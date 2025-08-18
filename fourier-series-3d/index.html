@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Fourier Series (Complex) — 3D</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<style>
+  :root{
+    --bg:#ffffff; --fg:#0f172a; --panel:#f8fafc; --panel-border:#e5e7eb;
+    --btn:#e2e8f0; --accent:#0ea5e9; --plot-bg:#ffffff; --plot-paper:#ffffff;
+    --total-light:#111827; --total-dark:#9ca3af; /* gris en dark */
+  }
+  .dark-mode{
+    --bg:#0b0b0c; --fg:#f1f5f9; --panel:#151618; --panel-border:#2a2c30;
+    --btn:#1f2937; --accent:#22d3ee; --plot-bg:#0b0b0c; --plot-paper:#0b0b0c;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    background:var(--bg); color:var(--fg);
+    height:100vh; overflow:hidden;
+    display:grid; grid-template-columns:320px 1fr; grid-template-rows:auto 1fr;
+    grid-template-areas:"header header" "sidebar main";
+  }
+  body.sidebar-collapsed{ grid-template-columns:0 1fr; }
+
+  header{
+    grid-area:header; background:var(--panel); border-bottom:1px solid var(--panel-border);
+    padding:10px 14px; display:flex; gap:10px; align-items:center; justify-content:space-between;
+  }
+  .title{margin:0; font-weight:700; font-size:1.05rem}
+  .toolbar{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+  button,select,label{font-size:0.95rem}
+  button{
+    background:var(--btn); color:var(--fg); border:1px solid var(--panel-border);
+    border-radius:10px; padding:8px 12px; cursor:pointer;
+  }
+  button:hover{border-color:var(--accent)}
+
+  #sidebar{
+    grid-area:sidebar; background:var(--panel); border-right:1px solid var(--panel-border);
+    display:flex; flex-direction:column; gap:10px; padding:12px; overflow-y:auto; width:320px;
+  }
+  body.sidebar-collapsed #sidebar{ display:none; }
+
+  .presets{display:flex; gap:6px; flex-wrap:wrap}
+  .toggles{display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:6px}
+  .control-grid{display:grid; gap:10px; grid-template-columns:1fr}
+  .control-card{background:var(--bg); border:1px solid var(--panel-border); border-radius:12px; padding:10px}
+  .row2{display:grid; gap:6px}
+  .row2 label{display:flex; justify-content:space-between; align-items:center; font-size:0.85rem}
+  input[type="range"]{width:100%}
+
+  #main{grid-area:main; padding:8px; display:flex; flex-direction:column; overflow:hidden}
+  #plot3d{flex:1; min-height:460px}
+  @media (max-width:900px){
+    body{
+      grid-template-columns:1fr; grid-template-rows:auto auto 1fr;
+      grid-template-areas:"header" "sidebar" "main";
+    }
+    body.sidebar-collapsed{ grid-template-rows:auto 1fr; }
+    #sidebar{max-height:45vh}
+    #main{min-height:55vh}
+  }
+</style>
+</head>
+<body>
+  <header>
+    <h1 class="title" id="mainTitle">Fourier Series (Complex) — 3D</h1>
+    <div class="toolbar">
+      <select id="languageSelector" aria-label="Language">
+        <option value="en" selected>English</option>
+        <option value="es">Español</option>
+        <option value="fr">Français</option>
+      </select>
+      <button id="toggleTheme">Dark Mode</button>
+      <button id="toggleSidebar">Hide Controls</button>
+    </div>
+  </header>
+
+  <aside id="sidebar">
+    <div class="presets" style="margin-bottom:6px">
+      <button id="presetSquare">Square</button>
+      <button id="presetTriangle">Triangle</button>
+      <button id="presetAll0">All 0</button>
+      <button id="presetZeroNegZeroPos">0, −1, 0, +1</button>
+    </div>
+    <div class="toggles">
+      <label><input type="checkbox" id="showComponents" checked /> <span id="labelShowComponents">Show Components</span></label>
+      <label><input type="checkbox" id="showPhasors" /> <span id="labelShowPhasors">Show Phasors</span></label>
+    </div>
+    <div class="control-grid" id="controlsGrid"></div>
+  </aside>
+
+  <main id="main">
+    <div class="toolbar" style="margin:4px 6px">
+      <button id="viewReal">Real</button>
+      <button id="viewImag">Imag</button>
+      <button id="viewPlane">Complex plane</button>
+      <button id="view3D">3D</button>
+    </div>
+    <div id="plot3d"></div>
+  </main>
+
+<script>
+/* ================= CONFIG ================= */
+const N_HARMONICS = 10;
+const N_PERIODS = 2;
+const POINTS_PER_PERIOD = 200;
+const OMEGA0 = 1;
+const RAD = Math.PI/180;
+
+/* Line widths */
+const LINE_WIDTH_COMPONENT = 2;
+const LINE_WIDTH_TOTAL = 6;
+
+/* 🎨 Colores para componentes y fasores */
+const COLORS = [
+  "#1f77b4","#ff7f0e","#2ca02c","#d62728","#9467bd",
+  "#8c564b","#e377c2","#7f7f7f","#bcbd22","#17becf"
+];
+
+/* ================= i18n ================= */
+const tr = {
+  en:{ title:"Fourier Series (Complex) — 3D", magnitude:"Magnitude", phase:"Phase",
+       darkMode:"Dark Mode", lightMode:"Light Mode", hideControls:"Hide Controls", showControls:"Show Controls",
+       showComponents:"Show Components", showPhasors:"Show Phasors",
+       viewReal:"Real", viewImag:"Imag.", viewPlane:"Complex plane", view3D:"3D",
+       square:"Square", triangle:"Triangle", all0:"All 0", zeroNegZeroPos:"0, −1, 0, +1",
+       axisX:"Time (rad)", axisY:"Real", axisZ:"Imag", total:"Total" },
+  es:{ title:"Serie de Fourier (Compleja) — 3D", magnitude:"Módulo", phase:"Fase",
+       darkMode:"Modo oscuro", lightMode:"Modo claro", hideControls:"Ocultar controles", showControls:"Mostrar controles",
+       showComponents:"Mostrar componentes", showPhasors:"Mostrar fasores",
+       viewReal:"Real", viewImag:"Imag.", viewPlane:"Plano complejo", view3D:"3D",
+       square:"Cuadrada", triangle:"Triangular", all0:"Todo 0", zeroNegZeroPos:"0, −1, 0, +1",
+       axisX:"Tiempo (rad)", axisY:"Real", axisZ:"Imaginaria", total:"Total" },
+  fr:{ title:"Série de Fourier (Complexe) — 3D", magnitude:"Module", phase:"Phase",
+       darkMode:"Mode sombre", lightMode:"Mode clair", hideControls:"Masquer contrôles", showControls:"Afficher contrôles",
+       showComponents:"Afficher composantes", showPhasors:"Afficher des phaseurs",
+       viewReal:"Réel", viewImag:"Imag.", viewPlane:"Plan complexe", view3D:"3D",
+       square:"Carrée", triangle:"Triangulaire", all0:"Tout 0", zeroNegZeroPos:"0, −1, 0, +1",
+       axisX:"Temps (rad)", axisY:"Réel", axisZ:"Imaginaire", total:"Total" }
+};
+let lang="en";
+
+/* ================= STATE ================= */
+let magnitudes = Array.from({length:N_HARMONICS},(_,i)=> (i===0?1:0));
+let phases = Array(N_HARMONICS).fill(0);
+let darkMode=false, sidebarHidden=false;
+let initialized=false;
+
+/* Flag para intercambiar Re/Im SOLO en el preset 0,-1,0,+1 */
+let swapRI = false;
+
+/* Time vector (fixed) */
+const totalPoints = N_PERIODS*POINTS_PER_PERIOD + 1;
+const tvec = Array.from({length:totalPoints},(_,i)=> i*(2*Math.PI)/POINTS_PER_PERIOD);
+
+/* rAF throttle */
+let rafPending=false;
+function scheduleUpdate(){ if(rafPending) return; rafPending=true; requestAnimationFrame(()=>{ updatePlot(true); rafPending=false; }); }
+
+/* ================= UI ================= */
+function buildControls(){
+  const grid=document.getElementById("controlsGrid");
+  grid.innerHTML="";
+  for(let k=1;k<=N_HARMONICS;k++){
+    const card=document.createElement("div"); card.className="control-card";
+    const inner=document.createElement("div"); inner.className="row2";
+
+    // |a_k|
+    const labAmp=document.createElement("label");
+    const spanAmp=document.createElement("span");
+    spanAmp.innerHTML=`${tr[lang].magnitude} &vert;a<sub>${k}</sub>&vert;`;
+    const valAmp=document.createElement("span"); valAmp.id=`val-amp-${k}`; valAmp.textContent=magnitudes[k-1].toFixed(2);
+    labAmp.append(spanAmp,valAmp);
+
+    const sliderAmp=document.createElement("input");
+    sliderAmp.type="range"; sliderAmp.min="0"; sliderAmp.max="2"; sliderAmp.step="0.01"; sliderAmp.value=String(magnitudes[k-1]);
+    sliderAmp.addEventListener("input",()=>{ magnitudes[k-1]=parseFloat(sliderAmp.value); valAmp.textContent=magnitudes[k-1].toFixed(2); scheduleUpdate(); },{passive:true});
+
+    // φ_k (deg)
+    const labPh=document.createElement("label");
+    const spanPh=document.createElement("span");
+    spanPh.innerHTML=`${tr[lang].phase} &phi;<sub>${k}</sub> (deg)`;
+    const valPh=document.createElement("span"); valPh.id=`val-ph-${k}`; valPh.textContent=(phases[k-1]/RAD).toFixed(0);
+    labPh.append(spanPh,valPh);
+
+    const sliderPh=document.createElement("input");
+    sliderPh.type="range"; sliderPh.min="-180"; sliderPh.max="180"; sliderPh.step="1"; sliderPh.value=String((phases[k-1]/RAD).toFixed(0));
+    sliderPh.addEventListener("input",()=>{ phases[k-1]=parseFloat(sliderPh.value)*RAD; valPh.textContent=sliderPh.value; scheduleUpdate(); },{passive:true});
+
+    inner.append(labAmp,sliderAmp,labPh,sliderPh);
+    card.appendChild(inner); grid.appendChild(card);
+  }
+}
+
+/* ================= PRESETS ================= */
+function applyPresetSquare(){
+  swapRI = false;
+  magnitudes.fill(0); phases.fill(0);
+  for(let k=1;k<=N_HARMONICS;k+=2){ magnitudes[k-1]=1/k; }
+  buildControls(); scheduleUpdate();
+}
+function applyPresetTriangle(){
+  swapRI = false;
+  magnitudes.fill(0); phases.fill(0);
+  for(let idx=0; idx<N_HARMONICS; idx++){
+    const k=idx+1;
+    if(k%2===1){ magnitudes[idx]=1/(k*k); phases[idx]= (Math.floor(k/2)%2 ? Math.PI : 0); }
+  }
+  buildControls(); scheduleUpdate();
+}
+function applyPresetAll(sign){
+  swapRI = false;
+  if(sign===0){ magnitudes.fill(0); phases.fill(0); }
+  buildControls(); scheduleUpdate();
+}
+
+/* --- preset 0,-1,0,+1 (numeric) + intercambio correcto Re/Im --- */
+function applyPresetZeroNegZeroPos(){
+  const S = 4096; const dt = (2*Math.PI)/S;
+  const f = new Array(S);
+  for(let i=0;i<S;i++){
+    const t = i*dt;
+    if (t < Math.PI/2) f[i] = 0;
+    else if (t < Math.PI) f[i] = -1;
+    else if (t < 3*Math.PI/2) f[i] = 0;
+    else f[i] = 1;
+  }
+  magnitudes.fill(0); phases.fill(0);
+  for(let k=1;k<=N_HARMONICS;k++){
+    let Ak = 0, Bk = 0;
+    for(let i=0;i<S;i++){
+      const t = i*dt;
+      Ak += f[i]*Math.cos(k*t);
+      Bk += f[i]*Math.sin(k*t);
+    }
+    Ak = (Ak*dt)/Math.PI;
+    Bk = (Bk*dt)/Math.PI;
+    const R = Math.hypot(Ak, Bk);
+    const phi = Math.atan2(-Bk, Ak);
+    magnitudes[k-1] = R;
+    phases[k-1] = phi;
+  }
+  swapRI = true; // el intercambio se aplica en el trazado
+  buildControls(); scheduleUpdate();
+}
+
+/* ================= COMPUTE ================= */
+function computeData(){
+  const showComps=document.getElementById("showComponents").checked;
+  const sumRe=new Float64Array(totalPoints), sumIm=new Float64Array(totalPoints);
+  const components=[];
+  let maxAmp = 0;
+  if(showComps){
+    for(let k=1;k<=N_HARMONICS;k++){
+      const A=magnitudes[k-1], phi=phases[k-1];
+      const re=new Float64Array(totalPoints), im=new Float64Array(totalPoints);
+      for(let i=0;i<totalPoints;i++){
+        const th=k*OMEGA0*tvec[i]+phi;
+        if(!swapRI){ re[i]=A*Math.cos(th); im[i]=A*Math.sin(th); }
+        else{        re[i]=A*Math.sin(th); im[i]=A*Math.cos(th); }
+        sumRe[i]+=re[i]; sumIm[i]+=im[i];
+        maxAmp = Math.max(maxAmp, Math.abs(re[i]), Math.abs(im[i]));
+      }
+      components.push({k,re,im});
+    }
+  }else{
+    for(let k=1;k<=N_HARMONICS;k++){
+      const A=magnitudes[k-1], phi=phases[k-1];
+      for(let i=0;i<totalPoints;i++){
+        const th=k*OMEGA0*tvec[i]+phi;
+        if(!swapRI){ sumRe[i]+=A*Math.cos(th); sumIm[i]+=A*Math.sin(th); }
+        else{        sumRe[i]+=A*Math.sin(th); sumIm[i]+=A*Math.cos(th); }
+      }
+    }
+  }
+  for(let i=0;i<totalPoints;i++){
+    maxAmp = Math.max(maxAmp, Math.abs(sumRe[i]), Math.abs(sumIm[i]));
+  }
+  maxAmp = Math.max(1, maxAmp * 1.1);
+  return {sumRe,sumIm,components,maxAmp};
+}
+
+/* ================= PLOT ================= */
+/* Vista 3D isométrica (ortográfica) inicial */
+const INITIAL_CAMERA = {
+  eye:{x:1.8, y:-1.8, z:1.2},
+  up: {x:0,   y:0,   z:1},
+  projection:{type:"orthographic"}
+};
+
+function layoutWithCamera(includeCamera=false, maxAmp=1){
+  const layout = {
+    uirevision: "keep-camera",
+    margin:{l:0,r:0,b:0,t:16},
+    scene:{
+      xaxis:{title:tr[lang].axisX, zeroline:false, backgroundcolor:getComputedStyle(document.body).getPropertyValue('--plot-bg').trim(), range:[0, tvec[totalPoints-1]]},
+      yaxis:{title:tr[lang].axisY, zeroline:false, backgroundcolor:getComputedStyle(document.body).getPropertyValue('--plot-bg').trim(), range:[-maxAmp, maxAmp]},
+      zaxis:{title:tr[lang].axisZ, zeroline:false, backgroundcolor:getComputedStyle(document.body).getPropertyValue('--plot-bg').trim(), range:[-maxAmp, maxAmp]}
+    },
+    paper_bgcolor:getComputedStyle(document.body).getPropertyValue('--plot-paper').trim(),
+    plot_bgcolor:getComputedStyle(document.body).getPropertyValue('--plot-bg').trim(),
+    template: darkMode ? "plotly_dark" : "plotly_white",
+    hovermode:false,
+    legend:{bgcolor:"rgba(0,0,0,0)"}
+  };
+  if(includeCamera){
+    // Solo en el primer render fijamos cámara y aspecto por defecto
+    layout.scene.camera = INITIAL_CAMERA;
+    layout.scene.aspectmode = "cube";
+  }
+  return layout;
+}
+
+/* === Vista actual: leerla SIEMPRE del gráfico y reinyectarla en cada update === */
+<!-- function getCurrentView(){ -->
+  <!-- if(!plotDiv || !plotDiv._fullLayout || !plotDiv._fullLayout.scene) return {}; -->
+  <!-- const cam = plotDiv._fullLayout.scene.camera; -->
+  <!-- const aspect = plotDiv._fullLayout.scene.aspectmode || "auto"; -->
+  <!-- return { -->
+    <!-- camera: JSON.parse(JSON.stringify(cam)), -->
+    <!-- aspect -->
+  <!-- }; -->
+<!-- } -->
+function getCurrentView(){
+  if(!plotDiv || !plotDiv._fullLayout || !plotDiv._fullLayout.scene) return {};
+  const cam = plotDiv._fullLayout.scene.camera;
+  const aspect = plotDiv._fullLayout.scene.aspectmode || "auto";
+  return {
+    camera: JSON.parse(JSON.stringify(cam)), // Deep copy of camera (includes projection.scale)
+    aspect
+  };
+}
+
+let plotDiv = null;
+
+function updatePlot(useReact=false){
+  const {sumRe,sumIm,components,maxAmp}=computeData();
+  const showComps=document.getElementById("showComponents").checked;
+  const showPh=document.getElementById("showPhasors").checked;
+
+  const traces=[];
+  // Color de la curva total (y del fasor total)
+  const totalColor = getComputedStyle(document.body)
+    .getPropertyValue('--total-' + (darkMode?'dark':'light')).trim();
+
+  if(showComps){
+    for(const c of components){
+      const k = c.k;
+      const color = COLORS[(k-1) % COLORS.length];
+      traces.push({
+        type:"scatter3d", mode:"lines",
+        x:tvec, y:Array.from(c.re), z:Array.from(c.im),
+        line:{width:LINE_WIDTH_COMPONENT, color},
+        hoverinfo:"skip", name:`k=${k}`
+      });
+    }
+  }
+  // Curva total
+  traces.push({
+    type:"scatter3d", mode:"lines",
+    x:tvec, y:Array.from(sumRe), z:Array.from(sumIm),
+    line:{width:LINE_WIDTH_TOTAL, color: totalColor},
+    hoverinfo:"skip", name:tr[lang].total
+  });
+
+  if(showPh){
+    let tipReTot=0, tipImTot=0;
+    for(let k=1;k<=N_HARMONICS;k++){
+      const A=magnitudes[k-1], phi=phases[k-1];
+      const tipRe = !swapRI ? A*Math.cos(phi) : A*Math.sin(phi);
+      const tipIm = !swapRI ? A*Math.sin(phi) : A*Math.cos(phi);
+      tipReTot+=tipRe; tipImTot+=tipIm;
+
+      if(showComps){
+        const color = COLORS[(k-1) % COLORS.length];
+        traces.push({
+          type:"scatter3d", mode:"lines",
+          x:[0,0], y:[0,tipRe], z:[0,tipIm],
+          line:{width:LINE_WIDTH_COMPONENT+1, color},
+          hoverinfo:"skip", name:`phasor k=${k}`, showlegend:false
+        });
+      }
+    }
+    // Fasor total con el MISMO color que la curva total
+    traces.push({
+      type:"scatter3d", mode:"lines",
+      x:[0,0], y:[0,tipReTot], z:[0,tipImTot],
+      line:{width:LINE_WIDTH_TOTAL+1, color: totalColor},
+      hoverinfo:"skip", name:"phasor total"
+    });
+  }
+
+  const config={responsive:true, displaylogo:false};
+
+  /* === Construimos el layout y le inyectamos la vista ACTUAL === */
+  const view = getCurrentView();                         // lee cámara/aspecto actuales
+  let layout = layoutWithCamera(!initialized, maxAmp);   // base (solo pone camera si !initialized)
+  if(view.camera){
+    // Clone camera and ensure orthographic projection with preserved scale
+    const cam = JSON.parse(JSON.stringify(view.camera));
+    cam.projection = cam.projection || {};
+    cam.projection.type = "orthographic";
+    cam.projection.scale = cam.projection.scale || 1; // Default to 1 if undefined
+    layout.scene.camera = cam;
+  }
+  if(view.aspect){
+    layout.scene.aspectmode = view.aspect;
+  }
+
+  if(!initialized){
+    Plotly.newPlot("plot3d", traces, layout, config).then(gd=>{
+      plotDiv = gd;
+      initialized=true;
+    });
+  } else {
+    Plotly.react("plot3d", traces, layout, config).then(gd=>{ plotDiv = gd; });
+  }
+}
+
+/* ================= CAMERA VIEWS (cambian vista actual) ================= */
+function setView(view){
+  let eye, up={x:0,y:0,z:1};
+  let aspect = "auto";
+  if(view==="real"){ 
+    eye={x:0, y:0, z:2.8}; up={x:0,y:1,z:0};
+  } else if(view==="imag"){ 
+    eye={x:0, y:-2.8, z:0};
+  } else if(view==="plane"){ 
+    eye={x:2.8, y:0, z:0}; aspect="cube";         // plane: misma escala en Y/Z
+  } else if(view==="3D"){ 
+    eye={x:1.8, y:-1.8, z:1.2}; aspect="cube";     // 3D isométrica
+  }
+  Plotly.relayout("plot3d", {
+    "scene.camera.eye": eye,
+    "scene.camera.up": up,
+    "scene.camera.projection.type": "orthographic",
+    "scene.aspectmode": aspect
+  });
+}
+
+/* ================= LANG & THEME ================= */
+function applyLanguage(){
+  document.getElementById("mainTitle").textContent=tr[lang].title;
+  document.getElementById("toggleTheme").textContent=darkMode? tr[lang].lightMode : tr[lang].darkMode;
+  document.getElementById("toggleSidebar").textContent=sidebarHidden? tr[lang].showControls : tr[lang].hideControls;
+  document.getElementById("viewReal").textContent=tr[lang].viewReal;
+  document.getElementById("viewImag").textContent=tr[lang].viewImag;
+  document.getElementById("viewPlane").textContent=tr[lang].viewPlane;
+  document.getElementById("view3D").textContent = tr[lang].view3D;
+  document.getElementById("presetSquare").textContent=tr[lang].square;
+  document.getElementById("presetTriangle").textContent=tr[lang].triangle;
+  document.getElementById("presetAll0").textContent=tr[lang].all0;
+  document.getElementById("presetZeroNegZeroPos").textContent=tr[lang].zeroNegZeroPos;
+  document.getElementById("labelShowComponents").textContent=tr[lang].showComponents;
+  document.getElementById("labelShowPhasors").textContent=tr[lang].showPhasors;
+  buildControls(); updatePlot(true);
+}
+
+/* ================= EVENTS ================= */
+document.getElementById("languageSelector").addEventListener("change",(e)=>{ lang=e.target.value; applyLanguage(); });
+document.getElementById("toggleTheme").addEventListener("click",()=>{
+  darkMode=!darkMode; document.body.classList.toggle("dark-mode",darkMode);
+  document.getElementById("toggleTheme").textContent=darkMode? tr[lang].lightMode : tr[lang].darkMode;
+  updatePlot(true);
+});
+document.getElementById("toggleSidebar").addEventListener("click",()=>{
+  sidebarHidden=!sidebarHidden;
+  document.body.classList.toggle("sidebar-collapsed", sidebarHidden);
+  document.getElementById("toggleSidebar").textContent = sidebarHidden? tr[lang].showControls : tr[lang].hideControls;
+  setTimeout(()=>{ Plotly.Plots.resize("plot3d"); }, 0);
+});
+
+document.getElementById("showComponents").addEventListener("change",()=>updatePlot(true));
+document.getElementById("showPhasors").addEventListener("change",()=>updatePlot(true));
+
+document.getElementById("viewReal").addEventListener("click",()=>setView("real"));
+document.getElementById("viewImag").addEventListener("click",()=>setView("imag"));
+document.getElementById("viewPlane").addEventListener("click",()=>setView("plane"));
+document.getElementById("view3D").addEventListener("click",()=>setView("3D"));
+
+document.getElementById("presetSquare").addEventListener("click",applyPresetSquare);
+document.getElementById("presetTriangle").addEventListener("click",applyPresetTriangle);
+document.getElementById("presetAll0").addEventListener("click",()=>applyPresetAll(0));
+document.getElementById("presetZeroNegZeroPos").addEventListener("click",applyPresetZeroNegZeroPos);
+
+window.addEventListener("resize",()=>{ Plotly.Plots.resize("plot3d"); });
+
+/* ================= INIT ================= */
+buildControls();
+updatePlot();
+</script>
+</body>
+</html>

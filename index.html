@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Franco Ferrucci – Home</title>
+  <meta name="description" content="Personal homepage with links to projects and pages in English, Français, Español." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg: #ffffff;
+      --fg: #11131a;
+      --muted: #5b6475;
+      --card: #f7f8fb;
+      --border: #e8ebf2;
+      --link: #0b6cff;
+      --accent: #545bff;
+      --shadow: 0 6px 24px rgba(0,0,0,.06);
+      --radius-xl: 18px;
+      --radius-lg: 14px;
+    }
+    @media (prefers-color-scheme: dark){
+      :root{ --bg:#0d0f14; --fg:#ecf0ff; --muted:#a9b1c6; --card:#121623; --border:#20263a; --link:#8ab4ff; --accent:#a58bff; --shadow: 0 10px 30px rgba(0,0,0,.45);}    }
+    html.dark {
+      --bg:#0d0f14; --fg:#ecf0ff; --muted:#a9b1c6; --card:#121623; --border:#20263a; --link:#8ab4ff; --accent:#a58bff; --shadow: 0 10px 30px rgba(0,0,0,.45);
+    }
+    html.light {
+      --bg: #ffffff; --fg: #11131a; --muted:#5b6475; --card:#f7f8fb; --border:#e8ebf2; --link:#0b6cff; --accent:#545bff; --shadow: 0 6px 24px rgba(0,0,0,.06);
+    }
+    *{box-sizing:border-box}
+    body{margin:0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, "Apple Color Emoji","Segoe UI Emoji"; color:var(--fg); background:var(--bg); line-height:1.55}
+    a{color:var(--link); text-decoration:none}
+    a:hover{text-decoration:underline}
+    .wrap{max-width:1100px; margin:0 auto; padding:28px clamp(16px,4vw,40px)}
+    header{display:flex; gap:16px; align-items:center; justify-content:space-between; padding-block:6px 10px}
+    .brand{display:flex; align-items:center; gap:14px}
+    .avatar{width:56px; height:56px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--link)); box-shadow:var(--shadow)}
+    .title h1{font-size:clamp(24px,3vw,32px); margin:0; letter-spacing:.2px}
+    .title p{margin:.15rem 0 0; color:var(--muted); font-size:14px}
+
+    .controls{display:flex; gap:10px; align-items:center}
+    .btn{border:1px solid var(--border); background:var(--card); color:var(--fg); padding:10px 14px; border-radius:12px; cursor:pointer; font-weight:600; box-shadow:var(--shadow)}
+    .btn:hover{filter:brightness(1.03)}
+    .segmented{display:flex; background:var(--card); border:1px solid var(--border); border-radius:12px; overflow:hidden; box-shadow:var(--shadow)}
+    .segmented button{border:0; padding:8px 12px; background:transparent; color:var(--muted); font-weight:600; cursor:pointer}
+    .segmented button.active{background:var(--bg); color:var(--fg)}
+
+    .hero{margin-top:18px; background:var(--card); border:1px solid var(--border); border-radius:var(--radius-xl); box-shadow:var(--shadow); padding:22px clamp(16px,3vw,28px)}
+    .hero h2{margin:.2rem 0 .6rem; font-size:clamp(20px,2.6vw,28px)}
+    .hero p{margin:.25rem 0; color:var(--muted)}
+
+    .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:16px; margin-top:20px}
+    .card{background:var(--card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:10px}
+    .card h3{margin:0; font-size:18px}
+    .card p{margin:0; color:var(--muted); font-size:14px}
+    .chipbar{display:flex; gap:6px; flex-wrap:wrap; margin-top:4px}
+    .chip{font-size:12px; border:1px solid var(--border); background:transparent; color:var(--muted); padding:2px 8px; border-radius:999px}
+
+    .section-title{display:flex; align-items:center; justify-content:space-between; margin-top:24px}
+    .section-title h2{margin:0; font-size:clamp(18px,2vw,22px)}
+    .muted{color:var(--muted)}
+
+    footer{margin-top:30px; color:var(--muted); font-size:13px}
+    .mono{font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="avatar" aria-hidden="true"></div>
+        <div class="title">
+          <h1 id="name">Franco Ferrucci</h1>
+          <p id="tag">Signal processing • Electronics • Teaching</p>
+        </div>
+      </div>
+      <div class="controls">
+        <div class="segmented" role="tablist" aria-label="Language switcher">
+          <button id="btn-en" class="active" data-lang="en" role="tab" aria-selected="true">EN</button>
+          <button id="btn-fr" data-lang="fr" role="tab" aria-selected="false">FR</button>
+          <button id="btn-es" data-lang="es" role="tab" aria-selected="false">ES</button>
+        </div>
+        <button id="themeBtn" class="btn" aria-label="Toggle color theme">🌗</button>
+      </div>
+    </header>
+
+    <section class="hero" aria-labelledby="intro-title">
+      <h2 id="intro-title">Hello!</h2>
+      <p id="intro-body">
+        I'm Franco, a university professor in Tahiti. I teach and build things around signals & systems, electronics, and Python.
+      </p>
+      <p id="intro-more" class="muted">
+        Below are all my public pages and mini-projects hosted on GitHub Pages.
+      </p>
+    </section>
+
+    <div class="section-title">
+      <h2 id="list-title">All pages</h2>
+      <span class="muted" id="count"></span>
+    </div>
+
+    <section class="grid" id="cards" aria-label="Links to pages"></section>
+
+    <footer>
+      <div>© <span id="year"></span> <span id="foot-name">Franco Ferrucci</span> · <span class="mono">github.com/your-username</span></div>
+    </footer>
+  </div>
+
+  <script>
+    // --------- EDIT THIS: Your pages list (titles per language) ---------
+    const PAGES = [
+      {
+        url: "fourier-series-2d/", // folder with its own index.html
+        titles: { en: "Fourier Series – 2D Demo", fr: "Séries de Fourier – Démo 3D", es: "Series de Fourier – Demo 3D" },
+        desc: {  en: "Interactive 2D real Fourier visualizer.",
+                 fr: "Visualiseur 2D interactif des séries de Fourier réelles.",
+                 es: "Visualizador 2d interactivo de series de Fourier reales." },
+        tags: ["Plotly", "Teaching", "Signals"]
+      },
+      {
+        url: "fourier-series-3d/", // folder with its own index.html
+        titles: { en: "Fourier Series – 3D Demo", fr: "Séries de Fourier – Démo 3D", es: "Series de Fourier – Demo 3D" },
+        desc: {  en: "Interactive 3D complex Fourier visualizer.",
+                 fr: "Visualiseur 3D interactif des séries de Fourier complexes.",
+                 es: "Visualizador 3D interactivo de series de Fourier complejas." },
+        tags: ["Plotly", "Teaching", "Signals"]
+      },      
+      {
+        url: "chirp/",
+        titles: { en: "Chirp signal", fr: "Signal chirp", es: "Señal chirp" },
+        desc: {  en: "Test.",
+                 fr: "Test.",
+                 es: "Test." },
+        tags: ["Signals", "Electronics"]
+      }
+    ];
+
+    // --------- Translations ---------
+    const TXT = {
+      en: {
+        name: "Franco Ferrucci",
+        tag: "Signal processing • Electronics • Teaching",
+        hello: "Hello!",
+        about: "I'm Franco, a university professor in Tahiti. I teach and build things around signals & systems, electronics, and Python.",
+        about2: "Below are all my public pages and mini-projects hosted on GitHub Pages.",
+        all: "All pages",
+        count: n=>`${n} link${n===1?"":"s"}`,
+        footName: "Franco Ferrucci"
+      },
+      fr: {
+        name: "Franco Ferrucci",
+        tag: "Traitement du signal • Électronique • Enseignement",
+        hello: "Bonjour !",
+        about: "Je suis Franco, maître de conférences à Tahiti. J'enseigne et je fabrique des choses autour des signaux & systèmes, de l'électronique et de Python.",
+        about2: "Ci‑dessous, toutes mes pages publiques et mini‑projets hébergés sur GitHub Pages.",
+        all: "Toutes les pages",
+        count: n=>`${n} lien${n>1?"s":""}`,
+        footName: "Franco Ferrucci"
+      },
+      es: {
+        name: "Franco Ferrucci",
+        tag: "Tratamiento de señales • Electrónica • Docencia",
+        hello: "¡Hola!",
+        about: "Soy Franco, profesor universitario en Tahití. Enseño y construyo cosas sobre señales y sistemas, electrónica y Python.",
+        about2: "Abajo están todas mis páginas públicas y mini‑proyectos alojados en GitHub Pages.",
+        all: "Todas las páginas",
+        count: n=>`${n} enlace${n===1?"":"s"}`,
+        footName: "Franco Ferrucci"
+      }
+    };
+
+    // --------- Language logic ---------
+    const $ = (q)=>document.querySelector(q);
+    const cards = $('#cards');
+    const btns = [$('#btn-en'), $('#btn-fr'), $('#btn-es')];
+
+    function preferredLang(){
+      const saved = localStorage.getItem('lang');
+      if(saved) return saved;
+      const nav = navigator.language.toLowerCase();
+      if(nav.startsWith('fr')) return 'fr';
+      if(nav.startsWith('es')) return 'es';
+      return 'en';
+    }
+
+    function setLang(lang){
+      const t = TXT[lang] || TXT.en;
+      $('#name').textContent = t.name;
+      $('#tag').textContent = t.tag;
+      $('#intro-title').textContent = t.hello;
+      $('#intro-body').textContent = t.about;
+      $('#intro-more').textContent = t.about2;
+      $('#list-title').textContent = t.all;
+      $('#foot-name').textContent = t.footName;
+      document.documentElement.lang = lang;
+
+      // Buttons UI
+      btns.forEach(b=>{
+        const active = b.dataset.lang === lang; b.classList.toggle('active', active); b.setAttribute('aria-selected', active);
+      });
+
+      // Render cards
+      cards.innerHTML = '';
+      PAGES.forEach(p=>{
+        const h = document.createElement('a');
+        h.className = 'card';
+        h.href = p.url;
+        h.innerHTML = `
+          <h3>${(p.titles && p.titles[lang]) || p.titles?.en || p.url}</h3>
+          <p>${(p.desc && p.desc[lang]) || p.desc?.en || ''}</p>
+          <div class="chipbar">${(p.tags||[]).map(tag=>`<span class="chip">${tag}</span>`).join('')}</div>
+        `;
+        cards.appendChild(h);
+      });
+      $('#count').textContent = (t.count)(PAGES.length);
+
+      localStorage.setItem('lang', lang);
+    }
+
+    btns.forEach(b=> b.addEventListener('click', ()=> setLang(b.dataset.lang)));
+
+    // --------- Theme toggle ---------
+    const themeBtn = document.getElementById('themeBtn');
+    function applyTheme(mode){
+      document.documentElement.classList.remove('light','dark');
+      if(mode === 'light') document.documentElement.classList.add('light');
+      if(mode === 'dark') document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', mode);
+    }
+    function initTheme(){
+      const saved = localStorage.getItem('theme');
+      if(saved){ applyTheme(saved); }
+    }
+    themeBtn.addEventListener('click', ()=>{
+      const html = document.documentElement;
+      const now = html.classList.contains('dark') ? 'light' : html.classList.contains('light') ? 'auto' : 'dark';
+      applyTheme(now);
+    });
+
+    // --------- Init ---------
+    document.getElementById('year').textContent = new Date().getFullYear();
+    setLang(preferredLang());
+    initTheme();
+  </script>
+</body>
+</html>

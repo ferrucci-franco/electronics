@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Fourier Series (Real)</title>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<style>
+  :root{
+    --bg:#ffffff; --fg:#111111; --panel:#f2f2f2; --border:#d7d7d7; --accent:#4a68ff;
+  }
+  body.dark-mode{
+    --bg:#0f0f10; --fg:#f5f5f5; --panel:#1a1b1e; --border:#2a2b2e; --accent:#8aa0ff;
+  }
+  *{box-sizing:border-box}
+  html, body { height: 100%; }
+  body{
+    height: 100dvh; overflow: hidden;
+    margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    background:var(--bg); color:var(--fg);
+    display:flex; flex-direction:column;
+  }
+  header{
+    background:var(--panel); border-bottom:1px solid var(--border);
+    padding:10px clamp(10px,2vw,24px);
+    display:grid; grid-template-columns:1fr auto; align-items:center; gap:10px;
+  }
+  header h1{margin:0; font-size:clamp(18px,2.8vw,28px)}
+  .toolbar{display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:flex-end}
+  .toolbar select,.toolbar button,.toolbar label{font-size:14px}
+  button{
+    padding:8px 12px; border:1px solid var(--border); background:var(--bg); color:var(--fg);
+    border-radius:10px; cursor:pointer;
+  }
+  button:hover{border-color:var(--accent)}
+
+  /* Layout a altura completa */
+  .wrapper{
+    display:grid; grid-template-columns:minmax(300px, 420px) 1fr;
+    gap:10px; padding:10px clamp(10px,2vw,24px);
+    flex:1; min-height:0;
+  }
+  .wrapper.controls-hidden{ grid-template-columns: 1fr; }
+  @media (max-width:900px){ .wrapper{ grid-template-columns:1fr } }
+
+  /* Sidebar ocupa toda la altura; scroll sólo vertical; nada de scroll horizontal */
+  .controls{
+    background:var(--panel); border:1px solid var(--border); border-radius:14px;
+    padding:10px; display:grid; grid-template-columns:1fr; gap:10px;
+    height:100%; min-height:0; overflow-y:auto; overflow-x:hidden;
+  }
+  .controls.hidden{display:none}
+
+  /* Cada tarjeta: dos columnas compactas (etiquetas cortas) */
+  .row{
+    display:grid;
+    grid-template-columns:minmax(160px,1fr) minmax(160px,1fr);
+    gap:6px;
+  }
+  @media (max-width:520px){ .row{ grid-template-columns:1fr; } }
+
+  .control-group{
+    border:1px dashed var(--border); border-radius:10px; padding:8px; display:grid; gap:6px;
+  }
+  .control-group b{font-size:13px}
+
+  /* Etiquetas ultra compactas: no wrap + valor al lado */
+  .mini-label{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:8px; white-space:nowrap;
+    font-size:13px;
+  }
+  .mini-label .value{
+    font-variant-numeric:tabular-nums; opacity:0.8; margin-left:8px;
+  }
+  input[type="range"]{ width:100% }
+
+  #plot{
+    min-height:420px; height:100%;
+    border:1px solid var(--border); border-radius:14px; background:var(--bg);
+  }
+</style>
+</head>
+<body>
+  <header>
+    <h1 id="mainTitle">Fourier Series (Real)</h1>
+    <div class="toolbar">
+      <select id="languageSelector" aria-label="Language">
+        <option value="en" selected>English</option>
+        <option value="es">Español</option>
+        <option value="fr">Français</option>
+      </select>
+
+      <label for="showComponents">
+        <input type="checkbox" id="showComponents" checked />
+        <span id="showComponentsText">Show Components</span>
+      </label>
+
+      <button id="presetSquare">Square</button>
+      <button id="presetTriangle">Triangle</button>
+      <button id="presetSawtooth">Sawtooth</button>
+      <button id="presetZeroNegZeroPos">Square 0→−1→0→+1</button>
+
+      <button id="resetAll">Reset</button>
+      <button id="toggleControls">Hide Controls</button>
+      <button id="toggleTheme">Dark Mode</button>
+    </div>
+  </header>
+
+  <div class="wrapper" id="wrapper">
+    <aside id="controlsPanel" class="controls"></aside>
+    <main id="plot"></main>
+  </div>
+
+<script>
+/* ====================== CONFIG ====================== */
+const N_HARMONICS = 20;
+const N_PERIODS = 2;
+const POINTS_PER_PERIOD = 1000;
+
+/* Short UI strings (kept minimal to avoid overflow) */
+const I18N = {
+  en:{ title:"Fourier Series", amp:"a", phase:"φ (°)",
+       hideControls:"Hide Controls", showControls:"Show Controls", showComponents:"Show Components",
+       darkMode:"Dark Mode", lightMode:"Light Mode", reset:"Reset",
+       square:"Square", triangle:"Triangle", sawtooth:"Sawtooth",
+       zeroNegZeroPos:"Square 0→−1→0→+1",
+       total:"Total", xaxis:"Time (rad)", yaxis:"Amplitude" },
+  es:{ title:"Serie de Fourier", amp:"a", phase:"φ (°)",
+       hideControls:"Ocultar controles", showControls:"Mostrar controles", showComponents:"Mostrar componentes",
+       darkMode:"Modo oscuro", lightMode:"Modo claro", reset:"Reset",
+       square:"Cuadrada", triangle:"Triangular", sawtooth:"Diente de sierra",
+       zeroNegZeroPos:"Cuadrada 0→−1→0→+1",
+       total:"Suma", xaxis:"Tiempo (rad)", yaxis:"Amplitud" },
+  fr:{ title:"Série de Fourier", amp:"a", phase:"φ (°)",
+       hideControls:"Masquer contrôles", showControls:"Afficher contrôles", showComponents:"Afficher composantes",
+       darkMode:"Mode sombre", lightMode:"Mode clair", reset:"Réinitialiser",
+       square:"Carrée", triangle:"Triangulaire", sawtooth:"Dent de scie",
+       zeroNegZeroPos:"Carrée 0→−1→0→+1",
+       total:"Total", xaxis:"Temps (rad)", yaxis:"Amplitude" }
+};
+let lang = "en";
+
+/* ====================== STATE ====================== */
+let amplitudes = Array(N_HARMONICS).fill(0);
+let phases = Array(N_HARMONICS).fill(0); // radians
+let darkMode = false;
+let ampSliders = [], phaseSliders = [];
+
+/* ====================== UI CREATION ====================== */
+function createControls() {
+  const panel = document.getElementById("controlsPanel");
+  panel.innerHTML = "";
+
+  ampSliders = [];
+  phaseSliders = [];
+
+  for (let k = 1; k <= N_HARMONICS; k++) {
+    const card = document.createElement("div");
+    card.className = "control-group";
+
+    const title = document.createElement("b");
+    title.innerHTML = `k = ${k}`;
+    card.appendChild(title);
+
+    const row = document.createElement("div");
+    row.className = "row";
+
+    /* -------- Amplitude (a_k) -------- */
+    const ampWrap = document.createElement("div");
+
+    const ampLabel = document.createElement("label");
+    // Subíndice con <sub>, valor a la derecha
+    ampLabel.innerHTML = `a<sub>${k}</sub>: <span class="value" id="a_val_${k}">${amplitudes[k-1].toFixed(2)}</span>`;
+
+    const ampSlider = document.createElement("input");
+    ampSlider.type = "range";
+    ampSlider.min = "0";
+    ampSlider.max = "2";
+    ampSlider.step = "0.01";
+    ampSlider.value = amplitudes[k-1].toString();
+    ampSlider.addEventListener("input", () => {
+      amplitudes[k - 1] = parseFloat(ampSlider.value);
+      const v = document.getElementById(`a_val_${k}`);
+      if (v) v.textContent = amplitudes[k - 1].toFixed(2);
+      updatePlot();
+    });
+
+    ampWrap.appendChild(ampLabel);
+    ampWrap.appendChild(ampSlider);
+
+    /* -------- Phase (φ_k) -------- */
+    const phaWrap = document.createElement("div");
+
+    const phaLabel = document.createElement("label");
+    // φ con subíndice y grados entre paréntesis, valor a la derecha
+    const degText = (lang === "fr") ? "(degrés)" : (lang === "es" ? "(grados)" : "(deg)");
+    phaLabel.innerHTML = `φ<sub>${k}</sub> ${degText}: <span class="value" id="p_val_${k}">${(phases[k-1] * 180 / Math.PI).toFixed(0)}</span>`;
+
+    const phaSlider = document.createElement("input");
+    phaSlider.type = "range";
+    phaSlider.min = "-180";
+    phaSlider.max = "180";
+    phaSlider.step = "1";
+    phaSlider.value = (phases[k - 1] * 180 / Math.PI).toFixed(0);
+    phaSlider.addEventListener("input", () => {
+      phases[k - 1] = parseFloat(phaSlider.value) * Math.PI / 180;
+      const v = document.getElementById(`p_val_${k}`);
+      if (v) v.textContent = (phases[k - 1] * 180 / Math.PI).toFixed(0);
+      updatePlot();
+    });
+
+    phaWrap.appendChild(phaLabel);
+    phaWrap.appendChild(phaSlider);
+
+    /* -------- ensamblar -------- */
+    row.appendChild(ampWrap);
+    row.appendChild(phaWrap);
+    card.appendChild(row);
+    panel.appendChild(card);
+
+    ampSliders.push(ampSlider);
+    phaseSliders.push(phaSlider);
+  }
+}
+
+
+/* ====================== PLOTTING ====================== */
+function timeVector(){
+  const L = N_PERIODS*POINTS_PER_PERIOD + 1;
+  const dt = 2*Math.PI/POINTS_PER_PERIOD;
+  return Array.from({length:L},(_,i)=>i*dt);
+}
+function buildTraces(t){
+  const showComponents = document.getElementById("showComponents").checked;
+  const traces=[]; const yTotal=new Array(t.length).fill(0);
+
+  const addHarm = (k, a, ph) => {
+    const yk = t.map(tt => a*Math.cos(k*tt + ph));
+    for(let i=0;i<yTotal.length;i++) yTotal[i]+=yk[i];
+    if(showComponents){
+      traces.push({
+        x:t, y:yk, mode:"lines",
+        line:{width:1,opacity:0.9},
+        name:`k=${k}`,
+        hoverinfo:'skip'
+      });
+    }
+  };
+
+  for(let k=1;k<=N_HARMONICS;k++){
+    addHarm(k, amplitudes[k-1], phases[k-1]);
+  }
+
+  /* Total curve: gray in dark mode */
+  const totalColor = darkMode ? "#bfbfbf" : "#000000";
+  traces.push({
+    x:t, y:yTotal, mode:"lines",
+    line:{width:3,color:totalColor},
+    name:I18N[lang].total,
+    hoverinfo:'skip'
+  });
+  return traces;
+}
+function plotLayout(){
+  const bg = darkMode ? "#0f0f10" : "#ffffff";
+  return {
+    margin:{t:24,r:16,b:48,l:56},
+    xaxis:{title:I18N[lang].xaxis},
+    yaxis:{title:I18N[lang].yaxis},
+    paper_bgcolor:bg, plot_bgcolor:bg,
+    template: darkMode ? "plotly_dark" : "plotly_white",
+    hovermode: false
+  };
+}
+function updatePlot(){
+  const t=timeVector();
+  Plotly.react("plot", buildTraces(t), plotLayout(), {
+    responsive:true, scrollZoom:true, displaylogo:false
+  });
+}
+
+/* ====================== PRESETS ====================== */
+function resetAll(){
+  amplitudes.fill(0); phases.fill(0);
+  ampSliders.forEach(s=>{ s.value="0"; s.dispatchEvent(new Event("input")); });
+  phaseSliders.forEach(s=>{ s.value="0"; s.dispatchEvent(new Event("input")); });
+  updatePlot();
+}
+function applySquarePreset(){
+  amplitudes.fill(0); phases.fill(0);
+  for(let k=1;k<=N_HARMONICS;k++){
+    if(k%2===1){
+      const ak=(4/Math.PI)/k; amplitudes[k-1]=ak; phases[k-1]=-Math.PI/2;
+    }
+  }
+  reflectSliders();
+}
+function applyTrianglePreset(){
+  amplitudes.fill(0); phases.fill(0);
+  for(let k=1;k<=N_HARMONICS;k++){
+    if(k%2===1){
+      const m=(k-1)/2, sign=(m%2===0)?+1:-1;
+      const ak=(8/(Math.PI*Math.PI))/ (k*k);
+      amplitudes[k-1]=ak;
+      phases[k-1]=(sign>0)?-Math.PI/2:+Math.PI/2;
+    }
+  }
+  reflectSliders();
+}
+function applySawtoothPreset(){
+  amplitudes.fill(0); phases.fill(0);
+  for(let k=1;k<=N_HARMONICS;k++){
+    const sign = ((k+1)%2===0)?-1:+1; // (-1)^{k+1}
+    const b = (2/Math.PI)/k * sign;
+    amplitudes[k-1]=Math.abs(b);
+    phases[k-1]=(b>=0)?-Math.PI/2:+Math.PI/2;
+  }
+  reflectSliders();
+}
+function applyZeroNegZeroPosPreset(){
+  const S = 4096; const dt = (2*Math.PI)/S;
+  const f = new Array(S);
+  for(let i=0;i<S;i++){
+    const t = i*dt;
+    if (t < Math.PI/2) f[i] = 0;
+    else if (t < Math.PI) f[i] = -1;
+    else if (t < 3*Math.PI/2) f[i] = 0;
+    else f[i] = 1;
+  }
+  amplitudes.fill(0); phases.fill(0);
+  for(let k=1;k<=N_HARMONICS;k++){
+    let Ak = 0, Bk = 0;
+    for(let i=0;i<S;i++){
+      const t = i*dt;
+      Ak += f[i]*Math.cos(k*t);
+      Bk += f[i]*Math.sin(k*t);
+    }
+    Ak = (Ak*dt)/Math.PI;
+    Bk = (Bk*dt)/Math.PI;
+    const R = Math.hypot(Ak, Bk);
+    const phi = Math.atan2(-Bk, Ak);
+    amplitudes[k-1] = R;
+    phases[k-1] = phi;
+  }
+  reflectSliders();
+}
+function reflectSliders() {
+  for (let k = 1; k <= N_HARMONICS; k++) {
+    // Amplitude slider: keep full precision in the control
+    if (ampSliders[k - 1]) {
+      ampSliders[k - 1].value = String(amplitudes[k - 1]); // no rounding here
+    }
+    const av = document.getElementById(`a_val_${k}`);
+    if (av) av.textContent = amplitudes[k - 1].toFixed(3); // display with 3 decimals
+
+    // Phase slider: integer degrees is fine
+    const deg = Math.round(phases[k - 1] * 180 / Math.PI);
+    if (phaseSliders[k - 1]) {
+      phaseSliders[k - 1].value = String(deg);
+    }
+    const pv = document.getElementById(`p_val_${k}`);
+    if (pv) pv.textContent = String(deg);
+  }
+  updatePlot();
+}
+
+
+/* ====================== LANGUAGE ====================== */
+function setLanguage(nextLang){
+  lang = nextLang;
+  document.getElementById("mainTitle").textContent = I18N[lang].title;
+  document.getElementById("toggleControls").textContent =
+    document.getElementById("controlsPanel").classList.contains("hidden") ? I18N[lang].showControls : I18N[lang].hideControls;
+  document.getElementById("toggleTheme").textContent = darkMode ? I18N[lang].lightMode : I18N[lang].darkMode;
+  document.getElementById("showComponentsText").textContent = I18N[lang].showComponents;
+  document.getElementById("presetSquare").textContent = I18N[lang].square;
+  document.getElementById("presetTriangle").textContent = I18N[lang].triangle;
+  document.getElementById("presetSawtooth").textContent = I18N[lang].sawtooth;
+  document.getElementById("presetZeroNegZeroPos").textContent = I18N[lang].zeroNegZeroPos;
+  document.getElementById("resetAll").textContent = I18N[lang].reset;
+
+  createControls();
+  reflectSliders();
+  updatePlot();
+}
+
+/* ====================== EVENTS ====================== */
+document.getElementById("languageSelector").addEventListener("change",(e)=>setLanguage(e.target.value));
+
+document.getElementById("toggleControls").addEventListener("click",()=>{
+  const panel=document.getElementById("controlsPanel");
+  const wrapper=document.getElementById("wrapper");
+  const btn=document.getElementById("toggleControls");
+  const nowHidden = panel.classList.toggle("hidden");
+  wrapper.classList.toggle("controls-hidden", nowHidden);
+  btn.textContent = nowHidden ? I18N[lang].showControls : I18N[lang].hideControls;
+
+  // Force plot to re-measure after layout change
+  requestAnimationFrame(()=>{
+    const plotEl = document.getElementById('plot');
+    if (plotEl && plotEl.data) {
+      Plotly.Plots.resize(plotEl);
+    }
+  });
+});
+
+document.getElementById("toggleTheme").addEventListener("click",()=>{
+  darkMode=!darkMode; document.body.classList.toggle("dark-mode",darkMode);
+  document.getElementById("toggleTheme").textContent = darkMode ? I18N[lang].lightMode : I18N[lang].darkMode;
+  updatePlot();
+});
+
+document.getElementById("showComponents").addEventListener("change",updatePlot);
+
+document.getElementById("resetAll").addEventListener("click",resetAll);
+document.getElementById("presetSquare").addEventListener("click",applySquarePreset);
+document.getElementById("presetTriangle").addEventListener("click",applyTrianglePreset);
+document.getElementById("presetSawtooth").addEventListener("click",applySawtoothPreset);
+document.getElementById("presetZeroNegZeroPos").addEventListener("click",applyZeroNegZeroPosPreset);
+
+/* ====================== INIT ====================== */
+createControls();
+updatePlot();
+applySquarePreset();
+</script>
+</body>
+</html>
