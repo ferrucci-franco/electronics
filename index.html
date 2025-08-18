@@ -241,8 +241,7 @@
     }
     themeBtn.addEventListener('click', ()=>{
       const html = document.documentElement;
-      const now = html.classList.contains('dark') ? 'light' : html.classList.contains('light') ? 'auto' : 'dark';
-      applyTheme(now);
+      applyTheme(html.classList.contains('dark') ? 'light' : 'dark');
     });
 
     // --------- Init ---------
