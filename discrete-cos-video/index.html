@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fonction cos(ωn) à temps discret</title>
+
+  <!-- Nicer font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root { --gap: 12px; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      margin: 0; padding: 20px; color:#111;
+      line-height: 1.45; background:#fff;
+    }
+    .wrap { max-width: 1000px; margin: 0 auto; }
+    h1 {
+      text-align: center; margin: 0 0 14px 0; font-weight: 600;
+      letter-spacing: .2px;
+    }
+    .player-box { position: relative; aspect-ratio: 16/9; background: #000;
+      border-radius: 14px; overflow: hidden; }
+    #player { width: 100%; height: 100%; }
+
+    .controls {
+      display: flex; flex-wrap: wrap; gap: var(--gap);
+      margin-top: var(--gap); align-items: center;
+    }
+    .controls button, .controls select {
+      font-size: 14px; padding: 8px 12px; border-radius: 10px;
+      border: 1px solid #d7d9df; background: #fff; cursor: pointer;
+    }
+    .controls select { cursor: default; }
+    .controls .spacer { flex: 1; }
+    .readout { font-variant-numeric: tabular-nums; opacity: .85; }
+
+    .pill {
+      padding: 6px 10px; border: 1px solid #e5e7ee; border-radius: 999px;
+      background: #f8f9fc; font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Fonction cos(ωn) à temps discret</h1>
+
+    <div class="player-box">
+      <div id="player"></div>
+    </div>
+
+    <div class="controls" id="controls">
+      <button id="play">⏵︎ Lire</button>
+      <button id="pause">⏸︎ Pause</button>
+
+      <label class="pill">
+        <span id="rateLabel">Vitesse</span>
+        <select id="rate">
+          <option>0.25</option><option>0.5</option><option selected>1</option>
+          <option>1.25</option><option>1.5</option><option>2</option>
+        </select>
+      </label>
+
+      <!-- Frame-like steps (no user "Pas" control; uses STEP_SEC) -->
+      <button id="stepBack">⟲ −1</button>
+      <button id="stepFwd">⟳ +1</button>
+
+      <span class="spacer"></span>
+      <span class="readout">t = <span id="time">0.000</span> s</span>
+
+      <label class="pill">
+        <span id="langLabel">Langue</span>
+        <select id="lang">
+          <option value="fr" selected>FR</option>
+          <option value="en">EN</option>
+          <option value="es">ES</option>
+        </select>
+      </label>
+    </div>
+
+    <p style="margin-top:10px;color:#444" id="hint">
+      Astuce : quand la vidéo est en pause et que le lecteur a le focus sur ordinateur,
+      les touches <b>.</b> / <b>,</b> avancent/reculent d’une image.
+    </p>
+  </div>
+
+  <!-- YouTube IFrame Player API -->
+  <script>
+    // ==== CONFIG ====
+    const YT_VIDEO_ID = "ey9bNTH0RII";     // ← replace with your YouTube ID
+    const STEP_SEC    = 1/30;           // ← "frame" step (e.g., 1/30 for ~30 fps)
+    // ===============
+
+    // i18n
+    const I18N = {
+      fr: {
+        title: "Fonction cos(ωn) à temps discret",
+        play: "⏵︎ Lire", pause: "⏸︎ Pause", rate: "Vitesse",
+        stepB: "⟲ −1", stepF: "⟳ +1", lang: "Langue",
+        hint: "Astuce : vidéo en pause + focus lecteur → touches « . » / « , » pour avancer/reculer d’une image."
+      },
+      en: {
+        title: "Discrete-time cos(ωn)",
+        play: "⏵︎ Play", pause: "⏸︎ Pause", rate: "Speed",
+        stepB: "⟲ −1", stepF: "⟳ +1", lang: "Language",
+        hint: "Tip: with the video paused and the player focused, use “.” / “,” to step frames on desktop."
+      },
+      es: {
+        title: "Función cos(ωn) en tiempo discreto",
+        play: "⏵︎ Reproducir", pause: "⏸︎ Pausa", rate: "Velocidad",
+        stepB: "⟲ −1", stepF: "⟳ +1", lang: "Idioma",
+        hint: "Truco: con el video en pausa y el reproductor enfocado, usa “.” / “,” para avanzar/retroceder fotograma en escritorio."
+      }
+    };
+
+    function applyLang(lang) {
+      const t = I18N[lang] || I18N.fr;
+      document.title = t.title;
+      document.querySelector("h1").textContent = t.title;
+      qs("#play").textContent      = t.play;
+      qs("#pause").textContent     = t.pause;
+      qs("#rateLabel").textContent = t.rate;
+      qs("#stepBack").textContent  = t.stepB;
+      qs("#stepFwd").textContent   = t.stepF;
+      qs("#langLabel").textContent = t.lang;
+      qs("#hint").textContent      = t.hint;
+    }
+
+    // Load YT API
+    const tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(tag);
+
+    let player;
+
+    window.onYouTubeIframeAPIReady = function(){
+      player = new YT.Player('player', {
+        videoId: YT_VIDEO_ID,
+        playerVars: { controls: 1, modestbranding: 1, rel: 0, fs: 1, iv_load_policy: 3, enablejsapi: 1 },
+        events: { 'onReady': onReady }
+      });
+    };
+
+    function onReady(){
+      qs('#play').onclick  = () => player.playVideo();
+      qs('#pause').onclick = () => player.pauseVideo();
+      qs('#rate').onchange = (e) => player.setPlaybackRate(parseFloat(e.target.value));
+
+      // frame-like steps using constant STEP_SEC
+      qs('#stepBack').onclick = () => step(-1);
+      qs('#stepFwd').onclick  = () => step(+1);
+
+      // language switch
+      qs('#lang').onchange = (e) => applyLang(e.target.value);
+
+      tick(); // start time display
+      applyLang(qs('#lang').value);
+    }
+
+    function qs(sel){ return document.querySelector(sel); }
+
+    function nudge(dt){
+      const t = Math.max(0, (player.getCurrentTime() || 0) + dt);
+      player.seekTo(Math.round(t*1000)/1000, true);
+    }
+    function step(sign){
+      player.pauseVideo();
+      nudge(sign * STEP_SEC);
+    }
+
+    function tick(){
+      if (player && player.getCurrentTime) {
+        const t = player.getCurrentTime() || 0;
+        qs('#time').textContent = (Math.round(t*1000)/1000).toFixed(3);
+      }
+      requestAnimationFrame(tick);
+    }
+  </script>
+</body>
+</html>
