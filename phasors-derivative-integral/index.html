@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Complex exponentials and phasors</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+<style>
+  :root{
+    --bg:#ffffff; --fg:#0f172a; --panel:#f8fafc; --panel-border:#e5e7eb;
+    --btn:#e2e8f0; --accent:#0ea5e9; --plot-bg:#ffffff; --plot-paper:#ffffff; --grid:#e5e7eb;
+    --modal-overlay: rgba(0,0,0,0.35);
+    --modal-bg: #f0f0f0;
+    --modal-fg: #111111;
+    --modal-border: #bdbdbd;
+  }
+  .dark-mode{
+    --bg:#0b0b0c; --fg:#f1f5f9; --panel:#151618; --panel-border:#2a2c30;
+    --btn:#1f2937; --accent:#22d3ee; --plot-bg:#0b0b0c; --plot-paper:#0b0b0c; --grid:rgba(220,220,220,0.28);
+    --modal-overlay: rgba(0,0,0,0.6);
+    --modal-bg: #1b1d22;
+    --modal-fg: #e5e7eb;
+    --modal-border: #2f343b;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; font-family:Calibri,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    background:var(--bg); color:var(--fg);
+    height:100vh; overflow:hidden;
+    display:grid; grid-template-columns:320px 1fr; grid-template-rows:auto 1fr;
+    grid-template-areas:"header header" "sidebar main";
+  }
+  body.sidebar-collapsed{ grid-template-columns:0 1fr; }
+
+  /* Sidebar credits */
+  .sidebar-credits{
+    text-align:center;
+    padding: 6px 8px 14px;
+    color: var(--fg);
+    opacity: .75;
+    font-size: .9rem;
+  }
+  .sidebar-credits small{ letter-spacing:.02em; }
+
+  header{
+    grid-area:header; background:var(--panel); border-bottom:1px solid var(--panel-border);
+    padding:10px 14px; display:flex; gap:10px; align-items:center; justify-content:space-between;
+  }
+  .title{margin:0; font-weight:700; font-size:1.25rem} /* 5) bigger title */
+  .toolbar{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+  button,select,label{font-size:0.95rem}
+  button{
+    background:var(--btn); color:var(--fg); border:1px solid var(--panel-border);
+    border-radius:10px; padding:8px 12px; cursor:pointer;
+  }
+  button:hover{border-color:var(--accent)}
+
+  #sidebar{
+    grid-area:sidebar; background:var(--panel); border-right:1px solid var(--panel-border);
+    display:flex; flex-direction:column; gap:10px; padding:12px; overflow-y:auto; width:320px;
+  }
+  body.sidebar-collapsed #sidebar{ display:none; }
+
+  .control-card{background:var(--bg); border:1px solid var(--panel-border); border-radius:12px; padding:12px}
+  .row{display:grid; gap:8px}
+  .row label{display:flex; justify-content:space-between; align-items:center; font-size:0.9rem}
+  .hint{font-size:0.86rem; opacity:.9; margin-top:2px}
+  input[type="range"]{width:100%}
+  .checks{display:grid; gap:6px; margin-top:8px}
+  .checks label{display:flex; align-items:center; gap:8px; font-size:0.95rem}
+
+  #main{grid-area:main; padding:8px; display:flex; flex-direction:column; overflow:hidden}
+  #plots{flex:1; display:grid; gap:8px; grid-template-columns:1.2fr 1fr; grid-template-rows:1fr 1fr;
+         grid-template-areas:"plot3d plotRe" "plot3d plotIm"; min-height:480px}
+  #plot3d{grid-area:plot3d; min-height:460px}
+  #plotRe{grid-area:plotRe; min-height:220px}
+  #plotIm{grid-area:plotIm; min-height:220px}
+
+  .mini-toolbar{display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin:4px 6px}
+  .flex-split{display:flex; gap:8px; align-items:center; justify-content:space-between}
+
+  .modal{
+    position:fixed; inset:0; display:none;
+    align-items:center; justify-content:center;
+    background: var(--modal-overlay); z-index:50;
+  }
+  .modal .card{
+      background: var(--modal-bg);
+      color: var(--modal-fg);
+      border: 1px solid var(--modal-border);
+      border-radius: 12px;
+      max-width: 800px;
+      width: min(92vw, 800px);
+      padding: 16px;
+  }
+  /* ensure MathJax inherits modal text color */
+  .modal .card mjx-container[jax="CHTML"] { color: inherit; }
+
+  .modal .close{margin-top:10px}
+
+  @media (max-width:1100px){
+    #plots{grid-template-columns:1fr; grid-template-rows:1fr 280px 280px; grid-template-areas:"plot3d" "plotRe" "plotIm";}
+  }
+  @media (max-width:900px){
+    body{ grid-template-columns:1fr; grid-template-rows:auto auto 1fr; grid-template-areas:"header" "sidebar" "main"; }
+    body.sidebar-collapsed{ grid-template-rows:auto 1fr; }
+    #sidebar{max-height:48vh}
+    #main{min-height:52vh}
+  }
+</style>
+</head>
+<body>
+  <header>
+    <h1 class="title" id="mainTitle">Complex exponentials and phasors</h1>
+    <div class="toolbar">
+      <!-- language first, then info (swapped earlier) -->
+      <select id="languageSelector" aria-label="Language">
+        <option value="en" selected>English</option>
+        <option value="es">Español</option>
+        <option value="fr">Français</option>
+      </select>
+      <button id="btnInfo">ℹ️ Info</button>
+      <button id="toggleTheme">Dark Mode</button>
+      <button id="toggleSidebar">Hide Controls</button>
+    </div>
+  </header>
+
+  <aside id="sidebar">
+    <div class="control-card">
+      <div class="flex-split">
+        <strong id="paramsTitle">Parameters</strong>
+        <button id="btnDefault">Default</button>
+      </div>
+    </div>
+
+    <!-- φ: step 5°, no decimals -->
+    <div class="control-card">
+      <div class="row">
+        <label><span id="labPhi">Phase φ (deg)</span> <span id="valPhi">-30</span></label>
+        <input id="slPhi" type="range" min="-180" max="180" step="5" value="-30"/>
+        <div class="hint" id="hintPhiRad">φ = -0.52 rad</div>
+      </div>
+    </div>
+
+    <!-- A: integers 1,2,3 -->
+    <div class="control-card">
+      <div class="row">
+        <label><span id="labA">Amplitude A</span> <span id="valA">1</span></label>
+        <input id="slA" type="range" min="1" max="3" step="1" value="1"/>
+        <div class="hint" id="hintA">Values: 1, 2, 3</div>
+      </div>
+    </div>
+
+    <!-- ω: only 0.75, 1, 1.5 (slider snaps to those marks) -->
+    <div class="control-card">
+      <div class="row">
+        <label><span id="labOmega">Omega ω (rad/s)</span> <span id="valOmega">1</span></label>
+        <input id="slOmega" type="range" min="0.75" max="1.5" step="0.01" value="1" list="omegaMarks"/>
+        <datalist id="omegaMarks">
+          <option value="0.75"></option>
+          <option value="1"></option>
+          <option value="1.5"></option>
+        </datalist>
+        <!-- freq hint removed per request -->
+      </div>
+    </div>
+
+    <!-- Periods: 1,2,3 -->
+    <div class="control-card">
+      <div class="row">
+        <label><span id="labPeriods">Duration (periods)</span> <span id="valPeriods">1</span></label>
+        <input id="slPeriods" type="range" min="1" max="3" step="1" value="1"/>
+        <div class="hint" id="hintPeriods">1, 2, or 3 periods</div>
+      </div>
+    </div>
+
+    <div class="control-card">
+      <strong id="compareTitle">Compare with</strong>
+      <div class="checks">
+        <label><input id="cbDeriv" type="checkbox"/> <span id="labDeriv">Derivative dz/dt</span></label>
+        <label><input id="cbInt"   type="checkbox"/> <span id="labInt">Integral ∫z(t)dt</span></label>
+      </div>
+    </div>
+
+    <div class="control-card">
+      <strong id="viewsTitle">Views</strong>
+      <div class="mini-toolbar" style="margin-top:8px">
+        <button id="viewReal">Real</button>
+        <button id="viewImag">Imag</button>
+        <button id="viewPlane">Complex plane</button>
+        <button id="view3D">3D</button>
+      </div>
+    </div>
+    
+    <div class="sidebar-credits" aria-label="Credits">
+        <small>© 2025 Franco FERRUCCI — HTML + JavaScript + Plotly</small>
+    </div>
+    
+  </aside>
+
+  <main id="main">
+    <div class="mini-toolbar">
+      <div id="formula">
+        \( z(t)=A\,e^{j(\omega t+\phi)} = A\cos(\omega t+\phi) + j\,A\sin(\omega t+\phi) \)
+      </div>
+    </div>
+    <div id="plots">
+      <div id="plot3d"></div>
+      <div id="plotRe"></div>
+      <div id="plotIm"></div>
+    </div>
+  </main>
+
+  <div class="modal" id="modal">
+    <div class="card">
+      <div id="modalContent"></div>
+      <button class="close" id="btnCloseModal">Close</button>
+    </div>
+  </div>
+
+<script>
+/* ================= constants ================= */
+var RAD = Math.PI/180;
+var COLORS = { z:"#2563eb", dz:"#ff8c00", int:"#7e57c2", phasorTip:"#1f2937" };
+var AXIS_GRAY="gray", W3D=6, W2D=3, WPH=6, TIP_SIZE=5;
+var N_SAMPLES=1000;
+
+/* i18n text and info popup (same as before, trimmed here for brevity) */
+var infoHTML = {
+  en: `
+  <p><strong>Differentiating and integrating complex exponential</strong></p>
+  <p>The rules for differentiating and integrating \\(e^{z}\\) with complex \\(z=\\sigma+j\\omega\\) are the same as for real exponentials.</p>
+  \\[
+  \\frac{d}{dt}\\big(e^{z(t)}\\big)=z'(t)\\,e^{z(t)}
+  \\]
+  \\[
+  \\frac{d}{dt}\\big(e^{(\\sigma+j\\omega)t}\\big)=(\\sigma+j\\omega)\\,e^{(\\sigma+j\\omega)t}=(\\sigma+j\\omega)e^{\\sigma t}e^{j\\omega t}
+  \\]
+  <hr/>
+  <p><strong>Evolution of \\(\\dfrac{dz}{dt}\\)</strong></p>
+  \\[
+  \\frac{dz}{dt}=j\\omega A e^{j(\\omega t+\\varphi)}=
+  \\underbrace{A e^{j\\varphi}}_{\\text{phasor of } z(t)}\\cdot \\omega e^{j90^\\circ}\\cdot e^{j\\omega t}
+  =-\\omega A\\sin(\\omega t+\\varphi)+j\\omega A\\cos(\\omega t+\\varphi)
+  \\]
+  <p>The phasor of \\(\\frac{dz}{dt}\\) is the phasor of \\(z(t)\\) rotated by \\(+90^\\circ\\) and scaled by \\(\\omega\\).</p>
+  <hr/>
+  <p><strong>Evolution of \\(\\int z(t)\\,dt\\)</strong></p>
+  \\[
+  \\int z(t)\\,dt=\\frac{A}{j\\omega}e^{j(\\omega t+\\varphi)}=
+  \\frac{1}{\\omega}e^{-j90^\\circ}\\cdot \\underbrace{A e^{j\\varphi}}_{\\text{phasor of } z(t)}\\cdot e^{j\\omega t}
+  =\\frac{A}{\\omega}\\big[\\sin(\\omega t+\\varphi)-j\\cos(\\omega t+\\varphi)\\big]
+  \\]
+  <p>The phasor of the integral is the phasor of \\(z(t)\\) rotated by \\(-90^\\circ\\) and scaled by \\(1/\\omega\\).</p>
+  `,
+
+  es: `
+  <p><strong>Diferenciación e integración de exponenciales complejas</strong></p>
+  <p>Las reglas para derivar e integrar \\(e^{z}\\) con \\(z=\\sigma+j\\omega\\) son las mismas que para exponenciales reales.</p>
+  \\[
+  \\frac{d}{dt}\\big(e^{z(t)}\\big)=z'(t)\\,e^{z(t)}
+  \\]
+  \\[
+  \\frac{d}{dt}\\big(e^{(\\sigma+j\\omega)t}\\big)=(\\sigma+j\\omega)\\,e^{(\\sigma+j\\omega)t}=(\\sigma+j\\omega)e^{\\sigma t}e^{j\\omega t}
+  \\]
+  <hr/>
+  <p><strong>Evolución de \\(\\dfrac{dz}{dt}\\)</strong></p>
+  \\[
+  \\frac{dz}{dt}=j\\omega A e^{j(\\omega t+\\varphi)}=
+  \\underbrace{A e^{j\\varphi}}_{\\text{fasor de } z(t)}\\cdot \\omega e^{j90^\\circ}\\cdot e^{j\\omega t}
+  =-\\omega A\\sin(\\omega t+\\varphi)+j\\omega A\\cos(\\omega t+\\varphi)
+  \\]
+  <p>El fasor de \\(\\frac{dz}{dt}\\) es el de \\(z(t)\\) girado \\(+90^\\circ\\) y escalado por \\(\\omega\\).</p>
+  <hr/>
+  <p><strong>Evolución de \\(\\int z(t)\\,dt\\)</strong></p>
+  \\[
+  \\int z(t)\\,dt=\\frac{A}{j\\omega}e^{j(\\omega t+\\varphi)}=
+  \\frac{1}{\\omega}e^{-j90^\\circ}\\cdot \\underbrace{A e^{j\\varphi}}_{\\text{fasor de } z(t)}\\cdot e^{j\\omega t}
+  =\\frac{A}{\\omega}\\big[\\sin(\\omega t+\\varphi)-j\\cos(\\omega t+\\varphi)\\big]
+  \\]
+  <p>El fasor de la integral es el de \\(z(t)\\) girado \\(-90^\\circ\\) y escalado por \\(1/\\omega\\).</p>
+  `,
+
+  fr: `
+  <p><strong>Dérivation et intégration d’une exponentielle complexe</strong></p>
+  <p>Les règles pour dériver et intégrer \\(e^{z}\\) avec \\(z=\\sigma+j\\omega\\) sont les mêmes que pour les exponentielles réelles.</p>
+  \\[
+  \\frac{d}{dt}\\big(e^{z(t)}\\big)=z'(t)\\,e^{z(t)}
+  \\]
+  \\[
+  \\frac{d}{dt}\\big(e^{(\\sigma+j\\omega)t}\\big)=(\\sigma+j\\omega)\\,e^{(\\sigma+j\\omega)t}=(\\sigma+j\\omega)e^{\\sigma t}e^{j\\omega t}
+  \\]
+  <hr/>
+  <p><strong>Évolution de \\(\\dfrac{dz}{dt}\\)</strong></p>
+  \\[
+  \\frac{dz}{dt}=j\\omega A e^{j(\\omega t+\\varphi)}=
+  \\underbrace{A e^{j\\varphi}}_{\\text{phaseur de } z(t)}\\cdot \\omega e^{j90^\\circ}\\cdot e^{j\\omega t}
+  =-\\omega A\\sin(\\omega t+\\varphi)+j\\omega A\\cos(\\omega t+\\varphi)
+  \\]
+  <p>Le phaseur de \\(\\frac{dz}{dt}\\) est celui de \\(z(t)\\) tourné de \\(+90^\\circ\\) et multiplié par \\(\\omega\\).</p>
+  <hr/>
+  <p><strong>Évolution de \\(\\int z(t)\\,dt\\)</strong></p>
+  \\[
+  \\int z(t)\\,dt=\\frac{A}{j\\omega}e^{j(\\omega t+\\varphi)}=
+  \\frac{1}{\\omega}e^{-j90^\\circ}\\cdot \\underbrace{A e^{j\\varphi}}_{\\text{phaseur de } z(t)}\\cdot e^{j\\omega t}
+  =\\frac{A}{\\omega}\\big[\\sin(\\omega t+\\varphi)-j\\cos(\\omega t+\\varphi)\\big]
+  \\]
+  <p>Le phaseur de l’intégrale est celui de \\(z(t)\\) tourné de \\(-90^\\circ\\) et multiplié par \\(1/\\omega\\).</p>
+  `
+};
+var tr = {
+  en:{title:"Complex exponentials and phasors",params:"Parameters",compare:"Compare with",views:"Views",
+      dark:"Dark Mode",light:"Light Mode",hide:"Hide Controls",show:"Show Controls",
+      phi:"Phase φ (deg)",A:"Amplitude A",omega:"Omega ω (rad/s)",periods:"Duration (periods)",
+      periodsHint:"1, 2, or 3 periods",deriv:"Derivative dz/dt",integ:"Integral ∫z(t)dt",
+      viewReal:"Real",viewImag:"Imag.",viewPlane:"Complex plane",view3D:"3D",
+      axisTime:"Time",axisReal:"Real Part",axisImag:"Imaginary Part",axisX3d:"Time",axisY3d:"Real",axisZ3d:"Imag",
+      reset:"Default",info:"Info",close:"Close"},
+  es:{title:"Exponenciales complejas y fasores",params:"Parámetros",compare:"Comparar con",views:"Vistas",
+      dark:"Modo oscuro",light:"Modo claro",hide:"Ocultar controles",show:"Mostrar controles",
+      phi:"Fase φ (deg)",A:"Amplitud A",omega:"Omega ω (rad/s)",periods:"Duración (períodos)",
+      periodsHint:"1, 2 o 3 períodos",deriv:"Derivada dz/dt",integ:"Integral ∫z(t)dt",
+      viewReal:"Real",viewImag:"Imag.",viewPlane:"Plano complejo",view3D:"3D",
+      axisTime:"Tiempo",axisReal:"Parte real",axisImag:"Parte imaginaria",axisX3d:"Tiempo",axisY3d:"Real",axisZ3d:"Imaginaria",
+      reset:"Valores por defecto",info:"Info",close:"Cerrar"},
+  fr:{title:"Exponentielles complexes et phaseurs",params:"Paramètres",compare:"Comparer avec",views:"Vues",
+      dark:"Mode sombre",light:"Mode clair",hide:"Masquer contrôles",show:"Afficher contrôles",
+      phi:"Phase φ (deg)",A:"Amplitude A",omega:"Oméga ω (rad/s)",periods:"Durée (périodes)",
+      periodsHint:"1, 2 ou 3 périodes",deriv:"Dérivée dz/dt",integ:"Intégrale ∫z(t)dt",
+      viewReal:"Réel",viewImag:"Imag.",viewPlane:"Plan complexe",view3D:"3D",
+      axisTime:"Temps",axisReal:"Partie réelle",axisImag:"Partie imaginaire",axisX3d:"Temps",axisY3d:"Réel",axisZ3d:"Imaginaire",
+      reset:"Par défaut",info:"Infos",close:"Fermer"}
+};
+var lang="en";
+
+/* ================= state ================= */
+var A=1, omega=1, phi=-30*RAD, periods=1;
+var showDeriv=false, showInt=false;
+var darkMode=false, sidebarHidden=false;
+
+var plot3D=null, plotRe=null, plotIm=null;
+var initialized3D=false, initializedRe=false, initializedIm=false, syncAttached=false;
+var lastSpan = 0;
+
+/* time vector */
+var N=N_SAMPLES;
+var tNorm=new Array(N); for(var i=0;i<N;i++){ tNorm[i]=i/(N-1); }
+function span(){ return periods*(2*Math.PI/omega); }
+function timeVec(){ var s=span(), out=new Array(N); for(var i=0;i<N;i++){ out[i]=tNorm[i]*s; } return out; }
+
+/* dom helpers */
+function $(id){ return document.getElementById(id); }
+function gridColor(){ return getComputedStyle(document.body).getPropertyValue('--grid').trim(); }
+
+/* compute */
+function computeSignals(){
+  var t=timeVec(), re=new Array(N), im=new Array(N);
+  for(var i=0;i<N;i++){ var th=omega*t[i]+phi; re[i]=A*Math.cos(th); im[i]=A*Math.sin(th); }
+  var dre=null, dim=null, ire=null, iim=null;
+  if(showDeriv){ dre=new Array(N); dim=new Array(N); for(var j=0;j<N;j++){ dre[j]=-omega*im[j]; dim[j]=omega*re[j]; } }
+  if(showInt){ var k=1/omega; ire=new Array(N); iim=new Array(N); for(var m=0;m<N;m++){ ire[m]=k*im[m]; iim[m]=-k*re[m]; } }
+  var mAbs=1, v,i;
+  for(i=0;i<N;i++){ v=Math.abs(re[i]); if(v>mAbs)mAbs=v; v=Math.abs(im[i]); if(v>mAbs)mAbs=v; }
+  if(dre){ for(i=0;i<N;i++){ v=Math.abs(dre[i]); if(v>mAbs)mAbs=v; v=Math.abs(dim[i]); if(v>mAbs)mAbs=v; } }
+  if(ire){ for(i=0;i<N;i++){ v=Math.abs(ire[i]); if(v>mAbs)mAbs=v; v=Math.abs(iim[i]); if(v>mAbs)mAbs=v; } }
+  return {t:t,re:re,im:im,dre:dre,dim:dim,ire:ire,iim:iim,maxAbs:1.1*mAbs};
+}
+
+/* view helpers */
+function get3DView(){ if(!plot3D||!plot3D._fullLayout||!plot3D._fullLayout.scene) return {}; var cam=plot3D._fullLayout.scene.camera; var aspect=plot3D._fullLayout.scene.aspectmode||"auto"; return {camera:JSON.parse(JSON.stringify(cam)),aspect:aspect}; }
+function getXRange(gd){ if(!gd||!gd._fullLayout||!gd._fullLayout.xaxis) return undefined; var r=gd._fullLayout.xaxis.range; return r?[r[0],r[1]]:undefined; }
+function rangesEqual(a,b){ return a&&b&&a.length===2&&b.length===2&&Math.abs(a[0]-b[0])<1e-9&&Math.abs(a[1]-b[1])<1e-9; }
+
+/* layouts */
+function layout3D(maxAmp, includeCamera){
+  var paper=getComputedStyle(document.body).getPropertyValue('--plot-paper').trim();
+  var bg=getComputedStyle(document.body).getPropertyValue('--plot-bg').trim();
+  var grid=gridColor(), s=span();
+  var lay={ uirevision:"keep-3d", margin:{l:0,r:0,b:0,t:6},
+    scene:{
+      xaxis:{title:tr[lang].axisX3d,backgroundcolor:bg,range:[0,s],showgrid:true,gridcolor:grid},
+      yaxis:{title:tr[lang].axisY3d,backgroundcolor:bg,range:[-maxAmp,maxAmp],showgrid:true,gridcolor:grid},
+      zaxis:{title:tr[lang].axisZ3d,backgroundcolor:bg,range:[-maxAmp,maxAmp],showgrid:true,gridcolor:grid},
+      aspectmode:"cube"
+    },
+    paper_bgcolor:paper, plot_bgcolor:bg, template: darkMode?"plotly_dark":"plotly_white",
+    hovermode:false, legend:{x:1,y:0,xanchor:"right",yanchor:"bottom",bgcolor:"rgba(0,0,0,0)"}
+  };
+  if(includeCamera){ lay.scene.camera={eye:{x:1.8,y:-1.8,z:1.2},up:{x:0,y:0,z:1},projection:{type:"orthographic"}}; }
+  return lay;
+}
+function layout2D(titleY, xr, forceNewSpan){
+  var paper=getComputedStyle(document.body).getPropertyValue('--plot-paper').trim();
+  var bg=getComputedStyle(document.body).getPropertyValue('--plot-bg').trim();
+  var grid=gridColor(), s=span();
+  var xRange = forceNewSpan ? [0,s] : (xr || [0,s]);   // 1) update x-axis when periods change
+  return {
+    uirevision:"keep-2d",
+    margin:{l:50,r:10,b:40,t:10},
+    xaxis:{title:tr[lang].axisTime, range:xRange, showgrid:true, gridcolor:grid},
+    yaxis:{title:titleY, autorange:true, showgrid:true, gridcolor:grid},
+    paper_bgcolor:paper, plot_bgcolor:bg, template: darkMode?"plotly_dark":"plotly_white",
+    hovermode:false, showlegend:false
+  };
+}
+
+/* throttled update */
+var rafPending=false;
+function scheduleUpdate(){ if(rafPending) return; rafPending=true; requestAnimationFrame(function(){ updateAll(); rafPending=false; }); }
+
+/* update */
+function updateAll(){
+  var dat=computeSignals();
+  var view=get3DView();
+  var currSpan = span();
+  var spanChanged = Math.abs(currSpan - lastSpan) > 1e-9;
+
+  var traces3d=[
+    {type:"scatter3d",mode:"lines",x:dat.t,y:dat.re,z:dat.im,line:{width:W3D,color:COLORS.z},hoverinfo:"skip",name:"z(t)"},
+    {type:"scatter3d",mode:"lines+markers",x:[0,0],y:[0, A*Math.cos(phi)],z:[0, A*Math.sin(phi)],
+      line:{width:WPH,color:COLORS.z,dash:"dash"}, marker:{size:TIP_SIZE,color:COLORS.z,line:{width:1,color:COLORS.phasorTip}},
+      hoverinfo:"skip",name:"phasor z(t)"},
+    {type:"scatter3d",mode:"lines",x:[0,0],y:[-A*1.2,A*1.2],z:[0,0],line:{color:AXIS_GRAY,width:3},showlegend:false},
+    {type:"scatter3d",mode:"lines",x:[0,0],y:[0,0],z:[-A*1.2,A*1.2],line:{color:AXIS_GRAY,width:3},showlegend:false}
+  ];
+  if(showDeriv){
+    var dy0=-omega*(A*Math.sin(phi)), dz0=omega*(A*Math.cos(phi));
+    traces3d.push(
+      {type:"scatter3d",mode:"lines",x:dat.t,y:dat.dre,z:dat.dim,line:{width:W3D,color:COLORS.dz},name:"dz/dt",hoverinfo:"skip"},
+      {type:"scatter3d",mode:"lines+markers",x:[0,0],y:[0,dy0],z:[0,dz0],line:{width:WPH,color:COLORS.dz,dash:"dash"},
+       marker:{size:TIP_SIZE,color:COLORS.dz,line:{width:1,color:COLORS.phasorTip}},hoverinfo:"skip",name:"phasor dz/dt"}
+    );
+  }
+  if(showInt){
+    var iy0=(1/omega)*(A*Math.sin(phi)), iz0=-(1/omega)*(A*Math.cos(phi));
+    traces3d.push(
+      {type:"scatter3d",mode:"lines",x:dat.t,y:dat.ire,z:dat.iim,line:{width:W3D,color:COLORS.int},name:"∫z",hoverinfo:"skip"},
+      {type:"scatter3d",mode:"lines+markers",x:[0,0],y:[0,iy0],z:[0,iz0],line:{width:WPH,color:COLORS.int,dash:"dash"},
+       marker:{size:TIP_SIZE,color:COLORS.int,line:{width:1,color:COLORS.phasorTip}},hoverinfo:"skip",name:"phasor ∫z"}
+    );
+  }
+
+  var lay=layout3D(dat.maxAbs,!initialized3D);
+  if(view.camera){ var cam=JSON.parse(JSON.stringify(view.camera)); cam.projection=cam.projection||{}; cam.projection.type="orthographic"; lay.scene.camera=cam; }
+  if(view.aspect){ lay.scene.aspectmode=view.aspect; }
+  var cfg={responsive:true, displaylogo:false};
+  if(!initialized3D){ Plotly.newPlot("plot3d",traces3d,lay,cfg).then(function(gd){plot3D=gd; initialized3D=true;}); }
+  else{ Plotly.react("plot3d",traces3d,lay,cfg).then(function(gd){plot3D=gd;}); }
+
+  var xrRe=getXRange(plotRe);
+  var trRe=[{type:"scatter",mode:"lines",x:dat.t,y:dat.re,line:{width:W2D,color:COLORS.z},name:"Re",hoverinfo:"skip"}];
+  if(showDeriv) trRe.push({type:"scatter",mode:"lines",x:dat.t,y:dat.dre,line:{width:W2D,color:COLORS.dz},name:"Re{dz/dt}",hoverinfo:"skip"});
+  if(showInt)   trRe.push({type:"scatter",mode:"lines",x:dat.t,y:dat.ire,line:{width:W2D,color:COLORS.int},name:"Re{∫z}",hoverinfo:"skip"});
+  var layRe=layout2D(tr[lang].axisReal, xrRe, spanChanged);
+  if(!initializedRe){ Plotly.newPlot("plotRe",trRe,layRe,cfg).then(function(gd){plotRe=gd; initializedRe=true; attachSyncIfReady();}); }
+  else{ Plotly.react("plotRe",trRe,layRe,cfg).then(function(gd){plotRe=gd;}); }
+
+  var xrIm=getXRange(plotIm);
+  var trIm=[{type:"scatter",mode:"lines",x:dat.t,y:dat.im,line:{width:W2D,color:COLORS.z},name:"Im",hoverinfo:"skip"}];
+  if(showDeriv) trIm.push({type:"scatter",mode:"lines",x:dat.t,y:dat.dim,line:{width:W2D,color:COLORS.dz},name:"Im{dz/dt}",hoverinfo:"skip"});
+  if(showInt)   trIm.push({type:"scatter",mode:"lines",x:dat.t,y:dat.iim,line:{width:W2D,color:COLORS.int},name:"Im{∫z}",hoverinfo:"skip"});
+  var layIm=layout2D(tr[lang].axisImag, xrIm, spanChanged);
+  if(!initializedIm){ Plotly.newPlot("plotIm",trIm,layIm,cfg).then(function(gd){plotIm=gd; initializedIm=true; attachSyncIfReady();}); }
+  else{ Plotly.react("plotIm",trIm,layIm,cfg).then(function(gd){plotIm=gd;}); }
+
+  lastSpan = currSpan;
+  if(window.MathJax && window.MathJax.typesetPromise){ MathJax.typesetPromise(); }
+}
+
+/* sync x-axes */
+var syncing=false, syncAttached=false;
+function attachSyncIfReady(){
+  if(syncAttached || !plotRe || !plotIm) return;
+  function rangesEqual(a,b){ return a&&b&&a.length===2&&b.length===2&&Math.abs(a[0]-b[0])<1e-9&&Math.abs(a[1]-b[1])<1e-9; }
+  function getXRange(gd){ if(!gd||!gd._fullLayout||!gd._fullLayout.xaxis) return undefined; var r=gd._fullLayout.xaxis.range; return r?[r[0],r[1]]:undefined; }
+  function syncX(src,dst,ev){
+    if(syncing||!ev) return;
+    if('xaxis.autorange' in ev){ syncing=true; Plotly.relayout(dst,{'xaxis.autorange':ev['xaxis.autorange']}).then(function(){syncing=false;}); return; }
+    if('xaxis.range[0]' in ev && 'xaxis.range[1]' in ev){
+      var nr=[ev['xaxis.range[0]'],ev['xaxis.range[1]']]; var dr=getXRange(dst);
+      if(!rangesEqual(dr,nr)){ syncing=true; Plotly.relayout(dst,{'xaxis.range':nr}).then(function(){syncing=false;}); }
+    }
+  }
+  plotRe.on('plotly_relayout', function(ev){ syncX(plotRe,plotIm,ev); });
+  plotIm.on('plotly_relayout', function(ev){ syncX(plotIm,plotRe,ev); });
+  plotRe.on('plotly_doubleclick', function(){ Plotly.relayout(plotIm,{'xaxis.autorange':true}); });
+  plotIm.on('plotly_doubleclick', function(){ Plotly.relayout(plotRe,{'xaxis.autorange':true}); });
+  syncAttached=true;
+}
+
+/* views */
+function setView(which){
+  var eye,up,aspect="auto";
+  if(which==="real"){ eye={x:0,y:0,z:2.8}; up={x:0,y:1,z:0}; }
+  else if(which==="imag"){ eye={x:0,y:-2.8,z:0}; up={x:0,y:0,z:1}; }
+  else if(which==="plane"){ eye={x:2.8,y:0,z:0}; up={x:0,y:0,z:1}; aspect="cube"; }
+  else { eye={x:1.8,y:-1.8,z:1.2}; up={x:0,y:0,z:1}; aspect="cube"; }
+  Plotly.relayout("plot3d",{"scene.camera.eye":eye,"scene.camera.up":up,"scene.camera.projection.type":"orthographic","scene.aspectmode":aspect});
+}
+
+/* language + UI text */
+function refreshTexts(){
+  $("mainTitle").textContent=tr[lang].title;
+  $("paramsTitle").textContent=tr[lang].params;
+  $("compareTitle").textContent=tr[lang].compare;
+  $("viewsTitle").textContent=tr[lang].views;
+  $("toggleTheme").textContent=darkMode?tr[lang].light:tr[lang].dark;
+  $("toggleSidebar").textContent=sidebarHidden?tr[lang].show:tr[lang].hide;
+  $("labPhi").textContent=tr[lang].phi;
+  $("labA").textContent=tr[lang].A;
+  $("labOmega").textContent=tr[lang].omega;
+  $("labPeriods").textContent=tr[lang].periods;
+  $("labDeriv").textContent=tr[lang].deriv;
+  $("labInt").textContent=tr[lang].integ;
+  $("btnDefault").textContent=tr[lang].reset;
+  $("btnInfo").textContent=tr[lang].info;
+  $("btnCloseModal").textContent=tr[lang].close;
+  $("hintPeriods").textContent=tr[lang].periodsHint;
+
+  $("valPhi").textContent = Math.round(phi/RAD).toString();
+  $("hintPhiRad").textContent = "φ = "+phi.toFixed(2)+" rad";
+  $("valA").textContent = String(A);
+  $("valOmega").textContent = (omega===1? "1" : (omega===1.5? "1.5" : "0.75"));
+  $("valPeriods").textContent = String(periods);
+
+  $("modalContent").innerHTML=infoHTML[lang];
+  if(window.MathJax && window.MathJax.typesetPromise){ MathJax.typesetPromise(); }
+}
+
+/* bindings */
+$("languageSelector").addEventListener("change", function(e){ lang=e.target.value; refreshTexts(); scheduleUpdate(); });
+$("toggleTheme").addEventListener("click", function(){ darkMode=!darkMode; document.body.classList.toggle("dark-mode",darkMode); $("toggleTheme").textContent=darkMode?tr[lang].light:tr[lang].dark; scheduleUpdate(); });
+$("toggleSidebar").addEventListener("click", function(){ sidebarHidden=!sidebarHidden; document.body.classList.toggle("sidebar-collapsed",sidebarHidden); $("toggleSidebar").textContent=sidebarHidden?tr[lang].show:tr[lang].hide; setTimeout(function(){ Plotly.Plots.resize("plot3d"); Plotly.Plots.resize("plotRe"); Plotly.Plots.resize("plotIm"); },0); });
+
+/* φ slider (integer 5° steps) */
+$("slPhi").addEventListener("input", function(e){
+  var deg = parseInt(e.target.value,10);
+  if(deg>=180-1e-6) deg=180;
+  phi = deg*RAD;
+  $("valPhi").textContent = String(deg);
+  $("hintPhiRad").textContent = "φ = "+phi.toFixed(2)+" rad";
+  scheduleUpdate();
+});
+
+/* A slider: 1,2,3 */
+$("slA").addEventListener("input", function(e){
+  A = parseInt(e.target.value,10);
+  $("valA").textContent = String(A);
+  scheduleUpdate();
+});
+
+/* ω slider: snap to {0.75, 1, 1.5} */
+function snapOmega(val){
+  var opts=[0.75,1.0,1.5], best=opts[0], d=Math.abs(val-opts[0]);
+  for(var i=1;i<opts.length;i++){ var dd=Math.abs(val-opts[i]); if(dd<d){d=dd; best=opts[i];} }
+  return best;
+}
+$("slOmega").addEventListener("input", function(e){
+  omega = snapOmega(parseFloat(e.target.value));
+  $("slOmega").value = omega;               // snap the thumb to the nearest mark
+  $("valOmega").textContent = (omega===1? "1" : (omega===1.5? "1.5" : "0.75"));
+  scheduleUpdate();
+});
+
+/* periods slider: 1,2,3 */
+$("slPeriods").addEventListener("input", function(e){
+  periods = parseInt(e.target.value,10);
+  $("valPeriods").textContent = String(periods);
+  scheduleUpdate();
+});
+
+/* checkboxes */
+$("cbDeriv").addEventListener("change", function(e){ showDeriv=e.target.checked; scheduleUpdate(); });
+$("cbInt").addEventListener("change", function(e){ showInt=e.target.checked; scheduleUpdate(); });
+
+/* defaults */
+$("btnDefault").addEventListener("click", function(){
+  A=1; omega=1; phi=-30*RAD; periods=1; showDeriv=false; showInt=false;
+  $("slA").value=A; $("slOmega").value=omega; $("slPhi").value=-30; $("slPeriods").value=1;
+  $("cbDeriv").checked=false; $("cbInt").checked=false;
+  refreshTexts(); scheduleUpdate();
+});
+
+/* views */
+$("viewReal").addEventListener("click", function(){ setView("real");});
+$("viewImag").addEventListener("click", function(){ setView("imag");});
+$("viewPlane").addEventListener("click", function(){ setView("plane");});
+$("view3D").addEventListener("click", function(){ setView("3D");});
+
+/* resize */
+window.addEventListener("resize", function(){ Plotly.Plots.resize("plot3d"); Plotly.Plots.resize("plotRe"); Plotly.Plots.resize("plotIm"); });
+
+/* modal */
+var modal=$("modal");
+$("btnInfo").addEventListener("click", function(){ modal.style.display="flex"; refreshTexts(); });
+$("btnCloseModal").addEventListener("click", function(){ modal.style.display="none"; });
+modal.addEventListener("click", function(e){ if(e.target===modal) modal.style.display="none"; });
+
+/* init */
+refreshTexts();
+scheduleUpdate();
+</script>
+</body>
+</html>
