@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Damped Complex Exponential (Discrete) — Stems</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<style>
+  :root{
+    --bg:#ffffff; --fg:#0f172a; --panel:#f8fafc; --panel-border:#e5e7eb;
+    --btn:#e2e8f0; --accent:#0ea5e9; --plot-bg:#ffffff; --plot-paper:#ffffff;
+    --grid:#e5e7eb;
+  }
+  .dark-mode{
+    --bg:#0b0b0c; --fg:#f1f5f9; --panel:#151618; --panel-border:#2a2c30;
+    --btn:#1f2937; --accent:#22d3ee; --plot-bg:#0b0b0c; --plot-paper:#0b0b0c;
+    --grid:rgba(220,220,220,0.28);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    background:var(--bg); color:var(--fg);
+    height:100vh; overflow:hidden;
+    display:grid; grid-template-columns:320px 1fr; grid-template-rows:auto 1fr;
+    grid-template-areas:"header header" "sidebar main";
+  }
+  body.sidebar-collapsed{ grid-template-columns:0 1fr; }
+
+  header{
+    grid-area:header; background:var(--panel); border-bottom:1px solid var(--panel-border);
+    padding:10px 14px; display:flex; gap:10px; align-items:center; justify-content:space-between;
+  }
+  .title{margin:0; font-weight:700; font-size:1.05rem}
+  .toolbar{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+  button,select,label{font-size:0.95rem}
+  button{
+    background:var(--btn); color:var(--fg); border:1px solid var(--panel-border);
+    border-radius:10px; padding:8px 12px; cursor:pointer;
+  }
+  button:hover{border-color:var(--accent)}
+
+  #sidebar{
+    grid-area:sidebar; background:var(--panel); border-right:1px solid var(--panel-border);
+    display:flex; flex-direction:column; gap:10px; padding:12px; overflow-y:auto; width:320px;
+  }
+  body.sidebar-collapsed #sidebar{ display:none; }
+
+  .control-card{background:var(--bg); border:1px solid var(--panel-border); border-radius:12px; padding:12px}
+  .row{display:grid; gap:8px}
+  .row label{display:flex; justify-content:space-between; align-items:center; font-size:0.9rem}
+  .hint{font-size:0.86rem; opacity:.9; margin-top:2px}
+
+  /* Slider wrapper + tick */
+  .slider-wrap{ position:relative; width:100%; }
+  .slider-wrap input[type="range"]{ width:100%; }
+  .slider-tick{
+    position:absolute; top:50%; transform:translate(-1px,-50%);
+    width:2px; height:70%; background:var(--accent); border-radius:2px; pointer-events:none;
+    opacity:0.9;
+  }
+
+  #main{grid-area:main; padding:8px; display:flex; flex-direction:column; overflow:hidden}
+  #plots{flex:1; display:grid; gap:8px; grid-template-columns:1.2fr 1fr; grid-template-rows:1fr 1fr; grid-template-areas:"plot3d plotRe" "plot3d plotIm"; min-height:480px}
+  #plot3d{grid-area:plot3d; min-height:460px}
+  #plotRe{grid-area:plotRe; min-height:220px}
+  #plotIm{grid-area:plotIm; min-height:220px}
+
+  .mini-toolbar{display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin:4px 6px}
+  .flex-split{display:flex; gap:8px; align-items:center; justify-content:space-between}
+
+  @media (max-width:1100px){
+    #plots{grid-template-columns:1fr; grid-template-rows:1fr 280px 280px; grid-template-areas:"plot3d" "plotRe" "plotIm";}
+  }
+  @media (max-width:900px){
+    body{
+      grid-template-columns:1fr; grid-template-rows:auto auto 1fr;
+      grid-template-areas:"header" "sidebar" "main";
+    }
+    body.sidebar-collapsed{ grid-template-rows:auto 1fr; }
+    #sidebar{max-height:48vh}
+    #main{min-height:52vh}
+  }
+</style>
+</head>
+<body>
+  <header>
+    <h1 class="title" id="mainTitle">Damped Complex Exponential (Discrete) — Stems</h1>
+    <div class="toolbar">
+      <select id="languageSelector" aria-label="Language">
+        <option value="en" selected>English</option>
+        <option value="es">Español</option>
+        <option value="fr">Français</option>
+      </select>
+      <button id="toggleTheme">Dark Mode</button>
+      <button id="toggleSidebar">Hide Controls</button>
+    </div>
+  </header>
+
+  <aside id="sidebar">
+    <div class="control-card">
+      <div class="flex-split">
+        <strong id="paramsTitle">Parameters</strong>
+        <button id="btnDefault">Default</button>
+      </div>
+    </div>
+
+    <!-- A -->
+    <div class="control-card">
+      <div class="row">
+        <label><span id="labA">Amplitude A</span> <span id="valA">1.00</span></label>
+        <div class="slider-wrap">
+          <input id="slA" type="range" min="0" max="3" step="0.1" value="1.0"/>
+          <div class="slider-tick" id="tickA" aria-hidden="true"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phi -->
+    <div class="control-card">
+      <div class="row">
+        <label><span id="labPhi">Phi φ (deg)</span> <span id="valPhi">0.00</span></label>
+        <div class="slider-wrap">
+          <input id="slPhi" type="range" min="-180" max="180" step="1" value="0"/>
+          <div class="slider-tick" id="tickPhi" aria-hidden="true"></div>
+        </div>
+        <div class="hint" id="hintPhiRad">φ = 0.00 rad</div>
+      </div>
+    </div>
+
+    <!-- |z| -->
+    <div class="control-card">
+      <div class="row">
+        <label><span id="labAbsZ">|z| (magnitude)</span> <span id="valAbsZ">0.95</span></label>
+        <div class="slider-wrap">
+          <input id="slAbsZ" type="range" min="0" max="2" step="0.01" value="0.95"/>
+          <div class="slider-tick" id="tickAbsZ" aria-hidden="true"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- angle(z) en grados -->
+    <div class="control-card">
+      <div class="row">
+        <label><span id="labAngZ">∠z (deg/sample)</span> <span id="valAngZ">20</span></label>
+        <div class="slider-wrap">
+          <input id="slAngZ" type="range" min="-180" max="180" step="1" value="20"/>
+          <div class="slider-tick" id="tickAngZ" aria-hidden="true"></div>
+        </div>
+        <div class="hint" id="hintOmegaF">ω = 0.349 rad/sample<br>f = 0.055 cycles/sample</div>
+      </div>
+    </div>
+
+    <!-- Max n -->
+    <div class="control-card">
+      <div class="row">
+        <label><span id="labMaxN">Max n</span> <span id="valMaxN">70</span></label>
+        <input id="slMaxN" type="range" min="10" max="200" step="1" value="70"/>
+        <div class="hint" id="hintMaxN">Controls the length of the sequence (0…max n)</div>
+      </div>
+    </div>
+
+    <!-- Selected n -->
+    <div class="control-card">
+      <div class="row">
+        <label><span id="labN">Selected n</span> <span id="valN">0</span></label>
+        <input id="slN" type="range" min="0" max="70" step="1" value="0"/>
+        <div class="hint" id="hintN">Integer sample index</div>
+      </div>
+    </div>
+
+    <div class="control-card">
+      <strong id="viewsTitle">Views</strong>
+      <div class="mini-toolbar" style="margin-top:8px">
+        <button id="viewReal">Real</button>
+        <button id="viewImag">Imag</button>
+        <button id="viewPlane">Complex plane</button>
+        <button id="view3D">3D</button>
+      </div>
+    </div>
+  </aside>
+
+  <main id="main">
+    <div class="mini-toolbar">
+      <div id="formula">
+        \( x[n]=C\,z^n,\quad C=A\,e^{j\phi},\quad z=|z|\,e^{j\,\angle z} \)
+      </div>
+    </div>
+    <div id="plots">
+      <div id="plot3d"></div>
+      <div id="plotRe"></div>
+      <div id="plotIm"></div>
+    </div>
+  </main>
+
+<script>
+/* ================= CONSTANTS ================= */
+const RAD = Math.PI/180;
+
+/* Colors */
+const COLOR_3D = "#2563eb";
+const COLOR_RE = "#ef4444";
+const COLOR_IM = "#22c55e";
+const COLOR_TIP_DFLT = "#111827";
+
+/* Phasor (complex plane at n=0) */
+const PHASOR_COLOR = "#93c5fd";
+const PHASOR_WIDTH = 4;
+
+/* Tip sizes */
+const TIP3D_SIZE = 2.5;
+const TIP2D_SIZE = 4;
+
+/* Defaults */
+const DEF_A = 1.0;
+const DEF_ABSZ = 0.95;            // |z|
+const DEF_ANGZ_RAD = 20*RAD;      // rad/sample (interno)
+const DEF_PHI   = 0.0;            // rad
+const DEF_NSEL  = 0;
+const DEF_MAXN  = 70;
+const MAXN_LIMIT = 200;
+
+/* i18n */
+const tr = {
+  en: {
+    title: "Damped Complex Exponential (Discrete)",
+    params: "Parameters",
+    views: "Views",
+    dark:"Dark Mode", light:"Light Mode", hide:"Hide Controls", show:"Show Controls",
+    A:"Amplitude A", phi:"Phi φ (deg)", absz:"|z| (magnitude)", angz:"∠z (deg/sample)",
+    nsel:"Selected n", nmax:"Max n",
+    nHint:"Integer sample index",
+    nmaxHint:"Controls the length of the sequence (0…max n)",
+    viewReal:"Real", viewImag:"Imag.", viewPlane:"Complex plane", view3D:"3D",
+    axisN:"n (samples)", axisReal:"Real Part", axisImag:"Imaginary Part",
+    axisX3d:"n", axisY3d:"Real", axisZ3d:"Imag",
+    reset:"Default"
+  },
+  es: {
+    title:"Exponencial compleja amortiguada (Discreta)",
+    params:"Parámetros",
+    views:"Vistas",
+    dark:"Modo oscuro", light:"Modo claro", hide:"Ocultar controles", show:"Mostrar controles",
+    A:"Amplitud A", phi:"Phi φ (deg)", absz:"|z| (módulo)", angz:"∠z (deg/muestra)",
+    nsel:"n seleccionado", nmax:"n máximo",
+    nHint:"Índice entero de muestra",
+    nmaxHint:"Controla la longitud de la secuencia (0…n máx.)",
+    viewReal:"Real", viewImag:"Imag.", viewPlane:"Plano complejo", view3D:"3D",
+    axisN:"n (muestras)", axisReal:"Parte real", axisImag:"Parte imaginaria",
+    axisX3d:"n", axisY3d:"Real", axisZ3d:"Imaginaria",
+    reset:"Valores por defecto"
+  },
+  fr: {
+    title:"Exponentielle complexe amortie (Discrète)",
+    params:"Paramètres",
+    views:"Vues",
+    dark:"Mode sombre", light:"Mode clair", hide:"Masquer contrôles", show:"Afficher contrôles",
+    A:"Amplitude A", phi:"Phi φ (deg)", absz:"|z| (module)", angz:"∠z (deg/éch)",
+    nsel:"n sélectionné", nmax:"n max",
+    nHint:"Indice entier d'échantillon",
+    nmaxHint:"Contrôle la longueur de la séquence (0…n max)",
+    viewReal:"Réel", viewImag:"Imag.", viewPlane:"Plan complexe", view3D:"3D",
+    axisN:"n (échantillons)", axisReal:"Partie réelle", axisImag:"Partie imaginaire",
+    axisX3d:"n", axisY3d:"Réel", axisZ3d:"Imaginaire",
+    reset:"Par défaut"
+  }
+};
+let lang = "en";
+const L = (k)=> (tr[lang] && tr[lang][k]) || tr.en[k] || k;
+
+/* ================= STATE ================= */
+let A=DEF_A, absZ=DEF_ABSZ, angZ=DEF_ANGZ_RAD, phi=DEF_PHI, nSel=DEF_NSEL, maxN=DEF_MAXN;
+let darkMode=false, sidebarHidden=false;
+let initialized3D=false, initializedRe=false, initializedIm=false;
+let syncAttached=false;
+let maxNChanged = true;
+
+/* Sample index vector */
+function makeNvec(N){ return Array.from({length:N+1}, (_,i)=> i); }
+let nvec = makeNvec(maxN);
+
+/* ================= UTIL ================= */
+let plot3D = null, plotRe = null, plotIm = null;
+
+function get3DView(){
+  if(!plot3D || !plot3D._fullLayout || !plot3D._fullLayout.scene) return {};
+  const cam = plot3D._fullLayout.scene.camera;
+  const aspect = plot3D._fullLayout.scene.aspectmode || "auto";
+  return { camera: JSON.parse(JSON.stringify(cam)), aspect };
+}
+function getXRange(gd){
+  if(!gd || !gd._fullLayout || !gd._fullLayout.xaxis) return undefined;
+  const x = gd._fullLayout.xaxis.range;
+  return x ? [x[0], x[1]] : undefined;
+}
+function gridColor(){ return getComputedStyle(document.body).getPropertyValue('--grid').trim(); }
+function tipColor(){ return darkMode ? "#f1f5f9" : COLOR_TIP_DFLT; }
+
+/* Build stems arrays */
+function buildStems2D(x, y){
+  const X = new Array(x.length*3);
+  const Y = new Array(y.length*3);
+  for(let i=0;i<x.length;i++){
+    X[3*i] = x[i];     Y[3*i] = 0;
+    X[3*i+1] = x[i];   Y[3*i+1] = y[i];
+    X[3*i+2] = NaN;    Y[3*i+2] = NaN;
+  }
+  return {X,Y};
+}
+function buildStems3D(n, re, im){
+  const X = new Array(n.length*3);
+  const Y = new Array(n.length*3);
+  const Z = new Array(n.length*3);
+  for(let i=0;i<n.length;i++){
+    X[3*i] = n[i];   Y[3*i] = 0;      Z[3*i] = 0;
+    X[3*i+1] = n[i]; Y[3*i+1] = re[i];Z[3*i+1] = im[i];
+    X[3*i+2] = null; Y[3*i+2] = null; Z[3*i+2] = null;
+  }
+  return {X,Y,Z};
+}
+
+/* ================= COMPUTE ================= */
+function computeSignals(){
+  const len = maxN+1;
+  const re = new Float64Array(len);
+  const im = new Float64Array(len);
+  for(let i=0;i<len;i++){
+    const r = A * Math.pow(absZ, i);    // |z|^n
+    const th = angZ * i + phi;          // ∠z * n + φ
+    re[i] = r * Math.cos(th);
+    im[i] = r * Math.sin(th);
+  }
+  const maxAbs = Math.max(1, ...re.map(Math.abs), ...im.map(Math.abs)) * 1.1;
+  return {re,im,maxAbs};
+}
+
+/* ================= LAYOUTS ================= */
+const INITIAL_CAMERA = {
+  eye:{x:1.8, y:-1.8, z:1.2},
+  up: {x:0,   y:0,   z:1},
+  projection:{type:"orthographic"}
+};
+function layout3D(maxAmp, includeCamera=false){
+  const paper = getComputedStyle(document.body).getPropertyValue('--plot-paper').trim();
+  const bg    = getComputedStyle(document.body).getPropertyValue('--plot-bg').trim();
+  const grid  = gridColor();
+  const lay = {
+    uirevision:"keep-3d",
+    margin:{l:0,r:0,b:0,t:6},
+    showlegend:false,
+    scene:{
+      xaxis:{title:L('axisX3d'), zeroline:false, backgroundcolor:bg, range:[0, maxN], showgrid:true, gridcolor:grid},
+      yaxis:{title:L('axisY3d'), zeroline:false, backgroundcolor:bg, range:[-maxAmp,maxAmp], showgrid:true, gridcolor:grid},
+      zaxis:{title:L('axisZ3d'), zeroline:false, backgroundcolor:bg, range:[-maxAmp,maxAmp], showgrid:true, gridcolor:grid},
+    },
+    paper_bgcolor:paper,
+    plot_bgcolor:bg,
+    template: darkMode ? "plotly_dark" : "plotly_white",
+    hovermode:false
+  };
+  if(includeCamera){
+    lay.scene.camera = INITIAL_CAMERA;
+    lay.scene.aspectmode = "cube";
+  }
+  return lay;
+}
+function layout2D(titleY, xr){
+  const paper = getComputedStyle(document.body).getPropertyValue('--plot-paper').trim();
+  const bg    = getComputedStyle(document.body).getPropertyValue('--plot-bg').trim();
+  const grid  = gridColor();
+  return {
+    uirevision:"keep-2d",
+    margin:{l:50,r:10,b:40,t:10},
+    xaxis:{title:L('axisN'), range:xr || [0, maxN], showgrid:true, gridcolor:grid},
+    yaxis:{title:titleY, autorange:true, zeroline:true, zerolinecolor:grid, showgrid:true, gridcolor:grid},
+    paper_bgcolor:paper,
+    plot_bgcolor:bg,
+    template: darkMode ? "plotly_dark" : "plotly_white",
+    hovermode:false,
+    showlegend:false
+  };
+}
+
+/* ================= UPDATE ================= */
+let rafPending=false;
+function scheduleUpdate(){
+  if(rafPending) return;
+  rafPending=true;
+  requestAnimationFrame(()=>{ updateAll(); rafPending=false; });
+}
+
+function updateAll(){
+  nvec = makeNvec(maxN);
+  const {re, im, maxAbs} = computeSignals();
+
+  /* ----- 3D ----- */
+  const view3d = get3DView();
+  const {X,Y,Z} = buildStems3D(nvec, Array.from(re), Array.from(im));
+  const re0 = A*Math.cos(phi);
+  const im0 = A*Math.sin(phi);
+
+  const stems3d = { type:"scatter3d", mode:"lines", x:X, y:Y, z:Z,
+    line:{width:2, color:COLOR_3D}, hoverinfo:"skip", showlegend:false };
+  const tips3d = { type:"scatter3d", mode:"markers", x:nvec, y:Array.from(re), z:Array.from(im),
+    marker:{size:TIP3D_SIZE, color:tipColor()}, hoverinfo:"skip", showlegend:false };
+  const phasor = { type:"scatter3d", mode:"lines", x:[0,0], y:[0,re0], z:[0,im0],
+    line:{width:PHASOR_WIDTH, color:PHASOR_COLOR, dash:"dash"}, hoverinfo:"skip", showlegend:false };
+  const sel3d = { type:"scatter3d", mode:"lines+markers", x:[nSel,nSel], y:[0,re[nSel]], z:[0,im[nSel]],
+    line:{width:6, color:"#f59e0b"}, marker:{size:TIP3D_SIZE+2, color:"#f59e0b"},
+    hoverinfo:"skip", showlegend:false };
+
+  let layout = layout3D(maxAbs, !initialized3D);
+  if(view3d.camera){
+    const cam = JSON.parse(JSON.stringify(view3d.camera));
+    cam.projection = cam.projection || {};
+    cam.projection.type = "orthographic";
+    cam.projection.scale = cam.projection.scale || 1;
+    layout.scene.camera = cam;
+  }
+  if(view3d.aspect){ layout.scene.aspectmode = view3d.aspect; }
+  const config = {responsive:true, displaylogo:false};
+  const traces3d = [stems3d, tips3d, phasor, sel3d];
+
+  if(!initialized3D){
+    Plotly.newPlot("plot3d", traces3d, layout, config).then(gd=>{ plot3D=gd; initialized3D=true; });
+  }else{
+    Plotly.react("plot3d", traces3d, layout, config).then(gd=>{ plot3D=gd; });
+  }
+
+  /* ----- 2D: Real ----- */
+  const xrRe = maxNChanged ? null : getXRange(plotRe);
+  const {X:XR, Y:YR} = buildStems2D(nvec, Array.from(re));
+  const trRe = [
+    { type:"scatter", mode:"lines", x:XR, y:YR, line:{width:2, color:COLOR_RE}, hoverinfo:"skip", showlegend:false },
+    { type:"scatter", mode:"markers", x:nvec, y:Array.from(re), marker:{size:TIP2D_SIZE, color:tipColor()}, hoverinfo:"skip", showlegend:false },
+    { type:"scatter", mode:"lines+markers", x:[nSel,nSel], y:[0, re[nSel]], line:{width:6, color:"#f59e0b"}, marker:{size:TIP2D_SIZE+2, color:"#f59e0b"}, hoverinfo:"skip", showlegend:false }
+  ];
+  const layRe = layout2D(L('axisReal'), xrRe);
+  if(!initializedRe){
+    Plotly.newPlot("plotRe", trRe, layRe, config).then(gd=>{ plotRe=gd; initializedRe=true; attachSyncIfReady(); });
+  }else{
+    Plotly.react("plotRe", trRe, layRe, config).then(gd=>{ plotRe=gd; });
+  }
+
+  /* ----- 2D: Imag ----- */
+  const xrIm = maxNChanged ? null : getXRange(plotIm);
+  const {X:XI, Y:YI} = buildStems2D(nvec, Array.from(im));
+  const trIm = [
+    { type:"scatter", mode:"lines", x:XI, y:YI, line:{width:2, color:COLOR_IM}, hoverinfo:"skip", showlegend:false },
+    { type:"scatter", mode:"markers", x:nvec, y:Array.from(im), marker:{size:TIP2D_SIZE, color:tipColor()}, hoverinfo:"skip", showlegend:false },
+    { type:"scatter", mode:"lines+markers", x:[nSel,nSel], y:[0, im[nSel]], line:{width:6, color:"#f59e0b"}, marker:{size:TIP2D_SIZE+2, color:"#f59e0b"}, hoverinfo:"skip", showlegend:false }
+  ];
+  const layIm = layout2D(L('axisImag'), xrIm);
+  if(!initializedIm){
+    Plotly.newPlot("plotIm", trIm, layIm, config).then(gd=>{ plotIm=gd; initializedIm=true; attachSyncIfReady(); });
+  }else{
+    Plotly.react("plotIm", trIm, layIm, config).then(gd=>{ plotIm=gd; });
+  }
+
+  maxNChanged = false;
+
+  if(nSel > maxN){
+    nSel = maxN;
+    const sN = document.getElementById("slN");
+    sN.max = String(maxN);
+    sN.value = String(nSel);
+    document.getElementById("valN").textContent = String(nSel);
+  }
+
+  // after layout changes, keep tick positions aligned
+  updateAllSliderTicks();
+}
+
+/* ================= LINK X-AXES ================= */
+let syncing = false;
+function attachSyncIfReady(){
+  if(syncAttached || !plotRe || !plotIm) return;
+
+  function getRange(ev){
+    if ('xaxis.autorange' in ev) return {auto: ev['xaxis.autorange']};
+    if ('xaxis.range[0]' in ev && 'xaxis.range[1]' in ev) return {range:[ev['xaxis.range[0]'], ev['xaxis.range[1]']]};
+    return null;
+  }
+  function syncX(srcGd, dstGd, ev){
+    if(syncing || !ev) return;
+    const info = getRange(ev);
+    if(!info) return;
+    syncing = true;
+    const cmd = info.auto ? {'xaxis.autorange': info.auto} : {'xaxis.range': info.range};
+    Plotly.relayout(dstGd, cmd).then(()=>{ syncing=false; });
+  }
+
+  plotRe.on('plotly_relayout', (ev)=> syncX(plotRe, plotIm, ev));
+  plotIm.on('plotly_relayout', (ev)=> syncX(plotIm, plotRe, ev));
+  plotRe.on('plotly_doubleclick', ()=> Plotly.relayout(plotIm, {'xaxis.autorange': true}));
+  plotIm.on('plotly_doubleclick', ()=> Plotly.relayout(plotRe, {'xaxis.autorange': true}));
+  syncAttached = true;
+}
+
+/* ================= CAMERA PRESETS ================= */
+function setView(which){
+  let eye, up, aspect="auto";
+  if(which==="real"){
+    eye={x:0, y:0, z:2.8};
+    up ={x:0, y:1, z:0};
+  }else if(which==="imag"){
+    eye={x:0, y:-2.8, z:0};
+    up ={x:0, y:0, z:1};
+  }else if(which==="plane"){
+    eye={x:2.8, y:0, z:0};
+    up ={x:0, y:0, z:1};
+    aspect="cube";
+  }else{
+    eye={x:1.8, y:-1.8, z:1.2};
+    up ={x:0, y:0, z:1};
+    aspect="cube";
+  }
+  Plotly.relayout("plot3d", {
+    "scene.camera.eye": eye,
+    "scene.camera.up": up,
+    "scene.camera.projection.type": "orthographic",
+    "scene.aspectmode": aspect
+  });
+}
+
+/* ================= UI BINDINGS ================= */
+const $ = (id)=>document.getElementById(id);
+
+/* Slider ticks helpers */
+function positionTickFor(sliderEl, tickEl, refValue){
+  const min = parseFloat(sliderEl.min);
+  const max = parseFloat(sliderEl.max);
+  const pct = (refValue - min) / (max - min); // 0..1
+  tickEl.style.left = (pct*100) + "%";
+}
+function updateAllSliderTicks(){
+  positionTickFor($("slPhi"),  $("tickPhi"),  0);
+  positionTickFor($("slAngZ"), $("tickAngZ"), 0);
+  positionTickFor($("slA"),    $("tickA"),    1.0);
+  positionTickFor($("slAbsZ"), $("tickAbsZ"), 1.0);
+}
+
+/* Ensure sliders reflect current state */
+function setSlidersFromState(){
+  $("slA").value     = String(A);
+  $("slPhi").value   = String(phi*180/Math.PI);
+  $("slAbsZ").value  = String(absZ);
+  $("slAngZ").value  = String(angZ*180/Math.PI);
+  $("slN").max       = String(maxN);
+  $("slN").value     = String(nSel);
+  $("slMaxN").max    = String(MAXN_LIMIT);
+  $("slMaxN").value  = String(maxN);
+  updateAllSliderTicks();
+}
+
+function typesetFormula(){
+  if(window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise();
+}
+function refreshHints(){
+  const omega = angZ; // rad/sample
+  const f_cps = omega/(2*Math.PI); // cycles/sample
+  $("hintPhiRad").textContent = `φ = ${phi.toFixed(2)} rad`;
+  $("hintOmegaF").innerHTML   = `ω = ${omega.toFixed(3)} rad/sample<br>f = ${f_cps.toFixed(3)} cycles/sample`;
+  $("valN").textContent       = nSel.toString();
+  $("valMaxN").textContent    = maxN.toString();
+  $("valA").textContent       = A.toFixed(2);
+  $("valAbsZ").textContent    = absZ.toFixed(3);
+  $("valAngZ").textContent    = (angZ*180/Math.PI).toFixed(3);
+  $("valPhi").textContent     = (phi*180/Math.PI).toFixed(2);
+}
+function refreshTexts(){
+  $("mainTitle").textContent = L('title');
+  $("paramsTitle").textContent = L('params');
+  $("viewsTitle").textContent = L('views');
+  $("toggleTheme").textContent = darkMode ? L('light') : L('dark');
+  $("toggleSidebar").textContent = sidebarHidden ? L('show') : L('hide');
+
+  $("labA").textContent   = L('A');
+  $("labPhi").textContent = L('phi');
+  $("labAbsZ").textContent= L('absz');
+  $("labAngZ").textContent= L('angz');
+  $("labN").textContent   = L('nsel');
+  $("labMaxN").textContent= L('nmax');
+
+  $("btnDefault").textContent = L('reset');
+  $("viewReal").textContent = L('viewReal');
+  $("viewImag").textContent = L('viewImag');
+  $("viewPlane").textContent = L('viewPlane');
+  $("view3D").textContent = L('view3D');
+
+  /* Hints traducibles */
+  $("hintMaxN").textContent = L('nmaxHint');
+  $("hintN").textContent    = L('nHint');
+
+  setSlidersFromState();
+  refreshHints();
+  typesetFormula();
+}
+
+/* Listeners */
+$("languageSelector").addEventListener("change", (e)=>{
+  lang = e.target.value;
+  if(!tr[lang]) lang = "en";  // fallback
+  refreshTexts();
+  scheduleUpdate();
+});
+
+$("toggleTheme").addEventListener("click", ()=>{
+  darkMode = !darkMode;
+  document.body.classList.toggle("dark-mode", darkMode);
+  $("toggleTheme").textContent = darkMode ? L('light') : L('dark');
+  typesetFormula();
+  scheduleUpdate();
+});
+
+$("toggleSidebar").addEventListener("click", ()=>{
+  sidebarHidden = !sidebarHidden;
+  document.body.classList.toggle("sidebar-collapsed", sidebarHidden);
+  $("toggleSidebar").textContent = sidebarHidden ? L('show') : L('hide');
+  setTimeout(()=>{ Plotly.Plots.resize("plot3d"); Plotly.Plots.resize("plotRe"); Plotly.Plots.resize("plotIm"); }, 0);
+});
+
+/* Sliders */
+$("slA").addEventListener("input", (e)=>{ A=parseFloat(e.target.value); refreshHints(); scheduleUpdate(); });
+$("slPhi").addEventListener("input", (e)=>{
+  let deg = parseFloat(e.target.value);
+  if (deg >= 180 - 1e-6) deg = 180;
+  phi = deg * Math.PI / 180;
+  refreshHints(); scheduleUpdate();
+});
+$("slAbsZ").addEventListener("input", (e)=>{ absZ = Math.max(0, parseFloat(e.target.value)); refreshHints(); scheduleUpdate(); });
+$("slAngZ").addEventListener("input", (e)=>{
+  const deg = parseFloat(e.target.value); angZ = deg * Math.PI / 180;
+  refreshHints(); scheduleUpdate();
+});
+$("slN").addEventListener("input", (e)=>{
+  nSel = Math.min(parseInt(e.target.value, 10), maxN);
+  e.target.value = String(nSel);
+  refreshHints(); scheduleUpdate();
+});
+$("slMaxN").addEventListener("input", (e)=>{
+  maxN = Math.max(10, Math.min(MAXN_LIMIT, parseInt(e.target.value, 10)));
+  const sN = $("slN");
+  sN.max = String(maxN);
+  if(nSel > maxN){ nSel = maxN; sN.value = String(nSel); }
+  $("slMaxN").value = String(maxN);
+  maxNChanged = true;
+  refreshHints(); scheduleUpdate();
+});
+
+/* Default */
+$("btnDefault").addEventListener("click", ()=>{
+  A=DEF_A; absZ=DEF_ABSZ; angZ=DEF_ANGZ_RAD; phi=DEF_PHI; nSel=DEF_NSEL; maxN=DEF_MAXN;
+  setSlidersFromState();
+  maxNChanged = true;
+  refreshTexts();
+  scheduleUpdate();
+});
+
+/* Views */
+function setView(which){
+  let eye, up, aspect="auto";
+  if(which==="real"){ eye={x:0, y:0, z:2.8}; up ={x:0, y:1, z:0}; }
+  else if(which==="imag"){ eye={x:0, y:-2.8, z:0}; up ={x:0, y:0, z:1}; }
+  else if(which==="plane"){ eye={x:2.8, y:0, z:0}; up ={x:0, y:0, z:1}; aspect="cube"; }
+  else { eye={x:1.8, y:-1.8, z:1.2}; up ={x:0, y:0, z:1}; aspect="cube"; }
+  Plotly.relayout("plot3d", {
+    "scene.camera.eye": eye,
+    "scene.camera.up": up,
+    "scene.camera.projection.type": "orthographic",
+    "scene.aspectmode": aspect
+  });
+}
+$("viewReal").addEventListener("click", ()=>setView("real"));
+$("viewImag").addEventListener("click", ()=>setView("imag"));
+$("viewPlane").addEventListener("click", ()=>setView("plane"));
+$("view3D").addEventListener("click", ()=>setView("3D"));
+
+/* Resize -> also keep ticks aligned */
+window.addEventListener("resize", ()=>{ 
+  Plotly.Plots.resize("plot3d"); Plotly.Plots.resize("plotRe"); Plotly.Plots.resize("plotIm");
+  updateAllSliderTicks();
+});
+
+/* ================= INIT ================= */
+(function init(){
+  setSlidersFromState();
+  refreshTexts();
+  scheduleUpdate();
+})();
+</script>
+</body>
+</html>
