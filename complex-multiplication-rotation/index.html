@@ -405,7 +405,7 @@
                     <h3 id="powerTitle">Puissance</h3>
                     <div class="control-group">
                         <label id="powerLabel">Puissance n :</label>
-                        <input type="range" id="powerSlider" min="0" max="16" value="1">
+                        <input type="range" id="powerSlider" min="-16" max="16" value="1">
                         <span class="value-display" id="powerValue">1</span>
                     </div>
                 </div>
@@ -500,8 +500,8 @@
                 magnitudeLabel: "|z| :",
                 observationTitle: "Observation :",
                 observationText: "Le vecteur rouge montre C&times;z<sup>n</sup>. L'angle total est &phi; + n&times;&omega; !",
-                realAxis: "R&eacute;el",
-                imaginaryAxis: "Imaginaire"
+                realAxis: "Re",
+                imaginaryAxis: "Imag"
             },
             en: {
                 mainTitle: "Multiplication by z<sup>n</sup> = Vector Rotation",
@@ -672,9 +672,11 @@
             ctx.lineTo(centerX, canvas.height);
             ctx.stroke();
             
+            // Unit circle with radius 120 pixels
+            const UNIT_CIRCLE_RADIUS = 120;
             ctx.strokeStyle = gridColor;
             ctx.beginPath();
-            ctx.arc(centerX, centerY, 120, 0, 2 * Math.PI);
+            ctx.arc(centerX, centerY, UNIT_CIRCLE_RADIUS, 0, 2 * Math.PI);
             ctx.stroke();
             
             const t = translations[currentLanguage];
@@ -683,21 +685,27 @@
             ctx.fillText(t.realAxis, canvas.width - 30, centerY - 10);
             ctx.fillText(t.imaginaryAxis, centerX + 10, 15);
             
-            const amplitude = parseFloat(amplitudeSlider.value);
+            // Get current values
+            const amplitude = parseFloat(amplitudeSlider.value) / 100; // Convert to actual value
             const phase = parseFloat(phaseSlider.value) * Math.PI / 180;
             const angle = parseFloat(angleSlider.value) * Math.PI / 180;
             const power = parseInt(powerSlider.value);
-            const magnitude = parseFloat(magnitudeSlider.value);
+            const magnitude = parseFloat(magnitudeSlider.value) / 100; // Convert to actual value
+            
+            // Scale vectors to match unit circle (120 pixels = 1.0 unit)
+            const amplitudePixels = amplitude * UNIT_CIRCLE_RADIUS;
+            const magnitudePixels = magnitude * UNIT_CIRCLE_RADIUS;
             
             // Draw C vector
             ctx.strokeStyle = '#4CAF50';
             ctx.lineWidth = 2;
             ctx.beginPath();
             ctx.moveTo(centerX, centerY);
-            const xC = centerX + amplitude * Math.cos(phase);
-            const yC = centerY - amplitude * Math.sin(phase);
-            const xC_line = centerX + (amplitude - ARROW_SIZE) * Math.cos(phase);
-            const yC_line = centerY - (amplitude - ARROW_SIZE) * Math.sin(phase);
+            const xC = centerX + amplitudePixels * Math.cos(phase);
+            const yC = centerY - amplitudePixels * Math.sin(phase);
+            // Stop line at distance where arrow base will be
+            const xC_line = centerX + Math.max(0, amplitudePixels - ARROW_SIZE * 0.7) * Math.cos(phase);
+            const yC_line = centerY - Math.max(0, amplitudePixels - ARROW_SIZE * 0.7) * Math.sin(phase);
             ctx.lineTo(xC_line, yC_line);
             ctx.stroke();
             
@@ -709,10 +717,11 @@
             ctx.lineWidth = 3;
             ctx.beginPath();
             ctx.moveTo(centerX, centerY);
-            const x1 = centerX + magnitude * Math.cos(angle);
-            const y1 = centerY - magnitude * Math.sin(angle);
-            const x1_line = centerX + (magnitude - ARROW_SIZE) * Math.cos(angle);
-            const y1_line = centerY - (magnitude - ARROW_SIZE) * Math.sin(angle);
+            const x1 = centerX + magnitudePixels * Math.cos(angle);
+            const y1 = centerY - magnitudePixels * Math.sin(angle);
+            // Stop line at distance where arrow base will be
+            const x1_line = centerX + Math.max(0, magnitudePixels - ARROW_SIZE * 0.7) * Math.cos(angle);
+            const y1_line = centerY - Math.max(0, magnitudePixels - ARROW_SIZE * 0.7) * Math.sin(angle);
             ctx.lineTo(x1_line, y1_line);
             ctx.stroke();
             
@@ -721,15 +730,18 @@
             
             // Draw C * z^n vector
             const totalAngle = phase + angle * power;
-            const totalMagnitude = amplitude * Math.pow(magnitude/100, power);
+            const totalMagnitude = amplitude * Math.pow(magnitude, power);
+            const totalMagnitudePixels = totalMagnitude * UNIT_CIRCLE_RADIUS;
+            
             ctx.strokeStyle = '#FF6B6B';
             ctx.lineWidth = 4;
             ctx.beginPath();
             ctx.moveTo(centerX, centerY);
-            const x2 = centerX + totalMagnitude * Math.cos(totalAngle);
-            const y2 = centerY - totalMagnitude * Math.sin(totalAngle);
-            const x2_line = centerX + (totalMagnitude - ARROW_SIZE) * Math.cos(totalAngle);
-            const y2_line = centerY - (totalMagnitude - ARROW_SIZE) * Math.sin(totalAngle);
+            const x2 = centerX + totalMagnitudePixels * Math.cos(totalAngle);
+            const y2 = centerY - totalMagnitudePixels * Math.sin(totalAngle);
+            // Stop line at distance where arrow base will be
+            const x2_line = centerX + Math.max(0, totalMagnitudePixels - ARROW_SIZE * 0.7) * Math.cos(totalAngle);
+            const y2_line = centerY - Math.max(0, totalMagnitudePixels - ARROW_SIZE * 0.7) * Math.sin(totalAngle);
             ctx.lineTo(x2_line, y2_line);
             ctx.stroke();
             
