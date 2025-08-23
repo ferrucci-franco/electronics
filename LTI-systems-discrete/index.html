@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="auto">
+<head>
+  <meta charset="utf-8" />
+  <title>🧪 Demo — Respuesta de sistemas discretos (LTI)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <style>
+    :root{
+      --bg:#0f1222; --fg:#f8fafc; --muted:#a0a6b5; --card:#171b31; --border:#2a2f4a;
+      --xcolor:#3ea0ff; --ycolor:#ff5757; --curcolor:#ffa500;
+      --plot:#0f1222; --field:#141a2a; --grid:#2a2f4a;
+      --ok:#22c55e; --bad:#ef4444;
+    }
+    @media (prefers-color-scheme: light){
+      :root{
+        --bg:#ffffff; --fg:#11131a; --muted:#5b6475; --card:#f7f8fb; --border:#e8ebf2;
+        --xcolor:#2563eb; --ycolor:#dc2626; --curcolor:#f59e0b;
+        --plot:#ffffff; --field:#ffffff; --grid:#d4d7de;
+        --ok:#16a34a; --bad:#dc2626;
+      }
+    }
+    :root[data-theme="light"]{
+      --bg:#ffffff; --fg:#11131a; --muted:#5b6475; --card:#f7f8fb; --border:#e8ebf2;
+      --xcolor:#2563eb; --ycolor:#dc2626; --curcolor:#f59e0b;
+      --plot:#ffffff; --field:#ffffff; --grid:#d4d7de;
+      --ok:#16a34a; --bad:#dc2626;
+    }
+    :root[data-theme="dark"]{
+      --bg:#0f1222; --fg:#f8fafc; --muted:#a0a6b5; --card:#171b31; --border:#2a2f4a;
+      --xcolor:#3ea0ff; --ycolor:#ff5757; --curcolor:#ffa500;
+      --plot:#0f1222; --field:#141a2a; --grid:#2a2f4a;
+      --ok:#22c55e; --bad:#ef4444;
+    }
+
+    html,body{
+      height:100vh; margin:0; background:var(--bg); color:var(--fg);
+      font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+      display:flex; flex-direction:column;
+    }
+    h1{flex:0 0 auto; font-size:1.25rem; margin:12px 16px}
+    .wrap{
+      flex:1 1 auto; display:grid; grid-template-columns:340px 1fr; gap:12px; padding:12px; min-height:0;
+      transition: grid-template-columns .2s ease;
+    }
+    .wrap.pz-on{ grid-template-columns:340px 1fr 380px; }
+    .left{height:100%; overflow:auto; padding-right:4px;}
+    .right{height:100%; overflow:hidden; display:flex; flex-direction:column; min-height:0;}
+    .pzcol{ display:none; height:100%; overflow-y:auto; overflow-x:hidden; }
+    .wrap.pz-on .pzcol{ display:block; }
+    /* La tabla no se desborda y “corta” contenido largo con … si hace falta */
+    .pz-list table{ table-layout:fixed; width:100%; border-collapse:collapse; }
+    .pz-list table th, .pz-list table td{
+      padding:2px 6px;
+      overflow:hidden; 
+      text-overflow:ellipsis; 
+      white-space:nowrap;
+    }
+
+    .panel{background:var(--card); border:1px solid var(--border); border-radius:12px; padding:12px; margin-bottom:12px;}
+    .panel h2{font-size:1rem;margin:0 0 8px 0}
+    label{display:block;font-size:.95rem;margin:8px 0 4px 0;color:var(--muted)}
+    input[type="text"], input[type="number"], input[type="range"], select, textarea{
+      width:100%; box-sizing:border-box; padding:8px 10px; border-radius:8px; border:1px solid var(--border);
+      background:var(--field); color:var(--fg); outline:none;
+    }
+    select option{background:var(--card); color:var(--fg);}
+    textarea{min-height:70px; resize:vertical}
+    input[type="range"]{padding:0;height:32px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .btn{display:inline-block;padding:8px 10px;border-radius:10px;border:1px solid var(--border);
+      background:transparent;color:var(--fg);cursor:pointer;font-size:.9rem}
+    .btn:hover{border-color:var(--xcolor)}
+    .btnbar{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+    .small{font-size:.8rem;color:var(--muted)}
+    .eq{font-size:1.05rem; line-height:1.6}
+    .eq b{font-weight:800}
+    .eq .big{font-size:1.1rem}
+
+    .plots{flex:1 1 auto; display:flex; flex-direction:column; gap:12px; min-height:0; overflow:hidden;}
+    #plotX, #plotY{flex:1 1 0; min-height:240px; width:100%;}
+    @media (max-width: 980px){
+      .wrap{grid-template-columns:1fr}
+      .wrap.pz-on{grid-template-columns:1fr}
+      .pzcol{order:3}
+    }
+
+    /* Lista polos/ceros */
+    .pz-list{font-size:.9rem}
+    .pz-list h3{font-size:.95rem;margin:8px 0 4px 0}
+    .tag-ok{color:var(--ok); font-weight:600}
+    .tag-bad{color:var(--bad); font-weight:600}
+    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
+  </style>
+</head>
+<body>
+  <h1 id="pageTitleH1">🧪 Demo — Respuesta de sistemas discretos (LTI)</h1>
+  <div class="wrap" id="wrapRoot">
+    <div class="left">
+      <!-- General -->
+      <div class="panel" id="card-general">
+        <h2 id="t_general">General</h2>
+        <div class="row">
+          <div>
+            <label id="t_lang_lbl">Idioma</label>
+            <select id="lang">
+              <option value="es">Español</option>
+              <option value="fr">Français</option>
+              <option value="en">English</option>
+            </select>
+          </div>
+          <div>
+            <label id="t_theme_lbl">Tema</label>
+            <select id="theme">
+              <option value="auto">Auto</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select>
+          </div>
+        </div>
+        <div class="small" id="t_hint"></div>
+      </div>
+
+      <!-- System -->
+      <div class="panel" id="card-sistema">
+        <h2 id="t_sys">Sistema (coeficientes)</h2>
+        <div class="eq">
+          <b class="big">y[n] = Σ b<sub>k</sub> x[n−k] − Σ a<sub>k</sub> y[n−k]</b><br>
+          <span class="big">a<sub>0</sub> = 1</span>
+        </div>
+
+        <label id="t_b_lbl"></label>
+        <input id="bInput" type="text" value="1" />
+        <label id="t_a_lbl"></label>
+        <input id="aInput" type="text" value="" />
+
+        <label id="t_presets_lbl" style="margin-top:10px">Presets</label>
+        <div class="btnbar" id="presets">
+          <button class="btn" data-preset="iir1"></button>
+          <button class="btn" data-preset="iir2"></button>
+          <button class="btn" data-preset="iir4"></button>
+          <button class="btn" data-preset="iir6"></button>
+          <button class="btn" data-preset="fir2"></button>
+          <button class="btn" data-preset="fir4"></button>
+          <button class="btn" data-preset="fir6"></button>
+          <button class="btn" data-preset="diff"></button>
+          <button class="btn" data-preset="acc"></button>
+        </div>
+      </div>
+
+      <!-- Input -->
+      <div class="panel" id="card-entrada">
+        <h2 id="t_input">Entrada x[n]</h2>
+        <label id="t_type_lbl">Tipo</label>
+        <select id="inputType"></select>
+        <div id="inputParams" style="margin-top:6px"></div>
+      </div>
+
+      <!-- n Axis -->
+      <div class="panel" id="card-eje">
+        <h2 id="t_axis">Eje n</h2>
+        <div class="row">
+          <div>
+            <label id="t_nmax_lbl">Max n</label>
+            <input id="nMax" type="number" min="0" step="1" value="64" />
+          </div>
+          <div>
+            <label id="t_ncur_lbl">n actual: <span id="nCurVal">32</span></label>
+            <input id="nCurSlider" type="range" min="0" max="64" step="1" value="32" />
+          </div>
+        </div>
+        <div class="small" id="t_axis_hint">La visualización muestra siempre de 0 a Max n.</div>
+      </div>
+
+      <!-- Display -->
+      <div class="panel" id="card-display">
+        <h2 id="t_display">Visualización</h2>
+        <label style="display:flex;align-items:center;gap:8px">
+          <input id="overlap" type="checkbox"/>
+          <span id="t_overlap_lbl">Superponer entrada y salida</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:8px; margin-top:6px">
+          <input id="showPZ" type="checkbox"/>
+          <span id="t_pz_lbl">Mostrar diagrama polos/ceros</span>
+        </label>
+      </div>
+      
+      <!-- Export -->
+      <div class="panel" id="card-export">
+        <h2 id="t_export">Export</h2>
+        <button class="btn" id="copyPy">Copy Python code</button>
+        <div class="small" id="copyStatus"></div>
+      </div>
+      
+    </div>
+
+    <div class="right">
+      <div class="panel" style="flex:1 1 auto; display:flex; flex-direction:column; min-height:0; overflow:hidden;">
+        <h2 id="plotsTitle">Gráficas</h2>
+        <div class="plots">
+          <div id="plotX"></div>
+          <div id="plotY"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Columna 3: Polos–Ceros -->
+    <div class="pzcol" id="pzCol">
+      <div class="panel" style="min-height:0">
+        <h2 id="pzTitle">Polos y Ceros</h2>
+        <div id="pzPlot" style="width:100%; height:360px;"></div>
+        <div class="pz-list" id="pzList"></div>
+      </div>
+    </div>
+
+  </div>
+
+<script>
+(function(){
+  const state = {
+    b: [1],
+    a: [1],
+    input: { type: 'impulse', params: { A:1, n0:0 } },
+    range: { nmax: 64, ncur: 32 },
+    display: { overlap:false, uirev:'keep', showPZ:false },
+    data: { x:[], y:[] },
+    plotsReady: false,
+    lang: document.documentElement.lang || 'es',
+    pz: { poles: [], zeros: [], stable: true }
+  };
+
+  const STR = {
+    es:{
+      pageTitle:'🧪 Respuesta de sistemas "LTI" discretos',
+      general:'General', lang:'Idioma', theme:'Tema', hint:'',
+      system:'Sistema (coeficientes)', presets:'Presets',
+      input:'Entrada x[n]', type:'Tipo',
+      axis:'Eje n', nmax:'Max n', ncur:'n actual', axis_hint:'Siempre se muestra de 0 a Max n.',
+      display:'Visualización', overlap:'Superponer entrada y salida',
+      plots:'Gráficas', titleX:'Entrada x[n]', titleY:'Salida y[n]',
+      presets_labels:{iir1:'IIR 1', iir2:'IIR 2', iir4:'IIR 4', iir6:'IIR 6', acc:'Acumulador', fir2:'FIR 2', fir4:'FIR 4', fir6:'FIR 6', diff:'Diferenciador'},
+      inputs:{impulse:'Impulso δ[n−n₀]', step:'Escalón u[n−n₀]', pulse:'Pulso rectangular', ramp:'Rampa', sine:'Senoidal', noise:'Ruido blanco', custom:'Custom (lista)'},
+      sine_labels:{
+        A:'Amplitud A', n0:'n₀ (silencio hasta n₀)',
+        f:'Frecuencia f (ciclos/muestra)', phi:'Fase ϕ (grados)',
+        omegaLbl:'ω = 2π·f = {w} rad/muestra'
+      },
+      others:{A:'Amplitud A', n0:'n₀', width:'Duración', slope:'Pendiente', seed:'Seed', list:'Secuencia (coma/espacio)', start:'Inicio n₀', offset:'Offset A', range:'Rango (±A)'},
+      pzTitle:'Polos y Ceros', pzToggle:'Mostrar diagrama polos/ceros',
+      stableOK:'Estable', stableBAD:'Inestable',
+      listPoles:'Polos (raices de D)', listZeros:'Ceros (raices de N)',
+      cols:['#','Re','Im','|z|','∠ (°)'],
+      export:'Exportar', copyBtn:'Copiar código Python', copied:'¡Copiado! Pega en un archivo .py y ejecútalo.',
+      copyFail:'No se pudo copiar (¿permisos del navegador?).',
+      b_lbl: "b (coma o espacio)",
+      a_lbl: "a (solo a₁..N)"
+    },
+    fr:{
+      pageTitle:'🧪 Réponse des systèmes "LTI" discrets',
+      general:'Général', lang:'Langue', theme:'Thème', hint:'',
+      system:'Système (coefficients)', presets:'Préréglages',
+      input:'Entrée x[n]', type:'Type',
+      axis:'Axe n', nmax:'n max', ncur:'n actuel', axis_hint:'Toujours 0 à n max.',
+      display:'Affichage', overlap:'Superposer entrée et sortie',
+      plots:'Graphiques', titleX:'Entrée x[n]', titleY:'Sortie y[n]',
+      presets_labels:{iir1:'IIR 1', iir2:'IIR 2', iir4:'IIR 4', iir6:'IIR 6', acc:'Accumulateur', fir2:'FIR 2', fir4:'FIR 4', fir6:'FIR 6', diff:'Dérivateur'},
+      inputs:{impulse:'Impulsion δ[n−n₀]', step:'Échelon u[n−n₀]', pulse:'Impulsion rectangulaire', ramp:'Rampe', sine:'Sinusoïdale', noise:'Bruit blanc', custom:'Personnalisée (liste)'},
+      sine_labels:{
+        A:'Amplitude A', n0:'n₀ (zéro jusqu’à n₀)',
+        f:'Fréquence f (cycles/échantillon)', phi:'Phase ϕ (degrés)',
+        omegaLbl:'ω = 2π·f = {w} rad/échantillon'
+      },
+      others:{A:'Amplitude A', n0:'n₀', width:'Durée', slope:'Pente', seed:'Graine', list:'Séquence (virgule/espace)', start:'Début n₀', offset:'Décalage A', range:'Plage (±A)'},
+      pzTitle:'Pôles et Zéros', pzToggle:'Afficher le diagramme pôles/zéros',
+      stableOK:'Stable', stableBAD:'Instable',
+      listPoles:'Pôles (racines de D)', listZeros:'Zéros (racines de N)',
+      cols:['#','Re','Im','|z|','∠ (°)'],
+      export:'Exporter', copyBtn:'Copier le code Python', copied:'Copié ! Collez dans un .py et exécutez.',
+      copyFail:'Échec de copie (permissions navigateur ?).',
+      b_lbl: "b (virgule ou espace)",
+      a_lbl: "a (seulement a₁..N)"
+    },
+    en:{
+      pageTitle:'🧪 Discrete-Time "LTI" System Response',
+      general:'General', lang:'Language', theme:'Theme', hint:'',
+      system:'System (coefficients)', presets:'Presets',
+      input:'Input x[n]', type:'Type',
+      axis:'n axis', nmax:'Max n', ncur:'current n', axis_hint:'Always 0 to Max n.',
+      display:'Display', overlap:'Overlay input and output',
+      plots:'Plots', titleX:'Input x[n]', titleY:'Output y[n]',
+      presets_labels:{iir1:'IIR LP 1', iir2:'IIR 2', iir4:'IIR 4', iir6:'IIR 6', acc:'Accumulator', fir2:'FIR 2', fir4:'FIR 4', fir6:'FIR 6', diff:'Differentiator'},
+      inputs:{impulse:'Impulse δ[n−n₀]', step:'Step u[n−n₀]', pulse:'Rectangular pulse', ramp:'Ramp', sine:'Sinusoid', noise:'White noise', custom:'Custom (list)'},
+      sine_labels:{
+        A:'Amplitude A', n0:'n₀ (zero until n₀)',
+        f:'Frequency f (cycles/sample)', phi:'Phase ϕ (degrees)',
+        omegaLbl:'ω = 2π·f = {w} rad/sample'
+      },
+      others:{A:'Amplitude A', n0:'n₀', width:'Duration', slope:'Slope', seed:'Seed', list:'Sequence (comma/space)', start:'Start n₀', offset:'Offset A', range:'Range (±A)'},
+      pzTitle:'Poles & Zeros', pzToggle:'Show pole/zero diagram',
+      stableOK:'Stable', stableBAD:'Unstable',
+      listPoles:'Poles (roots of D)', listZeros:'Zeros (roots of N)',
+      cols:['#','Re','Im','|z|','∠ (°)'],
+      export:'Export', copyBtn:'Copy Python code', copied:'Copied! Paste into a .py file and run.',
+      copyFail:'Could not copy (browser permissions?).',
+      b_lbl: "b (comma or space)",
+      a_lbl: "a (only a₁..N)"
+    }
+  };
+
+  const $ = (id)=>document.getElementById(id);
+  function cssVar(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+  function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+  function parseCoeffs(txt){ const parts = txt.split(/[, \t\n\r]+/).map(s=>s.trim()).filter(Boolean); return parts.length?parts.map(Number).filter(Number.isFinite):[]; }
+  function makeLCG(seed){ let s=(seed>>>0)||1; return ()=>{ s=(1664525*s+1013904223)>>>0; return s/0xFFFFFFFF; }; }
+
+  // -------- util complejos (para raíces) --------
+  const C = {
+    add:(a,b)=>({re:a.re+b.re, im:a.im+b.im}),
+    sub:(a,b)=>({re:a.re-b.re, im:a.im-b.im}),
+    mul:(a,b)=>({re:a.re*b.re - a.im*b.im, im:a.re*b.im + a.im*b.re}),
+    div:(a,b)=>{ const d=b.re*b.re+b.im*b.im || 1e-300; return {re:(a.re*b.re+a.im*b.im)/d, im:(a.im*b.re-a.re*b.im)/d}; },
+    abs:(a)=>Math.hypot(a.re,a.im)
+  };
+  function polyEvalDesc(c, z){
+    let acc = {re:0, im:0};
+    for(let i=0;i<c.length;i++){
+      acc = C.mul(acc, z);
+      acc.re += c[i];
+    }
+    return acc;
+  }
+  function roots_desc_DK(coeffDesc){
+    let c = coeffDesc.slice();
+    while(c.length>1 && Math.abs(c[0])<1e-14) c.shift();
+    if(c.length<=1) return [];
+    const N = c.length-1;
+    const a0 = c[0]; c = c.map(v=>v/a0);
+
+    const R = 1;
+    const roots = Array.from({length:N}, (_,k)=>{
+      const th = 2*Math.PI*(k+1)/(N+1);
+      return {re:R*Math.cos(th), im:R*Math.sin(th)};
+    });
+
+    const MAXIT=250, TOL=1e-12;
+    for(let it=0; it<MAXIT; it++){
+      let maxStep=0;
+      for(let i=0;i<N;i++){
+        const zi = roots[i];
+        const pzi = polyEvalDesc(c, zi);
+        let denom = {re:1, im:0};
+        for(let j=0;j<N;j++){
+          if(j===i) continue;
+          denom = C.mul(denom, C.sub(zi, roots[j]));
+        }
+        const delta = C.div(pzi, denom);
+        roots[i] = C.sub(zi, delta);
+        maxStep = Math.max(maxStep, C.abs(delta));
+      }
+      if(maxStep < TOL) break;
+    }
+    return roots;
+  }
+
+  // ------- construir polinomios en z (coef DESC) -------
+  function denomZDesc_from_aTail(aTail){
+    const arr = [1, ...aTail].map(x=>Number(x||0));
+    while(arr.length>1 && Math.abs(arr[arr.length-1])<1e-14) arr.pop();
+    while(arr.length>1 && Math.abs(arr[0])<1e-14) arr.shift();
+    return arr;
+  }
+  function numerZDesc_from_b(b){
+    const raw = b.map(x=>Number(x||0));
+    if(raw.every(v=>Math.abs(v)<1e-14)) return [0];
+    while(raw.length>1 && Math.abs(raw[0])<1e-14) raw.shift();
+    return raw;
+  }
+
+  function genInput(nmax, input){
+    const N=nmax+1, x=new Array(N).fill(0);
+    const {type, params} = input; const A=Number(params.A??1); const n0=Number(params.n0??0);
+    if(type==='impulse'){ if(n0>=0 && n0<=nmax) x[n0]=A; }
+    else if(type==='step'){ for(let n=Math.max(0,n0); n<=nmax; n++) x[n]=A; }
+    else if(type==='pulse'){ const w=Number(params.width??8); for(let n=Math.max(0,n0); n<Math.min(N,n0+w); n++) x[n]=A; }
+    else if(type==='ramp'){ const slope=Number(params.slope??1); for(let n=Math.max(0,n0); n<=nmax; n++) x[n]=A+slope*(n-n0); }
+    else if(type==='sine'){
+      const f = clamp(Number(params.f ?? 0), -0.5, 0.5);
+      const phiDeg = clamp(Number(params.phiDeg ?? 0), -180, 180);
+      const w = 2*Math.PI*f;  const phi = phiDeg * Math.PI/180;
+      for(let n=0;n<=nmax;n++){ x[n] = (n<n0)?0 : A*Math.cos(w*(n-n0) + phi); }
+      const lF = $('lbl_f'), lP = $('lbl_phi'), omegaLbl = $('omegaLbl');
+      if(lF) lF.textContent = STR[state.lang].sine_labels.f + `: ${f.toFixed(2)}`;
+      if(lP) lP.textContent = STR[state.lang].sine_labels.phi + `: ${phiDeg.toFixed(0)}°`;
+      if(omegaLbl){ omegaLbl.textContent = STR[state.lang].sine_labels.omegaLbl.replace('{w}', w.toFixed(3)); }
+    }
+    else if(type==='noise'){ const rnd=makeLCG(Number(params.seed??1234)); for(let n=0;n<=nmax;n++) x[n]=(rnd()*2-1)*A; }
+    else if(type==='custom'){ const seq=parseCoeffs(String(params.list??'')); for(let n=0;n<=nmax;n++) x[n]=seq[n]??0; }
+    return x;
+  }
+
+  function lfilter(b, a, x){
+    const N=x.length, y=new Array(N).fill(0); const M=b.length-1; const P=a.length-1;
+    for(let n=0;n<N;n++){
+      let acc=0;
+      for(let k=0;k<=M;k++){ if(n-k>=0) acc+=b[k]*x[n-k]; }
+      for(let k=1;k<=P;k++){ if(n-k>=0) acc-=a[k]*y[n-k]; }
+      y[n]=acc;
+    }
+    return y;
+  }
+
+  function makeStemSegments(xs, ys){
+    const xx=[], yy=[];
+    for(let i=0;i<xs.length;i++){ const x=xs[i], y=ys[i]; xx.push(x,x,null); yy.push(0,y,null); }
+    return {xx,yy};
+  }
+
+  function iir_lp_k(k, alpha=0.9){
+    const a=[1]; for(let m=1;m<=k;m++){ let C=1; for(let i=0;i<m;i++){ C=C*(k-i)/(i+1);} a.push(C*Math.pow(-alpha,m)); }
+    const b=[Math.pow(1-alpha, k)]; return {b,aTail:a.slice(1)};
+  }
+  function fir_ma_L(L){ return {b:Array.from({length:L},()=>1/L), aTail:[]}; }
+
+  const inputTypesOrder = ['impulse','step','pulse','ramp','sine','noise','custom'];
+
+  function populateInputTypeSelect(){
+    const sel = $('inputType'); sel.innerHTML = '';
+    inputTypesOrder.forEach(key=>{
+      const opt = document.createElement('option');
+      opt.value = key; opt.textContent = STR[state.lang].inputs[key]; sel.appendChild(opt);
+    });
+    sel.value = state.input.type;
+  }
+
+  function renderPresetLabels(){
+    const labels = STR[state.lang].presets_labels;
+    document.querySelectorAll('#presets .btn').forEach(btn=>{
+      btn.textContent = labels[btn.getAttribute('data-preset')] || btn.getAttribute('data-preset');
+    });
+  }
+
+  function buildInputParamsUI(){
+    const host = $('inputParams'); host.innerHTML = '';
+    const type = $('inputType').value;
+
+    if(type==='sine'){
+      const L = STR[state.lang].sine_labels;
+
+      const row1 = document.createElement('div'); row1.className='row';
+      const wA = document.createElement('div'); const lA=document.createElement('label'); lA.textContent=L.A;
+      const inA = document.createElement('input'); inA.type='number'; inA.step='any'; inA.value = state.input.params.A ?? 1; inA.id='in_A';
+      wA.appendChild(lA); wA.appendChild(inA); row1.appendChild(wA);
+
+      const wN0 = document.createElement('div'); const lN0=document.createElement('label'); lN0.textContent=L.n0;
+      const inN0 = document.createElement('input'); inN0.type='number'; inN0.step='1'; inN0.value = state.input.params.n0 ?? 0; inN0.id='in_n0';
+      wN0.appendChild(lN0); wN0.appendChild(inN0); row1.appendChild(wN0);
+      host.appendChild(row1);
+
+      const lF = document.createElement('label'); lF.id='lbl_f';
+      lF.textContent = L.f + `: ${(state.input.params.f ?? 0.30).toFixed(2)}`;
+      const sF = document.createElement('input'); sF.type='range'; sF.min='-0.5'; sF.max='0.5'; sF.step='0.01';
+      sF.value = state.input.params.f ?? 0.30; sF.id='in_f';
+      host.appendChild(lF); host.appendChild(sF);
+
+      const omegaLbl = document.createElement('div'); omegaLbl.className='small'; omegaLbl.id='omegaLbl';
+      const w = 2*Math.PI*(state.input.params.f ?? 0.30);
+      omegaLbl.textContent = L.omegaLbl.replace('{w}', w.toFixed(3));
+      host.appendChild(omegaLbl);
+
+      const lP = document.createElement('label'); lP.id='lbl_phi';
+      lP.textContent = L.phi + `: ${(state.input.params.phiDeg ?? 0).toFixed(0)}°`;
+      const sP = document.createElement('input'); sP.type='range'; sP.min='-180'; sP.max='180'; sP.step='1';
+      sP.value = state.input.params.phiDeg ?? 0; sP.id='in_phiDeg';
+      host.appendChild(lP); host.appendChild(sP);
+
+      inA.addEventListener('input', ()=>{ state.input.params.A = Number(inA.value); recalcAndRender(); });
+      inN0.addEventListener('input', ()=>{ state.input.params.n0 = Number(inN0.value); recalcAndRender(); });
+      sF.addEventListener('input', ()=>{
+        state.input.params.f = Number(sF.value);
+        lF.textContent = L.f + `: ${Number(sF.value).toFixed(2)}`;
+        const wNow = 2*Math.PI*state.input.params.f;
+        omegaLbl.textContent = L.omegaLbl.replace('{w}', wNow.toFixed(3));
+        recalcAndRender();
+      });
+      sP.addEventListener('input', ()=>{
+        state.input.params.phiDeg = Number(sP.value);
+        lP.textContent = L.phi + `: ${Number(sP.value).toFixed(0)}°`;
+        recalcAndRender();
+      });
+
+    }else{
+      const O = STR[state.lang].others;
+      const addField = (id,label, type='number', step='any', defVal=0, span=false)=>{
+        const wrap = document.createElement('div'); if(span) wrap.style.gridColumn='1 / -1';
+        const lbl = document.createElement('label'); lbl.textContent = label;
+        let ctrl;
+        if(type==='textarea'){ ctrl = document.createElement('textarea'); }
+        else { ctrl = document.createElement('input'); ctrl.type=type; ctrl.step=step; }
+        ctrl.value = state.input.params[id] ?? defVal; ctrl.id = 'in_'+id;
+        wrap.appendChild(lbl); wrap.appendChild(ctrl); return {wrap,ctrl};
+      };
+
+      if(type==='impulse'){
+        const grid=document.createElement('div'); grid.className='row';
+        const f1=addField('A', O.A, 'number','any',1);
+        const f2=addField('n0', O.n0, 'number','1',0);
+        grid.appendChild(f1.wrap); grid.appendChild(f2.wrap); host.appendChild(grid);
+        f1.ctrl.addEventListener('input', ()=>{ state.input.params.A=Number(f1.ctrl.value); recalcAndRender(); });
+        f2.ctrl.addEventListener('input', ()=>{ state.input.params.n0=Number(f2.ctrl.value); recalcAndRender(); });
+      }
+      else if(type==='step'){
+        const grid=document.createElement('div'); grid.className='row';
+        const f1=addField('A', O.A, 'number','any',1);
+        const f2=addField('n0', O.n0, 'number','1',0);
+        grid.appendChild(f1.wrap); grid.appendChild(f2.wrap); host.appendChild(grid);
+        f1.ctrl.addEventListener('input', ()=>{ state.input.params.A=Number(f1.ctrl.value); recalcAndRender(); });
+        f2.ctrl.addEventListener('input', ()=>{ state.input.params.n0=Number(f2.ctrl.value); recalcAndRender(); });
+      }
+      else if(type==='pulse'){
+        const grid=document.createElement('div'); grid.className='row';
+        const f1=addField('A', O.A, 'number','any',1);
+        const f2=addField('n0', O.start, 'number','1',0);
+        const f3=addField('width', O.width, 'number','1',8, true);
+        grid.appendChild(f1.wrap); grid.appendChild(f2.wrap); host.appendChild(grid); host.appendChild(f3.wrap);
+        f1.ctrl.addEventListener('input', ()=>{ state.input.params.A=Number(f1.ctrl.value); recalcAndRender(); });
+        f2.ctrl.addEventListener('input', ()=>{ state.input.params.n0=Number(f2.ctrl.value); recalcAndRender(); });
+        f3.ctrl.addEventListener('input', ()=>{ state.input.params.width=Number(f3.ctrl.value); recalcAndRender(); });
+      }
+      else if(type==='ramp'){
+        const grid=document.createElement('div'); grid.className='row';
+        const f1=addField('A', O.offset, 'number','any',0);
+        const f2=addField('n0', O.start, 'number','1',0);
+        const f3=addField('slope', O.slope, 'number','any',1, true);
+        grid.appendChild(f1.wrap); grid.appendChild(f2.wrap); host.appendChild(grid); host.appendChild(f3.wrap);
+        f1.ctrl.addEventListener('input', ()=>{ state.input.params.A=Number(f1.ctrl.value); recalcAndRender(); });
+        f2.ctrl.addEventListener('input', ()=>{ state.input.params.n0=Number(f2.ctrl.value); recalcAndRender(); });
+        f3.ctrl.addEventListener('input', ()=>{ state.input.params.slope=Number(f3.ctrl.value); recalcAndRender(); });
+      }
+      else if(type==='noise'){
+        const grid=document.createElement('div'); grid.className='row';
+        const f1=addField('A', O.range, 'number','any',1);
+        const f2=addField('seed', O.seed, 'number','1',1234);
+        grid.appendChild(f1.wrap); grid.appendChild(f2.wrap); host.appendChild(grid);
+        f1.ctrl.addEventListener('input', ()=>{ state.input.params.A=Number(f1.ctrl.value); recalcAndRender(); });
+        f2.ctrl.addEventListener('input', ()=>{ state.input.params.seed=Number(f2.ctrl.value); recalcAndRender(); });
+      }
+      else if(type==='custom'){
+        const f1=addField('list', O.list, 'textarea','', '1, 0, 0, 0, 0, 0, 0, 0', true);
+        host.appendChild(f1.wrap);
+        f1.ctrl.addEventListener('input', ()=>{ state.input.params.list=String(f1.ctrl.value); recalcAndRender(); });
+      }
+    }
+  }
+
+  function recalc(){
+    const b = parseCoeffs($('bInput').value);
+    const aTail = parseCoeffs($('aInput').value);
+    state.b = (b.length?b:[0]); state.a = [1, ...aTail];
+
+    const nmax = clamp(Number($('nMax').value)|0, 0, 100000);
+    state.range.nmax = nmax;
+    const slider=$('nCurSlider'); slider.max=String(nmax);
+    state.range.ncur = clamp(Number(slider.value)|0, 0, nmax);
+
+    state.input.type = $('inputType').value;
+
+    const x = genInput(nmax, state.input);
+    const y = lfilter(state.b, state.a, x);
+    state.data.x = x; state.data.y = y;
+
+    // --- cálculo polos/ceros (coef en potencias descendentes de z) ---
+    const Ddesc = denomZDesc_from_aTail(aTail);
+    const Ndesc = numerZDesc_from_b(state.b);
+
+    const poles = (Ddesc.length<=1) ? [] : roots_desc_DK(Ddesc);
+    const zeros = (Ndesc.length<=1) ? [] : roots_desc_DK(Ndesc);
+
+    poles.sort((p,q)=>Math.hypot(q.re,q.im)-Math.hypot(p.re,p.im));
+    zeros.sort((p,q)=>Math.hypot(q.re,q.im)-Math.hypot(p.re,p.im));
+
+    const stable = poles.every(p=>Math.hypot(p.re,p.im) < 1 - 1e-12);
+    state.pz = { poles, zeros, stable };
+  }
+
+  function axisLayout(title){
+    const fg = cssVar('--fg'), grid = cssVar('--grid') || '#d4d7de';
+    return { paper_bgcolor:'transparent', plot_bgcolor:'transparent',
+      font:{color:fg}, margin:{l:50,r:25,t:24,b:32}, showlegend:false, uirevision: state.display.uirev,
+      xaxis:{zeroline:false, gridcolor:grid, gridwidth:1},
+      yaxis:{zeroline:true, gridcolor:grid, gridwidth:1},
+      title:{text:title, font:{size:16}, y:0.98} };
+  }
+
+  function ensurePlots(){
+    if(state.plotsReady) return;
+    Plotly.newPlot('plotX', [
+      {x:[],y:[],mode:'lines',name:'stemsX',hoverinfo:'skip',line:{width:1}},
+      {x:[],y:[],mode:'markers',name:'markersX',marker:{size:6,symbol:'circle',line:{width:0.5}}},
+      {x:[],y:[],mode:'lines+markers',name:'ncurX', line:{width:4}, marker:{size:[0,9], symbol:'diamond'}}
+    ], axisLayout((STR[state.lang]||STR.es).titleX), {displaylogo:false,responsive:true});
+
+    Plotly.newPlot('plotY', [
+      {x:[],y:[],mode:'lines',name:'stemsY',hoverinfo:'skip',line:{width:1}},
+      {x:[],y:[],mode:'markers',name:'markersY',marker:{size:6,symbol:'circle',line:{width:0.5}}},
+      {x:[],y:[],mode:'lines+markers',name:'ncurY', line:{width:4}, marker:{size:[0,9], symbol:'diamond'}}
+    ], axisLayout((STR[state.lang]||STR.es).titleY), {displaylogo:false,responsive:true});
+
+    state.plotsReady = true;
+  }
+
+  function updatePlots(){
+    ensurePlots();
+    const cx = cssVar('--xcolor'), cy = cssVar('--ycolor'), ccur = cssVar('--curcolor');
+    const nmax = state.range.nmax, ncur = state.range.ncur;
+    const nIdx = [...Array(nmax+1).keys()];
+    const xdata = state.data.x.slice(0, nmax+1);
+    const ydata = state.data.y.slice(0, nmax+1);
+    const sx = makeStemSegments(nIdx, xdata);
+    const sy = makeStemSegments(nIdx, ydata);
+    const curX = (ncur<=nmax) ? state.data.x[ncur] : 0;
+    const curY = (ncur<=nmax) ? state.data.y[ncur] : 0;
+    const ncurX = { x:[ncur,ncur], y:[0,curX] };
+    const ncurY = { x:[ncur,ncur], y:[0,curY] };
+
+    if(state.display.overlap){
+      $('plotX').style.display='none';
+      const plotY = $('plotY');
+      while(plotY.data.length < 6){
+        Plotly.addTraces('plotY', [
+          {x:[],y:[],mode:'lines',name:'stemsX',hoverinfo:'skip',line:{width:1}},
+          {x:[],y:[],mode:'markers',name:'markersX',marker:{size:6,symbol:'circle',line:{width:0.5}}},
+          {x:[],y:[],mode:'lines+markers',name:'ncurX', line:{width:4}, marker:{size:[0,9], symbol:'diamond'}}
+        ]);
+      }
+      const idx = {stemsY:0, markersY:1, ncurY:2, stemsX:3, markersX:4, ncurX:5};
+
+      Plotly.restyle('plotY', {'line.color':[cy]}, [idx.stemsY]);
+      Plotly.restyle('plotY', {'marker.color':[cy]}, [idx.markersY]);
+      Plotly.restyle('plotY', {'line.color':[ccur], 'marker.color':[ccur]}, [idx.ncurY]);
+      Plotly.restyle('plotY', {'line.color':[cx]}, [idx.stemsX]);
+      Plotly.restyle('plotY', {'marker.color':[cx]}, [idx.markersX]);
+      Plotly.restyle('plotY', {'line.color':[ccur], 'marker.color':[ccur]}, [idx.ncurX]);
+
+      Plotly.restyle('plotY', {'x':[sy.xx],'y':[sy.yy]}, [idx.stemsY]);
+      Plotly.restyle('plotY', {'x':[nIdx],'y':[ydata]}, [idx.markersY]);
+      Plotly.restyle('plotY', {'x':[ncurY.x],'y':[ncurY.y],'marker.size':[[0,9]]}, [idx.ncurY]);
+
+      Plotly.restyle('plotY', {'x':[sx.xx],'y':[sx.yy]}, [idx.stemsX]);
+      Plotly.restyle('plotY', {'x':[nIdx],'y':[xdata]}, [idx.markersX]);
+      Plotly.restyle('plotY', {'x':[ncurX.x],'y':[ncurX.y],'marker.size':[[0,9]]}, [idx.ncurX]);
+
+      const t = STR[state.lang]||STR.es;
+      Plotly.relayout('plotY', axisLayout(
+        `<span style="color:${cx}">${t.titleX}</span> · <span style="color:${cy}">${t.titleY}</span>`
+      ));
+
+      requestAnimationFrame(()=>{ try{ Plotly.Plots.resize('plotY'); }catch(e){} });
+
+    }else{
+      const plotY = $('plotY');
+      while(plotY.data.length > 3){ Plotly.deleteTraces('plotY', [plotY.data.length-1]); }
+      $('plotX').style.display='block';
+
+      Plotly.restyle('plotX', {'line.color':[cx]}, [0]);
+      Plotly.restyle('plotX', {'marker.color':[cx]}, [1]);
+      Plotly.restyle('plotX', {'line.color':[ccur], 'marker.color':[ccur]}, [2]);
+
+      Plotly.restyle('plotY', {'line.color':[cy]}, [0]);
+      Plotly.restyle('plotY', {'marker.color':[cy]}, [1]);
+      Plotly.restyle('plotY', {'line.color':[ccur], 'marker.color':[ccur]}, [2]);
+
+      Plotly.restyle('plotX',
+        {'x':[[...sx.xx],[...nIdx],[...ncurX.x]],
+         'y':[[...sx.yy],[...xdata],[...ncurX.y]],
+         'marker.size':[null,6,[0,9]]}, [0,1,2]);
+
+      Plotly.restyle('plotY',
+        {'x':[[...sy.xx],[...nIdx],[...ncurY.x]],
+         'y':[[...sy.yy],[...ydata],[...ncurY.y]],
+         'marker.size':[null,6,[0,9]]}, [0,1,2]);
+
+      const t = STR[state.lang]||STR.es;
+      Plotly.relayout('plotX', axisLayout(`<span style="color:${cx}">${t.titleX}</span>`));
+      Plotly.relayout('plotY', axisLayout(`<span style="color:${cy}">${t.titleY}</span>`));
+    }
+
+    // actualizar PZ si corresponde
+    if(state.display.showPZ) updatePZ();
+  }
+
+  // --------- Diagrama Polos–Ceros ----------
+  function plotPZ(poles, zeros, stable){
+    const th = Array.from({length:361}, (_,k)=>k*Math.PI/180);
+    const uc = {
+      x: th.map(t=>Math.cos(t)), y: th.map(t=>Math.sin(t)),
+      mode:'lines', name:'|z|=1', line:{width:1.5, dash:'solid', color:cssVar('--muted')}, hoverinfo:'skip'
+    };
+    const axisX = { x:[-2,2], y:[0,0], mode:'lines', line:{width:1, color:cssVar('--grid')}, showlegend:false, hoverinfo:'skip' };
+    const axisY = { x:[0,0], y:[-2,2], mode:'lines', line:{width:1, color:cssVar('--grid')}, showlegend:false, hoverinfo:'skip' };
+
+    const z_re = zeros.map(z=>z.re), z_im=zeros.map(z=>z.im);
+    const p_re = poles.map(z=>z.re), p_im=poles.map(z=>z.im);
+
+    const zerosTrace = {
+      x:z_re, y:z_im, mode:'markers', name:`Ceros (${zeros.length})`,
+      marker:{symbol:'circle-open', size:12, line:{width:2, color:'green'}, color:'green'},
+      hovertemplate:'Re=%{x:.4f}<br>Im=%{y:.4f}<extra>Zero</extra>'
+    };
+
+    const polesTrace = {
+      x:p_re, y:p_im, mode:'markers', name:`Polos (${poles.length})`,
+      marker:{symbol:'x', size:12, color:'red', line:{width:0.05, color:'red'}},
+      hovertemplate:'Re=%{x:.4f}<br>Im=%{y:.4f}<extra>Pole</extra>'
+    };
+
+    // --- AUTO-ZOOM CUADRADO (simétrico alrededor de 0, incluye círculo unidad) ---
+    const allX = [...z_re, ...p_re, -1, 1];   // asegura incluir ±1 por el círculo unidad
+    const allY = [...z_im, ...p_im, -1, 1];
+
+    const maxAbs = Math.max(
+      1,
+      ...allX.map(v => Math.abs(v)),
+      ...allY.map(v => Math.abs(v))
+    );
+    const pad = 1.15; // margen ~15%
+    const lim = maxAbs * pad;
+
+    const t = STR[state.lang] || STR.es;
+    const titleTxt = `${t.pzTitle} — ${stable? t.stableOK+' ✅' : t.stableBAD+' ❌'}`;
+    const layout = {
+      title: {text:titleTxt, font:{size:16, color:cssVar('--fg')}},
+      <!-- xaxis:{range:[-lim,lim], zeroline:false, scaleanchor:'y', scaleratio:1, title:'Re{z}', gridcolor:cssVar('--grid'), color:cssVar('--fg')}, -->
+      <!-- yaxis:{range:[-lim,lim], zeroline:false, title:'Im{z}', gridcolor:cssVar('--grid'), color:cssVar('--fg')}, -->
+      xaxis:{
+        range:[-lim,lim], zeroline:false,
+        title:'Re{z}',
+        gridcolor:cssVar('--grid'), color:cssVar('--fg')
+      },
+      yaxis:{
+        range:[-lim,lim], zeroline:false,
+        title:'Im{z}',
+        gridcolor:cssVar('--grid'), color:cssVar('--fg')
+      },
+      margin:{l:50,r:20,t:40,b:40},
+      showlegend:false,
+      paper_bgcolor:'transparent', plot_bgcolor:'transparent',
+      font:{color:cssVar('--fg')}
+    };
+
+    const data = [uc, axisX, axisY, zerosTrace, polesTrace];
+    Plotly.react('pzPlot', data, layout, {displayModeBar:false, responsive:true});
+  }
+
+  function deg(a){ return a*180/Math.PI; }
+  function fmtNum(v, d=4){ return (Math.abs(v)<1e-12? 0 : v).toFixed(d); }
+
+  function buildList(){
+    const t = STR[state.lang]||STR.es;
+    const {poles, zeros} = state.pz;
+
+    function tableFor(arr, title){
+      if(!arr.length) return `<h3>${title}</h3><div class="small">—</div>`;
+      const header = `<tr>${t.cols.map(c=>`<th style="text-align:right;padding:2px 6px">${c}</th>`).join('')}</tr>`;
+      const rows = arr.map((z,i)=>{
+        const r = Math.hypot(z.re, z.im);
+        const ang = deg(Math.atan2(z.im, z.re));
+        return `<tr class="mono">
+          <td style="text-align:right;padding:2px 6px">${i+1}</td>
+          <td style="text-align:right;padding:2px 6px">${fmtNum(z.re,4)}</td>
+          <td style="text-align:right;padding:2px 6px">${fmtNum(z.im,4)}</td>
+          <td style="text-align:right;padding:2px 6px">${fmtNum(r,4)}</td>
+          <td style="text-align:right;padding:2px 6px">${fmtNum(ang,2)}</td>
+        </tr>`;
+      }).join('');
+      return `<h3>${title}</h3>
+      <table style="border-collapse:collapse;width:100%;table-layout:fixed">
+        ${header}${rows}
+      </table>`;
+    }
+
+    const stab = state.pz.stable ? `<span class="tag-ok">(${t.stableOK})</span>` : `<span class="tag-bad">(${t.stableBAD})</span>`;
+    $('pzList').innerHTML = `
+      <div class="small" style="margin:-2px 0 6px 0">|p|&lt;1 ⇒ ${t.stableOK}. ${stab}</div>
+      ${tableFor(poles, t.listPoles)}
+      ${tableFor(zeros, t.listZeros)}
+    `;
+  }
+
+  function updatePZ(){
+    plotPZ(state.pz.poles, state.pz.zeros, state.pz.stable);
+    buildList();
+  }
+
+  function recalcAndRender(){ recalc(); updatePlots(); }
+
+  document.querySelectorAll('#presets .btn').forEach(btn=>{
+    btn.addEventListener('click', (e)=>applyPreset(e.currentTarget.getAttribute('data-preset')));
+  });
+  function applyPreset(name){
+    let r=null;
+  
+    if(name==='iir1'){
+      r = iir_lp_k(1, 0.9);  // lo dejas igual si quieres mantener el 1er orden simple
+    }
+    else if(name==='iir2'){
+      // ── 1 par de polos complejos (r=0.8, θ=0.4π) y 1 par de ceros complejos (r=0.9, θ=0.6π)
+      // D(z) = z^2 - 2 r cosθ z + r^2  → aTail = [-2 r cosθ, r^2]
+      // N(z) = z^2 - 2 Rz cosφ z + Rz^2 → b = [1, -2 Rz cosφ, Rz^2]  (coef descendentes)
+      r = {
+        b:     [1.000000,  0.556231, 0.810000],
+        aTail: [-0.494427, 0.640000]
+      };
+    }
+    else if(name==='iir4'){
+      // ── 2 pares de polos (r1=0.85, θ1=0.25π) · (r2=0.8, θ2=0.45π)
+      // ── 2 pares de ceros en el círculo unidad (θ=π/4 y 3π/4)  ⇒ N(z)≈ z^4 + 1
+      r = {
+        b:     [1.000000, 0.000000, 0.000000, 0.000000, 1.000000],
+        aTail: [-1.452377, 1.663375, -0.950170, 0.462400]
+      };
+    }
+    else if(name==='iir6'){
+      // ── 3 pares de polos (r=0.9,0.85,0.8 ; θ=0.2π,0.4π,0.6π)
+      // ── 3 pares de ceros en el círculo unidad (θ=0.2π, 0.5π, 0.8π)
+      r = {
+        b:     [1.000000, 0.000000, 0.381966, 0.000000, 0.381966, 0.000000, 1.000000],
+        aTail: [-1.487132, 1.957763, -1.609895, 1.325038, -0.656340, 0.374544]
+      };
+    }
+    else if(name==='acc'){
+      r = {b:[1], aTail:[-1]};
+    }
+    else if(name==='diff'){
+      r = {b:[1,-1], aTail:[]};
+    }
+    else if(name==='fir2'){
+      // FIR orden 2 (3 taps): par de ceros en z = e^{±j 0.6π}  → notch en ω = 0.6π
+      // N(z) = (z - e^{jθ})(z - e^{-jθ}) = z^2 - 2cosθ z + 1
+      const theta = Math.PI * 0.6;
+      const c = -2*Math.cos(theta); // ≈ +0.61803399
+      r = { b:[1.00000000, c, 1.00000000], aTail:[] };
+    }
+    else if(name==='fir4'){
+      // FIR orden 4 (5 taps): ceros en e^{±j 0.3π} y e^{±j 0.7π}
+      // N(z) = ∏ (z^2 - 2cosθ z + 1)  → coeficientes descendentes: [1, 0, 0.61803399, 0, 1]
+      r = { b:[1.00000000, 0.00000000, 0.61803399, 0.00000000, 1.00000000], aTail:[] };
+    }
+    else if(name==='fir6'){
+      // FIR orden 6 (7 taps): ceros en e^{±j 0.2π}, e^{±j 0.5π}, e^{±j 0.8π}
+      // Descendentes: [1, 0, 0.38196601, 0, 0.38196601, 0, 1]
+      r = { b:[1.00000000, 0.00000000, 0.38196601, 0.00000000, 0.38196601, 0.00000000, 1.00000000], aTail:[] };
+    }
+    if(r){
+      $('bInput').value = r.b.join(', ');
+      $('aInput').value = (r.aTail||[]).join(', ');
+      recalcAndRender();
+    }
+  }
+
+  $('bInput').addEventListener('input', recalcAndRender);
+  $('aInput').addEventListener('input', recalcAndRender);
+
+  $('inputType').addEventListener('change', ()=>{
+    state.input.type = $('inputType').value;
+    if(state.input.type==='sine'){ state.input.params = {A:1, n0:0, f:0.30, phiDeg:0}; }
+    else if(state.input.type==='impulse'){ state.input.params = {A:1, n0:0}; }
+    else if(state.input.type==='step'){ state.input.params = {A:1, n0:0}; }
+    else if(state.input.type==='pulse'){ state.input.params = {A:1, n0:0, width:8}; }
+    else if(state.input.type==='ramp'){ state.input.params = {A:0, n0:0, slope:1}; }
+    else if(state.input.type==='noise'){ state.input.params = {A:1, seed:1234}; }
+    else if(state.input.type==='custom'){ state.input.params = {list:'1, 0, 0, 0, 0, 0, 0, 0'}; }
+    buildInputParamsUI(); recalcAndRender();
+  });
+
+  $('nMax').addEventListener('input', ()=>{
+    const nmax = Number($('nMax').value)|0;
+    const slider = $('nCurSlider'); slider.max = String(nmax);
+    slider.value = String(clamp(Number(slider.value)|0, 0, nmax));
+    $('nCurVal').textContent = slider.value;
+    recalcAndRender();
+  });
+
+  $('nCurSlider').addEventListener('input', ()=>{
+    const v = Number($('nCurSlider').value)|0;
+    state.range.ncur = clamp(v, 0, state.range.nmax);
+    $('nCurVal').textContent = state.range.ncur;
+    updatePlots();
+  });
+
+  $('overlap').addEventListener('change', ()=>{ state.display.overlap = $('overlap').checked; updatePlots(); });
+
+  // Toggle PZ
+  $('showPZ').addEventListener('change', ()=>{
+    state.display.showPZ = $('showPZ').checked;
+    const wrap = $('wrapRoot');
+    if(state.display.showPZ){ wrap.classList.add('pz-on'); updatePZ(); }
+    else { wrap.classList.remove('pz-on'); }
+    // redimensionar plots para aprovechar espacio
+    requestAnimationFrame(()=>{
+      try{ Plotly.Plots.resize('plotX'); Plotly.Plots.resize('plotY'); if(state.display.showPZ) Plotly.Plots.resize('pzPlot'); }catch(e){}
+    });
+  });
+
+  $('lang').addEventListener('change', ()=>{
+    state.lang = $('lang').value; document.documentElement.lang = state.lang;
+    applyLang(); populateInputTypeSelect(); renderPresetLabels(); buildInputParamsUI(); updatePlots();
+    if(state.display.showPZ){ updatePZ(); }
+  });
+
+  $('theme').addEventListener('change', ()=>{
+    document.documentElement.setAttribute('data-theme', $('theme').value);
+    updatePlots();
+    if(state.display.showPZ){ updatePZ(); }
+  });
+
+  function applyLang(){
+    const t = STR[state.lang];
+    document.title = t.pageTitle;
+    $('pageTitleH1').textContent = t.pageTitle;
+    $('t_general').textContent = t.general;
+    $('t_lang_lbl').textContent = t.lang;
+    $('t_theme_lbl').textContent = t.theme;
+    $('t_hint').textContent = t.hint;
+    $('t_sys').textContent = t.system;
+    $('t_presets_lbl').textContent = t.presets;
+    $('t_input').textContent = t.input;
+    $('t_type_lbl').textContent = t.type;
+    $('t_axis').textContent = t.axis;
+    $('t_nmax_lbl').textContent = t.nmax;
+    $('t_ncur_lbl').innerHTML = t.ncur + ': <span id="nCurVal">'+state.range.ncur+'</span>';
+    $('t_axis_hint').textContent = t.axis_hint;
+    $('t_display').textContent = t.display;
+    $('t_overlap_lbl').textContent = t.overlap;
+    $('plotsTitle').textContent = t.plots;
+    $('t_export').textContent = t.export;
+    $('copyPy').textContent = t.copyBtn;
+    $('t_b_lbl').textContent = t.b_lbl;
+    $('t_a_lbl').innerHTML   = t.a_lbl;   // innerHTML porque contiene subíndice
+
+    // PZ labels
+    $('t_pz_lbl').textContent = t.pzToggle;
+    $('pzTitle').textContent = t.pzTitle;
+
+    if(state.input.type==='sine'){
+      const omegaLbl = $('omegaLbl');
+      if(omegaLbl){
+        const w = 2*Math.PI*(state.input.params.f ?? 0);
+        omegaLbl.textContent = t.sine_labels.omegaLbl.replace('{w}', w.toFixed(3));
+      }
+    }
+  }
+  
+  // Linkear ejes X entre plotX y plotY cuando NO hay superposición
+  let __syncing = false;
+  function linkXRanges(srcId, dstId){
+    document.getElementById(srcId).on('plotly_relayout', ev=>{
+      if(state.display.overlap) return;
+      if(ev['xaxis.autorange'] === true){
+        if(__syncing) return;
+        __syncing = true;
+        Plotly.relayout(dstId, {'xaxis.autorange': true}).then(()=>{ __syncing = false; });
+        return;
+      }
+      const x0 = ev['xaxis.range[0]'], x1 = ev['xaxis.range[1]'];
+      if(x0 === undefined || x1 === undefined) return;
+      if(__syncing) return;
+      __syncing = true;
+      Plotly.relayout(dstId, {'xaxis.range': [x0, x1]}).then(()=>{ __syncing = false; });
+    });
+  }
+
+  // --- Generador de script Python para exportar ---
+  function buildPythonScript(){
+    // Current state
+    const b = (state.b || []).slice();
+    const aTail = (state.a || [1]).slice(1); // a = [1, a1, a2, ...]
+    const nmax = state.range?.nmax ?? 64;
+    const kind = state.input?.type || 'impulse';
+    const params = Object.assign({}, state.input?.params || {});
+
+    // Safe serializations
+    const b_js      = JSON.stringify(b);
+    const aTail_js  = JSON.stringify(aTail);
+    const kind_js   = JSON.stringify(kind);
+    const params_js = JSON.stringify(params);
+    const nmax_js   = JSON.stringify(nmax);
+
+    // Python script (English), no use_line_collection, no leading spaces
+    const py = `# -*- coding: utf-8 -*-
+# Requires: numpy, matplotlib
+#   pip install numpy matplotlib
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+# ==== Exported data from the web app ====
+# Numerator b, denominator a (a[0]=1), input type and parameters, and Nmax
+b = np.array(${b_js}, dtype=float)              # [b0, b1, ..., bM]
+a_tail = np.array(${aTail_js}, dtype=float)     # [a1, a2, ..., aN] with a0 = 1
+nmax = int(${nmax_js})
+kind = ${kind_js}
+params = ${params_js}
+
+# ==== Utilities ====
+def trim_leading_zeros_desc(p, tol=1e-14):
+    \"\"\"Drop leading ~0 coefficients for polynomials given in descending powers.\"\"\"
+    p = np.array(p, dtype=float)
+    nz = np.flatnonzero(np.abs(p) > tol)
+    if nz.size == 0:
+        return np.array([0.0])
+    return p[nz[0]:]
+
+# Polynomials in z (descending powers)
+D_desc = trim_leading_zeros_desc(np.insert(a_tail, 0, 1.0))   # D(z) = z^N + a1 z^(N-1) + ... + aN
+N_desc = trim_leading_zeros_desc(b)                           # N(z) = b0 z^M + b1 z^(M-1) + ... + bM
+
+def H(z):
+    \"\"\"Transfer function in z using descending-polynomial evaluation.\"\"\"
+    num = np.polyval(N_desc, z)
+    den = np.polyval(D_desc, z)
+    return np.divide(num, den, where=np.abs(den) > 1e-12)
+
+def gen_input(nmax, kind, params):
+    \"\"\"Recreate the same input used in the web app.\"\"\"
+    N = nmax + 1
+    x = np.zeros(N, dtype=float)
+    if kind == 'impulse':
+        A = float(params.get('A', 1)); n0 = int(params.get('n0', 0))
+        if 0 <= n0 <= nmax: x[n0] = A
+    elif kind == 'step':
+        A = float(params.get('A', 1)); n0 = int(params.get('n0', 0))
+        n0 = max(0, n0); x[n0:] = A
+    elif kind == 'pulse':
+        A = float(params.get('A', 1)); n0 = int(params.get('n0', 0)); width = int(params.get('width', 8))
+        i0 = max(0, n0); i1 = min(N, n0 + width); x[i0:i1] = A
+    elif kind == 'ramp':
+        A = float(params.get('A', 0)); n0 = int(params.get('n0', 0)); slope = float(params.get('slope', 1))
+        i0 = max(0, n0); n = np.arange(i0, N); x[i0:] = A + slope * (n - n0)
+    elif kind == 'sine':
+        A = float(params.get('A', 1)); n0 = int(params.get('n0', 0))
+        f = float(params.get('f', 0.30)); phiDeg = float(params.get('phiDeg', 0))
+        w = 2*np.pi*f; phi = np.deg2rad(phiDeg)
+        n = np.arange(N); x = np.where(n < n0, 0.0, A*np.cos(w*(n-n0) + phi))
+    elif kind == 'noise':
+        A = float(params.get('A', 1)); seed = int(params.get('seed', 1234))
+        rng = np.random.default_rng(seed); x = (rng.random(N)*2 - 1) * A
+    elif kind == 'custom':
+        lst = str(params.get('list', '')).replace(',', ' ').split()
+        seq = np.array([float(v) for v in lst], dtype=float) if lst else np.array([], dtype=float)
+        x[:min(N, len(seq))] = seq[:min(N, len(seq))]
+    return x
+
+def lfilter(b, a, x):
+    \"\"\"Direct-time implementation:
+    y[n] = sum b[k] x[n-k] - sum_{k=1..P} a[k] y[n-k], with a[0]=1
+    \"\"\"
+    a = np.array(a, dtype=float); b = np.array(b, dtype=float)
+    N = len(x); y = np.zeros_like(x, dtype=float)
+    M = len(b) - 1; P = len(a) - 1
+    for n in range(N):
+        acc = 0.0
+        for k in range(M+1):
+            if n-k >= 0: acc += b[k] * x[n-k]
+        for k in range(1, P+1):
+            if n-k >= 0: acc -= a[k] * y[n-k]
+        y[n] = acc
+    return y
+
+# Signals and output
+a = np.insert(a_tail, 0, 1.0)     # a[0] = 1
+x = gen_input(nmax, kind, params)
+y = lfilter(b, a, x)
+n = np.arange(nmax + 1)
+
+# Roots (computed in Python, not exported from HTML)
+def safe_roots(p):
+    p = trim_leading_zeros_desc(p)
+    return np.roots(p) if p.size > 1 else np.array([], dtype=complex)
+
+poles = safe_roots(D_desc)
+zeros = safe_roots(N_desc)
+
+def format_root(z):
+    re, im = z.real, z.imag
+    r = np.abs(z); ang = np.degrees(np.arctan2(im, re))
+    sign = '+' if im >= 0 else '-'
+    return f\"({re:.4f} {sign} j{abs(im):.4f}) |z|={r:.4f} ∠={ang:.2f}°\"
+
+print(\"=== Poles (roots of D) ===\")
+if poles.size:
+    for i, z in enumerate(poles, 1):
+        print(f\"p{i} = {format_root(z)}\")
+else:
+    print(\"(no finite poles)\")
+
+print(\"\\n=== Zeros (roots of N) ===\")
+if zeros.size:
+    for i, z in enumerate(zeros, 1):
+        print(f\"z{i} = {format_root(z)}\")
+else:
+    print(\"(no finite zeros)\")
+
+# ==== Plots ====
+# ==== Plots ====
+xcolor = "#3ea0ff"   # same as HTML
+ycolor = "#ff5757"
+
+# 1) Two rows (stems): x[n] and y[n]
+fig1, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 6), sharex=True)
+
+m1, s1, b1 = ax1.stem(n, x, basefmt=" ")
+plt.setp(s1, color=xcolor)
+plt.setp(m1, markerfacecolor=xcolor, markeredgecolor=xcolor)
+ax1.set_title("Input x[n]")
+ax1.grid(True, ls=':', alpha=0.6)
+
+m2, s2, b2 = ax2.stem(n, y, basefmt=" ")
+plt.setp(s2, color=ycolor)
+plt.setp(m2, markerfacecolor=ycolor, markeredgecolor=ycolor)
+ax2.set_title("Output y[n]")
+ax2.set_xlabel("n")
+ax2.grid(True, ls=':', alpha=0.6)
+fig1.tight_layout()
+
+# 2) Overlaid (stems)
+fig2, ax = plt.subplots(figsize=(10, 4))
+
+m3, s3, b3 = ax.stem(n, x, basefmt=" ")
+plt.setp(s3, color=xcolor)
+plt.setp(m3, markerfacecolor=xcolor, markeredgecolor=xcolor)
+
+m4, s4, b4 = ax.stem(n, y, basefmt=" ")
+plt.setp(s4, color=ycolor)
+plt.setp(m4, markerfacecolor=ycolor, markeredgecolor=ycolor)
+
+ax.set_title("Input and output (overlaid)")
+ax.set_xlabel("n")
+ax.grid(True, ls=':', alpha=0.6)
+ax.legend(["x[n]", "y[n]"])
+fig2.tight_layout()
+
+# 3) Pole–zero diagram
+fig3, axp = plt.subplots(figsize=(6, 6))
+th = np.linspace(0, 2*np.pi, 361)
+axp.plot(np.cos(th), np.sin(th), lw=1, color=\"#888888\")  # unit circle
+axp.axhline(0, color=\"#cccccc\", lw=1)
+axp.axvline(0, color=\"#cccccc\", lw=1)
+
+if zeros.size:
+    axp.plot(zeros.real, zeros.imag, marker='o', linestyle='None',
+             mfc='none', mec='green', mew=2, label=\"Zeros\")
+if poles.size:
+    axp.plot(poles.real, poles.imag, marker='x', linestyle='None',
+             color='red', mew=1.5, ms=8, label=\"Poles\")
+
+axp.set_aspect('equal', adjustable='box')  # keep the unit circle circular
+axp.set_xlabel(\"Re{z}\")
+axp.set_ylabel(\"Im{z}\")
+axp.set_title(\"Pole–zero diagram\")
+axp.grid(True, ls=':', alpha=0.6)
+# Uncomment if you want a legend:
+# axp.legend()
+
+plt.show()
+`.trimStart();
+    return py;
+    }
+
+  // Botón: copiar al portapapeles
+  const copyBtn = document.getElementById('copyPy');
+  if(copyBtn){
+    copyBtn.addEventListener('click', async ()=>{
+      try{
+        const code = buildPythonScript();
+        await navigator.clipboard.writeText(code);
+        const st = $('copyStatus');
+        if(st){ st.textContent = STR[state.lang].copied; setTimeout(()=>st.textContent='', 2500); }
+      }catch(err){
+        const st = document.getElementById('copyStatus');
+        if(st){ st.textContent = 'No se pudo copiar. (¿Permisos del navegador?)'; setTimeout(()=>st.textContent='', 3000); }
+        console.error(err);
+      }
+    });
+  }
+
+
+  // Inicialización
+  function init(){
+    applyLang();
+    populateInputTypeSelect();
+    renderPresetLabels();
+    buildInputParamsUI();
+    ensurePlots();
+    linkXRanges('plotX', 'plotY');
+    linkXRanges('plotY', 'plotX');
+    recalcAndRender();
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
