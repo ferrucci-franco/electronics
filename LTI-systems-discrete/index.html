@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" data-theme="auto">
+<html lang="en" data-theme="auto">
 <head>
   <meta charset="utf-8" />
   <title>🧪 Demo — Respuesta de sistemas discretos (LTI)</title>
@@ -716,30 +716,26 @@
     // --- AUTO-ZOOM CUADRADO (simétrico alrededor de 0, incluye círculo unidad) ---
     const allX = [...z_re, ...p_re, -1, 1];   // asegura incluir ±1 por el círculo unidad
     const allY = [...z_im, ...p_im, -1, 1];
-
-    const maxAbs = Math.max(
-      1,
-      ...allX.map(v => Math.abs(v)),
-      ...allY.map(v => Math.abs(v))
-    );
-    const pad = 1.15; // margen ~15%
-    const lim = maxAbs * pad;
+ 
+    const ranges = pzComputeRanges(poles, zeros, {pad:1.15, square:true});
 
     const t = STR[state.lang] || STR.es;
     const titleTxt = `${t.pzTitle} — ${stable? t.stableOK+' ✅' : t.stableBAD+' ❌'}`;
     const layout = {
       title: {text:titleTxt, font:{size:16, color:cssVar('--fg')}},
-      <!-- xaxis:{range:[-lim,lim], zeroline:false, scaleanchor:'y', scaleratio:1, title:'Re{z}', gridcolor:cssVar('--grid'), color:cssVar('--fg')}, -->
-      <!-- yaxis:{range:[-lim,lim], zeroline:false, title:'Im{z}', gridcolor:cssVar('--grid'), color:cssVar('--fg')}, -->
       xaxis:{
-        range:[-lim,lim], zeroline:false,
+        range: ranges.x,   // aquí usamos ranges.x
+        zeroline:false,
+        scaleanchor:'y',
+        scaleratio:1,
         title:'Re{z}',
         gridcolor:cssVar('--grid'), color:cssVar('--fg')
       },
       yaxis:{
-        range:[-lim,lim], zeroline:false,
-        title:'Im{z}',
-        gridcolor:cssVar('--grid'), color:cssVar('--fg')
+          range: ranges.y,   // aquí usamos ranges.y
+          zeroline:false,
+          title:'Im{z}',
+          gridcolor:cssVar('--grid'), color:cssVar('--fg')
       },
       margin:{l:50,r:20,t:40,b:40},
       showlegend:false,
@@ -748,7 +744,61 @@
     };
 
     const data = [uc, axisX, axisY, zerosTrace, polesTrace];
-    Plotly.react('pzPlot', data, layout, {displayModeBar:false, responsive:true});
+    
+    //Plotly.react('pzPlot', data, layout, {displayModeBar:false, responsive:true});
+    Plotly.react('pzPlot', data, layout, {
+      displayModeBar:false,
+      responsive:true,
+      doubleClick:false   // desactiva el autorange por defecto
+    });
+  
+    // bind una sola vez
+    const pzEl = document.getElementById('pzPlot');
+    if (pzEl && !pzEl.__pzDblBound && typeof pzEl.on === 'function'){
+      pzEl.__pzDblBound = true;
+      pzEl.on('plotly_doubleclick', () => {
+        const ranges = pzComputeRanges(state.pz.poles, state.pz.zeros, {pad:1.15, square:true}); // o false
+        pzApplyRanges(ranges);
+      });
+    }
+  }
+  
+  function pzComputeRanges(poles, zeros, {pad=1.15, square=true}={}){
+    const zx = zeros.map(z=>z.re), zy=zeros.map(z=>z.im);
+    const px = poles.map(z=>z.re), py=poles.map(z=>z.im);
+  
+    // Incluye al menos el círculo unidad (±1)
+    const allX = [...zx, ...px, -1, 1];
+    const allY = [...zy, ...py, -1, 1];
+  
+    if(!allX.length || !allY.length){
+      return {x:[-1.2, 1.2], y:[-1.2, 1.2]};
+    }
+  
+    if(square){
+      const maxAbs = Math.max(
+        1,
+        ...allX.map(Math.abs),
+        ...allY.map(Math.abs)
+      );
+      const lim = maxAbs * pad;
+      return { x:[-lim, lim], y:[-lim, lim] };
+    }else{
+      const minX = Math.min(...allX), maxX = Math.max(...allX);
+      const minY = Math.min(...allY), maxY = Math.max(...allY);
+      const padX = Math.max((maxX-minX)*0.10, 0.2);
+      const padY = Math.max((maxY-minY)*0.10, 0.2);
+      return { x:[minX-padX, maxX+padX], y:[minY-padY, maxY+padY] };
+    }
+  }
+  
+  function pzApplyRanges(ranges){
+    Plotly.relayout('pzPlot', {
+      'xaxis.autorange': false,
+      'yaxis.autorange': false,
+      'xaxis.range': ranges.x,
+      'yaxis.range': ranges.y
+    });
   }
 
   function deg(a){ return a*180/Math.PI; }
@@ -789,6 +839,8 @@
   function updatePZ(){
     plotPZ(state.pz.poles, state.pz.zeros, state.pz.stable);
     buildList();
+    const ranges = pzComputeRanges(state.pz.poles, state.pz.zeros, {pad:1.15, square:true});
+    pzApplyRanges(ranges);
   }
 
   function recalcAndRender(){ recalc(); updatePlots(); }
@@ -1182,7 +1234,6 @@ plt.show()
       }
     });
   }
-
 
   // Inicialización
   function init(){
