@@ -9,13 +9,13 @@
     --bg:#0f1222; --fg:#e9ecf4; --muted:#a9b0c3; --card:#1a2036;
     --accent:#5aa9ff; --grid:#273054; --axis:#3a476f;
     --a:#8fd3ff; --b:#ffb686; --red:#ff4d4d;
-    --material:#1fbf7a;
+    --material:#1a9c65;
   }
   [data-theme="light"]{
     --bg:#ffffff; --fg:#111624; --muted:#55607a; --card:#f5f7fb;
     --accent:#0b6cff; --grid:#d6dbee; --axis:#c3cbe4;
     --a:#0b6cff; --b:#ff8b3d; --red:#d62828;
-    --material:#18a568;
+    --material:#1a9c65;
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.45 system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
@@ -26,8 +26,44 @@
   .seg{display:inline-flex;background:var(--card);border:1px solid var(--grid);border-radius:14px;overflow:hidden}
   .seg button{border:0;background:transparent;color:var(--muted);padding:8px 14px;font-weight:600;cursor:pointer}
   .seg button.active{background:var(--bg);color:var(--fg)}
+  /* ——— Mejora de contraste en tema claro (segmento activo) ——— */
+  [data-theme="light"] .seg button.active{
+    background:#eaf2ff; /* fallback */
+    background:color-mix(in srgb, var(--accent) 14%, #fff);
+    color:var(--fg);
+    box-shadow: inset 0 0 0 2px var(--accent);
+  }
+  [data-theme="light"] .seg button:not(.active){
+    opacity:.75;
+  }
+  /* Accesibilidad: anillo de foco visible */
+  .seg button:focus-visible{
+    outline:2px solid var(--accent);
+    outline-offset:2px;
+  }
+  
   .iconbtn{border:1px solid var(--grid);background:var(--card);border-radius:14px;padding:8px 10px;cursor:pointer;font-weight:700}
-
+  /* Botón media (play/pause) con SVG */
+  .iconbtn--media{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:40px}
+  .iconbtn--media svg{width:16px;height:16px;display:block;fill:currentColor}
+  /* Más contraste en tema claro */
+  [data-theme="light"] .iconbtn--media{background:#fff}
+  /* ——— Colores para estado "running" ——— */
+  :root{
+    --play-on-bg:#1f8f4d; /* dark theme */
+    --play-on-fg:#ffffff;
+  }
+  [data-theme="light"]{
+    --play-on-bg:#27ae60; /* light theme */
+    --play-on-fg:#ffffff;
+  }
+  .iconbtn--media.is-running{
+    background:var(--play-on-bg)!important;
+    color:var(--play-on-fg)!important;
+    border-color:transparent!important;
+    box-shadow:inset 0 0 0 2px color-mix(in srgb, var(--play-on-bg) 35%, transparent);
+  }  
+  
   .grid{display:grid;grid-template-columns:420px 1fr;gap:16px;margin-top:12px}
   @media (max-width:980px){ .grid{grid-template-columns:1fr} }
   .card{background:var(--card);border-radius:14px;padding:14px;box-shadow:0 6px 18px rgba(0,0,0,.12)}
@@ -60,6 +96,35 @@
   canvas{display:block;width:100%;height:140px;background:transparent;border:1px solid var(--grid);border-radius:12px}
   .hintcard{margin-top:10px;border:1px solid var(--grid);border-radius:12px;padding:12px;background:transparent}
   .hintcard .hint{font-size:18px}
+  
+  /* Colores RPM (se sobre-escriben desde JS si quieres) */
+  :root{
+    --rpm-neg: #ff6b6b;  /* barra/texto para rpm < 0 */
+    --rpm-pos: #2ecc71;  /* barra/texto para rpm > 0 */
+  }
+  
+  /* Pista bicolor con corte al centro */
+  #rpm::-webkit-slider-runnable-track{
+    height:10px; border-radius:999px;
+    background:linear-gradient(90deg,var(--rpm-neg) 0 50%, #0000 50% 50%, var(--rpm-pos) 50% 100%);
+    outline:1px solid var(--grid);
+  }
+  #rpm::-moz-range-track{
+    height:10px; border-radius:999px;
+    background:linear-gradient(90deg,var(--rpm-neg) 0 50%, #0000 50% 50%, var(--rpm-pos) 50% 100%);
+    outline:1px solid var(--grid);
+  }
+  
+  /* Thumb */
+  #rpm::-webkit-slider-thumb{
+    appearance:none; width:18px; height:18px; border-radius:50%;
+    background:#fff; border:2px solid #0003; margin-top:-4px;
+    box-shadow:0 2px 6px rgba(0,0,0,.25);
+  }
+  #rpm::-moz-range-thumb{
+    width:18px; height:18px; border-radius:50%;
+    background:#fff; border:2px solid #0003; box-shadow:0 2px 6px rgba(0,0,0,.25);
+  }
 </style>
 </head>
 <body data-theme="dark">
@@ -115,7 +180,17 @@
           <button data-mode="manual" class="active" id="btnManual">Manual</button>
           <button data-mode="const" id="btnConst">Constant speed</button>
         </div>
-        <button id="play" class="iconbtn" title="Play/Pause" disabled>▶</button>
+        <button id="play" class="iconbtn iconbtn--media" title="Play" aria-pressed="false" disabled>
+          <!-- Play -->
+          <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true">
+            <polygon points="8,5 19,12 8,19"></polygon>
+          </svg>
+          <!-- Pause -->
+          <svg class="icon-pause" viewBox="0 0 24 24" aria-hidden="true" hidden>
+            <rect x="6" y="5" width="4" height="14" rx="1.5"></rect>
+            <rect x="14" y="5" width="4" height="14" rx="1.5"></rect>
+          </svg>
+        </button>
         <button id="reset" class="primary"><span id="t_reset">Reset</span></button>
       </div>
 
@@ -129,8 +204,8 @@
         <label id="t_countMode">Counting</label>
         <select id="countMode">
           <option value="x4">All edges (×4)</option>
-          <option value="x2">Rising edges of A & B (×2)</option>
-		  <option value="x1">Rising edge of A (×1)</option>
+          <option value="x2">A edges (rise &amp; fall) (×2)</option>
+          <option value="x1">A rising edges (×1)</option>
         </select>
         <label for="ppr" id="t_ppr" style="margin-left:8px">PPR</label>
         <input id="ppr" type="number" min="1" max="1024" step="1" value="10" style="width:90px" />
@@ -182,19 +257,19 @@ const I18N={
     mode:"Mode",manual:"Manual",const:"Constant speed",rpm:"RPM",count:"Counting",
     reset:"Reset",abs:"Counter (abs)",tangle:"True angle (deg)",mangle:"Measured angle",
     ppr:"PPR",
-    x4:"All edges (×4)",x2:"Rising edges of A & B (×2)", x1:"Rising edge of A (×1)"},
+    x4:"All edges (×4)",x2:"A edges (rise & fall) (×2)", x1:"Rising edge of A (×1)"},
   es:{title:"Encoder incremental – Interactivo",wheel:"Rueda (arrastra para girar)",
     hint:"Tip: arrastra con mouse/touch. Shift: 5°. También ←/→.",
     mode:"Modo",manual:"Manual",const:"Velocidad constante",rpm:"RPM",count:"Conteo",
     reset:"Reset",abs:"Contador (absoluto)",tangle:"Ángulo real (deg)",mangle:"Ángulo medido",
     ppr:"PPR",
-    x4:"Todos los flancos (×4)",x2:"Flancos de subida de A y B (×2)", x1:"Flancos de subida de A (×1)"},
+    x4:"Todos los flancos (×4)",x2:"Flancos de A (±) (×2)", x1:"Flancos de subida de A (×1)"},
   fr:{title:"Codeur incrémental – Interactif",wheel:"Roue (faire glisser pour tourner)",
     hint:"Astuce : Maj = 5°. Aussi ←/→.",
     mode:"Mode",manual:"Manuel",const:"Vitesse constante",rpm:"RPM",count:"Comptage",
     reset:"Reset",abs:"Compteur (absolu)",tangle:"Angle réel (deg)",mangle:"Angle mesuré",
     ppr:"PPR",
-    x4:"Tous les fronts (×4)",x2:"Fronts montants de A & B (×2)", x1:"Fronts montants de A (×1)"}
+    x4:"Tous les fronts (×4)",x2:"Fronts de A (montants & descendants) (×2)", x1:"Fronts montants de A (×1)"}
 };
 function setLang(code){
   const t=I18N[code]||I18N.en;
@@ -218,7 +293,7 @@ function setLang(code){
   const tip = document.getElementById('t_hintDrag');
   tip.textContent = t.hint;
   tip.style.fontWeight = '700';
-  tip.style.setProperty('font-size', '18px', 'important'); // vence reglas previas
+  tip.style.setProperty('font-size', '18px', 'important');
 }
 const langSegEl=document.getElementById('langSeg');
 langSegEl.addEventListener('click',e=>{
@@ -230,34 +305,21 @@ langSegEl.addEventListener('click',e=>{
 setLang('en');
 
 /* ==== Config ==== */
+const RPM_POS_COLOR = '#5fbfad';
+const RPM_NEG_COLOR = '#e07b7b';
 let PPR=10;
-// Where to place the red time cursor within the window [0..1]. 1.0 = right edge, 0.5 = center
 const VIEW_FACTOR = 0.8;
-function oddParityDeg(){
-  return (PPR % 2) ? (180/PPR) : 0; // half-slot mechanical shift for odd PPR
-}
-
+function oddParityDeg(){ return (PPR % 2) ? (180/PPR) : 0; }
 const SNAP_DEG=5;
-const KEY_STEP_DEG=1;           // base ←/→ (Shift: ×5)
+const KEY_STEP_DEG=1;
 const PHASE_A_ELEC=-0.25;
 const PHASE_B_ELEC=-0.5;
-
-// Absolute sensor azimuth: +X = 0°, top(North) ≈ -90°
 const SENSOR_AZIMUTH_DEG = -90;
-// Convención para mostrar el ángulo verdadero:
-//  +1  → CCW positivo (convención habitual)
-//  -1  → CW  positivo (lo que pides)
 const TRUE_ANGLE_DIR = 1;
+const COUNT_DIR = 1;
+const INIT_OFFSET_DEG = 0;
 
-// Signo del contador y del ángulo medido:
-//  +1 → CCW positivo (convención clásica)
-//  -1 → CW  positivo
-const COUNT_DIR = 1;   // pon +1 si quieres volver a CCW+
-
-// OFFSET: initial 1/4-step CCW (positive) to avoid bad initial alignment
-const INIT_OFFSET_DEG = 0; //360/(PPR*4);
-
-/* ==== Geometría y máscaras ==== */
+/* ==== Geometría y rotor ==== */
 const CX=180, CY=180;
 const R_EXT=150, R_CORE=20;
 const R_A_IN=40, R_A_OUT=80;
@@ -265,27 +327,11 @@ const R_B_IN=90, R_B_OUT=130;
 const NOTCH_angle=0, NOTCH_deg=15, NOTCH_depth=8;
 const viewMarginRATIO = 0.08;
 
-function buildMask(maskId,rOut,rIn,slots,phaseElec){
-  const phaseDeg=phaseElec*(360/slots);
-  const m=document.getElementById(maskId); m.innerHTML='';
-  const full=document.createElementNS("http://www.w3.org/2000/svg","rect");
-  full.setAttribute('x',0); full.setAttribute('y',0); full.setAttribute('width',360);
-  full.setAttribute('height',360); full.setAttribute('fill','white'); m.appendChild(full);
-  const inner=document.createElementNS("http://www.w3.org/2000/svg","circle");
-  inner.setAttribute('cx',CX); inner.setAttribute('cy',CY); inner.setAttribute('r',rIn);
-  inner.setAttribute('fill','black'); m.appendChild(inner);
-  const slotAngle=360/slots, open=slotAngle/2;
-  for(let k=0;k<slots;k++){
-    const a=(k*slotAngle+phaseDeg-open/2)*Math.PI/180;
-    const b=(k*slotAngle+phaseDeg+open/2)*Math.PI/180;
-    const path=document.createElementNS("http://www.w3.org/2000/svg","path");
-    const p=[[CX+rIn*Math.cos(a),CY+rIn*Math.sin(a)],[CX+rOut*Math.cos(a),CY+rOut*Math.sin(a)],
-             [CX+rOut*Math.cos(b),CY+rOut*Math.sin(b)],[CX+rIn*Math.cos(b),CY+rIn*Math.sin(b)]];
-    path.setAttribute('d',`M ${p[0][0]} ${p[0][1]} L ${p[1][0]} ${p[1][1]} L ${p[2][0]} ${p[2][1]} L ${p[3][0]} ${p[3][1]} Z`);
-    path.setAttribute('fill','black'); m.appendChild(path);
-  }
-}
-// Replaced masks with generator buildEncoderSVG()
+// aplica a CSS vars para la pista
+document.documentElement.style.setProperty('--rpm-pos', RPM_POS_COLOR);
+document.documentElement.style.setProperty('--rpm-neg', RPM_NEG_COLOR);
+
+// Construcción del rotor (usa buildEncoderSVG de encoder_svg.js)
 (function(){
   try{
     var materialColor = getComputedStyle(document.body).getPropertyValue('--material').trim() || '#1fbf7a';
@@ -314,16 +360,12 @@ const labA=document.getElementById('labA'), labB=document.getElementById('labB')
 (function placeDots(){
   const rB=(R_A_IN+R_A_OUT)/2;
   const rA=(R_B_IN+R_B_OUT)/2;
-   
   dotA.setAttribute('cx',CX); 
   dotA.setAttribute('cy',CY-rA*(1+viewMarginRATIO));
-  
   labA.setAttribute('x',CX+12); 
   labA.setAttribute('y',CY-rA+4);
-  
   dotB.setAttribute('cx',CX); 
   dotB.setAttribute('cy',CY-rB*(1+viewMarginRATIO));
-  
   labB.setAttribute('x',CX+12); 
   labB.setAttribute('y',CY-rB+4);
 })();
@@ -333,8 +375,7 @@ let thetaDeg=0, lastThetaDeg=0;         // ángulo real acumulativo (CCW positiv
 let mode='manual', running=false;
 let rpm=0;
 let countModeVal='x4';
-let countAbsX4=0, countAbsX2=0, countAbsX1 = 0, prevAB=null;
-let accX4=0, accX2=0, accX1=0;
+let countAbsX4=0, countAbsX2=0, countAbsX1 = 0;
 let tSim=0, lastSampleT=-1, winWindow=0.5;
 let keyMovePending=false;
 
@@ -345,7 +386,13 @@ const rpmRow=document.getElementById('rpmRow');
 const rpmSlider=document.getElementById('rpm');
 const rpmVal=document.getElementById('rpmVal');
 const countModeEl=document.getElementById('countMode');
-rpmSlider.oninput=()=>{ rpm=+rpmSlider.value; rpmVal.textContent=rpm.toFixed(1); };
+rpmSlider.oninput = ()=>{
+  rpm = +rpmSlider.value;
+  rpmVal.textContent = rpm.toFixed(1);
+  rpmVal.style.color = (rpm > 0) ? RPM_POS_COLOR
+                     : (rpm < 0) ? RPM_NEG_COLOR
+                     : getComputedStyle(document.body).getPropertyValue('--fg').trim();
+};
 
 // Estado inicial: Manual -> slider deshabilitado
 (function initManual(){
@@ -362,14 +409,26 @@ modeSeg.addEventListener('click',e=>{
   rpmRow.classList.toggle('disabled',!isConst);
   rpmSlider.disabled=!isConst;
   playBtn.disabled=!isConst;
-  if(!isConst){ running=false; playBtn.textContent='▶'; }
+  if(!isConst){ running=false; setPlayVisual(false); }
 });
-playBtn.onclick=()=>{ running=!running; playBtn.textContent=running?'⏸':'▶'; };
+
+function setPlayVisual(isRunning){
+  playBtn.setAttribute('aria-pressed', String(isRunning));
+  playBtn.title = isRunning ? 'Pause' : 'Play';
+  const p = playBtn.querySelector('.icon-play');
+  const q = playBtn.querySelector('.icon-pause');
+  if(p && q){ p.hidden = isRunning; q.hidden = !isRunning; }
+  playBtn.classList.toggle('is-running', !!isRunning);  
+}
+playBtn.onclick=()=>{ running=!running; setPlayVisual(running); };
+setPlayVisual(false);
 
 // Cambiar tipo de conteo: NO resetear nada; solo cambiar lo que se muestra
 countModeEl.onchange=e=>{
   countModeVal=e.target.value;
-  updateMetrics(); // mostrar inmediatamente según la selección
+  updateMetrics();
+  updateResInfo();
+  onCountingParamsChanged();
 };
 
 // === PPR control ===
@@ -394,14 +453,15 @@ function rebuildRotor(){
 
 function resetAll(){
   thetaDeg=0; lastThetaDeg=0;
-  countAbsX4=0; countAbsX2=0; countAbsX1=0; prevAB=null;
+  thetaCumDeg=0; q4_prev=0; phaseOffCycles=0;
+  countAbsX4=0; countAbsX2=0; countAbsX1=0;
   tSim=0; lastSampleT=-1; winWindow=0.5;
   tSeriesA.length=0; tSeriesB.length=0;
   drawPlots(true);
   updateMetrics();
-  // ensure visual reset
   const phi=(((thetaDeg + INIT_OFFSET_DEG + oddParityDeg())%360)+360)%360;
   rotorEl.setAttribute('transform',`rotate(${phi} ${CX} ${CY})`);
+  onCountingParamsChanged();
 }
 
 function updateResInfo(){
@@ -421,17 +481,13 @@ if(pprInput){
     rebuildRotor();
     resetAll();
     updateResInfo();
+    onCountingParamsChanged();
   };
   pprInput.addEventListener('change', commit);
   pprInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter') { e.preventDefault(); commit(); }});
 }
 
-countModeEl.addEventListener('change', updateResInfo);
-
-// initial res info once DOM painted
 setTimeout(updateResInfo, 0);
-
-// Reset manual (este sí resetea todo)
 resetBtn.onclick=()=>{ resetAll(); };
 
 /* ==== Arrastre (CCW positivo) ==== */
@@ -446,8 +502,8 @@ wheelSVG.addEventListener('pointerdown',e=>{ wheelSVG.setPointerCapture(e.pointe
 window.addEventListener('pointermove',e=>{
   if(!dragging || mode!=='manual') return;
   const a=angleAt(e);
-  let d=a-prevAng; d=((d+540)%360)-180; // delta CCW positivo
-  thetaDeg += d;                        // CCW aumenta
+  let d=a-prevAng; d=((d+540)%360)-180;
+  thetaDeg += d;
   prevAng=a;
   if(e.shiftKey){ thetaDeg=Math.round(thetaDeg/SNAP_DEG)*SNAP_DEG; }
 });
@@ -458,47 +514,77 @@ window.addEventListener('keydown',e=>{
   if(e.key==='ArrowLeft' || e.key==='ArrowRight'){
     e.preventDefault();
     const mul=e.shiftKey?5:1;
-    // → suma (CCW+), ← resta (CW−). Dime si lo prefieres invertido.
     const step = mul*KEY_STEP_DEG*(e.key==='ArrowRight'? +1 : -1);
     thetaDeg += step; keyMovePending=true;
   }
 });
 
 /* ==== Señales y conteo en paralelo (CCW = +1) ==== */
-// dynamic CPR via currentCPR()
-
 function ABfromTheta(th){
-  // Apply initial offset and odd-PPR compensation (keeps A/B aligned with SVG)
-  //th += INIT_OFFSET_DEG + oddParityDeg();
-  th += INIT_OFFSET_DEG;
-  
-  th += SENSOR_AZIMUTH_DEG;  // align logical model with sensor at top
+  th += INIT_OFFSET_DEG + oddParityDeg();
+  th += SENSOR_AZIMUTH_DEG;
   let eA=th/360*PPR + PHASE_A_ELEC;
   let eB=th/360*PPR + PHASE_B_ELEC;
-  
-  const A = (((eA%1)+1)%1) < 0.5 ? 1 : 0;
-  const B = (((eB%1)+1)%1) < 0.5 ? 1 : 0;
-  
+  const Araw = (((eA%1)+1)%1) < 0.5 ? 1 : 0;
+  const Braw = (((eB%1)+1)%1) < 0.5 ? 1 : 0;
+  const A = (PPR % 2) ? (1 - Araw) : Araw;
+  const B = (PPR % 2) ? (1 - Braw) : Braw;
   return [A,B];
 }
-const CCW_TRANS=new Set([0b0001,0b0111,0b1110,0b1000]); // 00->01->11->10->00
-const CW_TRANS =new Set([0b0010,0b0100,0b1101,0b1011]);
-function updateCountingBoth(A,B){
-  if(prevAB===null){ prevAB=[A,B]; return; }
-  const [pA,pB]=prevAB; if(A===pA && B===pB){ return; }
-  const code=(pA<<3)|(pB<<2)|(A<<1)|B;
-  const isNeighbor=((pA^A)+(pB^B))===1;
-  if(isNeighbor){
-    const dir0 = CCW_TRANS.has(code) ? +1 : (CW_TRANS.has(code) ? -1 : 0);
-    const dir  = COUNT_DIR * dir0;   // ← aplica la convención
-    // x4: cada transición suma
-    countAbsX4 += dir;
-    // x2: solo flancos de subida (en cualquiera de los dos canales)
-    const risingA=(pA===0&&A===1), risingB=(pB===0&&B===1);
-    if(risingA || risingB) countAbsX2 += dir;
-	if (risingA) countAbsX1 += dir;
+
+// === Quantized counting aligned to real edges (BASE x4) ===
+let thetaCumDeg = 0;
+let q4_prev = 0;
+let phaseOffCycles = 0;
+const EPS_EDGE = 1e-9;
+
+// Calibrate offset so x4 borders match the real rising edge of A
+function calibratePhaseOffset(){
+  const STEP = 0.05; // deg
+  let prevA = null, edgeThetaDeg = null;
+  for(let th=0; th<360; th+=STEP){
+    const [A,_B] = ABfromTheta(th);
+    if(prevA===null){ prevA = A; continue; }
+    if(prevA===0 && A===1){ edgeThetaDeg = th; break; }
+    prevA = A;
   }
-  prevAB=[A,B];
+  phaseOffCycles = (edgeThetaDeg!==null) ? (-edgeThetaDeg/360) : 0;
+  const q4 = Math.floor(PPR * 4 * ((thetaCumDeg/360) + phaseOffCycles) + EPS_EDGE);
+  q4_prev = q4;
+}
+
+// Count how many integers n in (a, b] satisfy n % 4 in residues; signed by direction
+function countResiduesCrossed(a, b, residues){
+  if(b === a) return 0;
+  const dir = (b > a) ? 1 : -1;
+  const lo = dir > 0 ? a : b;
+  const hi = dir > 0 ? b : a;
+  let c = 0;
+  for(const r of residues){
+    c += Math.floor((hi - r)/4) - Math.floor((lo - r)/4);
+  }
+  return dir * c;
+}
+
+function onCountingParamsChanged(){ calibratePhaseOffset(); }
+
+// Count with x4 base; derive x2 and x1 by residue logic
+function tickAlignedCount(deltaDeg){
+  thetaCumDeg += deltaDeg;
+  const q4 = Math.floor(PPR * 4 * ((thetaCumDeg/360) + phaseOffCycles) + EPS_EDGE);
+  if(q4 !== q4_prev){
+    const dq4 = q4 - q4_prev;
+    // x4: todos los bordes (A± y B±)
+    countAbsX4 += COUNT_DIR * dq4;
+    // x2: flancos de A (±) → residuos 0 (A↑) y 2 (A↓)
+    const c2 = countResiduesCrossed(q4_prev, q4, [0,2]);
+    if(c2) countAbsX2 += COUNT_DIR * c2;
+    // x1: A↑ en el sentido del movimiento (0 al avanzar, 2 al retroceder)
+    const residuesX1 = (dq4 >= 0) ? [0] : [2];
+    const c1 = countResiduesCrossed(q4_prev, q4, residuesX1);
+    if(c1) countAbsX1 += COUNT_DIR * c1;
+    q4_prev = q4;    
+  }
 }
 
 /* ==== Plots (step) ==== */
@@ -514,45 +600,68 @@ function pushSample(t,A,B,win){
   if(tSeriesB.length>MAX) tSeriesB.splice(0,tSeriesB.length-MAX);
 }
 function drawStep(ctx,canvas,series,color,tCenter,win){
-  const W=canvas.width,H=canvas.height,P=10;
+  const W=canvas.width, H=canvas.height, P=10;
+  const X_PAD = 19;
+  const LEFT  = P + X_PAD;
+  const WIDTH = W - 2*P - X_PAD;
+
   ctx.clearRect(0,0,W,H);
+
   ctx.strokeStyle=getComputedStyle(document.body).getPropertyValue('--axis');
-  ctx.strokeRect(P,P,W-2*P,H-2*P);
+  ctx.strokeRect(LEFT, P, WIDTH, H-2*P);
+
   ctx.strokeStyle=getComputedStyle(document.body).getPropertyValue('--grid');
   ctx.beginPath();
-  ctx.moveTo(P,(H-P-P)*0.25+P); ctx.lineTo(W-P,(H-P-P)*0.25+P);
-  ctx.moveTo(P,(H-P-P)*0.75+P); ctx.lineTo(W-P,(H-P-P)*0.75+P); ctx.stroke();
+  const yMid = (H-P-P)*0.5 + P;
+  ctx.moveTo(LEFT, yMid); 
+  ctx.lineTo(LEFT + WIDTH, yMid);
+  ctx.stroke();
+
   if(series.length===0) return;
-  // const t0=tCenter-win/2, mapX=t=>P+(t-t0)/win*(W-2*P), y0=v=>(1-v)*(H-2*P)+P;
-  const t0=tCenter - win*VIEW_FACTOR, mapX=t=>P+(t-t0)/win*(W-2*P), y0=v=>(1-v)*(H-2*P)+P;
-  let v=series[0][1]; for(let i=0;i<series.length;i++){ if(series[i][0]<=t0) v=series[i][1]; else break; }
+
+  const t0   = tCenter - win*VIEW_FACTOR;
+  const mapX = (t) => LEFT + (t - t0) / win * WIDTH;
+  const y0   = (v)  => (1 - v) * (H - 2*P) + P;
+
+  let v=series[0][1]; 
+  for(let i=0;i<series.length;i++){ if(series[i][0]<=t0) v=series[i][1]; else break; }
+
   ctx.strokeStyle=color; ctx.lineWidth=2; ctx.beginPath();
-  let xPrev=mapX(t0), yPrev=y0(v); ctx.moveTo(xPrev,yPrev);
+  let xPrev = mapX(t0), yPrev = y0(v);
+  ctx.moveTo(xPrev, yPrev);
+
   for(let i=0;i<series.length;i++){
     const [ts,vs]=series[i]; if(ts<t0) continue;
-    const x=mapX(ts); ctx.lineTo(x,yPrev);
+    const x=mapX(ts);
+    ctx.lineTo(x, yPrev);
     if(v!==vs){ const y=y0(vs); ctx.lineTo(x,y); yPrev=y; v=vs; }
   }
-  ctx.lineTo(P+(W-2*P),yPrev); ctx.stroke();
-  // const xc=(W-2*P)/2+P;
-  const xc=P + VIEW_FACTOR*(W-2*P);
-  ctx.strokeStyle=getComputedStyle(document.body).getPropertyValue('--red'); ctx.lineWidth=1.5;
+  ctx.lineTo(LEFT + WIDTH, yPrev); 
+  ctx.stroke();
+
+  const xc = LEFT + VIEW_FACTOR * WIDTH;
+  ctx.strokeStyle=getComputedStyle(document.body).getPropertyValue('--red'); 
+  ctx.lineWidth=1.5;
   ctx.beginPath(); ctx.moveTo(xc,P); ctx.lineTo(xc,H-P); ctx.stroke();
+
+  ctx.fillStyle=getComputedStyle(document.body).getPropertyValue('--fg');
+  ctx.font="18px monospace";
+  ctx.fillText("1", LEFT-18, P+6);
+  ctx.fillText("0", LEFT-18, H-6);
 }
+
 function drawPlots(){
   if(mode==='const' && running && Math.abs(rpm)>1e-6){
     const fA = Math.abs(rpm)*PPR/60;
     winWindow = Math.max(0.2, Math.min(5, 4/Math.max(0.1, fA)));
   }
 
-  // Señales directamente para dibujar
   const [A, B] = ABfromTheta(thetaDeg);
 
   pushSample(tSim, A, B, winWindow);
   drawStep(ctxA, plotA, tSeriesA, getComputedStyle(document.body).getPropertyValue('--a'), tSim, winWindow);
   drawStep(ctxB, plotB, tSeriesB, getComputedStyle(document.body).getPropertyValue('--b'), tSim, winWindow);
 }
-
 
 /* ==== Métricas ==== */
 const mAbs=document.getElementById('m_abs');
@@ -571,7 +680,7 @@ function currentCPR(){
 
 function updateMetrics(){
   const cnt=currentCount(), cpr=currentCPR();
-  const angMeasuredAbs=(cnt/cpr)*360; // CCW positivo
+  const angMeasuredAbs=(cnt/cpr)*360;
   mAbs.textContent=cnt.toString();
   mTrue.textContent = `${(TRUE_ANGLE_DIR * thetaDeg).toFixed(2)}°`;
   mAngAbs.textContent=`${angMeasuredAbs.toFixed(2)}°`;
@@ -584,7 +693,7 @@ function tick(){
   const t=performance.now(), dt=(t-lastT)/1000; lastT=t;
 
   if(mode==='const' && running){
-    const omega=rpm*2*Math.PI/60;      // rpm>0 => CCW(+)
+    const omega=rpm*2*Math.PI/60;
     thetaDeg += omega*180/Math.PI*dt;
     tSim += dt;
   }else if(mode==='manual'){
@@ -593,20 +702,11 @@ function tick(){
   const deltaDeg = thetaDeg - lastThetaDeg;
   lastThetaDeg=thetaDeg;
 
-  // Robust counting by integrating angle delta (no missed pulses)
-  accX4 += COUNT_DIR * (PPR*4) * (deltaDeg/360);
-  accX2 += COUNT_DIR * (PPR*2) * (deltaDeg/360);
-  accX1 += COUNT_DIR * (PPR*1) * (deltaDeg/360);
-  let inc4 = Math.trunc(accX4); countAbsX4 += inc4; accX4 -= inc4;
-  let inc2 = Math.trunc(accX2); countAbsX2 += inc2; accX2 -= inc2;
-  let inc1 = Math.trunc(accX1); countAbsX1 += inc1; accX1 -= inc1;
+  // Conteo robusto por cuantización alineada (sin pérdidas)
+  tickAlignedCount(deltaDeg);
 
-  // Only the drawing wraps 0..360; true angle remains cumulative
   const phi=(((thetaDeg + INIT_OFFSET_DEG + oddParityDeg())%360)+360)%360;
-  rotorEl.setAttribute('transform',`rotate(${phi} ${CX} ${CY})`); // positive => CCW visual
-
-  const [A,B]=ABfromTheta(thetaDeg);
-  // counting now handled by angle-delta integration (no missed pulses)
+  rotorEl.setAttribute('transform',`rotate(${phi} ${CX} ${CY})`);
 
   updateMetrics();
   drawPlots();
@@ -615,35 +715,10 @@ function tick(){
 }
 requestAnimationFrame(tick);
 </script>
-
-<script>
-(function(){
-  function currentCPR_local(){
-    var sel = document.getElementById('countMode');
-    if(!sel) return null;
-    var val = sel.value;
-    try{
-      return (val === 'x4') ? (PPR*4)
-           : (val === 'x2') ? (PPR*2)
-           :                  PPR;        // x1
-    }catch(e){ return null; }
-  }
-  
-  function updateResInfo(){
-    var cpr = currentCPR_local();
-    var el = document.getElementById('resInfo');
-    if(!el || !cpr) return;
-    var resDeg = 360/cpr;
-    el.textContent = 'Resolution: ' + resDeg.toFixed(4) + '°/count  (' + cpr + ' counts/rev)';
-  }
-  document.addEventListener('DOMContentLoaded', updateResInfo);
-  var sel = document.getElementById('countMode'); if(sel){ sel.addEventListener('change', updateResInfo); }
-var ppri = document.getElementById('ppr'); if(ppri){ ppri.addEventListener('change', updateResInfo); }
-  // also refresh after language switch (those buttons exist in your UI)
-  var langSeg = document.getElementById('langSeg');
-  if(langSeg){ langSeg.addEventListener('click', function(){ setTimeout(updateResInfo,0); }); }
-})();
-</script>
-
 </body>
 </html>
+"""
+from pathlib import Path
+out = Path("/mnt/data/index_clean.html")
+out.write_text(clean_html, encoding="utf-8")
+print("Wrote", out)
