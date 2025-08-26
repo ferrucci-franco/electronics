@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="es" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Encoder SVG – Live Preview</title>
+<style>
+  :root{
+    --bg:#0f1222; --fg:#e8ecf8; --muted:#94a0b8; --card:#161a33; --accent:#6fa8ff; --input:#23284a;
+    --tooltip-bg: color-mix(in oklab, var(--card) 92%, #000 8%);
+    --tooltip-bd: color-mix(in oklab, var(--fg) 18%, transparent);
+    --card-border: color-mix(in oklab, var(--fg) 18%, transparent);
+    --subcard-bg: color-mix(in oklab, var(--card) 96%, #000 4%);
+  }
+  @media (prefers-color-scheme: light){
+    :root{ --bg:#ffffff; --fg:#0f1222; --muted:#5a6275; --card:#f3f5fb; --accent:#0b6cff; --input:#eef1f9;
+           --tooltip-bg: color-mix(in oklab, var(--card) 96%, #000 4%);
+           --tooltip-bd: color-mix(in oklab, var(--fg) 12%, transparent);
+           --card-border: color-mix(in oklab, var(--fg) 12%, transparent);
+           --subcard-bg: color-mix(in oklab, var(--card) 98%, #000 2%);
+    }
+  }
+  html[data-theme="light"]{ --bg:#ffffff; --fg:#0f1222; --muted:#5a6275; --card:#f3f5fb; --accent:#0b6cff; --input:#eef1f9; }
+  html[data-theme="dark"] { --bg:#0f1222; --fg:#e8ecf8; --muted:#94a0b8; --card:#161a33; --accent:#6fa8ff; --input:#23284a; }
+
+  html, body{ height:100%; }
+  body{
+    margin:0; padding:16px; background:var(--bg); color:var(--fg);
+    font: 15px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif;
+    /* 👉 solo scroll en el menú */
+    overflow:hidden; display:grid; grid-template-rows:auto 1fr; gap:12px; min-height:0;
+  }
+  h1{ font-size:20px; margin:0; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .toolbar{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  select, input[type="color"]{
+    background: var(--input); color: var(--fg); border: 1px solid color-mix(in oklab, var(--fg) 15%, transparent);
+    border-radius: 8px; padding:6px 10px;
+  }
+
+  /* ===== Layout dos columnas a altura completa ===== */
+  .layout{
+    height:100%; min-height:0;
+    display:grid; grid-template-columns: 1fr 380px; gap:16px; align-items:stretch;
+  }
+
+  .card{ background:var(--card); border-radius:12px; padding:16px; box-shadow: 0 1px 0 rgba(0,0,0,.05), 0 10px 30px rgba(0,0,0,.12); }
+
+  /* Panel izquierdo autoajustable al alto */
+  #preview-card{ display:flex; flex-direction:column; min-height:0; }
+  #encoder-preview{ display:flex; align-items:center; justify-content:center; flex:1 1 auto; min-height:0; }
+  #encoder-preview svg{ width:100%; height:100%; display:block; } /* si lo dejas escalar */
+  .actions{ display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
+  button{
+    background:var(--accent); color:#fff; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:600;
+  }
+  button.secondary{ background:transparent; color:var(--fg); outline:1px solid color-mix(in oklab, var(--fg) 24%, transparent); }
+  .note{ font-size:12px; color:var(--muted); margin-top:8px; }
+  .tiny{ font-size:11px; color:var(--muted); }
+  .cols2{ display:grid; grid-template-columns: 1fr 1fr; gap:8px; }
+  .chip{ padding:6px 10px; border-radius:999px; background:var(--input); color:var(--fg);
+         border:1px solid color-mix(in oklab, var(--fg) 15%, transparent); cursor:pointer; user-select:none; }
+  .lang-btn.active{ background: var(--accent); color: #fff; }
+  .spacer{ width:8px; display:inline-block; }
+
+  /* Panel derecho: card grande con scroll propio y sub-cards */
+  #sidebar{ display:flex; flex-direction:column; gap:12px; overflow-y:auto; min-height:0; }
+  .controls form{ display:flex; flex-direction:column; gap:12px; }
+  .controls fieldset{
+    border:1px solid var(--card-border);
+    background: var(--subcard-bg);
+    border-radius:10px;
+    margin:0; padding:12px;
+  }
+  .controls legend{ font-weight:600; margin-bottom:6px; padding:0 4px; }
+  .row{ display:grid; grid-template-columns: 1fr auto; align-items:center; gap:8px; margin:8px 0; }
+  .row label{ display:block; font-size:13px; color:var(--muted); position:relative; }
+  .row input[type="range"], .row input[type="number"]{ width: 100%; }
+  .row output{ min-width:64px; text-align:right; font-variant-numeric: tabular-nums; }
+
+  /* Help icon + tooltip */
+  .help{
+    display:inline-grid; place-items:center; width:16px; height:16px; margin-left:6px;
+    border-radius:50%; background:var(--muted); color:#fff; font-size:11px; font-weight:700;
+    cursor:help; vertical-align:middle; position:relative;
+  }
+  .help::after{
+    content: attr(data-tip);
+    position:absolute; left:0; top:0;
+    transform: translate(0.4rem, -110%);
+    background: var(--tooltip-bg);
+    color: var(--fg);
+    border: 1px solid var(--tooltip-bd);
+    padding: 8px 10px;
+    border-radius: 8px;
+    min-width: 220px; max-width: 320px;
+    box-shadow: 0 6px 20px rgba(0,0,0,.18);
+    font-size:12px; line-height:1.25; white-space:pre-line;
+    pointer-events:none; opacity:0; transition: opacity .12s ease;
+    z-index: 10;
+  }
+  .help:hover::after{ opacity:1; }
+  .help::before{
+    content:""; position:absolute; left:6px; top:-6px;
+    border:6px solid transparent; border-bottom-color: var(--tooltip-bd);
+    transform: translateY(-100%);
+    opacity:0; transition: opacity .12s ease;
+  }
+  .help:hover::before{ opacity:1; }
+</style>
+</head>
+<body>
+  <h1>
+    <span id="title">Encoder SVG – Vista en vivo</span>
+    <span class="toolbar">
+      <span class="chip" id="btn-theme">🌓 <span id="theme-label">Auto</span></span>
+      <div id="lang-buttons">
+        <span class="chip lang-btn active" data-lang="es">ES</span>
+        <span class="spacer"></span>
+        <span class="chip lang-btn" data-lang="fr">FR</span>
+        <span class="spacer"></span>
+        <span class="chip lang-btn" data-lang="en">EN</span>
+      </div>
+      <label class="chip">
+        <span id="lbl-fill" style="margin-right:6px;">Color disco</span>
+        <input type="color" id="fillColor" value="#554691">
+      </label>
+    </span>
+  </h1>
+
+  <div class="layout">
+    <!-- Izquierda -->
+    <div id="preview-card" class="card">
+      <div id="encoder-preview"></div>
+      <div class="actions">
+        <button id="btn-download"></button>
+        <button id="btn-toggle-outlines" class="secondary"></button>
+      </div>
+      <div class="note" id="note"></div>
+    </div>
+
+    <!-- Derecha -->
+    <div id="sidebar">
+      <div class="card controls">
+        <form id="encoder-form">
+          <fieldset>
+            <legend id="lg-global">Geometría global</legend>
+            <div class="row">
+              <label id="lbl-n">n <span class="help" data-key="n">?</span></label>
+              <input type="range" name="n" min="1" max="128" step="1" value="8">
+              <output data-for="n">8</output>
+            </div>
+            <div class="row">
+              <label id="lbl-duty">duty <span class="help" data-key="duty">?</span></label>
+              <input type="range" name="duty" min="0.05" max="0.95" step="0.01" value="0.50">
+              <output data-for="duty">0.50</output>
+            </div>
+            <div class="cols2">
+              <div class="row">
+                <label id="lbl-Rext">R<sub>ext</sub> <span class="help" data-key="Rext">?</span></label>
+                <input type="range" name="Rext" min="60" max="220" step="1" value="120">
+                <output data-for="Rext">120</output>
+              </div>
+              <div class="row">
+                <label id="lbl-Rcore">R<sub>core</sub> <span class="help" data-key="Rcore">?</span></label>
+                <input type="range" name="Rcore" min="0" max="80" step="1" value="18">
+                <output data-for="Rcore">18</output>
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend id="lg-A">Pista A</legend>
+            <div class="cols2">
+              <div class="row">
+                <label id="lbl-Ain">A<sub>in</sub> <span class="help" data-key="A_in">?</span></label>
+                <input type="range" name="A_in" min="20" max="180" step="1" value="50">
+                <output data-for="A_in">50</output>
+              </div>
+              <div class="row">
+                <label id="lbl-Aout">A<sub>out</sub> <span class="help" data-key="A_out">?</span></label>
+                <input type="range" name="A_out" min="21" max="190" step="1" value="70">
+                <output data-for="A_out">70</output>
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend id="lg-B">Pista B</legend>
+            <div class="cols2">
+              <div class="row">
+                <label id="lbl-Bin">B<sub>in</sub> <span class="help" data-key="B_in">?</span></label>
+                <input type="range" name="B_in" min="25" max="200" step="1" value="80">
+                <output data-for="B_in">80</output>
+              </div>
+              <div class="row">
+                <label id="lbl-Bout">B<sub>out</sub> <span class="help" data-key="B_out">?</span></label>
+                <input type="range" name="B_out" min="26" max="210" step="1" value="100">
+                <output data-for="B_out">100</output>
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend id="lg-notch">Muesca</legend>
+            <div class="row">
+              <label id="lbl-notchAng">Ángulo (°) <span class="help" data-key="notchAngleDeg">?</span></label>
+              <input type="range" name="notchAngleDeg" min="-180" max="180" step="1" value="0">
+              <output data-for="notchAngleDeg">0</output>
+            </div>
+            <div class="cols2">
+              <div class="row">
+                <label id="lbl-notchW">Ancho (°) <span class="help" data-key="notchWidthDeg">?</span></label>
+                <input type="range" name="notchWidthDeg" min="4" max="60" step="1" value="12">
+                <output data-for="notchWidthDeg">12</output>
+              </div>
+              <div class="row">
+                <label id="lbl-notchD">Profundidad <span class="help" data-key="notchDepth">?</span></label>
+                <input type="range" name="notchDepth" min="0" max="40" step="0.5" value="7">
+                <output data-for="notchDepth">7</output>
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Tip</legend>
+            <div class="tiny" id="tip">
+              Consejo: mantén A<sub>out</sub> &lt; B<sub>in</sub> y todas las pistas &lt; R<sub>ext</sub> para evitar solapes.
+            </div>
+          </fieldset>
+        </form>
+      </div>
+    </div>
+  </div>
+
+<!-- Cargar la función generadora desde archivo externo -->
+<script src="encoder_svg.js"></script>
+
+<script>
+/* ========= i18n ========= */
+const I18N = {
+  es: {
+    title: "Encoder SVG – Vista en vivo",
+    fill: "Color disco",
+    download: "Descargar SVG",
+    guides_on: "Guías: on",
+    guides_off: "Guías: off",
+    note: "Rueda lisa con ventanas (pistas A y B) y muesca en el núcleo. La pista B está desfasada 90° eléctricos automáticamente.",
+    lg_global: "Geometría global",
+    lbl_n: "n",
+    lbl_duty: "duty",
+    lbl_Rext: "Rext",
+    lbl_Rcore: "Rcore",
+    lg_A: "Pista A",
+    lbl_Ain: "Ain",
+    lbl_Aout: "Aout",
+    lg_B: "Pista B",
+    lbl_Bin: "Bin",
+    lbl_Bout: "Bout",
+    lg_notch: "Muesca",
+    lbl_notchAng: "Ángulo (°)",
+    lbl_notchW: "Ancho (°)",
+    lbl_notchD: "Profundidad",
+    tip: "Consejo: mantén A_out < B_in y todas las pistas < R_ext para evitar solapes.",
+    help: {
+      n: "Número de ventanas por pista (dientes ópticos).",
+      duty: "Fracción angulada abierta de cada período (0–1). 0.5 = 50%.",
+      Rext: "Radio exterior del disco. Limita el tamaño total.",
+      Rcore: "Radio del agujero central.",
+      A_in: "Radio interno del anillo de la pista A.",
+      A_out: "Radio externo del anillo de la pista A.",
+      B_in: "Radio interno del anillo de la pista B.",
+      B_out: "Radio externo del anillo de la pista B.",
+      notchAngleDeg: "Ángulo central de la muesca del núcleo (°). 0° apunta al eje +X.",
+      notchWidthDeg: "Ancho angular de la muesca del núcleo (°).",
+      notchDepth: "Profundidad radial de la muesca desde Rcore hacia afuera."
+    }
+  },
+  fr: {
+    title: "Encodeur SVG – Aperçu en direct",
+    fill: "Couleur du disque",
+    download: "Télécharger le SVG",
+    guides_on: "Guides : on",
+    guides_off: "Guides : off",
+    note: "Disque lisse avec fenêtres (pistes A et B) et encoche centrale. La piste B est décalée de 90° électriques automatiquement.",
+    lg_global: "Géométrie globale",
+    lbl_n: "n",
+    lbl_duty: "duty",
+    lbl_Rext: "Rext",
+    lbl_Rcore: "Rcore",
+    lg_A: "Piste A",
+    lbl_Ain: "Ain",
+    lbl_Aout: "Aout",
+    lg_B: "Piste B",
+    lbl_Bin: "Bin",
+    lbl_Bout: "Bout",
+    lg_notch: "Encoche",
+    lbl_notchAng: "Angle (°)",
+    lbl_notchW: "Largeur (°)",
+    lbl_notchD: "Profondeur",
+    tip: "Astuce : gardez A_out < B_in et toutes les pistes < R_ext pour éviter les chevauchements.",
+    help: {
+      n: "Nombre de fenêtres par piste (dents optiques).",
+      duty: "Fraction angulaire ouverte par période (0–1). 0,5 = 50 %.",
+      Rext: "Rayon extérieur du disque. Limite la taille totale.",
+      Rcore: "Rayon du trou central.",
+      A_in: "Rayon interne de l'anneau de la piste A.",
+      A_out: "Rayon externe de l'anneau de la piste A.",
+      B_in: "Rayon interne de l'anneau de la piste B.",
+      B_out: "Rayon externe de l'anneau de la piste B.",
+      notchAngleDeg: "Angle central de l'encoche du noyau (°). 0° pointe vers l’axe +X.",
+      notchWidthDeg: "Largeur angulaire de l'encoche du noyau (°).",
+      notchDepth: "Profondeur radiale de l'encoche depuis Rcore vers l’extérieur."
+    }
+  },
+  en: {
+    title: "SVG Encoder – Live Preview",
+    fill: "Disk color",
+    download: "Download SVG",
+    guides_on: "Guides: on",
+    guides_off: "Guides: off",
+    note: "Smooth disk with windows (tracks A & B) and a core notch. Track B is automatically offset by 90° electrical.",
+    lg_global: "Global geometry",
+    lbl_n: "n",
+    lbl_duty: "duty",
+    lbl_Rext: "Rext",
+    lbl_Rcore: "Rcore",
+    lg_A: "Track A",
+    lbl_Ain: "Ain",
+    lbl_Aout: "Aout",
+    lg_B: "Track B",
+    lbl_Bin: "Bin",
+    lbl_Bout: "Bout",
+    lg_notch: "Notch",
+    lbl_notchAng: "Angle (°)",
+    lbl_notchW: "Width (°)",
+    lbl_notchD: "Depth",
+    tip: "Tip: keep A_out < B_in and all tracks < R_ext to avoid overlaps.",
+    help: {
+      n: "Number of windows per track (optical teeth).",
+      duty: "Open angular fraction per period (0–1). 0.5 = 50%.",
+      Rext: "Outer radius of the disk. Sets overall size.",
+      Rcore: "Radius of the center hole.",
+      A_in: "Inner radius of Track A ring.",
+      A_out: "Outer radius of Track A ring.",
+      B_in: "Inner radius of Track B ring.",
+      B_out: "Outer radius of Track B ring.",
+      notchAngleDeg: "Central angle of the core notch (°). 0° points along +X axis.",
+      notchWidthDeg: "Angular width of the core notch (°).",
+      notchDepth: "Radial depth of the notch from Rcore outward."
+    }
+  }
+};
+function setLang(lang){
+  const t = I18N[lang] || I18N.en;
+  const $ = id => document.getElementById(id);
+  $('title')       && ($('title').textContent = t.title);
+  $('lbl-fill')    && ($('lbl-fill').textContent = t.fill);
+  $('btn-download')&& ($('btn-download').textContent = t.download);
+  $('btn-toggle-outlines') && ($('btn-toggle-outlines').textContent =
+    (window.__showOutlines ? t.guides_on : t.guides_off));
+  $('note')        && ($('note').textContent = t.note);
+  $('lg-global')   && ($('lg-global').textContent = t.lg_global);
+  $('lbl-n')       && ($('lbl-n').innerHTML = t.lbl_n + ' ' + helpIconHTML('n'));
+  $('lbl-duty')    && ($('lbl-duty').innerHTML = t.lbl_duty + ' ' + helpIconHTML('duty'));
+  $('lbl-Rext')    && ($('lbl-Rext').innerHTML = 'R<sub>ext</sub> ' + helpIconHTML('Rext'));
+  $('lbl-Rcore')   && ($('lbl-Rcore').innerHTML = 'R<sub>core</sub> ' + helpIconHTML('Rcore'));
+  $('lg-A')        && ($('lg-A').textContent = t.lg_A);
+  $('lbl-Ain')     && ($('lbl-Ain').innerHTML = 'A<sub>in</sub> ' + helpIconHTML('A_in'));
+  $('lbl-Aout')    && ($('lbl-Aout').innerHTML = 'A<sub>out</sub> ' + helpIconHTML('A_out'));
+  $('lg-B')        && ($('lg-B').textContent = t.lg_B);
+  $('lbl-Bin')     && ($('lbl-Bin').innerHTML = 'B<sub>in</sub> ' + helpIconHTML('B_in'));
+  $('lbl-Bout')    && ($('lbl-Bout').innerHTML = 'B<sub>out</sub> ' + helpIconHTML('B_out'));
+  $('lg-notch')    && ($('lg-notch').textContent = t.lg_notch);
+  $('lbl-notchAng')&& ($('lbl-notchAng').innerHTML = t.lbl_notchAng + ' ' + helpIconHTML('notchAngleDeg'));
+  $('lbl-notchW')  && ($('lbl-notchW').innerHTML   = t.lbl_notchW   + ' ' + helpIconHTML('notchWidthDeg'));
+  $('lbl-notchD')  && ($('lbl-notchD').innerHTML   = t.lbl_notchD   + ' ' + helpIconHTML('notchDepth'));
+  $('tip')         && ($('tip').innerHTML = t.tip
+                        .replaceAll('A_out','A<sub>out</sub>')
+                        .replaceAll('B_in','B<sub>in</sub>')
+                        .replaceAll('R_ext','R<sub>ext</sub>'));
+  document.querySelectorAll('.help').forEach(el=>{
+    const key = el.dataset.key;
+    el.setAttribute('data-tip', (t.help && t.help[key]) || '');
+  });
+}
+function helpIconHTML(key){ return `<span class="help" data-key="${key}" data-tip=""></span>`; }
+
+/* ========= Theme toggle ========= */
+function cycleTheme(){
+  const html = document.documentElement;
+  const cur = html.getAttribute('data-theme') || 'auto';
+  const next = cur === 'auto' ? 'light' : (cur === 'light' ? 'dark' : 'auto');
+  html.setAttribute('data-theme', next);
+  const label = document.getElementById('theme-label');
+  if (label) label.textContent = next[0].toUpperCase() + next.slice(1);
+}
+
+/* ========= Encoder generator ========= */
+
+/* ========= Live UI ========= */
+function debounce(fn, ms=60){ let t=null; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), ms); }; }
+function clamp(x,a,b){ return Math.min(b, Math.max(a, x)); }
+function numVal(v, def=null){ const x = Number(v); return Number.isFinite(x) ? x : def; }
+
+function createEncoderPreview(container, initialOptions={}){
+  function update(opts){ container.innerHTML = buildEncoderSVG(opts); }
+  update(initialOptions);
+  return { update };
+}
+function bindOutputs(form){
+  const outputs = form.querySelectorAll('output[data-for]');
+  const map = {}; outputs.forEach(o => map[o.dataset.for] = o);
+  function refresh(e){ const t = e?.target; if (t && t.name && map[t.name]) map[t.name].textContent = t.value; }
+  form.addEventListener('input', refresh); form.addEventListener('change', refresh);
+  form.querySelectorAll('input').forEach(inp => { if (map[inp.name]) map[inp.name].textContent = inp.value; });
+}
+function bindEncoderControls(form, onChange, initial={}){
+  bindOutputs(form);
+  const handler = debounce(()=>{
+    const f = new FormData(form);
+    const opts = {
+      n:  clamp(Math.round(numVal(f.get('n'), initial.n ?? 8)), 1, 4096),
+      duty: clamp(numVal(f.get('duty'), initial.duty ?? 0.5), 0.01, 0.99),
+      Rext: numVal(f.get('Rext'), initial.Rext ?? 120),
+      Rcore: Math.max(0, numVal(f.get('Rcore'), initial.Rcore ?? 18)),
+      A_in: numVal(f.get('A_in'), initial.A_in ?? 50),
+      A_out: numVal(f.get('A_out'), initial.A_out ?? 70),
+      B_in: numVal(f.get('B_in'), initial.B_in ?? 80),
+      B_out: numVal(f.get('B_out'), initial.B_out ?? 100),
+      notchAngleDeg: numVal(f.get('notchAngleDeg'), initial.notchAngleDeg ?? 0),
+      notchWidthDeg: clamp(numVal(f.get('notchWidthDeg'), initial.notchWidthDeg ?? 12), 1, 90),
+      notchDepth: Math.max(0, numVal(f.get('notchDepth'), initial.notchDepth ?? 7)),
+      width: 360, height: 360,
+      viewMarginRatio: initial.viewMarginRatio ?? 0.00,
+      fillColor: document.getElementById('fillColor').value || "#554691",
+      showOutlines: window.__showOutlines === true
+    };
+    if (opts.A_out <= opts.A_in) opts.A_out = opts.A_in + 1;
+    if (opts.B_out <= opts.B_in) opts.B_out = opts.B_in + 1;
+    const maxTrack = Math.max(opts.A_out, opts.B_out);
+    if (maxTrack > opts.Rext - 2) opts.Rext = maxTrack + 2;
+    if (opts.B_in <= opts.A_out) opts.B_in = opts.A_out + 1;
+    onChange(opts);
+  }, 40);
+
+  form.addEventListener('input', handler);
+  form.addEventListener('change', handler);
+  document.getElementById('fillColor').addEventListener('input', handler);
+  handler();
+}
+
+/* ==== Bootstrap ==== */
+(function(){
+  const container = document.getElementById('encoder-preview');
+  const form = document.getElementById('encoder-form');
+  const btnTheme = document.getElementById('btn-theme');
+  const btnDown = document.getElementById('btn-download');
+  const btnTog  = document.getElementById('btn-toggle-outlines');
+  window.__showOutlines = false;
+
+  // idioma
+  document.querySelectorAll('.lang-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.lang-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      const lang = btn.dataset.lang || 'es';
+      setLang(lang);
+      form.dispatchEvent(new Event('input', {bubbles:true}));
+    });
+  });
+  document.querySelector('.lang-btn[data-lang="es"]').classList.add('active');
+  setLang('es');
+
+  // theme
+  btnTheme.addEventListener('click', cycleTheme);
+
+  // preview
+  const initial = {
+    n: 8, duty: 0.5,
+    Rext: 120, Rcore: 18,
+    A_in: 50, A_out: 70,
+    B_in: 80, B_out: 100,
+    notchAngleDeg: 0, notchWidthDeg: 12, notchDepth: 7,
+    width: 360, height: 360, fillColor: "#554691",
+    viewMarginRatio: 0.00, showOutlines: false,
+  };
+  const preview = createEncoderPreview(container, initial);
+  bindEncoderControls(form, (opts)=> preview.update(opts), initial);
+
+  // botones
+  const t = I18N['es'];
+  btnDown.textContent = t.download;
+  btnTog.textContent  = t.guides_off;
+
+  btnTog.addEventListener('click', ()=>{
+    window.__showOutlines = !window.__showOutlines;
+    const lang = document.querySelector('.lang-btn.active')?.dataset.lang || 'es';
+    const tx = I18N[lang] || I18N.en;
+    btnTog.textContent = window.__showOutlines ? tx.guides_on : tx.guides_off;
+    form.dispatchEvent(new Event('input',{bubbles:true}));
+  });
+
+  btnDown.addEventListener('click', ()=>{
+    const f = new FormData(form);
+    const n = Number(f.get('n'));
+    const svgText = buildEncoderSVG({
+      n,
+      duty: Number(f.get('duty')),
+      Rext: Number(f.get('Rext')),
+      Rcore: Number(f.get('Rcore')),
+      A_in: Number(f.get('A_in')),
+      A_out: Number(f.get('A_out')),
+      B_in: Number(f.get('B_in')),
+      B_out: Number(f.get('B_out')),
+      notchAngleDeg: Number(f.get('notchAngleDeg')),
+      notchWidthDeg: Number(f.get('notchWidthDeg')),
+      notchDepth: Number(f.get('notchDepth')),
+      width: 0, height: 0,
+      fillColor: document.getElementById('fillColor').value || "#554691",
+      showOutlines: window.__showOutlines === true
+    });
+    const blob = new Blob([svgText], {type: "image/svg+xml"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `encoder_n${n}.svg`; a.click();
+    URL.revokeObjectURL(url);
+  });
+})();
+</script>
+</body>
+</html>

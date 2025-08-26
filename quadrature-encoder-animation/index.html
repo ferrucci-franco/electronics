@@ -1,0 +1,649 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Incremental Encoder – Interactive</title>
+<style>
+  :root{
+    --bg:#0f1222; --fg:#e9ecf4; --muted:#a9b0c3; --card:#1a2036;
+    --accent:#5aa9ff; --grid:#273054; --axis:#3a476f;
+    --a:#8fd3ff; --b:#ffb686; --red:#ff4d4d;
+    --material:#1fbf7a;
+  }
+  [data-theme="light"]{
+    --bg:#ffffff; --fg:#111624; --muted:#55607a; --card:#f5f7fb;
+    --accent:#0b6cff; --grid:#d6dbee; --axis:#c3cbe4;
+    --a:#0b6cff; --b:#ff8b3d; --red:#d62828;
+    --material:#18a568;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.45 system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+  .wrap{max-width:1100px;margin:0 auto;padding:16px}
+
+  .topbar{display:flex;align-items:center;gap:12px}
+  .title{font-size:20px;font-weight:700;flex:1}
+  .seg{display:inline-flex;background:var(--card);border:1px solid var(--grid);border-radius:14px;overflow:hidden}
+  .seg button{border:0;background:transparent;color:var(--muted);padding:8px 14px;font-weight:600;cursor:pointer}
+  .seg button.active{background:var(--bg);color:var(--fg)}
+  .iconbtn{border:1px solid var(--grid);background:var(--card);border-radius:14px;padding:8px 10px;cursor:pointer;font-weight:700}
+
+  .grid{display:grid;grid-template-columns:420px 1fr;gap:16px;margin-top:12px}
+  @media (max-width:980px){ .grid{grid-template-columns:1fr} }
+  .card{background:var(--card);border-radius:14px;padding:14px;box-shadow:0 6px 18px rgba(0,0,0,.12)}
+  .subtitle{font-weight:700;margin-bottom:8px}
+
+  .wheelbox{display:grid;place-items:center;height:420px}
+  .hint{color:var(--muted);font-size:13px}
+
+  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  select,input[type="range"],button{background:#0f1528;border:1px solid var(--grid);color:var(--fg);border-radius:10px;padding:8px 10px}
+  [data-theme="light"] select,[data-theme="light"] input[type="range"],[data-theme="light"] button:not(.primary){background:#fff}
+  .primary{background:var(--accent)!important;border-color:transparent;color:#fff!important;font-weight:700}
+  input[type="range"]{width:260px}
+  .rpmval{min-width:56px;display:inline-block;text-align:right}
+  .disabled{opacity:.45;filter:saturate(.2)}
+  button{cursor:pointer}
+
+  .metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+  @media (max-width:880px){ .metrics{grid-template-columns:repeat(2,minmax(0,1fr))} }
+  .metric{min-width:0;background:transparent;border:1px solid var(--grid);border-radius:12px;padding:10px}
+  .metric .h{color:var(--muted);font-size:12px;margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .metric .v{font-size:18px;font-weight:700}
+  .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace}
+
+  .legend{display:flex;gap:12px;font-size:13px;color:var(--muted)}
+  .dot{width:10px;height:10px;border-radius:50%;display:inline-block;vertical-align:middle;margin-right:6px}
+  .dot.a{background:var(--a)} .dot.b{background:var(--b)}
+
+  .plots{display:grid;grid-template-columns:1fr;gap:10px;margin-top:10px}
+  canvas{display:block;width:100%;height:140px;background:transparent;border:1px solid var(--grid);border-radius:12px}
+  .hintcard{margin-top:10px;border:1px solid var(--grid);border-radius:12px;padding:12px;background:transparent}
+  .hintcard .hint{font-size:18px}
+</style>
+</head>
+<body data-theme="dark">
+<div class="wrap">
+  <div class="topbar">
+    <div class="title" id="t_title">Incremental Encoder – Interactive</div>
+    <div class="seg" id="langSeg">
+      <button data-lang="en" class="active">EN</button>
+      <button data-lang="fr">FR</button>
+      <button data-lang="es">ES</button>
+    </div>
+    <button id="themeBtn" class="iconbtn" title="Theme">🌓</button>
+  </div>
+
+  <div class="grid">
+    <!-- LEFT -->
+    <div class="card">
+      <div class="subtitle" id="t_wheel">Wheel (drag to rotate)</div>
+      <div class="wheelbox">
+        <svg id="wheel" width="360" height="360" viewBox="0 0 360 360" aria-label="Encoder wheel">
+          <defs>
+            <mask id="maskA"></mask>
+            <mask id="maskB"></mask>
+          </defs>
+
+          <!-- Sensors BELOW rotor so opaque material hides them -->
+          <g id="sensors">
+            <circle id="dotA" r="6" fill="var(--a)"/>
+            <text id="labA" font-size="12" fill="var(--a)" style="display:none">A</text>
+            <circle id="dotB" r="6" fill="var(--b)"/>
+            <text id="labB" font-size="12" fill="var(--b)" style="display:none">B</text>
+          </g>
+
+          <!-- Rotor -->
+          <g id="rotor">
+            <circle cx="180" cy="180" r="150" fill="var(--material)" mask="url(#maskA)"></circle>
+            <circle cx="180" cy="180" r="110" fill="transparent"></circle>
+            <circle cx="180" cy="180" r="100" fill="transparent"></circle>
+            <circle cx="180" cy="180" r="100" fill="var(--material)" mask="url(#maskB)"></circle>
+            <circle cx="180" cy="180" r="70" fill="transparent"></circle>
+          </g>
+          <circle cx="180" cy="180" r="8" fill="transparent"></circle>
+        </svg>
+      </div>
+      <div class="hintcard"><div class="hint" id="t_hintDrag">Tip: drag with mouse/touch. Shift snaps to 5°. Use ←/→ too.</div></div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="card">
+      <div class="subtitle" id="t_mode">Mode</div>
+      <div class="row" style="margin-bottom:8px">
+        <div class="seg" id="modeSeg">
+          <button data-mode="manual" class="active" id="btnManual">Manual</button>
+          <button data-mode="const" id="btnConst">Constant speed</button>
+        </div>
+        <button id="play" class="iconbtn" title="Play/Pause" disabled>▶</button>
+        <button id="reset" class="primary"><span id="t_reset">Reset</span></button>
+      </div>
+
+      <div class="row" id="rpmRow">
+        <label for="rpm"><span id="t_rpm">RPM</span></label>
+        <input id="rpm" type="range" min="-10" max="10" step="0.1" value="0">
+        <span class="rpmval mono" id="rpmVal">0.0</span>
+      </div>
+
+      <div class="row" style="margin-top:6px">
+        <label id="t_countMode">Counting</label>
+        <select id="countMode">
+          <option value="x4">All edges (×4)</option>
+          <option value="x2">Rising edges of A & B (×2)</option>
+		  <option value="x1">Rising edge of A (×1)</option>
+        </select>
+        <label for="ppr" id="t_ppr" style="margin-left:8px">PPR</label>
+        <input id="ppr" type="number" min="1" max="1024" step="1" value="10" style="width:90px" />
+        <span id="resInfo" class="mono" style="opacity:.8"></span>
+      </div>
+
+      <div class="metrics" style="margin-top:10px">
+        <div class="metric">
+          <div class="h" id="t_absCount">Counter (abs)</div>
+          <div class="v mono" id="m_abs">0</div>
+        </div>
+        <div class="metric">
+          <div class="h" id="t_trueAngle">True angle (deg)</div>
+          <div class="v mono" id="m_true">0.00°</div>
+        </div>
+        <div class="metric">
+          <div class="h" id="t_angleAbs">Measured angle</div>
+          <div class="v mono" id="m_angAbs">0.00°</div>
+        </div>
+      </div>
+
+      <div class="legend" style="margin-top:8px">
+        <span><i class="dot a"></i>A</span>
+        <span><i class="dot b"></i>B</span>
+      </div>
+      <div class="plots">
+        <canvas id="plotA" width="800" height="140" aria-label="Signal A"></canvas>
+        <canvas id="plotB" width="800" height="140" aria-label="Signal B"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="encoder_svg.js"></script>
+<script>
+/* ==== Theme ==== */
+const themeBtn=document.getElementById('themeBtn');
+const savedTheme=localStorage.getItem('enc_theme');
+if(savedTheme) document.body.setAttribute('data-theme', savedTheme);
+themeBtn.textContent=document.body.getAttribute('data-theme')==='light'?'🌞':'🌓';
+themeBtn.onclick=()=>{ const cur=document.body.getAttribute('data-theme');
+  const next=(cur==='light')?'dark':'light'; document.body.setAttribute('data-theme',next);
+  localStorage.setItem('enc_theme',next); themeBtn.textContent=next==='light'?'🌞':'🌓'; };
+
+/* ==== I18N ==== */
+const I18N={
+  en:{title:"Incremental Encoder – Interactive",wheel:"Wheel (drag to rotate)",
+    hint:"Tip: drag with mouse/touch. Shift snaps to 5°. Use ←/→ too.",
+    mode:"Mode",manual:"Manual",const:"Constant speed",rpm:"RPM",count:"Counting",
+    reset:"Reset",abs:"Counter (abs)",tangle:"True angle (deg)",mangle:"Measured angle",
+    ppr:"PPR",
+    x4:"All edges (×4)",x2:"Rising edges of A & B (×2)", x1:"Rising edge of A (×1)"},
+  es:{title:"Encoder incremental – Interactivo",wheel:"Rueda (arrastra para girar)",
+    hint:"Tip: arrastra con mouse/touch. Shift: 5°. También ←/→.",
+    mode:"Modo",manual:"Manual",const:"Velocidad constante",rpm:"RPM",count:"Conteo",
+    reset:"Reset",abs:"Contador (absoluto)",tangle:"Ángulo real (deg)",mangle:"Ángulo medido",
+    ppr:"PPR",
+    x4:"Todos los flancos (×4)",x2:"Flancos de subida de A y B (×2)", x1:"Flancos de subida de A (×1)"},
+  fr:{title:"Codeur incrémental – Interactif",wheel:"Roue (faire glisser pour tourner)",
+    hint:"Astuce : Maj = 5°. Aussi ←/→.",
+    mode:"Mode",manual:"Manuel",const:"Vitesse constante",rpm:"RPM",count:"Comptage",
+    reset:"Reset",abs:"Compteur (absolu)",tangle:"Angle réel (deg)",mangle:"Angle mesuré",
+    ppr:"PPR",
+    x4:"Tous les fronts (×4)",x2:"Fronts montants de A & B (×2)", x1:"Fronts montants de A (×1)"}
+};
+function setLang(code){
+  const t=I18N[code]||I18N.en;
+  document.getElementById('t_title').textContent=t.title;
+  document.getElementById('t_wheel').textContent=t.wheel;
+  document.getElementById('t_hintDrag').textContent=t.hint;
+  document.getElementById('t_mode').textContent=t.mode;
+  document.getElementById('btnManual').textContent=t.manual;
+  document.getElementById('btnConst').textContent=t.const;
+  document.getElementById('t_rpm').textContent=t.rpm;
+  document.getElementById('t_countMode').textContent=t.count;
+  document.getElementById('t_ppr').textContent=t.ppr;
+  document.getElementById('t_reset').textContent=t.reset;
+  document.getElementById('t_absCount').textContent=t.abs;
+  document.getElementById('t_trueAngle').textContent=t.tangle;
+  document.getElementById('t_angleAbs').textContent=t.mangle;
+  const sel=document.getElementById('countMode');
+  sel.options[0].text=t.x4; 
+  sel.options[1].text=t.x2;
+  sel.options[2].text = t.x1; 
+  const tip = document.getElementById('t_hintDrag');
+  tip.textContent = t.hint;
+  tip.style.fontWeight = '700';
+  tip.style.setProperty('font-size', '18px', 'important'); // vence reglas previas
+}
+const langSegEl=document.getElementById('langSeg');
+langSegEl.addEventListener('click',e=>{
+  if(e.target.tagName!=='BUTTON') return;
+  [...langSegEl.children].forEach(b=>b.classList.remove('active'));
+  e.target.classList.add('active');
+  setLang(e.target.dataset.lang);
+});
+setLang('en');
+
+/* ==== Config ==== */
+let PPR=10;
+// Where to place the red time cursor within the window [0..1]. 1.0 = right edge, 0.5 = center
+const VIEW_FACTOR = 0.8;
+function oddParityDeg(){
+  return (PPR % 2) ? (180/PPR) : 0; // half-slot mechanical shift for odd PPR
+}
+
+const SNAP_DEG=5;
+const KEY_STEP_DEG=1;           // base ←/→ (Shift: ×5)
+const PHASE_A_ELEC=-0.25;
+const PHASE_B_ELEC=-0.5;
+
+// Absolute sensor azimuth: +X = 0°, top(North) ≈ -90°
+const SENSOR_AZIMUTH_DEG = -90;
+// Convención para mostrar el ángulo verdadero:
+//  +1  → CCW positivo (convención habitual)
+//  -1  → CW  positivo (lo que pides)
+const TRUE_ANGLE_DIR = 1;
+
+// Signo del contador y del ángulo medido:
+//  +1 → CCW positivo (convención clásica)
+//  -1 → CW  positivo
+const COUNT_DIR = 1;   // pon +1 si quieres volver a CCW+
+
+// OFFSET: initial 1/4-step CCW (positive) to avoid bad initial alignment
+const INIT_OFFSET_DEG = 0; //360/(PPR*4);
+
+/* ==== Geometría y máscaras ==== */
+const CX=180, CY=180;
+const R_EXT=150, R_CORE=20;
+const R_A_IN=40, R_A_OUT=80;
+const R_B_IN=90, R_B_OUT=130;
+const NOTCH_angle=0, NOTCH_deg=15, NOTCH_depth=8;
+const viewMarginRATIO = 0.08;
+
+function buildMask(maskId,rOut,rIn,slots,phaseElec){
+  const phaseDeg=phaseElec*(360/slots);
+  const m=document.getElementById(maskId); m.innerHTML='';
+  const full=document.createElementNS("http://www.w3.org/2000/svg","rect");
+  full.setAttribute('x',0); full.setAttribute('y',0); full.setAttribute('width',360);
+  full.setAttribute('height',360); full.setAttribute('fill','white'); m.appendChild(full);
+  const inner=document.createElementNS("http://www.w3.org/2000/svg","circle");
+  inner.setAttribute('cx',CX); inner.setAttribute('cy',CY); inner.setAttribute('r',rIn);
+  inner.setAttribute('fill','black'); m.appendChild(inner);
+  const slotAngle=360/slots, open=slotAngle/2;
+  for(let k=0;k<slots;k++){
+    const a=(k*slotAngle+phaseDeg-open/2)*Math.PI/180;
+    const b=(k*slotAngle+phaseDeg+open/2)*Math.PI/180;
+    const path=document.createElementNS("http://www.w3.org/2000/svg","path");
+    const p=[[CX+rIn*Math.cos(a),CY+rIn*Math.sin(a)],[CX+rOut*Math.cos(a),CY+rOut*Math.sin(a)],
+             [CX+rOut*Math.cos(b),CY+rOut*Math.sin(b)],[CX+rIn*Math.cos(b),CY+rIn*Math.sin(b)]];
+    path.setAttribute('d',`M ${p[0][0]} ${p[0][1]} L ${p[1][0]} ${p[1][1]} L ${p[2][0]} ${p[2][1]} L ${p[3][0]} ${p[3][1]} Z`);
+    path.setAttribute('fill','black'); m.appendChild(path);
+  }
+}
+// Replaced masks with generator buildEncoderSVG()
+(function(){
+  try{
+    var materialColor = getComputedStyle(document.body).getPropertyValue('--material').trim() || '#1fbf7a';
+    var diskSVG = buildEncoderSVG({
+      n: PPR,
+      duty: 0.5,
+      Rext: R_EXT,
+      Rcore: R_CORE,
+      A_in: R_A_IN,  A_out: R_A_OUT,
+      B_in: R_B_IN, B_out: R_B_OUT,
+      notchAngleDeg: NOTCH_angle,
+      notchWidthDeg: NOTCH_deg,
+      notchDepth: NOTCH_depth,
+      viewMarginRatio: viewMarginRATIO,
+      width: 360, 
+      height: 360,
+      fillColor: materialColor,
+      showOutlines: false
+    });
+    document.getElementById('rotor').innerHTML = diskSVG;
+  }catch(e){ console.error(e); }
+})();
+// sensores en el centro radial de cada pista (arriba)
+const dotA=document.getElementById('dotA'), dotB=document.getElementById('dotB');
+const labA=document.getElementById('labA'), labB=document.getElementById('labB');
+(function placeDots(){
+  const rB=(R_A_IN+R_A_OUT)/2;
+  const rA=(R_B_IN+R_B_OUT)/2;
+   
+  dotA.setAttribute('cx',CX); 
+  dotA.setAttribute('cy',CY-rA*(1+viewMarginRATIO));
+  
+  labA.setAttribute('x',CX+12); 
+  labA.setAttribute('y',CY-rA+4);
+  
+  dotB.setAttribute('cx',CX); 
+  dotB.setAttribute('cy',CY-rB*(1+viewMarginRATIO));
+  
+  labB.setAttribute('x',CX+12); 
+  labB.setAttribute('y',CY-rB+4);
+})();
+
+/* ==== Estado & controles ==== */
+let thetaDeg=0, lastThetaDeg=0;         // ángulo real acumulativo (CCW positivo)
+let mode='manual', running=false;
+let rpm=0;
+let countModeVal='x4';
+let countAbsX4=0, countAbsX2=0, countAbsX1 = 0, prevAB=null;
+let accX4=0, accX2=0, accX1=0;
+let tSim=0, lastSampleT=-1, winWindow=0.5;
+let keyMovePending=false;
+
+const modeSeg=document.getElementById('modeSeg');
+const playBtn=document.getElementById('play');
+const resetBtn=document.getElementById('reset');
+const rpmRow=document.getElementById('rpmRow');
+const rpmSlider=document.getElementById('rpm');
+const rpmVal=document.getElementById('rpmVal');
+const countModeEl=document.getElementById('countMode');
+rpmSlider.oninput=()=>{ rpm=+rpmSlider.value; rpmVal.textContent=rpm.toFixed(1); };
+
+// Estado inicial: Manual -> slider deshabilitado
+(function initManual(){
+  rpmSlider.disabled=true; rpmRow.classList.add('disabled'); playBtn.disabled=true;
+  rpmVal.textContent=(+rpmSlider.value).toFixed(1);
+})();
+
+modeSeg.addEventListener('click',e=>{
+  if(e.target.tagName!=='BUTTON') return;
+  [...modeSeg.children].forEach(b=>b.classList.remove('active'));
+  e.target.classList.add('active');
+  mode=e.target.dataset.mode;
+  const isConst=(mode==='const');
+  rpmRow.classList.toggle('disabled',!isConst);
+  rpmSlider.disabled=!isConst;
+  playBtn.disabled=!isConst;
+  if(!isConst){ running=false; playBtn.textContent='▶'; }
+});
+playBtn.onclick=()=>{ running=!running; playBtn.textContent=running?'⏸':'▶'; };
+
+// Cambiar tipo de conteo: NO resetear nada; solo cambiar lo que se muestra
+countModeEl.onchange=e=>{
+  countModeVal=e.target.value;
+  updateMetrics(); // mostrar inmediatamente según la selección
+};
+
+// === PPR control ===
+const pprInput = document.getElementById('ppr');
+if(pprInput) pprInput.value = PPR;
+
+function rebuildRotor(){
+  try{
+    var materialColor = getComputedStyle(document.body).getPropertyValue('--material').trim() || '#1fbf7a';
+    var diskSVG = buildEncoderSVG({
+      n: PPR, duty: 0.5,
+      Rext: R_EXT, Rcore: R_CORE,
+      A_in: R_A_IN, A_out: R_A_OUT,
+      B_in: R_B_IN, B_out: R_B_OUT,
+      notchAngleDeg: NOTCH_angle, notchWidthDeg: NOTCH_deg, notchDepth: NOTCH_depth,
+      viewMarginRatio: viewMarginRATIO, width: 360, height: 360,
+      fillColor: materialColor, showOutlines: false
+    });
+    document.getElementById('rotor').innerHTML = diskSVG;
+  }catch(e){ console.error('rebuildRotor error', e); }
+}
+
+function resetAll(){
+  thetaDeg=0; lastThetaDeg=0;
+  countAbsX4=0; countAbsX2=0; countAbsX1=0; prevAB=null;
+  tSim=0; lastSampleT=-1; winWindow=0.5;
+  tSeriesA.length=0; tSeriesB.length=0;
+  drawPlots(true);
+  updateMetrics();
+  // ensure visual reset
+  const phi=(((thetaDeg + INIT_OFFSET_DEG + oddParityDeg())%360)+360)%360;
+  rotorEl.setAttribute('transform',`rotate(${phi} ${CX} ${CY})`);
+}
+
+function updateResInfo(){
+  const cpr = currentCPR();
+  const el = document.getElementById('resInfo');
+  if(!el) return;
+  const resDeg = 360/Math.max(1, cpr);
+  el.textContent = `Resolution: ${resDeg.toFixed(4)}°/count  (${cpr} counts/rev)`;
+}
+
+if(pprInput){
+  const commit = ()=>{
+    let v = Math.floor(+pprInput.value||PPR);
+    if (v < 1) v = 1;
+    if (v > 1024) v = 1024;
+    PPR = v;
+    rebuildRotor();
+    resetAll();
+    updateResInfo();
+  };
+  pprInput.addEventListener('change', commit);
+  pprInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter') { e.preventDefault(); commit(); }});
+}
+
+countModeEl.addEventListener('change', updateResInfo);
+
+// initial res info once DOM painted
+setTimeout(updateResInfo, 0);
+
+// Reset manual (este sí resetea todo)
+resetBtn.onclick=()=>{ resetAll(); };
+
+/* ==== Arrastre (CCW positivo) ==== */
+const wheelSVG=document.getElementById('wheel');
+let dragging=false, prevAng=null;
+function angleAt(evt){
+  const r=wheelSVG.getBoundingClientRect();
+  return Math.atan2((evt.touches?evt.touches[0].clientY:evt.clientY)-r.top-r.height/2,
+                    (evt.touches?evt.touches[0].clientX:evt.clientX)-r.left-r.width/2)*180/Math.PI;
+}
+wheelSVG.addEventListener('pointerdown',e=>{ wheelSVG.setPointerCapture(e.pointerId); dragging=true; prevAng=angleAt(e); });
+window.addEventListener('pointermove',e=>{
+  if(!dragging || mode!=='manual') return;
+  const a=angleAt(e);
+  let d=a-prevAng; d=((d+540)%360)-180; // delta CCW positivo
+  thetaDeg += d;                        // CCW aumenta
+  prevAng=a;
+  if(e.shiftKey){ thetaDeg=Math.round(thetaDeg/SNAP_DEG)*SNAP_DEG; }
+});
+window.addEventListener('pointerup',()=>{ dragging=false; prevAng=null; });
+
+/* ==== Teclado ←/→ ==== */
+window.addEventListener('keydown',e=>{
+  if(e.key==='ArrowLeft' || e.key==='ArrowRight'){
+    e.preventDefault();
+    const mul=e.shiftKey?5:1;
+    // → suma (CCW+), ← resta (CW−). Dime si lo prefieres invertido.
+    const step = mul*KEY_STEP_DEG*(e.key==='ArrowRight'? +1 : -1);
+    thetaDeg += step; keyMovePending=true;
+  }
+});
+
+/* ==== Señales y conteo en paralelo (CCW = +1) ==== */
+// dynamic CPR via currentCPR()
+
+function ABfromTheta(th){
+  // Apply initial offset and odd-PPR compensation (keeps A/B aligned with SVG)
+  //th += INIT_OFFSET_DEG + oddParityDeg();
+  th += INIT_OFFSET_DEG;
+  
+  th += SENSOR_AZIMUTH_DEG;  // align logical model with sensor at top
+  let eA=th/360*PPR + PHASE_A_ELEC;
+  let eB=th/360*PPR + PHASE_B_ELEC;
+  
+  const A = (((eA%1)+1)%1) < 0.5 ? 1 : 0;
+  const B = (((eB%1)+1)%1) < 0.5 ? 1 : 0;
+  
+  return [A,B];
+}
+const CCW_TRANS=new Set([0b0001,0b0111,0b1110,0b1000]); // 00->01->11->10->00
+const CW_TRANS =new Set([0b0010,0b0100,0b1101,0b1011]);
+function updateCountingBoth(A,B){
+  if(prevAB===null){ prevAB=[A,B]; return; }
+  const [pA,pB]=prevAB; if(A===pA && B===pB){ return; }
+  const code=(pA<<3)|(pB<<2)|(A<<1)|B;
+  const isNeighbor=((pA^A)+(pB^B))===1;
+  if(isNeighbor){
+    const dir0 = CCW_TRANS.has(code) ? +1 : (CW_TRANS.has(code) ? -1 : 0);
+    const dir  = COUNT_DIR * dir0;   // ← aplica la convención
+    // x4: cada transición suma
+    countAbsX4 += dir;
+    // x2: solo flancos de subida (en cualquiera de los dos canales)
+    const risingA=(pA===0&&A===1), risingB=(pB===0&&B===1);
+    if(risingA || risingB) countAbsX2 += dir;
+	if (risingA) countAbsX1 += dir;
+  }
+  prevAB=[A,B];
+}
+
+/* ==== Plots (step) ==== */
+const plotA=document.getElementById('plotA'), plotB=document.getElementById('plotB');
+const ctxA=plotA.getContext('2d'), ctxB=plotB.getContext('2d');
+let tSeriesA=[], tSeriesB=[];
+function pushSample(t,A,B,win){
+  if(t<=lastSampleT+1e-9) return; lastSampleT=t;
+  tSeriesA.push([t,A]); tSeriesB.push([t,B]);
+  while(tSeriesA.length && tSeriesA[0][0] < t-win) tSeriesA.shift();
+  while(tSeriesB.length && tSeriesB[0][0] < t-win) tSeriesB.shift();
+  const MAX=1000; if(tSeriesA.length>MAX) tSeriesA.splice(0,tSeriesA.length-MAX);
+  if(tSeriesB.length>MAX) tSeriesB.splice(0,tSeriesB.length-MAX);
+}
+function drawStep(ctx,canvas,series,color,tCenter,win){
+  const W=canvas.width,H=canvas.height,P=10;
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle=getComputedStyle(document.body).getPropertyValue('--axis');
+  ctx.strokeRect(P,P,W-2*P,H-2*P);
+  ctx.strokeStyle=getComputedStyle(document.body).getPropertyValue('--grid');
+  ctx.beginPath();
+  ctx.moveTo(P,(H-P-P)*0.25+P); ctx.lineTo(W-P,(H-P-P)*0.25+P);
+  ctx.moveTo(P,(H-P-P)*0.75+P); ctx.lineTo(W-P,(H-P-P)*0.75+P); ctx.stroke();
+  if(series.length===0) return;
+  // const t0=tCenter-win/2, mapX=t=>P+(t-t0)/win*(W-2*P), y0=v=>(1-v)*(H-2*P)+P;
+  const t0=tCenter - win*VIEW_FACTOR, mapX=t=>P+(t-t0)/win*(W-2*P), y0=v=>(1-v)*(H-2*P)+P;
+  let v=series[0][1]; for(let i=0;i<series.length;i++){ if(series[i][0]<=t0) v=series[i][1]; else break; }
+  ctx.strokeStyle=color; ctx.lineWidth=2; ctx.beginPath();
+  let xPrev=mapX(t0), yPrev=y0(v); ctx.moveTo(xPrev,yPrev);
+  for(let i=0;i<series.length;i++){
+    const [ts,vs]=series[i]; if(ts<t0) continue;
+    const x=mapX(ts); ctx.lineTo(x,yPrev);
+    if(v!==vs){ const y=y0(vs); ctx.lineTo(x,y); yPrev=y; v=vs; }
+  }
+  ctx.lineTo(P+(W-2*P),yPrev); ctx.stroke();
+  // const xc=(W-2*P)/2+P;
+  const xc=P + VIEW_FACTOR*(W-2*P);
+  ctx.strokeStyle=getComputedStyle(document.body).getPropertyValue('--red'); ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(xc,P); ctx.lineTo(xc,H-P); ctx.stroke();
+}
+function drawPlots(){
+  if(mode==='const' && running && Math.abs(rpm)>1e-6){
+    const fA = Math.abs(rpm)*PPR/60;
+    winWindow = Math.max(0.2, Math.min(5, 4/Math.max(0.1, fA)));
+  }
+
+  // Señales directamente para dibujar
+  const [A, B] = ABfromTheta(thetaDeg);
+
+  pushSample(tSim, A, B, winWindow);
+  drawStep(ctxA, plotA, tSeriesA, getComputedStyle(document.body).getPropertyValue('--a'), tSim, winWindow);
+  drawStep(ctxB, plotB, tSeriesB, getComputedStyle(document.body).getPropertyValue('--b'), tSim, winWindow);
+}
+
+
+/* ==== Métricas ==== */
+const mAbs=document.getElementById('m_abs');
+const mTrue=document.getElementById('m_true');
+const mAngAbs=document.getElementById('m_angAbs');
+function currentCount(){ 
+  return (countModeVal==='x4') ? countAbsX4
+       : (countModeVal==='x2') ? countAbsX2
+       :                         countAbsX1;
+}
+function currentCPR(){
+  return (countModeVal==='x4') ? (PPR*4)
+       : (countModeVal==='x2') ? (PPR*2)
+       : PPR;
+}
+
+function updateMetrics(){
+  const cnt=currentCount(), cpr=currentCPR();
+  const angMeasuredAbs=(cnt/cpr)*360; // CCW positivo
+  mAbs.textContent=cnt.toString();
+  mTrue.textContent = `${(TRUE_ANGLE_DIR * thetaDeg).toFixed(2)}°`;
+  mAngAbs.textContent=`${angMeasuredAbs.toFixed(2)}°`;
+}
+
+/* ==== Loop ==== */
+const rotorEl=document.getElementById('rotor');
+let lastT=performance.now();
+function tick(){
+  const t=performance.now(), dt=(t-lastT)/1000; lastT=t;
+
+  if(mode==='const' && running){
+    const omega=rpm*2*Math.PI/60;      // rpm>0 => CCW(+)
+    thetaDeg += omega*180/Math.PI*dt;
+    tSim += dt;
+  }else if(mode==='manual'){
+    if(Math.abs(thetaDeg-lastThetaDeg)>1e-6 || keyMovePending){ tSim += dt; keyMovePending=false; }
+  }
+  const deltaDeg = thetaDeg - lastThetaDeg;
+  lastThetaDeg=thetaDeg;
+
+  // Robust counting by integrating angle delta (no missed pulses)
+  accX4 += COUNT_DIR * (PPR*4) * (deltaDeg/360);
+  accX2 += COUNT_DIR * (PPR*2) * (deltaDeg/360);
+  accX1 += COUNT_DIR * (PPR*1) * (deltaDeg/360);
+  let inc4 = Math.trunc(accX4); countAbsX4 += inc4; accX4 -= inc4;
+  let inc2 = Math.trunc(accX2); countAbsX2 += inc2; accX2 -= inc2;
+  let inc1 = Math.trunc(accX1); countAbsX1 += inc1; accX1 -= inc1;
+
+  // Only the drawing wraps 0..360; true angle remains cumulative
+  const phi=(((thetaDeg + INIT_OFFSET_DEG + oddParityDeg())%360)+360)%360;
+  rotorEl.setAttribute('transform',`rotate(${phi} ${CX} ${CY})`); // positive => CCW visual
+
+  const [A,B]=ABfromTheta(thetaDeg);
+  // counting now handled by angle-delta integration (no missed pulses)
+
+  updateMetrics();
+  drawPlots();
+
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+</script>
+
+<script>
+(function(){
+  function currentCPR_local(){
+    var sel = document.getElementById('countMode');
+    if(!sel) return null;
+    var val = sel.value;
+    try{
+      return (val === 'x4') ? (PPR*4)
+           : (val === 'x2') ? (PPR*2)
+           :                  PPR;        // x1
+    }catch(e){ return null; }
+  }
+  
+  function updateResInfo(){
+    var cpr = currentCPR_local();
+    var el = document.getElementById('resInfo');
+    if(!el || !cpr) return;
+    var resDeg = 360/cpr;
+    el.textContent = 'Resolution: ' + resDeg.toFixed(4) + '°/count  (' + cpr + ' counts/rev)';
+  }
+  document.addEventListener('DOMContentLoaded', updateResInfo);
+  var sel = document.getElementById('countMode'); if(sel){ sel.addEventListener('change', updateResInfo); }
+var ppri = document.getElementById('ppr'); if(ppri){ ppri.addEventListener('change', updateResInfo); }
+  // also refresh after language switch (those buttons exist in your UI)
+  var langSeg = document.getElementById('langSeg');
+  if(langSeg){ langSeg.addEventListener('click', function(){ setTimeout(updateResInfo,0); }); }
+})();
+</script>
+
+</body>
+</html>
