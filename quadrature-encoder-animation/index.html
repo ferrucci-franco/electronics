@@ -717,8 +717,3 @@ requestAnimationFrame(tick);
 </script>
 </body>
 </html>
-"""
-from pathlib import Path
-out = Path("/mnt/data/index_clean.html")
-out.write_text(clean_html, encoding="utf-8")
-print("Wrote", out)
