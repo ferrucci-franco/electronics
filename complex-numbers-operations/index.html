@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Operaciones con Números Complejos – Vectores</title>
+  <style>
+    :root{
+      --bg-grad-1:#667eea; --bg-grad-2:#764ba2;
+      --panel:#ffffff; --ink:#333; --muted:#666; --muted2:#999; --soft:#f6f7fb;
+      --card:#ffffff; --card2:#f8f9fa;
+      --brand:#4ECDC4; --brand-2:#FF6B6B; --brand-3:#4CAF50;
+      --axis:#dddddd; --grid:#eeeeee; --circle:#cfd3d7;
+      --accent:#2196F3; --shadow:rgba(0,0,0,.08);
+    }
+    body.dark{
+      --bg-grad-1:#2c3e50; --bg-grad-2:#34495e;
+      --panel:#34495e; --ink:#ecf0f1; --muted:#dfe6e9; --muted2:#b2bec3; --soft:#2b3b4a;
+      --card:#2f3f50; --card2:#2c3e50;
+      --axis:#556; --grid:#445; --circle:#6c7a89;
+      --accent:#3498db; --shadow:rgba(0,0,0,.28);
+    }
+    html,body{height:100%;}
+    body{
+      margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,"Helvetica Neue",Arial,"Noto Sans";
+      background:linear-gradient(135deg,var(--bg-grad-1),var(--bg-grad-2)); color:var(--ink);
+      overflow:hidden; /* sólo scrollea el menú (columna izquierda) */
+    }
+    .wrapper{max-width:1400px; margin:0 auto; padding:20px;}
+    .panel{
+      background:var(--panel); border-radius:16px; box-shadow:0 18px 40px var(--shadow);
+      padding:24px; height:calc(100vh - 40px); display:flex; flex-direction:column; min-height:0;
+    }
+    .header{
+      background:linear-gradient(45deg,#FF6B6B,#4ECDC4);
+      color:#fff; padding:18px 22px; border-radius:12px; margin:-8px -8px 18px -8px;
+      display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+      flex:0 0 auto;
+    }
+    .header h1{margin:0; font-weight:600; font-size:22px}
+    .settings{
+      display:flex; gap:10px; align-items:center;
+      background:rgba(255,255,255,.18); padding:6px 10px; border-radius:999px;
+    }
+    
+    
+    <!-- body.dark .settings{background:rgba(0,0,0,.18);} -->
+    <!-- .settings select{border:1px solid #ddd; border-radius:10px; padding:4px 8px; background:transparent; color:#fff;} -->
+    /* Claro */
+    .settings select{
+      border:1px solid rgba(0,0,0,.15);
+      border-radius:10px;
+      padding:4px 8px;
+      background:#fff;            /* <- fondo sólido */
+      color:#17324a;              /* <- texto oscuro legible */
+    }
+
+    /* Oscuro */
+    body.dark .settings select{
+      border-color: rgba(255,255,255,.25);
+      background:#1f2a36;         /* <- fondo oscuro */
+      color:#ecf0f1;              /* <- texto claro */
+    }
+
+    /* En algunos navegadores los <option> permiten estilo */
+    .settings select option{ background:#fff; color:#17324a; }
+    body.dark .settings select option{ background:#1f2a36; color:#ecf0f1; }
+
+    
+    .settings button{border:0; border-radius:999px; padding:6px 10px; cursor:pointer; color:#fff; background:#00000022;}
+
+    /* ====== LAYOUT ====== */
+    .grid{
+      display:grid;
+      grid-template-columns: 420px 1fr;   /* izquierda fija, derecha flexible */
+      gap:22px;
+      flex:1 1 auto; min-height:0;
+      align-items:stretch;
+    }
+    @media (max-width:1100px){ .grid{ grid-template-columns:1fr; } }
+
+    .left{
+      display:flex; flex-direction:column; gap:16px;
+      overflow-y:auto; overflow-x:hidden; /* sólo vertical */
+      /* reservar canal para el scrollbar en todos los SO/navegadores */
+      scrollbar-gutter: stable both-edges;
+      padding-right: calc(16px + var(--sbw, 0px)); /* 16px + ancho real de barra */
+      min-width:0; min-height:0; max-height:100%;
+    }
+    .left > .card{ margin-right:8px; } /* pequeño colchón interno */
+    /* estético en WebKit/Chromium */
+    .left::-webkit-scrollbar{ width:12px; }
+    .left::-webkit-scrollbar-thumb{ background:#c7cbd1; border-radius:8px; }
+    .left::-webkit-scrollbar-track{ background:transparent; }
+
+    .card{
+      background:var(--card); border-radius:12px; padding:16px; box-shadow:0 4px 18px var(--shadow);
+      border-left:5px solid var(--brand);
+      flex:0 0 auto; width:100%;
+    }
+    .card h3{margin:0 0 8px 0; font-size:16px}
+    .grp{display:flex; flex-direction:column; gap:10px; margin-top:6px}
+
+    /* Filas de control en grilla: label | slider | badge  */
+    .row{
+      display:grid; grid-template-columns: 120px 1fr 64px; gap:10px;
+      align-items:center; min-width:0;
+    }
+    .row label{font-weight:600; font-size:13px}
+    .row input[type=range]{width:100%; min-width:0}
+    .badge{
+      background:var(--soft); border:1px solid #0001; padding:2px 8px; border-radius:8px; font-family:monospace; font-size:12px;
+      text-align:right;
+    }
+
+    .mini-legend{
+      display:flex; align-items:center; gap:14px; margin-top:6px;
+      font-size:12px; flex-wrap:wrap;
+    }
+
+    .right{
+      background:var(--card2); border-radius:12px; padding:12px; /* canvas toca el borde interno */
+      box-shadow:0 4px 18px var(--shadow);
+      position:sticky; top:0; display:flex; flex-direction:column; gap:8px; min-height:0;
+      margin-bottom:16px; /* aire exterior bajo el card */
+    }
+    .canvas-wrap{position:relative; flex:1; min-height:0;}
+    canvas{display:block; width:100%; height:100%; border-radius:10px; background:#fff; border:2px solid var(--axis)}
+    body.dark canvas{background:#2c3e50; border-color:#555}
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="panel">
+      <div class="header">
+        <h1 id="title">Operaciones con Números Complejos – Vectores</h1>
+        <div class="settings">
+          <span>🌐</span>
+          <select id="lang">
+            <option value="es">Español</option>
+            <option value="fr">Français</option>
+            <option value="en">English</option>
+          </select>
+          <button id="themeBtn">Dark</button>
+        </div>
+      </div>
+
+      <div class="grid">
+        <!-- IZQUIERDA -->
+        <div class="left" id="leftCol">
+          <div class="card" style="border-left-color: var(--brand-3);">
+            <h3 id="z1_title">z₁ – Amplitud y Fase</h3>
+            <div class="grp">
+              <div class="row">
+                <label id="amp1_lbl">Amplitud 1</label>
+                <input id="amp1" type="range" min="0.2" max="2" step="0.01" value="1.10"/>
+                <span class="badge" id="amp1_v">1.10</span>
+              </div>
+              <div class="row">
+                <label id="ph1_lbl">Fase 1 (°)</label>
+                <input id="ph1" type="range" min="-180" max="180" step="1" value="20"/>
+                <span class="badge" id="ph1_v">20°</span>
+              </div>
+              <div class="mini-legend">
+                <span id="z1_re_lbl">Re(z₁)</span><span>=</span><span id="z1_re">0.000</span>
+                <span>·</span>
+                <span id="z1_im_lbl">Im(z₁)</span><span>=</span><span id="z1_im">0.000</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="border-left-color: var(--brand);">
+            <h3 id="z2_title">z₂ – Amplitud y Fase</h3>
+            <div class="grp">
+              <div class="row">
+                <label id="amp2_lbl">Amplitud 2</label>
+                <input id="amp2" type="range" min="0.2" max="2" step="0.01" value="0.80"/>
+                <span class="badge" id="amp2_v">0.80</span>
+              </div>
+              <div class="row">
+                <label id="ph2_lbl">Fase 2 (°)</label>
+                <input id="ph2" type="range" min="-180" max="180" step="1" value="-40"/>
+                <span class="badge" id="ph2_v">-40°</span>
+              </div>
+              <div class="mini-legend">
+                <span id="z2_re_lbl">Re(z₂)</span><span>=</span><span id="z2_re">0.000</span>
+                <span>·</span>
+                <span id="z2_im_lbl">Im(z₂)</span><span>=</span><span id="z2_im">0.000</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="border-left-color: var(--brand-2);">
+            <h3 id="op_title">z₃ – Resultado</h3>
+            <div class="grp">
+              <div class="row">
+                <label id="op_lbl">Definición</label>
+                <select id="op">
+                  <option value="add">z₃ = z₁ + z₂</option>
+                  <option value="sub">z₃ = z₁ − z₂</option>
+                  <option value="mul">z₃ = z₁ · z₂</option>
+                  <option value="div">z₃ = z₁ / z₂</option>
+                </select>
+              </div>
+              <div class="mini-legend">
+                <span id="zr_re_lbl">Re(z₃)</span><span>=</span><span id="zr_re">0.000</span>
+                <span>·</span>
+                <span id="zr_im_lbl">Im(z₃)</span><span>=</span><span id="zr_im">0.000</span>
+              </div>
+              <div class="mini-legend">
+                <span id="zr_mag_lbl">|z₃|</span><span>=</span><span id="zr_mag">0.000</span>
+                <span>·</span>
+                <span id="zr_ang_lbl">∠z₃ (°)</span><span>=</span><span id="zr_ang">0</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3 id="sum_title">Resumen de operaciones</h3>
+            <div class="op-summary" id="sum_text">
+              <ul>
+                <li><strong>Suma:</strong> se suman las partes real e imaginaria.</li>
+                <li><strong>Resta:</strong> se restan las partes real e imaginaria.</li>
+                <li><strong>Multiplicación:</strong> se multiplican los módulos y se suman las fases.</li>
+                <li><strong>División:</strong> se dividen los módulos y se restan las fases.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- DERECHA -->
+        <div class="right">
+          <div class="canvas-wrap">
+            <canvas id="cv"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* ================= i18n ================= */
+const T = {
+  es:{
+    title:"Operaciones con Números Complejos – Vectores",
+    z1_title:"z₁ – Amplitud y Fase", z2_title:"z₂ – Amplitud y Fase",
+    amp1_lbl:"Amplitud 1", amp2_lbl:"Amplitud 2",
+    ph1_lbl:"Fase 1 (°)", ph2_lbl:"Fase 2 (°)",
+    z1_re_lbl:"Re(z₁)", z1_im_lbl:"Im(z₁)", z2_re_lbl:"Re(z₂)", z2_im_lbl:"Im(z₂)",
+    op_title:"z₃ – Resultado", op_lbl:"Definición",
+    op_add:"z₃ = z₁ + z₂", op_sub:"z₃ = z₁ − z₂", op_mul:"z₃ = z₁ · z₂", op_div:"z₃ = z₁ / z₂",
+    zr_re_lbl:"Re(z₃)", zr_im_lbl:"Im(z₃)", zr_mag_lbl:"|z₃|", zr_ang_lbl:"∠z₃ (°)",
+    sum_title:"Resumen de operaciones",
+    sum_html:`<ul>
+      <li><strong>Suma:</strong> se suman las partes real e imaginaria.</li>
+      <li><strong>Resta:</strong> se restan las partes real e imaginaria.</li>
+      <li><strong>Multiplicación:</strong> se multiplican los módulos y se suman las fases.</li>
+      <li><strong>División:</strong> se dividen los módulos y se restan las fases.</li>
+    </ul>`,
+    themeDark:"Dark", themeLight:"Light"
+  },
+  en:{
+    title:"Complex Numbers Operations – Vectors",
+    z1_title:"z₁ – Amplitude & Phase", z2_title:"z₂ – Amplitude & Phase",
+    amp1_lbl:"Amplitude 1", amp2_lbl:"Amplitude 2",
+    ph1_lbl:"Phase 1 (°)", ph2_lbl:"Phase 2 (°)",
+    z1_re_lbl:"Re(z₁)", z1_im_lbl:"Im(z₁)", z2_re_lbl:"Re(z₂)", z2_im_lbl:"Im(z₂)",
+    op_title:"z₃ – Result", op_lbl:"Definition",
+    op_add:"z₃ = z₁ + z₂", op_sub:"z₃ = z₁ − z₂", op_mul:"z₃ = z₁ · z₂", op_div:"z₃ = z₁ / z₂",
+    zr_re_lbl:"Re(z₃)", zr_im_lbl:"Im(z₃)", zr_mag_lbl:"|z₃|", zr_ang_lbl:"∠z₃ (°)",
+    sum_title:"Operation summary",
+    sum_html:`<ul>
+      <li><strong>Add:</strong> add real and imaginary parts.</li>
+      <li><strong>Subtract:</strong> subtract real and imaginary parts.</li>
+      <li><strong>Multiply:</strong> multiply magnitudes and add phases.</li>
+      <li><strong>Divide:</strong> divide magnitudes and subtract phases.</li>
+    </ul>`,
+    themeDark:"Dark", themeLight:"Light"
+  },
+  fr:{
+    title:"Opérations sur les Nombres Complexes – Vecteurs",
+    z1_title:"z₁ – Amplitude & Phase", z2_title:"z₂ – Amplitude & Phase",
+    amp1_lbl:"Amplitude 1", amp2_lbl:"Amplitude 2",
+    ph1_lbl:"Phase 1 (°)", ph2_lbl:"Phase 2 (°)",
+    z1_re_lbl:"Re(z₁)", z1_im_lbl:"Im(z₁)", z2_re_lbl:"Re(z₂)", z2_im_lbl:"Im(z₂)",
+    op_title:"z₃ – Résultat", op_lbl:"Définition",
+    op_add:"z₃ = z₁ + z₂", op_sub:"z₃ = z₁ − z₂", op_mul:"z₃ = z₁ · z₂", op_div:"z₃ = z₁ / z₂",
+    zr_re_lbl:"Re(z₃)", zr_im_lbl:"Im(z₃)", zr_mag_lbl:"|z₃|", zr_ang_lbl:"∠z₃ (°)",
+    sum_title:"Résumé des opérations",
+    sum_html:`<ul>
+      <li><strong>Addition :</strong> on additionne les parties réelle et imaginaire.</li>
+      <li><strong>Soustraction :</strong> on soustrait les parties réelle et imaginaire.</li>
+      <li><strong>Multiplication :</strong> on multiplie les modules et on additionne les phases.</li>
+      <li><strong>Division :</strong> on divise les modules et on soustrait les phases.</li>
+    </ul>`,
+    themeDark:"Sombre", themeLight:"Clair"
+  }
+};
+
+/* ===== DOM refs ===== */
+const $ = id => document.getElementById(id);
+const langSel = $('lang');
+const themeBtn = $('themeBtn');
+const cv = $('cv');
+const ctx = cv.getContext('2d');
+
+const amp1 = $('amp1'), ph1 = $('ph1');
+const amp2 = $('amp2'), ph2 = $('ph2');
+const opSel = $('op');
+
+const amp1_v = $('amp1_v'), ph1_v = $('ph1_v');
+const amp2_v = $('amp2_v'), ph2_v = $('ph2_v');
+
+const z1_re = $('z1_re'), z1_im = $('z1_im');
+const z2_re = $('z2_re'), z2_im = $('z2_im');
+const zr_re = $('zr_re'), zr_im = $('zr_im');
+const zr_mag = $('zr_mag'), zr_ang = $('zr_ang');
+
+/* ===== Theme & language ===== */
+let currentLang = 'fr';
+let dark = false;
+
+function applyLang(){
+  const t = T[currentLang];
+  $('title').textContent = t.title;
+  $('z1_title').textContent = t.z1_title; $('z2_title').textContent = t.z2_title;
+  $('amp1_lbl').textContent = t.amp1_lbl; $('amp2_lbl').textContent = t.amp2_lbl;
+  $('ph1_lbl').textContent = t.ph1_lbl; $('ph2_lbl').textContent = t.ph2_lbl;
+
+  $('op_title').textContent = t.op_title; $('op_lbl').textContent = t.op_lbl;
+  opSel.options[0].text = t.op_add; opSel.options[1].text = t.op_sub;
+  opSel.options[2].text = t.op_mul; opSel.options[3].text = t.op_div;
+  $('zr_re_lbl').textContent = t.zr_re_lbl; $('zr_im_lbl').textContent = t.zr_im_lbl;
+  $('zr_mag_lbl').textContent = t.zr_mag_lbl; $('zr_ang_lbl').textContent = t.zr_ang_lbl;
+
+  $('sum_title').textContent = t.sum_title; $('sum_text').innerHTML = t.sum_html;
+  themeBtn.textContent = dark ? t.themeLight : t.themeDark;
+
+  updateLeftScrollbarPadding();
+  draw();
+}
+
+langSel.addEventListener('change', e=>{ currentLang = e.target.value; applyLang(); });
+themeBtn.addEventListener('click', ()=>{
+  dark = !dark; document.body.classList.toggle('dark', dark);
+  applyLang();
+});
+
+/* ===== Helpers ===== */
+const DEG = Math.PI/180;
+const LABEL_SCALE = 1.3; // Tamaño global de etiquetas (1.0 = tamaño base). Sube a 1.3, 1.6, etc.
+function polarToRect(r, deg){ const a=deg*DEG; return {re:r*Math.cos(a), im:r*Math.sin(a)}; }
+function rectToPolar(re,im){ const r=Math.hypot(re,im); let a=Math.atan2(im,re)/DEG; return {r, a}; }
+function formatNum(x){ return (Math.abs(x)<1e-3?0:x).toFixed(3); }
+
+/* ===== UI sync ===== */
+function syncBadges(){
+  amp1_v.textContent = (+amp1.value).toFixed(2);
+  ph1_v.textContent  = `${(+ph1.value|0)}°`;
+  amp2_v.textContent = (+amp2.value).toFixed(2);
+  ph2_v.textContent  = `${(+ph2.value|0)}°`;
+}
+
+/* ===== Scrollbar width reserving (anti-superposición) ===== */
+function updateLeftScrollbarPadding(){
+  const left = document.getElementById('leftCol');
+  if(!left) return;
+  const sbw = left.offsetWidth - left.clientWidth; // ancho real de la barra
+  left.style.setProperty('--sbw', (sbw > 0 ? sbw : 0) + 'px');
+}
+window.addEventListener('load', updateLeftScrollbarPadding);
+window.addEventListener('resize', updateLeftScrollbarPadding);
+document.addEventListener('DOMContentLoaded', ()=>{
+  const left = document.getElementById('leftCol');
+  if(left){
+    left.addEventListener('mouseenter', updateLeftScrollbarPadding);
+  }
+});
+
+/* ===== Geometry & drawing ===== */
+function resizeCanvasToFit(){
+  const wrap = cv.parentElement;
+  const ratio = window.devicePixelRatio || 1;
+  const pad = 8;
+  const w = wrap.clientWidth - pad*2;
+  const h = wrap.clientHeight - pad*2; /* ocupa todo el alto disponible del card */
+  cv.style.width = w + 'px';
+  cv.style.height = h + 'px';
+  cv.width = Math.max(320, Math.floor(w*ratio));
+  cv.height = Math.max(320, Math.floor(h*ratio));
+}
+
+function drawAxes(scalePx){
+  ctx.clearRect(0,0,cv.width,cv.height);
+
+  const axisColor = getComputedStyle(document.body).getPropertyValue('--axis').trim() || '#ddd';
+  const gridColor = getComputedStyle(document.body).getPropertyValue('--grid').trim() || '#eee';
+  const circleColor = getComputedStyle(document.body).getPropertyValue('--circle').trim() || '#cfd3d7';
+
+  const cx = cv.width/2, cy = cv.height/2;
+  const w = cv.width, h = cv.height;
+
+  ctx.lineWidth = 1;
+
+  // Grilla
+  ctx.strokeStyle = gridColor;
+  ctx.beginPath();
+  const rangeX = Math.ceil((w/2)/scalePx);
+  const rangeY = Math.ceil((h/2)/scalePx);
+  for(let i=-rangeX;i<=rangeX;i++){
+    const x = cx + i*scalePx;
+    ctx.moveTo(x, 0); ctx.lineTo(x, h);
+  }
+  for(let j=-rangeY;j<=rangeY;j++){
+    const y = cy - j*scalePx;
+    ctx.moveTo(0, y); ctx.lineTo(w, y);
+  }
+  ctx.stroke();
+
+  // Ejes
+  ctx.strokeStyle = axisColor;
+  ctx.beginPath();
+  ctx.moveTo(0, cy); ctx.lineTo(w, cy); // X
+  ctx.moveTo(cx, 0); ctx.lineTo(cx, h); // Y
+  ctx.stroke();
+
+  // Ticks y números
+  ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--muted').trim() || '#666';
+  ctx.font = `${Math.max(10, Math.floor(12*(window.devicePixelRatio||1)))}px Arial`;
+
+  // X
+  for(let i=-rangeX;i<=rangeX;i++){
+    const x = cx + i*scalePx;
+    ctx.strokeStyle = axisColor;
+    ctx.beginPath(); ctx.moveTo(x, cy-6); ctx.lineTo(x, cy+6); ctx.stroke();
+    if(i!==0) ctx.fillText(String(i), x+3, cy + 14);
+  }
+  // Y
+  for(let j=-rangeY;j<=rangeY;j++){
+    const y = cy - j*scalePx;
+    ctx.strokeStyle = axisColor;
+    ctx.beginPath(); ctx.moveTo(cx-6, y); ctx.lineTo(cx+6, y); ctx.stroke();
+    if(j!==0) ctx.fillText(String(j), cx + 8, y + 4);
+  }
+  // 0 en el origen
+  ctx.fillText("0", cx + 6, cy + 12);
+
+  // Círculo unidad (radio 1)
+  ctx.strokeStyle = circleColor;
+  ctx.setLineDash([6,6]);
+  ctx.beginPath();
+  ctx.arc(cx, cy, scalePx, 0, Math.PI*2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function drawArrowFromOrigin(re_px, im_px, color){
+  const cx = cv.width/2, cy = cv.height/2;
+  const endX = cx + re_px;
+  const endY = cy - im_px;
+
+  const ang = Math.atan2(im_px, re_px); // ángulo en coords matemáticas (y hacia arriba)
+  const AR = 12 * (window.devicePixelRatio||1);
+  const half = AR * 0.5;
+
+  const baseX = endX - Math.cos(ang)*AR;
+  const baseY = endY + Math.sin(ang)*AR;
+
+  ctx.strokeStyle = color; ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(baseX, baseY);
+  ctx.stroke();
+
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(endX, endY);
+  ctx.lineTo(endX - Math.cos(ang)*AR + Math.sin(ang)*half, endY + Math.sin(ang)*AR + Math.cos(ang)*half);
+  ctx.lineTo(endX - Math.cos(ang)*AR - Math.sin(ang)*half, endY + Math.sin(ang)*AR - Math.cos(ang)*half);
+  ctx.closePath();
+  ctx.fill();
+
+  return { endX, endY, ang };
+}
+
+function drawVectorLabel(text, endX, endY, ang, color){
+  const ratio = window.devicePixelRatio || 1;
+
+  // Escalas según la constante global
+  const fontPx = Math.max(12, Math.floor(13 * ratio * LABEL_SCALE));
+  const ALONG  = (12 * ratio + 8) * LABEL_SCALE;  // más allá de la punta
+  const PERP   = (6  * ratio) * LABEL_SCALE;      // separación lateral
+  const haloW  = Math.max(2, 3 * LABEL_SCALE);    // grosor del halo
+
+  // Dirección del vector (coords canvas)
+  const dx = Math.cos(ang), dy = -Math.sin(ang);
+  const nx = -Math.sin(ang), ny = -Math.cos(ang); // normal izquierda
+
+  let x = endX + dx*ALONG + nx*PERP;
+  let y = endY + dy*ALONG + ny*PERP;
+
+  // No salir del canvas
+  const pad = 8*ratio + 4;
+  x = Math.min(cv.width - pad, Math.max(pad, x));
+  y = Math.min(cv.height - pad, Math.max(pad, y));
+
+  const isDark = document.body.classList.contains('dark');
+  ctx.save();
+  ctx.font = `${fontPx}px Arial`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.lineWidth = haloW;
+  ctx.strokeStyle = isDark ? 'rgba(0,0,0,0.65)' : 'rgba(255,255,255,0.9)';
+  ctx.strokeText(text, x, y);
+  ctx.fillStyle = color;
+  ctx.fillText(text, x, y);
+  ctx.restore();
+}
+
+
+function computeAll(){
+  const r1 = +amp1.value, a1 = +ph1.value;
+  const r2 = +amp2.value, a2 = +ph2.value;
+
+  const z1 = polarToRect(r1, a1);
+  const z2 = polarToRect(r2, a2);
+
+  let zr;
+  const op = opSel.value;
+  if(op==='add'){ zr = {re: z1.re+z2.re, im: z1.im+z2.im}; }
+  else if(op==='sub'){ zr = {re: z1.re-z2.re, im: z1.im-z2.im}; }
+  else if(op==='mul'){ zr = polarToRect(r1*r2, a1+a2); }
+  else{
+    const r = (r2===0) ? Infinity : (r1/r2);
+    const a = a1 - a2;
+    zr = (r===Infinity) ? {re:NaN, im:NaN} : polarToRect(r, a);
+  }
+
+  z1_re.textContent = formatNum(z1.re);
+  z1_im.textContent = formatNum(z1.im);
+  z2_re.textContent = formatNum(z2.re);
+  z2_im.textContent = formatNum(z2.im);
+
+  if(isFinite(zr.re) && isFinite(zr.im)){
+    const p = rectToPolar(zr.re, zr.im);
+    zr_re.textContent = formatNum(zr.re);
+    zr_im.textContent = formatNum(zr.im);
+    zr_mag.textContent = formatNum(p.r);
+    zr_ang.textContent = `${Math.round(p.a)}`;
+  } else {
+    zr_re.textContent = zr_im.textContent = '—';
+    zr_mag.textContent = zr_ang.textContent = '—';
+  }
+
+  return {z1, z2, zr};
+}
+
+function draw(){
+  resizeCanvasToFit();
+  syncBadges();
+  const {z1, z2, zr} = computeAll();
+
+  const R1 = Math.hypot(z1.re, z1.im);
+  const R2 = Math.hypot(z2.re, z2.im);
+  const RR = (isFinite(zr.re)&&isFinite(zr.im)) ? Math.hypot(zr.re, zr.im) : 1;
+  const Rmax = Math.max(1e-6, R1, R2, RR);
+  const margin = 1.15;
+  const usableHalfW = (cv.width/2) * 0.92;
+  const usableHalfH = (cv.height/2) * 0.92;
+  const scalePx = Math.min(usableHalfW, usableHalfH) / (Rmax*margin);
+
+  drawAxes(scalePx);
+
+  const colorZ1 = getComputedStyle(document.body).getPropertyValue('--brand-3').trim() || '#4CAF50';
+  const colorZ2 = getComputedStyle(document.body).getPropertyValue('--brand').trim() || '#4ECDC4';
+  const colorZR = getComputedStyle(document.body).getPropertyValue('--brand-2').trim() || '#FF6B6B';
+
+  const z1px = {re: z1.re*scalePx, im: z1.im*scalePx};
+  const z2px = {re: z2.re*scalePx, im: z2.im*scalePx};
+  const zrpx = {re: (isFinite(zr.re)? zr.re*scalePx: 0), im: (isFinite(zr.im)? zr.im*scalePx:0)};
+
+  drawArrowFromOrigin(z1px.re, z1px.im, colorZ1);
+  drawArrowFromOrigin(z2px.re, z2px.im, colorZ2);
+  if(isFinite(zr.re)&&isFinite(zr.im)) drawArrowFromOrigin(zrpx.re, zrpx.im, colorZR);
+
+  // Flechas
+  const p1 = drawArrowFromOrigin(z1px.re, z1px.im, colorZ1);
+  const p2 = drawArrowFromOrigin(z2px.re, z2px.im, colorZ2);
+  if(isFinite(zr.re)&&isFinite(zr.im)){
+    const p3 = drawArrowFromOrigin(zrpx.re, zrpx.im, colorZR);
+    drawVectorLabel('z₃', p3.endX, p3.endY, p3.ang, colorZR);
+  }
+
+  // Etiquetas z1 y z2
+  drawVectorLabel('z₁', p1.endX, p1.endY, p1.ang, colorZ1);
+  drawVectorLabel('z₂', p2.endX, p2.endY, p2.ang, colorZ2);
+
+  updateLeftScrollbarPadding(); // por si el SO alterna el overlay al interactuar
+}
+
+/* ===== events ===== */
+[amp1, ph1, amp2, ph2, opSel].forEach(el=> el.addEventListener('input', draw));
+window.addEventListener('resize', draw);
+
+/* init */
+langSel.value = 'fr';      // muestra “Français” en el select
+currentLang   = 'fr';      // por coherencia
+applyLang();
+draw();
+</script>
+</body>
+</html>
