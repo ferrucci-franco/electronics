@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Signal → Two Adjustable Filters</title>
+<meta name="description" content="Single-frequency input (amp=1)...(LP/HP), time plot and Bode plot (magnitude + optional phase).">
+<script defer src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+<style>
+  :root{
+    --bg:#ffffff; --fg:#0f1222; --muted:#5a6275; --card:#f7f8fb; --border:#e6eaf3; --link:#0b6cff;
+    --paper:#ffffff; --plot:#ffffff;
+    --c-in:#888888; --c-y1:#1f77b4; --c-y2:#ff7f0e;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0b0e15; --fg:#eaf0ff; --muted:#a9b1c6; --card:#111624; --border:#1d2540; --link:#8ab4ff;
+           --paper:#111624; --plot:#111624; }
+  }
+  html.dark{ --bg:#0b0e15; --fg:#eaf0ff; --muted:#a9b1c6; --card:#111624; --border:#1d2540; --link:#8ab4ff; --paper:#111624; --plot:#111624; }
+  html.light{ --bg:#ffffff; --fg:#0f1222; --muted:#5a6275; --card:#f7f8fb; --border:#e6eaf3; --link:#0b6cff; --paper:#ffffff; --plot:#ffffff; }
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
+  a{color:var(--link);text-decoration:none}
+
+  .grid{display:grid;grid-template-columns:340px 1fr 1fr;gap:10px;padding:10px;height:100vh}
+  .panel{border:1px solid var(--border);background:var(--card);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:10px;min-width:0}
+  .controls{overflow:auto}
+  .muted{color:var(--muted)}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  label{font-size:15px}
+  input[type=range]{width:100%}
+  .badge{font-variant-numeric:tabular-nums;border:1px solid var(--border);border-radius:999px;padding:2px 8px}
+
+  .controls button, .controls input[type=range], .controls select{
+    border:1px solid var(--border);background:var(--card);color:var(--fg);border-radius:10px;padding:8px 10px
+  }
+  .controls select{min-width:150px}
+  .controls button{cursor:pointer}
+  .controls button:hover{ filter: brightness(0.95); }
+  .controls button:focus-visible{ outline: 2px solid currentColor; outline-offset: 2px; }
+
+  .seg{display:flex;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+  .seg button{border:0;background:transparent;color:var(--muted);padding:6px 10px;cursor:pointer}
+  .seg button.active{background:var(--bg);color:var(--fg)}
+
+  .plotwrap{height:100%;min-height:0}
+  #timePlot{width:100%;height:100%}
+
+  .bodeWrap{display:flex;flex-direction:column;gap:8px; height:100%;}
+  #bodeMag, #bodePhase{width:100%;}
+  .hdrrow{justify-content:space-between}
+  .lang-theme{display:flex;gap:8px;align-items:center}
+  #themeBtn{padding:6px 10px}
+  .card{border:1px solid var(--border);border-radius:12px;padding:10px;background:var(--paper)}
+  .card h3{margin:0 0 6px;font-size:15px}
+  .grow{flex:1}
+  .pill{font-size:12px;padding:2px 6px;border:1px solid var(--border);border-radius:999px}
+  .copyright{font-size:12px;line-height:1.25}
+</style>
+</head>
+<body>
+  <div class="grid">
+    <!-- Left: Controls -->
+    <section class="panel controls">
+      <div class="row hdrrow">
+        <div>
+          <h2 id="title" style="margin:0 0 4px;font-size:18px">Signal → Two Adjustable Filters</h2>
+        </div>
+        <div class="lang-theme" aria-label="language switcher">
+          <div class="seg" role="tablist">
+            <button id="lang-en" class="active" data-lang="en" role="tab" aria-selected="true">EN</button>
+            <button id="lang-fr" data-lang="fr" role="tab" aria-selected="false">FR</button>
+            <button id="lang-es" data-lang="es" role="tab" aria-selected="false">ES</button>
+          </div>
+          <button id="themeBtn" title="Toggle theme">🌗</button>
+        </div>
+      </div>
+
+      <!-- Input card -->
+      <div class="card">
+        <h3 id="inCardTitle">Input (single frequency)</h3>
+
+        <div class="row">
+          <label for="waveSel" id="waveLbl" class="grow">Type</label>
+          <select id="waveSel">
+            <option value="sin">Sine</option>
+            <option value="square">Square</option>
+            <option value="triangle">Triangle</option>
+            <option value="saw">Sawtooth</option>
+            <option value="trap">Trapezoid</option>
+          </select>
+        </div>
+
+        <!-- Freq slider -->
+        <div class="row">
+          <label for="freq" id="freqLbl" class="grow">Freq (Hz)</label>
+          <span id="freqVal" class="pill">100 Hz</span>
+        </div>
+        <input id="freq" type="range" min="1" max="10000" step="1" value="100" />
+
+        <!-- Nmax slider -->
+        <div class="row" style="margin-top:6px">
+          <label for="nmax" id="nmaxLbl" class="grow">Cycles N<sub>max</sub></label>
+          <span id="nmaxVal" class="pill">10</span>
+        </div>
+        <!-- max será ajustado por constante en JS -->
+        <input id="nmax" type="range" min="1" max="20" step="1" value="10" />
+
+        <div class="muted" style="font-size:12px" id="inHint">Amplitude = 1. Time window is t ∈ [0, N<sub>max</sub>/f].</div>
+      </div>
+
+      <!-- Filter 1 -->
+      <div class="card">
+        <div class="row">
+          <label id="fc1Label" class="grow"><strong>Filter 1</strong></label>
+          <select id="f1type">
+            <option value="lp">Low-pass</option>
+            <option value="hp">High-pass</option>
+          </select>
+        </div>
+
+        <div class="row" style="margin-top:4px">
+          <label id="order1Label" class="grow">Order</label>
+          <select id="order1Sel">
+            <option value="2">2</option>
+            <option value="4" selected>4</option>
+            <option value="6">6</option>
+          </select>
+        </div>
+
+        <div class="row" style="margin-top:6px"><span id="fc1Val" class="badge">250 Hz</span></div>
+        <input id="fc1" type="range" min="1.3010" max="4.0000" step="0.001" />
+      </div>
+
+      <!-- Filter 2 -->
+      <div class="card">
+        <div class="row">
+          <label id="fc2Label" class="grow"><strong>Filter 2</strong></label>
+          <select id="f2type">
+            <option value="lp">Low-pass</option>
+            <option value="hp">High-pass</option>
+          </select>
+        </div>
+
+        <div class="row" style="margin-top:4px">
+          <label id="order2Label" class="grow">Order</label>
+          <select id="order2Sel">
+            <option value="2">2</option>
+            <option value="4" selected>4</option>
+            <option value="6">6</option>
+          </select>
+        </div>
+
+        <div class="row" style="margin-top:6px"><span id="fc2Val" class="badge">150 Hz</span></div>
+        <input id="fc2" type="range" min="1.3010" max="4.0000" step="0.001" />
+      </div>
+
+      <div class="row" style="margin-top:6px">
+        <label for="bodeDb" id="bodeScaleLabel">Y scale: logarithmic / linear</label>
+        <input id="bodeDb" type="checkbox" checked />
+      </div>
+      <div class="row">
+        <label for="showPhase" id="showPhaseLabel">Show phase</label>
+        <input id="showPhase" type="checkbox" />
+      </div>
+
+      <div class="muted copyright" style="margin-top:auto">
+        © 2025 Franco Ferrucci<br>
+        <a href="https://ferrucci-franco.github.io/electronics/" target="_blank" rel="noopener">https://ferrucci-franco.github.io/electronics/</a>
+      </div>
+    </section>
+
+    <!-- Middle: Time plot -->
+    <section class="panel plotwrap"><div id="timePlot"></div></section>
+
+    <!-- Right: Bode column (mag + optional phase) -->
+    <section class="panel plotwrap">
+      <div class="bodeWrap" id="bodeWrap">
+        <div id="bodeMag" style="height:100%"></div>
+        <div id="bodePhase" style="display:none;height:50%"></div>
+      </div>
+    </section>
+  </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  'use strict';
+
+  // ========= Helpers =========
+  const $ = s => document.querySelector(s);
+  const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const clamp = (x,a,b) => Math.min(b,Math.max(a,x));
+  const rad2deg = r => r*180/Math.PI;
+  const ln10 = Math.log(10);
+  const log10 = x => Math.log(x)/ln10;
+  const pow10 = x => Math.pow(10,x);
+  const logRange = (min,max) => [log10(min), log10(max)];
+
+  function resizePlot(id){
+    const el = document.getElementById(id);
+    if (el) Plotly.Plots.resize(el);
+  }
+
+  // ========= Textos =========
+  const TXT = {
+    en:{ title:'Signal → Two Adjustable Filters', inCard:'Input (single frequency)',
+      wave:'Type', waveOpt:{sin:'Sine',square:'Square',triangle:'Triangle',saw:'Sawtooth',trap:'Trapezoid'},
+      freq:'Freq (Hz)', nmax:'Cycles Nmax', hint:'Amplitude = 1. Time window is t ∈ [0, Nmax/f].',
+      order:'Order',
+      fc1:'Filter 1', fc2:'Filter 2', bodeScale:'Y scale: logarithmic / linear', showPhase:'Show phase',
+      timeTitle:()=>'Time response', bodeTitle:'Bode — Magnitude', bodePhaseTitle:'Bode — Phase',
+      traceIn:'Input', traceY1:'Output 1', traceY2:'Output 2', bodeYdB:'|H| (dB)', bodeYlin:'|H| (linear)', bodeX:'Frequency (Hz)', phaseY:'Phase (deg)',
+      lp:'Low-pass', hp:'High-pass'
+    },
+    fr:{ title:'Signal → Deux filtres réglables', inCard:'Entrée (fréquence unique)',
+      wave:'Type', waveOpt:{sin:'Sinusoïdal',square:'Carré',triangle:'Triangulaire',saw:'Dent de scie',trap:'Trapézoïdal'},
+      freq:'Fréq. (Hz)', nmax:'Cycles Nmax', hint:'Amplitude = 1. Fenêtre temporelle t ∈ [0, Nmax/f].',
+      order:'Ordre',
+      fc1:'Filtre 1', fc2:'Filtre 2', bodeScale:'Échelle Y : logarithmique / linéaire', showPhase:'Afficher la phase',
+      timeTitle:()=>'Réponse temporelle', bodeTitle:'Bode — Magnitude', bodePhaseTitle:'Bode — Phase',
+      traceIn:'Entrée', traceY1:'Sortie 1', traceY2:'Sortie 2', bodeYdB:'|H| (dB)', bodeYlin:'|H| (linéaire)', bodeX:'Fréquence (Hz)', phaseY:'Phase (deg)',
+      lp:'Passe-bas', hp:'Passe-haut'
+    },
+    es:{ title:'Señal → Dos filtros ajustables', inCard:'Entrada (frecuencia única)',
+      wave:'Tipo', waveOpt:{sin:'Seno',square:'Cuadrada',triangle:'Triangular',saw:'Diente de sierra',trap:'Trapezoidal'},
+      freq:'Frecuencia (Hz)', nmax:'Ciclos Nmax', hint:'Amplitud = 1. Ventana temporal t ∈ [0, Nmax/f].',
+      order:'Orden',
+      fc1:'Filtro 1', fc2:'Filtro 2', bodeScale:'Escala Y: logarítmica / lineal', showPhase:'Mostrar fase',
+      timeTitle:()=>'Respuesta temporal', bodeTitle:'Bode — Magnitud', bodePhaseTitle:'Bode — Fase',
+      traceIn:'Entrada', traceY1:'Salida 1', traceY2:'Salida 2', bodeYdB:'|H| (dB)', bodeYlin:'|H| (lineal)', bodeX:'Frecuencia (Hz)', phaseY:'Fase (°)',
+      lp:'Pasa-bajo', hp:'Pasa-alto'
+    }
+  };
+
+  // ========= Estado & Config =========
+  const FS_MIN = 100000;
+  const FS_MAX = 1000000;
+  const SPP    = 256;
+
+  const TRAP_EDGE_FRAC = 0.30;
+
+  // Límites f para Bode (home)
+  const BODE_FMIN = 10;
+  const BODE_FMAX = 10000;
+
+  // === NUEVO: control de Nmax por constantes ===
+  const NMAX_MIN = 1;
+  const NMAX_MAX = 20;
+
+  const COLORS = {
+    input: getComputedStyle(document.documentElement).getPropertyValue('--c-in').trim(),
+    f1:    getComputedStyle(document.documentElement).getPropertyValue('--c-y1').trim(),
+    f2:    getComputedStyle(document.documentElement).getPropertyValue('--c-y2').trim()
+  };
+
+  let timeBuilt=false, bodeMagBuilt=false, bodePhaseBuilt=false;
+  let bodeCache1=null, bodeCache2=null;
+  let _syncing=false;
+  let LREV = 0;
+
+  const state = {
+    wave:'sin', freq:100, nmax:10, duration:10/100,
+    fs: Math.min(Math.max(SPP*100, FS_MIN), FS_MAX),
+    x:null,
+    fc1:250, fc2:150, f1type:'lp', f2type:'lp',
+    order1:4, order2:4,
+    y1:null, y2:null,
+    bodeDb:true, showPhase:false
+  };
+
+  const getFs = () => state.fs;
+  const viewWindowSec = () => state.nmax / state.freq;
+  const clampFc = f => Math.min(0.45*getFs(), Math.max(20, f));
+  const hzToSliderVal = hz => log10(Math.min(10000, Math.max(20, hz)));
+  const sliderValToHz = v  => Math.round(pow10(parseFloat(v)));
+  const bodeDefaultXRangeExp = () => [Math.log10(BODE_FMIN), Math.log10(BODE_FMAX)];
+
+  // ========= Theme toggle (solo light/dark, sin Auto) =========
+  (function themeToggle(){
+    const btn = $('#themeBtn'); if(!btn) return;
+    const saved = localStorage.getItem('theme');
+    const initial = (saved==='light' || saved==='dark') ? saved : 'light';
+    const html=document.documentElement;
+    html.classList.remove('light','dark');
+    html.classList.add(initial);
+    localStorage.setItem('theme', initial);
+
+    btn.addEventListener('click', () => {
+      const mode = html.classList.contains('dark') ? 'light' : 'dark';
+      html.classList.remove('light','dark'); html.classList.add(mode);
+      localStorage.setItem('theme', mode);
+      if(window.Plotly && timeBuilt) Plotly.relayout('timePlot', {paper_bgcolor: cssVar('--paper'), plot_bgcolor: cssVar('--plot')});
+      if(window.Plotly && bodeMagBuilt) Plotly.relayout('bodeMag', {paper_bgcolor: cssVar('--paper'), plot_bgcolor: cssVar('--plot')});
+      if(window.Plotly && bodePhaseBuilt) Plotly.relayout('bodePhase', {paper_bgcolor: cssVar('--paper'), plot_bgcolor: cssVar('--plot')});
+    });
+  })();
+
+  // ========= Idioma =========
+  let LANG='en';
+  const langBtns = [$('#lang-en'), $('#lang-fr'), $('#lang-es')].filter(Boolean);
+  function setLang(l){
+    LANG=l; const t=TXT[l];
+    [['title', t.title], ['inCardTitle', t.inCard], ['waveLbl', t.wave],
+     ['freqLbl', t.freq], ['nmaxLbl', t.nmax], ['inHint', t.hint],
+     ['fc1Label', t.fc1], ['fc2Label', t.fc2], ['bodeScaleLabel', t.bodeScale], ['showPhaseLabel', t.showPhase],
+     ['order1Label', t.order], ['order2Label', t.order]
+    ].forEach(([id,txt])=>{ const el=$('#'+id); if(el) el.innerHTML=txt; });
+
+    const f1sel=$('#f1type'), f2sel=$('#f2type');
+    if(f1sel){ f1sel.options[0].text=t.lp; f1sel.options[1].text=t.hp; }
+    if(f2sel){ f2sel.options[0].text=t.lp; f2sel.options[1].text=t.hp; }
+
+    if(window.Plotly && timeBuilt){
+      Plotly.restyle('timePlot', {name:[t.traceIn, t.traceY1, t.traceY2]}, [0,1,2]);
+      Plotly.relayout('timePlot', {'title.text':'<b>'+t.timeTitle()+'</b>', 'xaxis.title':'t (s)', 'yaxis.title':'Amplitude'});
+    }
+    if(window.Plotly && bodeMagBuilt){
+      Plotly.relayout('bodeMag', {'title.text':'<b>'+t.bodeTitle+'</b>', 'xaxis.title':t.bodeX, 'yaxis.title': state.bodeDb ? t.bodeYdB : t.bodeYlin});
+    }
+    if(window.Plotly && bodePhaseBuilt){
+      Plotly.relayout('bodePhase', {'title.text':'<b>'+t.bodePhaseTitle+'</b>', 'xaxis.title':t.bodeX, 'yaxis.title': t.phaseY});
+    }
+    langBtns.forEach(btn => {
+      const isActive = (btn.dataset.lang === l);
+      btn.classList.toggle('active', isActive);
+      btn.setAttribute('aria-selected', String(isActive));
+    });
+    document.documentElement.setAttribute('lang', l);
+    localStorage.setItem('lang', l);
+  }
+  langBtns.forEach(b=> b.addEventListener('click', ()=> setLang(b.dataset.lang)));
+
+  // ========= fs dinámico =========
+  function updateFsFromFreq(){ state.fs = Math.min(Math.max(SPP * state.freq, FS_MIN), FS_MAX); }
+
+  // ========= Señal de entrada =========
+  function buildInput(){
+    updateFsFromFreq();
+    state.duration = viewWindowSec();
+
+    const fs = getFs();
+    const N = Math.max(2, Math.floor(fs*state.duration));
+    const arr = new Float32Array(N);
+    const TAU = 2*Math.PI;
+
+    for(let n=0;n<N;n++){
+      const t = n/fs;
+      const ph = TAU*state.freq*t;
+      if(state.wave==='sin'){ arr[n] = Math.sin(ph); }
+      else{
+        let u = (ph/TAU)%1; if(u<0) u+=1;
+        if(state.wave==='square'){ arr[n] = (u<0.5 ? 1 : -1); }
+        else if(state.wave==='triangle'){ const tri = 1 - Math.abs((u*2)%2 - 1); arr[n] = 2*tri - 1; }
+        else if(state.wave==='saw'){ arr[n] = 2*u - 1; }
+        else{
+          const r = Math.min(0.499, Math.max(0.001, 0.20));
+          const f = (1 - 2*r)/2;
+          if(u < r){ arr[n] = -1 + (u/r)*2; }
+          else if(u < r+f){ arr[n] =  1; }
+          else if(u < r+f+r){ const a = (u-(r+f))/r; arr[n] = 1 - a*2; }
+          else{ arr[n] = -1; }
+        }
+      }
+    }
+    state.x = arr;
+  }
+
+  // ========= Filtros =========
+  function butterQs(N){
+    const out=[];
+    for(let k=1;k<=N/2;k++){
+      out.push(1/(2*Math.cos((2*k-1)*Math.PI/(2*N))));
+    }
+    return out;
+  }
+  function biquadLPButter(fc, Q){
+    const fs = getFs();
+    const w0 = 2*fs * Math.tan(Math.PI*fc/fs);
+    const K=2*fs, A=K*K, B=K*w0/Q, C=w0*w0;
+    let b0=C,b1=2*C,b2=C, a0=A+B+C, a1=2*(C-A), a2=A-B+C;
+    b0/=a0; b1/=a0; b2/=a0; a1/=a0; a2/=a0;
+    return {b0,b1,b2,a1,a2};
+  }
+  function biquadHPButter(fc, Q){
+    const fs = getFs();
+    const w0 = 2*fs * Math.tan(Math.PI*fc/fs);
+    const K=2*fs, A=K*K, B=K*w0/Q, C=w0*w0;
+    let b0=A,b1=-2*A,b2=A, a0=A+B+C, a1=2*(C-A), a2=A-B+C;
+    b0/=a0; b1/=a0; b2/=a0; a1/=a0; a2/=a0;
+    return {b0,b1,b2,a1,a2};
+  }
+  function biquadProcess(sig,c){
+    const y=new Float32Array(sig.length); let s1=0,s2=0; const {b0,b1,b2,a1,a2}=c;
+    for(let n=0;n<sig.length;n++){ const w=sig[n]-a1*s1-a2*s2; const out=b0*w+b1*s1+b2*s2; s2=s1; s1=w; y[n]=out; }
+    return y;
+  }
+  function filtNx(sig, fc, kind, N){
+    fc=clampFc(fc);
+    const Qs = butterQs(N);
+    let y = sig;
+    for(const Q of Qs){
+      const sec = (kind==='hp') ? biquadHPButter(fc,Q) : biquadLPButter(fc,Q);
+      y = biquadProcess(y, sec);
+    }
+    return y;
+  }
+  function updateFilters(){
+    state.y1 = filtNx(state.x, state.fc1, state.f1type, state.order1);
+    state.y2 = filtNx(state.x, state.fc2, state.f2type, state.order2);
+  }
+
+  // ========= Decimación tiempo =========
+  function decimateXY(sig){
+    const fs = getFs();
+    const count = Math.min(Math.floor(viewWindowSec()*fs), sig.length);
+    if (count <= 2) return { x:[0,(count-1)/fs], y:[sig[0]||0,sig[count-1]||0] };
+
+    const wrap = document.getElementById('timePlot');
+    const w = wrap ? Math.max(320, (wrap.getBoundingClientRect().width|0)) : 800;
+    const targetPts = Math.min(count, Math.max(12000, Math.floor(w*300)));
+
+    if (count <= targetPts){
+      const tx=new Array(count), ty=new Array(count);
+      for(let i=0;i<count;i++){ tx[i]=i/fs; ty[i]=sig[i]; }
+      return {x:tx,y:ty};
+    }
+
+    const bins = Math.max(1, Math.floor(targetPts/2));
+    const binSize = Math.floor(count/bins);
+    const X=[], Y=[];
+    for(let start=0; start<count; start+=binSize){
+      const end=Math.min(count,start+binSize);
+      let yMin=Infinity, yMax=-Infinity, iMin=start, iMax=start;
+      for(let i=start;i<end;i++){
+        const v=sig[i];
+        if(v<yMin){yMin=v; iMin=i;}
+        if(v>yMax){yMax=v; iMax=i;}
+      }
+      if(iMin<=iMax){
+        X.push(iMin/fs); Y.push(yMin);
+        if(iMax!==iMin){ X.push(iMax/fs); Y.push(yMax); }
+      }else{
+        X.push(iMax/fs); Y.push(yMax);
+        X.push(iMin/fs); Y.push(yMin);
+      }
+    }
+    return {x:X, y:Y};
+  }
+
+  // ========= Bode (mag + phase) =========
+  function bodeFor(fc, kind, N, nPts=512){
+    const fs = getFs();
+    const fmin = BODE_FMIN;
+    const fmax = Math.min(fs/2, BODE_FMAX);
+    const Qs = butterQs(N);
+    const f=new Array(nPts), mag=new Array(nPts), ph=new Array(nPts);
+
+    const logfmin = Math.log10(fmin), logfmax = Math.log10(fmax);
+    let prev = 0;
+    for(let i=0;i<nPts;i++){
+      const a=i/(nPts-1), ff=pow10(logfmin + a*(logfmax-logfmin));
+      const w=2*Math.PI*ff/fs, z1r=Math.cos(-w),z1i=Math.sin(-w), z2r=Math.cos(-2*w),z2i=Math.sin(-2*w);
+
+      function Hsec(Q){
+        const s = (kind==='hp') ? biquadHPButter(fc,Q) : biquadLPButter(fc,Q);
+        const nr=s.b0+s.b1*z1r+s.b2*z2r, ni=s.b1*z1i+s.b2*z2i;
+        const dr=1+s.a1*z1r+s.a2*z2r, di=s.a1*z1i+s.a2*z2i;
+        const den=dr*dr+di*di;
+        const hr=(nr*dr+ni*di)/den, hi=(ni*dr-nr*di)/den;
+        return [hr,hi];
+      }
+
+      let hr=1, hi=0;
+      for(const Q of Qs){
+        const h=Hsec(Q);
+        const rr = hr*h[0] - hi*h[1];
+        const ii = hr*h[1] + hi*h[0];
+        hr=rr; hi=ii;
+      }
+
+      const m = Math.hypot(hr,hi);
+      let ang = Math.atan2(hi,hr);
+      let diff = ang - prev;
+      if(diff >  Math.PI)  ang -= 2*Math.PI;
+      if(diff < -Math.PI)  ang += 2*Math.PI;
+      prev = ang;
+
+      f[i]=ff; mag[i]=m; ph[i]=rad2deg(ang);
+    }
+    return {f, mag, ph};
+  }
+
+  // ========= Plotly helpers =========
+  function exists(id){ const el = document.getElementById(id); if(!el){ console.warn('Plot container not found:', id); } return el; }
+  function isFiniteArray(a){ return Array.isArray(a) && a.length>1 && a.every(Number.isFinite); }
+  function sanitizeTraceXY(tr){
+    const x = Array.isArray(tr.x) ? tr.x : [];
+    const y = Array.isArray(tr.y) ? tr.y : [];
+    const outX=[], outY=[]; const n=Math.min(x.length,y.length);
+    for(let i=0;i<n;i++){ const xi=+x[i], yi=+y[i]; if(Number.isFinite(xi)&&Number.isFinite(yi)){ outX.push(xi); outY.push(yi);} }
+    tr.x=outX; tr.y=outY; return tr;
+  }
+  function safeNewPlot(id, data, layout, config){
+    const gd = exists(id);
+    if(!gd) return Promise.resolve();
+    const clean = data.map(d => sanitizeTraceXY({...d}));
+    if(!clean.some(d => isFiniteArray(d.x) && isFiniteArray(d.y))){
+      console.warn('No finite data to plot for', id, clean);
+      return Promise.resolve();
+    }
+    const lay = layout || {};
+    const cfg = Object.assign({responsive:true, displaylogo:false, editable:false, staticPlot:false, doubleClick:'reset'}, config||{});
+    return new Promise(resolve=>{
+      let tries=0;
+      function go(){
+        const rect=gd.getBoundingClientRect();
+        if(rect.width>20 && rect.height>20){ Plotly.newPlot(gd, clean, lay, cfg).then(resolve); }
+        else if(++tries<20){ requestAnimationFrame(go); }
+        else { Plotly.newPlot(gd, clean, lay, cfg).then(resolve); }
+      }
+      requestAnimationFrame(go);
+    });
+  }
+
+  function setMagYAxisLinear() {
+    Plotly.relayout('bodeMag', {
+      'yaxis.type': 'linear',
+      'yaxis.autorange': false,
+      'yaxis.rangemode': 'tozero',
+      'yaxis.range': [0, 1],
+      'uirevision': ++LREV
+    });
+  }
+  function setMagYAxisdB(titleText) {
+    Plotly.relayout('bodeMag', {
+      'yaxis.type': 'linear',
+      'yaxis.autorange': true,
+      'yaxis.rangemode': 'normal',
+      'yaxis.title.text': titleText,
+      'uirevision': ++LREV
+    });
+  }
+  function enforceMagYAxis(){
+    if(state.bodeDb) setMagYAxisdB(TXT[LANG].bodeYdB);
+    else setMagYAxisLinear();
+  }
+
+  // ========= Construcción de gráficos =========
+  async function buildPlots(){
+    const t = TXT[LANG];
+    const inD = decimateXY(state.x), y1D = decimateXY(state.y1), y2D = decimateXY(state.y2);
+
+    await safeNewPlot('timePlot', [
+      {type:'scatter', mode:'lines', name:t.traceIn, x:inD.x, y:inD.y, line:{width:1.5, color:COLORS.input}},
+      {type:'scatter', mode:'lines', name:t.traceY1, x:y1D.x, y:y1D.y, line:{width:2.5, color:COLORS.f1}},
+      {type:'scatter', mode:'lines', name:t.traceY2, x:y2D.x, y:y2D.y, line:{width:2.5, color:COLORS.f2}}
+    ], {
+      margin:{l:60,r:16,t:70,b:80},
+      xaxis:{title:'t (s)', autorange:false, range:[0, viewWindowSec()]},
+      yaxis:{title:'Amplitude', autorange:true},
+      legend:{orientation:'h', x:0.5, xanchor:'center', y:-0.2, yanchor:'top'},
+      title:{text:'<b>'+t.timeTitle()+'</b>', x:0.5, xanchor:'center', font:{size:18}},
+      uirevision:'keep',
+      paper_bgcolor: cssVar('--paper'), plot_bgcolor: cssVar('--plot')
+    }, {
+      doubleClick: false
+    });
+    timeBuilt=true;
+
+    const timeGd = document.getElementById('timePlot');
+    if(timeGd && timeGd.on){
+      timeGd.removeAllListeners && timeGd.removeAllListeners('plotly_doubleclick');
+      timeGd.on('plotly_doubleclick', () => {
+        Plotly.relayout('timePlot', {'xaxis.autorange': false, 'xaxis.range':[0, viewWindowSec()], 'yaxis.autorange': true});
+        return false;
+      });
+    }
+
+    // Bode MAG
+    bodeCache1 = bodeFor(state.fc1, state.f1type, state.order1);
+    bodeCache2 = bodeFor(state.fc2, state.f2type, state.order2);
+    const y1m = state.bodeDb ? bodeCache1.mag.map(m=>20*Math.log10(m)) : bodeCache1.mag;
+    const y2m = state.bodeDb ? bodeCache2.mag.map(m=>20*Math.log10(m)) : bodeCache2.mag;
+
+    await safeNewPlot('bodeMag', [
+      {type:'scatter', mode:'lines', name:t.fc1, x:bodeCache1.f, y:y1m, line:{color:COLORS.f1}},
+      {type:'scatter', mode:'lines', name:t.fc2, x:bodeCache2.f, y:y2m, line:{color:COLORS.f2}}
+    ], {
+      margin:{l:70,r:16,t:60,b:40},
+      xaxis:{title:t.bodeX, type:'log', range: bodeDefaultXRangeExp()},
+      yaxis:{title: state.bodeDb ? t.bodeYdB : t.bodeYlin, autorange:true},
+      legend:{orientation:'h', x:0.5, xanchor:'center', y:1.005, yanchor:'bottom'},
+      title:{text:'<b>'+t.bodeTitle+'</b>', x:0.5, xanchor:'center', font:{size:18}},
+      uirevision:'keep',
+      paper_bgcolor: cssVar('--paper'), plot_bgcolor: cssVar('--plot'),
+      shapes:[{ type:'line', x0:state.freq, x1:state.freq, y0:0, y1:1, xref:'x', yref:'paper', line:{color:'red', width:2, dash:'dot'} }]
+    });
+    bodeMagBuilt=true;
+
+    // Bode PHASE (si está activo)
+    await ensurePhasePlot();
+
+    setupBodeLinking();
+    setupBodeDoubleClick();
+
+    enforceMagYAxis();
+  }
+
+  async function ensurePhasePlot(){
+    const t = TXT[LANG];
+    const phDiv = $('#bodePhase'), magDiv = $('#bodeMag');
+    if(state.showPhase){
+      phDiv.style.display = 'block';
+      magDiv.style.height = '55%';
+      phDiv.style.height  = '45%';
+      resizePlot('bodeMag');
+
+      const y1p = bodeCache1.ph, y2p = bodeCache2.ph;
+      if(!bodePhaseBuilt){
+        await safeNewPlot('bodePhase', [
+          {type:'scatter', mode:'lines', name:t.fc1, x:bodeCache1.f, y:y1p, line:{color:COLORS.f1}},
+          {type:'scatter', mode:'lines', name:t.fc2, x:bodeCache2.f, y:y2p, line:{color:COLORS.f2}}
+        ], {
+          margin:{l:70,r:16,t:60,b:40},
+          xaxis:{title:t.bodeX, type:'log', range: bodeDefaultXRangeExp()},
+          yaxis:{title: t.phaseY, autorange:true},
+          legend:{orientation:'h', x:0.5, xanchor:'center', y:1.005, yanchor:'bottom'},
+          title:{text:'<b>'+t.bodePhaseTitle+'</b>', x:0.5, xanchor:'center', font:{size:18}},
+          uirevision:'keep',
+          paper_bgcolor: cssVar('--paper'), plot_bgcolor: cssVar('--plot'),
+          shapes:[{ type:'line', x0:state.freq, x1:state.freq, y0:0, y1:1, xref:'x', yref:'paper', line:{color:'red', width:2, dash:'dot'} }]
+        });
+        bodePhaseBuilt=true;
+      }else{
+        Plotly.update('bodePhase', {x:[bodeCache1.f,bodeCache2.f], y:[y1p,y2p]}, {}, [0,1]);
+        Plotly.relayout('bodePhase', {
+          'margin.t':60, 'margin.b':40,
+          'legend.orientation':'h', 'legend.x':0.5, 'legend.xanchor':'center', 'legend.y':1.005, 'legend.yanchor':'bottom'
+        });
+      }
+      resizePlot('bodePhase');
+
+    }else{
+      phDiv.style.display = 'none';
+      magDiv.style.height = '100%';
+      resizePlot('bodeMag');
+    }
+  }
+
+  function setupBodeLinking(){
+    const mag = document.getElementById('bodeMag');
+    const ph  = document.getElementById('bodePhase');
+    if(!mag || !mag.on) return;
+
+    function sync(toId, ev){
+      if(_syncing) return;
+      const xr0 = ev['xaxis.range[0]'];
+      const xr1 = ev['xaxis.range[1]'];
+      const autor = ev['xaxis.autorange'];
+
+      _syncing = true;
+      if(xr0!=null && xr1!=null){
+        Plotly.relayout(toId, {'xaxis.type':'log', 'xaxis.autorange': false, 'xaxis.range':[xr0,xr1]}).then(()=>{_syncing=false;});
+      }else if(autor){
+        Plotly.relayout(toId, {'xaxis.type':'log', 'xaxis.autorange': true}).then(()=>{_syncing=false;});
+      }else{
+        _syncing=false;
+      }
+    }
+
+    mag.removeAllListeners && mag.removeAllListeners('plotly_relayout');
+    mag.on('plotly_relayout', ev => { if(state.showPhase) sync('bodePhase',ev); });
+
+    if(ph && ph.on){
+      ph.removeAllListeners && ph.removeAllListeners('plotly_relayout');
+      ph.on('plotly_relayout', ev => { sync('bodeMag',ev); });
+    }
+  }
+
+  function setupBodeDoubleClick(){
+    const mag = document.getElementById('bodeMag');
+    const ph  = document.getElementById('bodePhase');
+    const home = ()=> {
+      const xr = bodeDefaultXRangeExp();
+      Plotly.relayout('bodeMag', {'xaxis.type':'log','xaxis.autorange':false,'xaxis.range':xr})
+        .then(enforceMagYAxis);
+      if(state.showPhase){
+        Plotly.relayout('bodePhase', {'xaxis.type':'log','xaxis.autorange':false,'xaxis.range':xr,'yaxis.autorange':true});
+      }
+      return false;
+    };
+    if(mag && mag.on){
+      mag.removeAllListeners && mag.removeAllListeners('plotly_doubleclick');
+      mag.on('plotly_doubleclick', home);
+    }
+    if(ph && ph.on){
+      ph.removeAllListeners && ph.removeAllListeners('plotly_doubleclick');
+      ph.on('plotly_doubleclick', home);
+    }
+  }
+
+  function applyBodeMode(){
+    if(!(window.Plotly && bodeCache1 && bodeCache2 && bodeMagBuilt)) return;
+    const t=TXT[LANG];
+    const y1m = state.bodeDb ? bodeCache1.mag.map(m=>20*Math.log10(m)) : bodeCache1.mag;
+    const y2m = state.bodeDb ? bodeCache2.mag.map(m=>20*Math.log10(m)) : bodeCache2.mag;
+    Plotly.update('bodeMag', {y:[y1m,y2m], name:[t.fc1, t.fc2]}, {}, [0,1]);
+    Plotly.relayout('bodeMag', {
+      'margin.t':60, 'margin.b':40,
+      'legend.orientation':'h', 'legend.x':0.5, 'legend.xanchor':'center', 'legend.y':1.005, 'legend.yanchor':'bottom'
+    });
+    enforceMagYAxis();
+  }
+
+  function refreshAll(){
+    updateFilters();
+
+    if(window.Plotly && timeBuilt){
+      const inD = decimateXY(state.x), y1D = decimateXY(state.y1), y2D = decimateXY(state.y2);
+      Plotly.update('timePlot', {x:[inD.x,y1D.x,y2D.x], y:[inD.y,y1D.y,y2D.y]}, {}, [0,1,2]);
+      Plotly.relayout('timePlot', {
+        'title.text':'<b>'+TXT[LANG].timeTitle()+'</b>',
+        'xaxis.autorange': false,
+        'xaxis.range':[0, viewWindowSec()],
+        'yaxis.autorange': true
+      });
+    }
+
+    bodeCache1 = bodeFor(state.fc1, state.f1type, state.order1);
+    bodeCache2 = bodeFor(state.fc2, state.f2type, state.order2);
+    applyBodeMode();
+
+    Plotly.relayout('bodeMag', {
+      shapes: [{ type:'line', x0:state.freq, x1:state.freq, y0:0, y1:1, xref:'x', yref:'paper', line:{color:'red', width:2, dash:'dot'} }]
+    });
+    if(state.showPhase){
+      Plotly.relayout('bodePhase', {
+        shapes: [{ type:'line', x0:state.freq, x1:state.freq, y0:0, y1:1, xref:'x', yref:'paper', line:{color:'red', width:2, dash:'dot'} }]
+      });
+    }
+
+    ensurePhasePlot().then(()=>{ setupBodeLinking(); setupBodeDoubleClick(); });
+  }
+
+  // ========= UI =========
+  const fc1=$('#fc1'), fc2=$('#fc2'), fc1Val=$('#fc1Val'), fc2Val=$('#fc2Val');
+  const f1type=$('#f1type'), f2type=$('#f2type');
+  const order1Sel=$('#order1Sel'), order2Sel=$('#order2Sel');
+  const bodeDb=$('#bodeDb');
+  const showPhase=$('#showPhase');
+  const waveSel=$('#waveSel'), freqEl=$('#freq'), nmaxEl=$('#nmax');
+  const freqVal=$('#freqVal'), nmaxVal=$('#nmaxVal');
+
+  // === Aplicar constantes de Nmax al slider ===
+  nmaxEl.min = String(NMAX_MIN);
+  nmaxEl.max = String(NMAX_MAX);
+
+  // Init sliders y badges
+  fc1.value = hzToSliderVal(state.fc1).toFixed(4);
+  fc2.value = hzToSliderVal(state.fc2).toFixed(4);
+  fc1Val.textContent = state.fc1.toLocaleString()+' Hz';
+  fc2Val.textContent = state.fc2.toLocaleString()+' Hz';
+  freqVal.textContent = state.freq.toLocaleString()+' Hz';
+  nmaxVal.textContent = state.nmax.toString();
+  showPhase.checked = state.showPhase;
+  order1Sel.value = String(state.order1);
+  order2Sel.value = String(state.order2);
+
+  function setFc1(){ state.fc1=clampFc(sliderValToHz(fc1.value)); fc1Val.textContent=state.fc1.toLocaleString()+' Hz'; refreshAll(); }
+  function setFc2(){ state.fc2=clampFc(sliderValToHz(fc2.value)); fc2Val.textContent=state.fc2.toLocaleString()+' Hz'; refreshAll(); }
+  fc1.addEventListener('input', setFc1);
+  fc2.addEventListener('input', setFc2);
+
+  f1type.addEventListener('change', ()=>{ state.f1type=f1type.value; refreshAll(); });
+  f2type.addEventListener('change', ()=>{ state.f2type=f2type.value; refreshAll(); });
+
+  order1Sel.addEventListener('change', ()=>{
+    const o = parseInt(order1Sel.value,10);
+    state.order1 = (o===2||o===4||o===6) ? o : 4;
+    refreshAll();
+  });
+  order2Sel.addEventListener('change', ()=>{
+    const o = parseInt(order2Sel.value,10);
+    state.order2 = (o===2||o===4||o===6) ? o : 4;
+    refreshAll();
+  });
+
+  bodeDb.addEventListener('change', ()=>{ state.bodeDb=bodeDb.checked; applyBodeMode(); });
+
+  showPhase.addEventListener('change', ()=>{ state.showPhase=showPhase.checked; ensurePhasePlot().then(()=>{ setupBodeLinking(); setupBodeDoubleClick(); }); });
+
+  function sanitizeInputs(){
+    let f=Math.round(+freqEl.value||100), N=Math.round(+nmaxEl.value||10);
+    f = Math.min(10000, Math.max(1, f));
+    N = Math.min(NMAX_MAX, Math.max(NMAX_MIN, N));
+    freqEl.value=f; nmaxEl.value=N;
+    state.freq=f; state.nmax=N;
+    freqVal.textContent = f.toLocaleString()+' Hz';
+    nmaxVal.textContent = N.toString();
+  }
+  function rebuildInputAndOutputs(){
+    sanitizeInputs(); state.wave=waveSel.value;
+    buildInput(); refreshAll();
+  }
+  waveSel.addEventListener('change', rebuildInputAndOutputs);
+  freqEl.addEventListener('input', rebuildInputAndOutputs);
+  nmaxEl.addEventListener('input', rebuildInputAndOutputs);
+
+  // ========= Init =========
+  setLang('en');
+  $('#waveSel').value=state.wave; $('#freq').value=state.freq; $('#nmax').value=state.nmax;
+  $('#f1type').value=state.f1type; $('#f2type').value=state.f2type;
+  order1Sel.value=String(state.order1);
+  order2Sel.value=String(state.order2);
+
+  buildInput(); updateFilters();
+  (function waitPlotly(){
+    if(window.Plotly){ buildPlots(); }
+    else { requestAnimationFrame(waitPlotly); }
+  })();
+
+  // Resize
+  window.addEventListener('resize', ()=> {
+    if(window.Plotly && timeBuilt){
+      resizePlot('timePlot');
+      resizePlot('bodeMag');
+      if(state.showPhase && bodePhaseBuilt){
+        resizePlot('bodePhase');
+      }
+    }
+  });
+});
+</script>
+</body>
+</html>
