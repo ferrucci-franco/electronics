@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Operaciones con Números Complejos – Vectores</title>
+  <title>Opérations sur les Nombres Complexes – Vecteurs</title>
   <style>
     :root{
       --bg-grad-1:#667eea; --bg-grad-2:#764ba2;
@@ -12,6 +12,7 @@
       --brand:#4ECDC4; --brand-2:#FF6B6B; --brand-3:#4CAF50;
       --axis:#dddddd; --grid:#eeeeee; --circle:#cfd3d7;
       --accent:#2196F3; --shadow:rgba(0,0,0,.08);
+      --legend:#3a66a6;   /* azul pastel oscuro (modo claro) */
     }
     body.dark{
       --bg-grad-1:#2c3e50; --bg-grad-2:#34495e;
@@ -19,12 +20,13 @@
       --card:#2f3f50; --card2:#2c3e50;
       --axis:#556; --grid:#445; --circle:#6c7a89;
       --accent:#3498db; --shadow:rgba(0,0,0,.28);
+      --legend:#9dbaf0;   /* versión pastel más clara para buen contraste en modo oscuro */
     }
     html,body{height:100%;}
     body{
       margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,"Helvetica Neue",Arial,"Noto Sans";
       background:linear-gradient(135deg,var(--bg-grad-1),var(--bg-grad-2)); color:var(--ink);
-      overflow:hidden; /* sólo scrollea el menú (columna izquierda) */
+      overflow:hidden; /* en desktop: sólo scrollea el menú (columna izquierda) */
     }
     .wrapper{max-width:1400px; margin:0 auto; padding:20px;}
     .panel{
@@ -42,31 +44,24 @@
       display:flex; gap:10px; align-items:center;
       background:rgba(255,255,255,.18); padding:6px 10px; border-radius:999px;
     }
-    
-    
-    <!-- body.dark .settings{background:rgba(0,0,0,.18);} -->
-    <!-- .settings select{border:1px solid #ddd; border-radius:10px; padding:4px 8px; background:transparent; color:#fff;} -->
+
     /* Claro */
     .settings select{
       border:1px solid rgba(0,0,0,.15);
       border-radius:10px;
       padding:4px 8px;
-      background:#fff;            /* <- fondo sólido */
-      color:#17324a;              /* <- texto oscuro legible */
+      background:#fff;
+      color:#17324a;
     }
-
     /* Oscuro */
     body.dark .settings select{
       border-color: rgba(255,255,255,.25);
-      background:#1f2a36;         /* <- fondo oscuro */
-      color:#ecf0f1;              /* <- texto claro */
+      background:#1f2a36;
+      color:#ecf0f1;
     }
-
-    /* En algunos navegadores los <option> permiten estilo */
     .settings select option{ background:#fff; color:#17324a; }
     body.dark .settings select option{ background:#1f2a36; color:#ecf0f1; }
 
-    
     .settings button{border:0; border-radius:999px; padding:6px 10px; cursor:pointer; color:#fff; background:#00000022;}
 
     /* ====== LAYOUT ====== */
@@ -77,18 +72,15 @@
       flex:1 1 auto; min-height:0;
       align-items:stretch;
     }
-    @media (max-width:1100px){ .grid{ grid-template-columns:1fr; } }
 
     .left{
       display:flex; flex-direction:column; gap:16px;
-      overflow-y:auto; overflow-x:hidden; /* sólo vertical */
-      /* reservar canal para el scrollbar en todos los SO/navegadores */
+      overflow-y:auto; overflow-x:hidden; /* sólo vertical en desktop */
       scrollbar-gutter: stable both-edges;
-      padding-right: calc(16px + var(--sbw, 0px)); /* 16px + ancho real de barra */
+      padding-right: calc(20px + var(--sbw, 0px)); /* reserva canal barra */
       min-width:0; min-height:0; max-height:100%;
     }
-    .left > .card{ margin-right:8px; } /* pequeño colchón interno */
-    /* estético en WebKit/Chromium */
+    .left > .card{ margin-right: calc(8px + var(--sbw, 0px)); }
     .left::-webkit-scrollbar{ width:12px; }
     .left::-webkit-scrollbar-thumb{ background:#c7cbd1; border-radius:8px; }
     .left::-webkit-scrollbar-track{ background:transparent; }
@@ -112,14 +104,16 @@
       background:var(--soft); border:1px solid #0001; padding:2px 8px; border-radius:8px; font-family:monospace; font-size:12px;
       text-align:right;
     }
-
     .mini-legend{
       display:flex; align-items:center; gap:14px; margin-top:6px;
-      font-size:12px; flex-wrap:wrap;
+      font-size:13.5px;        
+      font-weight:700;       /* semi-negrita para buena legibilidad */
+      color:var(--legend);   /* usa el azul pastel */
+      flex-wrap:wrap;
     }
 
     .right{
-      background:var(--card2); border-radius:12px; padding:12px; /* canvas toca el borde interno */
+      background:var(--card2); border-radius:12px; padding:12px;
       box-shadow:0 4px 18px var(--shadow);
       position:sticky; top:0; display:flex; flex-direction:column; gap:8px; min-height:0;
       margin-bottom:16px; /* aire exterior bajo el card */
@@ -127,13 +121,39 @@
     .canvas-wrap{position:relative; flex:1; min-height:0;}
     canvas{display:block; width:100%; height:100%; border-radius:10px; background:#fff; border:2px solid var(--axis)}
     body.dark canvas{background:#2c3e50; border-color:#555}
+
+    /* ====== MODO UNA COLUMNA (zoom grande / ancho angosto) ====== */
+    @media (max-width:1100px){
+      .grid{ grid-template-columns:1fr; }
+      body{ overflow-y:auto; overflow-x:hidden; } /* sin scroll horizontal */
+      .panel{ height:auto; }
+      .left{
+        overflow:visible;        /* sin scroll propio del menú */
+        padding-right:16px;
+      }
+      .left > .card{ margin-right:0; }
+
+      .right{
+        position:static;         /* deja de ser sticky */
+        height:auto;
+        width:100%;
+        display:block;           /* quita flex del card derecho */
+      }
+
+      .canvas-wrap{
+        flex:0 0 auto;           /* anula flex:1 para respetar el height */
+        width:100%;
+        height:clamp(420px,78svh,1100px);
+        min-height:420px;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="wrapper">
     <div class="panel">
       <div class="header">
-        <h1 id="title">Operaciones con Números Complejos – Vectores</h1>
+        <h1 id="title">Opérations sur les Nombres Complexes – Vecteurs</h1>
         <div class="settings">
           <span>🌐</span>
           <select id="lang">
@@ -149,16 +169,16 @@
         <!-- IZQUIERDA -->
         <div class="left" id="leftCol">
           <div class="card" style="border-left-color: var(--brand-3);">
-            <h3 id="z1_title">z₁ – Amplitud y Fase</h3>
+            <h3 id="z1_title">z₁ – Amplitude & Phase</h3>
             <div class="grp">
               <div class="row">
-                <label id="amp1_lbl">Amplitud 1</label>
-                <input id="amp1" type="range" min="0.2" max="2" step="0.01" value="1.10"/>
+                <label id="amp1_lbl">Amplitude 1</label>
+                <input id="amp1" type="range" min="0.1" max="2" step="0.01" value="1.10"/>
                 <span class="badge" id="amp1_v">1.10</span>
               </div>
               <div class="row">
-                <label id="ph1_lbl">Fase 1 (°)</label>
-                <input id="ph1" type="range" min="-180" max="180" step="1" value="20"/>
+                <label id="ph1_lbl">Phase 1 (°)</label>
+                <input id="ph1" type="range" min="-360" max="360" step="1" value="20"/>
                 <span class="badge" id="ph1_v">20°</span>
               </div>
               <div class="mini-legend">
@@ -170,16 +190,16 @@
           </div>
 
           <div class="card" style="border-left-color: var(--brand);">
-            <h3 id="z2_title">z₂ – Amplitud y Fase</h3>
+            <h3 id="z2_title">z₂ – Amplitude & Phase</h3>
             <div class="grp">
               <div class="row">
-                <label id="amp2_lbl">Amplitud 2</label>
-                <input id="amp2" type="range" min="0.2" max="2" step="0.01" value="0.80"/>
+                <label id="amp2_lbl">Amplitude 2</label>
+                <input id="amp2" type="range" min="0.1" max="2" step="0.01" value="0.80"/>
                 <span class="badge" id="amp2_v">0.80</span>
               </div>
               <div class="row">
-                <label id="ph2_lbl">Fase 2 (°)</label>
-                <input id="ph2" type="range" min="-180" max="180" step="1" value="-40"/>
+                <label id="ph2_lbl">Phase 2 (°)</label>
+                <input id="ph2" type="range" min="-360" max="360" step="1" value="-40"/>
                 <span class="badge" id="ph2_v">-40°</span>
               </div>
               <div class="mini-legend">
@@ -191,10 +211,10 @@
           </div>
 
           <div class="card" style="border-left-color: var(--brand-2);">
-            <h3 id="op_title">z₃ – Resultado</h3>
+            <h3 id="op_title">z₃ – Résultat</h3>
             <div class="grp">
               <div class="row">
-                <label id="op_lbl">Definición</label>
+                <label id="op_lbl">Définition</label>
                 <select id="op">
                   <option value="add">z₃ = z₁ + z₂</option>
                   <option value="sub">z₃ = z₁ − z₂</option>
@@ -202,27 +222,37 @@
                   <option value="div">z₃ = z₁ / z₂</option>
                 </select>
               </div>
-              <div class="mini-legend">
-                <span id="zr_re_lbl">Re(z₃)</span><span>=</span><span id="zr_re">0.000</span>
-                <span>·</span>
-                <span id="zr_im_lbl">Im(z₃)</span><span>=</span><span id="zr_im">0.000</span>
+
+              <!-- Checkbox Mostrar z3 -->
+              <div class="row" style="grid-template-columns: 1fr auto; gap:10px;">
+                <label id="show3_lbl" for="showZ3">Afficher le résultat (z₃)</label>
+                <input id="showZ3" type="checkbox" checked />
               </div>
-              <div class="mini-legend">
-                <span id="zr_mag_lbl">|z₃|</span><span>=</span><span id="zr_mag">0.000</span>
-                <span>·</span>
-                <span id="zr_ang_lbl">∠z₃ (°)</span><span>=</span><span id="zr_ang">0</span>
+
+              <!-- Valores numéricos z3 -->
+              <div id="z3_values">
+                <div class="mini-legend">
+                  <span id="zr_re_lbl">Re(z₃)</span><span>=</span><span id="zr_re">0.000</span>
+                  <span>·</span>
+                  <span id="zr_im_lbl">Im(z₃)</span><span>=</span><span id="zr_im">0.000</span>
+                </div>
+                <div class="mini-legend">
+                  <span id="zr_mag_lbl">|z₃|</span><span>=</span><span id="zr_mag">0.000</span>
+                  <span>·</span>
+                  <span id="zr_ang_lbl">∠z₃ (°)</span><span>=</span><span id="zr_ang">0</span>
+                </div>
               </div>
             </div>
           </div>
 
           <div class="card">
-            <h3 id="sum_title">Resumen de operaciones</h3>
+            <h3 id="sum_title">Résumé des opérations</h3>
             <div class="op-summary" id="sum_text">
               <ul>
-                <li><strong>Suma:</strong> se suman las partes real e imaginaria.</li>
-                <li><strong>Resta:</strong> se restan las partes real e imaginaria.</li>
-                <li><strong>Multiplicación:</strong> se multiplican los módulos y se suman las fases.</li>
-                <li><strong>División:</strong> se dividen los módulos y se restan las fases.</li>
+                <li><strong>Addition :</strong> on additionne les parties réelle et imaginaire.</li>
+                <li><strong>Soustraction :</strong> on soustrait les parties réelle et imaginaire.</li>
+                <li><strong>Multiplication :</strong> on multiplie les modules et on additionne les phases.</li>
+                <li><strong>Division :</strong> on divise les modules et on soustrait les phases.</li>
               </ul>
             </div>
           </div>
@@ -230,7 +260,7 @@
 
         <!-- DERECHA -->
         <div class="right">
-          <div class="canvas-wrap">
+          <div class="canvas-wrap" id="canvasWrap">
             <canvas id="cv"></canvas>
           </div>
         </div>
@@ -249,6 +279,7 @@ const T = {
     z1_re_lbl:"Re(z₁)", z1_im_lbl:"Im(z₁)", z2_re_lbl:"Re(z₂)", z2_im_lbl:"Im(z₂)",
     op_title:"z₃ – Resultado", op_lbl:"Definición",
     op_add:"z₃ = z₁ + z₂", op_sub:"z₃ = z₁ − z₂", op_mul:"z₃ = z₁ · z₂", op_div:"z₃ = z₁ / z₂",
+    show3_lbl:"Mostrar resultado (z₃)",
     zr_re_lbl:"Re(z₃)", zr_im_lbl:"Im(z₃)", zr_mag_lbl:"|z₃|", zr_ang_lbl:"∠z₃ (°)",
     sum_title:"Resumen de operaciones",
     sum_html:`<ul>
@@ -267,6 +298,7 @@ const T = {
     z1_re_lbl:"Re(z₁)", z1_im_lbl:"Im(z₁)", z2_re_lbl:"Re(z₂)", z2_im_lbl:"Im(z₂)",
     op_title:"z₃ – Result", op_lbl:"Definition",
     op_add:"z₃ = z₁ + z₂", op_sub:"z₃ = z₁ − z₂", op_mul:"z₃ = z₁ · z₂", op_div:"z₃ = z₁ / z₂",
+    show3_lbl:"Show result (z₃)",
     zr_re_lbl:"Re(z₃)", zr_im_lbl:"Im(z₃)", zr_mag_lbl:"|z₃|", zr_ang_lbl:"∠z₃ (°)",
     sum_title:"Operation summary",
     sum_html:`<ul>
@@ -285,6 +317,7 @@ const T = {
     z1_re_lbl:"Re(z₁)", z1_im_lbl:"Im(z₁)", z2_re_lbl:"Re(z₂)", z2_im_lbl:"Im(z₂)",
     op_title:"z₃ – Résultat", op_lbl:"Définition",
     op_add:"z₃ = z₁ + z₂", op_sub:"z₃ = z₁ − z₂", op_mul:"z₃ = z₁ · z₂", op_div:"z₃ = z₁ / z₂",
+    show3_lbl:"Afficher le résultat (z₃)",
     zr_re_lbl:"Re(z₃)", zr_im_lbl:"Im(z₃)", zr_mag_lbl:"|z₃|", zr_ang_lbl:"∠z₃ (°)",
     sum_title:"Résumé des opérations",
     sum_html:`<ul>
@@ -307,6 +340,7 @@ const ctx = cv.getContext('2d');
 const amp1 = $('amp1'), ph1 = $('ph1');
 const amp2 = $('amp2'), ph2 = $('ph2');
 const opSel = $('op');
+const showZ3 = $('showZ3');
 
 const amp1_v = $('amp1_v'), ph1_v = $('ph1_v');
 const amp2_v = $('amp2_v'), ph2_v = $('ph2_v');
@@ -322,6 +356,8 @@ let dark = false;
 
 function applyLang(){
   const t = T[currentLang];
+  document.documentElement.lang = currentLang;
+
   $('title').textContent = t.title;
   $('z1_title').textContent = t.z1_title; $('z2_title').textContent = t.z2_title;
   $('amp1_lbl').textContent = t.amp1_lbl; $('amp2_lbl').textContent = t.amp2_lbl;
@@ -330,6 +366,8 @@ function applyLang(){
   $('op_title').textContent = t.op_title; $('op_lbl').textContent = t.op_lbl;
   opSel.options[0].text = t.op_add; opSel.options[1].text = t.op_sub;
   opSel.options[2].text = t.op_mul; opSel.options[3].text = t.op_div;
+  $('show3_lbl').textContent = t.show3_lbl;
+
   $('zr_re_lbl').textContent = t.zr_re_lbl; $('zr_im_lbl').textContent = t.zr_im_lbl;
   $('zr_mag_lbl').textContent = t.zr_mag_lbl; $('zr_ang_lbl').textContent = t.zr_ang_lbl;
 
@@ -337,7 +375,8 @@ function applyLang(){
   themeBtn.textContent = dark ? t.themeLight : t.themeDark;
 
   updateLeftScrollbarPadding();
-  draw();
+  updateLeftScrollbarPadding();
+  scheduleDraw();
 }
 
 langSel.addEventListener('change', e=>{ currentLang = e.target.value; applyLang(); });
@@ -345,13 +384,18 @@ themeBtn.addEventListener('click', ()=>{
   dark = !dark; document.body.classList.toggle('dark', dark);
   applyLang();
 });
+showZ3.addEventListener('change', ()=>{
+  const box = document.getElementById('z3_values');
+  box.style.display = showZ3.checked ? '' : 'none';
+  draw();
+});
 
 /* ===== Helpers ===== */
 const DEG = Math.PI/180;
-const LABEL_SCALE = 1.3; // Tamaño global de etiquetas (1.0 = tamaño base). Sube a 1.3, 1.6, etc.
+const LABEL_SCALE = 1.3; // tamaño global de etiquetas
 function polarToRect(r, deg){ const a=deg*DEG; return {re:r*Math.cos(a), im:r*Math.sin(a)}; }
 function rectToPolar(re,im){ const r=Math.hypot(re,im); let a=Math.atan2(im,re)/DEG; return {r, a}; }
-function formatNum(x){ return (Math.abs(x)<1e-3?0:x).toFixed(3); }
+function formatNum(x){ return (Math.abs(x)<1e-3?0:x).toFixed(2); }
 
 /* ===== UI sync ===== */
 function syncBadges(){
@@ -361,34 +405,53 @@ function syncBadges(){
   ph2_v.textContent  = `${(+ph2.value|0)}°`;
 }
 
-/* ===== Scrollbar width reserving (anti-superposición) ===== */
+/* ===== Anti-superposición de barra ===== */
+let lastSBW = -1;
 function updateLeftScrollbarPadding(){
   const left = document.getElementById('leftCol');
   if(!left) return;
-  const sbw = left.offsetWidth - left.clientWidth; // ancho real de la barra
-  left.style.setProperty('--sbw', (sbw > 0 ? sbw : 0) + 'px');
-}
-window.addEventListener('load', updateLeftScrollbarPadding);
-window.addEventListener('resize', updateLeftScrollbarPadding);
-document.addEventListener('DOMContentLoaded', ()=>{
-  const left = document.getElementById('leftCol');
-  if(left){
-    left.addEventListener('mouseenter', updateLeftScrollbarPadding);
+  const sbw = left.offsetWidth - left.clientWidth;
+  if (sbw !== lastSBW){
+    lastSBW = sbw;
+    left.style.setProperty('--sbw', (sbw > 0 ? sbw : 0) + 'px');
   }
-});
+}
 
-/* ===== Geometry & drawing ===== */
+
+/* ===== Observers para zoom/resize ===== */
+const canvasWrap = document.getElementById('canvasWrap');
+// ResizeObserver: solo el contenedor del canvas (evita bucles por cambios en el menú)
+if (window.ResizeObserver){
+  const ro = new ResizeObserver(()=>{ scheduleDraw(); });
+  ro.observe(canvasWrap);
+}
+
+// Zoom del navegador / barra URL móvil
+if (window.visualViewport){
+  visualViewport.addEventListener('resize', scheduleDraw);
+}
+
+let dprMQ;
+function watchDPR(){
+  if (dprMQ) dprMQ.removeEventListener('change', dprChanged);
+  dprMQ = matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`);
+  dprMQ.addEventListener('change', dprChanged);
+}
+function dprChanged(){ draw(); updateLeftScrollbarPadding(); watchDPR(); }
+
+/* ===== Canvas sizing & axes ===== */
 function resizeCanvasToFit(){
   const wrap = cv.parentElement;
   const ratio = window.devicePixelRatio || 1;
-  const pad = 8;
-  const w = wrap.clientWidth - pad*2;
-  const h = wrap.clientHeight - pad*2; /* ocupa todo el alto disponible del card */
-  cv.style.width = w + 'px';
-  cv.style.height = h + 'px';
-  cv.width = Math.max(320, Math.floor(w*ratio));
-  cv.height = Math.max(320, Math.floor(h*ratio));
+  const rect = wrap.getBoundingClientRect();
+  const w = Math.max(1, Math.floor(rect.width));
+  const h = Math.max(1, Math.floor(rect.height));
+
+  // No tocar cv.style.width/height → evita empujar el layout
+  cv.width  = Math.max(320, Math.floor(w * ratio));
+  cv.height = Math.max(320, Math.floor(h * ratio));
 }
+
 
 function drawAxes(scalePx){
   ctx.clearRect(0,0,cv.width,cv.height);
@@ -442,10 +505,9 @@ function drawAxes(scalePx){
     ctx.beginPath(); ctx.moveTo(cx-6, y); ctx.lineTo(cx+6, y); ctx.stroke();
     if(j!==0) ctx.fillText(String(j), cx + 8, y + 4);
   }
-  // 0 en el origen
   ctx.fillText("0", cx + 6, cy + 12);
 
-  // Círculo unidad (radio 1)
+  // Círculo unidad
   ctx.strokeStyle = circleColor;
   ctx.setLineDash([6,6]);
   ctx.beginPath();
@@ -454,12 +516,13 @@ function drawAxes(scalePx){
   ctx.setLineDash([]);
 }
 
+/* ===== Flecha + etiquetas ===== */
 function drawArrowFromOrigin(re_px, im_px, color){
   const cx = cv.width/2, cy = cv.height/2;
   const endX = cx + re_px;
   const endY = cy - im_px;
 
-  const ang = Math.atan2(im_px, re_px); // ángulo en coords matemáticas (y hacia arriba)
+  const ang = Math.atan2(im_px, re_px); // ángulo en coords matemáticas
   const AR = 12 * (window.devicePixelRatio||1);
   const half = AR * 0.5;
 
@@ -485,21 +548,17 @@ function drawArrowFromOrigin(re_px, im_px, color){
 
 function drawVectorLabel(text, endX, endY, ang, color){
   const ratio = window.devicePixelRatio || 1;
-
-  // Escalas según la constante global
   const fontPx = Math.max(12, Math.floor(13 * ratio * LABEL_SCALE));
-  const ALONG  = (12 * ratio + 8) * LABEL_SCALE;  // más allá de la punta
-  const PERP   = (6  * ratio) * LABEL_SCALE;      // separación lateral
-  const haloW  = Math.max(2, 3 * LABEL_SCALE);    // grosor del halo
+  const ALONG  = (12 * ratio + 8) * LABEL_SCALE;
+  const PERP   = (6  * ratio) * LABEL_SCALE;
+  const haloW  = Math.max(2, 3 * LABEL_SCALE);
 
-  // Dirección del vector (coords canvas)
   const dx = Math.cos(ang), dy = -Math.sin(ang);
-  const nx = -Math.sin(ang), ny = -Math.cos(ang); // normal izquierda
+  const nx = -Math.sin(ang), ny = -Math.cos(ang);
 
   let x = endX + dx*ALONG + nx*PERP;
   let y = endY + dy*ALONG + ny*PERP;
 
-  // No salir del canvas
   const pad = 8*ratio + 4;
   x = Math.min(cv.width - pad, Math.max(pad, x));
   y = Math.min(cv.height - pad, Math.max(pad, y));
@@ -517,7 +576,7 @@ function drawVectorLabel(text, endX, endY, ang, color){
   ctx.restore();
 }
 
-
+/* ===== Cálculo ===== */
 function computeAll(){
   const r1 = +amp1.value, a1 = +ph1.value;
   const r2 = +amp2.value, a2 = +ph2.value;
@@ -546,7 +605,10 @@ function computeAll(){
     zr_re.textContent = formatNum(zr.re);
     zr_im.textContent = formatNum(zr.im);
     zr_mag.textContent = formatNum(p.r);
-    zr_ang.textContent = `${Math.round(p.a)}`;
+    // zr_ang.textContent = `${Math.round(p.a)}`;
+    //zr_ang.textContent = p.a.toFixed(1);
+    const ang = +p.a.toFixed(1);
+    zr_ang.textContent = (Math.abs(ang) < 1e-12 ? 0 : ang).toFixed(1);
   } else {
     zr_re.textContent = zr_im.textContent = '—';
     zr_mag.textContent = zr_ang.textContent = '—';
@@ -555,7 +617,15 @@ function computeAll(){
   return {z1, z2, zr};
 }
 
-function draw(){
+/* ===== Dibujo principal ===== */
+let rafId = null;
+function scheduleDraw(){
+  if (rafId) return;
+  rafId = requestAnimationFrame(()=>{ rafId = null; drawCore(); });
+}
+function draw(){ scheduleDraw(); }   // nueva draw()
+
+function drawCore(){                 // pega aquí TODO el cuerpo de tu draw() anterior
   resizeCanvasToFit();
   syncBadges();
   const {z1, z2, zr} = computeAll();
@@ -579,34 +649,33 @@ function draw(){
   const z2px = {re: z2.re*scalePx, im: z2.im*scalePx};
   const zrpx = {re: (isFinite(zr.re)? zr.re*scalePx: 0), im: (isFinite(zr.im)? zr.im*scalePx:0)};
 
-  drawArrowFromOrigin(z1px.re, z1px.im, colorZ1);
-  drawArrowFromOrigin(z2px.re, z2px.im, colorZ2);
-  if(isFinite(zr.re)&&isFinite(zr.im)) drawArrowFromOrigin(zrpx.re, zrpx.im, colorZR);
-
-  // Flechas
   const p1 = drawArrowFromOrigin(z1px.re, z1px.im, colorZ1);
   const p2 = drawArrowFromOrigin(z2px.re, z2px.im, colorZ2);
-  if(isFinite(zr.re)&&isFinite(zr.im)){
+  if(isFinite(zr.re) && isFinite(zr.im) && showZ3.checked){
     const p3 = drawArrowFromOrigin(zrpx.re, zrpx.im, colorZR);
     drawVectorLabel('z₃', p3.endX, p3.endY, p3.ang, colorZR);
   }
-
-  // Etiquetas z1 y z2
   drawVectorLabel('z₁', p1.endX, p1.endY, p1.ang, colorZ1);
   drawVectorLabel('z₂', p2.endX, p2.endY, p2.ang, colorZ2);
 
-  updateLeftScrollbarPadding(); // por si el SO alterna el overlay al interactuar
+  updateLeftScrollbarPadding();
 }
 
 /* ===== events ===== */
-[amp1, ph1, amp2, ph2, opSel].forEach(el=> el.addEventListener('input', draw));
-window.addEventListener('resize', draw);
+// Resize de ventana
+window.addEventListener('resize', ()=>{ scheduleDraw(); updateLeftScrollbarPadding(); });
+
+// Sliders/selector operación
+[amp1, ph1, amp2, ph2, opSel].forEach(el=> el.addEventListener('input', scheduleDraw));
 
 /* init */
-langSel.value = 'fr';      // muestra “Français” en el select
-currentLang   = 'fr';      // por coherencia
-applyLang();
-draw();
+langSel.value = 'fr';
+currentLang   = 'fr';
+watchDPR();
+window.addEventListener('load', updateLeftScrollbarPadding);
+document.addEventListener('DOMContentLoaded', updateLeftScrollbarPadding);
+
+applyLang(); // llama a draw()
 </script>
 </body>
 </html>
