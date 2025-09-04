@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aproximación de π via Monte Carlo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+
+    /* Solo el canvas debe ser cuadrado */
+    canvas {
+        border-radius: 0px !important;
+    }
+    
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-weight: 400;
+        background: linear-gradient(135deg, #0d1421 0%, #1a237e 100%);
+        color: #e3f2fd;
+        min-height: 100vh;
+        overflow-x: hidden;
+    }
+    
+    body.light-theme {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .container {
+        max-width: 100%;
+        margin: 0;
+        background: rgba(227, 242, 253, 0.05);
+        backdrop-filter: blur(15px);
+        padding: 20px;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        border-radius: 20px;
+        box-sizing: border-box;
+    }
+        
+    .light-theme .container {
+        background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+    
+    h1 {
+        font-size: 2.2em;
+        font-weight: 700;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        flex: 1;
+        min-width: 300px;
+    }
+    
+    .header-controls {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+    }
+    
+    .lang-selector, .theme-controls {
+        display: flex;
+        background: rgba(227, 242, 253, 0.08);
+        padding: 4px;
+        gap: 2px;
+        border: 1px solid rgba(227, 242, 253, 0.15);
+        border-radius: 25px;
+    }
+    
+    .light-theme .lang-selector, .light-theme .theme-controls {
+        background: rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .lang-btn, .theme-btn {
+        background: transparent;
+        border: none;
+        padding: 8px 16px;
+        color: rgba(227, 242, 253, 0.7);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.9em;
+        font-weight: 600;
+        border-radius: 20px;
+    }
+    
+    .theme-btn {
+        padding: 8px 12px;
+        min-width: 40px;
+        font-size: 1.1em;
+    }
+    
+    .lang-btn {
+        min-width: 45px;
+    }
+    
+    .light-theme .lang-btn, .light-theme .theme-btn {
+        color: rgba(255, 255, 255, 0.8);
+    }
+    
+    .lang-btn.active, .theme-btn.active {
+        background: #64B5F6;
+        color: #0d1421;
+        box-shadow: 0 2px 8px rgba(100, 181, 246, 0.3);
+    }
+    
+    .lang-btn:hover:not(.active), .theme-btn:hover:not(.active) {
+        background: rgba(227, 242, 253, 0.1);
+        color: #e3f2fd;
+    }
+    
+    .light-theme .lang-btn:hover:not(.active), .light-theme .theme-btn:hover:not(.active) {
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+    }
+    
+    .main-content {
+        display: grid;
+        grid-template-columns: 1fr 420px;
+        gap: 20px;
+        flex: 1;
+        align-items: stretch;
+        max-width: 100%;
+    }
+    
+    .canvas-container {
+        background: #1a237e;
+        padding: 20px;
+        box-shadow: 0 4px 15px rgba(26, 35, 126, 0.4);
+        border: 1px solid rgba(100, 181, 246, 0.2);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100%;
+        border-radius: 15px;
+    }
+    
+    .light-theme .canvas-container {
+        background: white;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    canvas {
+      border: 2px solid #444 !important;
+      border-radius: 0px !important;
+      width: 100%;
+      height: auto;
+      max-width: min(calc(100vh - 200px), calc(100vw - 500px));
+      aspect-ratio: 1;
+  }
+    
+    .light-theme canvas {
+        border: 2px solid #333 !important;
+        border-radius: 0px !important;
+    }
+    
+    .controls-panel {
+        background: rgba(227, 242, 253, 0.08);
+        padding: 20px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(100, 181, 246, 0.2);
+        height: 100%;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        border-radius: 15px;
+    }
+    
+    .light-theme .controls-panel {
+        background: rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .pi-display {
+        text-align: center;
+        margin-bottom: 20px;
+        padding: 20px;
+        background: rgba(227, 242, 253, 0.05);
+        border: 1px solid rgba(100, 181, 246, 0.15);
+        border-radius: 10px;
+    }
+    
+    .light-theme .pi-display {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .pi-value {
+        font-size: 2.5em;
+        font-weight: bold;
+        color: #64B5F6;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        margin-bottom: 10px;
+    }
+    
+    .pi-error {
+        font-size: 1em;
+        color: #81C784;
+    }
+    
+    .light-theme .pi-error {
+        color: #FFB6C1;
+    }
+    
+    .stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 15px;
+    }
+    
+    .equation-card {
+        background: rgba(227, 242, 253, 0.05);
+        padding: 15px;
+        text-align: center;
+        border: 1px solid rgba(100, 181, 246, 0.15);
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .light-theme .equation-card {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .equation-label {
+        font-size: 0.95em;
+        color: rgba(227, 242, 253, 0.7);
+        margin-bottom: 8px;
+    }
+    
+    .light-theme .equation-label {
+        color: rgba(255, 255, 255, 0.8);
+    }
+    
+    .equation-formula {
+        font-size: 1.0em;
+        font-weight: 600;
+        color: #64B5F6;
+        font-family: 'Courier New', monospace;
+        letter-spacing: 1px;
+    }
+    .equation-formula span {
+        color: #81C784;
+        font-weight: bold;
+    }
+    .light-theme .equation-formula span {
+        color: #1976D2;
+    }
+    .light-theme .equation-formula {
+        color: #7B1FA2;
+    }
+    
+    .stat-item {
+        background: rgba(227, 242, 253, 0.05);
+        padding: 12px;
+        text-align: center;
+        border: 1px solid rgba(100, 181, 246, 0.15);
+        border-radius: 10px;
+    }
+    
+    .light-theme .stat-item {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .stat-label {
+        font-size: 0.95em;
+        color: rgba(227, 242, 253, 0.7);
+        margin-bottom: 5px;
+    }
+    
+    .light-theme .stat-label {
+        color: rgba(255, 255, 255, 0.8);
+    }
+    
+    .stat-value {
+        font-size: 1.3em;
+        font-weight: bold;
+        color: #e3f2fd;
+    }
+    
+    .light-theme .stat-value {
+        color: white;
+    }
+    
+    .controls {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        flex: 1;
+    }
+    
+    .control-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .control-row {
+        display: flex;
+        gap: 10px;
+    }
+    
+    button {
+        padding: 12px 16px;
+        border: none;
+        font-size: 0.9em;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        border-radius: 8px;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(45deg, #1976D2, #42A5F5);
+        color: white;
+        flex: 1;
+    }
+    
+    .light-theme .btn-primary {
+        background: linear-gradient(45deg, #FF6B6B, #FF8E8E);
+    }
+    
+    .btn-primary:hover {
+        background: linear-gradient(45deg, #1565C0, #2196F3);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(25, 118, 210, 0.4);
+    }
+    
+    .light-theme .btn-primary:hover {
+        background: linear-gradient(45deg, #FF5252, #FF7575);
+    }
+    
+    .btn-secondary {
+        background: linear-gradient(45deg, #7B1FA2, #9C27B0);
+        color: white;
+        flex: 1;
+    }
+    
+    .light-theme .btn-secondary {
+        background: linear-gradient(45deg, #4ECDC4, #6EE2D8);
+    }
+    
+    .btn-secondary:hover {
+        background: linear-gradient(45deg, #6A1B9A, #8E24AA);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(123, 31, 162, 0.4);
+    }
+    
+    .light-theme .btn-secondary:hover {
+        background: linear-gradient(45deg, #3BBDB4, #5DD9CF);
+    }
+    
+    input[type="range"] {
+        width: 100%;
+        margin: 10px 0;
+        height: 6px;
+        background: rgba(227, 242, 253, 0.15);
+        outline: none;
+        -webkit-appearance: none;
+        border-radius: 3px;
+    }
+    
+    .light-theme input[type="range"] {
+        background: rgba(255, 255, 255, 0.2);
+    }
+    
+    input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 20px;
+        height: 20px;
+        background: #64B5F6;
+        cursor: pointer;
+        border-radius: 50%;
+    }
+    
+    input[type="range"]::-moz-range-thumb {
+        width: 20px;
+        height: 20px;
+        background: #64B5F6;
+        cursor: pointer;
+        border: none;
+        border-radius: 50%;
+    }
+    
+    input[type="number"] {
+        padding: 10px;
+        border: 1px solid rgba(100, 181, 246, 0.15);
+        background: rgba(227, 242, 253, 0.1);
+        color: #e3f2fd;
+        font-size: 1em;
+        width: 100%;
+        border-radius: 8px;
+    }
+    
+    .light-theme input[type="number"] {
+        background: rgba(255, 255, 255, 0.9);
+        color: #333;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    label {
+        font-weight: 600;
+        margin-bottom: 5px;
+        display: block;
+        font-size: 0.9em;
+        color: #e3f2fd;
+    }
+    
+    .light-theme label {
+        color: white;
+    }
+    
+    .progress-bar {
+        width: 100%;
+        height: 20px;
+        background: rgba(227, 242, 253, 0.15);
+        overflow: hidden;
+        margin-top: 20px;
+        border-radius: 8px;
+    }
+    
+    .light-theme .progress-bar {
+        background: rgba(255, 255, 255, 0.2);
+    }
+    
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #64B5F6, #42A5F5);
+        width: 0%;
+        transition: width 0.3s ease;
+    }
+    
+    .light-theme .progress-fill {
+        background: linear-gradient(90deg, #FFD700, #FFA500);
+    }
+    
+    @media (max-width: 1024px) {
+        .main-content {
+            grid-template-columns: 1fr;
+            gap: 15px;
+            height: auto;
+        }
+        
+        .controls-panel {
+            order: -1;
+            height: auto;
+        }
+        
+        .canvas-container {
+            min-height: 400px;
+            overflow: hidden;
+        }
+        
+        canvas {
+            max-width: 400px;
+            max-height: 400px;
+        }
+        
+        .stats {
+            grid-template-columns: 1fr 1fr;
+        }
+        
+        .controls {
+            margin-bottom: 15px;
+        }
+        
+        .progress-bar {
+            margin-top: 25px;
+        }
+        
+        h1 {
+            font-size: 1.8em;
+        }
+        
+        .pi-value {
+            font-size: 2em;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .container {
+            padding: 15px;
+        }
+        
+        .header {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .header-controls {
+            justify-content: center;
+        }
+        
+        .stats {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+</style>
+
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 id="title">Aproximación de π via Monte Carlo</h1>
+            <div class="header-controls">
+                <div class="lang-selector">
+                    <button class="lang-btn active" data-lang="es">ES</button>
+                    <button class="lang-btn" data-lang="en">EN</button>
+                    <button class="lang-btn" data-lang="fr">FR</button>
+                </div>
+                <div class="theme-controls">
+                    <button class="theme-btn" data-theme="light">☀️</button>
+                    <button class="theme-btn active" data-theme="dark">🌙</button>
+                </div>
+            </div>
+        </div>
+
+
+    <div class="main-content">
+        <div class="canvas-container">
+            <canvas id="monteCarloCanvas" width="400" height="400"></canvas>
+        </div>
+        
+        <div class="controls-panel">
+            <div class="pi-display">
+                <div class="pi-value" id="piValue">3.14159</div>
+                <div class="pi-error" id="piError">Error: 0.00000</div>
+            </div>
+            
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-label" id="totalPointsLabel">Total de puntos</div>
+                    <div class="stat-value" id="totalPoints">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label" id="insidePointsLabel">Dentro del círculo</div>
+                    <div class="stat-value" id="insidePoints">0</div>
+                </div>
+            </div>
+            
+            <div class="equation-card">
+                <div class="equation-label" id="equationLabel">Estimación de π:</div>
+                <!-- <div class="equation-formula">π ≈ 4 × (<span id="insideCount">0</span> ÷ <span id="totalCount">0</span>)</div> -->
+                <div class="equation-formula" id="staticFormula">π = <span>puntos dentro</span> ÷ <span>total</span> × 4</div>
+
+            </div>
+            
+            <div class="controls">
+                <div class="control-row">
+                    <button class="btn-primary" id="playPauseBtn">▶ INICIAR</button>
+                    <button class="btn-secondary" id="resetBtn">↻ RESET</button>
+                </div>
+                
+                <div class="control-group">
+                    <label for="speedSlider" id="speedLabel">Velocidad</label>
+                    <input type="range" id="speedSlider" min="1" max="400" value="50">
+                </div>
+                
+                <div class="control-group">
+                    <label for="targetPoints" id="targetPointsLabel">Puntos objetivo:</label>
+                    <input type="number" id="targetPoints" value="10000" min="100" max="100000">
+                </div>
+            </div>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const translations = {
+        es: {
+            title: "Aproximación de π via Monte Carlo",
+            totalPoints: "Total de puntos",
+            insidePoints: "Dentro del círculo",
+            equationLabel: "Estimación de π:",
+            start: "▶ INICIAR",
+            pause: "⏸ PAUSAR",
+            reset: "↻ RESET",
+            speed: "Velocidad",
+            targetPoints: "Puntos objetivo:",
+            error: "Error:",
+            staticFormula: "π = <span>puntos dentro</span> ÷ <span>total</span> × 4",
+        },
+        en: {
+            title: "Monte Carlo π Approximation",
+            totalPoints: "Total Points",
+            insidePoints: "Inside Circle",
+            equationLabel: "π Estimation:",
+            start: "▶ START",
+            pause: "⏸ PAUSE",
+            reset: "↻ RESET",
+            speed: "Speed",
+            targetPoints: "Target points:",
+            error: "Error:",
+            staticFormula: "π = <span>points inside</span> ÷ <span>total</span> × 4",
+        },
+        fr: {
+            title: "Approximation de π par Monte Carlo",
+            totalPoints: "Total de points",
+            insidePoints: "Dans le cercle",
+            equationLabel: "Estimation de π:",
+            start: "▶ DÉMARRER",
+            pause: "⏸ PAUSE",
+            reset: "↻ RESET",
+            speed: "Vitesse",
+            targetPoints: "Points cibles:",
+            error: "Erreur:",
+            staticFormula: "π = <span>points dedans</span> ÷ <span>total</span> × 4",
+        }
+    };
+
+    class MonteCarloPI {
+        constructor() {
+            this.canvas = document.getElementById('monteCarloCanvas');
+            this.ctx = this.canvas.getContext('2d');
+            this.width = this.canvas.width;
+            this.height = this.canvas.height;
+            
+            this.totalPoints = 0;
+            this.insidePoints = 0;
+            this.isRunning = false;
+            this.timeoutId = null;
+            this.speed = 50;
+            this.targetPoints = 10000;
+            this.currentLang = 'es';
+            this.currentTheme = 'dark';
+            
+            this.setupCanvas();
+            this.updateDisplay();
+            this.loadPreferences();
+        }
+        
+        loadPreferences() {
+            const savedLang = localStorage?.getItem('monteCarloPiLang') || 'es';
+            const savedTheme = localStorage?.getItem('monteCarloPiTheme') || 'dark';
+            
+            this.setLanguage(savedLang);
+            this.setTheme(savedTheme);
+        }
+        
+        setupCanvas() {
+            this.ctx.clearRect(0, 0, this.width, this.height);
+            
+            let bgColor = this.currentTheme === 'light' ? '#ffffff' : '#1a237e';
+            this.ctx.fillStyle = bgColor;
+            this.ctx.fillRect(0, 0, this.width, this.height);
+            
+            // Línea discreta del cuarto de círculo
+            const circleColor = this.currentTheme === 'light' ? '#cccccc' : '#64B5F6';
+            this.ctx.strokeStyle = circleColor;
+            this.ctx.lineWidth = 1;
+            
+            this.ctx.beginPath();
+            this.ctx.arc(0, this.height, this.width, -Math.PI/2, 0, false);
+            this.ctx.stroke();
+            
+            // Bordes del cuadrado
+            const borderColor = this.currentTheme === 'light' ? '#333' : '#64B5F6';
+            this.ctx.strokeStyle = borderColor;
+            this.ctx.lineWidth = 2;
+            this.ctx.strokeRect(0, 0, this.width, this.height);
+        }
+        
+        setLanguage(lang) {
+            this.currentLang = lang;
+            
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.lang === lang);
+            });
+            
+            const t = translations[lang];
+            document.getElementById('title').textContent = t.title;
+            document.getElementById('totalPointsLabel').textContent = t.totalPoints;
+            document.getElementById('insidePointsLabel').textContent = t.insidePoints;
+            document.getElementById('equationLabel').textContent = t.equationLabel;
+            document.getElementById('targetPointsLabel').textContent = t.targetPoints;
+            document.getElementById('staticFormula').innerHTML = t.staticFormula;
+            
+            this.updateSpeedLabel();
+            this.updateButtons();
+            this.updateErrorText();
+            
+            if (localStorage) {
+                localStorage.setItem('monteCarloPiLang', lang);
+            }
+        }
+        
+        setTheme(theme) {
+            this.currentTheme = theme;
+            
+            document.body.className = theme === 'light' ? 'light-theme' : '';
+            
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.theme === theme);
+            });
+            
+            setTimeout(() => {
+                this.setupCanvas();
+                this.redrawAllPoints();
+            }, 50);
+            
+            if (localStorage) {
+                localStorage.setItem('monteCarloPiTheme', theme);
+            }
+        }
+        
+        redrawAllPoints() {
+            if (this.totalPoints > 0) {
+                const wasRunning = this.isRunning;
+                this.isRunning = false;
+                if (this.timeoutId) {
+                    clearTimeout(this.timeoutId);
+                    this.timeoutId = null;
+                }
+                
+                const currentTotal = this.totalPoints;
+                const currentInside = this.insidePoints;
+                
+                this.totalPoints = 0;
+                this.insidePoints = 0;
+                this.setupCanvas();
+                
+                for (let i = 0; i < currentTotal; i++) {
+                    const x = Math.random();
+                    const y = Math.random();
+                    const isInside = (x * x + y * y) <= 1;
+                    
+                    this.totalPoints++;
+                    if (isInside) this.insidePoints++;
+                    
+                    this.drawPoint(x, y, isInside);
+                }
+                
+                this.updateDisplay();
+                
+                if (wasRunning) {
+                    this.startAnimation();
+                }
+            }
+        }
+        
+        updateSpeedLabel() {
+            const t = translations[this.currentLang];
+            const speedLabel = document.getElementById('speedLabel');
+            if (speedLabel) {
+                speedLabel.textContent = t.speed;
+            }
+        }
+        
+        updateButtons() {
+            const t = translations[this.currentLang];
+            const playPauseBtn = document.getElementById('playPauseBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            
+            if (playPauseBtn) {
+                playPauseBtn.textContent = this.isRunning ? t.pause : t.start;
+            }
+            
+            if (resetBtn) {
+                resetBtn.textContent = t.reset;
+            }
+        }
+        
+        updateErrorText() {
+            const t = translations[this.currentLang];
+            const pi = this.totalPoints > 0 ? (4 * this.insidePoints / this.totalPoints) : 0;
+            const error = Math.abs(pi - Math.PI);
+            document.getElementById('piError').textContent = `${t.error} ${error.toFixed(6)}`;
+        }
+        
+        drawPoint(x, y, isInside) {
+            const canvasX = x * this.width;
+            const canvasY = this.height - (y * this.height);
+            
+            let insideColor, outsideColor;
+            if (this.currentTheme === 'light') {
+                insideColor = '#FF6B6B';
+                outsideColor = '#4ECDC4';
+            } else {
+                insideColor = '#00E676'; // Cian vibrante
+                outsideColor = '#E1BEE7'; // Púrpura claro
+            }
+            
+            this.ctx.fillStyle = isInside ? insideColor : outsideColor;
+            this.ctx.beginPath();
+            this.ctx.arc(canvasX, canvasY, 1.2, 0, 2 * Math.PI);
+            this.ctx.fill();
+        }
+        
+        updateDisplay() {
+            const pi = this.totalPoints > 0 ? (4 * this.insidePoints / this.totalPoints) : 0;
+            
+            // Actualizar contadores principales
+            document.getElementById('totalPoints').textContent = this.totalPoints.toLocaleString().replace(/,/g, ' ');
+            document.getElementById('insidePoints').textContent = this.insidePoints.toLocaleString().replace(/,/g, ' ');
+            document.getElementById('piValue').textContent = pi.toFixed(5);
+            
+            // // Actualizar números en la ecuación
+            // document.getElementById('insideCount').textContent = this.insidePoints.toLocaleString().replace(/,/g, ' ');
+            // document.getElementById('totalCount').textContent = this.totalPoints.toLocaleString().replace(/,/g, ' ');
+            
+            this.updateErrorText();
+            this.updateProgress();
+        }
+        
+        updateProgress() {
+            const progress = Math.min((this.totalPoints / this.targetPoints) * 100, 100);
+            document.getElementById('progressFill').style.width = `${progress}%`;
+        }
+        
+        startAnimation() {
+            this.isRunning = true;
+            this.updateButtons();
+            this.animate();
+        }
+        
+        animate() {
+            if (!this.isRunning) return;
+            
+            const x = Math.random();
+            const y = Math.random();
+            const isInside = (x * x + y * y) <= 1;
+            
+            this.totalPoints++;
+            if (isInside) this.insidePoints++;
+            
+            this.drawPoint(x, y, isInside);
+            this.updateDisplay();
+            
+            if (this.totalPoints >= this.targetPoints) {
+                this.isRunning = false;
+                this.updateButtons();
+                return;
+            }
+            
+            this.timeoutId = setTimeout(() => this.animate(), 1000 / this.speed);
+        }
+        
+        stop() {
+            this.isRunning = false;
+            this.updateButtons();
+            if (this.timeoutId) {
+                clearTimeout(this.timeoutId);
+                this.timeoutId = null;
+            }
+        }
+        
+        reset() {
+            this.stop();
+            this.totalPoints = 0;
+            this.insidePoints = 0;
+            this.setupCanvas();
+            this.updateDisplay();
+            this.updateButtons();
+        }
+    }
+
+    // Inicialización simple y limpia
+    document.addEventListener('DOMContentLoaded', () => {
+        const app = new MonteCarloPI();
+        
+        document.getElementById('playPauseBtn').addEventListener('click', () => {
+            if (app.isRunning) {
+                app.stop();
+            } else {
+                app.startAnimation();
+            }
+        });
+        
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            app.reset();
+        });
+        
+        document.getElementById('speedSlider').addEventListener('input', (e) => {
+            app.speed = parseInt(e.target.value);
+        });
+        
+        document.getElementById('targetPoints').addEventListener('change', (e) => {
+            app.targetPoints = parseInt(e.target.value);
+            app.updateProgress();
+        });
+        
+        document.querySelectorAll('.lang-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                app.setLanguage(e.target.dataset.lang);
+            });
+        });
+        
+        document.querySelectorAll('.theme-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                app.setTheme(e.target.dataset.theme);
+            });
+        });
+    });
+</script>
+</body>
+</html>
