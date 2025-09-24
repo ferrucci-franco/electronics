@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Correlación de Señales Discretas</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.26.0/plotly.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --border-color: #dee2e6;
+            --accent-color: #0066cc;
+            --grid-color: #e9ecef;
+            --signal-x-color: #007bff;
+            --signal-y-color: #dc3545;
+            --correlation-color: #28a745;
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #2d2d2d;
+            --text-primary: #ffffff;
+            --text-secondary: #b8b9ba;
+            --border-color: #404040;
+            --accent-color: #4dabf7;
+            --grid-color: #404040;
+            --signal-x-color: #4dabf7;
+            --signal-y-color: #ff6b6b;
+            --correlation-color: #51cf66;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .main-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .left-panel {
+            width: 300px;
+            background-color: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .right-panel {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .parameter-group {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .parameter-group:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .parameter-group h3 {
+            font-size: 1rem;
+            margin-bottom: 15px;
+            color: var(--accent-color);
+        }
+
+        .input-group {
+            margin-bottom: 12px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .input-group textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            resize: vertical;
+            min-height: 60px;
+            font-family: monospace;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .slider-container input[type="range"] {
+            flex: 1;
+        }
+
+        .slider-value {
+            min-width: 30px;
+            text-align: center;
+            font-weight: 600;
+            color: var(--accent-color);
+        }
+
+        .theme-toggle {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            font-size: 0.9rem;
+        }
+
+        .theme-toggle:hover {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        .charts-container {
+            min-height: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .chart-container {
+            flex: 1;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            background-color: var(--bg-secondary);
+            position: relative;
+            min-height: 200px;
+        }
+
+        .chart-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            text-align: center;
+            color: var(--accent-color);
+        }
+
+        .chart {
+            width: 100%;
+            height: calc(100% - 40px);
+        }
+
+        .predefined-select {
+            margin-bottom: 10px;
+        }
+
+        .predefined-select select {
+            width: 100%;
+            padding: 6px 10px;
+            font-size: 0.85rem;
+        }
+
+        .app-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 25px;
+            text-align: center;
+            color: var(--accent-color);
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--accent-color);
+        }
+
+        .control-section {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .correlation-value {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background-color: var(--accent-color);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            font-family: monospace;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body data-theme="light">
+    <div class="main-container">
+        <div class="left-panel">
+            <div class="app-title" data-translate="title">Correlación de Señales Discretas</div>
+            
+            <div class="control-section">
+                <div class="parameter-group">
+                    <h3 data-translate="controls">Controles</h3>
+                    
+                    <div class="input-group">
+                        <label data-translate="theme">Tema:</label>
+                        <button class="theme-toggle" id="themeToggle">🌙 <span data-translate="dark_mode">Modo Oscuro</span></button>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label data-translate="language">Idioma:</label>
+                        <select id="langSelect">
+                            <option value="es">Español</option>
+                            <option value="en" selected>English</option>
+                            <option value="fr">Français</option>
+                        </select>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label data-translate="lag">Desfase (l):</label>
+                        <div class="slider-container">
+                            <input type="range" id="lSlider" min="-20" max="20" value="0">
+                            <span id="lValue" class="slider-value">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="parameter-group">
+                <h3 data-translate="general_config">Configuración General</h3>
+                
+                <div class="checkbox-group">
+                    <input type="checkbox" id="autoCorrelation">
+                    <label for="autoCorrelation" data-translate="autocorrelation">Auto-correlación</label>
+                </div>
+            </div>
+
+            <div class="parameter-group">
+                <h3 data-translate="signal_x">Señal x[n]</h3>
+                
+                <div class="predefined-select">
+                    <select id="xPredefined">
+                        <option value="" data-translate="manual_input">Entrada manual</option>
+                        <option value="impulse" data-translate="impulse">Impulso</option>
+                        <option value="step" data-translate="step">Escalón</option>
+                        <option value="ramp" data-translate="ramp">Rampa</option>
+                        <option value="exponential" data-translate="exponential">Exponencial</option>
+                        <option value="sinusoidal" data-translate="sinusoidal">Sinusoidal</option>
+                    </select>
+                </div>
+                
+                <div class="input-group">
+                    <label data-translate="values">Valores (separados por comas):</label>
+                    <textarea id="xValues" placeholder="1, 2, 3, 2, 1">1, 2, 3, 2, 1</textarea>
+                </div>
+                
+                <div class="input-group">
+                    <label data-translate="zero_position">Posición n=0:</label>
+                    <input type="number" id="xZeroPos" value="2" min="0">
+                </div>
+            </div>
+
+            <div class="parameter-group" id="ySignalGroup">
+                <h3 data-translate="signal_y">Señal y[n]</h3>
+                
+                <div class="predefined-select">
+                    <select id="yPredefined">
+                        <option value="" data-translate="manual_input">Entrada manual</option>
+                        <option value="impulse" data-translate="impulse">Impulso</option>
+                        <option value="step" data-translate="step">Escalón</option>
+                        <option value="ramp" data-translate="ramp">Rampa</option>
+                        <option value="exponential" data-translate="exponential">Exponencial</option>
+                        <option value="sinusoidal" data-translate="sinusoidal">Sinusoidal</option>
+                    </select>
+                </div>
+                
+                <div class="input-group">
+                    <label data-translate="values">Valores (separados por comas):</label>
+                    <textarea id="yValues" placeholder="1, -1, 1, -1, 1">1, -1, 1, -1, 1</textarea>
+                </div>
+                
+                <div class="input-group">
+                    <label data-translate="zero_position">Posición n=0:</label>
+                    <input type="number" id="yZeroPos" value="2" min="0">
+                </div>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="charts-container">
+                <div class="chart-container">
+                    <div class="chart-title" data-translate="signal_x_title">Señal x[n]</div>
+                    <div class="chart" id="chartX"></div>
+                </div>
+                
+                <div class="chart-container">
+                    <div class="chart-title" data-translate="signal_y_title">Señal y[n-l]</div>
+                    <div class="chart" id="chartY"></div>
+                </div>
+                
+                <div class="chart-container">
+                    <div class="chart-title" data-translate="correlation_title">Correlación Rxy[l]</div>
+                    <div class="correlation-value" id="correlationValue">Rxy[0] = 0.00</div>
+                    <div class="chart" id="chartCorrelation"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Traducciones
+        const translations = {
+            es: {
+                title: "Correlación de Señales Discretas",
+                controls: "Controles",
+                theme: "Tema",
+                dark_mode: "Modo Oscuro",
+                light_mode: "Modo Claro",
+                language: "Idioma",
+                lag: "Desfase (l)",
+                lag_axis: "Desfase (l)",
+                general_config: "Configuración General",
+                autocorrelation: "Auto-correlación",
+                signal_x: "Señal x[n]",
+                signal_y: "Señal y[n]",
+                manual_input: "Entrada manual",
+                impulse: "Impulso",
+                step: "Escalón",
+                ramp: "Rampa",
+                exponential: "Exponencial",
+                sinusoidal: "Sinusoidal",
+                values: "Valores (separados por comas)",
+                zero_position: "Posición n=0",
+                signal_x_title: "Señal x[n]",
+                signal_y_title: "Señal y[n-l]",
+                correlation_title: "Correlación Rxy[l]",
+                correlation_value: "Valor"
+            },
+            en: {
+                title: "Discrete Signal Correlation",
+                controls: "Controls",
+                theme: "Theme",
+                dark_mode: "Dark Mode",
+                light_mode: "Light Mode",
+                language: "Language",
+                lag: "Lag (l)",
+                lag_axis: "Lag (l)",
+                general_config: "General Configuration",
+                autocorrelation: "Auto-correlation",
+                signal_x: "Signal x[n]",
+                signal_y: "Signal y[n]",
+                manual_input: "Manual input",
+                impulse: "Impulse",
+                step: "Step",
+                ramp: "Ramp",
+                exponential: "Exponential",
+                sinusoidal: "Sinusoidal",
+                values: "Values (comma separated)",
+                zero_position: "Position n=0",
+                signal_x_title: "Signal x[n]",
+                signal_y_title: "Signal y[n-l]",
+                correlation_title: "Correlation Rxy[l]",
+                correlation_value: "Value"
+            },
+            fr: {
+                title: "Corrélation de Signaux Discrets",
+                controls: "Contrôles",
+                theme: "Thème",
+                dark_mode: "Mode Sombre",
+                light_mode: "Mode Clair",
+                language: "Langue",
+                lag: "Décalage (l)",
+                lag_axis: "Décalage (l)",
+                general_config: "Configuration Générale",
+                autocorrelation: "Auto-corrélation",
+                signal_x: "Signal x[n]",
+                signal_y: "Signal y[n]",
+                manual_input: "Saisie manuelle",
+                impulse: "Impulsion",
+                step: "Échelon",
+                ramp: "Rampe",
+                exponential: "Exponentielle",
+                sinusoidal: "Sinusoïdale",
+                values: "Valeurs (séparées par virgules)",
+                zero_position: "Position n=0",
+                signal_x_title: "Signal x[n]",
+                signal_y_title: "Signal y[n-l]",
+                correlation_title: "Corrélation Rxy[l]",
+                correlation_value: "Valeur"
+            }
+        };
+
+        // Variables globales
+        let currentLang = 'en';
+        let currentL = 0;
+        let isAutoCorrelation = false;
+        let sharedXRange = { min: -10, max: 10 };
+
+        // Elementos DOM
+        const elements = {
+            themeToggle: document.getElementById('themeToggle'),
+            langSelect: document.getElementById('langSelect'),
+            lSlider: document.getElementById('lSlider'),
+            lValue: document.getElementById('lValue'),
+            autoCorrelation: document.getElementById('autoCorrelation'),
+            correlationValue: document.getElementById('correlationValue'),
+            xValues: document.getElementById('xValues'),
+            xZeroPos: document.getElementById('xZeroPos'),
+            xPredefined: document.getElementById('xPredefined'),
+            yValues: document.getElementById('yValues'),
+            yZeroPos: document.getElementById('yZeroPos'),
+            yPredefined: document.getElementById('yPredefined'),
+            ySignalGroup: document.getElementById('ySignalGroup'),
+            chartX: document.getElementById('chartX'),
+            chartY: document.getElementById('chartY'),
+            chartCorrelation: document.getElementById('chartCorrelation')
+        };
+
+        // Funciones de utilidad
+        function parseSignal(valuesStr) {
+            return valuesStr.split(',').map(v => parseFloat(v.trim())).filter(v => !isNaN(v));
+        }
+
+        function generatePredefinedSignal(type) {
+            const signals = {
+                impulse: [1, 0, 0, 0, 0],
+                step: [0, 0, 1, 1, 1, 1, 1],
+                ramp: [0, 0, 1, 2, 3, 4, 5],
+                exponential: [0, 0, 1, 0.5, 0.25, 0.125, 0.0625],
+                sinusoidal: Array.from({length: 24}, (_, i) => Math.round(Math.sin(2 * Math.PI * i / 12) * 1000) / 1000)
+            };
+            return signals[type] || [];
+        }
+
+        function calculateLagLimits(xSignal, ySignal, xZero, yZero) {
+            const xStart = -xZero;
+            const xEnd = xSignal.length - xZero - 1;
+            const yStart = -yZero;
+            const yEnd = ySignal.length - yZero - 1;
+            
+            const lMin = xStart - yEnd;
+            const lMax = xEnd - yStart;
+            
+            return {
+                min: Math.max(lMin, -50),
+                max: Math.min(lMax, 50)
+            };
+        }
+
+        function calculateFixedRange(xSignal, ySignal, xZero, yZero) {
+            const lagLimits = calculateLagLimits(xSignal, ySignal, xZero, yZero);
+            
+            const xStart = -xZero;
+            const xEnd = xSignal.length - xZero - 1;
+            
+            const yStartMin = -yZero + lagLimits.min;
+            const yEndMin = ySignal.length - yZero - 1 + lagLimits.min;
+            const yStartMax = -yZero + lagLimits.max;
+            const yEndMax = ySignal.length - yZero - 1 + lagLimits.max;
+            
+            const minN = Math.min(xStart, yStartMin, yStartMax) - 1;
+            const maxN = Math.max(xEnd, yEndMin, yEndMax) + 1;
+            
+            return { min: minN, max: maxN };
+        }
+
+        function calculateAutoRange(xSignal, ySignal, xZero, yZero, currentL) {
+            const xStart = -xZero;
+            const xEnd = xSignal.length - xZero - 1;
+            
+            const yStart = -yZero + currentL;
+            const yEnd = ySignal.length - yZero - 1 + currentL;
+            
+            const minN = Math.min(xStart, yStart) - 1;
+            const maxN = Math.max(xEnd, yEnd) + 1;
+            
+            return { min: minN, max: maxN };
+        }
+
+        function calculateCorrelation(x, y, xZero, yZero, nStart, nEnd, lagMin, lagMax) {
+            const correlation = [];
+            const lags = [];
+            
+            for (let l = lagMin; l <= lagMax; l++) {
+                let sum = 0;
+                let count = 0;
+                
+                for (let n = nStart; n <= nEnd; n++) {
+                    const xIndex = n + xZero;
+                    const yIndex = (n - l) + yZero;
+                    
+                    if (xIndex >= 0 && xIndex < x.length && yIndex >= 0 && yIndex < y.length) {
+                        sum += x[xIndex] * y[yIndex];
+                        count++;
+                    }
+                }
+                
+                correlation.push(count > 0 ? sum : 0);
+                lags.push(l);
+            }
+            
+            return { correlation, lags };
+        }
+
+        function getPlotlyTheme() {
+            const isDark = document.body.dataset.theme === 'dark';
+            return {
+                paper_bgcolor: isDark ? '#2d2d2d' : '#f8f9fa',
+                plot_bgcolor: isDark ? '#2d2d2d' : '#f8f9fa',
+                font: { color: isDark ? '#ffffff' : '#212529' },
+                gridcolor: isDark ? '#404040' : '#e9ecef',
+                zerolinecolor: isDark ? '#ffffff' : '#000000'
+            };
+        }
+
+        function drawSignal(containerId, signal, zeroPos, nStart, nEnd, color, shiftL = 0) {
+            const n_values = [];
+            const signal_values = [];
+            
+            for (let n = nStart; n <= nEnd; n++) {
+                const signalIndex = n + zeroPos + shiftL;
+                const value = (signalIndex >= 0 && signalIndex < signal.length) ? signal[signalIndex] : 0;
+                n_values.push(n);
+                signal_values.push(value);
+            }
+            
+            const theme = getPlotlyTheme();
+            
+            // Create stems using bar chart for vertical lines
+            const stemTrace = {
+                x: n_values,
+                y: signal_values,
+                type: 'bar',
+                width: 0.02,
+                marker: {
+                    color: color,
+                    line: { width: 0 }
+                },
+                showlegend: false,
+                hovertemplate: 'n: %{x}<br>Value: %{y}<extra></extra>'
+            };
+            
+            // Create points at the end of stems
+            const pointTrace = {
+                x: n_values,
+                y: signal_values,
+                type: 'scatter',
+                mode: 'markers',
+                marker: {
+                    color: color,
+                    size: 8,
+                    line: { color: 'white', width: 1 }
+                },
+                showlegend: false,
+                hovertemplate: 'n: %{x}<br>Value: %{y}<extra></extra>'
+            };
+            
+            const layout = {
+                ...theme,
+                xaxis: {
+                    title: 'n',
+                    gridcolor: theme.gridcolor,
+                    zerolinecolor: theme.zerolinecolor,
+                    zerolinewidth: 2,
+                    showgrid: true,
+                    dtick: Math.max(1, Math.ceil((nEnd - nStart) / 15))
+                },
+                yaxis: {
+                    title: 'Amplitude',
+                    gridcolor: theme.gridcolor,
+                    zerolinecolor: theme.zerolinecolor,
+                    zerolinewidth: 2,
+                    showgrid: true
+                },
+                margin: { l: 50, r: 20, t: 20, b: 50 },
+                showlegend: false,
+                hovermode: 'closest'
+            };
+            
+            Plotly.newPlot(containerId, [stemTrace, pointTrace], layout, {
+                displayModeBar: false,
+                responsive: true
+            });
+        }
+
+        function drawCorrelation(containerId, correlation, lags, currentL) {
+            const theme = getPlotlyTheme();
+            const t = translations[currentLang];
+            const highlightColor = document.body.dataset.theme === 'dark' ? '#ffa94d' : '#fd7e14';
+            const normalColor = document.body.dataset.theme === 'dark' ? '#51cf66' : '#28a745';
+            
+            // Create colors array to highlight current lag
+            const colors = lags.map(l => l === currentL ? highlightColor : normalColor);
+            const sizes = lags.map(l => l === currentL ? 8 : 8); // Same size as signal charts
+            
+            // Create stems using bar chart
+            const stemTrace = {
+                x: lags,
+                y: correlation,
+                type: 'bar',
+                width: 0.02, // Same width as signal charts
+                marker: {
+                    color: colors,
+                    line: { width: 0 }
+                },
+                showlegend: false,
+                hovertemplate: 'l: %{x}<br>Correlation: %{y}<extra></extra>'
+            };
+            
+            // Create points at the end of stems
+            const pointTrace = {
+                x: lags,
+                y: correlation,
+                type: 'scatter',
+                mode: 'markers',
+                marker: {
+                    color: colors,
+                    size: sizes, // Same size as signal charts
+                    line: { color: 'white', width: 1 }
+                },
+                showlegend: false,
+                hovertemplate: 'l: %{x}<br>Correlation: %{y}<extra></extra>'
+            };
+            
+            const layout = {
+                ...theme,
+                xaxis: {
+                    title: t.lag_axis || 'Lag (l)',
+                    gridcolor: theme.gridcolor,
+                    zerolinecolor: theme.zerolinecolor,
+                    zerolinewidth: 2,
+                    showgrid: true,
+                    dtick: Math.max(1, Math.ceil((lags[lags.length - 1] - lags[0]) / 10))
+                },
+                yaxis: {
+                    title: 'Correlation',
+                    gridcolor: theme.gridcolor,
+                    zerolinecolor: theme.zerolinecolor,
+                    zerolinewidth: 2,
+                    showgrid: true
+                },
+                margin: { l: 60, r: 20, t: 20, b: 50 },
+                showlegend: false,
+                hovermode: 'closest'
+            };
+            
+            Plotly.newPlot(containerId, [stemTrace, pointTrace], layout, {
+                displayModeBar: false,
+                responsive: true
+            });
+        }
+
+        function updateCharts() {
+            const xSignal = parseSignal(elements.xValues.value);
+            const xZero = parseInt(elements.xZeroPos.value);
+            
+            let ySignal, yZero;
+            if (isAutoCorrelation) {
+                ySignal = [...xSignal];
+                yZero = xZero;
+            } else {
+                ySignal = parseSignal(elements.yValues.value);
+                yZero = parseInt(elements.yZeroPos.value);
+            }
+            
+            const lagLimits = calculateLagLimits(xSignal, ySignal, xZero, yZero);
+            elements.lSlider.min = lagLimits.min;
+            elements.lSlider.max = lagLimits.max;
+            
+            if (currentL < lagLimits.min) {
+                currentL = lagLimits.min;
+                elements.lSlider.value = currentL;
+                elements.lValue.textContent = currentL;
+            } else             if (currentL > lagLimits.max) {
+                currentL = lagLimits.max;
+                elements.lSlider.value = currentL;
+                elements.lValue.textContent = currentL;
+            }
+            
+            // Always use fixed range behavior
+            sharedXRange = calculateFixedRange(xSignal, ySignal, xZero, yZero);
+            
+            const isDark = document.body.dataset.theme === 'dark';
+            const xColor = isDark ? '#4dabf7' : '#007bff';
+            const yColor = isDark ? '#ff6b6b' : '#dc3545';
+            
+            drawSignal('chartX', xSignal, xZero, sharedXRange.min, sharedXRange.max, xColor);
+            
+            // Update dynamic title for y signal based on current language
+            const yTitle = document.querySelector('[data-translate="signal_y_title"]');
+            const t = translations[currentLang];
+            let dynamicTitle;
+            if (isAutoCorrelation) {
+                const baseSignal = t.signal_x_title || 'Signal x[n]';
+                dynamicTitle = baseSignal.replace('x[n]', `x[n${currentL >= 0 ? '-' + currentL : '+' + Math.abs(currentL)}]`);
+            } else {
+                const baseSignal = t.signal_y_title || 'Signal y[n-l]';
+                dynamicTitle = baseSignal.replace('y[n-l]', `y[n${currentL >= 0 ? '-' + currentL : '+' + Math.abs(currentL)}]`);
+            }
+            yTitle.textContent = dynamicTitle;
+            
+            if (isAutoCorrelation) {
+                drawSignal('chartY', xSignal, xZero, sharedXRange.min, sharedXRange.max, yColor, -currentL);
+            } else {
+                drawSignal('chartY', ySignal, yZero, sharedXRange.min, sharedXRange.max, yColor, -currentL);
+            }
+            
+            const { correlation, lags } = calculateCorrelation(xSignal, ySignal, xZero, yZero, sharedXRange.min, sharedXRange.max, lagLimits.min, lagLimits.max);
+            
+            const currentCorrelationIndex = lags.indexOf(currentL);
+            const currentCorrelationValue = currentCorrelationIndex !== -1 ? correlation[currentCorrelationIndex] : 0;
+            
+            const correlationLabel = isAutoCorrelation ? 'Rxx' : 'Rxy';
+            elements.correlationValue.textContent = `${correlationLabel}[${currentL}] = ${currentCorrelationValue.toFixed(3)}`;
+            
+            drawCorrelation('chartCorrelation', correlation, lags, currentL);
+        }
+
+        function updateLanguage() {
+            const t = translations[currentLang];
+            document.querySelectorAll('[data-translate]').forEach(el => {
+                const key = el.getAttribute('data-translate');
+                if (t[key]) {
+                    if (el.tagName === 'INPUT' && el.type === 'text') {
+                        el.placeholder = t[key];
+                    } else if (el.tagName === 'TEXTAREA') {
+                        // Mantener placeholder original
+                    } else {
+                        el.textContent = t[key];
+                    }
+                }
+            });
+            
+            const selects = ['xPredefined', 'yPredefined'];
+            selects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                const options = select.querySelectorAll('option');
+                options.forEach(option => {
+                    const key = option.getAttribute('data-translate');
+                    if (key && t[key]) {
+                        option.textContent = t[key];
+                    }
+                });
+            });
+
+            updateThemeButton();
+        }
+
+        function updateThemeButton() {
+            const t = translations[currentLang];
+            const isDark = document.body.dataset.theme === 'dark';
+            const themeText = isDark ? t.light_mode : t.dark_mode;
+            const themeIcon = isDark ? '☀️' : '🌙';
+            elements.themeToggle.innerHTML = `${themeIcon} <span>${themeText}</span>`;
+        }
+
+        function toggleAutoCorrelation() {
+            isAutoCorrelation = elements.autoCorrelation.checked;
+            elements.ySignalGroup.style.opacity = isAutoCorrelation ? '0.5' : '1';
+            elements.yValues.disabled = isAutoCorrelation;
+            elements.yZeroPos.disabled = isAutoCorrelation;
+            elements.yPredefined.disabled = isAutoCorrelation;
+            
+            updateCharts();
+        }
+
+        function handlePredefinedSignal(selectElement, valuesElement, zeroElement) {
+            const type = selectElement.value;
+            if (type) {
+                const signal = generatePredefinedSignal(type);
+                valuesElement.value = signal.join(', ');
+                zeroElement.value = Math.floor(signal.length / 2);
+                updateCharts();
+            }
+        }
+
+        // Event listeners
+        elements.themeToggle.addEventListener('click', () => {
+            const currentTheme = document.body.dataset.theme;
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            document.body.dataset.theme = newTheme;
+            updateThemeButton();
+            updateCharts();
+        });
+
+        elements.langSelect.addEventListener('change', (e) => {
+            currentLang = e.target.value;
+            updateLanguage();
+            updateCharts(); // Force chart update to refresh dynamic titles
+        });
+
+        elements.lSlider.addEventListener('input', (e) => {
+            currentL = parseInt(e.target.value);
+            elements.lValue.textContent = currentL;
+            updateCharts();
+        });
+
+        elements.autoCorrelation.addEventListener('change', toggleAutoCorrelation);
+
+        elements.xValues.addEventListener('input', updateCharts);
+        elements.xZeroPos.addEventListener('input', updateCharts);
+        elements.yValues.addEventListener('input', updateCharts);
+        elements.yZeroPos.addEventListener('input', updateCharts);
+
+        elements.xPredefined.addEventListener('change', () => {
+            handlePredefinedSignal(elements.xPredefined, elements.xValues, elements.xZeroPos);
+        });
+
+        elements.yPredefined.addEventListener('change', () => {
+            handlePredefinedSignal(elements.yPredefined, elements.yValues, elements.yZeroPos);
+        });
+
+        window.addEventListener('resize', () => {
+            setTimeout(() => {
+                Plotly.Plots.resize('chartX');
+                Plotly.Plots.resize('chartY');
+                Plotly.Plots.resize('chartCorrelation');
+            }, 100);
+        });
+
+        // Inicialización
+        updateLanguage();
+        updateCharts();
+
+        setTimeout(() => {
+            updateCharts();
+        }, 500);
+    </script>
+</body>
+</html>
