@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tab 1: Señales y Espectro</title>
+
+  <!-- Plotly.js -->
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0f1222;
+      color: #f8fafc;
+      padding: 20px;
+      line-height: 1.6;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      color: #3ea0ff;
+    }
+
+    h2 {
+      font-size: 18px;
+      margin-bottom: 12px;
+      color: #f8fafc;
+    }
+
+    .container {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 20px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .panel {
+      background: #171b31;
+      border: 1px solid #2a2f4a;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 6px;
+      color: #a0a6b5;
+    }
+
+    select, input[type="number"] {
+      width: 100%;
+      background: #141a2a;
+      border: 1px solid #2a2f4a;
+      color: #f8fafc;
+      padding: 8px;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+    }
+
+    .btn {
+      width: 100%;
+      background: #3ea0ff;
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .btn:hover {
+      background: #5eb0ff;
+    }
+
+    .btn-stop {
+      background: #ff5757;
+    }
+
+    .btn-stop:hover {
+      background: #ff7070;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-icon {
+      width: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      padding: 0;
+    }
+
+    .radio-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .radio-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    input[type="radio"] {
+      accent-color: #3ea0ff;
+    }
+
+    input[type="checkbox"] {
+      accent-color: #3ea0ff;
+    }
+
+    .plot-area {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .plot-container {
+      background: #171b31;
+      border: 1px solid #2a2f4a;
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .plot {
+      width: 100%;
+      height: 300px;
+    }
+
+    .vu-meter {
+      height: 8px;
+      background: #141a2a;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    .vu-meter-fill {
+      height: 100%;
+      background: linear-gradient(to right, #22c55e, #ffa500, #ef4444);
+      width: 0%;
+      transition: width 0.1s ease;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .value-display {
+      display: inline-block;
+      min-width: 50px;
+      text-align: right;
+      color: #3ea0ff;
+      font-weight: 600;
+    }
+
+    @media (max-width: 980px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+
+    <!-- PANEL IZQUIERDO: CONTROLES -->
+    <aside>
+
+      <!-- Fuente de Audio -->
+      <div class="panel">
+        <h2>🎤 Fuente de Audio</h2>
+
+        <div class="radio-group">
+          <label class="radio-option">
+            <input type="radio" name="audio-source" value="realtime" checked>
+            <span>Tiempo Real (Micrófono)</span>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="audio-source" value="offline">
+            <span>Modo Offline (Grabar y procesar)</span>
+          </label>
+        </div>
+
+        <!-- Controles para Tiempo Real y Offline -->
+        <div id="recordingControls" style="margin-top: 12px;">
+          <div class="btn-group">
+            <button class="btn btn-icon" id="btnStart" title="Start Recording">●</button>
+            <button class="btn btn-stop btn-icon" id="btnStop" title="Stop Recording">■</button>
+          </div>
+
+          <div style="margin-top: 12px;">
+            <label>Nivel de entrada</label>
+            <div class="vu-meter">
+              <div class="vu-meter-fill" id="vuMeter"></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="border-top: 1px solid #2a2f4a; margin: 16px 0; padding-top: 16px;">
+          <div class="radio-group">
+            <label class="radio-option">
+              <input type="radio" name="audio-source" value="file">
+              <span>Importar Archivo</span>
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="audio-source" value="generator">
+              <span>Generador de Señales</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- File upload -->
+        <div id="fileControls" class="hidden" style="margin-top: 12px;">
+          <input type="file" id="fileInput" accept="audio/*" style="width: 100%; padding: 8px; background: #141a2a; border: 1px solid #2a2f4a; border-radius: 8px; color: #f8fafc;">
+        </div>
+
+        <!-- Parámetros específicos del generador -->
+        <div id="generatorControls" class="hidden" style="margin-top: 12px;">
+          <div class="form-group">
+            <label>Tipo de señal</label>
+            <select id="signalType">
+              <option value="sine">Tono puro (senoidal)</option>
+              <option value="sweep">Sweep (chirp)</option>
+              <option value="white">Ruido blanco</option>
+              <option value="pink">Ruido rosa</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Frecuencia (Hz): <span class="value-display" id="freqValue">440</span></label>
+            <input type="range" id="frequency" min="20" max="20000" value="440" step="1">
+          </div>
+          <div class="form-group">
+            <label>Amplitud: <span class="value-display" id="ampValue">0.5</span></label>
+            <input type="range" id="amplitude" min="0" max="1" value="0.5" step="0.01">
+          </div>
+          <button class="btn" id="btnGenerate">▶ Generar Señal</button>
+        </div>
+      </div>
+
+      <!-- Parámetros FFT -->
+      <div class="panel">
+        <h2>🎛️ Parámetros FFT</h2>
+
+        <div class="form-group">
+          <label>Tamaño de ventana</label>
+          <select id="fftSize">
+            <option value="512">512</option>
+            <option value="1024">1024</option>
+            <option value="2048" selected>2048</option>
+            <option value="4096">4096</option>
+            <option value="8192">8192</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Tipo de ventana</label>
+          <select id="windowType">
+            <option value="rectangular">Rectangular</option>
+            <option value="hamming">Hamming</option>
+            <option value="hanning" selected>Hanning</option>
+            <option value="blackman">Blackman</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Overlap (para espectrograma)</label>
+          <select id="overlap">
+            <option value="0">0%</option>
+            <option value="0.5" selected>50%</option>
+            <option value="0.75">75%</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="showSpectrogram" checked>
+            Mostrar espectrograma
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="showWindow">
+            Mostrar ventana aplicada
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="dbScale" checked>
+            Escala en dB
+          </label>
+        </div>
+      </div>
+
+      <!-- Presets -->
+      <div class="panel">
+        <h2>⭐ Presets</h2>
+        <button class="btn" data-preset="tone440">Tono 440 Hz</button>
+        <button class="btn" data-preset="chord">Acorde Do-Mi-Sol</button>
+        <button class="btn" data-preset="sweep">Sweep 100-5kHz</button>
+        <button class="btn" data-preset="white">Ruido blanco</button>
+      </div>
+
+    </aside>
+
+    <!-- ÁREA DERECHA: PLOTS -->
+    <main class="plot-area">
+
+      <!-- Plot 1: Señal Temporal -->
+      <div class="plot-container">
+        <h2>Señal Temporal</h2>
+        <div class="plot" id="plotTime"></div>
+      </div>
+
+      <!-- Plot 2: Magnitud FFT -->
+      <div class="plot-container">
+        <h2>Magnitud FFT</h2>
+        <div class="plot" id="plotFFT"></div>
+      </div>
+
+      <!-- Plot 3: Espectrograma -->
+      <div class="plot-container" id="spectrogramContainer">
+        <h2>Espectrograma</h2>
+        <div class="plot" id="plotSpectrogram"></div>
+      </div>
+
+    </main>
+
+  </div>
+
+  <script>
+    // ===== VARIABLES GLOBALES =====
+    let audioContext = null;
+    let analyser = null;
+    let microphone = null;
+    let scriptProcessor = null;
+    let isRecording = false;
+    let audioBuffer = [];
+    let sampleRate = 44100;
+
+    // ===== ELEMENTOS DOM =====
+    const btnStart = document.getElementById('btnStart');
+    const btnStop = document.getElementById('btnStop');
+    const vuMeter = document.getElementById('vuMeter');
+    const audioSourceInputs = document.querySelectorAll('input[name="audio-source"]');
+    const generatorControls = document.getElementById('generatorControls');
+    const fileControls = document.getElementById('fileControls');
+    const spectrogramContainer = document.getElementById('spectrogramContainer');
+    const showSpectrogramCheckbox = document.getElementById('showSpectrogram');
+
+    // ===== INICIALIZACIÓN =====
+    function init() {
+      console.log('🎵 Tab 1 inicializado');
+
+      // Crear plots vacíos
+      createEmptyPlots();
+
+      // Event listeners
+      btnStart.addEventListener('click', startRecording);
+      btnStop.addEventListener('click', stopRecording);
+
+      audioSourceInputs.forEach(input => {
+        input.addEventListener('change', handleSourceChange);
+      });
+
+      document.getElementById('frequency').addEventListener('input', (e) => {
+        document.getElementById('freqValue').textContent = e.target.value;
+      });
+
+      document.getElementById('amplitude').addEventListener('input', (e) => {
+        document.getElementById('ampValue').textContent = e.target.value;
+      });
+
+      showSpectrogramCheckbox.addEventListener('change', (e) => {
+        spectrogramContainer.style.display = e.target.checked ? 'block' : 'none';
+      });
+
+      // Presets
+      document.querySelectorAll('[data-preset]').forEach(btn => {
+        btn.addEventListener('click', () => loadPreset(btn.dataset.preset));
+      });
+    }
+
+    // ===== MANEJO DE FUENTE DE AUDIO =====
+    function handleSourceChange(e) {
+      const source = e.target.value;
+      const recordingControls = document.getElementById('recordingControls');
+
+      // Ocultar todos los controles específicos
+      generatorControls.classList.add('hidden');
+      fileControls.classList.add('hidden');
+      recordingControls.style.display = 'none';
+
+      // Mostrar controles según fuente
+      if (source === 'realtime' || source === 'offline') {
+        recordingControls.style.display = 'block';
+      } else if (source === 'generator') {
+        generatorControls.classList.remove('hidden');
+      } else if (source === 'file') {
+        fileControls.classList.remove('hidden');
+      }
+    }
+
+    // ===== GRABACIÓN =====
+    async function startRecording() {
+      try {
+        if (!audioContext) {
+          audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          sampleRate = audioContext.sampleRate;
+        }
+
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        microphone = audioContext.createMediaStreamSource(stream);
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = parseInt(document.getElementById('fftSize').value);
+
+        scriptProcessor = audioContext.createScriptProcessor(2048, 1, 1);
+
+        microphone.connect(analyser);
+        analyser.connect(scriptProcessor);
+        scriptProcessor.connect(audioContext.destination);
+
+        scriptProcessor.onaudioprocess = processAudio;
+
+        isRecording = true;
+        btnStart.disabled = true;
+        console.log('✓ Grabación iniciada');
+
+        // Iniciar visualización
+        updatePlots();
+
+      } catch (err) {
+        console.error('Error al acceder al micrófono:', err);
+        alert('No se pudo acceder al micrófono. Asegúrate de dar permisos.');
+      }
+    }
+
+    function stopRecording() {
+      if (scriptProcessor) {
+        scriptProcessor.disconnect();
+        scriptProcessor = null;
+      }
+      if (microphone) {
+        microphone.disconnect();
+        microphone = null;
+      }
+      isRecording = false;
+      btnStart.disabled = false;
+      console.log('⏹ Grabación detenida');
+    }
+
+    function processAudio(event) {
+      const inputData = event.inputBuffer.getChannelData(0);
+      audioBuffer.push(...inputData);
+
+      // Mantener solo últimos 2 segundos
+      const maxSamples = sampleRate * 2;
+      if (audioBuffer.length > maxSamples) {
+        audioBuffer = audioBuffer.slice(-maxSamples);
+      }
+
+      // VU meter
+      const rms = Math.sqrt(inputData.reduce((sum, val) => sum + val * val, 0) / inputData.length);
+      vuMeter.style.width = (rms * 100 * 10) + '%';
+    }
+
+    // ===== VISUALIZACIÓN =====
+    function updatePlots() {
+      if (!isRecording || !analyser) return;
+
+      // Señal temporal
+      updateTimePlot();
+
+      // FFT
+      updateFFTPlot();
+
+      // Continuar actualización
+      requestAnimationFrame(updatePlots);
+    }
+
+    function updateTimePlot() {
+      const data = new Float32Array(audioBuffer.slice(-2048));
+      const time = Array.from({ length: data.length }, (_, i) => i / sampleRate);
+
+      Plotly.react('plotTime', [{
+        x: time,
+        y: Array.from(data),
+        type: 'scatter',
+        mode: 'lines',
+        line: { color: '#3ea0ff', width: 1 }
+      }], {
+        xaxis: { title: 'Tiempo (s)', color: '#a0a6b5' },
+        yaxis: { title: 'Amplitud', range: [-1, 1], color: '#a0a6b5' },
+        paper_bgcolor: '#0f1222',
+        plot_bgcolor: '#0f1222',
+        font: { color: '#f8fafc' },
+        margin: { t: 20, r: 20, b: 40, l: 50 }
+      }, { displayModeBar: false });
+    }
+
+    function updateFFTPlot() {
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      analyser.getByteFrequencyData(dataArray);
+
+      const freqs = Array.from({ length: bufferLength }, (_, i) => i * sampleRate / (2 * bufferLength));
+      const useDB = document.getElementById('dbScale').checked;
+
+      let magnitudes = Array.from(dataArray);
+      if (useDB) {
+        magnitudes = magnitudes.map(val => 20 * Math.log10(val / 255 + 1e-10));
+      }
+
+      Plotly.react('plotFFT', [{
+        x: freqs,
+        y: magnitudes,
+        type: 'scatter',
+        mode: 'lines',
+        line: { color: '#ff5757', width: 1.5 }
+      }], {
+        xaxis: { title: 'Frecuencia (Hz)', color: '#a0a6b5' },
+        yaxis: { title: useDB ? 'Magnitud (dB)' : 'Magnitud', color: '#a0a6b5' },
+        paper_bgcolor: '#0f1222',
+        plot_bgcolor: '#0f1222',
+        font: { color: '#f8fafc' },
+        margin: { t: 20, r: 20, b: 40, l: 50 }
+      }, { displayModeBar: false });
+    }
+
+    function createEmptyPlots() {
+      const emptyData = [{ x: [0], y: [0], type: 'scatter', mode: 'lines', line: { color: '#3ea0ff' } }];
+      const layout = {
+        paper_bgcolor: '#0f1222',
+        plot_bgcolor: '#0f1222',
+        font: { color: '#f8fafc' },
+        margin: { t: 20, r: 20, b: 40, l: 50 }
+      };
+
+      Plotly.newPlot('plotTime', emptyData, layout, { displayModeBar: false });
+      Plotly.newPlot('plotFFT', emptyData, layout, { displayModeBar: false });
+      Plotly.newPlot('plotSpectrogram', emptyData, layout, { displayModeBar: false });
+    }
+
+    // ===== PRESETS =====
+    function loadPreset(preset) {
+      const genSource = document.querySelector('input[value="generator"]');
+      genSource.checked = true;
+      generatorControls.classList.remove('hidden');
+
+      const signalType = document.getElementById('signalType');
+      const frequency = document.getElementById('frequency');
+
+      switch(preset) {
+        case 'tone440':
+          signalType.value = 'sine';
+          frequency.value = 440;
+          document.getElementById('freqValue').textContent = '440';
+          break;
+        case 'chord':
+          signalType.value = 'sine';
+          frequency.value = 261; // Do
+          document.getElementById('freqValue').textContent = '261';
+          break;
+        case 'sweep':
+          signalType.value = 'sweep';
+          break;
+        case 'white':
+          signalType.value = 'white';
+          break;
+      }
+    }
+
+    // ===== INICIAR =====
+    init();
+  </script>
+
+</body>
+</html>
