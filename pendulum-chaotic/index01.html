@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Péndulos caóticos – Sensibilidad a condiciones iniciales</title>
+<style>
+  :root{
+    --sidebar-min: 340px;
+    --sidebar-vw: 30vw;
+    --sidebar-max: 560px;
+    --sidebar-w: clamp(var(--sidebar-min), var(--sidebar-vw), var(--sidebar-max));
+    --radius:16px; --pad:16px; --gap:14px;
+    --accent-1:#ff6b6b; --accent-2:#4ecdc4; --accent-3:#ff9500;
+    --focus: 0 0 0 3px rgba(78,205,196,0.35);
+    --scrollbar-w:14px; --scrollbar-thumb-radius:12px;
+    --thumb-size:20px;
+  }
+  html[data-theme="dark"]{
+    --bg: linear-gradient(135deg,#0c0c0c,#1a1a2e);
+    --fg:#fff; --muted:#c8c8c8;
+    --card:rgba(255,255,255,0.06);
+    --border:rgba(255,255,255,0.12);
+    --canvas-bg:#0b0e16;
+    --pill-bg: rgba(255,255,255,0.10);
+    --toggle-bg: rgba(255,255,255,0.12);
+    --scrollbar-track: rgba(255,255,255,0.08);
+    --scrollbar-thumb: rgba(255,255,255,0.35);
+    color-scheme: dark;
+  }
+  html[data-theme="light"]{
+    --bg: linear-gradient(135deg,#f6f8ff,#e9eef9);
+    --fg:#101014; --muted:#4b4b58;
+    --card:rgba(0,0,0,0.05);
+    --border:rgba(0,0,0,0.12);
+    --canvas-bg:#ffffff;
+    --pill-bg: rgba(0,0,0,0.06);
+    --toggle-bg: rgba(0,0,0,0.07);
+    --scrollbar-track: rgba(0,0,0,0.06);
+    --scrollbar-thumb: rgba(0,0,0,0.35);
+    color-scheme: light;
+  }
+
+  /* Fondo fijo (no se corta con zoom) */
+  html,body{height:100%}
+  html{background:#0b0e16;}
+  body{
+    margin:0; color:var(--fg); background:transparent;
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    isolation:isolate;
+  }
+  body::before{
+    content:""; position:fixed; inset:0; z-index:-1;
+    background:var(--bg); pointer-events:none; transform:translateZ(0);
+  }
+  .app,.sidebar,.main{background:transparent}
+
+  *,*::before,*::after{box-sizing:border-box}
+  :focus-visible{outline:none; box-shadow:var(--focus); border-radius:10px}
+
+  /* Scrollbars */
+  *{scrollbar-color:var(--scrollbar-thumb) var(--scrollbar-track); scrollbar-width:thin}
+  *::-webkit-scrollbar{width:var(--scrollbar-w); height:var(--scrollbar-w)}
+  *::-webkit-scrollbar-track{background:var(--scrollbar-track);border-radius:var(--scrollbar-thumb-radius)}
+  *::-webkit-scrollbar-thumb{
+    background:var(--scrollbar-thumb); border-radius:var(--scrollbar-thumb-radius);
+    border:3px solid transparent; background-clip:padding-box;
+  }
+  *::-webkit-scrollbar-thumb:hover{background:rgba(100,100,100,.5)}
+
+  .app{display:flex; width:100%; height:100%}
+
+  @media (min-width:1024px){
+    body{overflow:hidden}
+    .sidebar{overflow-y:auto}
+    .main{overflow:hidden}
+  }
+  @media (max-width:1023.98px){
+    .app{flex-direction:column}
+    body{overflow-x:hidden}
+    .sidebar{overflow-y:auto}
+    .main{overflow:visible}
+  }
+
+  /* Pantalla completa */
+  body.fs-active{overflow:hidden;}
+  body.fs-active .sidebar{display:none;}
+  body.fs-active .main{
+    position:fixed; inset:0; z-index:9999; padding:0;
+    width:100vw; height:100vh; background:transparent;
+    display:block;
+  }
+  body.fs-active canvas{border-width:0;} /* evita efecto de “descentramiento” visual */
+
+  .exit-fs{
+    position:fixed; top:12px; right:12px; z-index:10000;
+    border:1px solid var(--border);
+    background:linear-gradient(45deg,var(--accent-1),var(--accent-2));
+    color:#fff; font-weight:800; padding:10px 14px; border-radius:12px; cursor:pointer;
+    display:none;
+  }
+  body.fs-active .exit-fs{display:inline-flex;}
+
+  /* Sidebar */
+  .sidebar{
+    width:var(--sidebar-w);
+    border-right:1px solid var(--border);
+    padding:var(--pad);
+    flex:0 0 auto;
+  }
+  @media (max-width:1023.98px){
+    .sidebar{width:100%; border-right:none;}
+  }
+
+  .top-controls{
+    display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:var(--gap)
+  }
+  .segmented{position:relative; display:inline-grid; grid-auto-flow:column; gap:0; padding:4px; border-radius:999px; background:var(--pill-bg); isolation:isolate}
+  .segmented .indicator{position:absolute; z-index:0; top:4px; left:4px; height:calc(100% - 8px); border-radius:999px; background:linear-gradient(45deg,var(--accent-1),var(--accent-2)); width:0; transform:translateX(0); transition:transform .2s ease, width .2s ease}
+  .segmented button{position:relative; z-index:1; padding:8px 14px; border:0; background:transparent; color:var(--fg); font-weight:700; border-radius:999px; cursor:pointer; white-space:nowrap}
+
+  .theme-toggle{display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border:1px solid var(--border); border-radius:999px; background:var(--toggle-bg); color:var(--fg); cursor:pointer}
+
+  .title{margin:4px 0 6px 0; font-size:1.26rem; font-weight:800; background:linear-gradient(45deg,var(--accent-1),var(--accent-2));
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text}
+  .subtitle{margin:0 0 12px 0; color:var(--muted); font-style:italic; font-size:.95rem}
+
+  .card{background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:12px; margin-bottom:var(--gap)}
+  .card h3{margin:0 0 10px 0; font-size:1rem}
+
+  .radios{display:flex; gap:12px; flex-wrap:wrap}
+  .radio{display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:10px; border:1px solid var(--border); cursor:pointer}
+  .radio input{accent-color:var(--accent-2)}
+  .slider-line{display:grid; grid-template-columns:1fr auto; gap:8px; align-items:center}
+
+  /* Sliders: el usuario sólo puede “agarrar” el pulgar */
+  input[type="range"]{
+    width:100%; appearance:none; height:8px; border-radius:999px; background:linear-gradient(90deg,var(--accent-2),var(--accent-1));
+    cursor:default;
+  }
+  input[type="range"]::-webkit-slider-thumb{
+    appearance:none; width:var(--thumb-size); height:var(--thumb-size); border-radius:50%;
+    background:#fff; border:2px solid #0002; box-shadow:0 2px 8px #0006; cursor:pointer
+  }
+  input[type="range"]::-moz-range-thumb{
+    width:var(--thumb-size); height:var(--thumb-size); border-radius:50%; background:#fff; border:none; cursor:pointer
+  }
+
+  .value{min-width:64px; text-align:right; font-weight:800}
+  .checks{display:grid; gap:8px}
+  .checks label{display:flex; align-items:center; gap:8px}
+
+  .buttons{display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:12px;}
+  .btn{
+    border:1px solid var(--border);
+    background:linear-gradient(45deg,var(--accent-1),var(--accent-2));
+    color:#fff; font-weight:800; padding:10px 14px; border-radius:12px; cursor:pointer; white-space:nowrap;
+    flex:0 0 auto;
+  }
+  .btn:disabled{opacity:.5; cursor:not-allowed}
+
+  .radios.friction{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+  .radios.friction .radio{ justify-content:center; padding:8px 10px; }
+  .radios.friction .radio span{ text-align:center; font-weight:700; }
+
+  .stack-sliders .slider-line + .slider-line{ margin-top:12px; }
+
+  .main{ flex:1 1 auto; height:100%; padding:0; position:relative; }
+  canvas{
+    display:block; background: var(--canvas-bg); border:1px solid var(--border); border-radius:0;
+    width:100%; height:100%; box-sizing:border-box; position:relative; z-index:0;
+  }
+  @media (max-width:1023.98px){
+    .main{padding:0}
+    canvas{ width:100%; height:auto; margin:0; }
+  }
+</style>
+</head>
+<body>
+  <button id="exitFs" class="exit-fs" aria-label="Salir de pantalla completa">Restablecer</button>
+
+  <div class="app">
+    <aside class="sidebar">
+      <div class="top-controls">
+        <div class="segmented" id="langSegment">
+          <div class="indicator"></div>
+          <button type="button" data-lang="en">EN</button>
+          <button type="button" data-lang="fr">FR</button>
+          <button type="button" data-lang="es" class="active">ES</button>
+        </div>
+        <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle theme">
+          <span class="icon" id="themeIcon">🌙</span>
+          <span class="label" id="themeLabel">Dark</span>
+        </button>
+      </div>
+
+      <h2 class="title">Péndulos caóticos</h2>
+      <p class="subtitle">Observa cómo pequeñas diferencias en las condiciones iniciales crean patrones completamente diferentes.</p>
+
+      <section class="card">
+        <h3>Tipo de péndulo</h3>
+        <div class="radios">
+          <label class="radio"><input type="radio" name="ptype" value="double" checked><span>Doble</span></label>
+          <label class="radio"><input type="radio" name="ptype" value="triple"><span>Triple</span></label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h3>Número de péndulos superpuestos</h3>
+        <div class="slider-line">
+          <input type="range" id="num" min="1" max="40" step="1" value="8" />
+          <div class="value" id="numVal">8</div>
+        </div>
+      </section>
+
+      <section class="card" style="text-align:center;">
+        <div class="buttons">
+          <button class="btn" id="startBtn">Iniciar</button>
+          <button class="btn" id="pauseBtn" disabled>Pausar</button>
+          <button class="btn" id="fsBtn">Pantalla completa</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h3>Fricción</h3>
+        <div class="radios friction">
+          <label class="radio"><input type="radio" name="fric" value="none" checked><span>Sin</span></label>
+          <label class="radio"><input type="radio" name="fric" value="low"><span>Baja</span></label>
+          <label class="radio"><input type="radio" name="fric" value="high"><span>Alta</span></label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h3>Ángulo inicial</h3>
+        <div class="slider-line">
+          <input type="range" id="ang" min="45" max="315" step="5" value="90" />
+          <div class="value" id="angVal">90°</div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h3>Diferencia inicial</h3>
+        <div class="slider-line">
+          <input type="range" id="diff" min="0.01" max="10" step="0.01" value="0.50" />
+          <div class="value" id="diffVal">0.50°</div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h3>Velocidad de animación</h3>
+        <div class="slider-line">
+          <input type="range" id="spd" min="0.2" max="50" step="0.1" value="1" />
+          <div class="value" id="spdVal">x1.0</div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+          <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+            <input type="checkbox" id="advToggle" />
+            <span>Parámetros avanzados</span>
+          </label>
+          <button class="btn" id="defaultsBtn" type="button">Valores por defecto</button>
+        </div>
+
+        <div id="advPanel" style="display:none; margin-top:12px;">
+          <div class="card stack-sliders" style="margin-bottom:10px;">
+            <h3>Longitudes de barras</h3>
+            <div class="slider-line">
+              <input type="range" id="l1" min="5" max="100" step="1" value="60" />
+              <div class="value" id="l1Val">60 cm</div>
+            </div>
+            <div class="slider-line">
+              <input type="range" id="l2" min="5" max="100" step="1" value="45" />
+              <div class="value" id="l2Val">45 cm</div>
+            </div>
+            <div class="slider-line" id="l3Row">
+              <input type="range" id="l3" min="5" max="100" step="1" value="35" />
+              <div class="value" id="l3Val">35 cm</div>
+            </div>
+          </div>
+
+          <div class="card stack-sliders" style="margin-bottom:0;">
+            <h3>Masas</h3>
+            <div class="slider-line">
+              <input type="range" id="m1" min="0.01" max="10" step="0.01" value="1.00" />
+              <div class="value" id="m1Val">1.00 kg</div>
+            </div>
+            <div class="slider-line">
+              <input type="range" id="m2" min="0.01" max="10" step="0.01" value="0.80" />
+              <div class="value" id="m2Val">0.80 kg</div>
+            </div>
+            <div class="slider-line" id="m3Row">
+              <input type="range" id="m3" min="0.01" max="10" step="0.01" value="0.60" />
+              <div class="value" id="m3Val">0.60 kg</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h3>Visualización</h3>
+        <div class="checks">
+          <label><input type="checkbox" id="chkTrails" checked /> <span>Mostrar estelas</span></label>
+          <label><input type="checkbox" id="chkFade" /> <span>Desvanecimiento activado</span></label>
+          <label><input type="checkbox" id="chkJoints" checked /> <span>Mostrar codos</span></label>
+        </div>
+      </section>
+    </aside>
+
+    <main class="main">
+      <canvas id="simCanvas" aria-label="canvas"></canvas>
+    </main>
+  </div>
+
+<script>
+  /* ===== Utilidades ===== */
+  const deg2rad = d => d*Math.PI/180;
+
+  /* ===== Sliders: sólo pulgar ===== */
+  function attachThumbOnly(range){
+    const hitFactor=0.75;
+    function isOnThumb(clientX){
+      const rect=range.getBoundingClientRect();
+      const x=clientX-rect.left;
+      const min=Number(range.min||0), max=Number(range.max||100), val=Number(range.value);
+      const pct=(val-min)/(max-min);
+      const center=pct*rect.width;
+      const thumb=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--thumb-size'))||20;
+      return Math.abs(x-center) <= thumb*hitFactor;
+    }
+    range.addEventListener('mousedown',(e)=>{
+      if(!isOnThumb(e.clientX)){ e.preventDefault(); e.stopPropagation(); range.focus({preventScroll:true}); }
+    });
+    range.addEventListener('touchstart',(e)=>{
+      if(e.touches && e.touches[0] && !isOnThumb(e.touches[0].clientX)){
+        e.preventDefault(); e.stopPropagation(); range.focus({preventScroll:true});
+      }
+    }, {passive:false});
+  }
+
+  /* ===== Placeholder de simulación ===== */
+  class Simulation{
+    constructor(canvas){
+      this.canvas = canvas;
+      this.ctx = canvas.getContext('2d');
+      this.state = 'stopped';           // 'stopped' | 'playing' | 'paused'
+      this.params = this.defaultParams();
+      this.t = 0; this.lastTs = null; this.raf = null;
+    }
+    defaultParams(){
+      return {
+        type:'double',
+        count:8,
+        friction:'none',     // none | low | high
+        angleDeg:90,
+        deltaDeg:0.5,
+        speed:1,             // x factor (cambia en vivo)
+        lengths:[60,45,35],  // cm
+        masses:[1.0,0.8,0.6],// kg
+        show:{trails:true, fade:false, joints:true}
+      };
+    }
+    setParams(p){ this.params = {...this.params, ...p}; }
+    setSpeed(s){ this.params.speed = Math.max(0.2, Math.min(50, s)); }
+    setShowFlags(flags){ this.params.show = {...this.params.show, ...flags}; }
+
+    /* Dibuja el fondo y ejes */
+    drawBase(){
+      const dpr = window.devicePixelRatio||1;
+      const w = this.canvas.width/dpr, h = this.canvas.height/dpr;
+      const ctx = this.ctx;
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+      ctx.clearRect(0,0,w,h);
+      ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--canvas-bg').trim();
+      ctx.fillRect(0,0,w,h);
+      ctx.strokeStyle = (document.documentElement.getAttribute("data-theme")==="light")
+                        ? "rgba(0,0,0,0.25)" : "rgba(255,255,255,0.25)";
+      ctx.lineWidth = Math.max(1, w*0.002);
+      if(this.params.show.joints){
+        ctx.beginPath();
+        ctx.moveTo(w*0.08, h*0.5); ctx.lineTo(w*0.92, h*0.5);
+        ctx.moveTo(w*0.5, h*0.08); ctx.lineTo(w*0.5, h*0.92);
+        ctx.stroke();
+      }
+    }
+
+    /* Dibuja el bob en un ángulo dado */
+    drawBob(angleRad){
+      const dpr = window.devicePixelRatio||1;
+      const w = this.canvas.width/dpr, h = this.canvas.height/dpr;
+      const ctx = this.ctx;
+      const r = Math.min(w,h)*0.35*(this.params.lengths[0]/100); // escala con L1
+      const cx=w*0.5, cy=h*0.5;
+      const x = cx + r*Math.cos(angleRad);
+      const y = cy + r*Math.sin(angleRad);
+      ctx.save();
+      ctx.strokeStyle = (document.documentElement.getAttribute("data-theme")==="light")
+                        ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.35)";
+      ctx.lineWidth = Math.max(1.5, Math.min(w,h)*0.004);
+      ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(x,y); ctx.stroke();
+      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-2').trim() || '#4ecdc4';
+      ctx.beginPath(); ctx.arc(x,y, Math.max(3, Math.min(w,h)*0.012), 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+    }
+
+    /* Calcula ángulo(t) placeholder (simple oscilador con amortiguamiento por “fricción”) */
+    angleAt(t){
+      const theta0 = deg2rad(this.params.angleDeg);
+      const A = deg2rad(this.params.deltaDeg);             // pequeña amplitud
+      const g = 9.81;
+      const L = Math.max(0.05, this.params.lengths[0]/100); // m
+      const omega0 = Math.sqrt(g/L);
+      const gamma = this.params.friction==='high' ? 1.2 : this.params.friction==='low' ? 0.2 : 0.0;
+      const env = Math.exp(-gamma*t);
+      return theta0 + A*env*Math.sin(omega0*t);
+    }
+
+    drawInitial(){
+      this.drawBase();
+      this.drawBob(deg2rad(this.params.angleDeg));
+    }
+
+    start(){
+      this.state='playing'; this.t=0; this.lastTs=null;
+      const loop = (ts)=>{
+        if(this.state!=='playing') return;
+        if(this.lastTs==null) this.lastTs=ts;
+        const dt = (ts - this.lastTs)/1000; this.lastTs = ts;
+        const speed = this.params.speed;
+
+        if(!this.params.show.trails || !this.params.show.fade) this.drawBase();
+        if(this.params.show.fade){
+          const dpr = window.devicePixelRatio||1;
+          const w = this.canvas.width/dpr, h = this.canvas.height/dpr;
+          this.ctx.fillStyle = (document.documentElement.getAttribute("data-theme")==="light")
+                                ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)";
+          this.ctx.fillRect(0,0,w,h);
+        }
+
+        this.t += dt*speed;
+        const ang = this.angleAt(this.t);
+        this.drawBob(ang);
+        this.raf = requestAnimationFrame(loop);
+      };
+      cancelAnimationFrame(this.raf); this.raf = requestAnimationFrame(loop);
+    }
+    pause(){ cancelAnimationFrame(this.raf); this.raf=null; this.state='paused'; }
+    stop(){ cancelAnimationFrame(this.raf); this.raf=null; this.state='stopped'; this.drawInitial(); }
+  }
+
+  /* ===== DOM refs ===== */
+  const num=document.getElementById("num"), numVal=document.getElementById("numVal");
+  const ang=document.getElementById("ang"), angVal=document.getElementById("angVal");
+  const diff=document.getElementById("diff"), diffVal=document.getElementById("diffVal");
+  const spd=document.getElementById("spd"), spdVal=document.getElementById("spdVal");
+  const l1=document.getElementById("l1"), l1Val=document.getElementById("l1Val");
+  const l2=document.getElementById("l2"), l2Val=document.getElementById("l2Val");
+  const l3=document.getElementById("l3"), l3Val=document.getElementById("l3Val");
+  const m1=document.getElementById("m1"), m1Val=document.getElementById("m1Val");
+  const m2=document.getElementById("m2"), m2Val=document.getElementById("m2Val");
+  const m3=document.getElementById("m3"), m3Val=document.getElementById("m3Val");
+  const canvas=document.getElementById("simCanvas");
+
+  /* ===== Tamaño canvas ===== */
+  const BP_TWO_COL = 1024;
+  function sizeCanvas(){
+    const container=document.querySelector(".main");
+    if(!container) return;
+    const dpr=window.devicePixelRatio||1;
+    const isTwoCol = window.matchMedia(`(min-width:${BP_TWO_COL}px)`).matches;
+    let wCSS, hCSS;
+
+    if (document.body.classList.contains("fs-active")){
+      wCSS = Math.floor(window.innerWidth);
+      hCSS = Math.floor(window.innerHeight);
+    } else if (isTwoCol){
+      wCSS = Math.floor(container.clientWidth);
+      hCSS = Math.floor(container.clientHeight);
+    } else {
+      const vv = window.visualViewport || { width: window.innerWidth, height: window.innerHeight };
+      const vw = Math.floor(vv.width);
+      const vh = Math.floor(vv.height);
+      wCSS = Math.floor(container.clientWidth);
+      hCSS = Math.min(vh, vw);
+    }
+    canvas.style.width = wCSS + "px";
+    canvas.style.height = hCSS + "px";
+    const s = getComputedStyle(canvas);
+    const bX = parseFloat(s.borderLeftWidth) + parseFloat(s.borderRightWidth);
+    const bY = parseFloat(s.borderTopWidth)  + parseFloat(s.borderBottomWidth);
+    canvas.width  = Math.floor((wCSS - bX) * dpr);
+    canvas.height = Math.floor((hCSS - bY) * dpr);
+  }
+
+  /* ===== Máquina de estados UI ===== */
+  const startBtn = document.getElementById("startBtn");
+  const pauseBtn = document.getElementById("pauseBtn");
+  const fsBtn    = document.getElementById("fsBtn");
+  const exitFsBtn= document.getElementById("exitFs");
+
+  function updateButtonsUI(sim){
+    if(sim.state==='stopped'){
+      startBtn.textContent="Iniciar";
+      pauseBtn.textContent="Pausar"; pauseBtn.disabled=true;
+    }else if(sim.state==='playing'){
+      startBtn.textContent="Detener";
+      pauseBtn.textContent="Pausar"; pauseBtn.disabled=false;
+    }else{
+      startBtn.textContent="Detener";
+      pauseBtn.textContent="Continuar"; pauseBtn.disabled=false;
+    }
+  }
+
+  /* ===== Conectar UI → params ===== */
+  function readParamsFromUI(sim){
+    const type = document.querySelector('input[name="ptype"]:checked').value;
+    const friction = document.querySelector('input[name="fric"]:checked').value;
+    const lengths = [Number(l1.value), Number(l2.value), Number(l3.value)];
+    const masses  = [Number(m1.value), Number(m2.value), Number(m3.value)];
+    sim.setParams({
+      type, friction,
+      count: Number(num.value),
+      angleDeg: Number(ang.value),
+      deltaDeg: Number(diff.value),
+      lengths, masses
+    });
+  }
+
+  /* ===== Inicializar ===== */
+  const sim = new Simulation(canvas);
+
+  function redrawAccordingToState(){
+    if(sim.state==='stopped'){ sim.drawInitial(); }
+    // en pausa se queda el último frame; en play el loop sigue
+  }
+
+  function physicsParamChanged(){
+    readParamsFromUI(sim);
+    if(sim.state==='playing'){ sim.start(); } else { sim.stop(); } // “stop” además dibuja inicial
+    updateButtonsUI(sim);
+  }
+
+  /* ===== Eventos de UI ===== */
+  // valores visibles de sliders
+  const labelMap = new Map([
+    [num, v=>v],
+    [ang, v=>`${v}°`],
+    [diff, v=>`${Number(v).toFixed(2)}°`],
+    [spd, v=>`x${Number(v).toFixed(1)}`],
+    [l1, v=>`${v} cm`],[l2, v=>`${v} cm`],[l3, v=>`${v} cm`],
+    [m1, v=>`${Number(v).toFixed(2)} kg`],
+    [m2, v=>`${Number(v).toFixed(2)} kg`],
+    [m3, v=>`${Number(v).toFixed(2)} kg`],
+  ]);
+  function bindRange(range, label){
+    attachThumbOnly(range);
+    range.addEventListener('input', ()=>{
+      label.textContent = labelMap.get(range)(range.value);
+      if(range===spd){ sim.setSpeed(Number(range.value)); } // sólo cambia velocidad
+      if(range===ang && sim.state!=='playing'){ // ver condición inicial al mover ángulo detenido/pausa
+        readParamsFromUI(sim); sim.stop(); updateButtonsUI(sim);
+      }
+    });
+    if(range!==spd){ // reinicia sólo en change para físicos
+      range.addEventListener('change', physicsParamChanged);
+    }
+  }
+  bindRange(num, numVal); bindRange(ang, angVal); bindRange(diff, diffVal);
+  bindRange(spd, spdVal); bindRange(l1, l1Val); bindRange(l2, l2Val); bindRange(l3, l3Val);
+  bindRange(m1, m1Val); bindRange(m2, m2Val); bindRange(m3, m3Val);
+
+  // radios que reinician
+  document.querySelectorAll('input[name="ptype"], input[name="fric"]').forEach(r=>{
+    r.addEventListener('change', physicsParamChanged);
+  });
+
+  // check de visualización: NO reinician; aplican flags y redibujan si no está corriendo
+  const chkTrails=document.getElementById('chkTrails');
+  const chkFade  =document.getElementById('chkFade');
+  const chkJoints=document.getElementById('chkJoints');
+  function applyShowFlags(){
+    sim.setShowFlags({
+      trails: chkTrails.checked,
+      fade:   chkFade.checked,
+      joints: chkJoints.checked
+    });
+    redrawAccordingToState();
+  }
+  [chkTrails,chkFade,chkJoints].forEach(c=>c.addEventListener('change', applyShowFlags));
+
+  // panel avanzado (sólo UI)
+  const advToggle=document.getElementById("advToggle");
+  const advPanel=document.getElementById("advPanel");
+  advToggle.addEventListener("change",()=>advPanel.style.display=advToggle.checked?"block":"none");
+
+  // tipo triple muestra sliders 3
+  function updateTripleRows(){
+    const isTriple=document.querySelector('input[name="ptype"][value="triple"]').checked;
+    document.getElementById("l3Row").style.display=isTriple?"grid":"none";
+    document.getElementById("m3Row").style.display=isTriple?"grid":"none";
+  }
+  document.querySelectorAll('input[name="ptype"]').forEach(r=>r.addEventListener("change",updateTripleRows));
+
+  // botones play/pause/stop
+  startBtn.addEventListener('click', ()=>{
+    if(sim.state==='playing'){ sim.stop(); }
+    else{ readParamsFromUI(sim); sim.start(); }
+    updateButtonsUI(sim);
+  });
+  pauseBtn.addEventListener('click', ()=>{
+    if(sim.state==='playing'){ sim.pause(); }
+    else if(sim.state==='paused'){ sim.start(); }
+    updateButtonsUI(sim);
+  });
+
+  // Pantalla completa
+  function enterFS(){ document.body.classList.add("fs-active"); sizeCanvas(); sim.stop(); updateButtonsUI(sim); }
+  function exitFS(){ document.body.classList.remove("fs-active"); sizeCanvas(); redrawAccordingToState(); }
+  document.getElementById("fsBtn").addEventListener("click", enterFS);
+  document.getElementById("exitFs").addEventListener("click", exitFS);
+
+  // Valores por defecto
+  document.getElementById("defaultsBtn").addEventListener("click",()=>{
+    num.value=8; num.dispatchEvent(new Event("input"));
+    ang.value=90; ang.dispatchEvent(new Event("input"));
+    diff.value=0.50; diff.dispatchEvent(new Event("input"));
+    spd.value=1; spd.dispatchEvent(new Event("input"));
+    l1.value=60; l1.dispatchEvent(new Event("input"));
+    l2.value=45; l2.dispatchEvent(new Event("input"));
+    l3.value=35; l3.dispatchEvent(new Event("input"));
+    m1.value=1.00; m1.dispatchEvent(new Event("input"));
+    m2.value=0.80; m2.dispatchEvent(new Event("input"));
+    m3.value=0.60; m3.dispatchEvent(new Event("input"));
+    document.querySelector('input[name="ptype"][value="double"]').checked=true;
+    document.querySelector('input[name="fric"][value="none"]').checked=true;
+    updateTripleRows(); physicsParamChanged();
+  });
+
+  // Tema
+  const themeToggle=document.getElementById("themeToggle");
+  const themeIcon=document.getElementById("themeIcon");
+  const themeLabel=document.getElementById("themeLabel");
+  function setTheme(mode){
+    document.documentElement.setAttribute("data-theme",mode);
+    if(mode==="dark"){ themeIcon.textContent="🌙"; themeLabel.textContent="Dark";}
+    else{ themeIcon.textContent="☀️"; themeLabel.textContent="Light";}
+    sizeCanvas(); redrawAccordingToState();
+  }
+  themeToggle.addEventListener("click",()=>{
+    const cur=document.documentElement.getAttribute("data-theme")||"dark";
+    setTheme(cur==="dark"?"light":"dark");
+  });
+
+  // Idioma pills (sólo movimiento del indicador visual)
+  const langSegment=document.getElementById("langSegment");
+  const indicator=langSegment.querySelector(".indicator");
+  const langBtns=[...langSegment.querySelectorAll("button[data-lang]")];
+  function positionIndicator(){
+    const active=langBtns.find(b=>b.classList.contains("active"))||langBtns[2];
+    const r=active.getBoundingClientRect(), p=langSegment.getBoundingClientRect();
+    indicator.style.width=r.width+"px";
+    indicator.style.transform=`translateX(${r.left-p.left}px)`;
+  }
+  langBtns.forEach(btn=>{
+    btn.addEventListener("click",()=>{ langBtns.forEach(b=>b.classList.remove("active")); btn.classList.add("active"); positionIndicator(); });
+  });
+  window.addEventListener("resize", ()=>{ positionIndicator(); sizeCanvas(); redrawAccordingToState(); });
+
+  /* INIT */
+  function init(){
+    // labels iniciales
+    [[num,numVal],[ang,angVal],[diff,diffVal],[spd,spdVal],[l1,l1Val],[l2,l2Val],[l3,l3Val],[m1,m1Val],[m2,m2Val],[m3,m3Val]]
+      .forEach(([inp,lab])=>lab.textContent=(labelMap.get(inp))(inp.value));
+    [num,ang,diff,spd,l1,l2,l3,m1,m2,m3].forEach(attachThumbOnly);
+    updateTripleRows();
+    sizeCanvas();
+    readParamsFromUI(sim);
+    sim.stop(); // dibuja condición inicial
+    updateButtonsUI(sim);
+    positionIndicator();
+  }
+  document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>
