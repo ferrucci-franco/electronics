@@ -19,6 +19,7 @@
             --text-primary: #27272a;
             --text-secondary: #696a73;
             --border-color: #d8dae0;
+            --primary-color: #d84f72;
             --accent-color: #d84f72;
             --accent-hover: #c63f62;
             --input-bg: #ffffff;
@@ -33,6 +34,7 @@
             --text-primary: #f1f1f3;
             --text-secondary: #bbbcc5;
             --border-color: #494a54;
+            --primary-color: #ff6f91;
             --accent-color: #ff6f91;
             --accent-hover: #ff5d84;
             --input-bg: #24242a;
@@ -57,6 +59,8 @@
             overflow-y: auto;
             overflow-x: hidden;
             padding: 20px;
+            display: flex;
+            flex-direction: column;
             transition: background-color 0.3s;
         }
 
@@ -286,35 +290,46 @@
 
         .settings-toolbar {
             display: flex;
-            align-items: flex-end;
-            gap: 12px;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            min-width: 0;
         }
 
-        .setting-block {
-            flex: 1;
-            min-width: 0;
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
         }
 
         .language-selector {
             display: flex;
-            gap: 4px;
-            padding: 4px;
+            gap: 0.25rem;
+            flex: 1 1 auto;
+            min-width: 0;
             background-color: var(--bg-tertiary);
+            padding: 0.25rem;
             border-radius: 8px;
         }
 
         .lang-btn {
-            flex: 1;
+            flex: 1 1 0;
+            min-width: 0;
             width: auto;
-            padding: 8px 7px;
-            color: var(--text-primary);
-            background-color: transparent;
+            padding: 0.4rem 0.25rem;
             border: none;
+            background-color: transparent;
+            color: var(--text-primary);
+            cursor: pointer;
             border-radius: 6px;
-            font-size: 12px;
-            font-weight: 700;
-            letter-spacing: 0;
-            transition: background-color 0.2s, color 0.2s, box-shadow 0.2s;
+            font-size: 0.85rem;
+            transition: all 0.2s;
         }
 
         .lang-btn:hover {
@@ -323,40 +338,42 @@
         }
 
         .lang-btn.active {
+            background-color: var(--primary-color);
             color: #ffffff;
-            background-color: var(--accent-color);
-            box-shadow: 0 2px 5px var(--shadow);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
 
         .icon-btn {
-            width: 100%;
+            flex: 0 0 40px;
+            width: 40px;
             height: 40px;
-            padding: 8px 10px;
-            color: var(--text-primary);
-            background-color: var(--bg-primary);
+            padding: 0;
             border: 1px solid var(--border-color);
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            cursor: pointer;
             border-radius: 8px;
-            display: inline-flex;
+            font-size: 1.1rem;
+            transition: all 0.2s;
+            display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            transition: background-color 0.2s, border-color 0.2s, transform 0.2s;
         }
 
-        .icon-btn:hover {
+        .icon-btn:hover:not(:disabled) {
             opacity: 1;
             background-color: var(--hover-bg);
-            border-color: var(--accent-color);
             transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
-        .icon-btn:active {
+        .icon-btn:active:not(:disabled) {
             transform: translateY(0);
         }
 
-        .theme-icon {
-            font-size: 17px;
-            line-height: 1;
+        .icon-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
         }
 
         .primary-btn {
@@ -366,6 +383,132 @@
         .primary-btn:hover {
             opacity: 1;
             background-color: var(--accent-hover);
+        }
+
+        .help-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .help-backdrop[hidden] {
+            display: none;
+        }
+
+        .help-modal {
+            width: 100%;
+            max-width: 760px;
+            max-height: 85vh;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .help-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 16px 20px 12px;
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        .help-modal-header h2 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 650;
+            color: var(--text-primary);
+        }
+
+        .help-modal-close {
+            width: auto;
+            padding: 4px 8px;
+            background: none;
+            border: none;
+            border-radius: 4px;
+            color: var(--text-secondary);
+            font-size: 20px;
+            line-height: 1;
+        }
+
+        .help-modal-close:hover {
+            opacity: 1;
+            background: var(--hover-bg);
+            color: var(--text-primary);
+        }
+
+        .help-modal-body {
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .help-section h3 {
+            margin: 0 0 8px;
+            font-size: 16px;
+            font-weight: 650;
+            color: var(--primary-color);
+        }
+
+        .help-section strong {
+            color: var(--primary-color);
+            font-weight: 750;
+        }
+
+        .help-section p,
+        .help-section ul {
+            margin: 0;
+            font-size: 15px;
+            line-height: 1.65;
+            color: var(--text-primary);
+        }
+
+        .help-section p + p {
+            margin-top: 8px;
+        }
+
+        .help-section ul {
+            padding-left: 22px;
+            margin-top: 8px;
+        }
+
+        .help-section li {
+            margin-bottom: 6px;
+        }
+
+        .sidebar-author {
+            padding: 12px 0 0;
+            margin-top: auto;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            font-size: 12px;
+            line-height: 1.5;
+            text-align: center;
+        }
+
+        .sidebar-author a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .sidebar-author a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
@@ -377,21 +520,19 @@
         <div class="section">
             <div class="section-title" id="interface-title">Interfaz</div>
             <div class="settings-toolbar">
-                <div class="setting-block">
-                    <label id="lang-label">Idioma</label>
-                    <div class="language-selector" role="group" aria-labelledby="lang-label">
-                        <button type="button" class="lang-btn" data-lang="es">ES</button>
-                        <button type="button" class="lang-btn active" data-lang="en">EN</button>
-                        <button type="button" class="lang-btn" data-lang="fr">FR</button>
-                    </div>
+                <span id="lang-label" class="visually-hidden">Idioma</span>
+                <span id="theme-label" class="visually-hidden">Tema</span>
+                <div class="language-selector" role="group" aria-labelledby="lang-label">
+                    <button type="button" class="lang-btn active" data-lang="en">EN</button>
+                    <button type="button" class="lang-btn" data-lang="fr">FR</button>
+                    <button type="button" class="lang-btn" data-lang="es">ES</button>
                 </div>
-                <div class="setting-block">
-                    <label id="theme-label" for="theme-toggle">Tema</label>
-                    <button type="button" id="theme-toggle" class="icon-btn" title="Toggle theme" aria-label="Toggle theme">
-                        <span id="theme-icon" class="theme-icon" aria-hidden="true">&#9790;</span>
-                        <span id="theme-toggle-label">Dark</span>
-                    </button>
-                </div>
+                <button type="button" id="help-btn" class="icon-btn" title="Help" aria-label="Help">
+                    <span class="icon" aria-hidden="true">❓</span>
+                </button>
+                <button type="button" id="theme-toggle" class="icon-btn" title="Toggle theme" aria-label="Toggle theme">
+                    <span class="icon" id="theme-icon" aria-hidden="true">🌙</span>
+                </button>
             </div>
         </div>
 
@@ -579,6 +720,11 @@
         </div>
 
         <button id="update-btn" class="primary-btn" onclick="updatePlots()">Actualizar Gráficos</button>
+
+        <div class="sidebar-author">
+            Franco FERRUCCI &nbsp;·&nbsp;
+            <a href="https://ferrucci-franco.github.io/electronics/" target="_blank" rel="noopener">ferrucci-franco.github.io</a>
+        </div>
     </div>
 
     <div class="main-content">
@@ -596,6 +742,16 @@
                     <div id="plot3" class="plot-wrapper"></div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <div id="help-backdrop" class="help-backdrop" hidden>
+        <div class="help-modal" role="dialog" aria-modal="true" aria-labelledby="help-title">
+            <div class="help-modal-header">
+                <h2 id="help-title">Help</h2>
+                <button type="button" id="help-close" class="help-modal-close" aria-label="Close">×</button>
+            </div>
+            <div id="help-body" class="help-modal-body"></div>
         </div>
     </div>
 
@@ -658,7 +814,45 @@
                 time: 'Tiempo (s)',
                 frequency: 'Frecuencia (Hz)',
                 amplitude: 'Amplitud',
-                phaseUnit: 'Fase (°)'
+                phaseUnit: 'Fase (°)',
+                helpButton: 'Ayuda',
+                helpClose: 'Cerrar',
+                helpTitle: 'Cómo usar esta app',
+                helpSections: [
+                    {
+                        title: '🔎 La idea central',
+                        paragraphs: [
+                            'Esta app conecta **dos maneras de mirar la misma señal**: en el tiempo y en frecuencia. A la izquierda ves cómo cambia la tensión con el tiempo. En el espectro ves **qué frecuencias forman esa señal** y con qué peso aparece cada una.',
+                            'La meta no es solo dibujar gráficos. La meta es **entrenar la intuición**: una senoidal pura produce una línea dominante, una cuadrada necesita muchos armónicos impares, el ruido levanta un piso de energía y una señal compuesta revela sus componentes.'
+                        ]
+                    },
+                    {
+                        title: '🧪 Cómo experimentar',
+                        paragraphs: [
+                            'Empieza con una **senoidal** y cambia la frecuencia, la amplitud y el offset. Después prueba ondas **cuadradas** y **triangulares**. Observa cómo el gráfico temporal puede parecer simple, pero el espectro muestra la **receta de frecuencias** que la construye.'
+                        ],
+                        list: [
+                            '🎵 Activa una segunda señal para ver cómo se suman dos tonos en el tiempo y cómo aparecen **dos líneas principales** en frecuencia.',
+                            '🌫️ Agrega ruido para observar cómo el espectro deja de tener solo líneas limpias y empieza a mostrar **energía distribuida**.',
+                            '📏 Cambia entre escala lineal y **dB**: en dB se ven mejor componentes pequeñas que quedan escondidas en escala lineal.',
+                            '🧭 Activa **Mostrar Fase** para comparar módulo y fase. El módulo dice cuánto hay de cada frecuencia; la fase dice cómo está alineada cada componente.'
+                        ]
+                    },
+                    {
+                        title: '📡 Relación con la FFT de un osciloscopio',
+                        paragraphs: [
+                            'Un osciloscopio digital mide **muestras de tensión en el tiempo**. Cuando activas la función **FFT**, el instrumento toma una ventana de esas muestras y calcula qué frecuencias están presentes. Esta app reproduce esa idea de forma controlada para que puedas ver **qué está haciendo el osciloscopio por dentro**.',
+                            'En un osciloscopio real, la FFT depende de la cantidad de muestras, de la frecuencia de muestreo, de la ventana usada y de la escala vertical. Por eso una misma señal puede verse distinta si cambias la base de tiempo, el span de frecuencia o la ventana. Aquí puedes **aislar esos efectos** y observarlos sin la presión de una medición real.'
+                        ]
+                    },
+                    {
+                        title: '✅ Lectura recomendada',
+                        paragraphs: [
+                            'Lee primero la **señal temporal**: periodo, amplitud, offset y forma. Luego mira el **módulo**: ubicación de picos, armónicos y piso de ruido. Por último mira la **fase**, especialmente cuando comparas señales o cuando necesitas entender retardos y alineaciones.',
+                            'Un buen ejercicio: usa una senoidal pura, después una cuadrada con el mismo fundamental, y finalmente agrega ruido. Esa secuencia muestra por qué la **FFT del osciloscopio** es tan útil: transforma una forma de onda en una **lista visual de frecuencias**.'
+                        ]
+                    }
+                ]
             },
             en: {
                 appTitle: 'Periodic Signals & Fourier Series',
@@ -716,7 +910,45 @@
                 time: 'Time (s)',
                 frequency: 'Frequency (Hz)',
                 amplitude: 'Amplitude',
-                phaseUnit: 'Phase (°)'
+                phaseUnit: 'Phase (°)',
+                helpButton: 'Help',
+                helpClose: 'Close',
+                helpTitle: 'How to use this app',
+                helpSections: [
+                    {
+                        title: '🔎 The main idea',
+                        paragraphs: [
+                            'This app connects **two ways of looking at the same signal**: in time and in frequency. In the time plot you see how voltage changes over time. In the spectrum you see **which frequencies build that signal** and how strong each one is.',
+                            'The goal is not just to draw plots. The goal is to **build intuition**: a pure sine wave produces one dominant line, a square wave needs many odd harmonics, noise raises a floor of energy, and a mixed signal reveals its components.'
+                        ]
+                    },
+                    {
+                        title: '🧪 How to experiment',
+                        paragraphs: [
+                            'Start with a **sine wave** and change frequency, amplitude, and offset. Then try **square** and **triangle** waves. Notice how the time plot can look simple while the spectrum shows the **frequency recipe** that creates it.'
+                        ],
+                        list: [
+                            '🎵 Enable a second signal to see two tones add in time and appear as **two main lines** in frequency.',
+                            '🌫️ Add noise to see how the spectrum stops being only clean lines and starts showing **distributed energy**.',
+                            '📏 Switch between linear and **dB** scale: dB makes small components easier to see when they are hidden in linear scale.',
+                            '🧭 Enable **Show Phase** to compare magnitude and phase. Magnitude tells you how much of each frequency exists; phase tells you how each component is aligned.'
+                        ]
+                    },
+                    {
+                        title: '📡 Connection with an oscilloscope FFT',
+                        paragraphs: [
+                            'A digital oscilloscope measures **voltage samples in time**. When you enable the **FFT** function, the instrument takes a window of those samples and calculates which frequencies are present. This app recreates that idea in a controlled way so you can see **what the oscilloscope is doing internally**.',
+                            'On a real oscilloscope, the FFT depends on the number of samples, the sampling frequency, the selected window, and the vertical scale. That is why the same signal can look different when you change timebase, frequency span, or window. Here you can **isolate those effects** and observe them without the pressure of a real measurement.'
+                        ]
+                    },
+                    {
+                        title: '✅ A good reading order',
+                        paragraphs: [
+                            'Read the **time signal** first: period, amplitude, offset, and shape. Then read the **magnitude spectrum**: peak locations, harmonics, and noise floor. Finally read **phase**, especially when comparing signals or when you need to understand delays and alignment.',
+                            'A useful exercise: use a pure sine wave, then a square wave with the same fundamental, and finally add noise. That sequence shows why the **oscilloscope FFT** is so useful: it turns a waveform into a **visual list of frequencies**.'
+                        ]
+                    }
+                ]
             },
             fr: {
                 appTitle: 'Signaux Périodiques & Série de Fourier',
@@ -774,24 +1006,134 @@
                 time: 'Temps (s)',
                 frequency: 'Fréquence (Hz)',
                 amplitude: 'Amplitude',
-                phaseUnit: 'Phase (°)'
+                phaseUnit: 'Phase (°)',
+                helpButton: 'Aide',
+                helpClose: 'Fermer',
+                helpTitle: 'Comment utiliser cette app',
+                helpSections: [
+                    {
+                        title: '🔎 L’idée principale',
+                        paragraphs: [
+                            'Cette app relie **deux façons de regarder le même signal** : dans le temps et en fréquence. Dans le graphe temporel, tu vois comment la tension varie avec le temps. Dans le spectre, tu vois **quelles fréquences construisent ce signal** et avec quelle importance chacune apparaît.',
+                            'Le but n’est pas seulement de tracer des courbes. Le but est de **construire l’intuition** : une sinusoïde pure produit une ligne dominante, un signal carré demande beaucoup d’harmoniques impaires, le bruit élève un plancher d’énergie, et un signal composé révèle ses composantes.'
+                        ]
+                    },
+                    {
+                        title: '🧪 Comment expérimenter',
+                        paragraphs: [
+                            'Commence avec une **sinusoïde** et change la fréquence, l’amplitude et l’offset. Essaie ensuite les signaux **carré** et **triangulaire**. Observe que le graphe temporel peut sembler simple, tandis que le spectre montre la **recette fréquentielle** qui le crée.'
+                        ],
+                        list: [
+                            '🎵 Active un deuxième signal pour voir deux tons s’additionner dans le temps et apparaître comme **deux lignes principales** en fréquence.',
+                            '🌫️ Ajoute du bruit pour observer comment le spectre cesse d’être seulement composé de lignes propres et commence à montrer de **l’énergie distribuée**.',
+                            '📏 Passe de l’échelle linéaire à l’échelle **dB** : les dB rendent visibles les petites composantes souvent cachées en échelle linéaire.',
+                            '🧭 Active **Afficher la Phase** pour comparer module et phase. Le module indique combien il y a de chaque fréquence ; la phase indique comment chaque composante est alignée.'
+                        ]
+                    },
+                    {
+                        title: '📡 Lien avec la FFT d’un oscilloscope',
+                        paragraphs: [
+                            'Un oscilloscope numérique mesure des **échantillons de tension dans le temps**. Quand tu actives la fonction **FFT**, l’instrument prend une fenêtre de ces échantillons et calcule quelles fréquences sont présentes. Cette app recrée cette idée de manière contrôlée pour mieux comprendre **ce que l’oscilloscope fait à l’intérieur**.',
+                            'Sur un oscilloscope réel, la FFT dépend du nombre d’échantillons, de la fréquence d’échantillonnage, de la fenêtre choisie et de l’échelle verticale. C’est pourquoi un même signal peut paraître différent si tu changes la base de temps, le span fréquentiel ou la fenêtre. Ici tu peux **isoler ces effets** et les observer sans la pression d’une mesure réelle.'
+                        ]
+                    },
+                    {
+                        title: '✅ Ordre de lecture conseillé',
+                        paragraphs: [
+                            'Lis d’abord le **signal temporel** : période, amplitude, offset et forme. Lis ensuite le **module** : position des pics, harmoniques et plancher de bruit. Lis enfin la **phase**, surtout quand tu compares des signaux ou quand tu veux comprendre des retards et des alignements.',
+                            'Un bon exercice : utilise une sinusoïde pure, puis un signal carré avec le même fondamental, et ajoute enfin du bruit. Cette séquence montre pourquoi la **FFT de l’oscilloscope** est si utile : elle transforme une forme d’onde en une **liste visuelle de fréquences**.'
+                        ]
+                    }
+                ]
             }
         };
 
         let currentLang = 'en';
         let currentTheme = 'light';
+        let lastFocusedElement = null;
 
         function updateThemeToggle() {
             const t = translations[currentLang];
             const icon = document.getElementById('theme-icon');
-            const label = document.getElementById('theme-toggle-label');
             const toggle = document.getElementById('theme-toggle');
             const isDark = currentTheme === 'dark';
+            const nextThemeLabel = isDark ? t.themeLight : t.themeDark;
 
-            icon.innerHTML = isDark ? '&#9728;' : '&#9790;';
-            label.textContent = isDark ? t.themeLight : t.themeDark;
-            toggle.title = `${t.themeLabel}: ${label.textContent}`;
+            icon.textContent = isDark ? '☀️' : '🌙';
+            toggle.title = `${t.themeLabel}: ${nextThemeLabel}`;
             toggle.setAttribute('aria-label', toggle.title);
+        }
+
+        function updateHelpButton() {
+            const t = translations[currentLang];
+            const helpButton = document.getElementById('help-btn');
+            helpButton.title = t.helpButton;
+            helpButton.setAttribute('aria-label', t.helpButton);
+            document.getElementById('help-close').setAttribute('aria-label', t.helpClose);
+        }
+
+        function appendFormattedHelpText(element, text) {
+            const parts = text.split(/(\*\*[^*]+\*\*)/g);
+            parts.forEach(part => {
+                if (part.startsWith('**') && part.endsWith('**')) {
+                    const strong = document.createElement('strong');
+                    strong.textContent = part.slice(2, -2);
+                    element.appendChild(strong);
+                } else if (part) {
+                    element.appendChild(document.createTextNode(part));
+                }
+            });
+        }
+
+        function renderHelpContent() {
+            const t = translations[currentLang];
+            const helpTitle = document.getElementById('help-title');
+            const helpBody = document.getElementById('help-body');
+
+            helpTitle.textContent = t.helpTitle;
+            helpBody.textContent = '';
+
+            t.helpSections.forEach(section => {
+                const sectionEl = document.createElement('section');
+                sectionEl.className = 'help-section';
+
+                const titleEl = document.createElement('h3');
+                titleEl.textContent = section.title;
+                sectionEl.appendChild(titleEl);
+
+                section.paragraphs.forEach(paragraph => {
+                    const paragraphEl = document.createElement('p');
+                    appendFormattedHelpText(paragraphEl, paragraph);
+                    sectionEl.appendChild(paragraphEl);
+                });
+
+                if (section.list) {
+                    const listEl = document.createElement('ul');
+                    section.list.forEach(item => {
+                        const itemEl = document.createElement('li');
+                        appendFormattedHelpText(itemEl, item);
+                        listEl.appendChild(itemEl);
+                    });
+                    sectionEl.appendChild(listEl);
+                }
+
+                helpBody.appendChild(sectionEl);
+            });
+        }
+
+        function openHelpModal() {
+            const backdrop = document.getElementById('help-backdrop');
+            lastFocusedElement = document.activeElement;
+            renderHelpContent();
+            backdrop.hidden = false;
+            document.getElementById('help-close').focus();
+        }
+
+        function closeHelpModal() {
+            document.getElementById('help-backdrop').hidden = true;
+            if (lastFocusedElement) {
+                lastFocusedElement.focus();
+            }
         }
 
         // Update language
@@ -856,6 +1198,10 @@
             document.getElementById('continuous-label').textContent = t.continuousLabel;
             document.getElementById('update-btn').textContent = t.updateBtn;
             updateThemeToggle();
+            updateHelpButton();
+            if (!document.getElementById('help-backdrop').hidden) {
+                renderHelpContent();
+            }
 
             if (refreshPlots) {
                 updatePlots();
@@ -883,6 +1229,20 @@
 
         // Theme handling
         document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+
+        // Help handling
+        document.getElementById('help-btn').addEventListener('click', openHelpModal);
+        document.getElementById('help-close').addEventListener('click', closeHelpModal);
+        document.getElementById('help-backdrop').addEventListener('click', function(event) {
+            if (event.target === this) {
+                closeHelpModal();
+            }
+        });
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape' && !document.getElementById('help-backdrop').hidden) {
+                closeHelpModal();
+            }
+        });
 
         // Language handling
         document.querySelectorAll('.lang-btn').forEach(btn => {
@@ -1292,17 +1652,20 @@
             const continuousMode = showAdvanced && document.getElementById('continuous-mode').checked;
 
             const duration = cycles / frequency;
-            const sampleRate = maxFreq * 10; // Sample at 10x max frequency
+            const enableSignal2 = document.getElementById('enable-signal2').checked;
+            const frequency2 = enableSignal2 ? parseFloat(document.getElementById('frequency2').value) : 0;
+            const highestSignalFrequency = Math.max(frequency, frequency2);
+            const analysisSampleRate = maxFreq * 10; // Sample at 10x max analysis frequency
+            const displaySampleRate = highestSignalFrequency * 200; // Keep time-domain curves visually smooth
+            const sampleRate = Math.max(analysisSampleRate, displaySampleRate);
 
             // Generate first signal
             let {t: time, signal} = generateSignal(signalType, amplitude, offset, frequency, dutyCycle, duration, sampleRate);
 
             // Check if second signal is enabled
-            const enableSignal2 = document.getElementById('enable-signal2').checked;
             if (enableSignal2) {
                 const signalType2 = document.querySelector('input[name="signal-type2"]:checked').value;
                 const amplitude2 = parseFloat(document.getElementById('amplitude2').value);
-                const frequency2 = parseFloat(document.getElementById('frequency2').value);
                 const dutyCycle2 = parseFloat(document.getElementById('duty-cycle2').value);
                 
                 // Generate second signal (no offset for second signal, it adds to the first)
