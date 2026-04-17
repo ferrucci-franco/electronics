@@ -6,6 +6,7 @@
 <title>Pendulum Analyser – From Galileo to Arduino</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="lib/katex/katex.min.css">
 <link rel="stylesheet" href="tp-guide.css">
 <style>
 /* ============================================================
@@ -780,22 +781,60 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
               </div>
             </div>
             <div class="post-scroll">
-              <div class="an-params">
+              <div class="an-params" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(135px,.72fr)">
                 <div class="form-group">
-                  <label class="form-label" for="sid_ts"><span id="t_sid_ts">Start (s)</span></label>
-                  <input type="number" id="sid_ts" value="0" min="0" step="1">
+                  <label class="form-label" for="sid_ts">
+                    <span id="t_sid_ts">T<sub>start</sub> (s)</span>
+                    <span class="val-badge" id="v_sid_ts">0.0 s</span>
+                  </label>
+                  <input type="range" id="sid_ts" value="0" min="0" max="60" step="0.1">
                 </div>
                 <div class="form-group">
-                  <label class="form-label" for="sid_span"><span id="t_sid_span">Span (s)</span></label>
-                  <input type="number" id="sid_span" value="20" min="5" step="1">
+                  <label class="form-label" for="sid_span">
+                    <span id="t_sid_span">T<sub>span</sub> (s)</span>
+                    <span class="val-badge" id="v_sid_span">20.0 s</span>
+                  </label>
+                  <input type="range" id="sid_span" value="20" min="1" max="60" step="0.1">
+                </div>
+                <div style="display:flex">
+                  <button
+                    onclick="openSysIdIntroModal()"
+                    id="t_sysid_intro_btn"
+                    style="flex:1;padding:8px 10px;font-size:12px;border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:var(--r-sm);cursor:pointer;font-family:var(--font-ui);text-align:center;line-height:1.55;white-space:normal;transition:background var(--tr);display:flex;align-items:center;justify-content:center">
+                    💡 What are we identifying?
+                  </button>
                 </div>
               </div>
               <div class="an-chart-wrap" style="height:340px"><canvas id="sysidChart"></canvas></div>
+              <div style="text-align:center;font-size:12px;color:var(--text3);margin-top:2px" id="t_sysid_zoom_hint">🖱 Scroll/Drag = zoom · Ctrl+drag = pan · Dbl-click = reset</div>
               <div class="results-grid">
-                <div class="result-item"><div class="r-lbl" id="t_rb">Damping b</div><div class="r-val accent" id="rb_id">—</div></div>
-                <div class="result-item"><div class="r-lbl" id="t_rm">Mass m (kg)</div><div class="r-val accent" id="rm_id">—</div></div>
                 <div class="result-item"><div class="r-lbl" id="t_rLid">Length L (m)</div><div class="r-val accent" id="rL_id">—</div></div>
-                <div class="result-item"><div class="r-lbl">RMSE (°)</div><div class="r-val" id="rRMSE">—</div></div>
+                <div class="result-item"><div class="r-lbl" id="t_rm">b/(mL²)</div><div class="r-val accent" id="rm_id">—</div></div>
+                <div class="result-item">
+                  <div class="r-lbl" style="display:flex;align-items:center;gap:5px">
+                    RMSE (°)
+                    <button onclick="document.getElementById('rmseModal').style.display='flex'" title="What is RMSE?" style="width:22px;height:22px;border-radius:50%;border:2px solid var(--accent);background:var(--accent);color:#fff;font:700 12px var(--font-ui);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;flex-shrink:0;line-height:1;box-shadow:0 0 0 3px var(--accent-bg);transition:box-shadow .15s ease">?</button>
+                  </div>
+                  <div class="r-val" id="rRMSE">—</div>
+                </div>
+              </div>
+              <div style="background:var(--accent-bg);border:1px solid var(--accent);border-radius:var(--r-md);padding:10px 14px;font-size:13px;color:var(--text2);line-height:1.55;margin-top:10px;margin-bottom:10px">
+                <div id="t_sysid_ident_note">
+                <strong>Non-separable parameters:</strong> from θ(t), we identify b/(mL²), not b and m separately. Different pairs (b, m) can give the same motion if this ratio stays the same.
+                </div>
+                <div class="an-params" style="grid-template-columns:minmax(0,1fr) minmax(140px,.55fr);margin-top:10px">
+                <div class="form-group">
+                  <label class="form-label" for="sid_mass">
+                    <span id="t_sid_mass">Assumed mass m (kg)</span>
+                    <span class="val-badge" id="v_sid_mass">0.262 kg</span>
+                  </label>
+                  <input type="range" id="sid_mass" value="0.262" min="0.05" max="2.0" step="0.005">
+                </div>
+                <div class="result-item">
+                  <div class="r-lbl" id="t_rb">Equivalent damping b</div>
+                  <div class="r-val accent" id="rb_id">—</div>
+                </div>
+                </div>
               </div>
             </div>
           </div>
@@ -920,10 +959,24 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
   </div>
 </div>
 
+<div id="rmseModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;align-items:center;justify-content:center">
+  <div style="background:var(--card);border:1px solid var(--border2);border-radius:var(--r-lg);padding:24px 28px;max-width:740px;width:92%;position:relative;max-height:80vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.4)">
+    <button onclick="document.getElementById('rmseModal').style.display='none'" style="position:absolute;top:12px;right:12px;width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">✕</button>
+    <div id="rmseModalBody"></div>
+  </div>
+</div>
+
 <div id="fitConcModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;align-items:center;justify-content:center">
   <div style="background:var(--card);border:1px solid var(--border2);border-radius:var(--r-lg);padding:24px 28px;max-width:560px;width:90%;position:relative;max-height:80vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.4)">
     <button onclick="document.getElementById('fitConcModal').style.display='none'" style="position:absolute;top:12px;right:12px;width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">✕</button>
     <div id="fitConcModalBody"></div>
+  </div>
+</div>
+
+<div id="sysIdIntroModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;align-items:center;justify-content:center">
+  <div style="background:var(--card);border:1px solid var(--border2);border-radius:var(--r-lg);padding:24px 28px;max-width:680px;width:92%;position:relative;max-height:80vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.4)">
+    <button onclick="document.getElementById('sysIdIntroModal').style.display='none'" style="position:absolute;top:12px;right:12px;width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">✕</button>
+    <div id="sysIdIntroModalBody"></div>
   </div>
 </div>
 
@@ -938,6 +991,7 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
 
 </div><!-- app -->
 
+<script src="lib/katex/katex.min.js"></script>
 <script src="tp-guide.js"></script>
 <script>
 // ============================================================
@@ -1004,11 +1058,13 @@ EN:{
   fit_zoom_hint:'🖱 Scroll/Drag = zoom · Ctrl+drag = pan · Dbl-click = reset',
   fit_conc_btn:'💡 What does this fit tell us?',
   per_zoom_hint:'🖱 Scroll/Drag = zoom · Ctrl+drag = pan · Dbl-click = reset',
+  sysid_zoom_hint:'🖱 Scroll/Drag = zoom · Ctrl+drag = pan · Dbl-click = reset',
   per_flanco:'↑ 0°  (positive flank)',
   a2:'Period vs. time (zero crossings)',per_thr:'Angle threshold (°)',per_ti:'T<sub>start</sub> (s)',per_intro:'Every time the pendulum passes through equilibrium (θ = 0°) in the upward direction — coming from the negative side towards the positive — we call that instant a <strong>positive flank</strong>. The time between two consecutive positive flanks is exactly one <strong>oscillation period</strong>.<span style="display:block;height:7px"></span>As the pendulum loses energy through friction, its amplitude decreases. But what happens to the period? Does it stay constant? Does it increase? Decrease? The answer is not obvious… <strong>Run the analysis to find out!</strong><span style="display:block;height:7px"></span>The chart shows two overlapping curves: in <strong style="color:var(--text2)">grey</strong>, the pendulum signal θ(t) (right axis) as a visual reference. In <strong style="color:var(--data-t)">teal</strong>, the period measured cycle by cycle (left axis) — each point corresponds to a detected positive flank. The grey circles on the zero line mark the exact detection instants.',
   a3:'Phase portrait  θ vs. dθ/dt',play:'Play',pause:'Pause',run_phase:'Launch analysis',run_fit:'Launch analysis',run_period:'Launch analysis',run_sysid:'Launch analysis',
-  a4:'System identification (ODE vs. measurement)',sid_ts:'Start (s)',sid_span:'Span (s)',
-  rT:'Period T',rf:'Frequency',rA:'A (amplitude)',rth:'\u03b4 (decay)',rphi:'\u03c6 (phase)',rB:'B (offset)',rb:'Damping',rm:'Mass m (kg)',rLid:'Length L (m)',rTfft:'Period (FFT)',rMaxA:'Max angle',rMaxO:'Max \u03c9',
+  a4:'System identification (ODE vs. measurement)',sid_ts:'T<sub>start</sub> (s)',sid_span:'T<sub>span</sub> (s)',sid_mass:'Assumed mass m (kg)',sysid_intro_btn:'💡 What are we identifying?',
+  sysid_ident_note:'<strong>Non-separable parameters:</strong> from θ(t), we identify b/(mL²), not b and m separately. Different pairs (b, m) can give the same motion if this ratio stays the same.',
+  rT:'Period T',rf:'Frequency',rA:'A (amplitude)',rth:'\u03b4 (decay)',rphi:'\u03c6 (phase)',rB:'B (offset)',rb:'Equivalent damping b',rm:'b/(mL²)',rLid:'Identified L (m)',rTfft:'Period (FFT)',rMaxA:'Max angle',rMaxO:'Max \u03c9',
   edu1_h:'Linearization: sin(θ) ≈ θ',lin_theta:'Amplitude θ₀',
   edu1_p1:'The exact pendulum ODE is non-linear: the restoring torque is proportional to sin(θ). For small angles, sin(θ) ≈ θ (in radians), giving a simple harmonic oscillator.',
   edu1_p2:'The theoretical period is T₀ = 2π√(L/g). For larger amplitudes the real period increases. The slider shows the linearization error.',
@@ -1072,11 +1128,13 @@ FR:{
   fit_zoom_hint:'🖱 Scroll/Glisser = zoom · Ctrl+glisser = pan · Dbl-clic = réinit',
   fit_conc_btn:'💡 Que nous dit cet ajustement ?',
   per_zoom_hint:'🖱 Scroll/Glisser = zoom · Ctrl+glisser = pan · Dbl-clic = réinit',
+  sysid_zoom_hint:'🖱 Scroll/Glisser = zoom · Ctrl+glisser = pan · Dbl-clic = réinit',
   per_flanco:'↑ 0°  (front montant)',
   a2:'Période vs temps (passages par zéro)',per_thr:'Seuil angle (°)',per_ti:'T<sub>départ</sub> (s)',per_intro:'Chaque fois que le pendule passe par l\'équilibre (θ = 0°) en direction montante — venant du côté négatif vers le positif — nous appelons cet instant un <strong>front montant</strong>. Le temps entre deux fronts montants consécutifs est exactement une <strong>période d\'oscillation</strong>.<span style="display:block;height:7px"></span>À mesure que le pendule perd de l\'énergie par frottement, son amplitude diminue. Mais que se passe-t-il avec la période ? Reste-t-elle constante ? Augmente-t-elle ? Diminue-t-elle ? La réponse n\'est pas évidente… <strong>Lancez l\'analyse pour le découvrir !</strong><span style="display:block;height:7px"></span>Le graphique montre deux courbes superposées : en <strong style="color:var(--text2)">gris</strong>, le signal θ(t) du pendule (axe droit), comme référence visuelle. En <strong style="color:var(--data-t)">vert</strong>, la période mesurée cycle par cycle (axe gauche) — chaque point correspond à un front montant détecté. Les cercles gris sur la ligne zéro marquent exactement les instants de détection.',
   a3:'Portrait de phase  θ vs. dθ/dt',play:'Lecture',pause:'Pause',run_phase:'Lancer l\'analyse',run_fit:'Lancer l\'analyse',run_period:'Lancer l\'analyse',run_sysid:'Lancer l\'analyse',
-  a4:'Identification de système (EDP vs. mesure)',sid_ts:'Début (s)',sid_span:'Durée (s)',
-  rT:'Période T',rf:'Fréquence',rA:'A (amplitude)',rth:'\u03b4 (décroissance)',rphi:'\u03c6 (phase)',rB:'B (offset)',rb:'Amortissement',rm:'Masse m (kg)',rLid:'Longueur L (m)',rTfft:'Période (FFT)',rMaxA:'Angle max',rMaxO:'\u03c9 max',
+  a4:'Identification de système (EDP vs. mesure)',sid_ts:'T<sub>départ</sub> (s)',sid_span:'T<sub>durée</sub> (s)',sid_mass:'Masse supposée m (kg)',sysid_intro_btn:'💡 Qu’identifie-t-on ?',
+  sysid_ident_note:'<strong>Paramètres non séparables :</strong> à partir de θ(t), on identifie b/(mL²), pas b et m séparément. Plusieurs couples (b, m) peuvent produire le même mouvement si ce rapport reste identique.',
+  rT:'Période T',rf:'Fréquence',rA:'A (amplitude)',rth:'\u03b4 (décroissance)',rphi:'\u03c6 (phase)',rB:'B (offset)',rb:'Amortissement b équiv.',rm:'b/(mL²)',rLid:'L identifié (m)',rTfft:'Période (FFT)',rMaxA:'Angle max',rMaxO:'\u03c9 max',
   edu1_h:'Linéarisation : sin(θ) ≈ θ',lin_theta:'Amplitude θ₀',
   edu1_p1:"L'équation exacte est non-linéaire : le couple de rappel est proportionnel à sin(θ). Pour les petits angles, sin(θ) ≈ θ (radians), donnant un oscillateur harmonique.",
   edu1_p2:'La période théorique est T₀ = 2π√(L/g). Pour de grandes amplitudes, la période augmente.',
@@ -1140,11 +1198,13 @@ ES:{
   fit_zoom_hint:'🖱 Scroll/Arrastrar = zoom · Ctrl+arrastrar = pan · Dbl-clic = reiniciar',
   fit_conc_btn:'💡 ¿Qué nos dice este ajuste?',
   per_zoom_hint:'🖱 Scroll/Arrastrar = zoom · Ctrl+arrastrar = pan · Dbl-clic = reiniciar',
+  sysid_zoom_hint:'🖱 Scroll/Arrastrar = zoom · Ctrl+arrastrar = pan · Dbl-clic = reiniciar',
   per_flanco:'↑ 0°  (flanco positivo)',
   a2:'Período vs tiempo (cruces por cero)',per_thr:'Umbral ángulo (°)',per_ti:'T<sub>inicio</sub> (s)',per_intro:'Cada vez que el péndulo pasa por el equilibrio (θ = 0°) en dirección ascendente — viniendo del lado negativo hacia el positivo — llamamos a ese instante un <strong>flanco positivo</strong>. El tiempo entre dos flancos positivos consecutivos es exactamente un <strong>período de oscilación</strong>.<span style="display:block;height:7px"></span>A medida que el péndulo pierde energía por rozamiento, su amplitud disminuye. ¿Pero qué pasa con el período? ¿Se mantiene constante? ¿Aumenta? ¿Disminuye? La respuesta no es obvia… <strong>¡Ejecutá el análisis para descubrirlo!</strong><span style="display:block;height:7px"></span>El gráfico muestra dos curvas superpuestas: en <strong style="color:var(--text2)">gris</strong>, la señal θ(t) del péndulo (eje derecho), como referencia visual. En <strong style="color:var(--data-t)">verde</strong>, el período medido ciclo a ciclo (eje izquierdo) — cada punto corresponde a un flanco positivo detectado. Los círculos grises sobre el eje cero marcan exactamente los instantes de detección.',
   a3:'Diagrama de fase  θ vs. dθ/dt',play:'Reproducir',pause:'Pausar',run_phase:'Lanzar el análisis',run_fit:'Lanzar el análisis',run_period:'Lanzar el análisis',run_sysid:'Lanzar el análisis',
-  a4:'Identificación de sistema (ODE vs. medición)',sid_ts:'Inicio (s)',sid_span:'Duración (s)',
-  rT:'Período T',rf:'Frecuencia',rA:'A (amplitud)',rth:'\u03b4 (decaimiento)',rphi:'\u03c6 (fase)',rB:'B (offset)',rb:'Amortiguamiento',rm:'Masa m (kg)',rLid:'Longitud L (m)',rTfft:'Período (FFT)',rMaxA:'Ángulo máx',rMaxO:'\u03c9 máx',
+  a4:'Identificación de sistema (ODE vs. medición)',sid_ts:'T<sub>inicio</sub> (s)',sid_span:'T<sub>duración</sub> (s)',sid_mass:'Masa supuesta m (kg)',sysid_intro_btn:'💡 ¿Qué estamos identificando?',
+  sysid_ident_note:'<strong>Parámetros no separables:</strong> a partir de θ(t), identificamos b/(mL²), no b y m por separado. Distintos pares (b, m) pueden producir el mismo movimiento si este cociente se mantiene igual.',
+  rT:'Período T',rf:'Frecuencia',rA:'A (amplitud)',rth:'\u03b4 (decaimiento)',rphi:'\u03c6 (fase)',rB:'B (offset)',rb:'Amortiguamiento b equiv.',rm:'b/(mL²)',rLid:'L identificada (m)',rTfft:'Período (FFT)',rMaxA:'Ángulo máx',rMaxO:'\u03c9 máx',
   edu1_h:'Linealización: sin(θ) ≈ θ',lin_theta:'Amplitud θ₀',
   edu1_p1:'La ecuación exacta es no lineal: el torque es proporcional a sin(θ). Para ángulos pequeños, sin(θ) ≈ θ (radianes), dando un oscilador armónico.',
   edu1_p2:'El período teórico es T₀ = 2π√(L/g). Para amplitudes mayores el período aumenta.',
@@ -1201,7 +1261,7 @@ function setLang(l){
     btn.classList.toggle('active',btn.dataset.lang===l);
   });
   const t=LANG[l]||LANG.EN;
-  const HTML_KEYS=/^hist_p|^hist_sys|^hist_obj|^pts_info|^fit_eq_desc|^fit_r2_note|^fit_zoom_hint|^fit_ts|^per_intro|^per_ti/;
+  const HTML_KEYS=/^hist_p|^hist_sys|^hist_obj|^pts_info|^fit_eq_desc|^fit_r2_note|^fit_zoom_hint|^fit_ts|^per_intro|^per_ti|^sid_|^sysid_/;
   for(const[k,v]of Object.entries(t)){
     const el=document.getElementById('t_'+k);
     if(!el)continue;
@@ -1213,6 +1273,7 @@ function setLang(l){
   if(asb&&t.autoscale){const sp=document.getElementById('t_autoscale');if(sp)sp.textContent=t.autoscale;}
   // rebuild R² modal in the new language
   renderR2Modal(l);
+  renderRMSEModal(l);
   // update persistent chart axis labels
   updateChartLabels();
   // update encoder resolution label unit + badges
@@ -1329,8 +1390,11 @@ FR:{
 };
 
 const FMT={
-  box:(h)=>`<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--r-md);padding:10px 16px;font:600 14px var(--font-mono);color:var(--data-t);text-align:center;margin:6px 0 12px">${h}</div>`,
-  boxLg:(h)=>`<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--r-md);padding:12px 16px;font:700 16px var(--font-mono);color:var(--data-t);text-align:center;margin:6px 0 12px">${h}</div>`,
+  box:(h)=>`<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--r-md);padding:12px 16px;font:600 15.5px var(--font-mono);color:var(--data-t);text-align:center;margin:8px 0 14px;overflow-x:auto">${h}</div>`,
+  boxLg:(h)=>`<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--r-md);padding:14px 16px;font:700 17px var(--font-mono);color:var(--data-t);text-align:center;margin:8px 0 14px;overflow-x:auto">${h}</div>`,
+  math:(tex)=>`<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--r-md);padding:13px 16px;color:var(--data-t);text-align:center;margin:8px 0 14px;overflow-x:auto">${renderMath(tex)}</div>`,
+  mathLg:(tex)=>`<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--r-md);padding:15px 16px;color:var(--data-t);text-align:center;margin:8px 0 14px;overflow-x:auto">${renderMath(tex)}</div>`,
+  callout:(h)=>`<div style="background:var(--accent-bg);border:1px solid var(--accent);border-radius:var(--r-md);padding:13px 16px;font-size:15.5px;color:var(--text2);line-height:1.75;margin:14px 0">${h}</div>`,
   p8:(h)=>`<p style="margin-bottom:8px">${h}</p>`,
   p6:(h)=>`<p style="margin-bottom:6px">${h}</p>`,
   p10:(h)=>`<p style="margin-bottom:10px">${h}</p>`,
@@ -1338,14 +1402,21 @@ const FMT={
   p14:(h)=>`<p style="margin-bottom:14px">${h}</p>`,
 };
 
+function renderMath(tex){
+  if(window.katex){
+    return katex.renderToString(tex,{displayMode:true,throwOnError:false});
+  }
+  return `<code style="font:600 15px var(--font-mono);white-space:pre-wrap">${tex}</code>`;
+}
+
 function renderR2Modal(lang){
   const s=R2_MODAL[lang]||R2_MODAL.EN;
   const el=document.getElementById('r2ModalBody');
   if(!el)return;
-  const theta_bar=`<span style="text-decoration:overline">θ</span>`;
+  const theta_bar=`<span style="text-decoration:overline">&theta;</span>`;
   el.innerHTML=`
 <h3 style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:16px">${s.title}</h3>
-<div style="font-size:14px;color:var(--text2);line-height:1.85">
+<div style="font-size:15.5px;color:var(--text2);line-height:1.9">
 ${FMT.p10(s.p1)}
 ${FMT.p12(s.p2)}
 ${FMT.p8(s.d_res1)}
@@ -1353,16 +1424,16 @@ ${FMT.p8(s.d_res2)}
 ${FMT.p12(s.d_res3)}
 ${FMT.p8(s.d_sq1)}
 ${FMT.p6(s.lbl_ssres)}
-${FMT.box(`SS<sub>res</sub> = Σ<sub>k</sub> [ <strong>θ</strong>(t<sub>k</sub>) − <strong>θ<sub>fit</sub></strong>(t<sub>k</sub>) ]²`)}
+${FMT.math(String.raw`SS_{\mathrm{res}} = \sum_{k=1}^{N}\left[\theta_{\mathrm{data}}(t_k)-\theta_{\mathrm{fit}}(t_k)\right]^2`)}
 ${FMT.p8(s.d_norm1)}
 ${FMT.p8(s.d_norm2)}
 ${FMT.p8(s.d_mean)}
-${FMT.box(`${theta_bar} = (1/<strong>N</strong>) · Σ<sub>k</sub> <strong>θ</strong>(t<sub>k</sub>)`)}
+${FMT.math(String.raw`\overline{\theta}_{\mathrm{data}} = \frac{1}{N}\sum_{k=1}^{N}\theta_{\mathrm{data}}(t_k)`)}
 ${FMT.p8(s.d_lazy1)}
 ${FMT.p8(s.d_lazy2)}
 ${FMT.p8(s.d_lazy3)}
 ${FMT.p6(s.lbl_sstot)}
-${FMT.box(`SS<sub>tot</sub> = Σ<sub>k</sub> [ <strong>θ</strong>(t<sub>k</sub>) − ${theta_bar} ]²`)}
+${FMT.math(String.raw`SS_{\mathrm{tot}} = \sum_{k=1}^{N}\left[\theta_{\mathrm{data}}(t_k)-\overline{\theta}_{\mathrm{data}}\right]^2`)}
 ${FMT.p8(s.d_div1)}
 ${FMT.p8(s.d_div2)}
 ${FMT.p8(s.d_div3)}
@@ -1372,7 +1443,7 @@ ${FMT.p8(s.d_div6)}
 ${FMT.p8(s.d_div7)}
 ${FMT.p8(s.d_div8)}
 ${FMT.p6(s.d_r2def)}
-${FMT.boxLg(`R² = 1 − SS<sub>res</sub> / SS<sub>tot</sub>`)}
+${FMT.mathLg(String.raw`R^2 = 1-\frac{SS_{\mathrm{res}}}{SS_{\mathrm{tot}}}`)}
 ${FMT.p8(s.d_neg1)}
 ${FMT.p14(s.d_neg2)}
 <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--r-md);padding:12px 16px;font-size:13px;color:var(--text2);line-height:2">
@@ -1382,6 +1453,104 @@ ${s.ref_title}<br>
 <span style="color:var(--danger)">■</span> ${s.ref3}<br>
 <span style="color:var(--danger)">■</span> ${s.ref4}
 </div>
+</div>`;
+}
+
+// ============================================================
+// RMSE MODAL — multilingual content
+// ============================================================
+const RMSE_MODAL={
+ES:{
+  title:'¿Qué es RMSE? — El error típico del modelo',
+  p1:`En identificación de sistema tenemos dos curvas: <strong style="color:var(--text)">&theta;<sub>data</sub>(t)</strong>, que viene del péndulo real, y <strong style="color:var(--text)">&theta;<sub>model</sub>(t)</strong>, que sale de la ecuación diferencial simulada con los parámetros identificados.`,
+  p2:`Si ya abriste la ayuda de <strong style="color:var(--text)">R²</strong>, esta primera parte te va a sonar familiar: otra vez vamos a comparar dos curvas punto por punto, mirar sus <strong style="color:var(--text)">residuos</strong>, y evitar que errores positivos y negativos se cancelen.`,
+  d1:`💬 <em>— Recordatorio express: en cada instante t<sub>k</sub>, el residuo es la diferencia entre modelo y datos:</em>`,
+  d2:`💬 <em>— Igual que para R², no podemos simplemente sumar residuos: +5° y −5° se cancelarían, aunque el modelo se haya equivocado dos veces. Entonces elevamos al cuadrado.</em>`,
+  d3:`💬 <em>— Hasta acá, RMSE y R² pisan el mismo suelo: residuo, cuadrado, suma. La diferencia importante viene ahora: <strong style="color:var(--text)">¿contra qué normalizamos?</strong></em>`,
+  lbl_mse:`En R² comparábamos contra el “modelo perezoso” que predice siempre el promedio. En RMSE hacemos algo más directo: promediamos los errores al cuadrado. Eso se llama MSE, <em>mean squared error</em>:`,
+  d4:`💬 <em>— Pero si θ está en grados, el MSE queda en grados al cuadrado. Y “grados cuadrados” no es una unidad muy amigable para interpretar un péndulo.</em>`,
+  d5:`💬 <em>— Por eso tomamos la raíz cuadrada. Volvemos a la unidad original: grados. Ahí aparece RMSE:</em>`,
+  p3:`Así que si el RMSE vale <strong style="color:var(--text)">2.3°</strong>, podés leerlo de manera informal como: “el modelo se equivoca típicamente unos 2.3 grados”. No es exactamente el promedio simple del error absoluto, pero la intuición va por ahí.`,
+  p4:`Ojo con una trampa importante: RMSE castiga mucho los errores grandes, porque antes de promediar se elevan al cuadrado. Un pico feo, un salto del encoder o un mal inicio de la simulación pueden inflar el RMSE bastante.`,
+  p5:`Y otra trampa muy de péndulos: si el período del modelo es apenas distinto al real, al principio las curvas parecen perfectas, pero con el tiempo se desfasan. Visualmente “son parecidas”, pero punto por punto ya no coinciden, y el RMSE sube. No es ruido: es fase acumulada.`,
+  ref_title:`<strong style="color:var(--text)">Cómo leer RMSE en este TP:</strong>`,
+  ref1:`<strong style="color:var(--success)">Pequeño respecto a la amplitud</strong> — Bien: el modelo sigue la señal de cerca.`,
+  ref2:`<strong style="color:var(--warn)">Crece con el tiempo</strong> — Sospechá un período mal identificado o un desfase progresivo.`,
+  ref3:`<strong style="color:var(--danger)">Grande desde el inicio</strong> — Revisá condiciones iniciales, ventana temporal, offset, ruido o mala adquisición.`,
+  ref4:`<strong style="color:var(--accent)">Tiene unidades</strong> — Si θ está en grados, RMSE está en grados. Si θ está en radianes, RMSE está en radianes.`,
+  final:`<strong style="color:var(--text)">R²</strong> no tiene unidades y dice qué tan bien ganamos contra el modelo perezoso; <strong style="color:var(--text)">RMSE</strong> sí tiene unidades y dice el tamaño típico del error. Ninguno prueba que el modelo sea verdadero, pero juntos cuentan una historia mucho más rica.`
+},
+EN:{
+  title:'What is RMSE? — The model’s typical error',
+  p1:`In system identification we have two curves: <strong style="color:var(--text)">&theta;<sub>data</sub>(t)</strong>, from the real pendulum, and <strong style="color:var(--text)">&theta;<sub>model</sub>(t)</strong>, from the differential equation simulated with the identified parameters.`,
+  p2:`If you already opened the <strong style="color:var(--text)">R²</strong> help, this first part should feel familiar: again we compare two curves point by point, look at their <strong style="color:var(--text)">residuals</strong>, and prevent positive and negative errors from cancelling.`,
+  d1:`💬 <em>— Quick reminder: at each instant t<sub>k</sub>, the residual is the difference between model and data:</em>`,
+  d2:`💬 <em>— Just like for R², we cannot simply sum residuals: +5° and −5° would cancel, even though the model was wrong twice. So we square them.</em>`,
+  d3:`💬 <em>— Up to here, RMSE and R² stand on the same ground: residual, square, sum. The important difference comes now: <strong style="color:var(--text)">what do we normalize against?</strong></em>`,
+  lbl_mse:`For R², we compared against the “lazy model” that always predicts the mean. For RMSE, we do something more direct: average the squared errors. That is the MSE, mean squared error:`,
+  d4:`💬 <em>— But if θ is in degrees, MSE is in squared degrees. And “square degrees” are not very friendly when trying to interpret a pendulum.</em>`,
+  d5:`💬 <em>— So we take the square root. We come back to the original unit: degrees. That gives RMSE:</em>`,
+  p3:`So if RMSE is <strong style="color:var(--text)">2.3°</strong>, you can read it informally as: “the model is typically off by about 2.3 degrees”. It is not exactly the simple average absolute error, but that is the right intuition.`,
+  p4:`Careful: RMSE strongly punishes large errors, because errors are squared before averaging. One ugly spike, one encoder jump, or one bad simulation start can inflate RMSE quite a lot.`,
+  p5:`And here is the pendulum trap: if the model period is only slightly different from the real one, the curves look great at first, but they slowly drift out of phase. Visually they are “similar”, but point by point they no longer match, and RMSE rises. That is not just noise: it is accumulated phase error.`,
+  ref_title:`<strong style="color:var(--text)">How to read RMSE in this lab:</strong>`,
+  ref1:`<strong style="color:var(--success)">Small compared with the amplitude</strong> — Good: the model follows the signal closely.`,
+  ref2:`<strong style="color:var(--warn)">Grows with time</strong> — Suspect a wrong period or progressive phase drift.`,
+  ref3:`<strong style="color:var(--danger)">Large from the start</strong> — Check initial conditions, time window, offset, noise, or acquisition quality.`,
+  ref4:`<strong style="color:var(--accent)">It has units</strong> — If θ is in degrees, RMSE is in degrees. If θ is in radians, RMSE is in radians.`,
+  final:`<strong style="color:var(--text)">R²</strong> has no units and says how much we improve over the lazy model; <strong style="color:var(--text)">RMSE</strong> has units and says the typical size of the error. Neither proves that the model is true, but together they tell a much richer story.`
+},
+FR:{
+  title:'Qu’est-ce que le RMSE ? — L’erreur typique du modèle',
+  p1:`En identification de système, on a deux courbes : <strong style="color:var(--text)">&theta;<sub>data</sub>(t)</strong>, qui vient du pendule réel, et <strong style="color:var(--text)">&theta;<sub>model</sub>(t)</strong>, qui vient de l’équation différentielle simulée avec les paramètres identifiés.`,
+  p2:`Si vous avez déjà ouvert l’aide sur <strong style="color:var(--text)">R²</strong>, le début va vous sembler familier : encore une fois, on compare deux courbes point par point, on regarde leurs <strong style="color:var(--text)">résidus</strong>, et on évite que les erreurs positives et négatives s’annulent.`,
+  d1:`💬 <em>— Petit rappel : à chaque instant t<sub>k</sub>, le résidu est la différence entre le modèle et les données :</em>`,
+  d2:`💬 <em>— Comme pour R², on ne peut pas simplement sommer les résidus : +5° et −5° s’annuleraient, alors que le modèle s’est trompé deux fois. Donc on élève au carré.</em>`,
+  d3:`💬 <em>— Jusqu’ici, RMSE et R² partent de la même base : résidu, carré, somme. La différence importante arrive maintenant : <strong style="color:var(--text)">par rapport à quoi normalise-t-on ?</strong></em>`,
+  lbl_mse:`Pour R², on comparait au “modèle paresseux” qui prédit toujours la moyenne. Pour RMSE, on fait quelque chose de plus direct : on moyenne les erreurs au carré. C’est le MSE, <em>mean squared error</em> :`,
+  d4:`💬 <em>— Mais si θ est en degrés, le MSE est en degrés carrés. Et les “degrés carrés”, ce n’est pas très pratique pour interpréter un pendule.</em>`,
+  d5:`💬 <em>— Donc on prend la racine carrée. On revient à l’unité d’origine : les degrés. Voilà le RMSE :</em>`,
+  p3:`Donc si le RMSE vaut <strong style="color:var(--text)">2,3°</strong>, on peut le lire de façon informelle comme : “le modèle se trompe typiquement d’environ 2,3 degrés”. Ce n’est pas exactement la moyenne des erreurs absolues, mais l’intuition est bonne.`,
+  p4:`Attention : le RMSE punit fortement les grosses erreurs, parce qu’on élève les erreurs au carré avant de moyenner. Un pic étrange, un saut de l’encodeur ou un mauvais début de simulation peuvent faire monter le RMSE assez vite.`,
+  p5:`Et le piège classique du pendule : si la période du modèle est juste un peu différente de la période réelle, les courbes semblent très bonnes au début, puis elles se déphasent lentement. Visuellement elles se ressemblent, mais point par point elles ne coïncident plus, et le RMSE augmente. Ce n’est pas seulement du bruit : c’est une erreur de phase accumulée.`,
+  ref_title:`<strong style="color:var(--text)">Comment lire le RMSE dans ce TP :</strong>`,
+  ref1:`<strong style="color:var(--success)">Petit devant l’amplitude</strong> — Bien : le modèle suit la mesure de près.`,
+  ref2:`<strong style="color:var(--warn)">Augmente avec le temps</strong> — Soupçonnez une période mal identifiée ou un déphasage progressif.`,
+  ref3:`<strong style="color:var(--danger)">Grand dès le début</strong> — Vérifiez conditions initiales, fenêtre temporelle, offset, bruit ou qualité d’acquisition.`,
+  ref4:`<strong style="color:var(--accent)">Il a des unités</strong> — Si θ est en degrés, le RMSE est en degrés. Si θ est en radians, le RMSE est en radians.`,
+  final:`<strong style="color:var(--text)">R²</strong> n’a pas d’unité et dit combien on gagne par rapport au modèle paresseux; <strong style="color:var(--text)">RMSE</strong> a des unités et donne la taille typique de l’erreur. Aucun des deux ne prouve que le modèle est vrai, mais ensemble ils racontent une histoire beaucoup plus riche.`
+}
+};
+
+function renderRMSEModal(lang){
+  const s=RMSE_MODAL[lang]||RMSE_MODAL.EN;
+  const el=document.getElementById('rmseModalBody');
+  if(!el)return;
+  el.innerHTML=`
+<h3 style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:16px">${s.title}</h3>
+<div style="font-size:15.5px;color:var(--text2);line-height:1.9">
+${FMT.p10(s.p1)}
+${FMT.p12(s.p2)}
+${FMT.p8(s.d1)}
+${FMT.math(String.raw`e_k = \theta_{\mathrm{model}}(t_k)-\theta_{\mathrm{data}}(t_k)`)}
+${FMT.p8(s.d2)}
+${FMT.p12(s.d3)}
+${FMT.p6(s.lbl_mse)}
+${FMT.math(String.raw`MSE = \frac{1}{N}\sum_{k=1}^{N} e_k^2`)}
+${FMT.p8(s.d4)}
+${FMT.p8(s.d5)}
+${FMT.mathLg(String.raw`RMSE = \sqrt{\frac{1}{N}\sum_{k=1}^{N} e_k^2}`)}
+${FMT.p12(s.p3)}
+${FMT.p12(s.p4)}
+${FMT.p14(s.p5)}
+<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--r-md);padding:12px 16px;font-size:13px;color:var(--text2);line-height:2">
+${s.ref_title}<br>
+<span style="color:var(--success)">■</span> ${s.ref1}<br>
+<span style="color:var(--warn)">■</span> ${s.ref2}<br>
+<span style="color:var(--danger)">■</span> ${s.ref3}<br>
+<span style="color:var(--accent)">■</span> ${s.ref4}
+</div>
+${FMT.callout(s.final)}
 </div>`;
 }
 
@@ -1443,6 +1612,69 @@ ${FMT.p12(s.p5)}
 <div style="margin-top:14px;background:rgba(245,158,11,0.10);border:1px solid rgba(245,158,11,0.45);border-radius:var(--r-md);padding:11px 15px;font-size:13px;color:var(--text);line-height:1.7">${s.note}</div>
 </div>`;
 }
+
+// ============================================================
+// SYSTEM ID INTRO MODAL — multilingual content
+// ============================================================
+const SYSID_INTRO={
+ES:{
+  title:'💡 ¿Qué estamos identificando?',
+  p1:`Identificar un sistema es hacerle una pregunta muy concreta a los datos: <strong>“¿qué parámetros hacen que mi modelo reproduzca mejor esta medición?”</strong>`,
+  p2:`Hay modelos de <strong>caja negra</strong>: no miramos la física, solo buscamos una fórmula que copie bien la entrada y la salida. Puede funcionar muy bien, pero a veces es como decir “anda porque anda”.`,
+  p3:`También hay modelos de <strong>caja blanca</strong>: partimos de las leyes físicas, por ejemplo suma de cuplas = momento de inercia · aceleración angular. Ahí cada término tiene un significado mecánico.`,
+  p4:`Acá hacemos algo intermedio, bastante potente: usamos una <strong>caja gris</strong>. La estructura viene de la física del péndulo, pero los números se ajustan con datos reales.`,
+  p5:`El algoritmo prueba valores de los parámetros, simula la ecuación diferencial ordinaria (<strong>ODE</strong>, por <em>ordinary differential equation</em>), compara la curva simulada con θ(t), calcula el error, y repite hasta encontrar una combinación que reduzca ese error.`,
+  p6:`Muy importante: no todo parámetro que escribimos en una ecuación se puede identificar por separado. En este péndulo, usando solo θ(t), los datos permiten ver <strong>b/(mL²)</strong>, pero no separar b y m. Eso se llama <strong>parámetros no separables</strong>.`,
+  box:`Entonces el resultado experimental directo es: <strong>L</strong>, <strong>b/(mL²)</strong> y <strong>RMSE</strong>. Si después medís o suponés una masa, recién ahí podés convertir ese cociente en un <strong>b equivalente</strong>.`
+},
+EN:{
+  title:'💡 What are we identifying?',
+  p1:`System identification asks the data a very concrete question: <strong>“which parameters make my model reproduce this measurement best?”</strong>`,
+  p2:`Some models are <strong>black box</strong>: we do not look at the physics, we only search for a formula that copies the input-output behavior well. Useful, but sometimes it feels like “it works because it works”.`,
+  p3:`Other models are <strong>white box</strong>: we start from physical laws, for example sum of torques = moment of inertia · angular acceleration. Then each term has a mechanical meaning.`,
+  p4:`Here we use something in between, and very useful: a <strong>grey box</strong>. The structure comes from pendulum physics, but the numbers are adjusted using real data.`,
+  p5:`The algorithm tries parameter values, simulates the ordinary differential equation (<strong>ODE</strong>), compares the simulated curve with θ(t), computes the error, and repeats until it finds a combination that reduces that error.`,
+  p6:`Important: not every parameter written in an equation can be identified separately. For this pendulum, using only θ(t), the data can see <strong>b/(mL²)</strong>, but cannot separate b and m. These are called <strong>non-separable parameters</strong>.`,
+  box:`So the direct experimental result is: <strong>L</strong>, <strong>b/(mL²)</strong>, and <strong>RMSE</strong>. If you later measure or assume a mass, then you can convert that ratio into an <strong>equivalent b</strong>.`
+},
+FR:{
+  title:'💡 Qu’identifie-t-on ?',
+  p1:`Identifier un système, c’est poser une question très concrète aux données : <strong>« quels paramètres permettent à mon modèle de reproduire au mieux cette mesure ? »</strong>`,
+  p2:`Il existe des modèles de <strong>boîte noire</strong> : on ne regarde pas la physique, on cherche seulement une formule qui copie bien le comportement entrée-sortie. C’est utile, mais parfois cela ressemble à “ça marche parce que ça marche”.`,
+  p3:`Il existe aussi des modèles de <strong>boîte blanche</strong> : on part des lois physiques, par exemple somme des couples = moment d’inertie · accélération angulaire. Chaque terme a alors un sens mécanique.`,
+  p4:`Ici on fait quelque chose d’intermédiaire, très utile : une <strong>boîte grise</strong>. La structure vient de la physique du pendule, mais les nombres sont ajustés avec des données réelles.`,
+  p5:`L’algorithme essaie des valeurs de paramètres, simule l’équation différentielle ordinaire (<strong>ODE</strong>, pour <em>ordinary differential equation</em>), compare la courbe simulée avec θ(t), calcule l’erreur, puis recommence jusqu’à trouver une combinaison qui réduit cette erreur.`,
+  p6:`Point important : tout paramètre écrit dans une équation n’est pas forcément identifiable séparément. Pour ce pendule, avec seulement θ(t), les données voient <strong>b/(mL²)</strong>, mais ne peuvent pas séparer b et m. On parle de <strong>paramètres non séparables</strong>.`,
+  box:`Le résultat expérimental direct est donc : <strong>L</strong>, <strong>b/(mL²)</strong> et <strong>RMSE</strong>. Si ensuite vous mesurez ou supposez une masse, vous pouvez convertir ce rapport en <strong>b équivalent</strong>.`
+}
+};
+
+function renderSysIdIntroModal(lang){
+  const s=SYSID_INTRO[lang]||SYSID_INTRO.EN;
+  const el=document.getElementById('sysIdIntroModalBody');
+  if(!el)return;
+  el.innerHTML=`
+<h3 style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:16px">${s.title}</h3>
+<div style="font-size:14.5px;color:var(--text2);line-height:1.85">
+${FMT.p10(s.p1)}
+${FMT.p10(s.p2)}
+${FMT.p10(s.p3)}
+${FMT.p10(s.p4)}
+${FMT.p10(s.p5)}
+${FMT.p12(s.p6)}
+<div style="background:var(--accent-bg);border:1px solid var(--accent);border-radius:var(--r-md);padding:12px 16px;font-size:13.5px;color:var(--text);line-height:1.7">${s.box}</div>
+</div>`;
+}
+
+window.openSysIdIntroModal = function openSysIdIntroModal(){
+  renderSysIdIntroModal(curLang);
+  document.getElementById('sysIdIntroModal').style.display='flex';
+};
+document.getElementById('sysIdIntroModal').addEventListener('click',e=>{
+  if(e.target===document.getElementById('sysIdIntroModal'))
+    document.getElementById('sysIdIntroModal').style.display='none';
+});
+
 window.openPhaseIntroModal=function(){
   const el=document.getElementById('phaseIntroModalBody');
   if(!el)return;
@@ -1572,7 +1804,7 @@ function getPostData(){
   if(proModeActive){
     return{time:s.time,angle:quantize(s.angle)};
   }
-  return s;
+  return{time:s.time,angle:s.angle,omega:s.omega};
 }
 function updatePostInfo(){
   const d=getPostData();
@@ -2722,6 +2954,10 @@ document.getElementById('r2Modal').addEventListener('click',e=>{
   if(e.target===document.getElementById('r2Modal'))
     document.getElementById('r2Modal').style.display='none';
 });
+document.getElementById('rmseModal').addEventListener('click',e=>{
+  if(e.target===document.getElementById('rmseModal'))
+    document.getElementById('rmseModal').style.display='none';
+});
 
 // ============================================================
 // ANALYSIS ②: PERIOD VS TIME
@@ -3216,66 +3452,119 @@ document.getElementById('playPhaseBtn').onclick=()=>{
 // ============================================================
 // ANALYSIS ④: SYSTEM IDENTIFICATION
 // ============================================================
+let sysIdState=null;
 function runSysId(){
   const data=getPostData();
   if(!data){showToast((LANG[curLang]||LANG.EN).no_data);return;}
+  updateSysIdSliders(data);
   document.getElementById('sidSpinner').style.display='flex';
   setTimeout(()=>{
     try{_runSysId(data);}finally{document.getElementById('sidSpinner').style.display='none';}
   },30);
 }
+function updateSysIdSliders(data=null){
+  const ts=document.getElementById('sid_ts');
+  const sp=document.getElementById('sid_span');
+  const ms=document.getElementById('sid_mass');
+  const vts=document.getElementById('v_sid_ts');
+  const vsp=document.getElementById('v_sid_span');
+  const vms=document.getElementById('v_sid_mass');
+  if(data&&data.time&&data.time.length>1){
+    const maxT=data.time[data.time.length-1];
+    const step=Math.max(0.05,(maxT/200)).toFixed(2);
+    ts.max=Math.max(0,maxT).toFixed(1);
+    ts.step=step;
+    if(parseFloat(ts.value)>parseFloat(ts.max))ts.value=ts.max;
+    const remaining=Math.max(1,maxT-(parseFloat(ts.value)||0));
+    sp.max=remaining.toFixed(1);
+    sp.step=step;
+    if(parseFloat(sp.value)>remaining)sp.value=remaining.toFixed(1);
+  }
+  vts.textContent=(parseFloat(ts.value)||0).toFixed(1)+' s';
+  vsp.textContent=(parseFloat(sp.value)||0).toFixed(1)+' s';
+  vms.textContent=(parseFloat(ms.value)||0).toFixed(3)+' kg';
+  updateSysIdMassConversion();
+}
+function updateSysIdMassConversion(){
+  const m=parseFloat(document.getElementById('sid_mass').value)||0;
+  const vms=document.getElementById('v_sid_mass');
+  if(vms)vms.textContent=m.toFixed(3)+' kg';
+  if(!sysIdState)return;
+  const b=sysIdState.alpha*m*sysIdState.L*sysIdState.L;
+  document.getElementById('rb_id').textContent=b.toFixed(4)+' N·m·s/rad';
+}
 function _runSysId(data){
   const tstart=parseFloat(document.getElementById('sid_ts').value)||0;
   const tspan=parseFloat(document.getElementById('sid_span').value)||20;
-  let{time,angle}=data;
+  let{time,angle,omega}=data;
   // Trim to [tstart, tstart+tspan]
-  const i0=time.findIndex(t=>t>=tstart)||0;
+  let i0=time.findIndex(t=>t>=tstart);
+  if(i0<0){showToast('The System ID start time is after the end of the data. Choose an earlier start.');return;}
   time=time.slice(i0);angle=angle.slice(i0);
+  if(Array.isArray(omega)&&omega.length===data.time.length)omega=omega.slice(i0);
   const t0=time[0];
   time=time.map(t=>t-t0);
   const tEnd=time.findIndex(t=>t>tspan);
-  if(tEnd>10){time=time.slice(0,tEnd);angle=angle.slice(0,tEnd);}
-  if(time.length<20)return;
-  // Find first zero of angular velocity (max displacement) as IC
-  const omega_=numDeriv(time,angle);
-  let icIdx=0;
-  for(let i=1;i<omega_.length;i++){if(omega_[i-1]*omega_[i]<0){icIdx=i;break;}}
-  const theta0=angle[icIdx];const om0=0;
-  const tObs=time.slice(icIdx).map(t=>t-time[icIdx]);
-  const angObs=angle.slice(icIdx);
-  // Initial guess from sliders
+  if(tEnd>0){time=time.slice(0,tEnd);angle=angle.slice(0,tEnd);if(Array.isArray(omega))omega=omega.slice(0,tEnd);}
+  if(time.length<20){showToast('Not enough data in the System ID window. Try a longer duration or an earlier start.');return;}
+  // Use the actual start of the selected window as initial condition.
+  // Older versions jumped to the first maximum and hid the beginning of the signal.
+  const theta0=angle[0];
+  let om0=0;
+  if(Array.isArray(omega)&&Number.isFinite(omega[0])){
+    om0=omega[0];
+  }else{
+    const omega_=numDerivSmooth(time,angle);
+    om0=Number.isFinite(omega_[0])?omega_[0]:0;
+  }
+  const tObs=time;
+  const angObs=angle;
+  // Initial guess for L. The damping parameter is alpha = b/(mL²), so it is
+  // identifiable from theta(t) without knowing the mass.
   const Lg=parseFloat(document.getElementById('sl_L').value)||0.5;
-  const Mg=parseFloat(document.getElementById('sl_m').value)||0.262;
-  const bg=0.5;
-  const x0=[bg,Mg,Lg];
-  const cost=([b,M,L])=>{
-    if(b<0||M<=0||L<=0||L>3)return 1e12;
-    const params={b,M,L};
-    const dt=tObs.length>1?(tObs[tObs.length-1]-tObs[0])/(tObs.length-1):0.02;
-    const simT=[],simA=[];
+  const alphaG=1;
+  const x0=[alphaG,Lg];
+  const simulateAtObs=(params)=>{
+    const simA=[];
     let y=[deg2rad(theta0),deg2rad(om0)];
-    const steps=Math.ceil(tObs[tObs.length-1]/0.005)+1;
-    const dts=tObs[tObs.length-1]/steps;
-    let t=0,si=0;
-    for(let i=0;i<=steps&&si<tObs.length;i++){
-      while(si<tObs.length&&tObs[si]<=t){simT.push(t);simA.push(rad2deg(y[0]));si++;}
-      y=rk4Step(y,dts,pendulumDeriv,params);t+=dts;
+    let t=0;
+    const h=0.005;
+    for(const target of tObs){
+      while(t+h<target){
+        y=rk4Step(y,h,pendulumDeriv,params);
+        t+=h;
+      }
+      const rem=target-t;
+      if(rem>1e-12){
+        y=rk4Step(y,rem,pendulumDeriv,params);
+        t=target;
+      }
+      simA.push(rad2deg(y[0]));
     }
+    return simA;
+  };
+  const cost=([alpha,L])=>{
+    if(alpha<0||alpha>200||L<=0||L>3)return 1e12;
+    const params={b:alpha*L*L,M:1,L};
+    const simA=simulateAtObs(params);
     let s=0;const n=Math.min(angObs.length,simA.length);
     for(let i=0;i<n;i++){const r=simA[i]-angObs[i];s+=r*r;}
     return s/n;
   };
-  const{x:[b_id,M_id,L_id]}=nelderMead(cost,x0,{maxIter:3000,tol:1e-8});
+  const{x:[alpha_id,L_id]}=nelderMead(cost,x0,{maxIter:3000,tol:1e-8});
   // Final simulation with identified params
-  const res=integratePendulum(theta0,om0,{b:b_id,M:M_id,L:L_id},tObs[tObs.length-1],0.005);
+  const idParams={b:alpha_id*L_id*L_id,M:1,L:L_id};
+  const res=integratePendulum(theta0,om0,idParams,tObs[tObs.length-1],0.005);
+  const resAtObs=simulateAtObs(idParams);
   // RMSE
   let rmse2=0;
-  const n=Math.min(tObs.length,res.angle.length);
-  for(let i=0;i<n;i++){const d=res.angle[i]-angObs[i];rmse2+=d*d;}
+  const n=Math.min(tObs.length,resAtObs.length);
+  for(let i=0;i<n;i++){const d=resAtObs[i]-angObs[i];rmse2+=d*d;}
   const rmse=Math.sqrt(rmse2/n);
   // Update results
-  document.getElementById('rb_id').textContent=b_id.toFixed(4);
-  document.getElementById('rm_id').textContent=M_id.toFixed(4);
+  sysIdState={alpha:alpha_id,L:L_id};
+  updateSysIdMassConversion();
+  document.getElementById('rm_id').textContent=alpha_id.toFixed(4)+' s⁻¹';
   document.getElementById('rL_id').textContent=L_id.toFixed(4);
   document.getElementById('rRMSE').textContent=rmse.toFixed(3)+'°';
   // Chart
@@ -3286,10 +3575,41 @@ function _runSysId(data){
       {label:'Measurement',data:tObs.map((t,i)=>({x:t,y:angObs[i]})),borderColor:c.dr,borderWidth:1.5,pointRadius:0,tension:0},
       {label:'ODE (identified)',data:res.time.map((t,i)=>({x:t,y:res.angle[i]})),borderColor:c.dt,borderWidth:2,pointRadius:0,tension:0},
     ]},
-    options:{scales:baseScaleOpts(gL('ax_time'),gL('ax_angle')),plugins:{legend:baseLegend(['Measurement','ODE (identified)'],[c.dr,c.dt]),zoom:{pan:{enabled:true,mode:'xy'},wheel:{enabled:true,mode:'xy'}}}}
+    options:{
+      scales:baseScaleOpts(gL('ax_time'),gL('ax_angle')),
+      plugins:{
+        legend:baseLegend(['Measurement','ODE (identified)'],[c.dr,c.dt]),
+        zoom:{
+          pan:{enabled:true,mode:'xy',modifierKey:'ctrl'},
+          zoom:{
+            wheel:{enabled:true},
+            pinch:{enabled:true},
+            drag:{enabled:true,button:0,backgroundColor:'rgba(59,142,255,0.15)',borderColor:'rgba(59,142,255,0.8)',borderWidth:1},
+            mode:'xy'
+          }
+        }
+      }
+    }
   });
+  const canvas=document.getElementById('sysidChart');
+  if(canvas){
+    if(canvas._sysidDblHandler)canvas.removeEventListener('dblclick',canvas._sysidDblHandler);
+    canvas._sysidDblHandler=()=>{if(charts.sysidChart&&charts.sysidChart.resetZoom)charts.sysidChart.resetZoom();};
+    canvas.addEventListener('dblclick',canvas._sysidDblHandler);
+  }
 }
 document.getElementById('runSysIdBtn').onclick=runSysId;
+
+// System ID window sliders
+(function(){
+  const ts=document.getElementById('sid_ts');
+  const sp=document.getElementById('sid_span');
+  const ms=document.getElementById('sid_mass');
+  ts.oninput=()=>updateSysIdSliders();
+  sp.oninput=()=>updateSysIdSliders();
+  ms.oninput=()=>updateSysIdSliders();
+  updateSysIdSliders();
+})();
 
 // ============================================================
 // EDUCATIONAL DEMOS

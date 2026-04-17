@@ -8,3 +8,6 @@
 !tp-guide.js
 !img/
 !img/**
+!lib/
+!lib/katex/
+!lib/katex/**

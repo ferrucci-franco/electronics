@@ -1,5 +1,6 @@
 (function(){
   const TP_STORAGE_KEY='pendulum_tp_progress_v1';
+  const TP_REVIEW_MODE=true;
   const TP_STEPS=[
     {
       id:'real-first',
@@ -250,7 +251,7 @@ end PeriodMeter;`,
     document.getElementById('tpProgressCount').textContent=`${count} / ${TP_STEPS.length}`;
     document.getElementById('tpProgressFill').style.width=`${Math.round(count/TP_STEPS.length*100)}%`;
     list.innerHTML=TP_STEPS.map((s,i)=>{
-      const locked=i>tpState.unlocked;
+      const locked=!TP_REVIEW_MODE&&i>tpState.unlocked;
       const done=!!tpState.completed[s.id];
       const cls=['tp-step-btn',i===tpState.active?'active':'',done?'done':''].filter(Boolean).join(' ');
       const status=done?'OK':locked?'LOCK':'';
@@ -329,7 +330,7 @@ end PeriodMeter;`,
     renderTpQuestions(step);
     renderTpResources(step);
     document.getElementById('tpPrevBtn').disabled=tpState.active===0;
-    document.getElementById('tpNextBtn').disabled=tpState.active>=tpState.unlocked||tpState.active===TP_STEPS.length-1;
+    document.getElementById('tpNextBtn').disabled=(!TP_REVIEW_MODE&&tpState.active>=tpState.unlocked)||tpState.active===TP_STEPS.length-1;
     document.getElementById('tpFeedback').className='tp-feedback';
     document.getElementById('tpFeedback').textContent='';
     renderTpSidebar();
@@ -381,7 +382,7 @@ end PeriodMeter;`,
     renderTp();
     document.getElementById('tpValidateBtn').addEventListener('click',validateTpStep);
     document.getElementById('tpPrevBtn').addEventListener('click',()=>{tpState.active=Math.max(0,tpState.active-1);saveTpState();renderTp();});
-    document.getElementById('tpNextBtn').addEventListener('click',()=>{tpState.active=Math.min(tpState.unlocked,tpState.active+1);saveTpState();renderTp();});
+    document.getElementById('tpNextBtn').addEventListener('click',()=>{tpState.active=TP_REVIEW_MODE?Math.min(TP_STEPS.length-1,tpState.active+1):Math.min(tpState.unlocked,tpState.active+1);saveTpState();renderTp();});
     document.getElementById('tpResetBtn').addEventListener('click',()=>{
       if(!confirm('Reinitialiser le parcours TP sur ce navigateur ?'))return;
       localStorage.removeItem(TP_STORAGE_KEY);
