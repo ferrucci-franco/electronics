@@ -1,0 +1,10 @@
+# Ignore all as default
+*
+
+# Keep the pendulum app source files.
+!.gitignore
+!index.html
+!tp-guide.css
+!tp-guide.js
+!img/
+!img/**
