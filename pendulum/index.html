@@ -1,9 +1,12 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="fr" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pendulum Analyser – From Galileo to Arduino</title>
+<title>Analyseur de pendule - De Galilée à Arduino</title>
+<script>
+  document.documentElement.setAttribute('data-theme',new Date().getHours()>=7&&new Date().getHours()<18?'light':'dark');
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="lib/katex/katex.min.css">
@@ -34,7 +37,7 @@
   --font-ui:   'Outfit', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
   --r-sm: 6px; --r-md: 10px; --r-lg: 14px;
-  --tab-h: 48px; --sidebar-w: 290px;
+  --tab-h: 54px; --sidebar-w: 290px;
   --tr: 0.18s ease;
 }
 [data-theme="light"] {
@@ -59,20 +62,20 @@ body{font-family:var(--font-ui);font-size:15px;background:var(--bg);color:var(--
 .app{display:flex;flex-direction:column;height:100vh}
 
 /* TOPBAR */
-.topbar{display:flex;align-items:center;height:var(--tab-h);padding:0 16px;background:var(--surface);border-bottom:1px solid var(--border);gap:10px;flex-shrink:0;z-index:10}
-.logo{font-size:13px;font-weight:600;color:var(--text2);letter-spacing:.02em;white-space:nowrap}
+.topbar{display:flex;align-items:center;height:var(--tab-h);padding:0 18px;background:var(--surface);border-bottom:1px solid var(--border);gap:12px;flex-shrink:0;z-index:10}
+.logo{font-size:14px;font-weight:600;color:var(--text2);letter-spacing:.02em;white-space:nowrap}
 .logo span{color:var(--accent)}
 .tabs{display:flex;gap:2px;flex:1;justify-content:center}
-.tab-btn{padding:0 14px;height:36px;border:none;background:transparent;color:var(--text2);font:500 13px var(--font-ui);cursor:pointer;border-radius:var(--r-sm);transition:background var(--tr),color var(--tr);white-space:nowrap}
+.tab-btn{padding:0 16px;height:40px;border:none;background:transparent;color:var(--text2);font:500 14px var(--font-ui);cursor:pointer;border-radius:var(--r-sm);transition:background var(--tr),color var(--tr);white-space:nowrap}
 .tab-btn:hover{background:var(--accent-bg);color:var(--text)}
 .tab-btn.active{background:var(--accent-bg);color:var(--accent);font-weight:600}
-.tab-num{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:var(--border2);color:var(--text2);font-size:11px;margin-right:5px;transition:background var(--tr),color var(--tr)}
+.tab-num{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--border2);color:var(--text2);font-size:12px;margin-right:6px;transition:background var(--tr),color var(--tr)}
 .tab-btn.active .tab-num{background:var(--accent);color:#fff}
-.topbar-actions{display:flex;gap:8px}
-.icon-btn{width:32px;height:32px;border:1px solid var(--border);background:var(--card);border-radius:var(--r-sm);cursor:pointer;font-size:14px;color:var(--text);display:flex;align-items:center;justify-content:center;transition:all var(--tr)}
+.topbar-actions{display:flex;gap:9px}
+.icon-btn{width:36px;height:36px;border:1px solid var(--border);background:var(--card);border-radius:var(--r-sm);cursor:pointer;font-size:15px;color:var(--text);display:flex;align-items:center;justify-content:center;transition:all var(--tr)}
 .icon-btn:hover{border-color:var(--border2)}
 .language-selector{display:flex;gap:4px;background:var(--border);padding:4px;border-radius:8px}
-.lang-btn{height:26px;padding:0 11px;border:none;background:transparent;color:var(--text2);cursor:pointer;font:600 12px var(--font-ui);border-radius:6px;transition:background var(--tr),color var(--tr),box-shadow var(--tr)}
+.lang-btn{height:30px;padding:0 12px;border:none;background:transparent;color:var(--text2);cursor:pointer;font:600 13px var(--font-ui);border-radius:6px;transition:background var(--tr),color var(--tr),box-shadow var(--tr)}
 .lang-btn:hover{background:var(--card);color:var(--text)}
 .lang-btn.active{background:var(--accent);color:#fff;box-shadow:0 2px 4px rgba(0,0,0,.22)}
 
@@ -158,6 +161,7 @@ input[type="number"],input[type="text"]{width:100%;padding:6px 8px;background:va
 input[type="number"]:focus,input[type="text"]:focus{border-color:var(--accent)}
 select{width:100%;padding:7px 9px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);font:13px var(--font-ui);cursor:pointer;outline:none}
 select:focus{border-color:var(--accent)}
+button,label,.btn,.tab-btn,.icon-btn,.lang-btn,.src-btn,.spd-btn,.psrc-tab,.pan-btn,.checkbox-container,.form-label,.val-badge,.status-badge,input[type="range"],input[type="checkbox"],select{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .btn{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--card);color:var(--text);font:500 13px var(--font-ui);cursor:pointer;transition:all var(--tr);text-align:center}
 .btn:hover:not(:disabled){border-color:var(--border2);background:var(--border)}
 .btn:disabled{opacity:.35;cursor:not-allowed}
@@ -230,6 +234,12 @@ select:focus{border-color:var(--accent)}
 /* MISC */
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .text-muted{color:var(--text2);font-size:12px}
+.csv-series-list{display:flex;flex-direction:column;gap:5px;margin-top:6px}
+.csv-series-item{display:grid;grid-template-columns:1fr 24px;align-items:center;gap:6px;border:1px solid var(--border);background:var(--card);color:var(--text2);border-radius:var(--r-sm);padding:6px 6px 6px 9px;font-size:12px}
+.csv-series-item.active{border-color:var(--accent);background:var(--accent-bg);color:var(--text)}
+.csv-series-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.csv-series-close{width:22px;height:22px;border:0;background:transparent;color:var(--text3);border-radius:6px;cursor:pointer;font-size:13px;line-height:1}
+.csv-series-close:hover{background:rgba(239,68,68,.12);color:var(--danger)}
 .no-data{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text3);font-size:13px;gap:6px}
 .no-data .nd-icon{font-size:28px}
 .spinner-wrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(8,14,26,.7);border-radius:var(--r-lg);z-index:5}
@@ -264,17 +274,17 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
 
   <!-- ===== TOPBAR ===== -->
   <header class="topbar">
-    <div class="logo">⚗ <span id="t_appname">Pendulum Analyser</span></div>
+    <div class="logo">⚗ <span id="t_appname">Analyseur de Pendule</span></div>
     <nav class="tabs">
       <button class="tab-btn active" data-tab="intro"><span class="tab-num">1</span><span id="t_tab1">Introduction</span></button>
-      <button class="tab-btn" data-tab="tp"><span class="tab-num">TP</span><span>Parcours TP</span></button>
-      <button class="tab-btn" data-tab="acq"><span class="tab-num">2</span><span id="t_tab2">Acquisition & Sim.</span></button>
-      <button class="tab-btn" data-tab="post"><span class="tab-num">3</span><span id="t_tab3">Post-processing</span></button>
+      <button class="tab-btn" data-tab="tp"><span class="tab-num">TP</span><span id="t_tab_tp">Guide TP</span></button>
+      <button class="tab-btn" data-tab="acq"><span class="tab-num">2</span><span id="t_tab2">Acquisition et simulation</span></button>
+      <button class="tab-btn" data-tab="post"><span class="tab-num">3</span><span id="t_tab3">Post-traitement</span></button>
     </nav>
     <div class="topbar-actions">
       <div class="language-selector" aria-label="Language selector">
-        <button class="lang-btn active" data-lang="EN">EN</button>
-        <button class="lang-btn" data-lang="FR">FR</button>
+        <button class="lang-btn" data-lang="EN">EN</button>
+        <button class="lang-btn active" data-lang="FR">FR</button>
         <button class="lang-btn" data-lang="ES">ES</button>
       </div>
       <button class="icon-btn" id="themeBtn" title="Toggle theme">🌓</button>
@@ -289,13 +299,13 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
 
         <!-- HERO -->
         <div class="intro-hero">
-          <h1 id="t_intro_h1">From <em>Galileo Galilei</em> to Arduino</h1>
-          <p id="t_intro_sub">A complete toolkit for pendulum dynamics: acquisition, simulation, and analysis.</p>
+          <h1 id="t_intro_h1">De <em>Galilée</em> à Arduino</h1>
+          <p id="t_intro_sub">Un parcours complet autour de la dynamique du pendule : acquisition, simulation et analyse.</p>
         </div>
 
         <!-- HISTORICAL CONTEXT -->
         <div class="info-card">
-          <h3 id="t_intro_ctx_h">Historical context</h3>
+          <h3 id="t_intro_ctx_h">Contexte historique</h3>
 
           <div class="hist-sub-card">
             <div class="hist-imgs">
@@ -348,29 +358,14 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
 
         <!-- EXPERIMENTAL SETUP -->
         <div class="info-card">
-          <h3 id="t_intro_sys_h">Experimental setup</h3>
+          <h3 id="t_intro_sys_h">Dispositif expérimental</h3>
           <div style="background:var(--border);border-radius:var(--r-md);height:200px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;color:var(--text3);font-size:13px">
-            [GIF / photo — coming soon]
+            [GIF / photo - bientôt]
           </div>
           <p id="t_hist_sys1" class="hist-p" style="margin-bottom:10px"></p>
           <p id="t_hist_sys2" class="hist-p" style="margin-bottom:10px"></p>
           <p id="t_hist_sys3" class="hist-p" style="margin-bottom:10px"></p>
           <p id="t_hist_sys4" class="hist-p"></p>
-        </div>
-
-        <!-- OBJECTIVES -->
-        <div class="info-card">
-          <h3 id="t_intro_obj_h">Learning objectives</h3>
-          <p id="t_hist_obj" class="hist-p"></p>
-        </div>
-
-        <!-- HOW TO USE -->
-        <div class="info-card">
-          <h3 id="t_intro_guide_h">How to use this app</h3>
-          <ol class="guide-list">
-            <li><span class="step-num">2</span><div><strong id="t_g2h">Acquisition &amp; Simulation</strong><span id="t_g2d"> — Connect Arduino via serial port, or choose parameters and launch the simulator (×1 to ×10 speed). Data is stored internally for post-processing.</span></div></li>
-            <li><span class="step-num">3</span><div><strong id="t_g3h">Post-processing</strong><span id="t_g3d"> — Select data source (hardware, simulation, or CSV file) then run: sinusoidal fit, period tracking, phase portrait, or system identification.</span></div></li>
-          </ol>
         </div>
 
       </div>
@@ -382,37 +377,39 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
         <aside class="tp-sidebar">
           <div class="tp-progress-box">
             <div class="tp-progress-top">
-              <div class="tp-progress-title">Progression du TP</div>
+              <div class="tp-progress-title" id="tpProgressTitle">Progression du TP</div>
               <div class="tp-progress-count" id="tpProgressCount">0 / 0</div>
             </div>
             <div class="tp-progress-bar"><div class="tp-progress-fill" id="tpProgressFill"></div></div>
           </div>
           <div class="tp-step-list" id="tpStepList"></div>
-          <button class="btn btn-sm" id="tpResetBtn" type="button">Reinitialiser</button>
+          <button class="btn btn-sm" id="tpResetBtn" type="button">Réinitialiser</button>
         </aside>
 
         <main class="tp-main">
           <div class="tp-hero">
             <div>
-              <div class="tp-kicker" id="tpKicker">Parcours autonome</div>
+              <div class="tp-kicker" id="tpKicker">TP guidé</div>
               <h2 class="tp-title" id="tpTitle">TP pendule</h2>
-              <p class="tp-subtitle" id="tpSubtitle">Chaque etape debloque la suivante. Repondez, validez, puis utilisez les outils de mesure, de simulation et d'analyse.</p>
+              <p class="tp-subtitle" id="tpSubtitle">Chaque étape débloque la suivante. Répondez, validez, puis utilisez les outils de mesure, de simulation et d'analyse.</p>
             </div>
             <div class="tp-actions">
-              <button class="btn btn-sm" id="tpExportBtn" type="button">Exporter les reponses</button>
+              <button class="btn btn-sm" id="tpExportBtn" type="button">Exporter les réponses</button>
               <button class="btn btn-sm btn-primary" id="tpGoAcqBtn" type="button">Aller aux mesures</button>
             </div>
           </div>
 
+          <section class="tp-card" id="tpIntro"></section>
           <section class="tp-card" id="tpInstructions"></section>
-          <section class="tp-card" id="tpQuestions"></section>
           <section class="tp-card" id="tpResources"></section>
+          <section class="tp-card" id="tpQuestions"></section>
+          <section class="tp-card" id="tpChecklist"></section>
 
           <div class="tp-feedback" id="tpFeedback"></div>
           <div class="tp-nav">
-            <button class="btn btn-sm" id="tpPrevBtn" type="button">Etape precedente</button>
-            <button class="btn btn-sm btn-primary" id="tpValidateBtn" type="button">Valider l'etape</button>
-            <button class="btn btn-sm" id="tpNextBtn" type="button">Etape suivante</button>
+            <button class="btn btn-sm" id="tpPrevBtn" type="button">Étape précédente</button>
+            <button class="btn btn-sm btn-primary" id="tpValidateBtn" type="button">Valider l'étape</button>
+            <button class="btn btn-sm" id="tpNextBtn" type="button">Étape suivante</button>
           </div>
         </main>
       </div>
@@ -439,7 +436,7 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
             <div class="sb-section">
               <div class="sec-label" id="t_serial_lbl">Serial port (Arduino)</div>
               <button class="btn btn-primary" id="connectBtn">⚡ <span id="t_connect">Connect</span></button>
-              <button class="btn btn-danger" id="disconnectBtn" disabled>✕ <span id="t_disconnect">Disconnect</span></button>
+              <button class="btn btn-danger" id="disconnectBtn" disabled>✕ <span id="t_disconnect">Stop &amp; Disconnect</span></button>
               <div class="status-badge" id="serialStatus">—</div>
             </div>
           </div>
@@ -584,7 +581,8 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
               <button class="psrc-tab" data-ps="sim" id="ps_sim">⚙ <span id="t_ps_sim">Simulation</span></button>
               <button class="psrc-tab" data-ps="csv" id="ps_csv">📂 <span id="t_ps_csv">Load CSV</span></button>
             </div>
-            <input type="file" id="csvFile" accept=".csv" style="display:none">
+            <input type="file" id="csvFile" accept=".csv" multiple style="display:none">
+            <div class="csv-series-list" id="csvSeriesList"></div>
             <span class="text-muted" id="postInfo">—</span>
           </div>
 
@@ -593,14 +591,17 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
           <!-- Analysis selector -->
           <div class="sb-section">
             <div class="post-bar-label" id="t_post_analysis">Analysis</div>
-            <button class="pan-btn active" data-panel="fit">
-              <span id="t_a1_short">Sinusoidal fit</span>
+            <button class="pan-btn active" data-panel="data">
+              <span id="t_data_short">Data</span>
             </button>
             <button class="pan-btn" data-panel="period">
               <span id="t_a2_short">Period vs. time</span>
             </button>
             <button class="pan-btn" data-panel="phase">
               <span id="t_a3_short">Phase portrait</span>
+            </button>
+            <button class="pan-btn" data-panel="fit">
+              <span id="t_a1_short">Sinusoidal fit</span>
             </button>
             <button class="pan-btn" data-panel="sysid">
               <span id="t_a4_short">System ID</span>
@@ -619,8 +620,21 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
         <!-- ── MAIN AREA ── -->
         <div class="post-main">
 
+          <!-- DATA PREVIEW -->
+          <div class="post-panel active" id="panel-data">
+            <div class="an-header">
+              <div class="an-title"><span id="t_data_title">Selected data</span><span id="encBadge_data" class="enc-badge" style="display:none"></span></div>
+            </div>
+            <div class="post-scroll" style="overflow-y:hidden">
+              <div class="an-chart-wrap" style="height:calc(100vh - 240px);min-height:360px;position:relative">
+                <canvas id="postDataChart"></canvas>
+              </div>
+              <div style="text-align:center;font-size:12px;color:var(--text3);margin-top:6px" id="t_data_zoom_hint">🖱 Scroll/Drag = zoom · Ctrl+drag = pan · Dbl-click = reset</div>
+            </div>
+          </div>
+
           <!-- ① SINUSOIDAL FIT -->
-          <div class="post-panel active" id="panel-fit">
+          <div class="post-panel" id="panel-fit">
             <div class="an-header">
               <div class="an-title"><span id="t_a1">Sinusoidal fit with exponential decay</span><span id="encBadge_fit" class="enc-badge" style="display:none"></span></div>
               <div style="display:flex;gap:6px;align-items:center">
@@ -654,7 +668,7 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
                     <span id="t_fit_zc">Trim to 1st zero crossing</span>
                   </label>
                   <label style="display:flex;align-items:center;gap:6px;color:var(--text2);cursor:pointer;white-space:nowrap">
-                    <input type="checkbox" id="fitShowAll" style="width:14px;height:14px;cursor:pointer">
+                    <input type="checkbox" id="fitShowAll" checked style="width:14px;height:14px;cursor:pointer">
                     <span id="t_fit_showall">Show full signal</span>
                   </label>
                 </div>
@@ -1044,13 +1058,14 @@ const LANG={
 EN:{
   appname:'Pendulum Analyser',tab1:'Introduction',tab2:'Acquisition & Simulation',tab3:'Post-processing',tab4:'Education',
   src_lbl:'Data source',hw:'Hardware',sim_s:'Simulation',
-  serial_lbl:'Serial port (Arduino)',connect:'Connect',disconnect:'Disconnect',
+  serial_lbl:'Serial port (Arduino)',connect:'Connect',disconnect:'Stop & Disconnect',
   params_lbl:'Pendulum parameters',L:'Length L',m:'Mass m',b:'Damping',
   ic_lbl:'Initial conditions',th0:'θ₀ initial angle',om0:'ω₀ initial speed',
   spd_lbl:'Simulation speed',ctl_lbl:'Controls',clear:'Clear',save:'Save CSV',
   angle_lbl:'Angle',pts_lbl:'Points',chart_title:'Angle θ(t)',pend_title:'Animation',
+  remove_csv:'Remove CSV',no_csv_selected:'— no CSV selected —',no_data_short:'— no data —',
   start_sim:'Start',pause_sim:'Pause',resume_sim:'Resume',stop_sim:'Stop',
-  post_src:'Data source',post_analysis:'Analysis',a1_short:'Sinusoidal fit',a2_short:'Period vs. time',a3_short:'Phase portrait',a4_short:'System ID',ps_acq:'Acquisition',ps_sim:'Simulation',ps_csv:'Load CSV',run_all:'Run all',
+  post_src:'Data source',post_analysis:'Analysis',data_short:'Data',data_title:'Selected data',data_zoom_hint:'🖱 Scroll/Drag = zoom · Ctrl+drag = pan · Dbl-click = reset',a1_short:'Sinusoidal fit',a2_short:'Period vs. time',a3_short:'Phase portrait',a4_short:'System ID',ps_acq:'Acquisition',ps_sim:'Simulation',ps_csv:'Load CSV',run_all:'Run all',
   a1:'Sinusoidal fit with exponential decay',fit_ts:'T<sub>start</sub> (s)',fit_np:'N periods',
   fit_zc:'Trim to first zero crossing',fit_showall:'Show full signal',
   fit_eq_desc:'<strong>θ(t)</strong> is the pendulum angle [°] as a function of time. We fit this damped sinusoidal model over the selected window: <strong>A</strong> = initial amplitude [°], <strong>δ</strong> = exponential decay rate [s⁻¹], <strong>ω = 2π/T</strong> = angular frequency [rad/s], <strong>f = 1/T</strong> = oscillation frequency [Hz], <strong>φ</strong> = phase offset [rad], <strong>B</strong> = DC offset [°]. Dashed lines = decay envelope ±A·e<sup>−δt</sup>.',
@@ -1087,22 +1102,12 @@ EN:{
   hist_p3:'<strong>Isaac Newton</strong> used the pendulum as one of his most powerful instruments for studying gravity. Since T&nbsp;=&nbsp;2π√(L/g), a pendulum of known length allows direct measurement of the local gravitational acceleration <em>g</em>. Newton understood that <em>g</em> varies slightly over Earth\'s surface — less at the equator than at the poles — and used pendulum measurements at different latitudes to confirm that Earth is not a perfect sphere but an oblate spheroid. The pendulum thus became the first instrument of <strong>physical geodesy</strong>. The mathematical details are set out in his <a href=\'https://archive.org/details/1686-newton-principia-1ed\' target=\'_blank\'><em>Philosophiae Naturalis Principia Mathematica</em></a> (1687).',
   hist_p4:'In 1851, <strong>Léon Foucault</strong> hung a pendulum 67 metres long beneath the dome of the Panthéon in Paris. The plane of oscillation slowly rotated before the public\'s eyes: not because the pendulum was moving, but because the Earth was rotating beneath it. It was the first direct and visible demonstration of Earth\'s rotation — no telescope, no calculations, just a pendulum and the patience to watch. The event provoked a collective emotion hard to imagine today.',
   hist_p5:'Four centuries after Galileo, the pendulum remains an irreplaceable reference system. In <strong>seismology</strong>, inertial-mass seismographs are essentially pendulums. The <strong>MEMS accelerometers</strong> in your smartphone — the ones that detect screen orientation — are microscopic versions of the same principle: a suspended mass whose position is measured electrically. In the laboratory, the physical pendulum remains the ideal system for learning <strong>system identification</strong>: its equations are known, its behaviour is rich (non-linearity, damping, initial conditions), and today we can measure it with a rotary encoder and an Arduino in real time. This application is precisely that bridge: from Galileo\'s intuition to digital acquisition.',
-  intro_obj_h:'Learning objectives',obj1:'Acquire real pendulum data via serial port (Arduino) or via the built-in ODE simulator.',
-  obj2:'Analyse oscillatory signals: sinusoidal fitting, period tracking, phase portrait.',
-  obj3:'Identify physical parameters (damping, mass, length) from measurement data.',
-  obj4:'Compare linear approximation vs. exact non-linear model vs. real experiment.',
-
   intro_sys_h:'Experimental setup',
   hist_sys1:'The device you will use is a <strong>physical pendulum</strong> built around a 6 mm stainless steel threaded rod. Unlike the idealised simple pendulum — a point mass on a massless string — this pendulum is a real rigid body: the rod has distributed mass, and the motion depends not only on where the mass is but on how mass is distributed along the axis.',
   hist_sys2:'The <strong>sliding mass</strong> can be positioned anywhere along the rod. Moving it toward or away from the pivot simultaneously changes the effective distance to the axis and the moment of inertia of the system. This lets you study how the oscillation period varies with geometry — and verify whether the theoretical model correctly predicts that change.',
   hist_sys3:'The <strong>pivot axis</strong> is directly coupled to a <strong>rotary encoder</strong> with 1000 pulses per revolution. Thanks to quadrature counting, the system distinguishes 4000 positions per revolution, giving an angular resolution of <strong>0.09°</strong>. Every 20 ms, an <strong>Arduino</strong> microcontroller converts those pulses into an angle and a timestamp, and sends that data via USB to this application.',
   hist_sys4:'To study <strong>aerodynamic damping</strong>, the device includes an interchangeable accessory: two plastic pieces that hold a sheet of paper forming a <strong>sail</strong>. You decide the size by cutting the sheet. A larger surface area increases air resistance and makes the pendulum stop faster — without adding significant mass to the system. The effect is directly visible in the decay curve of the recorded data.',
-  hist_obj:'This application guides you, step by step, along the path from measurement to understanding. You will start by acquiring real data from the pendulum — or, if you do not have the hardware available, from a simulation that reproduces the same equations of motion. You will then analyse that signal: what is the exact period? How does it evolve as the amplitude decreases? What shape does the system trajectory trace in the angle–angular velocity space? The final step — and perhaps the most interesting — is to compare the theoretical model with the real measurement, and automatically adjust the model parameters so that both match as closely as possible. That process of finding the parameters of a physical system from its data is called <strong>system identification</strong>, and it is a fundamental tool in engineering and experimental physics. At the end, you will be able to answer a concrete question: to what extent does the mathematical model of the pendulum actually describe what happens in the laboratory?',
   autoscale:'Auto Scale XY ✓',showraw:'Show raw data in console (F12)',showpendulum:'Show pendulum animation',pts_info:'🖱 Scroll/Drag = zoom · Ctrl+drag = pan · Dbl-click = reset  |  📱 Pinch = zoom',
-  intro_guide_h:'How to use this app',
-  g2h:'Acquisition & Simulation',g2d:' — Connect Arduino or run the built-in simulator (×1–×10). Data is stored for post-processing.',
-  g3h:'Post-processing',g3d:' — Select data source and run any of the 4 analyses: sinusoidal fit, period, phase, Sys-ID.',
-  g4h:'Education',g4d:' — Interactive demos: linearization error, damping regimes, Nelder-Mead concept, model comparison.',
   no_data:'No data for the selected source.<br>→ Check that the data source (above) matches where your data came from: <em>Acquisition</em> for Arduino, <em>Simulation</em> for the simulator.<br>→ If you have no data yet, go to Tab 2 to connect the Arduino or run the simulator.',
   ax_time:'Time (s)',ax_angle:'Angle (°)',ax_anglet:'Angle θ(t) (°)',ax_period:'Period (s)',ax_theta:'θ (°)',ax_dtheta:'dθ/dt (°/s)',ax_omega:'ω(t) (°/s)',
   enc_pro:'⚙ Encoder simulation',enc_ppr:'Pulses/rev',enc_disp_lbl:'Display:',enc_cont:'Continuous',enc_disc:'Discrete',enc_both:'Cont+Disc',enc_step:'°/step',enc_note:'💡 You can also enable/disable the encoder simulation, or change its parameters, after the simulation ends.',
@@ -1114,13 +1119,14 @@ EN:{
 FR:{
   appname:'Analyseur de Pendule',tab1:'Introduction',tab2:'Acquisition & Simulation',tab3:'Post-traitement',tab4:'Éducation',
   src_lbl:'Source de données',hw:'Matériel',sim_s:'Simulation',
-  serial_lbl:'Port série (Arduino)',connect:'Connecter',disconnect:'Déconnecter',
+  serial_lbl:'Port série (Arduino)',connect:'Connecter',disconnect:'Arrêter et déconnecter',
   params_lbl:'Paramètres du pendule',L:'Longueur L',m:'Masse m',b:'Amortissement',
   ic_lbl:'Conditions initiales',th0:'θ₀ angle initial',om0:'ω₀ vitesse initiale',
   spd_lbl:'Vitesse simulation',ctl_lbl:'Contrôles',clear:'Effacer',save:'Sauvegarder CSV',
   angle_lbl:'Angle',pts_lbl:'Points',chart_title:'Angle θ(t)',pend_title:'Animation',
+  remove_csv:'Supprimer le CSV',no_csv_selected:'— aucun CSV sélectionné —',no_data_short:'— aucune donnée —',
   start_sim:'Démarrer',pause_sim:'Pause',resume_sim:'Reprendre',stop_sim:'Arrêter',
-  post_src:'Source',post_analysis:'Analyse',a1_short:'Ajustement sinus.',a2_short:'Période vs temps',a3_short:'Portrait de phase',a4_short:'Identif. système',ps_acq:'Acquisition',ps_sim:'Simulation',ps_csv:'Charger CSV',run_all:'Tout lancer',
+  post_src:'Source',post_analysis:'Analyse',data_short:'Données',data_title:'Données sélectionnées',data_zoom_hint:'🖱 Scroll/Drag = zoom · Ctrl+drag = pan · Dbl-click = reset',a1_short:'Ajustement sinus.',a2_short:'Période vs temps',a3_short:'Portrait de phase',a4_short:'Identif. système',ps_acq:'Acquisition',ps_sim:'Simulation',ps_csv:'Charger CSV',run_all:'Tout lancer',
   a1:'Ajustement sinusoïdal à décroissance exponentielle',fit_ts:'T<sub>départ</sub> (s)',fit_np:'N périodes',
   fit_zc:'Recouper au 1er passage par zéro',fit_showall:'Afficher signal complet',
   fit_eq_desc:'<strong>θ(t)</strong> est l\'angle du pendule [°] en fonction du temps. Nous ajustons ce modèle sur la fenêtre sélectionnée : <strong>A</strong> = amplitude initiale [°], <strong>δ</strong> = taux de décroissance exponentielle [s⁻¹], <strong>ω = 2π/T</strong> = fréquence angulaire [rad/s], <strong>f = 1/T</strong> = fréquence d\'oscillation [Hz], <strong>φ</strong> = déphasage [rad], <strong>B</strong> = offset continu [°]. Pointillés = enveloppe ±A·e<sup>−δt</sup>.',
@@ -1157,22 +1163,12 @@ FR:{
   hist_p3:'<strong>Isaac Newton</strong> utilisa le pendule comme l\'un de ses instruments les plus puissants pour étudier la gravité. Puisque T&nbsp;=&nbsp;2π√(L/g), un pendule de longueur connue permet de mesurer directement l\'accélération gravitationnelle locale <em>g</em>. Newton comprit que <em>g</em> varie légèrement à la surface de la Terre — plus faible à l\'équateur qu\'aux pôles — et utilisa des mesures de pendules à différentes latitudes pour confirmer que la Terre n\'est pas une sphère parfaite mais un sphéroïde aplati. Le pendule devint ainsi le premier instrument de <strong>géodésie physique</strong>. Les détails mathématiques sont consignés dans ses <a href=\'https://archive.org/details/1686-newton-principia-1ed\' target=\'_blank\'><em>Philosophiae Naturalis Principia Mathematica</em></a> (1687).',
   hist_p4:'En 1851, <strong>Léon Foucault</strong> suspendit un pendule de 67 mètres sous la coupole du Panthéon à Paris. Le plan d\'oscillation tournait lentement devant les yeux du public : non parce que le pendule se déplaçait, mais parce que la Terre tournait sous lui. C\'était la première démonstration directe et visible de la rotation terrestre — sans télescope, sans calculs, rien qu\'un pendule et la patience d\'observer. L\'expérience provoqua une émotion collective difficile à imaginer aujourd\'hui.',
   hist_p5:'Quatre siècles après Galilée, le pendule reste un système de référence irremplaçable. En <strong>sismologie</strong>, les sismographes à masse inertielle sont essentiellement des pendules. Les <strong>accéléromètres MEMS</strong> de votre smartphone — ceux qui détectent l\'orientation de l\'écran — sont des versions microscopiques du même principe : une masse suspendue dont la position est mesurée électriquement. En laboratoire, le pendule physique reste le système idéal pour apprendre l\' <strong>identification de systèmes</strong> : ses équations sont connues, son comportement est riche (non-linéarité, amortissement, conditions initiales), et nous pouvons aujourd\'hui le mesurer avec un codeur rotatif et un Arduino en temps réel. Cette application est précisément ce pont : de l\'intuition de Galilée à l\'acquisition numérique.',
-  intro_obj_h:'Objectifs pédagogiques',obj1:'Acquérir des données réelles via le port série ou via le simulateur ODE intégré.',
-  obj2:'Analyser les signaux oscillatoires : ajustement sinusoïdal, suivi de période, portrait de phase.',
-  obj3:'Identifier les paramètres physiques (amortissement, masse, longueur) depuis les données.',
-  obj4:'Comparer modèles linéaire et non-linéaire avec les expériences réelles.',
-
   intro_sys_h:'Dispositif expérimental',
   hist_sys1:'Le dispositif que vous utiliserez est un <strong>pendule physique</strong> construit autour d\'une tige filetée en acier inoxydable de 6 mm de diamètre. Contrairement au pendule simple idéalisé — une masse ponctuelle suspendue à un fil sans masse — ce pendule est un corps rigide réel : la tige a une masse répartie, et le mouvement dépend non seulement de la position de la masse, mais aussi de la façon dont celle-ci est distribuée le long de l\'axe.',
   hist_sys2:'La <strong>masse coulissante</strong> peut être positionnée en n\'importe quel point de la tige. En la déplaçant vers l\'axe de rotation ou en l\'en éloignant, vous modifiez simultanément la distance effective au pivot et le moment d\'inertie du système. Cela vous permettra d\'étudier comment la période d\'oscillation varie en fonction de la géométrie — et de vérifier si le modèle théorique prédit correctement ce changement.',
   hist_sys3:'L\'<strong>axe de rotation</strong> est directement couplé à un <strong>encodeur rotatif</strong> de 1000 impulsions par tour. Grâce au comptage en quadrature, le système distingue 4000 positions distinctes par tour, ce qui correspond à une résolution angulaire de <strong>0,09°</strong>. Toutes les 20 ms, un microcontrôleur <strong>Arduino</strong> convertit ces impulsions en angle et en instant de temps, et envoie cette donnée via USB vers cette application.',
   hist_sys4:'Pour étudier l\'<strong>amortissement aérodynamique</strong>, le dispositif comprend un accessoire interchangeable : deux pièces plastiques qui maintiennent une feuille de papier formant une <strong>voile</strong>. Vous décidez de la taille en découpant la feuille. Une surface plus grande augmente la résistance de l\'air et fait s\'arrêter le pendule plus rapidement — sans ajouter de masse significative au système. L\'effet est directement observable dans la courbe de décroissance des données enregistrées.',
-  hist_obj:'Cette application vous propose de parcourir, étape par étape, le chemin qui va de la mesure à la compréhension. Vous commencerez par acquérir des données réelles du pendule — ou, si vous ne disposez pas du matériel, avec une simulation qui reproduit les mêmes équations du mouvement. Vous analyserez ensuite ce signal : quel est la période exacte ? Comment évolue-t-elle à mesure que l\'amplitude diminue ? Quelle forme trace la trajectoire du système dans l\'espace angle–vitesse angulaire ? La dernière étape — et peut-être la plus intéressante — consiste à comparer le modèle théorique avec la mesure réelle, et à ajuster automatiquement les paramètres du modèle pour que les deux coïncident le mieux possible. Ce processus de détermination des paramètres d\'un système physique à partir de ses données s\'appelle l\'<strong>identification de systèmes</strong>, et c\'est un outil fondamental en ingénierie et en physique expérimentale. À la fin, vous serez en mesure de répondre à une question concrète : dans quelle mesure le modèle mathématique du pendule décrit-il réellement ce qui se passe en laboratoire ?',
   autoscale:'Échelle Auto XY ✓',showraw:'Données brutes en console (F12)',showpendulum:'Afficher animation du pendule',pts_info:'🖱 Scroll/Glisser = zoom · Ctrl+glisser = pan · Dbl-clic = réinit  |  📱 Pincer = zoom',
-  intro_guide_h:'Comment utiliser cette application',
-  g2h:'Acquisition & Simulation',g2d:' — Connectez l\'Arduino ou lancez le simulateur (×1–×10). Les données sont stockées.',
-  g3h:'Post-traitement',g3d:' — Sélectionnez la source et lancez les 4 analyses disponibles.',
-  g4h:'Éducation',g4d:' — Démos : linéarisation, régimes d\'amortissement, Sys-ID, comparaison de modèles.',
   no_data:'Aucune donnée pour la source sélectionnée.<br>→ Vérifiez que la source de données (ci-dessus) correspond à l\'origine : <em>Acquisition</em> pour l\'Arduino, <em>Simulation</em> pour le simulateur.<br>→ Si vous n\'avez pas encore de données, allez à l\'onglet 2 pour acquérir ou simuler.',
   ax_time:'Temps (s)',ax_angle:'Angle (°)',ax_anglet:'Angle θ(t) (°)',ax_period:'Période (s)',ax_theta:'θ (°)',ax_dtheta:'dθ/dt (°/s)',ax_omega:'ω(t) (°/s)',
   enc_pro:'⚙ Simulation encodeur',enc_ppr:'Impuls./tour',enc_disp_lbl:'Affichage :',enc_cont:'Continu',enc_disc:'Discret',enc_both:'Cont+Disc',enc_step:'°/pas',enc_note:'💡 Vous pouvez aussi activer/désactiver la simulation d\'encodeur, ou modifier ses paramètres, après la fin de la simulation.',
@@ -1184,13 +1180,14 @@ FR:{
 ES:{
   appname:'Analizador de Péndulo',tab1:'Introducción',tab2:'Adquisición & Simulación',tab3:'Post-procesamiento',tab4:'Educativo',
   src_lbl:'Fuente de datos',hw:'Hardware',sim_s:'Simulación',
-  serial_lbl:'Puerto serie (Arduino)',connect:'Conectar',disconnect:'Desconectar',
+  serial_lbl:'Puerto serie (Arduino)',connect:'Conectar',disconnect:'Detener y desconectar',
   params_lbl:'Parámetros del péndulo',L:'Longitud L',m:'Masa m',b:'Amortiguamiento',
   ic_lbl:'Condiciones iniciales',th0:'θ₀ ángulo inicial',om0:'ω₀ velocidad inicial',
   spd_lbl:'Velocidad simulación',ctl_lbl:'Controles',clear:'Limpiar',save:'Guardar CSV',
   angle_lbl:'Ángulo',pts_lbl:'Puntos',chart_title:'Ángulo θ(t)',pend_title:'Animación',
+  remove_csv:'Eliminar CSV',no_csv_selected:'— ningún CSV seleccionado —',no_data_short:'— sin datos —',
   start_sim:'Iniciar',pause_sim:'Pausar',resume_sim:'Reanudar',stop_sim:'Detener',
-  post_src:'Fuente de datos',post_analysis:'Análisis',a1_short:'Ajuste sinusoidal',a2_short:'Período vs tiempo',a3_short:'Diagrama de fase',a4_short:'Identif. sistema',ps_acq:'Adquisición',ps_sim:'Simulación',ps_csv:'Cargar CSV',run_all:'Ejecutar todo',
+  post_src:'Fuente de datos',post_analysis:'Análisis',data_short:'Datos',data_title:'Datos seleccionados',data_zoom_hint:'🖱 Scroll/Drag = zoom · Ctrl+drag = pan · Dbl-click = reset',a1_short:'Ajuste sinusoidal',a2_short:'Período vs tiempo',a3_short:'Diagrama de fase',a4_short:'Identif. sistema',ps_acq:'Adquisición',ps_sim:'Simulación',ps_csv:'Cargar CSV',run_all:'Ejecutar todo',
   a1:'Ajuste sinusoidal con decaimiento exponencial',fit_ts:'T<sub>inicio</sub> (s)',fit_np:'N períodos',
   fit_zc:'Recortar al primer cruce por cero',fit_showall:'Mostrar señal completa',
   fit_eq_desc:'<strong>θ(t)</strong> es el ángulo del péndulo [°] en función del tiempo. Ajustamos este modelo sinusoidal amortiguado en la ventana seleccionada: <strong>A</strong> = amplitud inicial [°], <strong>δ</strong> = tasa de decaimiento exponencial [s⁻¹], <strong>ω = 2π/T</strong> = frecuencia angular [rad/s], <strong>f = 1/T</strong> = frecuencia de oscilación [Hz], <strong>φ</strong> = desfase [rad], <strong>B</strong> = offset DC [°]. Líneas de puntos = envolvente ±A·e<sup>−δt</sup>.',
@@ -1227,22 +1224,12 @@ ES:{
   hist_p3:'<strong>Isaac Newton</strong> utilizó el péndulo como uno de sus instrumentos más poderosos para estudiar la gravedad. Dado que T&nbsp;=&nbsp;2π√(L/g), un péndulo de longitud conocida permite medir directamente la aceleración gravitacional local <em>g</em>. Newton comprendió que <em>g</em> varía ligeramente sobre la superficie terrestre — es menor en el ecuador que en los polos — y utilizó mediciones de péndulos en distintas latitudes para confirmar que la Tierra no es una esfera perfecta sino un esferoide achatado. El péndulo se convirtió así en el primer instrumento de <strong>geodesia física</strong>. Los detalles matemáticos quedaron consignados en sus <a href=\'https://archive.org/details/1686-newton-principia-1ed\' target=\'_blank\'><em>Philosophiae Naturalis Principia Mathematica</em></a> (1687).',
   hist_p4:'En 1851, <strong>Léon Foucault</strong> colgó un péndulo de 67 metros bajo la cúpula del Panteón de París. El plano de oscilación rotaba lentamente ante los ojos del público: no porque el péndulo se moviera, sino porque la Tierra giraba bajo él. Era la primera demostración directa y visible de la rotación terrestre — sin telescopio, sin cálculos, solo con un péndulo y la paciencia de observar. La experiencia provocó una emoción colectiva difícil de imaginar hoy.',
   hist_p5:'Cuatro siglos después de Galileo, el péndulo sigue siendo un sistema de referencia insustituible. En <strong>sismología</strong>, los sismógrafos de masa inercial son esencialmente péndulos. Los <strong>acelerómetros MEMS</strong> de tu smartphone — esos que detectan la orientación de la pantalla — son versiones microscópicas del mismo principio: una masa suspendida cuya posición se mide eléctricamente. En el laboratorio, el péndulo físico sigue siendo el sistema ideal para aprender <strong>identificación de sistemas</strong>: sus ecuaciones son conocidas, su comportamiento es rico (no linealidad, amortiguamiento, condiciones iniciales), y hoy podemos medirlo con un codificador rotatorio y un Arduino en tiempo real. Esta aplicación es precisamente ese puente: de la intuición de Galileo a la adquisición digital.',
-  intro_obj_h:'Objetivos pedagógicos',obj1:'Adquirir datos reales via puerto serie o mediante el simulador ODE integrado.',
-  obj2:'Analizar señales oscilatorias: ajuste sinusoidal, período, diagrama de fase.',
-  obj3:'Identificar parámetros físicos (amortiguamiento, masa, longitud) desde los datos.',
-  obj4:'Comparar modelos lineal y no-lineal con experimentos reales.',
-
   intro_sys_h:'Sistema experimental',
   hist_sys1:'El dispositivo que utilizarás es un <strong>péndulo físico</strong> construido alrededor de una varilla roscada de acero inoxidable de 6 mm de diámetro. A diferencia del péndulo simple idealizado — una masa puntual colgada de un hilo sin masa — este péndulo es un cuerpo rígido real: la varilla tiene masa distribuida, y el movimiento depende no solo de dónde está la masa sino de cómo está distribuida a lo largo del eje.',
   hist_sys2:'La <strong>masa deslizante</strong> puede posicionarse en cualquier punto de la varilla. Al moverla hacia el eje de rotación o alejándola, cambias simultáneamente la distancia efectiva al pivote y el momento de inercia del sistema. Esto te permitirá estudiar cómo varía el período de oscilación en función de la geometría — y verificar si el modelo teórico predice correctamente ese cambio.',
   hist_sys3:'El <strong>eje de rotación</strong> está acoplado directamente a un <strong>encoder rotatorio</strong> de 1000 pulsos por revolución. Gracias al conteo en cuadratura, el sistema distingue 4000 posiciones distintas por vuelta, lo que equivale a una resolución angular de <strong>0,09°</strong>. Cada 20 ms, un microcontrolador <strong>Arduino</strong> convierte esos pulsos en ángulo e instante de tiempo, y envía ese dato por USB hacia esta aplicación.',
   hist_sys4:'Para estudiar el <strong>amortiguamiento aerodinámico</strong>, el dispositivo incluye un accesorio intercambiable: dos piezas de plástico que sujetan una hoja de papel formando una <strong>vela</strong>. Tú decides el tamaño recortando la hoja. Una superficie mayor aumenta la resistencia del aire y hace que el péndulo se detenga más rápidamente — sin añadir masa significativa al sistema. El efecto es directamente observable en la curva de decaimiento de los datos registrados.',
-  hist_obj:'Esta aplicación te propone recorrer, paso a paso, el camino que va de la medición a la comprensión. Empezarás adquiriendo datos reales del péndulo — o, si no dispones del hardware, con una simulación que reproduce las mismas ecuaciones de movimiento. Luego analizarás esa señal: ¿cuál es el período exacto? ¿Cómo evoluciona a medida que la amplitud disminuye? ¿Qué forma traza la trayectoria del sistema en el espacio ángulo–velocidad angular? El paso final — y quizás el más interesante — consiste en comparar el modelo teórico con la medición real, y ajustar automáticamente los parámetros del modelo para que ambos coincidan lo mejor posible. Ese proceso de encontrar los parámetros de un sistema físico a partir de sus datos se llama <strong>identificación de sistemas</strong>, y es una herramienta fundamental en ingeniería y física experimental. Al final, podrás responder una pregunta concreta: ¿hasta qué punto el modelo matemático del péndulo describe realmente lo que ocurre en el laboratorio?',
   autoscale:'Auto Escala XY ✓',showraw:'Datos brutos en consola (F12)',showpendulum:'Mostrar animación del péndulo',pts_info:'🖱 Scroll/Arrastrar = zoom · Ctrl+arrastrar = pan · Dbl-clic = reiniciar  |  📱 Pellizcar = zoom',
-  intro_guide_h:'Cómo usar esta aplicación',
-  g2h:'Adquisición & Simulación',g2d:' — Conecte el Arduino o use el simulador integrado (×1–×10). Los datos se almacenan.',
-  g3h:'Post-procesamiento',g3d:' — Seleccione la fuente y ejecute los 4 análisis disponibles.',
-  g4h:'Educativo',g4d:' — Demos: linealización, amortiguamiento, Sys-ID, comparación de modelos.',
   no_data:'Sin datos para la fuente seleccionada.<br>→ Verificá que la fuente de datos (arriba) coincida con el origen: <em>Adquisición</em> si usaste el Arduino, <em>Simulación</em> si corriste el simulador.<br>→ Si aún no tenés datos, andá a la pestaña 2 y adquirí o simulá primero.',
   ax_time:'Tiempo (s)',ax_angle:'Ángulo (°)',ax_anglet:'Ángulo θ(t) (°)',ax_period:'Período (s)',ax_theta:'θ (°)',ax_dtheta:'dθ/dt (°/s)',ax_omega:'ω(t) (°/s)',
   enc_pro:'⚙ Simulación encoder',enc_ppr:'Pulsos/rev',enc_disp_lbl:'Visualización:',enc_cont:'Continuo',enc_disc:'Discreto',enc_both:'Cont+Disc',enc_step:'°/paso',enc_note:'💡 También podés habilitar/deshabilitar la simulación del encoder, o cambiar sus parámetros, luego de finalizada la simulación.',
@@ -1253,7 +1240,7 @@ ES:{
 }
 };
 
-let curLang='EN';
+let curLang='FR';
 function setLang(l){
   curLang=l;
   document.documentElement.lang=l.toLowerCase();
@@ -1261,7 +1248,7 @@ function setLang(l){
     btn.classList.toggle('active',btn.dataset.lang===l);
   });
   const t=LANG[l]||LANG.EN;
-  const HTML_KEYS=/^hist_p|^hist_sys|^hist_obj|^pts_info|^fit_eq_desc|^fit_r2_note|^fit_zoom_hint|^fit_ts|^per_intro|^per_ti|^sid_|^sysid_/;
+  const HTML_KEYS=/^hist_p|^hist_sys|^pts_info|^fit_eq_desc|^fit_r2_note|^fit_zoom_hint|^fit_ts|^per_intro|^per_ti|^sid_|^sysid_/;
   for(const[k,v]of Object.entries(t)){
     const el=document.getElementById('t_'+k);
     if(!el)continue;
@@ -1280,6 +1267,9 @@ function setLang(l){
   const resLbl=document.getElementById('enc_res_lbl');
   if(resLbl){const step=(LANG[l]||LANG.EN).enc_step||'°/step';resLbl.textContent='→ '+encRes().toFixed(2)+step;}
   updateEncoderBadges();
+  renderCsvSeriesList();
+  updatePostInfo();
+  if(window.setTpGuideLanguage)window.setTpGuideLanguage(l);
 }
 // Quick i18n lookup helper
 function gL(key){ return (LANG[curLang]||LANG.EN)[key]||key; }
@@ -1712,7 +1702,11 @@ function showToast(msg,duration=6000){
 // ============================================================
 // THEME
 // ============================================================
-let curTheme='light';
+function preferredThemeByClock(){
+  const hour=new Date().getHours();
+  return hour>=7&&hour<18?'light':'dark';
+}
+let curTheme=document.documentElement.getAttribute('data-theme')||preferredThemeByClock();
 function setTheme(th){
   curTheme=th;
   document.documentElement.setAttribute('data-theme',th);
@@ -1741,7 +1735,7 @@ function openTab(tab){
 document.querySelectorAll('.tab-btn').forEach(btn=>{
   btn.addEventListener('click',()=>openTab(btn.dataset.tab));
 });
-if(window.initTpGuide)window.initTpGuide({switchTab:openTab});
+if(window.initTpGuide)window.initTpGuide({switchTab:openTab,getLang:()=>curLang});
 
 // ── Minimum X-axis range (seconds) — prevents jerky autofit at startup ──
 const MIN_X_RANGE = 2.0; // change this to adjust minimum time window
@@ -1752,9 +1746,11 @@ const MIN_X_RANGE = 2.0; // change this to adjust minimum time window
 const store={
   acq:{time:[],angle:[]},
   sim:{time:[],angle:[],omega:[]},
-  csv:{time:[],angle:[]},
+  csvSeries:[],
+  activeCsvId:null,
   postSource:'acq',
 };
+let csvSeriesSeq=0;
 // ── Encoder / Pro Mode ──────────────────────────────────────
 let proModeActive=false;
 let proModePPR=1024;
@@ -1770,7 +1766,7 @@ function updateEncoderBadges(){
   const res=encRes().toFixed(2);
   const step=gL('enc_step')||'°/step';
   const txt=`⚙ ${proModePPR} PPR · ${res}${step}`;
-  ['fit','period','phase','sysid'].forEach(k=>{
+  ['data','fit','period','phase','sysid'].forEach(k=>{
     const el=document.getElementById('encBadge_'+k);
     if(!el)return;
     el.style.display=show?'inline':'none';
@@ -1794,24 +1790,81 @@ function updateProModeChart(){
   }
   ch.update('none');
   updateEncoderBadges();
+  renderPostDataChart();
 }
 
+function activeCsvSeries(){
+  if(!store.csvSeries.length)return null;
+  return store.csvSeries.find(s=>s.id===store.activeCsvId)||store.csvSeries[0];
+}
+function currentPostSeries(){
+  if(store.postSource==='csv')return activeCsvSeries();
+  return store[store.postSource];
+}
 function getPostData(){
-  const s=store[store.postSource];
+  const s=currentPostSeries();
   if(!s||s.time.length<10)return null;
   // When Pro Mode is ON, analysis ALWAYS uses the quantized signal,
   // regardless of the display radio button (which only controls the acqChart view).
   if(proModeActive){
-    return{time:s.time,angle:quantize(s.angle)};
+    return{time:s.time,angle:quantize(s.angle),source:store.postSource,name:s.name,id:s.id};
   }
-  return{time:s.time,angle:s.angle,omega:s.omega};
+  return{time:s.time,angle:s.angle,omega:s.omega,source:store.postSource,name:s.name,id:s.id};
 }
 function updatePostInfo(){
   const d=getPostData();
   const el=document.getElementById('postInfo');
-  if(!d){el.textContent='— no data —';return;}
+  if(!d){
+    el.textContent=store.postSource==='csv'?gL('no_csv_selected'):gL('no_data_short');
+    return;
+  }
   const dur=(d.time[d.time.length-1]-d.time[0]).toFixed(1);
   el.textContent=`${d.time.length} pts  |  ${dur} s`;
+}
+
+function renderPostDataChart(){
+  const data=getPostData();
+  const c=chartColors();
+  const ds=data?[{
+    label:gL('ax_anglet'),
+    data:data.time.map((t,i)=>({x:t,y:data.angle[i]})),
+    borderColor:c.dr,
+    borderWidth:1.8,
+    pointRadius:0,
+    pointHitRadius:12,
+    tension:0,
+    ...(proModeActive?{stepped:true}:{})
+  }]:[];
+  mkChart('postDataChart',{
+    type:'line',
+    data:{datasets:ds},
+    plugins:[zeroAxisPlugin],
+    options:{
+      interaction:{mode:'nearest',intersect:false},
+      scales:baseScaleOpts(gL('ax_time'),gL('ax_anglet')),
+      plugins:{
+        legend:{display:false},
+        tooltip:{enabled:!!data,callbacks:{
+          title:it=>`t = ${Number(it[0].raw.x).toFixed(3)} s`,
+          label:it=>`θ = ${Number(it.raw.y).toFixed(3)}°`
+        }},
+        zoom:{
+          pan:{enabled:true,mode:'xy',modifierKey:'ctrl'},
+          zoom:{wheel:{enabled:true},pinch:{enabled:true},drag:{enabled:true,button:0,backgroundColor:'rgba(59,142,255,0.15)',borderColor:'rgba(59,142,255,0.8)',borderWidth:1},mode:'xy'}
+        }
+      }
+    }
+  });
+}
+function appendPostDataPoint(t,theta,source){
+  if(store.postSource!==source)return;
+  if(!charts.postDataChart||!charts.postDataChart.data.datasets[0]){
+    renderPostDataChart();
+    return;
+  }
+  const y=proModeActive?Math.round(theta/encRes())*encRes():theta;
+  charts.postDataChart.data.datasets[0].data.push({x:t,y});
+  charts.postDataChart.update('none');
 }
 
 // ============================================================
@@ -1826,11 +1879,56 @@ const g=9.81;
 // CHART UTILITIES
 // ============================================================
 const charts={};
+function eventHasPanModifier(evt){
+  const e=evt&&((evt.native)||(evt.srcEvent)||evt);
+  return !!(e&&(e.ctrlKey||e.metaKey));
+}
+function stabilizeZoomInteractions(config){
+  const zoomOpts=config?.options?.plugins?.zoom;
+  if(!zoomOpts||zoomOpts._pendulumStable)return;
+  zoomOpts._pendulumStable=true;
+  const pan=zoomOpts.pan=zoomOpts.pan||{};
+  const zoom=zoomOpts.zoom=zoomOpts.zoom||{};
+  const prevPanStart=pan.onPanStart;
+  const prevPanComplete=pan.onPanComplete;
+  const prevZoomStart=zoom.onZoomStart;
+  const prevZoomComplete=zoom.onZoomComplete;
+
+  pan.onPanStart=ctx=>{
+    if(prevPanStart&&prevPanStart(ctx)===false)return false;
+    if(ctx?.chart)ctx.chart.$pendulumPanning=true;
+    return true;
+  };
+  pan.onPanComplete=ctx=>{
+    if(prevPanComplete)prevPanComplete(ctx);
+    if(ctx?.chart){
+      ctx.chart.$pendulumPanning=false;
+      ctx.chart.update('none');
+    }
+  };
+  zoom.onZoomStart=ctx=>{
+    if(ctx?.chart?.$pendulumPanning||eventHasPanModifier(ctx?.event))return false;
+    return prevZoomStart?prevZoomStart(ctx)!==false:true;
+  };
+  zoom.onZoomComplete=ctx=>{
+    if(ctx?.chart)ctx.chart.$pendulumPanning=false;
+    if(prevZoomComplete)prevZoomComplete(ctx);
+  };
+}
+function beginManualPan(chart){
+  if(chart)chart.$pendulumPanning=true;
+}
+function endManualPan(chart){
+  if(!chart)return;
+  chart.$pendulumPanning=false;
+  chart.update('none');
+}
 function mkChart(id,config){
   const canvas=document.getElementById(id);
   if(!canvas)return null;
   if(charts[id])charts[id].destroy();
   config.options=config.options||{};
+  stabilizeZoomInteractions(config);
   config.options.responsive=true;
   config.options.maintainAspectRatio=false;
   config.options.animation=config.options.animation!==undefined?config.options.animation:{duration:0};
@@ -1873,6 +1971,7 @@ function updateAllChartsTheme(){
     ch.options.scales.y.title.color=c.text2;
     ch.update('none');
   }
+  renderPostDataChart();
   // Re-render fitChart with new theme colors
   renderFitChart();
   if(document.getElementById('tab-edu').classList.contains('active'))updateAllEduCharts();
@@ -1884,6 +1983,13 @@ function updateChartLabels(){
     const ch=charts.acqChart;
     ch.options.scales.x.title.text=L.ax_time||'Time (s)';
     ch.options.scales.y.title.text=L.ax_anglet||'Angle θ(t) (°)';
+    ch.update('none');
+  }
+  if(charts.postDataChart){
+    const ch=charts.postDataChart;
+    ch.options.scales.x.title.text=L.ax_time||'Time (s)';
+    ch.options.scales.y.title.text=L.ax_anglet||'Angle θ(t) (°)';
+    if(ch.data.datasets[0])ch.data.datasets[0].label=L.ax_anglet||'Angle θ(t) (°)';
     ch.update('none');
   }
   // Period chart: update axis titles + dataset labels in-place
@@ -1984,6 +2090,7 @@ document.getElementById('acqChart').addEventListener('dblclick',()=>{if(charts.a
         midPanning=true;
         midStartX=e.clientX;
         midStartY=e.clientY;
+        beginManualPan(charts.acqChart);
       }
     }
   }, true); // <-- capture phase
@@ -1996,7 +2103,7 @@ document.getElementById('acqChart').addEventListener('dblclick',()=>{if(charts.a
   });
 
   window.addEventListener('mouseup', e=>{
-    if(e.button===1) midPanning=false;
+    if(e.button===1){midPanning=false;endManualPan(charts.acqChart);}
   });
 })();
 
@@ -2017,6 +2124,7 @@ function pushAcqPoint(t,theta,which,omegaDeg){
   currentAngle=theta;
   if(showPendulum)drawPendulum(theta);// theta is in degrees, matches original
   updatePostInfo();
+  appendPostDataPoint(t,theta,which);
   // update pts info label
 
 }
@@ -2284,6 +2392,7 @@ document.getElementById('startSimBtn').onclick=()=>{
   }
   // START fresh
   store.sim={time:[],angle:[],omega:[]};
+  if(store.postSource==='sim')renderPostDataChart();
   if(charts.acqChart){charts.acqChart.data.datasets[0].data=[];charts.acqChart.data.datasets[1].data=[];charts.acqChart.data.datasets[1].hidden=true;charts.acqChart.resetZoom();charts.acqChart.update('none');}
   document.getElementById('liveCount').textContent='0';
   _sampleAcc=0;
@@ -2466,6 +2575,7 @@ document.getElementById('clearBtn').onclick=()=>{
   document.getElementById('liveCount').textContent='0';
   document.getElementById('saveBtn').disabled=true;
   updatePostInfo();
+  if(store.postSource===(src==='hw'?'acq':'sim'))renderPostDataChart();
 };
 
 document.getElementById('saveBtn').onclick=()=>{
@@ -2542,48 +2652,120 @@ document.querySelectorAll('input[name="encMode"]').forEach(r=>{
 // ============================================================
 // POST-PROCESS SOURCE TABS
 // ============================================================
+function setPostSource(source){
+  store.postSource=source;
+  document.querySelectorAll('.psrc-tab').forEach(x=>x.classList.remove('active'));
+  if(source!=='csv'){
+    const btn=document.getElementById('ps_'+source);
+    if(btn)btn.classList.add('active');
+  }
+  renderCsvSeriesList();
+  updatePostInfo();
+  renderPostDataChart();
+}
+function selectCsvSeries(id){
+  if(!store.csvSeries.some(s=>s.id===id))return;
+  store.activeCsvId=id;
+  setPostSource('csv');
+  updateEncoderBadges();
+}
+function removeCsvSeries(id){
+  const idx=store.csvSeries.findIndex(s=>s.id===id);
+  if(idx<0)return;
+  store.csvSeries.splice(idx,1);
+  if(store.activeCsvId===id){
+    const next=store.csvSeries[idx]||store.csvSeries[idx-1]||null;
+    store.activeCsvId=next?next.id:null;
+  }
+  if(!store.activeCsvId&&store.postSource==='csv')store.postSource='acq';
+  setPostSource(store.postSource);
+  updateEncoderBadges();
+}
+function renderCsvSeriesList(){
+  const list=document.getElementById('csvSeriesList');
+  if(!list)return;
+  list.innerHTML='';
+  store.csvSeries.forEach(s=>{
+    const entry=document.createElement('div');
+    entry.className='csv-series-item'+(s.id===store.activeCsvId&&store.postSource==='csv'?' active':'');
+
+    const name=document.createElement('span');
+    name.className='csv-series-name';
+    name.textContent=s.name;
+    name.title=s.name;
+    name.addEventListener('click',()=>selectCsvSeries(s.id));
+
+    const close=document.createElement('button');
+    close.className='csv-series-close';
+    close.type='button';
+    close.textContent='✕';
+    close.title=gL('remove_csv');
+    close.addEventListener('click',e=>{e.stopPropagation();removeCsvSeries(s.id);});
+
+    entry.appendChild(name);
+    entry.appendChild(close);
+    list.appendChild(entry);
+  });
+}
+function parseCsvSeries(text,name){
+  const lines=text.trim().split(/\r?\n/);
+  const time=[],angle=[];
+  for(let i=1;i<lines.length;i++){
+    const p=lines[i].split(',');
+    if(p.length<2)continue;
+    const t=parseFloat(p[0]);
+    const a=parseFloat(p[1]);
+    if(Number.isFinite(t)&&Number.isFinite(a)){time.push(t);angle.push(a);}
+  }
+  return{id:'csv_'+(++csvSeriesSeq),name,time,angle,source:'csv'};
+}
+function loadCsvFile(file){
+  return new Promise(resolve=>{
+    const r=new FileReader();
+    r.onload=ev=>resolve(parseCsvSeries(ev.target.result,file.name.replace(/\.csv$/i,'')));
+    r.onerror=()=>resolve(null);
+    r.readAsText(file);
+  });
+}
 document.querySelectorAll('.psrc-tab').forEach(b=>{
   b.addEventListener('click',()=>{
     if(b.dataset.ps==='csv'){document.getElementById('csvFile').click();return;}
-    document.querySelectorAll('.psrc-tab').forEach(x=>x.classList.remove('active'));
-    b.classList.add('active');
-    store.postSource=b.dataset.ps;
-    updatePostInfo();
+    setPostSource(b.dataset.ps);
   });
 });
 
 // Analysis panel switcher
+function setPostPanel(panel){
+  const btn=document.querySelector(`.pan-btn[data-panel="${panel}"]`);
+  const target=document.getElementById('panel-'+panel);
+  if(!btn||!target)return;
+  document.querySelectorAll('.pan-btn').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.post-panel').forEach(x=>x.classList.remove('active'));
+  btn.classList.add('active');
+  target.classList.add('active');
+  if(panel==='data')setTimeout(renderPostDataChart,0);
+}
+window.setPostPanel=setPostPanel;
 document.querySelectorAll('.pan-btn').forEach(b=>{
-  b.addEventListener('click',()=>{
-    document.querySelectorAll('.pan-btn').forEach(x=>x.classList.remove('active'));
-    document.querySelectorAll('.post-panel').forEach(x=>x.classList.remove('active'));
-    b.classList.add('active');
-    document.getElementById('panel-'+b.dataset.panel).classList.add('active');
-  });
+  b.addEventListener('click',()=>setPostPanel(b.dataset.panel));
 });
-document.getElementById('csvFile').onchange=e=>{
-  const f=e.target.files[0];if(!f)return;
-  const r=new FileReader();
-  r.onload=ev=>{
-    const lines=ev.target.result.trim().split('\n');
-    const time=[],angle=[];
-    for(let i=1;i<lines.length;i++){
-      const p=lines[i].split(',');
-      if(p.length>=2){time.push(parseFloat(p[0]));angle.push(parseFloat(p[1]));}
-    }
-    store.csv={time,angle};
-    store.postSource='csv';
-    document.querySelectorAll('.psrc-tab').forEach(x=>x.classList.remove('active'));
-    document.getElementById('ps_csv').classList.add('active');
-    updatePostInfo();
+document.getElementById('csvFile').onchange=async e=>{
+  const files=Array.from(e.target.files||[]);
+  if(!files.length)return;
+  const loaded=(await Promise.all(files.map(loadCsvFile))).filter(s=>s&&s.time.length>=2);
+  if(loaded.length){
+    store.csvSeries.push(...loaded);
+    store.activeCsvId=loaded[loaded.length-1].id;
+    setPostSource('csv');
     updateEncoderBadges();
-  };
-  r.readAsText(f);
+  }
   e.target.value='';
 };
 
+document.getElementById('postDataChart').addEventListener('dblclick',()=>{if(charts.postDataChart)charts.postDataChart.resetZoom();});
+
 document.getElementById('runAllBtn').onclick=()=>{
-  runFit();runPeriod();runPhase();runSysId();
+  runPeriod();runPhase();runFit();runSysId();
 };
 
 // ============================================================
@@ -2934,7 +3116,7 @@ document.getElementById('fitChart').addEventListener('dblclick',()=>{
   el.addEventListener('mousedown',e=>{
     if(e.button===1||e.button===2){
       e.stopPropagation();e.preventDefault();
-      if(e.button===1){midPanning=true;midStartX=e.clientX;midStartY=e.clientY;}
+      if(e.button===1){midPanning=true;midStartX=e.clientX;midStartY=e.clientY;beginManualPan(charts.fitChart);}
     }
   },true);
   window.addEventListener('mousemove',e=>{
@@ -2943,7 +3125,7 @@ document.getElementById('fitChart').addEventListener('dblclick',()=>{
     midStartX=e.clientX;midStartY=e.clientY;
     charts.fitChart.pan({x:dx,y:dy},undefined,'none');
   });
-  window.addEventListener('mouseup',e=>{if(e.button===1)midPanning=false;});
+  window.addEventListener('mouseup',e=>{if(e.button===1){midPanning=false;endManualPan(charts.fitChart);}});
 })();
 
 // R² help modal
@@ -3171,7 +3353,7 @@ document.getElementById('runPeriodBtn').onclick=runPeriod;
   el.addEventListener('mousedown',e=>{
     if(e.button===1||e.button===2){
       e.stopPropagation();e.preventDefault();
-      if(e.button===1){midPanning=true;midStartX=e.clientX;midStartY=e.clientY;}
+      if(e.button===1){midPanning=true;midStartX=e.clientX;midStartY=e.clientY;beginManualPan(charts.periodChart);}
     }
   },true);
   window.addEventListener('mousemove',e=>{
@@ -3180,7 +3362,7 @@ document.getElementById('runPeriodBtn').onclick=runPeriod;
     midStartX=e.clientX;midStartY=e.clientY;
     charts.periodChart.pan({x:dx,y:dy},undefined,'none');
   });
-  window.addEventListener('mouseup',e=>{if(e.button===1)midPanning=false;});
+  window.addEventListener('mouseup',e=>{if(e.button===1){midPanning=false;endManualPan(charts.periodChart);}});
 })();
 
 // ============================================================
@@ -3220,7 +3402,7 @@ function runPhase(){
   let s=0;for(let i=1;i<fullAngle.length;i++){if(fullAngle[i-1]<0&&fullAngle[i]>=0){s=i;break;}}
   const time=fullTime.slice(s),angle=fullAngle.slice(s);
   // ω for phase chart — exact RK4 or numerical estimate (trimmed)
-  const src=document.querySelector('.src-btn.active')?.dataset.src||'sim';
+  const src=data.source||store.postSource;
   let omega;
   if(src==='sim'&&!proModeActive&&store.sim.omega&&store.sim.omega.length>s){
     omega=store.sim.omega.slice(s);
@@ -3346,6 +3528,7 @@ function addPhaseChartMouseFix(canvasId){
       e.preventDefault();
       const chart=charts[canvasId];
       if(!chart)return;
+      beginManualPan(chart);
       midPan={sx:e.clientX,sy:e.clientY,
         xMin:chart.scales.x.min,xMax:chart.scales.x.max,
         yMin:chart.scales.y.min,yMax:chart.scales.y.max,
@@ -3365,7 +3548,11 @@ function addPhaseChartMouseFix(canvasId){
     chart.update('none');
     if(canvasId==='thetaTimeChart'||canvasId==='omegaTimeChart')syncPhaseTimeXAxes(chart);
   });
-  const endMidPan=()=>{midPan=null;};
+  const endMidPan=()=>{
+    const chart=charts[canvasId];
+    midPan=null;
+    endManualPan(chart);
+  };
   canvas.addEventListener('mouseup',endMidPan);
   canvas.addEventListener('mouseleave',endMidPan);
   canvas.addEventListener('contextmenu',e=>e.preventDefault());
@@ -3681,7 +3868,7 @@ function buildCompChart(){
     {label:'Non-linear',data:res_nl.time.map((t,i)=>({x:t,y:res_nl.angle[i]})),borderColor:c.dt,borderWidth:2,pointRadius:0,tension:0},
     {label:'Linear',data:res_nl.time.map((t,i)=>({x:t,y:lin_a[i]})),borderColor:c.do,borderWidth:1.5,pointRadius:0,tension:0,borderDash:[4,3]},
   ];
-  const meas=store[store.postSource];
+  const meas=getPostData();
   if(meas&&meas.time.length>5){
     // Normalize measurement starting time
     let mt=meas.time.map(t=>t-meas.time[0]);
@@ -3704,8 +3891,10 @@ function updateAllEduCharts(){buildLinChart();buildDampChart();buildCompChart();
 // ============================================================
 // INIT
 // ============================================================
-setLang('EN');
+setTheme(preferredThemeByClock());
+setLang('FR');
 updatePostInfo();
+renderPostDataChart();
 setTimeout(()=>{
   if(document.getElementById('tab-edu').classList.contains('active'))updateAllEduCharts();
 },100);
