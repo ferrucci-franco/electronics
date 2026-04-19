@@ -1003,7 +1003,7 @@ end PeriodMeter;`;
       </button>`;
     }).join('');
     list.querySelectorAll('[data-tp-step]').forEach(btn=>{
-      btn.addEventListener('click',()=>{tpState.active=parseInt(btn.dataset.tpStep,10);saveTpState();renderTp();});
+      btn.addEventListener('click',()=>{tpState.active=parseInt(btn.dataset.tpStep,10);saveTpState();renderTpAtTop();});
     });
   }
 
@@ -1170,6 +1170,16 @@ end PeriodMeter;`;
     renderTpSidebar();
   }
 
+  function scrollTpMainToTop(){
+    const main=document.querySelector('.tp-main');
+    if(main)main.scrollTo({top:0,behavior:'auto'});
+  }
+
+  function renderTpAtTop(){
+    renderTp();
+    requestAnimationFrame(scrollTpMainToTop);
+  }
+
   function validateTpStep(){
     const ui=text().ui;
     const step=steps()[tpState.active];
@@ -1305,14 +1315,14 @@ end PeriodMeter;`;
     initialized=true;
     renderTp();
     document.getElementById('tpValidateBtn').addEventListener('click',validateTpStep);
-    document.getElementById('tpPrevBtn').addEventListener('click',()=>{tpState.active=Math.max(0,tpState.active-1);saveTpState();renderTp();});
+    document.getElementById('tpPrevBtn').addEventListener('click',()=>{tpState.active=Math.max(0,tpState.active-1);saveTpState();renderTpAtTop();});
     document.getElementById('tpNextBtn').addEventListener('click',()=>{
       const stepList=steps();
       const gate=firstIncompleteGateIndex(stepList);
       const next=TP_ALLOW_STEP_SKIP?Math.min(stepList.length-1,tpState.active+1):Math.min(tpState.unlocked,tpState.active+1);
       tpState.active=gate!==-1&&next>gate?gate:next;
       saveTpState();
-      renderTp();
+      renderTpAtTop();
     });
     document.getElementById('tpResetBtn').addEventListener('click',()=>{
       showTpResetDialog(()=>{
