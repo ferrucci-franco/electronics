@@ -18,7 +18,7 @@
 .tp-step-btn.done .tp-step-index{background:var(--success);border-color:var(--success);color:#fff}
 .tp-step-title{font-size:15px;font-weight:600;line-height:1.25;color:inherit}
 .tp-step-status{font-size:14px;color:var(--text3)}
-.tp-main{overflow-y:auto;padding:22px 26px;display:flex;flex-direction:column;gap:16px}
+.tp-main{overflow-y:auto;padding:22px 26px 26px;display:flex;flex-direction:column;gap:16px}
 .tp-hero{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;border-bottom:1px solid var(--border);padding-bottom:16px}
 .tp-kicker{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:4px}
 .tp-title{font-size:28px;font-weight:700;color:var(--text);line-height:1.1}
@@ -54,12 +54,13 @@
 .tp-option span{font-size:16px;line-height:1.55}
 .tp-code{position:relative}
 .tp-code pre{background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);padding:13px;overflow:auto;color:var(--text);font:12.5px/1.55 var(--font-mono)}
+.tp-code.tp-code-large pre{font-size:15px;line-height:1.6}
 .tp-code .btn-sm{position:absolute;top:8px;right:8px}
 .tp-feedback{display:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:13px 15px;font-size:17px;line-height:1.68}
 .tp-feedback.show{display:block}
 .tp-feedback.ok{border-color:rgba(34,197,94,.45);background:rgba(34,197,94,.09);color:var(--success)}
 .tp-feedback.warn{border-color:rgba(251,191,36,.55);background:rgba(251,191,36,.1);color:var(--warn)}
-.tp-nav{display:flex;gap:10px;justify-content:flex-end;align-items:center;position:sticky;bottom:0;background:linear-gradient(180deg,rgba(0,0,0,0),var(--bg) 24%);padding-top:20px}
+.tp-nav{display:flex;gap:10px;justify-content:flex-end;align-items:center;align-self:flex-end;width:max-content;max-width:100%;position:sticky;bottom:12px;background:transparent;padding:0;margin-top:4px;z-index:20;flex-wrap:wrap}
 .tp-main .btn,.tp-sidebar .btn{font-size:14px}
 .tp-nav .btn-sm{font-size:14px;padding:8px 13px}
 .tp-tools{display:flex;flex-wrap:wrap;gap:8px}

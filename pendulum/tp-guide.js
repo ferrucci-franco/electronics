@@ -74,11 +74,19 @@ end PeriodMeter;`;
   const TP_TEXT={
     EN:{
       ui:{
-        tab:'Lab guide',
+        tab:'Lab guides',
         progress:'Lab progress',
         reset:'Reset',
         export:'Export answers',
-        goAcq:'Go to measurements',
+        exportTitle:'Pendulum lab - validation answers',
+        exportDate:'Date and time',
+        exportStep:'Step',
+        exportStatus:'Step status',
+        exportValidated:'validated',
+        exportNotValidated:'not validated',
+        exportQuestions:'Questions',
+        exportChosen:'Selected answer',
+        exportNoAnswer:'(no answer)',
         prev:'Previous step',
         validate:'Validate step',
         next:'Next step',
@@ -105,7 +113,6 @@ end PeriodMeter;`;
         resetBody:'This will erase the TP progress and the answers stored in this browser.',
         resetCancel:'Cancel',
         resetOk:'Reset',
-        exportFile:'pendulum_lab_answers.json',
         done:'OK',
         locked:'LOCK'
       },
@@ -127,7 +134,8 @@ end PeriodMeter;`;
             {id:'real_mass_30cm',label:'I placed the mass at 30 cm.'},
             {id:'real_usb_connected',label:'I connected the USB cable to the pendulum, if it was not already connected.'},
             {id:'real_acquisition_180',label:'I started an acquisition with the pendulum at almost 180 degrees and without initial speed.'},
-            {id:'real_csv_saved',label:'I saved the result as a CSV and wrote down the file name.'}
+            {id:'real_csv_saved',label:'I saved the result as a CSV and wrote down the file name.'},
+            {id:'real_csv_emailed',label:'I emailed myself the CSV so I can use it another day, in part 2 of this TP.'}
           ],
           resources:[{label:'Open Acquisition',tab:'acq'}]
         },
@@ -281,19 +289,45 @@ end PeriodMeter;`;
         },
         {
           id:'modelica',
+          requiresValidation:true,
           title:'Modelica simulation',
           kicker:'Step 5',
-          subtitle:'Complete the model without being given the differential equations.',
+          subtitle:'Use the equations you just developed in a Modelica model.',
           instructions:[
-            'Copy this Modelica skeleton and complete only the two derivative lines.',
-            'The parameters are provided to save time on syntax, not to replace the physical reasoning.'
+            {html:'We will use the equations we just developed to simulate the system in <strong class="tp-highlight">OpenModelica</strong>.'},
+            'Remember: Modelica is a modelling language, and OpenModelica is free software that simulates models written in that language.',
+            'First we need to write our model. Below is a model skeleton: complete only the missing equations.',
+            {html:'Copy this text into OpenModelica and run the simulation.'},
+            {html:'To visualize the results more clearly, use the OpenModelica viewer.'}
           ],
           code:MODEL_CODE,
+          codeLarge:true,
           questions:[
-            {type:'text',id:'modelica_equations',label:'Which lines did you complete in Modelica?',min:20}
+            {type:'qcm',id:'modelica_der_theta',label:'In the Modelica skeleton, what does der(theta) represent?',options:[
+              ['alpha','The angular acceleration alpha.'],
+              ['omega','The angular velocity omega.'],
+              ['theta0','The initial condition theta(0).'],
+              ['torque','The total torque applied to the pendulum.']
+            ],answer:'omega'},
+            {type:'qcm',id:'modelica_omega_algorithm',label:'Does Modelica use the numerical algorithm from step 3 to calculate omega from theta(t)?',options:[
+              ['no_diff_eq','No. By solving the model differential equations, it obtains theta and omega simultaneously.'],
+              ['yes_post_derivative','Yes. Modelica first calculates theta(t), then applies the same numerical derivative algorithm used in step 3.']
+            ],answer:'no_diff_eq'},
+            {type:'qcm',id:'modelica_der_omega',label:'In der(omega), which term represents the effect of gravity?',options:[
+              ['theta_dot','A term proportional to der(theta).'],
+              ['time','A term that depends directly on time.'],
+              ['sin_theta','A term proportional to sin(theta).'],
+              ['constant_mass','A constant term equal to m.']
+            ],answer:'sin_theta'},
+            {type:'qcm',id:'modelica_validation_viewer',label:'After the simulation, what should you check in the viewer?',options:[
+              ['flat','That theta(t) remains perfectly constant.'],
+              ['random','That the curves are irregular, like experimental noise.'],
+              ['only_parameters','Only that the parameters L, m, b, and g are visible.'],
+              ['curves','That theta(t) and omega(t) evolve consistently with the initial conditions and damping.']
+            ],answer:'curves'}
           ],
+          success:'Correct. You can now write the two missing equations in the Modelica skeleton, simulate the model in OpenModelica, and inspect the curves with the viewer.',
           resources:[
-            {label:'Open Acquisition/Simulation',tab:'acq'},
             {label:'Open OpenModelica viewer',href:'./../openmodelica-viewer/index.html'}
           ]
         }
@@ -302,11 +336,19 @@ end PeriodMeter;`;
 
     FR:{
       ui:{
-        tab:'Parcours TP',
+        tab:'Guides TP',
         progress:'Progression du TP',
         reset:'Réinitialiser',
         export:'Exporter les réponses',
-        goAcq:'Aller aux mesures',
+        exportTitle:'TP pendule - réponses de validation',
+        exportDate:'Date et heure',
+        exportStep:'Étape',
+        exportStatus:'État de l’étape',
+        exportValidated:'validée',
+        exportNotValidated:'non validée',
+        exportQuestions:'Questions',
+        exportChosen:'Réponse choisie',
+        exportNoAnswer:'(sans réponse)',
         prev:'Étape précédente',
         validate:'Valider l’étape',
         next:'Étape suivante',
@@ -333,7 +375,6 @@ end PeriodMeter;`;
         resetBody:'Cela effacera la progression et les réponses enregistrées dans ce navigateur.',
         resetCancel:'Annuler',
         resetOk:'Réinitialiser',
-        exportFile:'reponses_tp_pendule.json',
         done:'OK',
         locked:'LOCK'
       },
@@ -355,7 +396,8 @@ end PeriodMeter;`;
             {id:'real_mass_30cm',label:'J’ai placé la masse à 30 cm.'},
             {id:'real_usb_connected',label:'J’ai connecté le câble USB au pendule, s’il n’était pas déjà connecté.'},
             {id:'real_acquisition_180',label:'J’ai lancé une acquisition avec le pendule presque à 180 degrés et sans vitesse initiale.'},
-            {id:'real_csv_saved',label:'J’ai sauvegardé le résultat en CSV et noté le nom du fichier.'}
+            {id:'real_csv_saved',label:'J’ai sauvegardé le résultat en CSV et noté le nom du fichier.'},
+            {id:'real_csv_emailed',label:'Je me suis envoyé le CSV par email pour pouvoir l’utiliser un autre jour, dans la partie 2 de ce TP.'}
           ],
           resources:[{label:'Ouvrir Acquisition',tab:'acq'}]
         },
@@ -509,19 +551,45 @@ end PeriodMeter;`;
         },
         {
           id:'modelica',
+          requiresValidation:true,
           title:'Simulation Modelica',
           kicker:'Étape 5',
-          subtitle:'Complétez le modèle sans que les équations différentielles soient données.',
+          subtitle:'Utilisez les équations que vous venez d’établir dans un modèle Modelica.',
           instructions:[
-            'Copiez ce squelette Modelica et complétez uniquement les deux lignes de dérivées.',
-            'Les paramètres sont fournis pour gagner du temps sur la syntaxe, pas pour remplacer le raisonnement physique.'
+            {html:'Nous allons utiliser les équations que nous venons de développer pour simuler le système dans <strong class="tp-highlight">OpenModelica</strong>.'},
+            'Rappel : Modelica est un langage de modélisation, et OpenModelica est un logiciel libre qui simule les modèles écrits dans ce langage.',
+            'Nous devons d’abord écrire notre modèle. Voici un squelette de modèle : complétez uniquement les équations manquantes.',
+            {html:'Copiez ce texte dans OpenModelica et lancez la simulation.'},
+            {html:'Pour mieux visualiser les résultats, utilisez l’outil OpenModelica viewer.'}
           ],
           code:MODEL_CODE,
+          codeLarge:true,
           questions:[
-            {type:'text',id:'modelica_equations',label:'Quelles lignes avez-vous complétées dans Modelica ?',min:20}
+            {type:'qcm',id:'modelica_der_theta',label:'Dans le squelette Modelica, que représente der(theta) ?',options:[
+              ['alpha','L’accélération angulaire α.'],
+              ['omega','La vitesse angulaire ω.'],
+              ['theta0','La condition initiale θ(0).'],
+              ['torque','Le moment total appliqué au pendule.']
+            ],answer:'omega'},
+            {type:'qcm',id:'modelica_omega_algorithm',label:'Modelica utilise-t-il l’algorithme numérique de l’étape 3 pour calculer omega à partir de theta(t) ?',options:[
+              ['no_diff_eq','Non. En résolvant les équations différentielles du modèle, il obtient simultanément theta et omega.'],
+              ['yes_post_derivative','Oui. Modelica calcule d’abord theta(t), puis applique le même algorithme de dérivation numérique que celui de l’étape 3.']
+            ],answer:'no_diff_eq'},
+            {type:'qcm',id:'modelica_der_omega',label:'Dans der(omega), quel terme traduit l’effet de la gravité ?',options:[
+              ['theta_dot','Un terme proportionnel à der(theta).'],
+              ['time','Un terme qui dépend directement du temps.'],
+              ['sin_theta','Un terme proportionnel à sin(theta).'],
+              ['constant_mass','Un terme constant égal à m.']
+            ],answer:'sin_theta'},
+            {type:'qcm',id:'modelica_validation_viewer',label:'Après la simulation, que faut-il vérifier dans le viewer ?',options:[
+              ['flat','Que θ(t) reste parfaitement constant.'],
+              ['random','Que les courbes soient irrégulières, comme du bruit expérimental.'],
+              ['only_parameters','Uniquement que les paramètres L, m, b et g soient visibles.'],
+              ['curves','Que θ(t) et ω(t) évoluent de façon cohérente avec les conditions initiales et l’amortissement.']
+            ],answer:'curves'}
           ],
+          success:{html:'Correct. Vous pouvez maintenant écrire les deux équations manquantes dans le squelette <strong>Modelica</strong>, <strong>simuler</strong> le modèle dans <strong>OpenModelica</strong>, puis inspecter les courbes avec le viewer.'},
           resources:[
-            {label:'Ouvrir Acquisition/Simulation',tab:'acq'},
             {label:'Ouvrir viewer OpenModelica',href:'./../openmodelica-viewer/index.html'}
           ]
         }
@@ -530,11 +598,19 @@ end PeriodMeter;`;
 
     ES:{
       ui:{
-        tab:'Guía TP',
+        tab:'Guías TP',
         progress:'Progreso del TP',
         reset:'Reiniciar',
         export:'Exportar respuestas',
-        goAcq:'Ir a mediciones',
+        exportTitle:'TP péndulo - respuestas de validación',
+        exportDate:'Fecha y hora',
+        exportStep:'Paso',
+        exportStatus:'Estado del paso',
+        exportValidated:'validado',
+        exportNotValidated:'no validado',
+        exportQuestions:'Preguntas',
+        exportChosen:'Respuesta elegida',
+        exportNoAnswer:'(sin respuesta)',
         prev:'Paso anterior',
         validate:'Validar paso',
         next:'Paso siguiente',
@@ -561,7 +637,6 @@ end PeriodMeter;`;
         resetBody:'Esto va a borrar el progreso y las respuestas guardadas en este navegador.',
         resetCancel:'Cancelar',
         resetOk:'Reiniciar',
-        exportFile:'respuestas_tp_pendulo.json',
         done:'OK',
         locked:'LOCK'
       },
@@ -583,7 +658,8 @@ end PeriodMeter;`;
             {id:'real_mass_30cm',label:'Coloqué la masa a 30 cm.'},
             {id:'real_usb_connected',label:'Conecté el cable USB al péndulo, si todavía no estaba conectado.'},
             {id:'real_acquisition_180',label:'Lancé una adquisición, con el péndulo a casi 180 grados y sin velocidad inicial.'},
-            {id:'real_csv_saved',label:'Guardé el resultado en un CSV y anoté el nombre del archivo.'}
+            {id:'real_csv_saved',label:'Guardé el resultado en un CSV y anoté el nombre del archivo.'},
+            {id:'real_csv_emailed',label:'Me envié el CSV por email para poder usarlo otro día, en la parte 2 de este TP.'}
           ],
           resources:[{label:'Abrir Adquisición',tab:'acq'}]
         },
@@ -737,20 +813,46 @@ end PeriodMeter;`;
         },
         {
           id:'modelica',
+          requiresValidation:true,
           title:'Simulación Modelica',
           kicker:'Paso 5',
-          subtitle:'Completá el modelo sin recibir directamente las ecuaciones diferenciales.',
+          subtitle:'Usá las ecuaciones que acabamos de desarrollar en un modelo Modelica.',
           instructions:[
-            'Copiá este esqueleto Modelica y completá únicamente las dos líneas de derivadas.',
-            'Los parámetros están dados para ahorrar tiempo con la sintaxis, no para reemplazar el razonamiento físico.'
+            {html:'Vamos a utilizar las ecuaciones que acabamos de desarrollar para simular el sistema en <strong class="tp-highlight">OpenModelica</strong>.'},
+            'Recordá que Modelica es un lenguaje de modelización, y OpenModelica es un software libre que simula los modelos hechos en dicho lenguaje.',
+            'Primero tenemos que escribir nuestro modelo. Acá abajo se encuentra un esqueleto del modelo: solo debés completar las ecuaciones que faltan.',
+            {html:'Copiá este texto en OpenModelica y simulá.'},
+            {html:'Para visualizar mejor los resultados, usá la herramienta OpenModelica viewer.'}
           ],
           code:MODEL_CODE,
+          codeLarge:true,
           questions:[
-            {type:'text',id:'modelica_equations',label:'¿Qué líneas completaste en Modelica?',min:20}
+            {type:'qcm',id:'modelica_der_theta',label:'En el esqueleto Modelica, ¿qué representa der(theta)?',options:[
+              ['alpha','La aceleración angular α.'],
+              ['omega','La velocidad angular ω.'],
+              ['theta0','La condición inicial θ(0).'],
+              ['torque','El torque total aplicado al péndulo.']
+            ],answer:'omega'},
+            {type:'qcm',id:'modelica_omega_algorithm',label:'¿Modelica usa el algoritmo numérico de la etapa 3 para calcular omega a partir de theta(t)?',options:[
+              ['no_diff_eq','No. Al resolver las ecuaciones diferenciales del modelo, obtiene simultáneamente theta y omega.'],
+              ['yes_post_derivative','Sí. Modelica primero calcula theta(t) y luego aplica el mismo algoritmo de derivación numérica usado en la etapa 3.']
+            ],answer:'no_diff_eq'},
+            {type:'qcm',id:'modelica_der_omega',label:'En der(omega), ¿qué término representa el efecto de la gravedad?',options:[
+              ['theta_dot','Un término proporcional a der(theta).'],
+              ['time','Un término que depende directamente del tiempo.'],
+              ['sin_theta','Un término proporcional a sin(theta).'],
+              ['constant_mass','Un término constante igual a m.']
+            ],answer:'sin_theta'},
+            {type:'qcm',id:'modelica_validation_viewer',label:'Después de la simulación, ¿qué conviene verificar en el viewer?',options:[
+              ['flat','Que θ(t) permanezca perfectamente constante.'],
+              ['random','Que las curvas sean irregulares, como ruido experimental.'],
+              ['only_parameters','Únicamente que los parámetros L, m, b y g sean visibles.'],
+              ['curves','Que θ(t) y ω(t) evolucionen de forma coherente con las condiciones iniciales y el amortiguamiento.']
+            ],answer:'curves'}
           ],
+          success:'Correcto. Ahora podés escribir las dos ecuaciones que faltan en el esqueleto Modelica, simular el modelo en OpenModelica y mirar las curvas con el viewer.',
           resources:[
-            {label:'Abrir Adquisición/Simulación',tab:'acq'},
-            {label:'Abrir viewer OpenModelica',href:'./../openmodelica-viewer/index.html'}
+            {label:'Abrir OpenModelica viewer',href:'./../openmodelica-viewer/index.html'}
           ]
         }
       ]
@@ -771,6 +873,7 @@ end PeriodMeter;`;
   function text(){return TP_TEXT[langCode()]||TP_TEXT.EN;}
   function steps(){return text().steps;}
   function hasChecklist(step){return !!(step&&step.checklist&&step.checklist.length);}
+  function hasQcm(step){return !!(step&&step.questions&&step.questions.some(q=>q.type==='qcm'));}
   function questionComplete(q){
     const val=answerValue(q.id);
     if(q.type==='qcm')return val===q.answer;
@@ -813,6 +916,24 @@ end PeriodMeter;`;
   }
   function saveTpState(){localStorage.setItem(TP_STORAGE_KEY,JSON.stringify(tpState));}
   function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function highlightTpTerms(v){
+    let html=escapeHtml(v);
+    const marked=[];
+    const protect=regex=>{
+      html=html.replace(regex,match=>{
+        const token=`%%TPHL${marked.length}%%`;
+        marked.push(`<strong class="tp-highlight">${match}</strong>`);
+        return token;
+      });
+    };
+    protect(/OpenModelica/g);
+    protect(/\bModelica\b/g);
+    protect(/modelling language|langage de modélisation|lenguaje de modelización|language de modelisation/gi);
+    protect(/free software|logiciel libre|software libre/gi);
+    protect(/\bsimulate\b|\bsimulates\b|\bsimuler\b|\bsimule\b|\bsimula\b|\bsimular\b|\bsimulá\b/gi);
+    marked.forEach((value,i)=>{html=html.replace(`%%TPHL${i}%%`,value);});
+    return html;
+  }
   function renderTpMath(tex){
     if(window.katex){
       return katex.renderToString(tex,{displayMode:true,throwOnError:false});
@@ -826,7 +947,7 @@ end PeriodMeter;`;
       if(v.math)return mathBlock(v.math);
       if(v.modal)return `<button class="tp-explain-btn" type="button" data-tp-modal="${escapeHtml(v.modal)}">${v.labelHtml||escapeHtml(v.label||'More')}</button>`;
     }
-    return escapeHtml(v);
+    return highlightTpTerms(v);
   }
   function proseHtml(v){
     if(v&&typeof v==='object'){
@@ -857,7 +978,6 @@ end PeriodMeter;`;
     setText('tpProgressTitle',ui.progress);
     setText('tpResetBtn',ui.reset);
     setText('tpExportBtn',ui.export);
-    setText('tpGoAcqBtn',ui.goAcq);
     setText('tpPrevBtn',ui.prev);
     setText('tpValidateBtn',ui.validate);
     setText('tpNextBtn',ui.next);
@@ -903,14 +1023,14 @@ end PeriodMeter;`;
       }
       if(q.type==='number'){
         return `<div class="tp-field">
-          <label for="tp_${escapeHtml(q.id)}">${escapeHtml(q.label)}</label>
+          <label for="tp_${escapeHtml(q.id)}">${highlightTpTerms(q.label)}</label>
           <input class="tp-input" id="tp_${escapeHtml(q.id)}" type="number" step="any" value="${escapeHtml(answerValue(q.id))}">
         </div>`;
       }
       return `<div class="tp-field">
-        <label for="tp_${escapeHtml(q.id)}">${escapeHtml(q.label)}</label>
+        <label for="tp_${escapeHtml(q.id)}">${highlightTpTerms(q.label)}</label>
         <textarea class="tp-textarea" id="tp_${escapeHtml(q.id)}">${escapeHtml(answerValue(q.id))}</textarea>
-        ${q.help?`<div class="tp-help">${escapeHtml(q.help)}</div>`:''}
+        ${q.help?`<div class="tp-help">${highlightTpTerms(q.help)}</div>`:''}
       </div>`;
     }).join('')}`;
     step.questions.forEach(q=>{
@@ -930,10 +1050,10 @@ end PeriodMeter;`;
     const hasResources=step.resources&&step.resources.length;
     if(!hasCode&&!hasResources){target.style.display='none';target.innerHTML='';return;}
     target.style.display='';
-    const code=hasCode?`<div class="tp-code"><button class="btn btn-sm" type="button" id="tpCopyCodeBtn">${escapeHtml(ui.copy)}</button><pre><code>${escapeHtml(step.code)}</code></pre></div>`:'';
+    const code=hasCode?`<div class="tp-code ${step.codeLarge?'tp-code-large':''}"><button class="btn btn-sm" type="button" id="tpCopyCodeBtn">${escapeHtml(ui.copy)}</button><pre><code>${escapeHtml(step.code)}</code></pre></div>`:'';
     const links=hasResources?`<div class="tp-tools">${step.resources.map(r=>{
-      if(r.tab)return `<button class="tp-link" type="button" data-resource-tab="${escapeHtml(r.tab)}" ${r.panel?`data-resource-panel="${escapeHtml(r.panel)}"`:''}>${escapeHtml(r.label)}</button>`;
-      return `<a class="tp-link" href="${escapeHtml(r.href)}" target="_blank" rel="noopener">${escapeHtml(r.label)}</a>`;
+      if(r.tab)return `<button class="tp-link" type="button" data-resource-tab="${escapeHtml(r.tab)}" ${r.panel?`data-resource-panel="${escapeHtml(r.panel)}"`:''}>${highlightTpTerms(r.label)}</button>`;
+      return `<a class="tp-link" href="${escapeHtml(r.href)}" target="_blank" rel="noopener">${highlightTpTerms(r.label)}</a>`;
     }).join('')}</div>`:'';
     target.innerHTML=`<h3>${escapeHtml(ui.tools)}</h3>${code}${links}`;
     const copy=document.getElementById('tpCopyCodeBtn');
@@ -1036,7 +1156,7 @@ end PeriodMeter;`;
     renderTpStaticUi();
     document.getElementById('tpKicker').textContent=step.kicker||ui.fallbackKicker;
     document.getElementById('tpTitle').textContent=step.title||ui.fallbackTitle;
-    document.getElementById('tpSubtitle').textContent=step.subtitle||ui.fallbackSubtitle;
+    document.getElementById('tpSubtitle').innerHTML=highlightTpTerms(step.subtitle||ui.fallbackSubtitle);
     renderTpIntro(step,ui);
     renderTpInstructions(step,ui);
     renderTpQuestions(step);
@@ -1044,6 +1164,7 @@ end PeriodMeter;`;
     renderTpChecklist(step);
     document.getElementById('tpPrevBtn').disabled=tpState.active===0;
     document.getElementById('tpNextBtn').disabled=(!TP_ALLOW_STEP_SKIP&&(tpState.active>=tpState.unlocked||(stepGate!==-1&&tpState.active>=stepGate)))||tpState.active===max;
+    document.getElementById('tpExportBtn').style.display=hasQcm(step)?'':'none';
     document.getElementById('tpFeedback').className='tp-feedback';
     document.getElementById('tpFeedback').textContent='';
     renderTpSidebar();
@@ -1075,7 +1196,8 @@ end PeriodMeter;`;
 
   function showTpFeedback(msg,kind){
     const el=document.getElementById('tpFeedback');
-    el.textContent=msg;
+    if(msg&&typeof msg==='object'&&msg.html)el.innerHTML=msg.html;
+    else el.innerHTML=highlightTpTerms(msg);
     el.className=`tp-feedback show ${kind}`;
     requestAnimationFrame(()=>scrollTpFeedbackIntoView(el));
   }
@@ -1089,18 +1211,47 @@ end PeriodMeter;`;
     if(el)el.scrollIntoView({behavior:'smooth',block:'end'});
   }
 
+  function qcmAnswerLabel(q,value){
+    const option=(q.options||[]).find(([optionValue])=>optionValue===value);
+    return option?option[1]:'';
+  }
+
+  function localDateTimeForText(date){
+    const pad=n=>String(n).padStart(2,'0');
+    return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())} ${pad(date.getHours())}h${pad(date.getMinutes())}`;
+  }
+
+  function localTimestampForFile(date){
+    const pad=n=>String(n).padStart(2,'0');
+    return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}_${pad(date.getHours())}h${pad(date.getMinutes())}`;
+  }
+
   function exportTpAnswers(){
     const ui=text().ui;
-    const payload={
-      exportedAt:new Date().toISOString(),
-      language:langCode(),
-      completed:tpState.completed,
-      answers:tpState.answers
-    };
-    const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+    const step=steps()[tpState.active];
+    if(!hasQcm(step))return;
+    const now=new Date();
+    const qcms=(step.questions||[]).filter(q=>q.type==='qcm');
+    const lines=[
+      ui.exportTitle,
+      '',
+      `${ui.exportDate}: ${localDateTimeForText(now)}`,
+      `${ui.exportStep}: ${step.kicker||''} - ${step.title||''}`.trim(),
+      `${ui.exportStatus}: ${isStepComplete(step)?ui.exportValidated:ui.exportNotValidated}`,
+      '',
+      `${ui.exportQuestions}:`
+    ];
+    qcms.forEach((q,index)=>{
+      const value=answerValue(q.id);
+      const label=qcmAnswerLabel(q,value);
+      lines.push('');
+      lines.push(`${index+1}. ${q.label}`);
+      lines.push(`${ui.exportChosen}: ${label||ui.exportNoAnswer}`);
+    });
+    const blob=new Blob([lines.join('\n')+'\n'],{type:'text/plain;charset=utf-8'});
     const a=document.createElement('a');
     a.href=URL.createObjectURL(blob);
-    a.download=ui.exportFile;
+    a.download=`etape${tpState.active+1}_${localTimestampForFile(now)}.txt`;
     a.click();
     URL.revokeObjectURL(a.href);
   }
@@ -1171,6 +1322,5 @@ end PeriodMeter;`;
       });
     });
     document.getElementById('tpExportBtn').addEventListener('click',exportTpAnswers);
-    document.getElementById('tpGoAcqBtn').addEventListener('click',()=>switchTab('acq'));
   };
 })();

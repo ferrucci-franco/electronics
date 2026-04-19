@@ -7,10 +7,11 @@
 <script>
   document.documentElement.setAttribute('data-theme',new Date().getHours()>=7&&new Date().getHours()<18?'light':'dark');
 </script>
+<link rel="preload" href="tp-guide.css" as="style">
+<link rel="stylesheet" href="tp-guide.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="lib/katex/katex.min.css">
-<link rel="stylesheet" href="tp-guide.css">
 <style>
 /* ============================================================
    DESIGN SYSTEM — Laboratory Precision
@@ -71,6 +72,14 @@ body{font-family:var(--font-ui);font-size:15px;background:var(--bg);color:var(--
 .tab-btn.active{background:var(--accent-bg);color:var(--accent);font-weight:600}
 .tab-num{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--border2);color:var(--text2);font-size:12px;margin-right:6px;transition:background var(--tr),color var(--tr)}
 .tab-btn.active .tab-num{background:var(--accent);color:#fff}
+.tp-guides-menu{position:relative}
+.tp-guides-trigger{display:inline-flex;align-items:center;gap:4px}
+.tp-guides-caret{font-size:10px;color:var(--text3);margin-left:2px}
+.tp-guides-dropdown{position:absolute;top:44px;right:0;min-width:220px;background:var(--card);border:1px solid var(--border2);border-radius:var(--r-sm);box-shadow:0 14px 34px rgba(0,0,0,.28);padding:6px;display:none;z-index:60}
+.tp-guides-menu.open .tp-guides-dropdown{display:flex;flex-direction:column;gap:4px}
+.tp-guide-option{width:100%;border:1px solid transparent;background:transparent;color:var(--text);border-radius:var(--r-sm);padding:9px 10px;text-align:left;font:600 13px var(--font-ui);cursor:pointer}
+.tp-guide-option:hover:not(:disabled){background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
+.tp-guide-option:disabled{color:var(--text3);cursor:not-allowed;opacity:.65}
 .topbar-actions{display:flex;gap:9px}
 .icon-btn{width:36px;height:36px;border:1px solid var(--border);background:var(--card);border-radius:var(--r-sm);cursor:pointer;font-size:15px;color:var(--text);display:flex;align-items:center;justify-content:center;transition:all var(--tr)}
 .icon-btn:hover{border-color:var(--border2)}
@@ -190,7 +199,7 @@ button,label,.btn,.tab-btn,.icon-btn,.lang-btn,.src-btn,.spd-btn,.psrc-tab,.pan-
 .post-main{display:flex;flex-direction:column;overflow:hidden}
 .post-bar-label{font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);padding:0 2px}
 .psrc-tabs{display:flex;gap:3px}
-.psrc-tab{padding:5px 11px;border:1px solid var(--border);background:var(--card);color:var(--text2);font:500 13px var(--font-ui);border-radius:var(--r-sm);cursor:pointer;transition:all var(--tr)}
+.psrc-tab{padding:9px 12px;min-height:40px;border:1px solid var(--border);background:var(--card);color:var(--text2);font:500 13px var(--font-ui);border-radius:var(--r-sm);cursor:pointer;transition:all var(--tr);display:flex;align-items:center;gap:10px;text-align:left}
 .psrc-tab.active{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
 .pan-btn{width:100%;padding:9px 12px;border:1px solid var(--border);background:var(--card);border-radius:var(--r-md);cursor:pointer;display:flex;align-items:center;gap:10px;color:var(--text2);font:500 14px var(--font-ui);transition:all var(--tr);text-align:left}
 .pan-btn:hover{border-color:var(--border2);color:var(--text)}
@@ -234,6 +243,8 @@ button,label,.btn,.tab-btn,.icon-btn,.lang-btn,.src-btn,.spd-btn,.psrc-tab,.pan-
 /* MISC */
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .text-muted{color:var(--text2);font-size:12px}
+#postInfo{color:#8b1d1d;font-weight:600}
+[data-theme="dark"] #postInfo{color:#b94a48}
 .csv-series-list{display:flex;flex-direction:column;gap:5px;margin-top:6px}
 .csv-series-item{display:grid;grid-template-columns:1fr 24px;align-items:center;gap:6px;border:1px solid var(--border);background:var(--card);color:var(--text2);border-radius:var(--r-sm);padding:6px 6px 6px 9px;font-size:12px}
 .csv-series-item.active{border-color:var(--accent);background:var(--accent-bg);color:var(--text)}
@@ -243,7 +254,7 @@ button,label,.btn,.tab-btn,.icon-btn,.lang-btn,.src-btn,.spd-btn,.psrc-tab,.pan-
 .no-data{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text3);font-size:13px;gap:6px}
 .no-data .nd-icon{font-size:28px}
 .spinner-wrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(8,14,26,.7);border-radius:var(--r-lg);z-index:5}
-#appToast{position:fixed;bottom:160px;left:50%;transform:translateX(-50%) translateY(16px);background:#fffbe6;border:1px solid #f0c040;border-radius:var(--r-md);padding:13px 18px;max-width:440px;width:90%;box-shadow:0 6px 28px rgba(0,0,0,.35);z-index:300;font-size:13px;color:#5a4200;line-height:1.65;opacity:0;transition:opacity .25s ease,transform .25s ease;pointer-events:none}
+#appToast{position:fixed;bottom:160px;left:50%;transform:translateX(-50%) translateY(16px);background:#fffbe6;border:1px solid #f0c040;border-radius:var(--r-md);padding:15px 20px;max-width:520px;width:90%;box-shadow:0 6px 28px rgba(0,0,0,.35);z-index:300;font-size:16px;color:#5a4200;line-height:1.7;opacity:0;transition:opacity .25s ease,transform .25s ease;pointer-events:none}
 [data-theme="dark"] #appToast{background:#2e2600;border-color:#a07800;color:#f5d96a}
 #appToast.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
 #appToast .toast-close{float:right;margin-left:12px;cursor:pointer;font-size:15px;line-height:1;color:#a07800}
@@ -256,6 +267,76 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
 ::-webkit-scrollbar-thumb:hover{background:var(--text3)}
+
+/* Slightly larger typography for acquisition and post-processing work areas */
+#tab-acq,
+#tab-post{font-size:16.5px}
+#tab-acq [style*="font-size:11px"],
+#tab-post [style*="font-size:11px"]{font-size:12.1px!important}
+#tab-acq [style*="font-size:12px"],
+#tab-post [style*="font-size:12px"]{font-size:13.2px!important}
+#tab-acq [style*="font-size:13px"],
+#tab-post [style*="font-size:13px"]{font-size:14.3px!important}
+#tab-post [style*="font-size:14px"]{font-size:15.4px!important}
+#tab-acq .sec-label,
+#tab-post .post-bar-label,
+#tab-post .sec-label{font-size:12.7px!important}
+#tab-acq .chart-box-title{font-size:12.7px!important}
+#tab-acq .online-badge{font-size:11px!important}
+#tab-acq .src-btn,
+#tab-acq .form-label,
+#tab-acq .val-badge,
+#tab-post .form-label,
+#tab-post .val-badge,
+#tab-post .text-muted,
+#tab-post .csv-series-item,
+#tab-post .r-lbl{font-size:13.2px!important}
+#tab-acq .btn,
+#tab-acq input[type="number"],
+#tab-acq input[type="text"],
+#tab-acq select,
+#tab-post .btn,
+#tab-post input[type="number"],
+#tab-post input[type="text"],
+#tab-post select,
+#tab-post .psrc-tab{font-size:14.3px!important}
+#tab-acq .btn-sm,
+#tab-post .btn-sm{font-size:13.2px!important}
+#tab-acq .status-badge,
+#tab-post .status-badge,
+#tab-post .pan-badge{font-size:12.1px!important}
+#tab-acq .live-val{font-size:24.2px!important}
+#tab-acq .live-lbl{font-size:11px!important}
+#tab-acq .spd-btn{font-size:13.2px!important}
+#tab-acq .footer-sb{font-size:11.6px!important}
+#tab-acq .checkbox-container,
+#tab-acq label.checkbox-container,
+#tab-acq #encNote,
+#tab-acq #t_enc_ppr,
+#tab-acq #enc_res_lbl,
+#tab-acq #t_pts_info,
+#tab-post #t_data_zoom_hint,
+#tab-post #t_fit_zoom_hint,
+#tab-post #t_per_zoom_hint,
+#tab-post #t_phase_zoom_hint,
+#tab-post #t_sysid_zoom_hint,
+#tab-post #phaseAnimSpeedLbl{font-size:13.2px!important}
+#tab-acq #encNote{line-height:1.5!important}
+#tab-acq #t_enc_disp_lbl,
+#tab-acq #encProPanel label{font-size:12.1px!important}
+#tab-post .pan-btn{font-size:15.4px!important}
+#tab-post .an-title{font-size:16px!important}
+#tab-post .an-badge{font-size:11px!important}
+#tab-post .r-val{font-size:16.5px!important}
+#tab-post .no-data{font-size:14.3px!important}
+#tab-post [id$="_intro_btn"],
+#tab-post #t_fit_conc_btn,
+#tab-post #t_sysid_intro_btn,
+#tab-post #t_phase_intro_btn{font-size:13.2px!important}
+#tab-post #t_fit_eq_desc,
+#tab-post #t_per_intro,
+#tab-post #t_sysid_ident_note{font-size:15.4px!important}
+
 @media(max-width:800px){
   .acq-layout{grid-template-columns:1fr;grid-template-rows:auto 1fr}
   .sidebar{border-right:none;border-bottom:1px solid var(--border);max-height:42vh}
@@ -277,9 +358,18 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
     <div class="logo">⚗ <span id="t_appname">Analyseur de Pendule</span></div>
     <nav class="tabs">
       <button class="tab-btn active" data-tab="intro"><span class="tab-num">1</span><span id="t_tab1">Introduction</span></button>
-      <button class="tab-btn" data-tab="tp"><span class="tab-num">TP</span><span id="t_tab_tp">Guide TP</span></button>
       <button class="tab-btn" data-tab="acq"><span class="tab-num">2</span><span id="t_tab2">Acquisition et simulation</span></button>
       <button class="tab-btn" data-tab="post"><span class="tab-num">3</span><span id="t_tab3">Post-traitement</span></button>
+      <div class="tp-guides-menu" id="tpGuidesMenu">
+        <button class="tab-btn tp-guides-trigger" data-guide-trigger type="button" aria-haspopup="menu" aria-expanded="false">
+          <span class="tab-num">TP</span><span id="t_tab_tp">Guides TP</span><span class="tp-guides-caret">▼</span>
+        </button>
+        <div class="tp-guides-dropdown" role="menu" aria-label="Guides TP">
+          <button class="tp-guide-option" type="button" disabled id="t_tp_discovery">TP Découverte</button>
+          <button class="tp-guide-option" type="button" data-guide-tab="tp" id="t_tp_part1">TP pendule - Partie 1</button>
+          <button class="tp-guide-option" type="button" disabled id="t_tp_part2">TP pendule - Partie 2</button>
+        </div>
+      </div>
     </nav>
     <div class="topbar-actions">
       <div class="language-selector" aria-label="Language selector">
@@ -393,10 +483,6 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
               <h2 class="tp-title" id="tpTitle">TP pendule</h2>
               <p class="tp-subtitle" id="tpSubtitle">Chaque étape débloque la suivante. Répondez, validez, puis utilisez les outils de mesure, de simulation et d'analyse.</p>
             </div>
-            <div class="tp-actions">
-              <button class="btn btn-sm" id="tpExportBtn" type="button">Exporter les réponses</button>
-              <button class="btn btn-sm btn-primary" id="tpGoAcqBtn" type="button">Aller aux mesures</button>
-            </div>
           </div>
 
           <section class="tp-card" id="tpIntro"></section>
@@ -410,6 +496,7 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
             <button class="btn btn-sm" id="tpPrevBtn" type="button">Étape précédente</button>
             <button class="btn btn-sm btn-primary" id="tpValidateBtn" type="button">Valider l'étape</button>
             <button class="btn btn-sm" id="tpNextBtn" type="button">Étape suivante</button>
+            <button class="btn btn-sm" id="tpExportBtn" type="button">Exporter les réponses</button>
           </div>
         </main>
       </div>
@@ -608,9 +695,6 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
             </button>
           </div>
 
-          <div class="divider"></div>
-          <button class="btn btn-primary" id="runAllBtn">▶ <span id="t_run_all">Run all</span></button>
-
           <div class="footer-sb" style="margin-top:auto">
             Franco FERRUCCI &nbsp;·&nbsp;
             <a href="https://ferrucci-franco.github.io/electronics/" target="_blank" rel="noopener">ferrucci-franco.github.io</a>
@@ -626,7 +710,7 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
               <div class="an-title"><span id="t_data_title">Selected data</span><span id="encBadge_data" class="enc-badge" style="display:none"></span></div>
             </div>
             <div class="post-scroll" style="overflow-y:hidden">
-              <div class="an-chart-wrap" style="height:calc(100vh - 240px);min-height:360px;position:relative">
+              <div class="an-chart-wrap" style="flex:1;min-height:0;position:relative">
                 <canvas id="postDataChart"></canvas>
               </div>
               <div style="text-align:center;font-size:12px;color:var(--text3);margin-top:6px" id="t_data_zoom_hint">🖱 Scroll/Drag = zoom · Ctrl+drag = pan · Dbl-click = reset</div>
@@ -768,10 +852,20 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
             </div>
             <div class="post-scroll" style="overflow-y:hidden">
               <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px">
-                <label style="flex:0 0 68%;display:flex;align-items:center;gap:7px;font-size:13px;color:var(--text2);cursor:pointer;user-select:none;min-width:0">
-                  <input type="checkbox" id="phaseShowTime" checked style="width:14px;height:14px;flex-shrink:0;cursor:pointer;accent-color:var(--accent)">
-                  <span id="t_phase_show_time" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Show temporal evolutions</span>
-                </label>
+                <div id="phaseViewModeGroup" style="flex:1;display:flex;align-items:center;gap:10px;min-width:0;color:var(--text2);font-size:13px;white-space:nowrap">
+                  <label style="display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none">
+                    <input type="radio" name="phaseViewMode" value="full" checked style="width:14px;height:14px;cursor:pointer;accent-color:var(--accent)">
+                    <span id="t_phase_view_full">Complete</span>
+                  </label>
+                  <label style="display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none">
+                    <input type="radio" name="phaseViewMode" value="time" style="width:14px;height:14px;cursor:pointer;accent-color:var(--accent)">
+                    <span id="t_phase_view_time">Temporal evolutions</span>
+                  </label>
+                  <label style="display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none">
+                    <input type="radio" name="phaseViewMode" value="portrait" style="width:14px;height:14px;cursor:pointer;accent-color:var(--accent)">
+                    <span id="t_phase_view_portrait">Phase portrait only</span>
+                  </label>
+                </div>
                 <button onclick="openPhaseIntroModal()" id="t_phase_intro_btn" style="flex:1;padding:5px 6px;font-size:11px;border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:var(--r-sm);cursor:pointer;font-family:var(--font-ui);text-align:center;line-height:1.4;white-space:normal;transition:background var(--tr)">💡 What is the phase portrait?</button>
               </div>
               <div id="phaseLayout" style="display:flex;gap:12px;flex:1;min-height:0;height:calc(100vh - 390px)">
@@ -779,7 +873,7 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
                   <div class="an-chart-wrap" style="flex:1;min-height:0;position:relative"><canvas id="thetaTimeChart"></canvas></div>
                   <div class="an-chart-wrap" style="flex:1;min-height:0;position:relative"><canvas id="omegaTimeChart"></canvas></div>
                 </div>
-                <div class="an-chart-wrap" style="flex:1;min-height:0;position:relative"><canvas id="phaseChart"></canvas></div>
+                <div id="phasePortraitCol" class="an-chart-wrap" style="flex:1;min-height:0;position:relative"><canvas id="phaseChart"></canvas></div>
               </div>
               <div style="text-align:center;font-size:12px;color:var(--text3);pointer-events:none" id="t_phase_zoom_hint">🖱 Scroll/Drag = zoom · Ctrl+drag = pan · Dbl-click = reset  |  📱 Pinch = zoom</div>
             </div>
@@ -1001,7 +1095,7 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
   </div>
 </div>
 
-<div id="appToast"><span class="toast-close" onclick="this.parentElement.classList.remove('show')">✕</span><span id="appToastMsg"></span></div>
+<div id="appToast"><span class="toast-close" onclick="hideToast()">✕</span><span id="appToastMsg"></span></div>
 
 </div><!-- app -->
 
@@ -1057,6 +1151,7 @@ function initApp(){
 const LANG={
 EN:{
   appname:'Pendulum Analyser',tab1:'Introduction',tab2:'Acquisition & Simulation',tab3:'Post-processing',tab4:'Education',
+  tab_tp:'Lab guides',tp_discovery:'TP Découverte',tp_part1:'Pendulum TP - Part 1',tp_part2:'Pendulum TP - Part 2',
   src_lbl:'Data source',hw:'Hardware',sim_s:'Simulation',
   serial_lbl:'Serial port (Arduino)',connect:'Connect',disconnect:'Stop & Disconnect',
   params_lbl:'Pendulum parameters',L:'Length L',m:'Mass m',b:'Damping',
@@ -1065,7 +1160,7 @@ EN:{
   angle_lbl:'Angle',pts_lbl:'Points',chart_title:'Angle θ(t)',pend_title:'Animation',
   remove_csv:'Remove CSV',no_csv_selected:'— no CSV selected —',no_data_short:'— no data —',
   start_sim:'Start',pause_sim:'Pause',resume_sim:'Resume',stop_sim:'Stop',
-  post_src:'Data source',post_analysis:'Analysis',data_short:'Data',data_title:'Selected data',data_zoom_hint:'🖱 Scroll/Drag = zoom · Ctrl+drag = pan · Dbl-click = reset',a1_short:'Sinusoidal fit',a2_short:'Period vs. time',a3_short:'Phase portrait',a4_short:'System ID',ps_acq:'Acquisition',ps_sim:'Simulation',ps_csv:'Load CSV',run_all:'Run all',
+  post_src:'Data source',post_analysis:'Analysis',data_short:'Data',data_title:'Selected data',data_zoom_hint:'🖱 Scroll/Drag = zoom · Ctrl+drag = pan · Dbl-click = reset',a1_short:'Sinusoidal fit',a2_short:'Period vs. time',a3_short:'Phase portrait',a4_short:'System ID',ps_acq:'Acquisition',ps_sim:'Simulation',ps_csv:'Load CSV',
   a1:'Sinusoidal fit with exponential decay',fit_ts:'T<sub>start</sub> (s)',fit_np:'N periods',
   fit_zc:'Trim to first zero crossing',fit_showall:'Show full signal',
   fit_eq_desc:'<strong>θ(t)</strong> is the pendulum angle [°] as a function of time. We fit this damped sinusoidal model over the selected window: <strong>A</strong> = initial amplitude [°], <strong>δ</strong> = exponential decay rate [s⁻¹], <strong>ω = 2π/T</strong> = angular frequency [rad/s], <strong>f = 1/T</strong> = oscillation frequency [Hz], <strong>φ</strong> = phase offset [rad], <strong>B</strong> = DC offset [°]. Dashed lines = decay envelope ±A·e<sup>−δt</sup>.',
@@ -1112,12 +1207,13 @@ EN:{
   ax_time:'Time (s)',ax_angle:'Angle (°)',ax_anglet:'Angle θ(t) (°)',ax_period:'Period (s)',ax_theta:'θ (°)',ax_dtheta:'dθ/dt (°/s)',ax_omega:'ω(t) (°/s)',
   enc_pro:'⚙ Encoder simulation',enc_ppr:'Pulses/rev',enc_disp_lbl:'Display:',enc_cont:'Continuous',enc_disc:'Discrete',enc_both:'Cont+Disc',enc_step:'°/step',enc_note:'💡 You can also enable/disable the encoder simulation, or change its parameters, after the simulation ends.',
   phase_intro:'To fully describe the state of the pendulum at any given instant, knowing its position θ is not enough — we also need to know <em>how fast</em> it is moving. <em style="color:var(--text2)">(Why? Think about it: if I only give you the position, the pendulum could be swinging up or down, at any speed… see? Position alone is not enough!)</em> That "how fast" is the angular velocity ω = dθ/dt. From the discrete samples of θ(t), we can estimate it numerically using central differences.<span style="display:block;height:7px"></span>We now have, at each instant, a pair of values (θ, ω). If we plot them as points in a 2D plane — θ on the X axis, ω on the Y axis — we get the <strong>phase portrait</strong>. For an <em>undamped</em> pendulum, the trajectory would be a closed ellipse: energy is conserved and the system returns to the same state after each cycle. For a <em>damped</em> pendulum (the real case), the trajectory is a spiral converging toward the origin (0,&nbsp;0): the system loses energy and the oscillation dies out. The shape of the spiral reveals the damping regime and, for large angles, the non-linearity of sin(θ) distorts the ellipse.',
-  phase_show_time:'Show temporal evolutions',
+  phase_view_full:'Complete',phase_view_time:'Temporal evolutions',phase_view_portrait:'Phase portrait only',
   phase_zoom_hint:'🖱 Scroll/Drag = zoom · Ctrl+drag = pan · Dbl-click = reset  |  📱 Pinch = zoom',
   phase_intro_btn:'💡 What is the phase portrait?'
 },
 FR:{
   appname:'Analyseur de Pendule',tab1:'Introduction',tab2:'Acquisition & Simulation',tab3:'Post-traitement',tab4:'Éducation',
+  tab_tp:'Guides TP',tp_discovery:'TP Découverte',tp_part1:'TP pendule - Partie 1',tp_part2:'TP pendule - Partie 2',
   src_lbl:'Source de données',hw:'Matériel',sim_s:'Simulation',
   serial_lbl:'Port série (Arduino)',connect:'Connecter',disconnect:'Arrêter et déconnecter',
   params_lbl:'Paramètres du pendule',L:'Longueur L',m:'Masse m',b:'Amortissement',
@@ -1126,7 +1222,7 @@ FR:{
   angle_lbl:'Angle',pts_lbl:'Points',chart_title:'Angle θ(t)',pend_title:'Animation',
   remove_csv:'Supprimer le CSV',no_csv_selected:'— aucun CSV sélectionné —',no_data_short:'— aucune donnée —',
   start_sim:'Démarrer',pause_sim:'Pause',resume_sim:'Reprendre',stop_sim:'Arrêter',
-  post_src:'Source',post_analysis:'Analyse',data_short:'Données',data_title:'Données sélectionnées',data_zoom_hint:'🖱 Scroll/Drag = zoom · Ctrl+drag = pan · Dbl-click = reset',a1_short:'Ajustement sinus.',a2_short:'Période vs temps',a3_short:'Portrait de phase',a4_short:'Identif. système',ps_acq:'Acquisition',ps_sim:'Simulation',ps_csv:'Charger CSV',run_all:'Tout lancer',
+  post_src:'Source',post_analysis:'Analyse',data_short:'Données',data_title:'Données sélectionnées',data_zoom_hint:'🖱 Scroll/Drag = zoom · Ctrl+drag = pan · Dbl-click = reset',a1_short:'Ajustement sinus.',a2_short:'Période vs temps',a3_short:'Portrait de phase',a4_short:'Identif. système',ps_acq:'Acquisition',ps_sim:'Simulation',ps_csv:'Charger CSV',
   a1:'Ajustement sinusoïdal à décroissance exponentielle',fit_ts:'T<sub>départ</sub> (s)',fit_np:'N périodes',
   fit_zc:'Recouper au 1er passage par zéro',fit_showall:'Afficher signal complet',
   fit_eq_desc:'<strong>θ(t)</strong> est l\'angle du pendule [°] en fonction du temps. Nous ajustons ce modèle sur la fenêtre sélectionnée : <strong>A</strong> = amplitude initiale [°], <strong>δ</strong> = taux de décroissance exponentielle [s⁻¹], <strong>ω = 2π/T</strong> = fréquence angulaire [rad/s], <strong>f = 1/T</strong> = fréquence d\'oscillation [Hz], <strong>φ</strong> = déphasage [rad], <strong>B</strong> = offset continu [°]. Pointillés = enveloppe ±A·e<sup>−δt</sup>.',
@@ -1173,12 +1269,13 @@ FR:{
   ax_time:'Temps (s)',ax_angle:'Angle (°)',ax_anglet:'Angle θ(t) (°)',ax_period:'Période (s)',ax_theta:'θ (°)',ax_dtheta:'dθ/dt (°/s)',ax_omega:'ω(t) (°/s)',
   enc_pro:'⚙ Simulation encodeur',enc_ppr:'Impuls./tour',enc_disp_lbl:'Affichage :',enc_cont:'Continu',enc_disc:'Discret',enc_both:'Cont+Disc',enc_step:'°/pas',enc_note:'💡 Vous pouvez aussi activer/désactiver la simulation d\'encodeur, ou modifier ses paramètres, après la fin de la simulation.',
   phase_intro:'Pour décrire complètement l\'état du pendule à un instant donné, connaître sa position θ ne suffit pas — il faut aussi savoir <em>à quelle vitesse</em> il se déplace. <em style="color:var(--text2)">(Pourquoi ? Réfléchis : si je te donne seulement la position, le pendule peut monter ou descendre, à n\'importe quelle vitesse… tu vois ? La position seule ne suffit pas !)</em> Ce "à quelle vitesse" est la vitesse angulaire ω = dθ/dt. À partir des échantillons discrets de θ(t), on peut l\'estimer numériquement par différences centrées.<span style="display:block;height:7px"></span>On dispose maintenant, à chaque instant, d\'une paire de valeurs (θ, ω). Si on les trace comme des points dans un plan 2D — θ en abscisse, ω en ordonnée — on obtient le <strong>portrait de phase</strong>. Pour un pendule <em>non amorti</em>, la trajectoire serait une ellipse fermée : l\'énergie est conservée et le système revient au même état à chaque cycle. Pour un pendule <em>amorti</em> (le cas réel), la trajectoire est une spirale qui converge vers l\'origine (0,&nbsp;0) : le système perd de l\'énergie et l\'oscillation s\'éteint. La forme de la spirale révèle le régime d\'amortissement et, pour de grands angles, la non-linéarité du sin(θ) déforme l\'ellipse.',
-  phase_show_time:'Afficher évolutions temporelles',
+  phase_view_full:'Complet',phase_view_time:'Évol. temporelles',phase_view_portrait:'Portrait seul',
   phase_zoom_hint:'🖱 Scroll/Glisser = zoom · Ctrl+glisser = pan · Dbl-clic = réinit  |  📱 Pincer = zoom',
   phase_intro_btn:'💡 Qu\'est-ce que le portrait de phase ?'
 },
 ES:{
   appname:'Analizador de Péndulo',tab1:'Introducción',tab2:'Adquisición & Simulación',tab3:'Post-procesamiento',tab4:'Educativo',
+  tab_tp:'Guías TP',tp_discovery:'TP Découverte',tp_part1:'TP péndulo - Parte 1',tp_part2:'TP péndulo - Parte 2',
   src_lbl:'Fuente de datos',hw:'Hardware',sim_s:'Simulación',
   serial_lbl:'Puerto serie (Arduino)',connect:'Conectar',disconnect:'Detener y desconectar',
   params_lbl:'Parámetros del péndulo',L:'Longitud L',m:'Masa m',b:'Amortiguamiento',
@@ -1187,7 +1284,7 @@ ES:{
   angle_lbl:'Ángulo',pts_lbl:'Puntos',chart_title:'Ángulo θ(t)',pend_title:'Animación',
   remove_csv:'Eliminar CSV',no_csv_selected:'— ningún CSV seleccionado —',no_data_short:'— sin datos —',
   start_sim:'Iniciar',pause_sim:'Pausar',resume_sim:'Reanudar',stop_sim:'Detener',
-  post_src:'Fuente de datos',post_analysis:'Análisis',data_short:'Datos',data_title:'Datos seleccionados',data_zoom_hint:'🖱 Scroll/Drag = zoom · Ctrl+drag = pan · Dbl-click = reset',a1_short:'Ajuste sinusoidal',a2_short:'Período vs tiempo',a3_short:'Diagrama de fase',a4_short:'Identif. sistema',ps_acq:'Adquisición',ps_sim:'Simulación',ps_csv:'Cargar CSV',run_all:'Ejecutar todo',
+  post_src:'Fuente de datos',post_analysis:'Análisis',data_short:'Datos',data_title:'Datos seleccionados',data_zoom_hint:'🖱 Scroll/Drag = zoom · Ctrl+drag = pan · Dbl-click = reset',a1_short:'Ajuste sinusoidal',a2_short:'Período vs tiempo',a3_short:'Diagrama de fase',a4_short:'Identif. sistema',ps_acq:'Adquisición',ps_sim:'Simulación',ps_csv:'Cargar CSV',
   a1:'Ajuste sinusoidal con decaimiento exponencial',fit_ts:'T<sub>inicio</sub> (s)',fit_np:'N períodos',
   fit_zc:'Recortar al primer cruce por cero',fit_showall:'Mostrar señal completa',
   fit_eq_desc:'<strong>θ(t)</strong> es el ángulo del péndulo [°] en función del tiempo. Ajustamos este modelo sinusoidal amortiguado en la ventana seleccionada: <strong>A</strong> = amplitud inicial [°], <strong>δ</strong> = tasa de decaimiento exponencial [s⁻¹], <strong>ω = 2π/T</strong> = frecuencia angular [rad/s], <strong>f = 1/T</strong> = frecuencia de oscilación [Hz], <strong>φ</strong> = desfase [rad], <strong>B</strong> = offset DC [°]. Líneas de puntos = envolvente ±A·e<sup>−δt</sup>.',
@@ -1234,7 +1331,7 @@ ES:{
   ax_time:'Tiempo (s)',ax_angle:'Ángulo (°)',ax_anglet:'Ángulo θ(t) (°)',ax_period:'Período (s)',ax_theta:'θ (°)',ax_dtheta:'dθ/dt (°/s)',ax_omega:'ω(t) (°/s)',
   enc_pro:'⚙ Simulación encoder',enc_ppr:'Pulsos/rev',enc_disp_lbl:'Visualización:',enc_cont:'Continuo',enc_disc:'Discreto',enc_both:'Cont+Disc',enc_step:'°/paso',enc_note:'💡 También podés habilitar/deshabilitar la simulación del encoder, o cambiar sus parámetros, luego de finalizada la simulación.',
   phase_intro:'Para describir completamente el estado del péndulo en un instante dado, no basta con saber su posición θ — también necesitamos saber <em>con qué velocidad</em> se mueve. <em style="color:var(--text2)">(¿Por qué? Mirá: si te doy solo la posición, el péndulo puede estar subiendo o bajando, y a cualquier velocidad… ¿ves? ¡la posición sola no alcanza!)</em> Ese "cuán rápido" es la velocidad angular ω = dθ/dt. A partir de las muestras discretas de θ(t), podemos estimarla numéricamente con diferencias centradas.<span style="display:block;height:7px"></span>Ahora tenemos, en cada instante, un par de valores (θ, ω). Si los graficamos como puntos en un plano 2D — θ en el eje X, ω en el eje Y — obtenemos el <strong>retrato de fase</strong>. Para un péndulo <em>no amortiguado</em>, la trayectoria sería una elipse cerrada: la energía se conserva y el sistema regresa al mismo estado tras cada ciclo. Para un péndulo <em>amortiguado</em> (el caso real), la trayectoria es una espiral que converge hacia el origen (0,&nbsp;0): el sistema pierde energía y la oscilación se extingue. La forma de la espiral revela el régimen de amortiguamiento y, para ángulos grandes, la no-linealidad del sin(θ) distorsiona la elipse.',
-  phase_show_time:'Mostrar evoluciones temporales',
+  phase_view_full:'Completo',phase_view_time:'Evol. temporales',phase_view_portrait:'Solo retrato de fase',
   phase_zoom_hint:'🖱 Scroll/Arrastrar = zoom · Ctrl+arrastrar = pan · Dbl-clic = reiniciar  |  📱 Pellizcar = zoom',
   phase_intro_btn:'💡 ¿Qué es el retrato de fase?'
 }
@@ -1689,14 +1786,25 @@ document.getElementById('fitConcModal').addEventListener('click',e=>{
 // TOAST — custom notification (replaces alert() to avoid browser "don't show again")
 // ============================================================
 let _toastTimer=null;
-function showToast(msg,duration=6000){
+function hideToast(){
+  const el=document.getElementById('appToast');
+  if(el)el.classList.remove('show');
+  if(_toastTimer){
+    clearTimeout(_toastTimer);
+    _toastTimer=null;
+  }
+}
+window.hideToast=hideToast;
+function showToast(msg,duration=5000){
   const el=document.getElementById('appToast');
   const msgEl=document.getElementById('appToastMsg');
   if(!el||!msgEl)return;
+  hideToast();
   msgEl.innerHTML=msg;
   el.classList.add('show');
-  if(_toastTimer)clearTimeout(_toastTimer);
-  _toastTimer=setTimeout(()=>el.classList.remove('show'),duration);
+  if(Number.isFinite(duration)&&duration>0){
+    _toastTimer=setTimeout(hideToast,duration);
+  }
 }
 
 // ============================================================
@@ -1723,7 +1831,9 @@ document.querySelectorAll('.lang-btn').forEach(btn=>{
 // TAB NAVIGATION
 // ============================================================
 function openTab(tab){
-  const btn=document.querySelector(`.tab-btn[data-tab="${tab}"]`);
+  const btn=tab==='tp'
+    ? document.querySelector('[data-guide-trigger]')
+    : document.querySelector(`.tab-btn[data-tab="${tab}"]`);
   const panel=document.getElementById('tab-'+tab);
   if(!btn||!panel)return;
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
@@ -1733,8 +1843,31 @@ function openTab(tab){
   if(tab==='edu')setTimeout(updateAllEduCharts,50);
 }
 document.querySelectorAll('.tab-btn').forEach(btn=>{
-  btn.addEventListener('click',()=>openTab(btn.dataset.tab));
+  if(!btn.dataset.guideTrigger)btn.addEventListener('click',()=>openTab(btn.dataset.tab));
 });
+const tpGuidesMenu=document.getElementById('tpGuidesMenu');
+const tpGuidesBtn=document.querySelector('[data-guide-trigger]');
+if(tpGuidesMenu&&tpGuidesBtn){
+  tpGuidesBtn.addEventListener('click',e=>{
+    e.stopPropagation();
+    const open=!tpGuidesMenu.classList.contains('open');
+    tpGuidesMenu.classList.toggle('open',open);
+    tpGuidesBtn.setAttribute('aria-expanded',open?'true':'false');
+  });
+  document.querySelectorAll('[data-guide-tab]').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      tpGuidesMenu.classList.remove('open');
+      tpGuidesBtn.setAttribute('aria-expanded','false');
+      openTab(btn.dataset.guideTab);
+    });
+  });
+  document.addEventListener('click',e=>{
+    if(!tpGuidesMenu.contains(e.target)){
+      tpGuidesMenu.classList.remove('open');
+      tpGuidesBtn.setAttribute('aria-expanded','false');
+    }
+  });
+}
 if(window.initTpGuide)window.initTpGuide({switchTab:openTab,getLang:()=>curLang});
 
 // ── Minimum X-axis range (seconds) — prevents jerky autofit at startup ──
@@ -1761,8 +1894,11 @@ function quantize(angArr){
   const r=encRes();
   return angArr.map(a=>Math.round(a/r)*r);
 }
+function postUsesEncoderSimulation(){
+  return proModeActive&&store.postSource==='sim';
+}
 function updateEncoderBadges(){
-  const show=proModeActive; // badge visible whenever Pro Mode is ON
+  const show=postUsesEncoderSimulation();
   const res=encRes().toFixed(2);
   const step=gL('enc_step')||'°/step';
   const txt=`⚙ ${proModePPR} PPR · ${res}${step}`;
@@ -1804,9 +1940,8 @@ function currentPostSeries(){
 function getPostData(){
   const s=currentPostSeries();
   if(!s||s.time.length<10)return null;
-  // When Pro Mode is ON, analysis ALWAYS uses the quantized signal,
-  // regardless of the display radio button (which only controls the acqChart view).
-  if(proModeActive){
+  // Encoder simulation only belongs to the simulated source, not to hardware acquisition or CSV.
+  if(postUsesEncoderSimulation()){
     return{time:s.time,angle:quantize(s.angle),source:store.postSource,name:s.name,id:s.id};
   }
   return{time:s.time,angle:s.angle,omega:s.omega,source:store.postSource,name:s.name,id:s.id};
@@ -1833,18 +1968,19 @@ function renderPostDataChart(){
     pointRadius:0,
     pointHitRadius:12,
     tension:0,
-    ...(proModeActive?{stepped:true}:{})
+    ...(postUsesEncoderSimulation()?{stepped:true}:{})
   }]:[];
   mkChart('postDataChart',{
     type:'line',
     data:{datasets:ds},
     plugins:[zeroAxisPlugin],
     options:{
-      interaction:{mode:'nearest',intersect:false},
+      interaction:{mode:'nearest',intersect:true},
+      hover:{mode:'nearest',intersect:true},
       scales:baseScaleOpts(gL('ax_time'),gL('ax_anglet')),
       plugins:{
         legend:{display:false},
-        tooltip:{enabled:!!data,callbacks:{
+        tooltip:{enabled:!!data,mode:'nearest',intersect:true,callbacks:{
           title:it=>`t = ${Number(it[0].raw.x).toFixed(3)} s`,
           label:it=>`θ = ${Number(it.raw.y).toFixed(3)}°`
         }},
@@ -1947,15 +2083,15 @@ function chartColors(){
 function baseScaleOpts(xt,yt){
   const c=chartColors();
   return{
-    x:{type:'linear',title:{display:!!xt,text:xt||'',color:c.text2,font:{size:12,weight:'bold'}},
-       ticks:{color:c.text2,font:{size:10}},grid:{color:c.grid}},
-    y:{title:{display:!!yt,text:yt||'',color:c.text2,font:{size:12,weight:'bold'}},
-       ticks:{color:c.text2,font:{size:10}},grid:{color:c.grid}},
+    x:{type:'linear',title:{display:!!xt,text:xt||'',color:c.text2,font:{size:13.2,weight:'bold'}},
+       ticks:{color:c.text2,font:{size:11}},grid:{color:c.grid}},
+    y:{title:{display:!!yt,text:yt||'',color:c.text2,font:{size:13.2,weight:'bold'}},
+       ticks:{color:c.text2,font:{size:11}},grid:{color:c.grid}},
   };
 }
 function baseLegend(labels,colors){
   if(!labels)return{display:false};
-  return{display:true,labels:{color:chartColors().text2,font:{size:11},boxWidth:12,
+  return{display:true,labels:{color:chartColors().text2,font:{size:12.1},boxWidth:12,
     generateLabels:()=>labels.map((l,i)=>({text:l,fillStyle:colors[i],strokeStyle:colors[i],lineWidth:2}))}};
 }
 function updateAllChartsTheme(){
@@ -2660,6 +2796,7 @@ function setPostSource(source){
     if(btn)btn.classList.add('active');
   }
   renderCsvSeriesList();
+  updateEncoderBadges();
   updatePostInfo();
   renderPostDataChart();
 }
@@ -2764,10 +2901,6 @@ document.getElementById('csvFile').onchange=async e=>{
 
 document.getElementById('postDataChart').addEventListener('dblclick',()=>{if(charts.postDataChart)charts.postDataChart.resetZoom();});
 
-document.getElementById('runAllBtn').onclick=()=>{
-  runPeriod();runPhase();runFit();runSysId();
-};
-
 // ============================================================
 // FFT (Cooley-Tukey)
 // ============================================================
@@ -2871,7 +3004,7 @@ function renderFitChart(){
       label:'Data',
       data:tFull.map((t,i)=>({x:t,y:aFull[i]})),
       borderColor:colorData,backgroundColor:colorData,
-      borderWidth:1.5,pointRadius:0,pointHitRadius:15,tension:0,...(proModeActive?{stepped:true}:{}),
+      borderWidth:1.5,pointRadius:0,pointHitRadius:15,tension:0,...(postUsesEncoderSimulation()?{stepped:true}:{}),
       segment:{
         borderColor:ctx=>{
           const x=ctx.p0.parsed.x;
@@ -2902,7 +3035,7 @@ function renderFitChart(){
       label:'Data',
       data:time.map((t,i)=>({x:t,y:angle[i]})),
       borderColor:colorData,backgroundColor:colorData,
-      borderWidth:1.5,pointRadius:0,pointHitRadius:15,tension:0,...(proModeActive?{stepped:true}:{})
+      borderWidth:1.5,pointRadius:0,pointHitRadius:15,tension:0,...(postUsesEncoderSimulation()?{stepped:true}:{})
     });
     datasets.push({
       label:'Fit',
@@ -2928,8 +3061,8 @@ function renderFitChart(){
     data:{datasets},
     options:{
       animation:{duration:0},
-      interaction:{mode:'index',intersect:false},
-      hover:{mode:null},
+      interaction:{mode:'nearest',intersect:true},
+      hover:{mode:'nearest',intersect:true},
       scales:baseScaleOpts(gL('ax_time'),gL('ax_angle')),
       plugins:{
         legend:{
@@ -2937,7 +3070,7 @@ function renderFitChart(){
           onClick:()=>{}, // disable dataset toggle on click
           labels:{
             color:c.text2,
-            font:{size:11},
+            font:{size:12.1},
             padding:12,
             filter:item=>item.text!=='_hidden',
             generateLabels:chart=>{
@@ -3236,7 +3369,7 @@ function _runPeriod(data){
         pointRadius:0,
         pointHitRadius:0,
         tension:0,
-        ...(proModeActive?{stepped:true}:{}),
+        ...(postUsesEncoderSimulation()?{stepped:true}:{}),
         yAxisID:'y1'
       },
       {
@@ -3257,24 +3390,26 @@ function _runPeriod(data){
     options:{
       responsive:true,
       maintainAspectRatio:false,
+      interaction:{mode:'nearest',intersect:true},
+      hover:{mode:'nearest',intersect:true},
       layout:{padding:{bottom:22}},
       scales:{
         x:{
           type:'linear',
-          title:{display:true,text:L.ax_time||'Time (s)',color:c.text2,font:{size:12,weight:'bold'}},
-          ticks:{color:c.text2,font:{size:10}},
+          title:{display:true,text:L.ax_time||'Time (s)',color:c.text2,font:{size:13.2,weight:'bold'}},
+          ticks:{color:c.text2,font:{size:11}},
           grid:{color:c.grid}
         },
         y:{
           position:'left',
-          title:{display:true,text:periodLabel,color:periodColor,font:{size:12,weight:'bold'}},
-          ticks:{color:c.text2,font:{size:10}},
+          title:{display:true,text:periodLabel,color:periodColor,font:{size:13.2,weight:'bold'}},
+          ticks:{color:c.text2,font:{size:11}},
           grid:{color:c.grid}            // period axis LEFT: draws the grid (primary measurement)
         },
         y1:{
           position:'right',
-          title:{display:true,text:angleLabel,color:angleColor,font:{size:12,weight:'bold'}},
-          ticks:{color:angleColor,font:{size:10}},
+          title:{display:true,text:angleLabel,color:angleColor,font:{size:13.2,weight:'bold'}},
+          ticks:{color:angleColor,font:{size:11}},
           grid:{drawOnChartArea:false}   // angle axis RIGHT: no grid (secondary reference)
         },
       },
@@ -3283,7 +3418,7 @@ function _runPeriod(data){
           display:true,
           labels:{
             color:c.text2,
-            font:{size:11},
+            font:{size:12.1},
             boxWidth:12,
             generateLabels:(chart)=>{
               return chart.data.datasets
@@ -3378,7 +3513,7 @@ function numDeriv(time,signal){
 }
 // Smoothed derivative — wider window to reduce quantization noise (used for phase portrait)
 function numDerivSmooth(time,signal){
-  const hw=proModeActive?5:2; // half-window: 5 samples (100ms) for encoder, 2 (40ms) for continuous
+  const hw=postUsesEncoderSimulation()?5:2; // half-window: 5 samples (100ms) for encoder, 2 (40ms) for continuous
   const d=new Array(signal.length);
   for(let i=0;i<signal.length;i++){
     const lo=Math.max(0,i-hw),hi=Math.min(signal.length-1,i+hw);
@@ -3404,14 +3539,14 @@ function runPhase(){
   // ω for phase chart — exact RK4 or numerical estimate (trimmed)
   const src=data.source||store.postSource;
   let omega;
-  if(src==='sim'&&!proModeActive&&store.sim.omega&&store.sim.omega.length>s){
+  if(src==='sim'&&!postUsesEncoderSimulation()&&store.sim.omega&&store.sim.omega.length>s){
     omega=store.sim.omega.slice(s);
   } else {
     omega=numDerivSmooth(time,angle);
   }
   // ω for temporal charts — full signal from t=0
   let fullOmega;
-  if(src==='sim'&&!proModeActive&&store.sim.omega&&store.sim.omega.length>0){
+  if(src==='sim'&&!postUsesEncoderSimulation()&&store.sim.omega&&store.sim.omega.length>0){
     fullOmega=store.sim.omega.slice();
   } else {
     fullOmega=numDerivSmooth(fullTime,fullAngle);
@@ -3423,13 +3558,14 @@ function runPhase(){
   mkChart('thetaTimeChart',{
     type:'line',
     data:{datasets:[{label:gL('ax_anglet'),data:fullTime.map((t,i)=>({x:t,y:fullAngle[i]})),
-      borderColor:c.dr,borderWidth:1.5,pointRadius:0,tension:0,
-      ...(proModeActive?{stepped:true}:{})}]},
+      borderColor:c.dr,borderWidth:1.5,pointRadius:0,pointHitRadius:12,tension:0,
+      ...(postUsesEncoderSimulation()?{stepped:true}:{})}]},
     plugins:[zeroAxisPlugin],
     options:{animation:{duration:0},maintainAspectRatio:false,
-      interaction:{mode:'nearest',intersect:false},
+      interaction:{mode:'nearest',intersect:true},
+      hover:{mode:'nearest',intersect:true},
       scales:{...baseScaleOpts(gL('ax_time'),gL('ax_anglet'))},
-      plugins:{legend:{display:false},tooltip:{callbacks:{title:it=>`t = ${Number(it[0].raw.x).toFixed(2)} s`,label:it=>`θ = ${Number(it.raw.y).toFixed(2)}°`}},zoom:{
+      plugins:{legend:{display:false},tooltip:{mode:'nearest',intersect:true,callbacks:{title:it=>`t = ${Number(it[0].raw.x).toFixed(2)} s`,label:it=>`θ = ${Number(it.raw.y).toFixed(2)}°`}},zoom:{
         pan:{enabled:true,mode:'xy',modifierKey:'ctrl',onPanComplete:({chart})=>syncPhaseTimeXAxes(chart)},
         zoom:{wheel:{enabled:true},drag:{enabled:true,button:0,backgroundColor:'rgba(59,142,255,0.15)',borderColor:'rgba(59,142,255,0.8)',borderWidth:1},mode:'xy',onZoomComplete:({chart})=>syncPhaseTimeXAxes(chart)}}}}
   });
@@ -3437,16 +3573,18 @@ function runPhase(){
   mkChart('omegaTimeChart',{
     type:'line',
     data:{datasets:[{label:gL('ax_omega'),data:fullTime.map((t,i)=>({x:t,y:fullOmega[i]})),
-      borderColor:c.dp,borderWidth:1.5,pointRadius:0,tension:0}]},
+      borderColor:c.dp,borderWidth:1.5,pointRadius:0,pointHitRadius:12,tension:0}]},
     plugins:[zeroAxisPlugin],
     options:{animation:{duration:0},maintainAspectRatio:false,
-      interaction:{mode:'nearest',intersect:false},
+      interaction:{mode:'nearest',intersect:true},
+      hover:{mode:'nearest',intersect:true},
       scales:{...baseScaleOpts(gL('ax_time'),gL('ax_omega'))},
-      plugins:{legend:{display:false},tooltip:{callbacks:{title:it=>`t = ${Number(it[0].raw.x).toFixed(2)} s`,label:it=>`ω = ${Number(it.raw.y).toFixed(2)} °/s`}},zoom:{
+      plugins:{legend:{display:false},tooltip:{mode:'nearest',intersect:true,callbacks:{title:it=>`t = ${Number(it[0].raw.x).toFixed(2)} s`,label:it=>`ω = ${Number(it.raw.y).toFixed(2)} °/s`}},zoom:{
         pan:{enabled:true,mode:'xy',modifierKey:'ctrl',onPanComplete:({chart})=>syncPhaseTimeXAxes(chart)},
         zoom:{wheel:{enabled:true},drag:{enabled:true,button:0,backgroundColor:'rgba(59,142,255,0.15)',borderColor:'rgba(59,142,255,0.8)',borderWidth:1},mode:'xy',onZoomComplete:({chart})=>syncPhaseTimeXAxes(chart)}}}}
   });
   renderPhaseChart(angle.length);
+  applyPhaseViewMode();
 }
 function renderPhaseChart(n){
   if(!phaseAnimData)return;
@@ -3464,12 +3602,13 @@ function renderPhaseChart(n){
     type:'scatter',
     data:{datasets:[{label:'Phase portrait',data:pts,
       borderColor:c.dt,backgroundColor:c.dt,
-      showLine:true,pointRadius:0,borderWidth:1.5,tension:0}]},
+      showLine:true,pointRadius:0,pointHitRadius:12,borderWidth:1.5,tension:0}]},
     plugins:[zeroAxisPlugin],
     options:{animation:{duration:0},maintainAspectRatio:false,
-      interaction:{mode:'nearest',intersect:false},
+      interaction:{mode:'nearest',intersect:true},
+      hover:{mode:'nearest',intersect:true},
       scales:{...baseScaleOpts(gL('ax_theta'),gL('ax_dtheta'))},
-      plugins:{legend:{display:false},tooltip:{callbacks:{title:it=>`θ = ${Number(it[0].raw.x).toFixed(2)}°`,label:it=>`ω = ${Number(it.raw.y).toFixed(2)} °/s`}},zoom:{
+      plugins:{legend:{display:false},tooltip:{mode:'nearest',intersect:true,callbacks:{title:it=>`θ = ${Number(it[0].raw.x).toFixed(2)}°`,label:it=>`ω = ${Number(it.raw.y).toFixed(2)} °/s`}},zoom:{
         pan:{enabled:true,mode:'xy',modifierKey:'ctrl'},
         zoom:{wheel:{enabled:true},drag:{enabled:true,button:0,backgroundColor:'rgba(59,142,255,0.15)',borderColor:'rgba(59,142,255,0.8)',borderWidth:1},mode:'xy'}}}}
   });
@@ -3558,23 +3697,42 @@ function addPhaseChartMouseFix(canvasId){
   canvas.addEventListener('contextmenu',e=>e.preventDefault());
 }
 ['phaseChart','thetaTimeChart','omegaTimeChart'].forEach(addPhaseChartMouseFix);
-document.getElementById('phaseShowTime').addEventListener('change',function(){
-  const show=this.checked;
-  document.getElementById('phaseTempCol').style.display=show?'flex':'none';
+function getPhaseViewMode(){
+  return document.querySelector('input[name="phaseViewMode"]:checked')?.value||'full';
+}
+function phaseShowsTime(){
+  const mode=getPhaseViewMode();
+  return mode==='full'||mode==='time';
+}
+function phaseShowsPortrait(){
+  const mode=getPhaseViewMode();
+  return mode==='full'||mode==='portrait';
+}
+function applyPhaseViewMode(){
+  const mode=getPhaseViewMode();
+  const tempCol=document.getElementById('phaseTempCol');
+  const portraitCol=document.getElementById('phasePortraitCol');
+  if(tempCol){
+    tempCol.style.display=mode==='portrait'?'none':'flex';
+    tempCol.style.width=mode==='time'?'100%':'38%';
+    tempCol.style.flexShrink=mode==='time'?'1':'0';
+  }
+  if(portraitCol){
+    portraitCol.style.display=mode==='time'?'none':'block';
+  }
   setTimeout(()=>{
-    if(show){
-      // When re-showing temporal charts, rebuild phaseChart from scratch at its
-      // new (narrower) size. Resizing an existing chart fights the ResizeObserver
-      // and loses — a fresh mkChart wins because it has zero plugin state and
-      // auto-scales correctly at whatever canvas size it finds itself in.
+    if(phaseShowsTime()){
       if(charts.thetaTimeChart)charts.thetaTimeChart.resize();
       if(charts.omegaTimeChart)charts.omegaTimeChart.resize();
-      if(phaseAnimData)renderPhaseChart(phaseAnimData.angle.length);
-    } else {
-      // When hiding temporal, just let the chart expand — no zoom state yet.
-      if(charts.phaseChart)charts.phaseChart.resize();
+    }
+    if(phaseShowsPortrait()){
+      if(phaseAnimData)renderPhaseChart(phaseAnimTimer?phaseAnimIdx:phaseAnimData.angle.length);
+      else if(charts.phaseChart)charts.phaseChart.resize();
     }
   },50);
+}
+document.querySelectorAll('input[name="phaseViewMode"]').forEach(r=>{
+  r.addEventListener('change',applyPhaseViewMode);
 });
 const PHASE_SPEED_VALUES=[0.1,0.25,0.5,1,2,4];
 document.getElementById('phaseAnimSpeed').addEventListener('input',function(){
@@ -3585,8 +3743,8 @@ function phaseSkipToEnd(){
   if(phaseAnimTimer){clearInterval(phaseAnimTimer);phaseAnimTimer=null;document.getElementById('t_play').textContent=(LANG[curLang]||LANG.EN).play;}
   const{angle,fullTime,fullAngle,fullOmega}=phaseAnimData;
   phaseAnimIdx=angle.length;
-  renderPhaseChart(angle.length);
-  if(document.getElementById('phaseShowTime').checked){
+  if(phaseShowsPortrait())renderPhaseChart(angle.length);
+  if(phaseShowsTime()){
     if(charts.thetaTimeChart){charts.thetaTimeChart.data.datasets[0].data=fullTime.map((t,i)=>({x:t,y:fullAngle[i]}));charts.thetaTimeChart.update('none');}
     if(charts.omegaTimeChart){charts.omegaTimeChart.data.datasets[0].data=fullTime.map((t,i)=>({x:t,y:fullOmega[i]}));charts.omegaTimeChart.update('none');}
   }
@@ -3603,9 +3761,9 @@ document.getElementById('playPhaseBtn').onclick=()=>{
     const totalDuration=(phaseAnimData.time[total-1]-phaseAnimData.time[0])||1;
     const step=Math.max(1,Math.round(spd*total*0.03/totalDuration));
     phaseAnimIdx=Math.min(phaseAnimIdx+step,total);
-    renderPhaseChart(phaseAnimIdx);
+    if(phaseShowsPortrait())renderPhaseChart(phaseAnimIdx);
     // Animate temporal charts if visible (use full signal; advance with trimOffset)
-    if(document.getElementById('phaseShowTime').checked){
+    if(phaseShowsTime()){
       const{fullTime,fullAngle,fullOmega,trimOffset}=phaseAnimData;
       const fullNN=trimOffset+phaseAnimIdx;
       if(charts.thetaTimeChart){
@@ -3621,7 +3779,7 @@ document.getElementById('playPhaseBtn').onclick=()=>{
       clearInterval(phaseAnimTimer);phaseAnimTimer=null;
       document.getElementById('t_play').textContent=(LANG[curLang]||LANG.EN).play;
       // Restore full temporal data
-      if(document.getElementById('phaseShowTime').checked){
+      if(phaseShowsTime()){
         const{fullTime,fullAngle,fullOmega}=phaseAnimData;
         if(charts.thetaTimeChart){
           charts.thetaTimeChart.data.datasets[0].data=fullTime.map((t,i)=>({x:t,y:fullAngle[i]}));
@@ -3759,13 +3917,16 @@ function _runSysId(data){
   mkChart('sysidChart',{
     type:'line',
     data:{datasets:[
-      {label:'Measurement',data:tObs.map((t,i)=>({x:t,y:angObs[i]})),borderColor:c.dr,borderWidth:1.5,pointRadius:0,tension:0},
-      {label:'ODE (identified)',data:res.time.map((t,i)=>({x:t,y:res.angle[i]})),borderColor:c.dt,borderWidth:2,pointRadius:0,tension:0},
+      {label:'Measurement',data:tObs.map((t,i)=>({x:t,y:angObs[i]})),borderColor:c.dr,borderWidth:1.5,pointRadius:0,pointHitRadius:12,tension:0},
+      {label:'ODE (identified)',data:res.time.map((t,i)=>({x:t,y:res.angle[i]})),borderColor:c.dt,borderWidth:2,pointRadius:0,pointHitRadius:12,tension:0},
     ]},
     options:{
+      interaction:{mode:'nearest',intersect:true},
+      hover:{mode:'nearest',intersect:true},
       scales:baseScaleOpts(gL('ax_time'),gL('ax_angle')),
       plugins:{
         legend:baseLegend(['Measurement','ODE (identified)'],[c.dr,c.dt]),
+        tooltip:{mode:'nearest',intersect:true},
         zoom:{
           pan:{enabled:true,mode:'xy',modifierKey:'ctrl'},
           zoom:{
