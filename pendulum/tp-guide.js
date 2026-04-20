@@ -239,18 +239,19 @@ end PeriodMeter;`;
             'Newton’s second law also has a rotational version. In translation:',
             {math:String.raw`\sum F = ma`},
             'In rotation, the sum of moments equals moment of inertia times angular acceleration:',
-            {math:String.raw`\sum M = J\alpha = J\dot{\omega}`},
+            {math:String.raw`\sum \Gamma = J\alpha = J\dot{\omega}`},
             'A torque, also called a moment, is the rotational effect of a force with respect to a chosen point or axis. Given a point and a force, there are two equivalent ways to compute it.',
             'First option: draw the line along which the force acts, measure the shortest distance from the chosen point to that line, and multiply distance by force.',
-            {math:String.raw`M = d_{\perp}F`},
+            {math:String.raw`\Gamma = d_{\perp}F`},
             'Second option: decompose the force into a collinear component and a tangential component. Only the tangential component produces rotation.',
-            {math:String.raw`M = L F_{\mathrm{tan}}`},
+            {math:String.raw`\Gamma = L F_{\mathrm{tan}}`},
             'In both methods, geometry enters the problem. For the pendulum, that means we cannot avoid trigonometric functions.',
             'We also need a viscous force, which opposes motion. In translation we often write:',
             {math:String.raw`F_b=-b\,v`},
             'Here we use the rotational version, with b in N·m·s/rad:',
-            {math:String.raw`M_b=-b\,\omega`},
-            'For this pendulum, the mechanical actions to consider are gravity and viscous damping.'
+            {math:String.raw`\Gamma_b=-b\,\omega`},
+            'For this pendulum, the mechanical actions to consider are gravity and viscous damping.',
+            'Now, with all these ingredients, you can calculate the equations of motion of the pendulum. Go for it!'
           ],
           instructions:[
             'Write the differential equations that describe the system.',
@@ -500,18 +501,22 @@ end PeriodMeter;`;
             'La deuxième loi de Newton possède aussi une version rotationnelle. En translation :',
             {math:String.raw`\sum F = ma`},
             'En rotation, la somme des moments est égale au moment d’inertie fois l’accélération angulaire :',
-            {math:String.raw`\sum M = J\alpha = J\dot{\omega}`},
+            {math:String.raw`\sum \Gamma = J\alpha = J\dot{\omega}`},
             'Un couple, ou moment, est l’effet rotationnel d’une force par rapport à un point ou à un axe choisi. Étant donnés un point et une force, il y a deux façons équivalentes de le calculer.',
             'Première option : tracer la droite sur laquelle agit la force, mesurer la distance minimale entre le point choisi et cette droite, puis multiplier distance par force.',
-            {math:String.raw`M = d_{\perp}F`},
+            {math:String.raw`\Gamma = d_{\perp}F`},
             'Deuxième option : décomposer la force en une composante colinéaire et une composante tangentielle. Seule la composante tangentielle produit une rotation.',
-            {math:String.raw`M = L F_{\mathrm{tan}}`},
+            {math:String.raw`\Gamma = L F_{\mathrm{tan}}`},
             'Dans les deux méthodes, la géométrie entre dans le problème. Pour le pendule, cela veut dire qu’on ne peut pas éviter les fonctions trigonométriques.',
+            'La force de gravité exercée sur la masse s’appelle le poids :',
+            {math:String.raw`F_g = m g`},
+            'Comme cette force agit à une certaine distance de l’axe de rotation, elle produit un moment par rapport au pivot. À vous de le déduire.',
             'Il faut aussi introduire une force visqueuse, qui s’oppose au mouvement. En translation, on écrit souvent :',
             {math:String.raw`F_b=-b\,v`},
             'Ici, on utilise la version rotationnelle, avec b en N·m·s/rad :',
-            {math:String.raw`M_b=-b\,\omega`},
-            'Pour ce pendule, les actions mécaniques à prendre en compte sont la gravité et l’amortissement visqueux.'
+            {math:String.raw`\Gamma_b=-b\,\omega`},
+            'Pour ce pendule, les actions mécaniques à prendre en compte sont la gravité et l’amortissement visqueux.',
+            'Maintenant, avec tous ces éléments, vous pouvez calculer les équations du mouvement du pendule. Allez-y !'
           ],
           instructions:[
             'Écrivez les équations différentielles qui décrivent le système.',
@@ -761,18 +766,19 @@ end PeriodMeter;`;
             'La segunda ley de Newton también tiene una versión rotacional. En traslación:',
             {math:String.raw`\sum F = ma`},
             'En rotación, la suma de momentos es igual al momento de inercia por la aceleración angular:',
-            {math:String.raw`\sum M = J\alpha = J\dot{\omega}`},
+            {math:String.raw`\sum \Gamma = J\alpha = J\dot{\omega}`},
             'Un torque, o momento, es el efecto rotacional de una fuerza respecto de un punto o eje elegido. Dados un punto y una fuerza, hay dos formas equivalentes de calcularlo.',
             'Primera opción: trazar la recta por la que pasa la fuerza, medir la distancia mínima entre el punto elegido y esa recta, y multiplicar distancia por fuerza.',
-            {math:String.raw`M = d_{\perp}F`},
+            {math:String.raw`\Gamma = d_{\perp}F`},
             'Segunda opción: descomponer la fuerza en una componente colineal y una componente tangencial. Solo la componente tangencial produce rotación.',
-            {math:String.raw`M = L F_{\mathrm{tan}}`},
+            {math:String.raw`\Gamma = L F_{\mathrm{tan}}`},
             'En cualquiera de los dos métodos entra la geometría. Para el péndulo, eso significa que no nos salvamos de usar funciones trigonométricas.',
             'También necesitamos introducir una fuerza viscosa, que se opone al movimiento. En traslación solemos escribir:',
             {math:String.raw`F_b=-b\,v`},
             'Acá usamos la versión rotacional, con b en N·m·s/rad:',
-            {math:String.raw`M_b=-b\,\omega`},
-            'Para este péndulo, las acciones mecánicas que hay que considerar son la gravedad y el amortiguamiento viscoso.'
+            {math:String.raw`\Gamma_b=-b\,\omega`},
+            'Para este péndulo, las acciones mecánicas que hay que considerar son la gravedad y el amortiguamiento viscoso.',
+            'Ahora, con todos estos elementos, ya podés calcular las ecuaciones de movimiento del péndulo. ¡Vamos!'
           ],
           instructions:[
             'Escribí las ecuaciones diferenciales que describen el sistema.',
@@ -861,6 +867,7 @@ end PeriodMeter;`;
   let getLang=function(){return document.documentElement.lang||'EN';};
   let initialized=false;
   let forcedLang=null;
+  let bypassLockedStepOnce=false;
 
   function normalizeLang(l){
     const code=String(l||'EN').slice(0,2).toUpperCase();
@@ -898,6 +905,9 @@ end PeriodMeter;`;
   function firstIncompleteGateIndex(stepList){
     if(TP_ALLOW_STEP_SKIP)return -1;
     return stepList.findIndex(s=>isGateStep(s)&&!isStepComplete(s));
+  }
+  function isStepNavOverride(event){
+    return !!(event&&event.ctrlKey&&event.shiftKey&&event.altKey);
   }
 
   function loadTpState(){
@@ -993,14 +1003,21 @@ end PeriodMeter;`;
       const done=isStepComplete(s);
       const cls=['tp-step-btn',i===tpState.active?'active':'',done?'done':''].filter(Boolean).join(' ');
       const status=done?ui.done:locked?ui.locked:'';
-      return `<button class="${cls}" type="button" data-tp-step="${i}" ${locked?'disabled':''}>
+      return `<button class="${cls}" type="button" data-tp-step="${i}" data-locked="${locked?'true':'false'}" aria-disabled="${locked?'true':'false'}" ${locked?'tabindex="-1"':''}>
         <span class="tp-step-index">${done?'✓':i+1}</span>
         <span class="tp-step-title">${escapeHtml(s.title)}</span>
         <span class="tp-step-status">${escapeHtml(status)}</span>
       </button>`;
     }).join('');
     list.querySelectorAll('[data-tp-step]').forEach(btn=>{
-      btn.addEventListener('click',()=>{tpState.active=parseInt(btn.dataset.tpStep,10);saveTpState();renderTpAtTop();});
+      btn.addEventListener('click',event=>{
+        const locked=btn.dataset.locked==='true';
+        if(locked&&!isStepNavOverride(event))return;
+        bypassLockedStepOnce=locked;
+        tpState.active=parseInt(btn.dataset.tpStep,10);
+        saveTpState();
+        renderTpAtTop();
+      });
     });
   }
 
@@ -1145,10 +1162,11 @@ end PeriodMeter;`;
     tpState.active=Math.min(tpState.active||0,max);
     tpState.unlocked=Math.min(tpState.unlocked||0,max);
     const stepGate=firstIncompleteGateIndex(stepList);
-    if(stepGate!==-1&&tpState.active>stepGate){
+    if(stepGate!==-1&&tpState.active>stepGate&&!bypassLockedStepOnce){
       tpState.active=stepGate;
       saveTpState();
     }
+    bypassLockedStepOnce=false;
     const step=stepList[tpState.active];
     renderTpStaticUi();
     document.getElementById('tpKicker').textContent=step.kicker||ui.fallbackKicker;
