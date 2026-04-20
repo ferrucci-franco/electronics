@@ -181,6 +181,10 @@ button,label,.btn,.tab-btn,.icon-btn,.lang-btn,.src-btn,.spd-btn,.psrc-tab,.pan-
 .btn-warning{background:var(--warn)!important;border-color:var(--warn)!important;color:#fff!important}
 .btn-warning:hover:not(:disabled){filter:brightness(1.12)!important}
 .btn-sm{padding:5px 10px;font-size:12px;width:auto}
+.analysis-run-btn{background:#087a56!important;border-color:#066747!important;color:#fff!important;font-weight:700;box-shadow:0 0 0 3px rgba(8,122,86,.16)}
+.analysis-run-btn:hover:not(:disabled){background:#066747!important;border-color:#05583d!important;filter:none!important;box-shadow:0 0 0 4px rgba(8,122,86,.22)}
+[data-theme="dark"] .analysis-run-btn{background:#0b7d63!important;border-color:#13a982!important;box-shadow:0 0 0 3px rgba(20,212,176,.13)}
+[data-theme="dark"] .analysis-run-btn:hover:not(:disabled){background:#0a6d57!important;border-color:#16c49a!important;box-shadow:0 0 0 4px rgba(20,212,176,.18)}
 .status-badge{font:500 11px var(--font-mono);padding:5px 8px;border-radius:4px;text-align:center;background:var(--bg);border:1px solid var(--border);color:var(--text2)}
 .status-badge.connected{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.3);color:var(--success)}
 .status-badge.running{background:rgba(59,142,255,.1);border-color:rgba(59,142,255,.3);color:var(--accent)}
@@ -211,7 +215,11 @@ button,label,.btn,.tab-btn,.icon-btn,.lang-btn,.src-btn,.spd-btn,.psrc-tab,.pan-
 .post-scroll{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
 .analysis-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
 .an-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--surface);border-bottom:1px solid var(--border)}
+.analysis-panel .an-header{background:#eaf7f2;border-bottom-color:rgba(8,122,86,.28)}
+[data-theme="dark"] .analysis-panel .an-header{background:#0d2a2c;border-bottom-color:rgba(20,212,176,.26)}
 .an-title{font-size:14.5px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px}
+.analysis-panel .an-title{color:#064c37}
+[data-theme="dark"] .analysis-panel .an-title{color:#c8f4eb}
 .an-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;background:var(--accent-bg);color:var(--accent);border:1px solid rgba(59,142,255,.2);letter-spacing:.04em}
 .an-body{padding:14px 16px;display:flex;flex-direction:column;gap:12px}
 .an-chart-wrap{position:relative}
@@ -718,12 +726,12 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
           </div>
 
           <!-- ① SINUSOIDAL FIT -->
-          <div class="post-panel" id="panel-fit">
+          <div class="post-panel analysis-panel" id="panel-fit">
             <div class="an-header">
               <div class="an-title"><span id="t_a1">Sinusoidal fit with exponential decay</span><span id="encBadge_fit" class="enc-badge" style="display:none"></span></div>
               <div style="display:flex;gap:6px;align-items:center">
                 <div id="fitSpinner" style="display:none"><div class="spinner" style="width:18px;height:18px;border-width:2px"></div></div>
-                <button class="btn btn-primary btn-sm" id="runFitBtn">▶ <span id="t_run_fit">Launch analysis</span></button>
+                <button class="btn btn-sm analysis-run-btn" id="runFitBtn">▶ <span id="t_run_fit">Launch analysis</span></button>
               </div>
             </div>
             <div class="post-scroll">
@@ -802,12 +810,12 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
           </div>
 
           <!-- ② PERIOD VS TIME -->
-          <div class="post-panel" id="panel-period">
+          <div class="post-panel analysis-panel" id="panel-period">
             <div class="an-header">
               <div class="an-title"><span id="t_a2">Period vs. time (zero crossings)</span><span id="encBadge_period" class="enc-badge" style="display:none"></span></div>
               <div style="display:flex;gap:6px;align-items:center">
                 <div id="perSpinner" style="display:none"><div class="spinner" style="width:18px;height:18px;border-width:2px"></div></div>
-                <button class="btn btn-primary btn-sm" id="runPeriodBtn">▶ <span id="t_run_period">Launch analysis</span></button>
+                <button class="btn btn-sm analysis-run-btn" id="runPeriodBtn">▶ <span id="t_run_period">Launch analysis</span></button>
               </div>
             </div>
             <div class="post-scroll" style="overflow-y:hidden">
@@ -839,7 +847,7 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
           </div>
 
           <!-- ③ PHASE PORTRAIT -->
-          <div class="post-panel" id="panel-phase">
+          <div class="post-panel analysis-panel" id="panel-phase">
             <div class="an-header">
               <div class="an-title"><span id="t_a3">Phase portrait  θ vs. dθ/dt</span><span id="encBadge_phase" class="enc-badge" style="display:none"></span></div>
               <div style="display:flex;gap:5px;align-items:center">
@@ -847,7 +855,7 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
                 <input type="range" id="phaseAnimSpeed" min="0" max="5" step="1" value="3" style="width:60px;accent-color:var(--accent);cursor:pointer">
                 <span id="phaseAnimSpeedLbl" style="font-size:11px;color:var(--text3);width:36px;flex-shrink:0;text-align:right;display:inline-block">1×</span>
                 <button class="btn btn-sm" id="phaseSkipEndBtn" title="Skip to end" style="padding:3px 7px;font-size:13px">⏭</button>
-                <button class="btn btn-primary btn-sm" id="runPhaseBtn">▶ <span id="t_run_phase">Launch analysis</span></button>
+                <button class="btn btn-sm analysis-run-btn" id="runPhaseBtn">▶ <span id="t_run_phase">Launch analysis</span></button>
               </div>
             </div>
             <div class="post-scroll" style="overflow-y:hidden">
@@ -880,12 +888,12 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
           </div>
 
           <!-- ④ SYSTEM IDENTIFICATION -->
-          <div class="post-panel" id="panel-sysid">
+          <div class="post-panel analysis-panel" id="panel-sysid">
             <div class="an-header">
               <div class="an-title"><span id="t_a4">System identification (ODE vs. measurement)</span><span id="encBadge_sysid" class="enc-badge" style="display:none"></span></div>
               <div style="display:flex;gap:6px;align-items:center">
                 <div id="sidSpinner" style="display:none"><div class="spinner" style="width:18px;height:18px;border-width:2px"></div></div>
-                <button class="btn btn-primary btn-sm" id="runSysIdBtn">▶ <span id="t_run_sysid">Launch analysis</span></button>
+                <button class="btn btn-sm analysis-run-btn" id="runSysIdBtn">▶ <span id="t_run_sysid">Launch analysis</span></button>
               </div>
             </div>
             <div class="post-scroll">
