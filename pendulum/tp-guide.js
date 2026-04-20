@@ -319,12 +319,11 @@ end PeriodMeter;`;
               ['sin_theta','A term proportional to sin(theta).'],
               ['constant_mass','A constant term equal to m.']
             ],answer:'sin_theta'},
-            {type:'qcm',id:'modelica_validation_viewer',label:'After the simulation, what should you check in the viewer?',options:[
-              ['flat','That theta(t) remains perfectly constant.'],
-              ['random','That the curves are irregular, like experimental noise.'],
-              ['only_parameters','Only that the parameters L, m, b, and g are visible.'],
-              ['curves','That theta(t) and omega(t) evolve consistently with the initial conditions and damping.']
-            ],answer:'curves'}
+            {type:'qcm',id:'modelica_damping_b',label:'If you compare a simulation with b = 0 and another with b > 0, what main difference should you see in the viewer?',options:[
+              ['damped_decay','With b > 0, the amplitude of theta(t) and omega(t) decreases over time; with b = 0, the ideal oscillation keeps its amplitude.'],
+              ['amplitude_grows','With b > 0, the amplitude increases over time; with b = 0, the pendulum stops faster.'],
+              ['adds_noise','With b > 0, the curves become irregular because damping adds experimental noise to the simulation.']
+            ],answer:'damped_decay'}
           ],
           success:'Correct. You can now write the two missing equations in the Modelica skeleton, simulate the model in OpenModelica, and inspect the curves with the viewer.',
           resources:[
@@ -581,12 +580,11 @@ end PeriodMeter;`;
               ['sin_theta','Un terme proportionnel à sin(theta).'],
               ['constant_mass','Un terme constant égal à m.']
             ],answer:'sin_theta'},
-            {type:'qcm',id:'modelica_validation_viewer',label:'Après la simulation, que faut-il vérifier dans le viewer ?',options:[
-              ['flat','Que θ(t) reste parfaitement constant.'],
-              ['random','Que les courbes soient irrégulières, comme du bruit expérimental.'],
-              ['only_parameters','Uniquement que les paramètres L, m, b et g soient visibles.'],
-              ['curves','Que θ(t) et ω(t) évoluent de façon cohérente avec les conditions initiales et l’amortissement.']
-            ],answer:'curves'}
+            {type:'qcm',id:'modelica_damping_b',label:'Si vous comparez une simulation avec b = 0 et une autre avec b > 0, quelle différence principale devriez-vous voir dans le viewer ?',options:[
+              ['damped_decay','Avec b > 0, l’amplitude de theta(t) et omega(t) diminue au cours du temps ; avec b = 0, l’oscillation idéale conserve son amplitude.'],
+              ['amplitude_grows','Avec b > 0, l’amplitude augmente au cours du temps ; avec b = 0, le pendule s’arrête plus vite.'],
+              ['adds_noise','Avec b > 0, les courbes deviennent irrégulières, car l’amortissement ajoute du bruit expérimental à la simulation.']
+            ],answer:'damped_decay'}
           ],
           success:{html:'Correct. Vous pouvez maintenant écrire les deux équations manquantes dans le squelette <strong>Modelica</strong>, <strong>simuler</strong> le modèle dans <strong>OpenModelica</strong>, puis inspecter les courbes avec le viewer.'},
           resources:[
@@ -843,12 +841,11 @@ end PeriodMeter;`;
               ['sin_theta','Un término proporcional a sin(theta).'],
               ['constant_mass','Un término constante igual a m.']
             ],answer:'sin_theta'},
-            {type:'qcm',id:'modelica_validation_viewer',label:'Después de la simulación, ¿qué conviene verificar en el viewer?',options:[
-              ['flat','Que θ(t) permanezca perfectamente constante.'],
-              ['random','Que las curvas sean irregulares, como ruido experimental.'],
-              ['only_parameters','Únicamente que los parámetros L, m, b y g sean visibles.'],
-              ['curves','Que θ(t) y ω(t) evolucionen de forma coherente con las condiciones iniciales y el amortiguamiento.']
-            ],answer:'curves'}
+            {type:'qcm',id:'modelica_damping_b',label:'Si comparás una simulación con b = 0 y otra con b > 0, ¿qué diferencia principal deberías ver en el viewer?',options:[
+              ['damped_decay','Con b > 0, la amplitud de theta(t) y omega(t) disminuye con el tiempo; con b = 0, la oscilación ideal conserva su amplitud.'],
+              ['amplitude_grows','Con b > 0, la amplitud aumenta con el tiempo; con b = 0, el péndulo se detiene más rápido.'],
+              ['adds_noise','Con b > 0, las curvas se vuelven irregulares, porque el amortiguamiento agrega ruido experimental a la simulación.']
+            ],answer:'damped_decay'}
           ],
           success:'Correcto. Ahora podés escribir las dos ecuaciones que faltan en el esqueleto Modelica, simular el modelo en OpenModelica y mirar las curvas con el viewer.',
           resources:[

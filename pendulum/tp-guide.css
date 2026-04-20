@@ -40,7 +40,7 @@
 .tp-explain-btn{display:inline-flex;align-items:center;justify-content:center;padding:8px 11px;border:1px solid var(--accent);background:var(--accent-bg);border-radius:var(--r-sm);color:var(--accent);font:600 14px var(--font-ui);cursor:pointer}
 .tp-explain-btn:hover{background:rgba(59,142,255,.16)}
 .tp-field{display:flex;flex-direction:column;gap:7px}
-.tp-field label{font-size:15px;font-weight:600;color:var(--text)}
+.tp-field > label{font-size:17px;font-weight:700;color:var(--text);line-height:1.45}
 .tp-help{font-size:13px;color:var(--text2);line-height:1.55}
 .tp-input,.tp-textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);font:13px var(--font-ui);outline:none}
 .tp-input{padding:8px 9px}
@@ -48,10 +48,10 @@
 .tp-input:focus,.tp-textarea:focus{border-color:var(--accent)}
 .tp-qcm{display:flex;flex-direction:column;gap:8px}
 #tpQuestions .tp-field + .tp-field{margin-top:10px}
-.tp-option{display:flex;gap:9px;align-items:flex-start;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);padding:9px 10px;cursor:pointer;color:var(--text2);transition:border-color var(--tr),color var(--tr),background var(--tr)}
+.tp-option{display:flex;gap:9px;align-items:flex-start;border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);padding:9px 10px;cursor:pointer;color:var(--text2);font-weight:400;transition:border-color var(--tr),color var(--tr),background var(--tr)}
 .tp-option:hover{border-color:var(--border2);color:var(--text)}
 .tp-option input{margin-top:3px;accent-color:var(--accent)}
-.tp-option span{font-size:16px;line-height:1.55}
+.tp-option span{font-size:16px;font-weight:400;line-height:1.55}
 .tp-code{position:relative}
 .tp-code pre{background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);padding:13px;overflow:auto;color:var(--text);font:12.5px/1.55 var(--font-mono)}
 .tp-code.tp-code-large pre{font-size:15px;line-height:1.6}
