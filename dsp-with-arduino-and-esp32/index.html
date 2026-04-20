@@ -1,0 +1,3844 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="auto">
+<head>
+  <meta charset="utf-8">
+  <title>Digital Filter Lab</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Markdown renderer (local first, CDN fallback) -->
+  <script src="lib/marked.min.js" onerror="this.onerror=null; this.src='https://cdn.jsdelivr.net/npm/marked/marked.min.js'"></script>
+  <!-- Plotly for Step 3 (local first, CDN fallback) -->
+  <script src="lib/plotly-2.32.0.min.js" onerror="this.onerror=null; this.src='https://cdn.plot.ly/plotly-2.32.0.min.js'"></script>
+
+  <style>
+    :root {
+      --bg:#050816;
+      --fg:#e5e7eb;
+      --muted:#9ca3af;
+      --card:#0b1020;
+      --border:#111827;
+      --accent:#38bdf8;
+      --accent-soft:rgba(56,189,248,0.16);
+      --accent2:#fb7185;
+      --radius:12px;
+      --font:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      --shadow:0 14px 40px rgba(15,23,42,0.5);
+    }
+
+    :root[data-theme="light"] {
+      --bg:#ffffff;
+      --fg:#111827;
+      --muted:#6b7280;
+      --card:#f7f8fb;
+      --border:#e5e7eb;
+      --accent:#2563eb;
+      --accent-soft:rgba(37,99,235,0.10);
+      --accent2:#dc2626;
+      --shadow:0 10px 30px rgba(15,23,42,0.12);
+    }
+
+    :root[data-theme="dark"] {
+      --bg:#1e293b;
+      --fg:#e5e7eb;
+      --muted:#94a3b8;
+      --card:#334155;
+      --border:#475569;
+      --accent:#38bdf8;
+      --accent-soft:rgba(56,189,248,0.25);
+      --accent2:#fb7185;
+      --shadow:0 18px 50px rgba(15,23,42,0.5);
+      --bg-soft:#293548;
+    }
+
+    * {
+      box-sizing:border-box;
+    }
+
+    html, body {
+      margin:0;
+      padding:0;
+      height:100vh;
+      background:var(--bg);
+      color:var(--fg);
+      font-family:var(--font);
+      display:flex;
+      flex-direction:column;
+    }
+
+    /* HEADER */
+
+    header {
+      flex:0 0 auto;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:10px 16px 8px;
+      border-bottom:1px solid var(--border);
+      gap:16px;
+      background:linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
+    }
+
+    :root[data-theme="dark"] header {
+      background:linear-gradient(135deg, #1e3a5f 0%, #1e293b 100%);
+    }
+
+    .app-left {
+      display:flex;
+      flex-direction:column;
+      gap:3px;
+    }
+
+    .app-title-main {
+      font-size:1.12rem;
+      font-weight:600;
+      letter-spacing:0.01em;
+    }
+
+    .app-title-sub {
+      font-size:0.72rem;
+      color:var(--muted);
+    }
+
+    .steps-nav {
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      align-items:center;
+    }
+
+    .step-tab {
+      padding:7px 14px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      font-size:0.9rem;
+      color:var(--muted);
+      cursor:pointer;
+      background:var(--bg-soft);
+      display:flex;
+      align-items:center;
+      gap:6px;
+      transition:all .16s ease;
+      white-space:nowrap;
+    }
+
+    .step-tab span.num {
+      font-weight:600;
+      font-size:0.9rem;
+      opacity:0.9;
+    }
+
+    .step-tab.active {
+      color:var(--accent);
+      border-color:var(--accent);
+      background:var(--accent-soft);
+    }
+
+    .step-tab:hover:not(.active) {
+      color:var(--accent);
+      border-color:var(--accent-soft);
+      background:rgba(148,163,253,0.05);
+    }
+
+    .step-arrow {
+      color:var(--muted);
+      font-size:1.2rem;
+      opacity:0.6;
+      user-select:none;
+      font-weight:bold;
+    }
+
+    .top-right {
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap;
+      font-size:0.78rem;
+      color:var(--muted);
+    }
+
+    .top-right label {
+      display:flex;
+      align-items:center;
+      gap:4px;
+    }
+
+    select {
+      background:var(--card);
+      color:var(--fg);
+      border-radius:8px;
+      border:1px solid var(--border);
+      padding:5px 24px 5px 8px;
+      font-size:0.8rem;
+      outline:none;
+      cursor:pointer;
+      -webkit-appearance:none;
+      -moz-appearance:none;
+      appearance:none;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%236b7280' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+      background-repeat:no-repeat;
+      background-position:right 6px center;
+    }
+
+    select:focus {
+      border-color:var(--accent);
+    }
+
+    select option {
+      background:var(--card);
+      color:var(--fg);
+      padding:8px;
+    }
+
+    /* Radio buttons */
+    input[type="radio"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      accent-color: var(--accent);
+    }
+
+    @media (max-width: 900px) {
+      header {
+        flex-wrap:wrap;
+        align-items:flex-start;
+      }
+      .steps-nav {
+        order:2;
+        flex:1 1 100%;
+      }
+      .top-right {
+        order:3;
+      }
+      .step-arrow {
+        display:none;
+      }
+    }
+
+    /* MAIN AREA */
+
+    main {
+      flex:1 1 auto;
+      padding:10px 16px;
+      display:flex;
+      justify-content:center;
+      align-items:stretch;
+      overflow:hidden;
+      min-height:0;
+    }
+
+    .step-wrapper {
+      width:100%;
+      max-width:1800px;
+      display:flex;
+      flex-direction:column;
+      height:100%;
+    }
+
+    .step-card {
+      background:#ffffff;
+      border-radius:var(--radius);
+      border:1px solid var(--border);
+      padding:14px;
+      box-shadow:var(--shadow);
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      flex:1 1 auto;
+      min-height:0;
+      overflow:auto;
+    }
+    :root[data-theme="dark"] .step-card {
+      background:var(--card);
+    }
+
+    /* Markdown content styling */
+
+    #stepContent {
+      font-size:0.96rem;
+      color:var(--fg);
+      line-height:1.7;
+    }
+
+    #stepContent h1 {
+      font-size:1.3rem;
+      margin:0 0 8px;
+      font-weight:600;
+    }
+
+    #stepContent h2 {
+      font-size:1.1rem;
+      margin:12px 0 6px;
+      font-weight:500;
+      color:var(--accent);
+    }
+
+    #stepContent h3 {
+      font-size:1.0rem;
+      margin:10px 0 5px;
+      font-weight:500;
+      color:var(--muted);
+    }
+
+    #stepContent p {
+      margin:4px 0 8px;
+    }
+
+    #stepContent ul, #stepContent ol {
+      padding-left:20px;
+      margin:6px 0 8px;
+    }
+
+    #stepContent li {
+      margin:4px 0;
+    }
+
+    #stepContent code {
+      font-family:SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+      font-size:0.88rem;
+      background:rgba(148,163,253,0.06);
+      padding:2px 5px;
+      border-radius:4px;
+    }
+
+    #stepContent pre {
+      background:#020817;
+      padding:10px;
+      border-radius:6px;
+      overflow:auto;
+      font-size:0.88rem;
+      border:1px solid rgba(148,163,253,0.18);
+    }
+
+    #stepContent blockquote {
+      margin:6px 0 8px;
+      padding:6px 10px;
+      border-left:3px solid var(--accent);
+      background:rgba(15,23,42,0.7);
+      border-radius:6px;
+      color:var(--muted);
+      font-size:0.9rem;
+    }
+
+    #stepContent img {
+      max-width:100%;
+      border-radius:8px;
+      margin:10px 0;
+      border:1px solid var(--border);
+      display:block;
+    }
+
+    .placeholder-note {
+      font-size:0.85rem;
+      color:var(--muted);
+      margin-top:6px;
+      font-style:italic;
+    }
+
+    .error-msg {
+      font-size:0.85rem;
+      color:var(--accent2);
+      margin-top:6px;
+    }
+
+    .edit-hint {
+      background:rgba(56,189,248,0.1);
+      border:1px solid var(--accent);
+      border-radius:8px;
+      padding:8px 12px;
+      font-size:0.8rem;
+      color:var(--muted);
+      margin-top:10px;
+    }
+
+    .edit-hint code {
+      background:rgba(0,0,0,0.3);
+      padding:2px 6px;
+      border-radius:4px;
+      font-size:0.75rem;
+    }
+
+    /* Step 2 - Aliasing Layout */
+
+    #stepContent:has(.step2-container) {
+      flex:1 1 auto;
+      display:flex;
+      min-height:0;
+    }
+
+    .step2-container {
+      display:grid;
+      grid-template-columns:250px 1fr;
+      grid-template-rows:minmax(300px, 1fr) minmax(300px, 1.5fr);
+      gap:6px;
+      width:100%;
+      height:100%;
+      flex:1 1 auto;
+      min-height:0;
+    }
+
+    .step2-sidebar {
+      grid-row:1 / 3;
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:8px;
+      padding:14px;
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+    }
+
+    .step2-temporal {
+      grid-column:2;
+      grid-row:1;
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:8px;
+      padding:12px;
+    }
+
+    .step2-spectral {
+      grid-column:2;
+      grid-row:2;
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:8px;
+      padding:12px 12px 4px;
+      display:grid;
+      grid-template-columns:70% 30%;
+      gap:12px;
+      overflow:hidden;
+    }
+
+    .control-group {
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+
+    .control-group label {
+      font-size:0.9rem; /* más grande para textos tipo "Frecuencia de entrada f₀" */
+      font-weight:500;
+      color:var(--fg);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+    }
+	
+	.control-group label span:first-child {
+	  display: inline-block;
+	  max-width: 95px;  /* ajusta si quieres más o menos ancho */
+	  white-space: normal;
+	  line-height: 1.35;
+	}
+
+    .control-group .value {
+      color:var(--accent);
+      font-weight:600;
+    }
+
+    .control-group input[type="range"] {
+      width:100%;
+      height:6px;
+      border-radius:3px;
+      background:var(--border);
+      outline:none;
+      -webkit-appearance:none;
+    }
+
+    .control-group input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance:none;
+      appearance:none;
+      width:16px;
+      height:16px;
+      border-radius:50%;
+      background:var(--accent);
+      cursor:pointer;
+    }
+
+    .control-group input[type="range"]::-moz-range-thumb {
+      width:16px;
+      height:16px;
+      border-radius:50%;
+      background:var(--accent);
+      cursor:pointer;
+      border:none;
+    }
+
+    /* Slider especial para f0 con gradiente y marca en el cero */
+    #f0Slider {
+      background: linear-gradient(to right, 
+        #fb7185 0%, 
+        #fb7185 49.5%, 
+        var(--border) 49.5%,
+        var(--border) 50.5%,
+        #38bdf8 50.5%, 
+        #38bdf8 100%);
+      position: relative;
+    }
+
+    /* Marca en el cero para el slider f0 */
+    .control-group:has(#f0Slider) {
+      position: relative;
+    }
+
+    .control-group:has(#f0Slider)::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      bottom: 0px;
+      width: 2px;
+      height: 12px;
+      background: var(--fg);
+      transform: translateX(-50%);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .preset-buttons {
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+
+    .preset-btn {
+      padding:6px 10px;
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:6px;
+      color:var(--fg);
+      font-size:0.78rem;
+      cursor:pointer;
+      transition:all 0.15s;
+    }
+
+    .preset-btn:hover {
+      background:var(--accent-soft);
+      border-color:var(--accent);
+      color:var(--accent);
+    }
+
+    canvas {
+      width:100%;
+      height:100%;
+      max-height:100%;
+      border-radius:6px;
+      display:block;
+    }
+
+    .canvas-wrapper {
+      width:100%;
+      height:100%;
+      position:relative;
+      overflow:hidden;
+    }
+
+    .info-panel {
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      font-size:0.85rem;
+	  /* line-height:1.3;      /* texto más compacto */ */
+      justify-content:flex-start;
+	  padding-right: 10px; /* margen derecho añadido */
+
+    }
+
+    .info-row {
+      display:flex;
+      justify-content:space-between;
+      padding:4px 0;
+    }
+
+    .info-label {
+      color:var(--muted);
+    }
+
+    .info-value {
+      font-weight:600;
+      color:var(--fg);
+    }
+
+    .status-indicator {
+      padding:6px 12px;
+      border-radius:6px;
+      text-align:center;
+      font-weight:600;
+      font-size:0.9rem;
+    }
+
+    .status-ok {
+      background:rgba(34,197,94,0.15);
+      color:#22c55e;
+      border:1px solid rgba(34,197,94,0.3);
+    }
+
+    .status-warning {
+      background:rgba(251,146,60,0.15);
+      color:#fb923c;
+      border:1px solid rgba(251,146,60,0.3);
+    }
+
+    .status-error {
+      background:rgba(239,68,68,0.15);
+      color:#ef4444;
+      border:1px solid rgba(239,68,68,0.3);
+    }
+
+    @media (max-width: 900px) {
+      .step2-container {
+        grid-template-columns:1fr;
+        grid-template-rows:auto;
+      }
+      
+      .step2-sidebar {
+        grid-row:auto;
+        grid-column:1;
+      }
+
+      .step2-temporal {
+        grid-column:1;
+        grid-row:auto;
+        height:300px;
+      }
+
+      .step2-spectral {
+        grid-column:1;
+        grid-row:auto;
+        grid-template-columns:1fr;
+        min-height:400px;
+      }
+    }
+
+    /* ===================== STEP 3 STYLES ===================== */
+
+    /* Override step-card for step3 */
+    .step-card:has(.step3-wrapper){
+      overflow:hidden;
+      padding:0;
+      gap:0;
+      box-shadow:none;
+    }
+
+    /* Make stepContent fill height for step3 */
+    #stepContent:has(.step3-wrapper){
+      flex:1 1 auto;
+      height:100%;
+      min-height:0;
+    }
+
+    .step3-wrapper{
+      height:100%;
+      width:100%;
+      padding:8px;
+      display:flex;
+      justify-content:center;
+      align-items:stretch;
+      background:var(--bg);
+      box-sizing:border-box;
+    }
+
+    .step3-card{
+      width:100%;
+      max-width:1800px;
+      background:transparent;
+      border:none;
+      padding:0;
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+    }
+
+    .step3-layout{
+      flex:1 1 auto;
+      display:grid;
+      grid-template-columns:340px 1fr 1fr;
+      gap:10px;
+      min-height:0;
+    }
+
+    .step3-panel{
+      background:#ffffff;
+      border-radius:10px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      font-size:.95rem;
+      overflow-y:auto;
+      overflow-x:hidden;
+      padding-right:4px;
+    }
+    :root[data-theme="dark"] .step3-panel{
+      background:var(--card);
+    }
+
+    .step3-section{
+      background:#f5f8fc;
+      border-radius:10px;
+      border:1px solid var(--border);
+      padding:8px 9px;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+    :root[data-theme="dark"] .step3-section{
+      background:var(--card);
+      border-color:var(--border);
+    }
+
+    .step3-section-title{
+      margin:0 0 2px;
+      font-size:.92rem;
+      font-weight:700;
+      color:var(--accent);
+      text-transform:uppercase;
+    }
+
+    .step3-group{ display:flex; flex-direction:column; gap:5px; }
+    .step3-row{ display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:.9rem; color:var(--fg); font-weight:500; }
+
+    .step3-range-row{ display:flex; align-items:center; gap:6px; }
+    .step3-range-row input[type="range"]{ flex:1 1 auto; }
+    .step3-range-row input[type="text"]{
+      width:70px;
+      flex:0 0 auto;
+      text-align:right;
+    }
+
+    .step3-note{ font-size:.72rem; color:var(--muted); }
+    .step3-disabled{ opacity:0.4; pointer-events:none; }
+
+    .step3-radios, .step3-checks{ display:flex; flex-wrap:wrap; gap:6px; font-size:.86rem; }
+    .step3-radios label, .step3-checks label{
+      display:inline-flex;
+      align-items:center;
+      gap:5px;
+      cursor:pointer;
+    }
+
+    /* Step3 form controls */
+    .step3-panel select{
+      padding:5px 24px 5px 8px;
+      border-radius:8px;
+      border:1px solid var(--border);
+      background:#fff;
+      font-size:.86rem;
+      color:var(--fg);
+      -webkit-appearance:none;
+      -moz-appearance:none;
+      appearance:none;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%236b7280' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+      background-repeat:no-repeat;
+      background-position:right 6px center;
+      cursor:pointer;
+    }
+    .step3-panel input[type="text"]{
+      padding:5px 8px;
+      border-radius:8px;
+      border:1px solid var(--border);
+      background:#fff;
+      font-size:.86rem;
+      color:var(--fg);
+    }
+    :root[data-theme="dark"] .step3-panel select{
+      background:var(--bg-soft);
+      border-color:var(--border);
+      color:var(--fg);
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%239ca3af' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+      background-repeat:no-repeat;
+      background-position:right 6px center;
+    }
+    :root[data-theme="dark"] .step3-panel input[type="text"]{
+      background:var(--bg-soft);
+      border-color:var(--border);
+      color:var(--fg);
+    }
+
+    .step3-advanced-box{
+      padding:6px 7px;
+      border-radius:8px;
+      border:1px dashed var(--border);
+      font-size:.78rem;
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+    }
+    .step3-advanced-title{
+      font-weight:600;
+      color:var(--accent);
+      font-size:.78rem;
+      text-transform:uppercase;
+    }
+
+    .step3-plot-card{
+      background:#fff;
+      border-radius:10px;
+      border:1px solid var(--border);
+      padding:6px;
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      min-height:0;
+      overflow:hidden;
+    }
+
+    :root[data-theme="dark"] .step3-plot-card{
+      background:var(--card);
+      border-color:var(--border);
+    }
+
+    .step3-plot-title{
+      font-size:.95rem;
+      font-weight:600;
+      color:var(--accent);
+      margin:0;
+    }
+
+    .step3-plot-box{ flex:1 1 auto; min-height:0; overflow:hidden; }
+    .step3-bode-wrap{ display:flex; flex-direction:column; gap:4px; height:100%; min-height:0; }
+
+    /* ===== STEP 4 STYLES ===== */
+    .step4-wrapper{
+      display:grid;
+      grid-template-columns:1fr 1fr 2fr;
+      grid-template-rows:30% 1fr;
+      gap:10px;
+      height:100%;
+      padding:10px;
+    }
+
+    .step4-card{
+      background:#fff;
+      border-radius:10px;
+      border:1px solid var(--border);
+      padding:12px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      min-width:0;
+      overflow:hidden;
+    }
+
+    :root[data-theme="dark"] .step4-card{
+      background:var(--card);
+      border-color:var(--border);
+    }
+
+    .step4-card-title{
+      font-size:.95rem;
+      font-weight:600;
+      color:var(--accent);
+      margin:0;
+    }
+
+    .step4-params{
+      grid-column:1;
+      grid-row:1;
+    }
+
+    .step4-lastconfig{
+      grid-column:2;
+      grid-row:1;
+    }
+
+    .step4-equation{
+      grid-column:1 / 3;
+      grid-row:2;
+      overflow-y:auto;
+    }
+
+    .step4-serial{
+      grid-column:3;
+      grid-row:1;
+    }
+
+    .step4-console{
+      grid-column:3;
+      grid-row:2;
+      min-height:200px;
+    }
+
+    .step4-param-grid{
+      display:grid;
+      grid-template-columns:auto 1fr;
+      gap:6px 12px;
+      font-size:.85rem;
+    }
+
+    .step4-param-label{
+      font-weight:500;
+      color:var(--fg);
+    }
+
+    .step4-param-value{
+      font-family:'Fira Code',monospace;
+      color:var(--accent);
+    }
+
+    .step4-coef-table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:.8rem;
+      font-family:'Fira Code',monospace;
+    }
+
+    .step4-coef-table th,
+    .step4-coef-table td{
+      padding:4px 8px;
+      border:1px solid var(--border);
+      text-align:center;
+    }
+
+    .step4-coef-table th{
+      background:var(--bg-soft);
+      font-weight:600;
+    }
+
+    .step4-equation-display{
+      font-family:'Fira Code',monospace;
+      font-size:.85rem;
+      padding:8px;
+      background:var(--bg-soft);
+      border-radius:6px;
+    }
+
+    .step4-serial-controls{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+
+    .step4-serial-controls select,
+    .step4-serial-controls button{
+      padding:6px 12px;
+      border-radius:8px;
+      border:1px solid var(--border);
+      font-size:.85rem;
+    }
+
+    .step4-serial-controls select{
+      background:#fff;
+      min-width:150px;
+      appearance:menulist;
+      -webkit-appearance:menulist;
+      cursor:pointer;
+    }
+
+    :root[data-theme="dark"] .step4-serial-controls select{
+      background:var(--bg-soft);
+      border-color:var(--border);
+      color:var(--fg);
+    }
+
+    .step4-btn{
+      background:var(--accent);
+      color:#fff;
+      border:none !important;
+      cursor:pointer;
+      font-weight:500;
+    }
+
+    .step4-btn:hover{
+      opacity:0.9;
+    }
+
+    .step4-btn:disabled{
+      opacity:0.5;
+      cursor:not-allowed;
+    }
+
+    .step4-btn-danger{
+      background:#dc2626;
+    }
+
+    .step4-status{
+      font-size:.8rem;
+      padding:4px 8px;
+      border-radius:4px;
+      background:var(--bg-soft);
+    }
+
+    .step4-status.connected{
+      background:#dcfce7;
+      color:#166534;
+    }
+
+    .step4-status.disconnected{
+      background:#fee2e2;
+      color:#991b1b;
+    }
+
+    :root[data-theme="dark"] .step4-status.connected{
+      background:#14532d;
+      color:#86efac;
+    }
+
+    :root[data-theme="dark"] .step4-status.disconnected{
+      background:#7f1d1d;
+      color:#fca5a5;
+    }
+
+    .step4-console-output{
+      flex:1 1 auto;
+      background:#1e1e1e;
+      color:#d4d4d4;
+      font-family:'Fira Code',monospace;
+      font-size:.75rem;
+      padding:8px;
+      border-radius:6px;
+      overflow-y:auto;
+      overflow-x:hidden;
+      min-height:0;
+      word-wrap:break-word;
+      overflow-wrap:break-word;
+      white-space:pre-wrap;
+    }
+
+    .step4-console-input{
+      display:flex;
+      gap:6px;
+    }
+
+    .step4-console-input input{
+      flex:1;
+      padding:6px 10px;
+      border-radius:6px;
+      border:1px solid var(--border);
+      font-family:'Fira Code',monospace;
+      font-size:.8rem;
+    }
+
+    .step4-log-tx{
+      color:#6ee7b7;
+    }
+
+    .step4-log-rx{
+      color:#93c5fd;
+    }
+
+    .step4-log-err{
+      color:#fca5a5;
+    }
+
+    .step4-log-info{
+      color:#a5b4fc;
+    }
+
+    /* Override step-card for step4 */
+    .step-card:has(.step4-wrapper){
+      overflow:hidden;
+      padding:0;
+      gap:0;
+    }
+
+    #stepContent:has(.step4-wrapper){
+      flex:1 1 auto;
+      height:100%;
+      min-height:0;
+    }
+
+    #step3BodeMag, #step3BodePhase{ width:100%; flex:1 1 auto; min-height:0; }
+    #step3BodeMag{ flex:1.2 1 auto; }
+    #step3BodePhase{ flex:0.8 1 auto; }
+
+    @media (max-width:1050px){
+      .step3-layout{ grid-template-columns:300px 1fr 1fr; }
+    }
+    @media (max-width:860px){
+      .step3-layout{
+        grid-template-columns:1fr;
+        grid-template-rows:auto 1.2fr 1fr;
+      }
+      .step3-panel{ max-height:300px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="app-left">
+    <div class="app-title-main" id="appTitle">
+      TP — Digital Filter Lab
+    </div>
+    <div class="app-title-sub" id="appSubtitle">
+      Real-time processing with Arduino/ESP32
+    </div>
+  </div>
+
+  <nav class="steps-nav" id="stepsNav">
+    <button class="step-tab active" data-step="1">
+      <span class="num">1</span><span id="stepLabel1">Montaje</span>
+    </button>
+    <span class="step-arrow">→</span>
+    <button class="step-tab" data-step="2">
+      <span class="num">2</span><span id="stepLabel2">Aliasing &amp; Fs</span>
+    </button>
+    <span class="step-arrow">→</span>
+    <button class="step-tab" data-step="3">
+      <span class="num">3</span><span id="stepLabel3">Señal &amp; Filtro</span>
+    </button>
+    <span class="step-arrow">→</span>
+    <button class="step-tab" data-step="4">
+      <span class="num">4</span><span id="stepLabel4">Conexión µC</span>
+    </button>
+    <span class="step-arrow" id="step5Arrow">→</span>
+    <button class="step-tab" data-step="5" id="step5Button">
+      <span class="num">5</span><span id="stepLabel5">Bode &amp; Medidas</span>
+    </button>
+  </nav>
+
+  <div class="top-right">
+    <label>
+      🌐
+      <select id="langSelect">
+        <option value="es">ES</option>
+        <option value="fr">FR</option>
+        <option value="en" selected>EN</option>
+      </select>
+    </label>
+    <label>
+      💡
+      <select id="themeSelect">
+        <option value="light" selected>Light</option>
+        <option value="dark">Dark</option>
+      </select>
+    </label>
+  </div>
+</header>
+
+<main>
+  <div class="step-wrapper">
+    <div class="step-card">
+      <div id="stepContent"></div>
+      <div class="placeholder-note" id="stepNote"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+  // ===== FEATURE FLAGS =====
+  const ENABLE_STEP5 = false;  // Set to true to show step 5 (Bode & Measurements)
+
+  // Hide step 5 if disabled
+  if (!ENABLE_STEP5) {
+    document.getElementById('step5Arrow').style.display = 'none';
+    document.getElementById('step5Button').style.display = 'none';
+  }
+
+  // MARKDOWN Step 1
+  const markdownContent = {
+    step1: {
+      es: `# Montaje del Sistema
+
+## Objetivo
+Implementar un sistema de adquisición y procesamiento digital de señales en tiempo real utilizando Arduino o ESP32.
+
+## Material Necesario
+- Microcontrolador (Arduino UNO R4 o ESP32)
+- Generador de funciones
+- Osciloscopio
+- Cables y breadboard
+- Resistencias y condensadores para circuito antialiasing
+
+## Procedimiento
+
+1. **Conexión del ADC**: Conectar la señal de entrada al pin analógico del microcontrolador
+2. **Configuración del DAC**: Preparar la salida para visualizar la señal procesada
+3. **Verificación**: Comprobar las conexiones con el osciloscopio
+
+## Consideraciones Importantes
+- Verificar los niveles de tensión (0-3.3V para ESP32, 0-5V para Arduino)
+- Implementar un filtro antialiasing si es necesario
+- Configurar correctamente la frecuencia de muestreo
+
+---
+**Nota**: Asegúrate de tener todos los componentes antes de comenzar el montaje.`,
+      fr: `# Montage du Système
+
+## Objectif
+Implémenter un système d'acquisition et de traitement numérique de signaux en temps réel avec Arduino ou ESP32.
+
+## Matériel Nécessaire
+- Microcontrôleur (Arduino UNO R4 ou ESP32)
+- Générateur de fonctions
+- Oscilloscope
+- Câbles et breadboard
+- Résistances et condensateurs pour circuit anti-repliement
+
+## Procédure
+
+1. **Connexion de l'ADC**: Connecter le signal d'entrée à la broche analogique du microcontrôleur
+2. **Configuration du DAC**: Préparer la sortie pour visualiser le signal traité
+3. **Vérification**: Vérifier les connexions avec l'oscilloscope
+
+## Considérations Importantes
+- Vérifier les niveaux de tension (0-3.3V pour ESP32, 0-5V pour Arduino)
+- Implémenter un filtre anti-repliement si nécessaire
+- Configurer correctement la fréquence d'échantillonnage
+
+---
+**Note**: Assurez-vous d'avoir tous les composants avant de commencer le montage.`,
+      en: `# System Setup
+
+## Objective
+Implement a real-time digital signal acquisition and processing system using Arduino or ESP32.
+
+## Required Materials
+- Microcontroller (Arduino UNO R4 or ESP32)
+- Function generator
+- Oscilloscope
+- Cables and breadboard
+- Resistors and capacitors for anti-aliasing circuit
+
+## Procedure
+
+1. **ADC Connection**: Connect the input signal to the microcontroller's analog pin
+2. **DAC Configuration**: Prepare the output to visualize the processed signal
+3. **Verification**: Check connections with the oscilloscope
+
+## Important Considerations
+- Verify voltage levels (0-3.3V for ESP32, 0-5V for Arduino)
+- Implement an anti-aliasing filter if necessary
+
+---
+**Note**: Make sure you have all components before starting the assembly.`
+    }
+  };
+
+  const state = { lang: 'en', step: 1 };
+
+  const stepLabels = {
+    es: {1:'Montaje',2:'Aliasing & Fs',3:'Señal & Filtro',4:'Conexión µC',5:'Bode & Medidas'},
+    fr: {1:'Montage',2:'Aliasing & Fs',3:'Signal & Filtre',4:'Connexion µC',5:'Bode & Mesures'},
+    en: {1:'Setup',2:'Aliasing & Fs',3:'Signal & Filter',4:'µC Connection',5:'Bode & Measurements'}
+  };
+
+  const appTitles = {
+    es:{main:'TP — Laboratorio de Filtros Digitales',sub:'Procesamiento en tiempo real con Arduino/ESP32 - Franco FERRUCCI'},
+    fr:{main:'TP — Laboratoire de Filtres Numériques',sub:'Traitement en temps réel avec Arduino/ESP32 - Franco FERRUCCI'},
+    en:{main:'Digital Filter Lab',sub:'Real-time processing with Arduino/ESP32 - Franco FERRUCCI'}
+  };
+
+  const stepNotes = {
+    es:{1:'',2:'',3:'',4:'',5:''},
+    fr:{1:'',2:'',3:'',4:'',5:''},
+    en:{1:'',2:'',3:'',4:'',5:''}
+  };
+
+  const stepContentEl = document.getElementById('stepContent');
+  const stepNoteEl = document.getElementById('stepNote');
+  const langSelect = document.getElementById('langSelect');
+  const themeSelect = document.getElementById('themeSelect');
+  const stepTabs = document.querySelectorAll('.step-tab');
+
+  // Step 2 state
+  const step2State = { f0:10, Fs:50, periods:3, interpType:'ideal' };
+
+  // Render Step 2 layout
+  function renderStep2() {
+    const texts = {
+      es:{
+        f0Label:'Frecuencia de entrada f<sub>IN</sub>',
+        FsLabel:'Frecuencia de muestreo Fs',
+        periodsLabel:'Períodos mostrados',
+        interpLabel:'Tipo de interpolación',
+        interpIdeal:'Ideal (sinc)',
+        interpZOH:'ZOH (escalera)',
+        interpLinear:'Lineal',
+        interpDescTitle:'Nota',
+        interpDescIdeal:'La <strong>interpolación ideal</strong> usando función sinc es no causal (requiere muestras futuras), por lo que no se puede usar en tiempo real, solo off-line.',
+        interpDescZOH:'El <strong>Zero-Order Hold</strong> mantiene el valor de cada muestra hasta la siguiente. Es causal y se usa en tiempo real.',
+        interpDescLinear:'La <strong>interpolación lineal</strong> conecta las muestras con líneas rectas. Es causal y simple de implementar.',
+        temporal:'Evolución Temporal',
+        spectral:'Diagrama Espectral',
+        theory:'Teorema de Muestreo',
+        f0:'Frecuencia f<sub>IN</sub>',Fs:'Frecuencia Fs',
+        fNyquist:'Frecuencia de Nyquist',
+        condition:'Condición',
+        statusOk:'✓ Muestreo correcto',
+        statusNyquist:'⚠ Límite de Nyquist',
+        statusAlias:'✗ Aliasing detectado',
+        fAlias:'Frecuencia aparente (f*<sub>IN</sub>)',
+        legend_continuous:'Continua',
+        legend_samples:'Muestras',
+        legend_reconstructed:'Reconstruida',
+        legend_time:'Tiempo (s)',
+        legend_no_aliasing:'Sin aliasing',
+        legend_aliasing:'Con aliasing'
+      },
+      fr:{
+        f0Label:'Fréquence d\'entrée f<sub>IN</sub>',
+        FsLabel:'Fréquence d\'échantillonnage Fs',
+        periodsLabel:'Périodes affichées',
+        interpLabel:'Type d\'interpolation',
+        interpIdeal:'Idéale (sinc)',
+        interpZOH:'ZOH (escalier)',
+        interpLinear:'Linéaire',
+        interpDescTitle:'Nota bene',
+        interpDescIdeal:'L\'<strong>interpolation idéale</strong> utilisant la fonction sinc est non causale (nécessite des échantillons futurs), donc inutilisable en temps réel, seulement hors ligne.',
+        interpDescZOH:'Le <strong>Zero-Order Hold</strong> maintient la valeur de chaque échantillon jusqu\'au suivant. Elle est causale et utilisée en temps réel.',
+        interpDescLinear:'L\'<strong>interpolation linéaire</strong> connecte les échantillons avec des lignes droites. Elle est causale et simple à implémenter.',
+        temporal:'Évolution Temporelle',
+        spectral:'Diagramme Spectral',
+        theory:'Théorème d\'Échantillonnage',
+        f0:'Fréquence f<sub>IN</sub>',Fs:'Fréquence Fs',
+        fNyquist:'Fréquence de Nyquist',
+        condition:'Condition',
+        statusOk:'✓ Échantillonnage correct',
+        statusNyquist:'⚠ Limite de Nyquist',
+        statusAlias:'✗ Repliement détecté',
+        fAlias:'Fréquence apparente (f*<sub>IN</sub>)',
+        legend_continuous:'Continue',
+        legend_samples:'Échantillons',
+        legend_reconstructed:'Reconstruite',
+        legend_time:'Temps (s)',
+        legend_no_aliasing:'Sans repliement',
+        legend_aliasing:'Avec repliement'
+      },
+      en:{
+        f0Label:'Input frequency f<sub>IN</sub>',
+        FsLabel:'Sampling frequency Fs',
+        periodsLabel:'Periods shown',
+        interpLabel:'Interpolation type',
+        interpIdeal:'Ideal (sinc)',
+        interpZOH:'ZOH (staircase)',
+        interpLinear:'Linear',
+        interpDescTitle:'Note',
+        interpDescIdeal:'The <strong>ideal interpolation</strong> using sinc function is non-causal (requires future samples), so it cannot be used in real-time, only offline.',
+        interpDescZOH:'The <strong>Zero-Order Hold</strong> maintains each sample value until the next. It is causal and used in real-time.',
+        interpDescLinear:'The <strong>linear interpolation</strong> connects samples with straight lines. It is causal and simple to implement.',
+        temporal:'Temporal Evolution',
+        spectral:'Spectral Diagram',
+        theory:'Sampling Theorem',
+        f0:'Frequency f<sub>IN</sub>',Fs:'Frequency Fs',
+        fNyquist:'Nyquist Frequency',
+        condition:'Condition',
+        statusOk:'✓ Correct sampling',
+        statusNyquist:'⚠ Nyquist limit',
+        statusAlias:'✗ Aliasing detected',
+        fAlias:'Apparent frequency (f*<sub>IN</sub>)',
+        legend_continuous:'Continuous',
+        legend_samples:'Samples',
+        legend_reconstructed:'Reconstructed',
+        legend_time:'Time (s)',
+        legend_no_aliasing:'No aliasing',
+        legend_aliasing:'With aliasing'
+      }
+    };
+    const t = texts[state.lang];
+
+    stepContentEl.innerHTML = `
+      <div class="step2-container">
+        <div class="step2-sidebar">
+          <div class="control-group">
+            <label>
+              <span>${t.f0Label}</span>
+              <span class="value" id="f0Value">${step2State.f0} Hz</span>
+            </label>
+            <input type="range" id="f0Slider" min="-100" max="100" value="${step2State.f0}" step="1">
+          </div>
+          <div class="control-group">
+            <label>
+              <span>${t.FsLabel}</span>
+              <span class="value" id="FsValue">${step2State.Fs} Hz</span>
+            </label>
+            <input type="range" id="FsSlider" min="2" max="500" value="${step2State.Fs}" step="1">
+          </div>
+          <div class="control-group">
+            <label>
+              <span>${t.periodsLabel}</span>
+              <span class="value" id="periodsValue">${step2State.periods}</span>
+            </label>
+            <input type="range" id="periodsSlider" min="1" max="10" value="${step2State.periods}" step="1">
+          </div>
+          
+          <div class="control-group" style="margin-top:16px;">
+            <label style="margin-bottom:8px; display:block; font-weight:500;">
+              ${t.interpLabel}
+            </label>
+            <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-start;">
+              <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                <input type="radio" name="interpType" value="ideal" ${step2State.interpType === 'ideal' ? 'checked' : ''}>
+                <span style="font-size:0.9rem;">${t.interpIdeal}</span>
+              </label>
+              <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                <input type="radio" name="interpType" value="zoh" ${step2State.interpType === 'zoh' ? 'checked' : ''}>
+                <span style="font-size:0.9rem;">${t.interpZOH}</span>
+              </label>
+              <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                <input type="radio" name="interpType" value="linear" ${step2State.interpType === 'linear' ? 'checked' : ''}>
+                <span style="font-size:0.9rem;">${t.interpLinear}</span>
+              </label>
+            </div>
+          </div>
+          
+          <div class="interp-description" id="interpDesc" style="margin-top:12px; padding:10px; background:var(--accent-soft); border-radius:8px; font-size:0.82rem; line-height:1.5; color:var(--fg);">
+            <div style="font-weight:600; margin-bottom:4px; color:var(--accent);">${t.interpDescTitle}</div>
+            <div id="interpDescText">${t.interpDescIdeal}</div>
+          </div>
+        </div>
+
+        <div class="step2-temporal">
+          <div style="font-size:0.92rem; font-weight:500; margin-bottom:8px; color:var(--accent);">${t.temporal}</div>
+          <div style="width:100%; height:calc(100% - 30px); position:relative;">
+            <canvas id="temporalCanvas"></canvas>
+          </div>
+        </div>
+
+        <div class="step2-spectral">
+          <div>
+            <div style="font-size:0.92rem; font-weight:500; margin-bottom:8px; color:var(--accent);">${t.spectral}</div>
+            <!-- altura un poco mayor para que no toque el borde inferior -->
+            <div style="width:100%; height:230px; position:relative;">
+              <canvas id="spectralCanvas"></canvas>
+            </div>
+          </div>
+          <div class="info-panel" id="theoryPanel">
+            <div style="font-size:0.9rem; font-weight:500; margin-bottom:4px; color:var(--accent);">${t.theory}</div>
+            <div class="info-row">
+              <span class="info-label">${t.f0}:</span>
+              <span class="info-value" id="f0InfoVal">10 Hz</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">${t.Fs}:</span>
+              <span class="info-value" id="FsInfoVal">50 Hz</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">${t.fNyquist}:</span>
+              <span class="info-value" id="fNyquistVal">25 Hz</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">${t.condition}:</span>
+              <span class="info-value" id="conditionVal">Fs > 2·f<sub>IN</sub></span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">${t.fAlias}:</span>
+              <span class="info-value" id="fAliasVal">10.0 Hz</span>
+            </div>
+            <div class="status-indicator status-ok" id="statusIndicator">${t.statusOk}</div>
+          </div>
+        </div>
+      </div>
+    `;
+    initStep2();
+  }
+
+  function initStep2() {
+    document.getElementById('f0Slider').addEventListener('input', e => {
+      step2State.f0 = parseFloat(e.target.value); updateStep2();
+    });
+    document.getElementById('FsSlider').addEventListener('input', e => {
+      step2State.Fs = parseFloat(e.target.value); updateStep2();
+    });
+    document.getElementById('periodsSlider').addEventListener('input', e => {
+      step2State.periods = parseInt(e.target.value); updateStep2();
+    });
+    
+    // Event listeners para radio buttons de interpolación
+    document.querySelectorAll('input[name="interpType"]').forEach(radio => {
+      radio.addEventListener('change', e => {
+        step2State.interpType = e.target.value;
+        updateInterpDescription();
+        updateStep2();
+      });
+    });
+
+    // Resize handler to redraw plots
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        if (state.step === 2) {
+          drawTemporalGraph();
+          drawSpectralGraph();
+        }
+      }, 100);
+    });
+
+    updateStep2();
+  }
+  
+  function updateInterpDescription() {
+    const texts = {
+      es: {
+        ideal: 'La <strong>interpolación ideal</strong> usando función sinc es no causal (requiere muestras futuras), por lo que no se puede usar en tiempo real, solo off-line.',
+        zoh: 'El <strong>Zero-Order Hold</strong> mantiene el valor de cada muestra hasta la siguiente. Es causal y se usa en tiempo real.',
+        linear: 'La <strong>interpolación lineal</strong> conecta las muestras con líneas rectas. Es causal y simple de implementar.'
+      },
+      fr: {
+        ideal: 'L\'<strong>interpolation idéale</strong> utilisant la fonction sinc est non causale (nécessite des échantillons futurs), donc inutilisable en temps réel, seulement hors ligne.',
+        zoh: 'Le <strong>Zero-Order Hold</strong> maintient la valeur de chaque échantillon jusqu\'au suivant. Elle est causale et utilisée en temps réel.',
+        linear: 'L\'<strong>interpolation linéaire</strong> connecte les échantillons avec des lignes droites. Elle est causale et simple à implémenter.'
+      },
+      en: {
+        ideal: 'The <strong>ideal interpolation</strong> using sinc function is non-causal (requires future samples), so it cannot be used in real-time, only offline.',
+        zoh: 'The <strong>Zero-Order Hold</strong> maintains each sample value until the next. It is causal and used in real-time.',
+        linear: 'The <strong>linear interpolation</strong> connects samples with straight lines. It is causal and simple to implement.'
+      }
+    };
+    const descText = texts[state.lang][step2State.interpType];
+    document.getElementById('interpDescText').innerHTML = descText;
+  }
+
+  function updateStep2() {
+    const { f0, Fs, periods } = step2State;
+    document.getElementById('f0Value').textContent = f0 + ' Hz';
+    document.getElementById('FsValue').textContent = Fs + ' Hz';
+    document.getElementById('periodsValue').textContent = periods;
+
+    // Validar que f0 no sea cero para evitar división por cero
+    if (Math.abs(f0) < 0.1) {
+      // Si f0 está muy cerca de cero, no dibujar los gráficos
+      return;
+    }
+
+    const fNyquist = Fs / 2;
+    const ratio = Fs / Math.abs(f0);
+    // Calcular frecuencia aparente con el mismo algoritmo del gráfico
+    let fAlias = f0 % Fs;
+    if(fAlias > Fs/2) fAlias = fAlias - Fs;
+    if(fAlias < -Fs/2) fAlias = fAlias + Fs;
+
+    const texts = {
+      es:{statusOk:'✓ Muestreo correcto',statusNyquist:'⚠ Límite de Nyquist',statusAlias:'✗ Aliasing detectado'},
+      fr:{statusOk:'✓ Échantillonnage correct',statusNyquist:'⚠ Limite de Nyquist',statusAlias:'✗ Repliement détecté'},
+      en:{statusOk:'✓ Correct sampling',statusNyquist:'⚠ Nyquist limit',statusAlias:'✗ Aliasing detected'}
+    };
+    const t = texts[state.lang];
+
+    document.getElementById('f0InfoVal').textContent = f0.toFixed(1) + ' Hz';
+    document.getElementById('FsInfoVal').textContent = Fs.toFixed(1) + ' Hz';
+    document.getElementById('fNyquistVal').textContent = fNyquist.toFixed(1) + ' Hz';
+    document.getElementById('conditionVal').innerHTML = 'Fs > 2·f<sub>IN</sub>';
+    document.getElementById('fAliasVal').textContent = (fAlias >= 0 ? '+' : '') + fAlias.toFixed(1) + ' Hz';
+
+    const statusIndicator = document.getElementById('statusIndicator');
+    if (ratio > 2.1) {
+      statusIndicator.className = 'status-indicator status-ok';
+      statusIndicator.textContent = t.statusOk;
+    } else if (ratio >= 2.0) {
+      statusIndicator.className = 'status-indicator status-warning';
+      statusIndicator.textContent = t.statusNyquist;
+    } else {
+      statusIndicator.className = 'status-indicator status-error';
+      statusIndicator.textContent = t.statusAlias;
+    }
+
+    drawTemporalGraph();
+    drawSpectralGraph();
+  }
+
+  function drawTemporalGraph() {
+    const canvas = document.getElementById('temporalCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const legendTexts = {
+      es:{legend_continuous:'Continua',legend_samples:'Muestras',legend_reconstructed:'Reconstruida',legend_time:'Tiempo (s)'},
+      fr:{legend_continuous:'Continue',legend_samples:'Échantillons',legend_reconstructed:'Reconstruite',legend_time:'Temps (s)'},
+      en:{legend_continuous:'Continuous',legend_samples:'Samples',legend_reconstructed:'Reconstructed',legend_time:'Time (s)'}
+    };
+    const t = legendTexts[state.lang];
+    const dpr = window.devicePixelRatio || 1;
+
+    const rect = canvas.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+
+    const { f0, Fs, periods } = step2State;
+    
+    // Validar que f0 no sea cero
+    if (Math.abs(f0) < 0.1) {
+      ctx.clearRect(0,0,width,height);
+      return;
+    }
+    
+    const T0 = 1 / Math.abs(f0);  // Usar valor absoluto para el período
+    const duration = periods * T0;
+    const padding = 40;
+    const graphWidth = width - 2 * padding;
+    const graphHeight = height - 2 * padding;
+
+    ctx.clearRect(0,0,width,height);
+
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark' ||
+      (!document.documentElement.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    const bgColor = isDark ? '#0b1020' : '#f7f8fb';
+    const gridColor = isDark ? '#1f2937' : '#e5e7eb';
+    const textColor = isDark ? '#9ca3af' : '#6b7280';
+    const signalColor = '#38bdf8';
+    const sampleColor = '#fb7185';
+    const reconstructColor = '#22c55e';
+
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0,0,width,height);
+
+    // Eje horizontal central
+    ctx.strokeStyle = gridColor;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(padding, padding + graphHeight/2);
+    ctx.lineTo(width-padding, padding + graphHeight/2);
+    ctx.stroke();
+
+    // Líneas verticales
+    ctx.setLineDash([2,2]);
+    for(let i=0;i<=periods;i++){
+      const x = padding + (i/periods)*graphWidth;
+      ctx.beginPath();
+      ctx.moveTo(x,padding);
+      ctx.lineTo(x,height-padding);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+
+    // Señal continua
+    ctx.strokeStyle = signalColor;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    const numPoints = 1000;
+    for(let i=0;i<=numPoints;i++){
+      const t = (i/numPoints)*duration;
+      const x = padding + (t/duration)*graphWidth;
+      const y = padding + graphHeight/2 - Math.sin(2*Math.PI*f0*t)*(graphHeight/2.5);
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+
+    // Muestras
+    const Ts = 1/Fs;
+    const samples=[];
+    const numSamples = Math.floor(duration/Ts)+1;
+    for(let i=0;i<numSamples;i++){
+      const t=i*Ts;
+      if(t>duration) break;
+      const v=Math.sin(2*Math.PI*f0*t);
+      const x=padding+(t/duration)*graphWidth;
+      const y=padding+graphHeight/2 - v*(graphHeight/2.5);
+      samples.push({x,y,t,value:v});
+    }
+
+    // Frecuencia aparente
+    const fNyquist = Fs/2;
+    const k = Math.floor(f0/Fs);
+    let fApp = f0 - k*Fs;
+    if(fApp>fNyquist) fApp = Fs - fApp;
+
+    // Fase aproximada
+    let phase=0;
+    if(samples.length>=2){
+      const t1=samples[0].t, v1=samples[0].value;
+      const t2=samples[1].t, v2=samples[1].value;
+      const p1 = Math.asin(Math.max(-1,Math.min(1,v1))) - 2*Math.PI*fApp*t1;
+      const p2 = Math.PI - Math.asin(Math.max(-1,Math.min(1,v1))) - 2*Math.PI*fApp*t1;
+      const e1 = Math.abs(Math.sin(2*Math.PI*fApp*t2+p1)-v2);
+      const e2 = Math.abs(Math.sin(2*Math.PI*fApp*t2+p2)-v2);
+      phase = e1<e2 ? p1 : p2;
+    }
+
+    // Reconstruida según el tipo de interpolación
+    if(samples.length>1){
+      const interpType = step2State.interpType;
+      ctx.strokeStyle=reconstructColor;
+      ctx.lineWidth=2;
+      ctx.setLineDash([4,4]);  // Todas las interpolaciones con línea punteada
+      
+      if(interpType === 'ideal') {
+        // Interpolación ideal usando sinc (aproximación con frecuencia aparente)
+        ctx.beginPath();
+        for(let i=0;i<=numPoints;i++){
+          const t=(i/numPoints)*duration;
+          const x=padding+(t/duration)*graphWidth;
+          const y=padding+graphHeight/2 - Math.sin(2*Math.PI*fApp*t+phase)*(graphHeight/2.5);
+          if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        }
+        ctx.stroke();
+      } else if(interpType === 'zoh') {
+        // Zero-Order Hold (escalera)
+        ctx.beginPath();
+        for(let i=0; i<samples.length; i++){
+          const s = samples[i];
+          const nextT = (i < samples.length-1) ? samples[i+1].t : duration;
+          const x1 = padding + (s.t/duration)*graphWidth;
+          const x2 = padding + (nextT/duration)*graphWidth;
+          if(i===0) ctx.moveTo(x1, s.y);
+          ctx.lineTo(x2, s.y);
+          if(i < samples.length-1) {
+            ctx.lineTo(x2, samples[i+1].y);
+          }
+        }
+        ctx.stroke();
+      } else if(interpType === 'linear') {
+        // Interpolación lineal
+        ctx.beginPath();
+        for(let i=0; i<samples.length; i++){
+          const s = samples[i];
+          if(i===0) ctx.moveTo(s.x, s.y);
+          else ctx.lineTo(s.x, s.y);
+        }
+        ctx.stroke();
+      }
+      
+      ctx.setLineDash([]);
+    }
+
+    // Puntos muestras
+    samples.forEach(s=>{
+      ctx.fillStyle=sampleColor;
+      ctx.beginPath();
+      ctx.arc(s.x,s.y,4,0,2*Math.PI);
+      ctx.fill();
+      ctx.strokeStyle=isDark?'#0b1020':'#ffffff';
+      ctx.lineWidth=2;
+      ctx.stroke();
+    });
+
+    // Ejes/labels (aumentar tamaño de fuente)
+    ctx.fillStyle=textColor;
+    ctx.font='14px system-ui';
+    ctx.textAlign='center';
+    ctx.fillText('0', padding, height-padding+16);
+    ctx.fillText((periods*T0).toFixed(3)+' s', width-padding, height-padding+16);
+    
+    // Label del eje X en negrita
+    ctx.font='bold 16px system-ui';
+    ctx.textAlign='right';
+    ctx.fillText(t.legend_time, width-padding, height-padding+32);
+
+    // Leyenda temporal (aumentar tamaño)
+    const legendY = padding-18;
+    ctx.font='13px system-ui';
+    ctx.textAlign='left';
+
+    ctx.strokeStyle=signalColor;
+    ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(padding,legendY);
+    ctx.lineTo(padding+20,legendY);
+    ctx.stroke();
+    ctx.fillStyle=textColor;
+    ctx.fillText(t.legend_continuous, padding+25, legendY+4);
+
+    ctx.fillStyle=sampleColor;
+    ctx.beginPath();
+    ctx.arc(padding+110,legendY,3,0,2*Math.PI);
+    ctx.fill();
+    ctx.fillStyle=textColor;
+    ctx.fillText(t.legend_samples, padding+118, legendY+4);
+
+    ctx.strokeStyle=reconstructColor;
+    ctx.setLineDash([4,4]);
+    ctx.beginPath();
+    ctx.moveTo(padding+205,legendY);
+    ctx.lineTo(padding+225,legendY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle=textColor;
+    ctx.fillText(t.legend_reconstructed, padding+232, legendY+4);
+  }
+
+  function drawSpectralGraph() {
+    const canvas = document.getElementById('spectralCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const legendTexts = {
+      es:{legend_no_aliasing:'Sin aliasing',legend_aliasing:'Con aliasing'},
+      fr:{legend_no_aliasing:'Sans repliement',legend_aliasing:'Avec repliement'},
+      en:{legend_no_aliasing:'No aliasing',legend_aliasing:'With aliasing'}
+    };
+    const t = legendTexts[state.lang];
+    const dpr = window.devicePixelRatio || 1;
+
+    const rect = canvas.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+
+    const { f0, Fs } = step2State;
+    
+    // Validar que f0 no sea cero
+    if (Math.abs(f0) < 0.1) {
+      ctx.clearRect(0,0,width,height);
+      return;
+    }
+    
+    const padding = 50;  // Aumentar padding superior para el y-label
+    const bottomPadding = 60;  // Más espacio abajo para x-label y leyenda
+    const graphWidth = width - 2*padding;
+    const graphHeight = height - padding - bottomPadding;
+
+    ctx.clearRect(0,0,width,height);
+
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark' ||
+      (!document.documentElement.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    const bgColor = isDark ? '#0b1020' : '#f7f8fb';
+    const gridColor = isDark ? '#1f2937' : '#e5e7eb';
+    const textColor = isDark ? '#9ca3af' : '#6b7280';
+    const accentColor = '#38bdf8';
+    const aliasColor = '#fb7185';
+
+    ctx.fillStyle=bgColor;
+    ctx.fillRect(0,0,width,height);
+
+    const xMin=-2*Fs, xMax=2*Fs;
+    const yMin=-Fs/2, yMax=Fs/2;
+
+    const f0ToX = f => padding + ((f-xMin)/(xMax-xMin))*graphWidth;
+    const f0StarToY = f => height - bottomPadding - ((f-yMin)/(yMax-yMin))*graphHeight;
+
+    // Eje X en el centro (y=0)
+    const yZero = f0StarToY(0);
+    ctx.strokeStyle=textColor;
+    ctx.lineWidth=1.5;
+    ctx.beginPath();
+    ctx.moveTo(padding,yZero);
+    ctx.lineTo(width-padding,yZero);
+    ctx.stroke();
+
+    // Eje Y centrado en x=0
+    const xZero = f0ToX(0);
+    ctx.beginPath();
+    ctx.moveTo(xZero,padding);
+    ctx.lineTo(xZero,height-bottomPadding);
+    ctx.stroke();
+
+    // Guías verticales -2Fs, -Fs, 0, Fs, 2Fs
+    ctx.strokeStyle=gridColor;
+    ctx.lineWidth=1;
+    ctx.setLineDash([2,2]);
+    for(let k=-2;k<=2;k++){
+      const x=f0ToX(k*Fs);
+      ctx.beginPath();
+      ctx.moveTo(x,padding);
+      ctx.lineTo(x,height-bottomPadding);
+      ctx.stroke();
+    }
+
+    // Líneas horizontales Nyquist (+Fs/2 y -Fs/2)
+    const yNyquistPos=f0StarToY(Fs/2);
+    const yNyquistNeg=f0StarToY(-Fs/2);
+    ctx.beginPath();
+    ctx.moveTo(padding,yNyquistPos);
+    ctx.lineTo(width-padding,yNyquistPos);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(padding,yNyquistNeg);
+    ctx.lineTo(width-padding,yNyquistNeg);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Curva alias tipo diente de sierra
+    ctx.strokeStyle=accentColor;
+    ctx.lineWidth=2.5;
+    ctx.beginPath();
+    const numPoints=1000;
+    for(let i=0;i<=numPoints;i++){
+      const f=xMin+(i/numPoints)*(xMax-xMin);
+      // Calcular f* con patrón diente de sierra
+      let fStar = f % Fs;
+      if(fStar > Fs/2) fStar = fStar - Fs;
+      if(fStar < -Fs/2) fStar = fStar + Fs;
+      const x=f0ToX(f);
+      const y=f0StarToY(fStar);
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+
+    // Punto actual
+    const k = Math.floor(f0/Fs);
+    let fStar = f0 % Fs;
+    if(fStar > Fs/2) fStar = fStar - Fs;
+    if(fStar < -Fs/2) fStar = fStar + Fs;
+    const xF0=f0ToX(f0);
+    const yF0=f0StarToY(fStar);
+    const fNyquist=Fs/2;
+    const pointColor = (f0>fNyquist)?aliasColor:accentColor;
+
+    // Crosshairs (vertical & horizontal) hacia ejes
+    ctx.setLineDash([4,4]);
+    ctx.strokeStyle=pointColor;
+    ctx.lineWidth=1;
+    // vertical hasta eje X (en y=0)
+    ctx.beginPath();
+    ctx.moveTo(xF0,yF0);
+    ctx.lineTo(xF0,yZero);
+    ctx.stroke();
+    // horizontal hasta eje Y (en x=0)
+    ctx.beginPath();
+    ctx.moveTo(xF0,yF0);
+    ctx.lineTo(xZero,yF0);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Punto
+    ctx.fillStyle=pointColor;
+    ctx.beginPath();
+    ctx.arc(xF0,yF0,5,0,2*Math.PI);
+    ctx.fill();
+    ctx.strokeStyle=isDark?'#0b1020':'#ffffff';
+    ctx.lineWidth=2;
+    ctx.stroke();
+
+    // Labels ejes X (mover bien abajo sin superposición)
+    ctx.fillStyle=textColor;
+    ctx.font='14px system-ui';
+    ctx.textAlign='center';
+    ctx.fillText((-2*Fs).toFixed(0), f0ToX(-2*Fs), yZero+22);
+    ctx.fillText((-Fs).toFixed(0), f0ToX(-Fs), yZero+22);
+    ctx.fillText('0', f0ToX(0)+15, yZero+22);  // Desplazar "0" a la derecha
+    ctx.fillText(Fs.toFixed(0), f0ToX(Fs), yZero+22);
+    ctx.fillText((2*Fs).toFixed(0), f0ToX(2*Fs), yZero+22);
+    ctx.font='bold 16px system-ui';  // Negrita
+    ctx.textAlign='right';  // Justificado a la derecha
+    ctx.fillText('fᵢₙ (Hz)', width-padding-10, height-bottomPadding+45);
+
+    // Labels eje Y (cerca del eje centrado en x=0, mostrar decimales si no son enteros)
+    ctx.textAlign='right';
+    ctx.font='14px system-ui';
+    const fNyquistNeg = -Fs/2;
+    const fNyquistPos = Fs/2;
+    // Mostrar con 1 decimal si no es entero, sino sin decimales
+    const formatFreq = (f) => {
+      return (f % 1 === 0) ? f.toFixed(0) : f.toFixed(1);
+    };
+    ctx.fillText(formatFreq(fNyquistNeg), xZero-8, yNyquistNeg+4);
+    ctx.fillText('0', xZero-8, yZero-10);  // Desplazar "0" hacia arriba
+    ctx.fillText(formatFreq(fNyquistPos), xZero-8, yNyquistPos+4);
+    
+    // Label del eje Y horizontal arriba con más espacio y negrita
+    ctx.textAlign='center';
+    ctx.font='bold 16px system-ui';  // Negrita
+    ctx.fillText('f*ᵢₙ (Hz)', xZero, padding-15);  // Más espacio desde el borde
+
+    // Leyenda centrada en la parte inferior
+    ctx.font='13px system-ui';
+    const legendY = height - 12;  // Parte inferior
+    const legendCenterX = width / 2;
+    const spacing = 120;  // Espacio entre las dos leyendas
+    const circleOffset = 10;  // Espacio entre círculo y texto
+
+    // Leyenda "Sin aliasing" a la izquierda
+    ctx.textAlign='left';
+    ctx.fillStyle=accentColor;
+    ctx.beginPath();
+    ctx.arc(legendCenterX - spacing/2 - 60, legendY-4, 4, 0, 2*Math.PI);
+    ctx.fill();
+    ctx.fillStyle=textColor;
+    ctx.fillText(t.legend_no_aliasing, legendCenterX - spacing/2 - 60 + circleOffset, legendY);
+
+    // Leyenda "Con aliasing" a la derecha
+    ctx.fillStyle=aliasColor;
+    ctx.beginPath();
+    ctx.arc(legendCenterX + spacing/2 - 50, legendY-4, 4, 0, 2*Math.PI);
+    ctx.fill();
+    ctx.fillStyle=textColor;
+    ctx.fillText(t.legend_aliasing, legendCenterX + spacing/2 - 50 + circleOffset, legendY);
+  }
+
+  // ===================== STEP 3 CODE =====================
+
+  // Step 3 i18n texts
+  const step3Texts = {
+    es: {
+      section_input: "Entrada",
+      section_nyquist: "Frecuencia de Nyquist",
+      section_filter: "Filtro",
+      section_visual: "Visualización",
+      section_advanced: "Opciones avanzadas",
+      input_signal_type: "Tipo de señal",
+      signal_sine: "Senoidal",
+      signal_square: "Cuadrada",
+      signal_tri: "Triangular",
+      force_range: "Forzar 0 ≤ Vin ≤ 3 V",
+      vpp_label: "Vpp (V)",
+      offset_label: "Offset (V)",
+      fin_label: "Frecuencia f<sub>IN</sub> (Hz)",
+      fin_note: "10 Hz – 50 kHz (log)",
+      duty_label: "Duty (cuadrada)",
+      fs_label: "Frecuencia de muestreo Fs",
+      cycles_label: "Ciclos visibles",
+      steady_note: "Se muestra solo el régimen permanente.",
+      nyq_value_prefix: "F<sub>Nyq</sub> = ",
+      nyq_condition: "Condición: Fs > 2·f<sub>IN</sub>",
+      nyq_alias_zone: "Zona de aliasing: f<sub>IN</sub> > F<sub>Nyq</sub>",
+      nyq_fin_prefix: "f<sub>IN</sub> = ",
+      nyq_fstar_prefix: "f*<sub>IN</sub> = ",
+      nyq_not_sine: "¡entrada no sinusoidal!",
+      nyq_status_ok: "✓ Muestreo correcto",
+      nyq_status_alias: "✗ Aliasing detectado",
+      filter_type_label: "Tipo de filtro",
+      filter_ma: "Media móvil",
+      filter_bypass: "Bypass",
+      filter_lp: "Pasa bajos IIR",
+      filter_hp: "Pasa altos IIR",
+      filter_diff: "Diferenciador",
+      filter_ma_order: "Orden N (media móvil)",
+      filter_ratio: "Razón F<sub>corte</sub> / F<sub>Nyq</sub>",
+      fc_prefix: "Frecuencia de corte: ",
+      filter_note: "El filtro se aplica a x[n] con retardo de 1 muestra.",
+      visual_time_title: "Respuesta temporal",
+      visual_bode_title: "Bode",
+      vis_show_time: "Mostrar respuesta temporal",
+      vis_overlay: "Superponer entrada y salida",
+      vis_show_zoh: "Mostrar salida ZOH",
+      vis_auto_y: "Ajuste automático Y",
+      vis_show_bode: "Mostrar Bode",
+      vis_show_phase: "Mostrar fase (°)",
+      vis_mag_label: "Magnitud Bode",
+      vis_mag_linear: "V/V",
+      vis_mag_db: "dB",
+      vis_log_freq: "Escala logarítmica",
+      advanced_bode_ext_title: "Extensión del Bode",
+      advanced_show_bode_beyond: "Mostrar más allá de F<sub>Nyq</sub>",
+      advanced_fmax_ratio_label: "Fmax / FNyq",
+      time_plot_title: "Señal continua, muestras y salida",
+      bode_plot_title: "Respuesta en frecuencia",
+      axis_time: "Tiempo (s)",
+      axis_amp: "Amplitud (V)",
+      axis_input: "Entrada",
+      axis_output: "Salida",
+      axis_freq: "Frecuencia (Hz)",
+      axis_mag_db: "|H| (dB)",
+      axis_mag_linear: "|H| (V/V)",
+      axis_phase: "∠H (°)"
+    },
+    fr: {
+      section_input: "Entrée",
+      section_nyquist: "Fréquence de Nyquist",
+      section_filter: "Filtre",
+      section_visual: "Visualisation",
+      section_advanced: "Options avancées",
+      input_signal_type: "Type de signal",
+      signal_sine: "Sinusoïdale",
+      signal_square: "Carrée",
+      signal_tri: "Triangulaire",
+      force_range: "Forcer 0 ≤ Vin ≤ 3 V",
+      vpp_label: "Vpp (V)",
+      offset_label: "Décalage (V)",
+      fin_label: "Fréquence f<sub>IN</sub> (Hz)",
+      fin_note: "10 Hz – 50 kHz (log)",
+      duty_label: "Rapport cyclique",
+      fs_label: "Fréquence d'échantillonnage Fs",
+      cycles_label: "Cycles visibles",
+      steady_note: "Seul le régime permanent est affiché.",
+      nyq_value_prefix: "F<sub>Nyq</sub> = ",
+      nyq_condition: "Condition : Fs > 2·f<sub>IN</sub>",
+      nyq_alias_zone: "Zone de repliement : f<sub>IN</sub> > F<sub>Nyq</sub>",
+      nyq_fin_prefix: "f<sub>IN</sub> = ",
+      nyq_fstar_prefix: "f*<sub>IN</sub> = ",
+      nyq_not_sine: "entrée non sinusoïdale !",
+      nyq_status_ok: "✓ Échantillonnage correct",
+      nyq_status_alias: "✗ Repliement détecté",
+      filter_type_label: "Type de filtre",
+      filter_ma: "Moyenne mobile",
+      filter_bypass: "Bypass",
+      filter_lp: "Passe-bas RII",
+      filter_hp: "Passe-haut RII",
+      filter_diff: "Différenciateur",
+      filter_ma_order: "Ordre N",
+      filter_ratio: "Rapport F<sub>coupure</sub> / F<sub>Nyq</sub>",
+      fc_prefix: "Fréquence de coupure : ",
+      filter_note: "Filtre appliqué avec retard d'un échantillon.",
+      visual_time_title: "Réponse temporelle",
+      visual_bode_title: "Bode",
+      vis_show_time: "Afficher réponse temporelle",
+      vis_overlay: "Superposer entrée/sortie",
+      vis_show_zoh: "Afficher sortie ZOH",
+      vis_auto_y: "Ajustement auto Y",
+      vis_show_bode: "Afficher Bode",
+      vis_show_phase: "Afficher phase (°)",
+      vis_mag_label: "Magnitude Bode",
+      vis_mag_linear: "V/V",
+      vis_mag_db: "dB",
+      vis_log_freq: "Échelle logarithmique",
+      advanced_bode_ext_title: "Extension du Bode",
+      advanced_show_bode_beyond: "Afficher au-delà de F<sub>Nyq</sub>",
+      advanced_fmax_ratio_label: "Fmax / FNyq",
+      time_plot_title: "Signal continu, échantillons et sortie",
+      bode_plot_title: "Réponse en fréquence",
+      axis_time: "Temps (s)",
+      axis_amp: "Amplitude (V)",
+      axis_input: "Entrée",
+      axis_output: "Sortie",
+      axis_freq: "Fréquence (Hz)",
+      axis_mag_db: "|H| (dB)",
+      axis_mag_linear: "|H| (V/V)",
+      axis_phase: "∠H (°)"
+    },
+    en: {
+      section_input: "Input",
+      section_nyquist: "Nyquist Frequency",
+      section_filter: "Filter",
+      section_visual: "Visualization",
+      section_advanced: "Advanced options",
+      input_signal_type: "Signal type",
+      signal_sine: "Sinusoidal",
+      signal_square: "Square",
+      signal_tri: "Triangular",
+      force_range: "Force 0 ≤ Vin ≤ 3 V",
+      vpp_label: "Vpp (V)",
+      offset_label: "Offset (V)",
+      fin_label: "Frequency f<sub>IN</sub> (Hz)",
+      fin_note: "10 Hz – 50 kHz (log)",
+      duty_label: "Duty (square)",
+      fs_label: "Sampling frequency Fs",
+      cycles_label: "Visible cycles",
+      steady_note: "Only steady-state is shown.",
+      nyq_value_prefix: "F<sub>Nyq</sub> = ",
+      nyq_condition: "Condition: Fs > 2·f<sub>IN</sub>",
+      nyq_alias_zone: "Aliasing region: f<sub>IN</sub> > F<sub>Nyq</sub>",
+      nyq_fin_prefix: "f<sub>IN</sub> = ",
+      nyq_fstar_prefix: "f*<sub>IN</sub> = ",
+      nyq_not_sine: "input not sinusoidal!",
+      nyq_status_ok: "✓ Correct sampling",
+      nyq_status_alias: "✗ Aliasing detected",
+      filter_type_label: "Filter type",
+      filter_ma: "Moving average",
+      filter_bypass: "Bypass",
+      filter_lp: "IIR lowpass",
+      filter_hp: "IIR highpass",
+      filter_diff: "Differentiator",
+      filter_ma_order: "Order N",
+      filter_ratio: "Ratio F<sub>cutoff</sub> / F<sub>Nyq</sub>",
+      fc_prefix: "Cutoff frequency: ",
+      filter_note: "Filter applied with 1-sample delay.",
+      visual_time_title: "Time response",
+      visual_bode_title: "Bode",
+      vis_show_time: "Show time response",
+      vis_overlay: "Overlay input/output",
+      vis_show_zoh: "Show ZOH output",
+      vis_auto_y: "Auto-adjust Y",
+      vis_show_bode: "Show Bode",
+      vis_show_phase: "Show phase (°)",
+      vis_mag_label: "Bode magnitude",
+      vis_mag_linear: "V/V",
+      vis_mag_db: "dB",
+      vis_log_freq: "Logarithmic scale",
+      advanced_bode_ext_title: "Bode extension",
+      advanced_show_bode_beyond: "Show beyond F<sub>Nyq</sub>",
+      advanced_fmax_ratio_label: "Fmax / FNyq",
+      time_plot_title: "Continuous signal, samples and output",
+      bode_plot_title: "Frequency response",
+      axis_time: "Time (s)",
+      axis_amp: "Amplitude (V)",
+      axis_input: "Input",
+      axis_output: "Output",
+      axis_freq: "Frequency (Hz)",
+      axis_mag_db: "|H| (dB)",
+      axis_mag_linear: "|H| (V/V)",
+      axis_phase: "∠H (°)"
+    }
+  };
+
+  function step3t(key) {
+    const dict = step3Texts[state.lang] || step3Texts.es;
+    return dict[key] || key;
+  }
+
+  // Step 3 state
+  const step3State = {
+    signal: 'sine',
+    Vpp: 2.5,
+    offset: 1.5,
+    f0: 50,
+    duty: 50,
+    limit: true,
+    Fs: 5000,
+    cycles: 2,
+    filt: 'ma',
+    maN: 5,
+    lpR: 0.10,
+    hpR: 0.10,
+    magMode: 'db',
+    log: false,
+    beyond: false,
+    fmaxRatio: 2.0,
+    showTime: true,
+    showPhase: true,
+    showZOH: true,
+    showBode: true,
+    overlay: true,
+    autoYRange: false
+  };
+
+  const MAX_SAMPLES = 5000;
+
+  // Step 3 utility functions
+  function step3ParseNum(v, defVal) {
+    if(typeof v === 'number') return v;
+    const n = parseFloat(String(v).replace(',', '.'));
+    return Number.isFinite(n) ? n : defVal;
+  }
+
+  function step3Fmt(v, d) {
+    return Number(v).toFixed(d).replace(/,/g, '.');
+  }
+
+  function step3Colors() {
+    const dark = document.documentElement.getAttribute('data-theme') === 'dark' ||
+      (!document.documentElement.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    return {
+      bg: dark ? '#0b1020' : '#ffffff',
+      grid: dark ? '#111827' : '#e5e7eb',
+      text: dark ? '#9ca3af' : '#6b7280',
+      contIn: '#2563eb',
+      xSamples: '#16a34a',
+      ySamples: '#dc2626',
+      zoh: '#f97316',
+      bode: '#2563eb',
+      bodePh: '#dc2626',
+      nyq: '#22c55e',
+      fs: '#f97316',
+      fs2: '#6366f1',
+      fs3: '#9333ea'
+    };
+  }
+
+  // Continuous signal
+  function step3_x_cont(t) {
+    const A = step3State.Vpp/2;
+    const off = step3State.offset;
+    const f = step3State.f0;
+    const w = 2*Math.PI*f;
+
+    if(step3State.signal === 'sine') {
+      return off + A*Math.sin(w*t);
+    } else if(step3State.signal === 'square') {
+      const d = step3State.duty/100;
+      const T = 1/f;
+      const tt = ((t % T) + T) % T;
+      return tt < d*T ? off + A : off - A;
+    } else {
+      const T = 1/f;
+      const tt = ((t % T) + T) % T;
+      const saw = 4*tt/T - 1;
+      const tri = (saw <= 1) ? saw : (2 - saw);
+      return off + A*tri;
+    }
+  }
+
+  // Filter coefficients
+  function step3Coeffs() {
+    const Fs = step3State.Fs;
+    const Fnyq = Fs/2;
+
+    if(step3State.filt === 'bypass') return { b:[1], a:[1] };
+    if(step3State.filt === 'ma') {
+      const N = step3State.maN;
+      const b = new Array(N).fill(1/N);
+      return { b:b, a:[1] };
+    }
+    if(step3State.filt === 'lp') {
+      const fc = step3State.lpR * Fnyq;
+      const a1 = Math.exp(-2*Math.PI*fc/Fs);
+      return { b:[1-a1], a:[1, -a1] };
+    }
+    if(step3State.filt === 'hp') {
+      const fc = step3State.hpR * Fnyq;
+      const a1 = Math.exp(-2*Math.PI*fc/Fs);
+      return { b:[1 - a1, -(1 - a1)], a:[1, -a1] };
+    }
+    return { b:[1, -1], a:[1] };
+  }
+
+  // Apply filter
+  function step3FilterApply(x) {
+    const cf = step3Coeffs();
+    const b = cf.b.slice();
+    const a = cf.a.slice();
+    const N = x.length;
+    const nb = b.length;
+    const na = a.length;
+    const y0 = new Array(N).fill(0);
+
+    for(let n=0; n<N; n++) {
+      let acc = 0;
+      for(let k=0; k<nb; k++) {
+        if(n-k >= 0) acc += b[k]*x[n-k];
+      }
+      for(let k=1; k<na; k++) {
+        if(n-k >= 0) acc -= a[k]*y0[n-k];
+      }
+      y0[n] = acc;
+    }
+
+    const y = new Array(N);
+    y[0] = 0;
+    for(let n=1; n<N; n++) {
+      y[n] = y0[n-1];
+    }
+
+    if(step3State.filt === 'hp' || step3State.filt === 'diff') {
+      for(let n=0; n<N; n++) {
+        y[n] += 1.5;
+      }
+    }
+    return y;
+  }
+
+  // Settle samples for transient
+  function step3SettleSamples() {
+    const Fs = step3State.Fs;
+    const Fnyq = Fs/2;
+    const f0 = Math.max(10, step3State.f0);
+    let settle = 0;
+
+    if(step3State.filt === 'ma') {
+      settle = step3State.maN + 10;
+    } else if(step3State.filt === 'lp' || step3State.filt === 'hp') {
+      const fc = (step3State.filt === 'lp' ? step3State.lpR : step3State.hpR)*Fnyq;
+      const a1 = Math.exp(-2*Math.PI*fc/Fs);
+      const tau = 1 / Math.max(1e-6, (1 - a1));
+      settle = Math.ceil(6*tau);
+    } else {
+      settle = 8;
+    }
+
+    const tenCycles = Math.ceil(Fs/f0)*10;
+    if(step3State.f0 > Fnyq) {
+      settle = Math.max(settle, Math.ceil(Fs/f0)*30);
+    }
+    settle = Math.max(settle, tenCycles, 64);
+    return settle;
+  }
+
+  // Generate steady state
+  function step3GenSteady() {
+    const Fs = step3State.Fs;
+    const f0 = step3State.f0;
+    const cyclesVisible = step3State.cycles;
+
+    const settle = step3SettleSamples();
+    const samplesPerCycle = Fs / f0;
+    const settleInCycles = Math.ceil(settle / samplesPerCycle);
+    const settleAdjusted = Math.round(settleInCycles * samplesPerCycle);
+    const minCycles = Math.ceil(f0 / Fs) + 1;
+    const maxCyclesBySamples = Math.floor((MAX_SAMPLES * f0) / Fs);
+
+    let effectiveCycles = Math.max(cyclesVisible, minCycles);
+    effectiveCycles = Math.min(effectiveCycles, maxCyclesBySamples, 110);
+
+    const timeShow = effectiveCycles / f0;
+    const showS = Math.ceil(Fs * timeShow);
+
+    if(effectiveCycles !== cyclesVisible) {
+      step3State.cycles = effectiveCycles;
+      const cyclesSlider = document.getElementById('step3CyclesSlider');
+      const cyclesNumber = document.getElementById('step3CyclesNumber');
+      if(cyclesSlider) cyclesSlider.value = effectiveCycles;
+      if(cyclesNumber) cyclesNumber.value = effectiveCycles;
+    }
+
+    let tOffset = settleAdjusted / Fs;
+    if(step3State.signal === 'sine') {
+      const T = 1/f0;
+      tOffset = Math.ceil(tOffset / T) * T;
+    }
+
+    const N = Math.ceil(tOffset * Fs) + showS;
+    const x_all = new Array(N);
+    for(let n=0; n<N; n++) {
+      x_all[n] = step3_x_cont(n/Fs);
+    }
+    const y_all = step3FilterApply(x_all);
+
+    const startSample = Math.ceil(tOffset * Fs);
+    const t = new Array(showS);
+    const x = new Array(showS);
+    const y = new Array(showS);
+    for(let i=0; i<showS; i++) {
+      const n = startSample + i;
+      t[i] = n/Fs - tOffset;
+      x[i] = x_all[n];
+      y[i] = y_all[n];
+    }
+    return { t:t, x:x, y:y, tShow: showS/Fs };
+  }
+
+  // Clamp functions
+  function step3ClampVpp(val) {
+    let v = Math.max(0, Math.min(3, val));
+    if(!step3State.limit) return v;
+    const off = step3State.offset;
+    const maxVpp = 2 * Math.min(Math.max(off,0), Math.max(0,3-off));
+    return Math.max(0, Math.min(maxVpp, v));
+  }
+
+  function step3ClampOffset(val) {
+    let v = Math.max(-3, Math.min(3, val));
+    if(!step3State.limit) return v;
+    const Vpp = step3State.Vpp;
+    const half = Vpp/2;
+    const minOff = half;
+    const maxOff = 3 - half;
+    if(v < minOff) v = minOff;
+    if(v > maxOff) v = maxOff;
+    return v;
+  }
+
+  function step3ApplyLimitImmediately() {
+    if(!step3State.limit) return;
+    step3State.offset = step3ClampOffset(step3State.offset);
+    step3State.Vpp = step3ClampVpp(step3State.Vpp);
+    const offSlider = document.getElementById('step3OffsetSlider');
+    const offNumber = document.getElementById('step3OffsetNumber');
+    const vppSlider = document.getElementById('step3VppSlider');
+    const vppNumber = document.getElementById('step3VppNumber');
+    if(offSlider) offSlider.value = step3State.offset;
+    if(offNumber) offNumber.value = step3Fmt(step3State.offset,2);
+    if(vppSlider) vppSlider.value = step3State.Vpp;
+    if(vppNumber) vppNumber.value = step3Fmt(step3State.Vpp,2);
+  }
+
+  // Frequency response
+  function step3H_at_f(f) {
+    const Fs = step3State.Fs;
+    const cf = step3Coeffs();
+    const b = cf.b;
+    const a = cf.a;
+    const w = 2*Math.PI*f/Fs;
+
+    let ReN=0, ImN=0;
+    for(let k=0; k<b.length; k++) {
+      ReN += b[k]*Math.cos(-w*k);
+      ImN += b[k]*Math.sin(-w*k);
+    }
+    let ReD=1, ImD=0;
+    for(let k=1; k<a.length; k++) {
+      ReD += a[k]*Math.cos(-w*k);
+      ImD += a[k]*Math.sin(-w*k);
+    }
+    const den = (ReD*ReD + ImD*ImD) || 1e-18;
+    return {
+      Re: (ReN*ReD + ImN*ImD)/den,
+      Im: (ImN*ReD - ReN*ImD)/den
+    };
+  }
+
+  // Log mapping for f0 slider
+  function step3LogMap(v) {
+    const a = Math.log10(10);
+    const b = Math.log10(50000);
+    return Math.pow(10, a + (v/1000)*(b - a));
+  }
+
+  function step3InvLog(f) {
+    const a = Math.log10(10);
+    const b = Math.log10(50000);
+    return 1000 * (Math.log10(f) - a) / (b - a);
+  }
+
+  // Draw time plot
+  function step3DrawTime() {
+    const el = document.getElementById('step3TimePlot');
+    if(!el || !step3State.showTime) {
+      if(el) Plotly.purge(el);
+      return;
+    }
+    const C = step3Colors();
+    const gen = step3GenSteady();
+    const tArr = gen.t, x = gen.x, y = gen.y, tShow = gen.tShow;
+
+    const data = [];
+    const layout = {
+      margin:{l:60,r:18,t:10,b:36},
+      paper_bgcolor:'rgba(0,0,0,0)',
+      plot_bgcolor:'rgba(0,0,0,0)',
+      showlegend:true,
+      legend:{orientation:'h',yanchor:'bottom',y:1.04,x:0,font:{size:12}}
+    };
+
+    const contFs = Math.max(50*step3State.f0, 20*step3State.Fs);
+    const nCont = Math.max(400, Math.floor(contFs * tShow));
+    const tStart = tArr[0];
+    const tEnd = tArr[tArr.length-1];
+    const tCont = [];
+    const xCont = [];
+    for(let i=0; i<nCont; i++) {
+      const tau = tStart + i/(nCont-1)*(tEnd - tStart);
+      tCont.push(tau);
+      xCont.push(step3_x_cont(tau));
+    }
+
+    if(step3State.overlay) {
+      data.push({ x:tCont, y:xCont, type:'scatter', mode:'lines', name:'x(t)', line:{color:C.contIn, width:2} });
+      data.push({ x:tArr, y:x, type:'scatter', mode:'markers', name:'x[n]', marker:{color:C.xSamples, size:6} });
+      data.push({ x:tArr, y:y, type:'scatter', mode:'markers', name:'y[n]', marker:{color:C.ySamples, size:6} });
+      if(step3State.showZOH) {
+        data.push({ x:tArr, y:y, type:'scatter', mode:'lines', name:'ZOH(y[n])', line:{color:C.zoh, width:2, shape:'hv'} });
+      }
+
+      layout.xaxis = { title:'<b>'+step3t('axis_time')+'</b>', titlefont:{size:14}, tickfont:{size:12}, range:[tStart, tEnd], gridcolor:C.grid, color:C.text };
+      layout.yaxis = { title:'<b>'+step3t('axis_amp')+'</b>', titlefont:{size:14}, tickfont:{size:12}, gridcolor:C.grid, color:C.text };
+
+      if(!step3State.autoYRange) {
+        if(step3State.limit) {
+          layout.yaxis.range = [-0.5, 3.5];
+          layout.yaxis.autorange = false;
+        } else {
+          layout.yaxis.range = [-5, 5];
+          layout.yaxis.autorange = false;
+        }
+      }
+    } else {
+      layout.showlegend = false;
+      layout.grid = {rows:2, columns:1, pattern:'independent'};
+
+      data.push({ x:tCont, y:xCont, type:'scatter', mode:'lines', name:'x(t)', line:{color:C.contIn, width:2}, xaxis:'x', yaxis:'y' });
+      data.push({ x:tArr, y:x, type:'scatter', mode:'markers', name:'x[n]', marker:{color:C.xSamples, size:6}, xaxis:'x', yaxis:'y' });
+      data.push({ x:tArr, y:y, type:'scatter', mode:'markers', name:'y[n]', marker:{color:C.ySamples, size:6}, xaxis:'x2', yaxis:'y2' });
+      if(step3State.showZOH) {
+        data.push({ x:tArr, y:y, type:'scatter', mode:'lines', name:'ZOH(y[n])', line:{color:C.zoh, width:2, shape:'hv'}, xaxis:'x2', yaxis:'y2' });
+      }
+
+      layout.xaxis = { title:'<b>'+step3t('axis_time')+'</b>', titlefont:{size:13}, tickfont:{size:11}, domain:[0,1], anchor:'y', gridcolor:C.grid, color:C.text, range:[tStart, tEnd] };
+      layout.yaxis = { title:'<b>'+step3t('axis_input')+'</b>', titlefont:{size:13}, tickfont:{size:11}, domain:[0.55,1], gridcolor:C.grid, color:C.text };
+      layout.xaxis2 = { title:'<b>'+step3t('axis_time')+'</b>', titlefont:{size:13}, tickfont:{size:11}, domain:[0,1], anchor:'y2', gridcolor:C.grid, color:C.text, range:[tStart, tEnd], matches:'x' };
+      layout.yaxis2 = { title:'<b>'+step3t('axis_output')+'</b>', titlefont:{size:13}, tickfont:{size:11}, domain:[0,0.45], gridcolor:C.grid, color:C.text };
+
+      if(!step3State.autoYRange) {
+        if(step3State.limit) {
+          layout.yaxis.range = [-0.5, 3.5];
+          layout.yaxis2.range = [-0.5, 3.5];
+        } else {
+          layout.yaxis.range = [-5, 5];
+          layout.yaxis2.range = [-5, 5];
+        }
+      }
+    }
+
+    Plotly.newPlot(el, data, layout, {displaylogo:false, responsive:true});
+  }
+
+  // Draw Bode plot
+  function step3DrawBode() {
+    const magDiv = document.getElementById('step3BodeMag');
+    const phDiv = document.getElementById('step3BodePhase');
+    if(!magDiv || !step3State.showBode) {
+      if(magDiv) Plotly.purge(magDiv);
+      if(phDiv) Plotly.purge(phDiv);
+      return;
+    }
+
+    const C = step3Colors();
+    const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const annBg = dark ? 'rgba(2,8,23,0.9)' : 'rgba(255,255,255,0.9)';
+
+    const Fs = step3State.Fs;
+    const Fnyq = Fs/2;
+    const fMax = step3State.beyond ? (Fnyq * step3State.fmaxRatio) : Fnyq;
+    const useLog = step3State.log;
+
+    const N = 600;
+    const freqs = [];
+    const mags = [];
+    const phases = [];
+    let prev = 0;
+    let fMin = useLog ? 10 : 0;
+
+    for(let i=0; i<N; i++) {
+      const f = useLog ? fMin * Math.pow(fMax/fMin, i/(N-1)) : (fMin + (fMax - fMin)*i/(N-1));
+      const H = step3H_at_f(f);
+      const m = Math.hypot(H.Re, H.Im);
+      let a = Math.atan2(H.Im, H.Re);
+      const d = a - prev;
+      if(d > Math.PI) a -= 2*Math.PI;
+      if(d < -Math.PI) a += 2*Math.PI;
+      prev = a;
+
+      freqs.push(f);
+      mags.push(m);
+      phases.push(a*180/Math.PI);
+    }
+
+    const magVals = (step3State.magMode === 'db')
+      ? mags.map(v => Math.max(20*Math.log10(v || 1e-12), -100))
+      : mags;
+    const magLabel = (step3State.magMode === 'db')
+      ? '<b>'+step3t('axis_mag_db')+'</b>'
+      : '<b>'+step3t('axis_mag_linear')+'</b>';
+
+    const shapesMag = [];
+    const shapesPh = [];
+    const ann = [];
+
+    function addMarker(freq, label, color) {
+      if(freq <= 0 || freq > fMax) return;
+      shapesMag.push({ type:'line', x0:freq, x1:freq, y0:0, y1:1, xref:'x', yref:'paper', line:{color:color, width:2, dash:'dot'} });
+      shapesPh.push({ type:'line', x0:freq, x1:freq, y0:0, y1:1, xref:'x', yref:'paper', line:{color:color, width:2, dash:'dot'} });
+      ann.push({ x:useLog ? Math.log10(freq) : freq, y:1.018, xref:'x', yref:'paper', xanchor:'center', yanchor:'top', text:'<b>'+label+'</b>', showarrow:false, font:{size:11, color:color}, bgcolor:annBg, borderpad:2 });
+    }
+
+    if(step3State.f0 > 0 && step3State.f0 <= fMax) {
+      const col = '#dc2626';
+      shapesMag.push({ type:'line', x0:step3State.f0, x1:step3State.f0, y0:0, y1:1, xref:'x', yref:'paper', line:{color:col, width:2, dash:'dot'} });
+      shapesPh.push({ type:'line', x0:step3State.f0, x1:step3State.f0, y0:0, y1:1, xref:'x', yref:'paper', line:{color:col, width:2, dash:'dot'} });
+      ann.push({ x:useLog ? Math.log10(step3State.f0) : step3State.f0, y:1.018, xref:'x', yref:'paper', xanchor:'center', yanchor:'top', text:'<b>f<sub>IN</sub></b>', showarrow:false, font:{size:11, color:col}, bgcolor:annBg, borderpad:2 });
+    }
+
+    addMarker(Fnyq, 'FNyq', C.nyq);
+    addMarker(Fs, 'Fs', C.fs);
+    addMarker(2*Fs, '2Fs', C.fs2);
+    addMarker(3*Fs, '3Fs', C.fs3);
+
+    if(step3State.showPhase) {
+      magDiv.style.display = 'block';
+      phDiv.style.display = 'block';
+    } else {
+      magDiv.style.display = 'block';
+      phDiv.style.display = 'none';
+    }
+
+    const magLayout = {
+      margin:{l:54,r:18,t:25,b:(step3State.showPhase ? 6 : 40)},
+      paper_bgcolor:'rgba(0,0,0,0)',
+      plot_bgcolor:'rgba(0,0,0,0)',
+      xaxis:{ type:(useLog ? 'log' : 'linear'), title:(step3State.showPhase ? '' : '<b>'+step3t('axis_freq')+'</b>'), titlefont:{size:14}, tickfont:{size:(step3State.showPhase?0:11)}, showticklabels: !step3State.showPhase, gridcolor:C.grid, color:C.text },
+      yaxis:{ title:magLabel, titlefont:{size:14}, tickfont:{size:11}, gridcolor:C.grid, color:C.text, rangemode:(step3State.magMode === 'linear' ? 'tozero' : 'normal') },
+      shapes: shapesMag,
+      annotations: ann,
+      showlegend:false
+    };
+
+    Plotly.newPlot(magDiv, [{ x:freqs, y:magVals, type:'scatter', mode:'lines', line:{color:C.bode, width:3} }], magLayout, {displaylogo:false, responsive:true});
+
+    if(step3State.showPhase) {
+      const phLayout = {
+        margin:{l:54,r:18,t:22,b:40},
+        paper_bgcolor:'rgba(0,0,0,0)',
+        plot_bgcolor:'rgba(0,0,0,0)',
+        xaxis:{ type:(useLog ? 'log' : 'linear'), title:'<b>'+step3t('axis_freq')+'</b>', titlefont:{size:14}, tickfont:{size:11}, gridcolor:C.grid, color:C.text },
+        yaxis:{ title:'<b>'+step3t('axis_phase')+'</b>', titlefont:{size:14}, tickfont:{size:11}, gridcolor:C.grid, color:C.text },
+        shapes: shapesPh,
+        showlegend:false
+      };
+      Plotly.newPlot(phDiv, [{ x:freqs, y:phases, type:'scatter', mode:'lines', line:{color:C.bodePh, width:3} }], phLayout, {displaylogo:false, responsive:true});
+
+      // Sync zoom between magnitude and phase plots
+      let syncing = false;
+      magDiv.on('plotly_relayout', function(ed) {
+        if(syncing || !ed) return;
+        const update = {};
+        if(ed['xaxis.range[0]'] !== undefined) update['xaxis.range[0]'] = ed['xaxis.range[0]'];
+        if(ed['xaxis.range[1]'] !== undefined) update['xaxis.range[1]'] = ed['xaxis.range[1]'];
+        if(ed['xaxis.autorange'] !== undefined) update['xaxis.autorange'] = ed['xaxis.autorange'];
+        if(Object.keys(update).length > 0) {
+          syncing = true;
+          Plotly.relayout(phDiv, update).then(() => { syncing = false; });
+        }
+      });
+      phDiv.on('plotly_relayout', function(ed) {
+        if(syncing || !ed) return;
+        const update = {};
+        if(ed['xaxis.range[0]'] !== undefined) update['xaxis.range[0]'] = ed['xaxis.range[0]'];
+        if(ed['xaxis.range[1]'] !== undefined) update['xaxis.range[1]'] = ed['xaxis.range[1]'];
+        if(ed['xaxis.autorange'] !== undefined) update['xaxis.autorange'] = ed['xaxis.autorange'];
+        if(Object.keys(update).length > 0) {
+          syncing = true;
+          Plotly.relayout(magDiv, update).then(() => { syncing = false; });
+        }
+      });
+    } else {
+      Plotly.purge(phDiv);
+    }
+
+    setTimeout(() => {
+      Plotly.Plots.resize(magDiv);
+      if(step3State.showPhase && phDiv) Plotly.Plots.resize(phDiv);
+    }, 0);
+  }
+
+  // Update Nyquist display
+  function step3UpdateNyquist() {
+    const Fs = step3State.Fs;
+    const f0 = step3State.f0;
+    const Fnyq = Fs/2;
+    const isSine = step3State.signal === 'sine';
+
+    const finEl = document.getElementById('step3FinValue');
+    const nyqEl = document.getElementById('step3NyquistValue');
+    const aliEl = document.getElementById('step3AliasInfo');
+    const fstarEl = document.getElementById('step3FstarValue');
+    const statusEl = document.getElementById('step3SamplingStatus');
+    if(!nyqEl) return;
+
+    // fIN display
+    if(finEl) {
+      if(isSine) {
+        let finLabel = f0 >= 1000 ? (f0/1000).toFixed(2) + ' kHz' : f0.toFixed(1) + ' Hz';
+        finEl.innerHTML = step3t('nyq_fin_prefix') + finLabel;
+      } else {
+        finEl.innerHTML = step3t('nyq_not_sine');
+      }
+    }
+
+    // FNyquist display
+    let label = Fnyq >= 1000 ? (Fnyq/1000).toFixed(2) + ' kHz' : Fnyq.toFixed(1) + ' Hz';
+    nyqEl.innerHTML = step3t('nyq_value_prefix') + label;
+
+    // Condition display
+    if(aliEl) aliEl.innerHTML = (f0 > Fnyq) ? step3t('nyq_alias_zone') : step3t('nyq_condition');
+
+    // f*IN (apparent frequency) - only for sinusoidal
+    if(fstarEl) {
+      if(isSine) {
+        let fStar = f0 % Fs;
+        if(fStar > Fnyq) fStar = Fs - fStar;
+        let fstarLabel = fStar >= 1000 ? (fStar/1000).toFixed(2) + ' kHz' : fStar.toFixed(1) + ' Hz';
+        fstarEl.innerHTML = step3t('nyq_fstar_prefix') + fstarLabel;
+        fstarEl.style.display = 'block';
+      } else {
+        fstarEl.style.display = 'none';
+      }
+    }
+
+    // Status indicator
+    if(statusEl) {
+      if(isSine) {
+        const isAliasing = f0 > Fnyq;
+        statusEl.innerHTML = isAliasing ? step3t('nyq_status_alias') : step3t('nyq_status_ok');
+        statusEl.style.color = isAliasing ? '#dc2626' : '#16a34a';
+        statusEl.style.display = 'block';
+      } else {
+        statusEl.style.display = 'none';
+      }
+    }
+  }
+
+  // Update Fc texts
+  function step3UpdateFcTexts() {
+    const nyq = step3State.Fs/2;
+    const lp = step3State.lpR * nyq;
+    const hp = step3State.hpR * nyq;
+    const lpEl = document.getElementById('step3LpFcInfo');
+    const hpEl = document.getElementById('step3HpFcInfo');
+    if(lpEl) lpEl.innerHTML = step3t('fc_prefix') + lp.toFixed(1) + ' Hz';
+    if(hpEl) hpEl.innerHTML = step3t('fc_prefix') + hp.toFixed(1) + ' Hz';
+  }
+
+  // Update Step 3 layout
+  function step3UpdateLayout() {
+    const grid = document.querySelector('.step3-layout');
+    const timeCard = document.getElementById('step3TimeCard');
+    const bodeCard = document.getElementById('step3BodeCard');
+    if(!grid || !timeCard || !bodeCard) return;
+
+    timeCard.style.display = step3State.showTime ? 'flex' : 'none';
+    bodeCard.style.display = step3State.showBode ? 'flex' : 'none';
+
+    grid.style.gridTemplateColumns = '340px 1fr 1fr';
+    timeCard.style.gridColumn = '2 / 3';
+    bodeCard.style.gridColumn = '3 / 4';
+
+    if(step3State.showTime && !step3State.showBode) {
+      grid.style.gridTemplateColumns = '340px 2.6fr 0';
+      timeCard.style.gridColumn = '2 / 4';
+    } else if(!step3State.showTime && step3State.showBode) {
+      grid.style.gridTemplateColumns = '340px 2.6fr 0';
+      bodeCard.style.gridColumn = '2 / 4';
+    }
+  }
+
+  // Draw all Step 3
+  function step3DrawAll() {
+    step3UpdateLayout();
+    if(step3State.showTime) step3DrawTime(); else { const el = document.getElementById('step3TimePlot'); if(el) Plotly.purge(el); }
+    if(step3State.showBode) step3DrawBode(); else { const m = document.getElementById('step3BodeMag'); const p = document.getElementById('step3BodePhase'); if(m) Plotly.purge(m); if(p) Plotly.purge(p); }
+    step3UpdateNyquist();
+  }
+
+  // Render Step 3
+  function renderStep3() {
+    const t = step3t;
+    const S = step3State;
+    stepContentEl.innerHTML = `
+      <div class="step3-wrapper">
+        <div class="step3-card">
+          <div class="step3-layout">
+            <!-- Panel lateral -->
+            <div class="step3-panel">
+              <!-- Entrada -->
+              <div class="step3-section">
+                <div class="step3-section-title">${t('section_input')}</div>
+                <div class="step3-group">
+                  <div class="step3-row"><span>${t('input_signal_type')}</span></div>
+                  <select id="step3SignalType">
+                    <option value="sine" ${S.signal === 'sine' ? 'selected' : ''}>${t('signal_sine')}</option>
+                    <option value="square" ${S.signal === 'square' ? 'selected' : ''}>${t('signal_square')}</option>
+                    <option value="triangular" ${S.signal === 'triangular' ? 'selected' : ''}>${t('signal_tri')}</option>
+                  </select>
+                </div>
+                <div class="step3-group">
+                  <div class="step3-checks">
+                    <label><input type="checkbox" id="step3LimitRange" ${S.limit ? 'checked' : ''}><span>${t('force_range')}</span></label>
+                  </div>
+                </div>
+                <div class="step3-group">
+                  <div class="step3-row"><span>${t('vpp_label')}</span></div>
+                  <div class="step3-range-row">
+                    <input type="range" id="step3VppSlider" min="0" max="3" step="0.1" value="${S.Vpp}">
+                    <input type="text" id="step3VppNumber" value="${step3Fmt(S.Vpp, 2)}">
+                  </div>
+                </div>
+                <div class="step3-group">
+                  <div class="step3-row"><span>${t('offset_label')}</span></div>
+                  <div class="step3-range-row">
+                    <input type="range" id="step3OffsetSlider" min="-3" max="3" step="0.1" value="${S.offset}">
+                    <input type="text" id="step3OffsetNumber" value="${step3Fmt(S.offset, 2)}">
+                  </div>
+                </div>
+                <div class="step3-group">
+                  <div class="step3-row"><span>${t('fin_label')}</span></div>
+                  <div class="step3-note">${t('fin_note')}</div>
+                  <div class="step3-range-row">
+                    <input type="range" id="step3F0LogSlider" min="0" max="1000" step="1" value="${step3InvLog(S.f0)}">
+                    <input type="text" id="step3F0Number" value="${step3Fmt(S.f0, 0)}">
+                  </div>
+                </div>
+                <div class="step3-group" id="step3DutyGroup" style="display:${S.signal === 'square' ? 'block' : 'none'}">
+                  <div class="step3-row"><span>${t('duty_label')}</span></div>
+                  <div class="step3-range-row">
+                    <input type="range" id="step3DutySlider" min="5" max="95" step="5" value="${S.duty}">
+                    <input type="text" id="step3DutyNumber" value="${step3Fmt(S.duty, 0)}">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Filtro -->
+              <div class="step3-section">
+                <div class="step3-section-title">${t('section_filter')}</div>
+                <div class="step3-group">
+                  <div class="step3-row"><span>${t('filter_type_label')}</span></div>
+                  <select id="step3FilterType">
+                    <option value="ma" ${S.filt === 'ma' ? 'selected' : ''}>${t('filter_ma')}</option>
+                    <option value="bypass" ${S.filt === 'bypass' ? 'selected' : ''}>${t('filter_bypass')}</option>
+                    <option value="lp" ${S.filt === 'lp' ? 'selected' : ''}>${t('filter_lp')}</option>
+                    <option value="hp" ${S.filt === 'hp' ? 'selected' : ''}>${t('filter_hp')}</option>
+                    <option value="diff" ${S.filt === 'diff' ? 'selected' : ''}>${t('filter_diff')}</option>
+                  </select>
+                </div>
+                <div class="step3-group" id="step3MaGroup" style="display:${S.filt === 'ma' ? 'block' : 'none'}">
+                  <div class="step3-row"><span>${t('filter_ma_order')}</span></div>
+                  <div class="step3-range-row">
+                    <input type="range" id="step3MaNSlider" min="2" max="15" step="1" value="${S.maN}">
+                    <input type="text" id="step3MaNNumber" value="${step3Fmt(S.maN, 0)}">
+                  </div>
+                </div>
+                <div class="step3-group" id="step3LpGroup" style="display:${S.filt === 'lp' ? 'block' : 'none'}">
+                  <div class="step3-row"><span>${t('filter_ratio')}</span></div>
+                  <div class="step3-range-row">
+                    <input type="range" id="step3LpRatioSlider" min="0.005" max="0.9" step="0.005" value="${S.lpR}">
+                    <input type="text" id="step3LpRatioNumber" value="${step3Fmt(S.lpR, 3)}">
+                  </div>
+                  <div class="step3-note" id="step3LpFcInfo">${t('fc_prefix')}250.0 Hz</div>
+                </div>
+                <div class="step3-group" id="step3HpGroup" style="display:${S.filt === 'hp' ? 'block' : 'none'}">
+                  <div class="step3-row"><span>${t('filter_ratio')}</span></div>
+                  <div class="step3-range-row">
+                    <input type="range" id="step3HpRatioSlider" min="0.005" max="0.9" step="0.005" value="${S.hpR}">
+                    <input type="text" id="step3HpRatioNumber" value="${step3Fmt(S.hpR, 3)}">
+                  </div>
+                  <div class="step3-note" id="step3HpFcInfo">${t('fc_prefix')}250.0 Hz</div>
+                </div>
+                <div class="step3-group">
+                  <div class="step3-row"><span>${t('fs_label')}</span></div>
+                  <select id="step3FsSelect">
+                    <option value="500" ${S.Fs === 500 ? 'selected' : ''}>500 Hz</option>
+                    <option value="1000" ${S.Fs === 1000 ? 'selected' : ''}>1 kHz</option>
+                    <option value="5000" ${S.Fs === 5000 ? 'selected' : ''}>5 kHz</option>
+                    <option value="10000" ${S.Fs === 10000 ? 'selected' : ''}>10 kHz</option>
+                    <!-- <option value="20000" ${S.Fs === 20000 ? 'selected' : ''}>20 kHz</option> -->
+                  </select>
+                </div>
+                <div class="step3-note">${t('filter_note')}</div>
+              </div>
+
+              <!-- Nyquist -->
+              <div class="step3-section">
+                <div class="step3-section-title">${t('section_nyquist')}</div>
+                <div class="step3-group">
+                  <div class="step3-note" id="step3FinValue">f<sub>IN</sub> = 100 Hz</div>
+                </div>
+                <div class="step3-group">
+                  <div class="step3-note" id="step3NyquistValue">F<sub>Nyq</sub> = 2.50 kHz</div>
+                </div>
+                <div class="step3-group">
+                  <div class="step3-note" id="step3AliasInfo">${t('nyq_condition')}</div>
+                </div>
+                <div class="step3-group">
+                  <div class="step3-note" id="step3FstarValue">f*<sub>IN</sub> = 100 Hz</div>
+                </div>
+                <div class="step3-group">
+                  <div class="step3-note" id="step3SamplingStatus" style="font-weight:600;"></div>
+                </div>
+              </div>
+
+              <!-- Visualización -->
+              <div class="step3-section">
+                <div class="step3-section-title">${t('section_visual')}</div>
+                <div style="font-weight:600; margin-top:8px; margin-bottom:6px;">${t('visual_time_title')}</div>
+                <div class="step3-group"><div class="step3-checks"><label><input type="checkbox" id="step3ShowTime" ${S.showTime ? 'checked' : ''}><span>${t('vis_show_time')}</span></label></div></div>
+                <div class="step3-group"><div class="step3-checks"><label><input type="checkbox" id="step3OverlayIO" ${S.overlay ? 'checked' : ''}><span>${t('vis_overlay')}</span></label></div></div>
+                <div class="step3-group"><div class="step3-checks"><label><input type="checkbox" id="step3ShowZOH" ${S.showZOH ? 'checked' : ''}><span>${t('vis_show_zoh')}</span></label></div></div>
+                <div class="step3-group"><div class="step3-checks"><label><input type="checkbox" id="step3AutoYRange" ${S.autoYRange ? 'checked' : ''}><span>${t('vis_auto_y')}</span></label></div></div>
+                <div class="step3-group">
+                  <div class="step3-row"><span>${t('cycles_label')}</span></div>
+                  <div class="step3-range-row">
+                    <input type="range" id="step3CyclesSlider" min="2" max="110" step="1" value="${S.cycles}">
+                    <input type="text" id="step3CyclesNumber" value="${step3Fmt(S.cycles, 0)}">
+                  </div>
+                </div>
+                <div class="step3-note">${t('steady_note')}</div>
+                <div style="font-weight:600; margin-top:12px; margin-bottom:6px;">${t('visual_bode_title')}</div>
+                <div class="step3-group"><div class="step3-checks"><label><input type="checkbox" id="step3ShowBode" ${S.showBode ? 'checked' : ''}><span>${t('vis_show_bode')}</span></label></div></div>
+                <div class="step3-group"><div class="step3-checks"><label><input type="checkbox" id="step3ShowPhase" ${S.showPhase ? 'checked' : ''}><span>${t('vis_show_phase')}</span></label></div></div>
+                <div class="step3-group">
+                  <div class="step3-row"><span>${t('vis_mag_label')}</span></div>
+                  <div class="step3-radios">
+                    <label><input type="radio" name="step3MagMode" value="linear" ${S.magMode === 'linear' ? 'checked' : ''}><span>${t('vis_mag_linear')}</span></label>
+                    <label><input type="radio" name="step3MagMode" value="db" ${S.magMode === 'db' ? 'checked' : ''}><span>${t('vis_mag_db')}</span></label>
+                  </div>
+                </div>
+                <div class="step3-group"><div class="step3-checks"><label><input type="checkbox" id="step3LogFreq" ${S.log ? 'checked' : ''}><span>${t('vis_log_freq')}</span></label></div></div>
+              </div>
+
+              <!-- Avanzadas -->
+              <div class="step3-section">
+                <div class="step3-section-title">${t('section_advanced')}</div>
+                <div class="step3-advanced-box">
+                  <div class="step3-advanced-title">${t('advanced_bode_ext_title')}</div>
+                  <div class="step3-group"><div class="step3-checks"><label><input type="checkbox" id="step3BodeBeyondNyq" ${S.beyond ? 'checked' : ''}><span>${t('advanced_show_bode_beyond')}</span></label></div></div>
+                  <div class="step3-group" id="step3BodeFmaxRatioGroup" style="display:${S.beyond ? 'block' : 'none'}">
+                    <div class="step3-row"><span>${t('advanced_fmax_ratio_label')}</span></div>
+                    <div class="step3-range-row">
+                      <input type="range" id="step3BodeFmaxRatioSlider" min="1" max="6" step="0.5" value="${S.fmaxRatio}">
+                      <input type="text" id="step3BodeFmaxRatioNumber" value="${step3Fmt(S.fmaxRatio, 1)}">
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Time plot -->
+            <div class="step3-plot-card" id="step3TimeCard">
+              <p class="step3-plot-title">${t('time_plot_title')}</p>
+              <div id="step3TimePlot" class="step3-plot-box"></div>
+            </div>
+
+            <!-- Bode plot -->
+            <div class="step3-plot-card" id="step3BodeCard">
+              <p class="step3-plot-title">${t('bode_plot_title')}</p>
+              <div class="step3-bode-wrap">
+                <div id="step3BodeMag" class="step3-plot-box"></div>
+                <div id="step3BodePhase" class="step3-plot-box"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    initStep3();
+  }
+
+  // Initialize Step 3 event listeners
+  function initStep3() {
+    // Signal type
+    document.getElementById('step3SignalType').addEventListener('change', e => {
+      step3State.signal = e.target.value;
+      document.getElementById('step3DutyGroup').style.display = (step3State.signal === 'square') ? 'block' : 'none';
+      step3DrawAll();
+    });
+
+    // Limit range
+    document.getElementById('step3LimitRange').addEventListener('change', e => {
+      step3State.limit = e.target.checked;
+      step3ApplyLimitImmediately();
+      step3DrawAll();
+    });
+
+    // Vpp
+    const syncVpp = v => {
+      step3State.Vpp = step3ClampVpp(step3ParseNum(v, step3State.Vpp));
+      document.getElementById('step3VppSlider').value = step3State.Vpp;
+      document.getElementById('step3VppNumber').value = step3Fmt(step3State.Vpp, 2);
+      if(step3State.limit) step3ApplyLimitImmediately();
+      step3DrawAll();
+    };
+    document.getElementById('step3VppSlider').addEventListener('input', e => syncVpp(e.target.value));
+    document.getElementById('step3VppNumber').addEventListener('change', e => syncVpp(e.target.value));
+
+    // Offset
+    const syncOff = v => {
+      step3State.offset = step3ClampOffset(step3ParseNum(v, step3State.offset));
+      document.getElementById('step3OffsetSlider').value = step3State.offset;
+      document.getElementById('step3OffsetNumber').value = step3Fmt(step3State.offset, 2);
+      if(step3State.limit) step3ApplyLimitImmediately();
+      step3DrawAll();
+    };
+    document.getElementById('step3OffsetSlider').addEventListener('input', e => syncOff(e.target.value));
+    document.getElementById('step3OffsetNumber').addEventListener('change', e => syncOff(e.target.value));
+
+    // Duty
+    const syncDuty = v => {
+      let d = step3ParseNum(v, step3State.duty);
+      d = Math.max(5, Math.min(95, d));
+      step3State.duty = d;
+      document.getElementById('step3DutySlider').value = d;
+      document.getElementById('step3DutyNumber').value = step3Fmt(d, 0);
+      step3DrawAll();
+    };
+    document.getElementById('step3DutySlider').addEventListener('input', e => syncDuty(e.target.value));
+    document.getElementById('step3DutyNumber').addEventListener('change', e => syncDuty(e.target.value));
+
+    // f0
+    const syncF0FromSlider = v => {
+      const f = Math.max(10, Math.min(50000, step3LogMap(step3ParseNum(v, 120))));
+      step3State.f0 = f;
+      document.getElementById('step3F0Number').value = step3Fmt(f, 0);
+      step3UpdateNyquist();
+      step3DrawAll();
+    };
+    const syncF0FromBox = val => {
+      let f = step3ParseNum(val, step3State.f0);
+      f = Math.max(10, Math.min(50000, f));
+      step3State.f0 = f;
+      document.getElementById('step3F0LogSlider').value = step3InvLog(f);
+      step3UpdateNyquist();
+      step3DrawAll();
+    };
+    document.getElementById('step3F0LogSlider').addEventListener('input', e => syncF0FromSlider(e.target.value));
+    document.getElementById('step3F0Number').addEventListener('change', e => syncF0FromBox(e.target.value));
+
+    // Fs
+    document.getElementById('step3FsSelect').addEventListener('change', e => {
+      step3State.Fs = parseInt(e.target.value, 10);
+      step3UpdateFcTexts();
+      step3UpdateNyquist();
+      step3DrawAll();
+    });
+
+    // Cycles
+    const syncCycles = v => {
+      let c = step3ParseNum(v, step3State.cycles);
+      c = Math.max(2, Math.min(110, c));
+      step3State.cycles = c;
+      document.getElementById('step3CyclesSlider').value = c;
+      document.getElementById('step3CyclesNumber').value = step3Fmt(c, 0);
+      if(step3State.showTime) step3DrawTime();
+    };
+    document.getElementById('step3CyclesSlider').addEventListener('input', e => syncCycles(e.target.value));
+    document.getElementById('step3CyclesNumber').addEventListener('change', e => syncCycles(e.target.value));
+
+    // Filter type
+    document.getElementById('step3FilterType').addEventListener('change', e => {
+      step3State.filt = e.target.value;
+      document.getElementById('step3MaGroup').style.display = (step3State.filt === 'ma') ? 'block' : 'none';
+      document.getElementById('step3LpGroup').style.display = (step3State.filt === 'lp') ? 'block' : 'none';
+      document.getElementById('step3HpGroup').style.display = (step3State.filt === 'hp') ? 'block' : 'none';
+      step3DrawAll();
+    });
+
+    // MA N
+    const syncN = v => {
+      let n = step3ParseNum(v, step3State.maN);
+      n = Math.max(2, Math.min(15, n));
+      step3State.maN = n;
+      document.getElementById('step3MaNSlider').value = n;
+      document.getElementById('step3MaNNumber').value = step3Fmt(n, 0);
+      step3DrawAll();
+    };
+    document.getElementById('step3MaNSlider').addEventListener('input', e => syncN(e.target.value));
+    document.getElementById('step3MaNNumber').addEventListener('change', e => syncN(e.target.value));
+
+    // LP ratio
+    const syncLp = v => {
+      let r = step3ParseNum(v, step3State.lpR);
+      r = Math.max(0.005, Math.min(0.9, r));
+      step3State.lpR = r;
+      document.getElementById('step3LpRatioSlider').value = r;
+      document.getElementById('step3LpRatioNumber').value = step3Fmt(r, 3);
+      step3UpdateFcTexts();
+      step3DrawAll();
+    };
+    document.getElementById('step3LpRatioSlider').addEventListener('input', e => syncLp(e.target.value));
+    document.getElementById('step3LpRatioNumber').addEventListener('change', e => syncLp(e.target.value));
+
+    // HP ratio
+    const syncHp = v => {
+      let r = step3ParseNum(v, step3State.hpR);
+      r = Math.max(0.005, Math.min(0.9, r));
+      step3State.hpR = r;
+      document.getElementById('step3HpRatioSlider').value = r;
+      document.getElementById('step3HpRatioNumber').value = step3Fmt(r, 3);
+      step3UpdateFcTexts();
+      step3DrawAll();
+    };
+    document.getElementById('step3HpRatioSlider').addEventListener('input', e => syncHp(e.target.value));
+    document.getElementById('step3HpRatioNumber').addEventListener('change', e => syncHp(e.target.value));
+
+    // Function to update disabled states based on ShowTime and ShowBode
+    function step3UpdateDisabledStates() {
+      const showTime = step3State.showTime;
+      const showBode = step3State.showBode;
+
+      // Time-related controls
+      const timeControls = [
+        document.getElementById('step3OverlayIO'),
+        document.getElementById('step3ShowZOH'),
+        document.getElementById('step3AutoYRange'),
+        document.getElementById('step3CyclesSlider'),
+        document.getElementById('step3CyclesNumber')
+      ];
+      timeControls.forEach(el => {
+        if (el) {
+          el.disabled = !showTime;
+          el.closest('.step3-group')?.classList.toggle('step3-disabled', !showTime);
+        }
+      });
+
+      // Bode-related controls
+      const bodeControls = [
+        document.getElementById('step3ShowPhase'),
+        document.getElementById('step3LogFreq')
+      ];
+      bodeControls.forEach(el => {
+        if (el) {
+          el.disabled = !showBode;
+          el.closest('.step3-group')?.classList.toggle('step3-disabled', !showBode);
+        }
+      });
+
+      // Mag mode radio buttons
+      document.querySelectorAll('input[name="step3MagMode"]').forEach(r => {
+        r.disabled = !showBode;
+      });
+      const magModeGroup = document.querySelector('input[name="step3MagMode"]')?.closest('.step3-group');
+      if (magModeGroup) magModeGroup.classList.toggle('step3-disabled', !showBode);
+    }
+
+    // Visualization checkboxes
+    document.getElementById('step3ShowTime').addEventListener('change', e => { step3State.showTime = e.target.checked; step3UpdateDisabledStates(); step3DrawAll(); });
+    document.getElementById('step3OverlayIO').addEventListener('change', e => { step3State.overlay = e.target.checked; if(step3State.showTime) step3DrawTime(); });
+    document.getElementById('step3ShowZOH').addEventListener('change', e => { step3State.showZOH = e.target.checked; if(step3State.showTime) step3DrawTime(); });
+    document.getElementById('step3AutoYRange').addEventListener('change', e => { step3State.autoYRange = e.target.checked; if(step3State.showTime) step3DrawTime(); });
+    document.getElementById('step3ShowBode').addEventListener('change', e => { step3State.showBode = e.target.checked; step3UpdateDisabledStates(); step3DrawAll(); });
+    document.getElementById('step3ShowPhase').addEventListener('change', e => { step3State.showPhase = e.target.checked; if(step3State.showBode) step3DrawBode(); });
+
+    // Mag mode
+    document.querySelectorAll('input[name="step3MagMode"]').forEach(r => {
+      r.addEventListener('change', e => { step3State.magMode = e.target.value; if(step3State.showBode) step3DrawBode(); });
+    });
+
+    // Log freq
+    document.getElementById('step3LogFreq').addEventListener('change', e => { step3State.log = e.target.checked; if(step3State.showBode) step3DrawBode(); });
+
+    // Beyond Nyquist
+    document.getElementById('step3BodeBeyondNyq').addEventListener('change', e => {
+      step3State.beyond = e.target.checked;
+      document.getElementById('step3BodeFmaxRatioGroup').style.display = step3State.beyond ? 'block' : 'none';
+      if(step3State.showBode) step3DrawBode();
+    });
+
+    // Fmax ratio
+    const syncFmaxRatio = v => {
+      let r = step3ParseNum(v, step3State.fmaxRatio);
+      r = Math.max(1, Math.min(6, r));
+      step3State.fmaxRatio = r;
+      document.getElementById('step3BodeFmaxRatioSlider').value = r;
+      document.getElementById('step3BodeFmaxRatioNumber').value = step3Fmt(r, 1);
+      if(step3State.showBode) step3DrawBode();
+    };
+    document.getElementById('step3BodeFmaxRatioSlider').addEventListener('input', e => syncFmaxRatio(e.target.value));
+    document.getElementById('step3BodeFmaxRatioNumber').addEventListener('change', e => syncFmaxRatio(e.target.value));
+
+    // Initial draw
+    step3UpdateFcTexts();
+    step3UpdateNyquist();
+    step3UpdateDisabledStates();
+    step3DrawAll();
+  }
+
+  // THEME
+  function applyTheme(val){
+    if(val==='auto'){
+      document.documentElement.removeAttribute('data-theme');
+    } else {
+      document.documentElement.setAttribute('data-theme',val);
+    }
+  }
+
+  themeSelect.addEventListener('change', () => {
+    applyTheme(themeSelect.value);
+    // Redibujar si estamos en Step 2 para que el cambio de tema se vea sin mover sliders
+    if (state.step === 2) {
+      drawTemporalGraph();
+      drawSpectralGraph();
+    }
+  });
+
+  // ===================== STEP 4: µC CONNECTION =====================
+  const step4Texts = {
+    es: {
+      params_title: 'Parámetros del filtro (Paso 3)',
+      equation_title: 'Ecuación de diferencias (Paso 3)',
+      serial_title: 'Puerto serie',
+      console_title: 'Consola',
+      fs_label: 'Frecuencia de muestreo',
+      filter_type: 'Tipo de filtro',
+      cutoff_freq: 'Frecuencia de corte',
+      order_label: 'Orden',
+      coef_a: 'Coeficientes a (denominador)',
+      coef_b: 'Coeficientes b (numerador)',
+      select_port: 'Seleccionar puerto',
+      connect: 'Conectar',
+      disconnect: 'Desconectar',
+      send_config: 'Enviar configuración',
+      status_connected: 'Conectado',
+      status_disconnected: 'Desconectado',
+      send: 'Enviar',
+      clear: 'Limpiar',
+      no_serial: 'Web Serial no soportado en este navegador',
+      request_port: 'Solicitar puerto...',
+      port_opened: 'Puerto abierto',
+      port_closed: 'Puerto cerrado',
+      config_sent: 'Configuración enviada',
+      error_connect: 'Error al conectar',
+      baud_rate: 'Baudrate',
+      lastconfig_title: 'Última config. enviada al µC',
+      no_config_sent: 'Ninguna configuración enviada',
+      desc_x: 'entrada ADC (muestra n)',
+      desc_y: 'salida del filtro (muestra n)',
+      desc_yout: 'salida DAC (muestra n)'
+    },
+    fr: {
+      params_title: 'Paramètres du filtre (Étape 3)',
+      equation_title: 'Équation aux différences (Étape 3)',
+      serial_title: 'Port série',
+      console_title: 'Console',
+      fs_label: 'Fréquence d\'échantillonnage',
+      filter_type: 'Type de filtre',
+      cutoff_freq: 'Fréquence de coupure',
+      order_label: 'Ordre',
+      coef_a: 'Coefficients a (dénominateur)',
+      coef_b: 'Coefficients b (numérateur)',
+      select_port: 'Sélectionner port',
+      connect: 'Connecter',
+      disconnect: 'Déconnecter',
+      send_config: 'Envoyer configuration',
+      status_connected: 'Connecté',
+      status_disconnected: 'Déconnecté',
+      send: 'Envoyer',
+      clear: 'Effacer',
+      no_serial: 'Web Serial non supporté dans ce navigateur',
+      request_port: 'Demander port...',
+      port_opened: 'Port ouvert',
+      port_closed: 'Port fermé',
+      config_sent: 'Configuration envoyée',
+      error_connect: 'Erreur de connexion',
+      baud_rate: 'Baudrate',
+      lastconfig_title: 'Dernière config. envoyée au µC',
+      no_config_sent: 'Aucune configuration envoyée',
+      desc_x: 'entrée ADC (échantillon n)',
+      desc_y: 'sortie du filtre (échantillon n)',
+      desc_yout: 'sortie DAC (échantillon n)'
+    },
+    en: {
+      params_title: 'Filter parameters (Step 3)',
+      equation_title: 'Difference equation (Step 3)',
+      serial_title: 'Serial port',
+      console_title: 'Console',
+      fs_label: 'Sampling frequency',
+      filter_type: 'Filter type',
+      cutoff_freq: 'Cutoff frequency',
+      order_label: 'Order',
+      coef_a: 'Coefficients a (denominator)',
+      coef_b: 'Coefficients b (numerator)',
+      select_port: 'Select port',
+      connect: 'Connect',
+      disconnect: 'Disconnect',
+      send_config: 'Send configuration',
+      status_connected: 'Connected',
+      status_disconnected: 'Disconnected',
+      send: 'Send',
+      clear: 'Clear',
+      no_serial: 'Web Serial not supported in this browser',
+      request_port: 'Request port...',
+      port_opened: 'Port opened',
+      port_closed: 'Port closed',
+      config_sent: 'Configuration sent',
+      error_connect: 'Connection error',
+      baud_rate: 'Baud rate',
+      lastconfig_title: 'Last config. sent to µC',
+      no_config_sent: 'No configuration sent',
+      desc_x: 'ADC input (sample n)',
+      desc_y: 'filter output (sample n)',
+      desc_yout: 'DAC output (sample n)'
+    }
+  };
+
+  function step4t(key) {
+    const dict = step4Texts[state.lang] || step4Texts.es;
+    return dict[key] || key;
+  }
+
+  // Step 4 constants and state
+  const STEP4_BAUD_RATE = 115200;  // Change this to match your board's baudrate
+  const STEP4_AC_BIAS_VOLTAGE = 1.5;  // AC bias in volts (target voltage)
+
+  const step4State = {
+    port: null,
+    reader: null,
+    writer: null,
+    connected: false,
+    availablePorts: [],
+    consoleLogs: [],
+    lastSentConfig: null,  // {filterName, Fs, fc, N, filt}
+    rxBuffer: '',  // Buffer for incoming serial data
+    vref: 3.3,  // Reference voltage (updated by vref command)
+    waitingForVref: false  // Flag to capture vref response
+  };
+
+  // Refresh available serial ports
+  async function step4RefreshPorts() {
+    if (!('serial' in navigator)) {
+      step4Log(step4t('no_serial'), 'err');
+      return;
+    }
+
+    try {
+      const ports = await navigator.serial.getPorts();
+      step4State.availablePorts = ports;
+
+      const select = document.getElementById('step4PortSelect');
+      if (!select) return;
+
+      select.innerHTML = `<option value="">${step4t('select_port')}</option>`;
+
+      for (let i = 0; i < ports.length; i++) {
+        const port = ports[i];
+        const info = port.getInfo();
+        let label = `Port ${i + 1}`;
+        if (info.usbVendorId) {
+          label = `USB ${info.usbVendorId.toString(16)}:${info.usbProductId.toString(16)}`;
+        }
+        select.innerHTML += `<option value="${i}">${label}</option>`;
+      }
+
+      if (ports.length === 0) {
+        step4Log('No ports available. Click Connect to request access.', 'info');
+      }
+    } catch (err) {
+      step4Log(`Error: ${err.message}`, 'err');
+    }
+  }
+
+  // Get filter coefficients from step3
+  function getFilterCoefficients() {
+    const { filt, maN, lpR, hpR, Fs } = step3State;
+    const Fnyq = Fs / 2;
+    let a = [1];
+    let b = [1];
+    let filterName = '';
+    let fc = 0;
+    let N = maN;
+
+    if (filt === 'bypass') {
+      filterName = step3t('filter_bypass');
+      a = [1];
+      b = [1];
+    } else if (filt === 'ma') {
+      filterName = step3t('filter_ma');
+      a = [1];
+      b = new Array(N).fill(1/N);
+    } else if (filt === 'lp') {
+      fc = lpR * Fnyq;
+      const w0 = 2 * Math.PI * fc / Fs;
+      const alpha = Math.sin(w0) / (2 * 0.707);
+      const cosw0 = Math.cos(w0);
+      const a0 = 1 + alpha;
+      a = [1, (-2 * cosw0) / a0, (1 - alpha) / a0];
+      b = [(1 - cosw0) / (2 * a0), (1 - cosw0) / a0, (1 - cosw0) / (2 * a0)];
+      filterName = step3t('filter_lp');
+    } else if (filt === 'hp') {
+      fc = hpR * Fnyq;
+      const w0 = 2 * Math.PI * fc / Fs;
+      const alpha = Math.sin(w0) / (2 * 0.707);
+      const cosw0 = Math.cos(w0);
+      const a0 = 1 + alpha;
+      a = [1, (-2 * cosw0) / a0, (1 - alpha) / a0];
+      b = [(1 + cosw0) / (2 * a0), -(1 + cosw0) / a0, (1 + cosw0) / (2 * a0)];
+      filterName = step3t('filter_hp');
+    } else if (filt === 'diff') {
+      filterName = step3t('filter_diff');
+      a = [1];
+      b = [1, -1];
+    }
+
+    return { a, b, filterName, Fs, fc, N, filt };
+  }
+
+  // Build difference equation strings (filter + DAC timing)
+  function buildEquationString(a, b) {
+    let eq = 'y[n] = ';
+    const bTerms = [];
+    const aTerms = [];
+
+    for (let i = 0; i < b.length; i++) {
+      const coef = b[i];
+      if (Math.abs(coef) > 1e-10) {
+        const delay = i === 0 ? 'x[n]' : `x[n-${i}]`;
+        bTerms.push(`b<sub>${i}</sub>·${delay}`);
+      }
+    }
+
+    for (let i = 1; i < a.length; i++) {
+      const coef = -a[i];
+      if (Math.abs(coef) > 1e-10) {
+        const delay = `y[n-${i}]`;
+        aTerms.push(`a<sub>${i}</sub>·${delay}`);
+      }
+    }
+
+    const allTerms = [...bTerms, ...aTerms];
+    eq += allTerms.join(' + ').replace(/\+ -/g, '- ');
+
+    return {
+      filter: eq || 'y[n] = x[n]',
+      dac: 'y<sub>OUT</sub>[n] = y[n-1]'
+    };
+  }
+
+  // Add log to console
+  function step4Log(message, type = 'info') {
+    const timestamp = new Date().toLocaleTimeString();
+    step4State.consoleLogs.push({ timestamp, message, type });
+    if (step4State.consoleLogs.length > 200) {
+      step4State.consoleLogs.shift();
+    }
+    updateConsoleDisplay();
+  }
+
+  function updateConsoleDisplay() {
+    const output = document.getElementById('step4ConsoleOutput');
+    if (!output) return;
+    output.innerHTML = step4State.consoleLogs.map(log =>
+      `<div class="step4-log-${log.type}">[${log.timestamp}] ${log.message}</div>`
+    ).join('');
+    output.scrollTop = output.scrollHeight;
+  }
+
+  // Serial port functions
+  async function step4Connect() {
+    if (!('serial' in navigator)) {
+      step4Log(step4t('no_serial'), 'err');
+      return;
+    }
+
+    try {
+      const select = document.getElementById('step4PortSelect');
+      const selectedIdx = select ? select.value : '';
+
+      if (selectedIdx !== '' && step4State.availablePorts[selectedIdx]) {
+        step4State.port = step4State.availablePorts[selectedIdx];
+      } else {
+        step4State.port = await navigator.serial.requestPort();
+        step4RefreshPorts();
+      }
+
+      await step4State.port.open({ baudRate: STEP4_BAUD_RATE });
+      step4State.connected = true;
+      step4Log(`${step4t('port_opened')} @ ${STEP4_BAUD_RATE} baud`, 'info');
+      updateStep4UI();
+      startReading();
+
+      // Query board's Vref for AC bias calculation
+      step4State.waitingForVref = true;
+      await step4Send('vref');
+    } catch (err) {
+      step4Log(`${step4t('error_connect')}: ${err.message}`, 'err');
+    }
+  }
+
+  async function step4Disconnect() {
+    step4State.connected = false;
+
+    try {
+      if (step4State.reader) {
+        await step4State.reader.cancel();
+        step4State.reader.releaseLock();
+        step4State.reader = null;
+      }
+    } catch (err) {
+      // Ignore reader errors during disconnect
+    }
+
+    try {
+      if (step4State.port) {
+        await step4State.port.close();
+        step4State.port = null;
+      }
+    } catch (err) {
+      step4Log(`Error: ${err.message}`, 'err');
+    }
+
+    step4State.rxBuffer = '';  // Clear buffer on disconnect
+    step4Log(step4t('port_closed'), 'info');
+    updateStep4UI();
+  }
+
+  async function startReading() {
+    const decoder = new TextDecoder();
+
+    while (step4State.port && step4State.port.readable && step4State.connected) {
+      step4State.reader = step4State.port.readable.getReader();
+
+      try {
+        while (true) {
+          const { value, done } = await step4State.reader.read();
+          if (done) break;
+          if (value) {
+            // Decode bytes to string and buffer
+            step4State.rxBuffer += decoder.decode(value, { stream: true });
+            const lines = step4State.rxBuffer.split('\n');
+            // Keep the last incomplete line in buffer
+            step4State.rxBuffer = lines.pop();
+            // Log all complete lines
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (trimmed) {
+                // Check if waiting for vref response
+                if (step4State.waitingForVref) {
+                  const vrefValue = parseFloat(trimmed);
+                  if (!isNaN(vrefValue) && vrefValue > 0 && vrefValue <= 10) {
+                    step4State.vref = vrefValue;
+                    step4State.waitingForVref = false;
+                    step4Log(`RX: ${trimmed} (Vref=${vrefValue}V)`, 'rx');
+                    continue;
+                  }
+                }
+                step4Log(`RX: ${trimmed}`, 'rx');
+              }
+            }
+          }
+        }
+      } catch (err) {
+        if (err.name !== 'AbortError' && step4State.connected) {
+          step4Log(`Read error: ${err.message}`, 'err');
+        }
+      } finally {
+        if (step4State.reader) {
+          step4State.reader.releaseLock();
+        }
+      }
+      break;
+    }
+  }
+
+  async function step4Send(data) {
+    if (!step4State.connected || !step4State.port) {
+      step4Log('Not connected', 'err');
+      return;
+    }
+
+    try {
+      const encoder = new TextEncoder();
+      const writer = step4State.port.writable.getWriter();
+      await writer.write(encoder.encode(data + '\n'));
+      writer.releaseLock();
+      step4Log(`TX: ${data}`, 'tx');
+    } catch (err) {
+      step4Log(`Send error: ${err.message}`, 'err');
+    }
+  }
+
+  async function step4SendConfig() {
+    const { a, b, Fs, filterName, fc, N, filt } = getFilterCoefficients();
+
+    // Send sampling frequency first (needed for all modes)
+    await step4Send(`fs ${Fs}`);
+
+    // Send bypass or filter mode
+    if (filt === 'bypass') {
+      await step4Send('bypass');
+    } else {
+      // Set filter mode and send coefficients
+      await step4Send('filter');
+
+      // Send coefficients based on filter type
+      const bStr = '[' + b.map(x => x.toFixed(6)).join(',') + ']';
+
+      if (a.length <= 1) {
+        // FIR filter (MA, diff)
+        await step4Send(`fir ${bStr}`);
+      } else {
+        // IIR filter (LP, HP) - a[0]=1 is implicit, send a[1..n]
+        const aStr = '[' + a.slice(1).map(x => x.toFixed(6)).join(',') + ']';
+        await step4Send(`iir ${bStr} ${aStr}`);
+      }
+
+      // Set AC mode based on filter type
+      // AC ON for HP and diff (they need DC-centered signals)
+      // AC OFF for MA and LP
+      if (filt === 'hp' || filt === 'diff') {
+        const acBias = STEP4_AC_BIAS_VOLTAGE / step4State.vref;
+        await step4Send(`ac set ${acBias.toFixed(6)}`);
+        await step4Send('ac on');
+      } else {
+        await step4Send('ac off');
+      }
+    }
+
+    step4Log(step4t('config_sent'), 'info');
+
+    // Store last sent config
+    step4State.lastSentConfig = { filterName, Fs, fc, N, filt };
+    updateLastConfigDisplay();
+  }
+
+  function updateLastConfigDisplay() {
+    const container = document.getElementById('step4LastConfigContent');
+    if (!container) return;
+
+    const cfg = step4State.lastSentConfig;
+    if (!cfg) {
+      container.innerHTML = `<span style="color:var(--fg);opacity:0.5">${step4t('no_config_sent')}</span>`;
+      return;
+    }
+
+    let html = `
+      <div class="step4-param-grid">
+        <span class="step4-param-label">${step4t('fs_label')}:</span>
+        <span class="step4-param-value">${cfg.Fs} Hz</span>
+        <span class="step4-param-label">${step4t('filter_type')}:</span>
+        <span class="step4-param-value">${cfg.filterName}</span>
+    `;
+
+    if (cfg.filt === 'ma') {
+      html += `
+        <span class="step4-param-label">${step4t('order_label')} N:</span>
+        <span class="step4-param-value">${cfg.N}</span>
+      `;
+    } else if (cfg.filt === 'lp' || cfg.filt === 'hp') {
+      html += `
+        <span class="step4-param-label">${step4t('cutoff_freq')}:</span>
+        <span class="step4-param-value">${cfg.fc.toFixed(1)} Hz</span>
+      `;
+    }
+
+    html += '</div>';
+    container.innerHTML = html;
+  }
+
+  function updateStep4UI() {
+    const connectBtn = document.getElementById('step4ConnectBtn');
+    const disconnectBtn = document.getElementById('step4DisconnectBtn');
+    const sendConfigBtn = document.getElementById('step4SendConfigBtn');
+    const statusEl = document.getElementById('step4Status');
+
+    if (connectBtn) connectBtn.disabled = step4State.connected;
+    if (disconnectBtn) disconnectBtn.disabled = !step4State.connected;
+    if (sendConfigBtn) sendConfigBtn.disabled = !step4State.connected;
+
+    if (statusEl) {
+      statusEl.textContent = step4State.connected ? step4t('status_connected') : step4t('status_disconnected');
+      statusEl.className = `step4-status ${step4State.connected ? 'connected' : 'disconnected'}`;
+    }
+  }
+
+  function renderStep4() {
+    const { a, b, filterName, Fs, fc, N, filt } = getFilterCoefficients();
+    const equation = buildEquationString(a, b);
+
+    // Build coefficients table
+    const maxLen = Math.max(a.length, b.length);
+    let tableRows = '';
+    for (let i = 0; i < maxLen; i++) {
+      const bVal = i < b.length ? b[i].toFixed(6) : '-';
+      const aVal = i < a.length ? a[i].toFixed(6) : '-';
+      tableRows += `<tr><td>${i}</td><td>${bVal}</td><td>${aVal}</td></tr>`;
+    }
+
+    // Determine which extra parameters to show
+    const showN = (filt === 'ma');
+    const showFc = (filt === 'lp' || filt === 'hp');
+
+    stepContentEl.innerHTML = `
+      <div class="step4-wrapper">
+        <!-- Filter Parameters Card -->
+        <div class="step4-card step4-params">
+          <p class="step3-plot-title">${step4t('params_title')}</p>
+          <div class="step4-param-grid">
+            <span class="step4-param-label">${step4t('fs_label')}:</span>
+            <span class="step4-param-value">${Fs} Hz</span>
+            <span class="step4-param-label">${step4t('filter_type')}:</span>
+            <span class="step4-param-value">${filterName}</span>
+            ${showN ? `
+            <span class="step4-param-label">${step4t('order_label')} N:</span>
+            <span class="step4-param-value">${N}</span>
+            ` : ''}
+            ${showFc ? `
+            <span class="step4-param-label">${step4t('cutoff_freq')}:</span>
+            <span class="step4-param-value">${fc.toFixed(1)} Hz</span>
+            ` : ''}
+          </div>
+        </div>
+
+        <!-- Last Config Sent Card -->
+        <div class="step4-card step4-lastconfig">
+          <p class="step3-plot-title">${step4t('lastconfig_title')}</p>
+          <div id="step4LastConfigContent">
+            <span style="color:var(--fg);opacity:0.5">${step4t('no_config_sent')}</span>
+          </div>
+        </div>
+
+        <!-- Serial Port Card -->
+        <div class="step4-card step4-serial">
+          <p class="step3-plot-title">${step4t('serial_title')}</p>
+          <div class="step4-serial-controls">
+            <select id="step4PortSelect">
+              <option value="">${step4t('select_port')}</option>
+            </select>
+            <button id="step4RefreshBtn" class="step4-btn">↻</button>
+            <button id="step4ConnectBtn" class="step4-btn">${step4t('connect')}</button>
+            <button id="step4DisconnectBtn" class="step4-btn step4-btn-danger" disabled>${step4t('disconnect')}</button>
+          </div>
+          <div class="step4-serial-controls" style="margin-top:8px;">
+            <span class="step4-param-label">Status:</span>
+            <span id="step4Status" class="step4-status disconnected">${step4t('status_disconnected')}</span>
+            <button id="step4SendConfigBtn" class="step4-btn" disabled>${step4t('send_config')}</button>
+          </div>
+        </div>
+
+        <!-- Difference Equation Card -->
+        <div class="step4-card step4-equation">
+          <p class="step3-plot-title">${step4t('equation_title')}</p>
+          <div class="step4-equation-display">
+            <div style="margin-bottom:4px">${equation.filter}</div>
+            <div style="margin-bottom:8px">${equation.dac}</div>
+            <div style="font-size:0.75em;color:var(--muted);line-height:1.4">
+              <div>x[n]: ${step4t('desc_x')}</div>
+              <div>y[n]: ${step4t('desc_y')}</div>
+              <div>y<sub>OUT</sub>[n]: ${step4t('desc_yout')}</div>
+            </div>
+          </div>
+          <table class="step4-coef-table">
+            <thead>
+              <tr><th>n</th><th>b<sub>n</sub></th><th>a<sub>n</sub></th></tr>
+            </thead>
+            <tbody>${tableRows}</tbody>
+          </table>
+        </div>
+
+        <!-- Console Card -->
+        <div class="step4-card step4-console">
+          <p class="step3-plot-title">${step4t('console_title')}</p>
+          <div id="step4ConsoleOutput" class="step4-console-output"></div>
+          <div class="step4-console-input">
+            <input type="text" id="step4ConsoleInput" placeholder="Enter command...">
+            <button id="step4SendBtn" class="step4-btn">${step4t('send')}</button>
+            <button id="step4ClearBtn" class="step4-btn">${step4t('clear')}</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Attach event listeners
+    document.getElementById('step4RefreshBtn').addEventListener('click', step4RefreshPorts);
+    document.getElementById('step4ConnectBtn').addEventListener('click', step4Connect);
+    document.getElementById('step4DisconnectBtn').addEventListener('click', step4Disconnect);
+    document.getElementById('step4SendConfigBtn').addEventListener('click', step4SendConfig);
+
+    // Initial port refresh
+    step4RefreshPorts();
+
+    document.getElementById('step4SendBtn').addEventListener('click', () => {
+      const input = document.getElementById('step4ConsoleInput');
+      if (input.value.trim()) {
+        step4Send(input.value.trim());
+        input.value = '';
+      }
+    });
+
+    document.getElementById('step4ConsoleInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        const input = e.target;
+        if (input.value.trim()) {
+          step4Send(input.value.trim());
+          input.value = '';
+        }
+      }
+    });
+
+    document.getElementById('step4ClearBtn').addEventListener('click', () => {
+      step4State.consoleLogs = [];
+      updateConsoleDisplay();
+    });
+
+    updateConsoleDisplay();
+    updateStep4UI();
+    updateLastConfigDisplay();
+  }
+
+  // STEPS NAV
+  function setActiveStep(step){
+    state.step = step;
+    stepTabs.forEach(btn=>{
+      btn.classList.toggle('active', Number(btn.dataset.step)===step);
+    });
+    loadStepContent();
+  }
+  stepTabs.forEach(btn=>{
+    btn.addEventListener('click', ()=>setActiveStep(Number(btn.dataset.step)));
+  });
+
+  // LANGUAGE
+  function setLanguage(lang){
+    state.lang = lang;
+    document.getElementById('appTitle').textContent = appTitles[lang].main;
+    document.getElementById('appSubtitle').textContent = appTitles[lang].sub;
+    document.getElementById('stepLabel1').textContent = stepLabels[lang][1];
+    document.getElementById('stepLabel2').textContent = stepLabels[lang][2];
+    document.getElementById('stepLabel3').textContent = stepLabels[lang][3];
+    document.getElementById('stepLabel4').textContent = stepLabels[lang][4];
+    document.getElementById('stepLabel5').textContent = stepLabels[lang][5];
+    loadStepContent();
+  }
+  langSelect.addEventListener('change', ()=>setLanguage(langSelect.value));
+
+  // LOAD CONTENT
+  function loadStepContent(){
+    const {step,lang} = state;
+    if(step===1){
+      stepContentEl.innerHTML = marked.parse(markdownContent.step1[lang]);
+    } else if(step===2){
+      renderStep2();
+    } else if(step===3){
+      renderStep3();
+    } else if(step===4){
+      renderStep4();
+    } else {
+      const placeholder = {
+        es:'Esta sección se llenará con herramientas interactivas en los siguientes pasos del desarrollo.',
+        fr:'Cette section sera complétée avec des outils interactifs dans les prochaines étapes du développement.',
+        en:'This section will be filled with interactive tools in the next development steps.'
+      };
+      stepContentEl.innerHTML = `<p>${placeholder[lang]}</p>`;
+    }
+    stepNoteEl.textContent = stepNotes[lang][step] || '';
+  }
+
+  // INIT
+  applyTheme('light');
+  setLanguage('en');
+  setActiveStep(1);
+</script>
+
+</body>
+</html>
