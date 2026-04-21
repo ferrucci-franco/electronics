@@ -7,10 +7,20 @@
 <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 <style>
   :root{
-    --bg:#ffffff; --fg:#111111; --panel:#f2f2f2; --border:#d7d7d7; --accent:#4a68ff;
+    --primary-color:#2196F3; --primary-hover:#1976D2;
+    --danger-color:#d83b3b;
   }
-  body.dark-mode{
-    --bg:#0f0f10; --fg:#f5f5f5; --panel:#1a1b1e; --border:#2a2b2e; --accent:#8aa0ff;
+  body.theme-light{
+    --bg:#ffffff; --fg:#212121; --muted:#757575;
+    --panel:#f5f5f5; --panel-strong:#e0e0e0; --border:#cccccc;
+    --sidebar:#fafafa; --hover:#e8e8e8; --accent:var(--primary-color);
+    --plot-bg:#ffffff; --shadow:0 2px 4px rgba(0,0,0,0.1);
+  }
+  body.theme-dark, body.dark-mode{
+    --bg:#1e1e1e; --fg:#e0e0e0; --muted:#a0a0a0;
+    --panel:#2d2d2d; --panel-strong:#3d3d3d; --border:#444444;
+    --sidebar:#252525; --hover:#353535; --accent:#64b5f6;
+    --plot-bg:#222222; --shadow:0 2px 6px rgba(0,0,0,0.25);
   }
   *{box-sizing:border-box}
   html, body { height: 100%; }
@@ -24,15 +34,29 @@
     background:var(--panel); border-bottom:1px solid var(--border);
     padding:10px clamp(10px,2vw,24px);
     display:grid; grid-template-columns:1fr auto; align-items:center; gap:10px;
+    min-height:60px;
   }
-  header h1{margin:0; font-size:clamp(18px,2.8vw,28px)}
+  header h1{margin:0; font-size:clamp(18px,2.2vw,24px); font-weight:600}
   .toolbar{display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:flex-end}
-  .toolbar select,.toolbar button,.toolbar label{font-size:14px}
+  .toolbar button,.toolbar label{font-size:14px}
+  .language-selector{
+    display:flex; gap:4px; margin-right:4px;
+    background:var(--panel-strong); padding:4px; border-radius:8px;
+  }
+  .lang-btn{
+    padding:6px 10px; border:none; background:transparent; color:var(--fg);
+    border-radius:6px; cursor:pointer; font-size:13px; transition:all 0.2s;
+  }
+  .lang-btn:hover{background:var(--hover)}
+  .lang-btn.active{
+    background:var(--primary-color); color:white; box-shadow:0 2px 4px rgba(0,0,0,0.18);
+  }
   button{
     padding:8px 12px; border:1px solid var(--border); background:var(--bg); color:var(--fg);
-    border-radius:10px; cursor:pointer;
+    border-radius:8px; cursor:pointer; transition:all 0.2s;
   }
-  button:hover{border-color:var(--accent)}
+  button:hover{border-color:var(--accent); background:var(--hover); box-shadow:var(--shadow)}
+  button.active{border-color:var(--primary-color); background:var(--primary-color); color:white}
 
   /* Layout a altura completa */
   .wrapper{
@@ -45,7 +69,7 @@
 
   /* Sidebar ocupa toda la altura; scroll sólo vertical; nada de scroll horizontal */
   .controls{
-    background:var(--panel); border:1px solid var(--border); border-radius:14px;
+    background:var(--sidebar); border:1px solid var(--border); border-radius:14px;
     padding:10px; display:grid; grid-template-columns:1fr; gap:10px;
     height:100%; min-height:0; overflow-y:auto; overflow-x:hidden;
   }
@@ -63,6 +87,24 @@
     border:1px dashed var(--border); border-radius:10px; padding:8px; display:grid; gap:6px;
   }
   .control-group b{font-size:13px}
+  .piecewise-group{
+    background:color-mix(in srgb, var(--primary-color) 12%, var(--bg));
+    border-color:color-mix(in srgb, var(--primary-color) 45%, var(--border));
+  }
+  body.theme-dark .piecewise-group{
+    background:color-mix(in srgb, var(--primary-color) 16%, var(--sidebar));
+    border-color:color-mix(in srgb, var(--primary-color) 55%, var(--border));
+  }
+  .options-group{display:grid; gap:4px}
+  .options-group-label{
+    font-size:12px; font-weight:700; color:var(--muted);
+    text-transform:uppercase; letter-spacing:0.04em;
+  }
+  .checkbox-label{
+    display:flex; align-items:center; gap:8px; padding:3px 0;
+    font-size:13px; cursor:pointer;
+  }
+  .checkbox-label input[type="checkbox"]{accent-color:var(--primary-color)}
 
   /* Etiquetas ultra compactas: no wrap + valor al lado */
   .mini-label{
@@ -73,37 +115,68 @@
   .mini-label .value{
     font-variant-numeric:tabular-nums; opacity:0.8; margin-left:8px;
   }
+  .value{font-variant-numeric:tabular-nums; opacity:0.85; margin-left:6px}
+  .signal-grid{
+    display:grid; grid-template-columns:1fr auto; gap:8px; align-items:end;
+  }
+  .signal-grid label{display:grid; gap:4px; font-size:13px}
+  .signal-grid input{
+    width:100%; padding:7px 8px; border:1px solid var(--border);
+    border-radius:8px; background:var(--bg); color:var(--fg);
+  }
+  .signal-actions{display:flex; gap:6px; flex-wrap:wrap}
+  .primary-action{
+    background:var(--primary-color); border-color:var(--primary-color); color:white;
+    font-weight:600;
+  }
+  .primary-action:hover{background:var(--primary-hover); border-color:var(--primary-hover)}
+  .secondary-action{
+    background:color-mix(in srgb, var(--primary-color) 12%, var(--bg));
+    border-color:color-mix(in srgb, var(--primary-color) 45%, var(--border));
+    color:var(--fg); font-weight:500;
+  }
+  textarea{
+    width:100%; min-height:138px; resize:vertical; padding:8px;
+    border:1px solid var(--border); border-radius:8px;
+    background:var(--bg); color:var(--fg);
+    font:13px/1.35 ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;
+  }
+  .status-line{font-size:12px; opacity:0.85; min-height:1.2em}
+  .status-line.error{color:var(--danger-color); opacity:1}
+  .signal-note{font-size:12px; color:var(--muted); margin:0}
+  .sidebar-author{
+    padding:12px 8px 4px; margin-top:auto; text-align:center;
+    font-size:12px; color:var(--muted); border-top:1px solid var(--border);
+  }
+  .sidebar-author a{color:var(--primary-color); text-decoration:none}
+  .sidebar-author a:hover{text-decoration:underline}
   input[type="range"]{ width:100% }
 
   #plot{
     min-height:420px; height:100%;
-    border:1px solid var(--border); border-radius:14px; background:var(--bg);
+    border:1px solid var(--border); border-radius:14px; background:var(--plot-bg);
   }
 </style>
 </head>
-<body>
+<body class="theme-light">
   <header>
     <h1 id="mainTitle">Fourier Series (Real)</h1>
     <div class="toolbar">
-      <select id="languageSelector" aria-label="Language">
-        <option value="en" selected>English</option>
-        <option value="es">Español</option>
-        <option value="fr">Français</option>
-      </select>
-
-      <label for="showComponents">
-        <input type="checkbox" id="showComponents" checked />
-        <span id="showComponentsText">Show Components</span>
-      </label>
+      <div class="language-selector" aria-label="Language">
+        <button class="lang-btn active" data-lang="en" type="button">EN</button>
+        <button class="lang-btn" data-lang="es" type="button">ES</button>
+        <button class="lang-btn" data-lang="fr" type="button">FR</button>
+      </div>
 
       <button id="presetSquare">Square</button>
       <button id="presetTriangle">Triangle</button>
       <button id="presetSawtooth">Sawtooth</button>
       <button id="presetZeroNegZeroPos">Square 0→−1→0→+1</button>
+      <button id="toggleSignalEditor">My signal</button>
 
       <button id="resetAll">Reset</button>
       <button id="toggleControls">Hide Controls</button>
-      <button id="toggleTheme">Dark Mode</button>
+      <button id="toggleTheme" title="Toggle theme" aria-label="Toggle theme">🌙</button>
     </div>
   </header>
 
@@ -117,35 +190,106 @@
 const N_HARMONICS = 20;
 const N_PERIODS = 2;
 const POINTS_PER_PERIOD = 1000;
+const TWO_PI = 2*Math.PI;
+const DEFAULT_PERIOD_TEXT = "2*pi";
+const DEFAULT_PIECEWISE_TEXT = [
+  "0, 0",
+  "pi/4, 0.8",
+  "3*pi/4, 0.8",
+  "5*pi/4, -0.4",
+  "7*pi/4, -0.4",
+  "2*pi, 0"
+].join("\n");
 
 /* Short UI strings (kept minimal to avoid overflow) */
 const I18N = {
   en:{ title:"Fourier Series", amp:"a", phase:"φ (°)",
-       hideControls:"Hide Controls", showControls:"Show Controls", showComponents:"Show Components",
+       hideControls:"Hide Controls", showControls:"Show Controls",
        darkMode:"Dark Mode", lightMode:"Light Mode", reset:"Reset",
        square:"Square", triangle:"Triangle", sawtooth:"Sawtooth",
        zeroNegZeroPos:"Square 0→−1→0→+1",
-       total:"Total", xaxis:"Time (rad)", yaxis:"Amplitude" },
+       mySignal:"My signal",
+       total:"Total", xaxis:"x", yaxis:"Amplitude",
+       displayTitle:"Display", showOriginalSignal:"Show original signal",
+       showFourierSum:"Show Fourier sum", showComponents:"Show components",
+       piecewiseTitle:"Piecewise signal", period:"Period T", points:"Points (x, y)",
+       applySignal:"Apply", loadExample:"Example", dc:"DC",
+       signalOriginal:"Original signal",
+       piNote:'You can use "pi" and "T" in the table, for example pi/2, 2*pi or T/4.',
+       pointsPlaceholder:"0, 0\nT/4, 1\nT/2, -1\nT/2, 1\nT, 0",
+       invalidPeriod:"Invalid period. Use a positive value.",
+       invalidLine:"Invalid line",
+       needTwoPoints:"Enter at least two points.",
+       nonMonotonic:"x values must be nondecreasing; repeat x only for jumps.",
+       periodMismatch:"The first and last x values must differ by T.",
+       appliedSignal:"Applied",
+       segments:"segments",
+       jumps:"jumps",
+       parseError:"Could not parse expression" },
   es:{ title:"Serie de Fourier", amp:"a", phase:"φ (°)",
-       hideControls:"Ocultar controles", showControls:"Mostrar controles", showComponents:"Mostrar componentes",
+       hideControls:"Ocultar controles", showControls:"Mostrar controles",
        darkMode:"Modo oscuro", lightMode:"Modo claro", reset:"Reset",
        square:"Cuadrada", triangle:"Triangular", sawtooth:"Diente de sierra",
        zeroNegZeroPos:"Cuadrada 0→−1→0→+1",
-       total:"Suma", xaxis:"Tiempo (rad)", yaxis:"Amplitud" },
+       mySignal:"Mi señal",
+       total:"Suma", xaxis:"x", yaxis:"Amplitud",
+       displayTitle:"Visualización", showOriginalSignal:"Mostrar señal original",
+       showFourierSum:"Mostrar suma de Fourier", showComponents:"Mostrar componentes",
+       piecewiseTitle:"Señal por trazos", period:"Periodo T", points:"Puntos (x, y)",
+       applySignal:"Aplicar", loadExample:"Ejemplo", dc:"DC",
+       signalOriginal:"Señal original",
+       piNote:'Se puede usar "pi" y "T" en la tabla, por ejemplo pi/2, 2*pi o T/4.',
+       pointsPlaceholder:"0, 0\nT/4, 1\nT/2, -1\nT/2, 1\nT, 0",
+       invalidPeriod:"Periodo inválido. Usa un valor positivo.",
+       invalidLine:"Línea inválida",
+       needTwoPoints:"Introduce al menos dos puntos.",
+       nonMonotonic:"Los valores de x deben ser crecientes; repite x solo para saltos.",
+       periodMismatch:"El primer y el último valor de x deben diferir en T.",
+       appliedSignal:"Aplicada",
+       segments:"tramos",
+       jumps:"saltos",
+       parseError:"No se pudo interpretar la expresión" },
   fr:{ title:"Série de Fourier", amp:"a", phase:"φ (°)",
-       hideControls:"Masquer contrôles", showControls:"Afficher contrôles", showComponents:"Afficher composantes",
+       hideControls:"Masquer contrôles", showControls:"Afficher contrôles",
        darkMode:"Mode sombre", lightMode:"Mode clair", reset:"Réinitialiser",
        square:"Carrée", triangle:"Triangulaire", sawtooth:"Dent de scie",
        zeroNegZeroPos:"Carrée 0→−1→0→+1",
-       total:"Total", xaxis:"Temps (rad)", yaxis:"Amplitude" }
+       mySignal:"Mon signal",
+       total:"Total", xaxis:"x", yaxis:"Amplitude",
+       displayTitle:"Affichage", showOriginalSignal:"Afficher le signal original",
+       showFourierSum:"Afficher la somme de Fourier", showComponents:"Afficher les composantes",
+       piecewiseTitle:"Signal par morceaux", period:"Période T", points:"Points (x, y)",
+       applySignal:"Appliquer", loadExample:"Exemple", dc:"DC",
+       signalOriginal:"Signal original",
+       piNote:'Vous pouvez utiliser « pi » et « T » dans le tableau, par exemple pi/2, 2*pi ou T/4.',
+       pointsPlaceholder:"0, 0\nT/4, 1\nT/2, -1\nT/2, 1\nT, 0",
+       invalidPeriod:"Période invalide. Utilisez une valeur positive.",
+       invalidLine:"Ligne invalide",
+       needTwoPoints:"Entrez au moins deux points.",
+       nonMonotonic:"Les valeurs de x doivent être croissantes; répétez x seulement pour les sauts.",
+       periodMismatch:"La première et la dernière valeur de x doivent différer de T.",
+       appliedSignal:"Appliqué",
+       segments:"segments",
+       jumps:"sauts",
+       parseError:"Impossible d'interpréter l'expression" }
 };
 let lang = "en";
 
 /* ====================== STATE ====================== */
 let amplitudes = Array(N_HARMONICS).fill(0);
 let phases = Array(N_HARMONICS).fill(0); // radians
+let dcOffset = 0;
+let period = TWO_PI;
+let periodText = DEFAULT_PERIOD_TEXT;
+let piecewiseText = DEFAULT_PIECEWISE_TEXT;
+let piecewiseModel = null;
+let originalSignalModel = null;
+let piecewiseStatus = "";
+let piecewiseStatusIsError = false;
+let signalEditorVisible = false;
+let displayOptions = { original:true, total:true, components:true };
 let darkMode = false;
-let ampSliders = [], phaseSliders = [];
+let ampSliders = [], phaseSliders = [], dcSlider = null;
 
 /* ====================== UI CREATION ====================== */
 function createControls() {
@@ -154,6 +298,11 @@ function createControls() {
 
   ampSliders = [];
   phaseSliders = [];
+  dcSlider = null;
+
+  panel.appendChild(createDisplayControls());
+  if (signalEditorVisible) panel.appendChild(createSignalEditor());
+  panel.appendChild(createDcControl());
 
   for (let k = 1; k <= N_HARMONICS; k++) {
     const card = document.createElement("div");
@@ -176,7 +325,7 @@ function createControls() {
     const ampSlider = document.createElement("input");
     ampSlider.type = "range";
     ampSlider.min = "0";
-    ampSlider.max = "2";
+    ampSlider.max = String(Math.max(2, Math.ceil(amplitudes[k-1]*110)/100));
     ampSlider.step = "0.01";
     ampSlider.value = amplitudes[k-1].toString();
     ampSlider.addEventListener("input", () => {
@@ -222,21 +371,355 @@ function createControls() {
     ampSliders.push(ampSlider);
     phaseSliders.push(phaSlider);
   }
+
+  panel.appendChild(createAuthorFooter());
 }
 
+function createAuthorFooter() {
+  const footer = document.createElement("div");
+  footer.className = "sidebar-author";
+  footer.innerHTML = 'Franco FERRUCCI &nbsp;·&nbsp; <a href="https://ferrucci-franco.github.io/electronics/" target="_blank" rel="noopener">ferrucci-franco.github.io</a>';
+  return footer;
+}
+
+function createDisplayControls() {
+  const card = document.createElement("div");
+  card.className = "control-group";
+
+  const title = document.createElement("b");
+  title.textContent = I18N[lang].displayTitle;
+  card.appendChild(title);
+
+  const group = document.createElement("div");
+  group.className = "options-group";
+
+  [
+    ["original", I18N[lang].showOriginalSignal],
+    ["total", I18N[lang].showFourierSum],
+    ["components", I18N[lang].showComponents]
+  ].forEach(([key, text]) => {
+    const label = document.createElement("label");
+    label.className = "checkbox-label";
+
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.checked = displayOptions[key];
+    input.addEventListener("change", () => setDisplayOption(key, input.checked));
+
+    const span = document.createElement("span");
+    span.textContent = text;
+
+    label.appendChild(input);
+    label.appendChild(span);
+    group.appendChild(label);
+  });
+
+  card.appendChild(group);
+  return card;
+}
+
+function setDisplayOption(key, value) {
+  displayOptions[key] = value;
+  updatePlot();
+}
+
+function getDisplayFlags() {
+  return {
+    showOriginal: displayOptions.original && Boolean(originalSignalModel),
+    showComponents: displayOptions.components,
+    showTotal: displayOptions.total
+  };
+}
+
+function createSignalEditor() {
+  const card = document.createElement("div");
+  card.className = "control-group piecewise-group";
+
+  const title = document.createElement("b");
+  title.textContent = I18N[lang].piecewiseTitle;
+  card.appendChild(title);
+
+  const note = document.createElement("p");
+  note.className = "signal-note";
+  note.textContent = I18N[lang].piNote;
+  card.appendChild(note);
+
+  const top = document.createElement("div");
+  top.className = "signal-grid";
+
+  const periodLabel = document.createElement("label");
+  periodLabel.textContent = I18N[lang].period;
+
+  const periodInput = document.createElement("input");
+  periodInput.id = "periodInput";
+  periodInput.value = periodText;
+  periodInput.addEventListener("change", () => {
+    periodText = periodInput.value;
+    try {
+      period = parsePositiveExpression(periodText);
+      piecewiseStatus = "";
+      piecewiseStatusIsError = false;
+      if (piecewiseModel) applyPiecewiseSignal(false);
+      else updatePlot();
+    } catch (err) {
+      piecewiseStatus = I18N[lang].invalidPeriod;
+      piecewiseStatusIsError = true;
+      refreshPiecewiseStatus();
+    }
+  });
+  periodLabel.appendChild(periodInput);
+
+  const actions = document.createElement("div");
+  actions.className = "signal-actions";
+
+  const applyBtn = document.createElement("button");
+  applyBtn.type = "button";
+  applyBtn.className = "primary-action";
+  applyBtn.textContent = I18N[lang].applySignal;
+  applyBtn.addEventListener("click", () => applyPiecewiseSignal(true));
+
+  const exampleBtn = document.createElement("button");
+  exampleBtn.type = "button";
+  exampleBtn.className = "secondary-action";
+  exampleBtn.textContent = I18N[lang].loadExample;
+  exampleBtn.addEventListener("click", () => {
+    periodText = DEFAULT_PERIOD_TEXT;
+    period = TWO_PI;
+    piecewiseText = DEFAULT_PIECEWISE_TEXT;
+    createControls();
+    applyPiecewiseSignal(true);
+  });
+
+  actions.appendChild(applyBtn);
+  actions.appendChild(exampleBtn);
+  top.appendChild(periodLabel);
+  top.appendChild(actions);
+  card.appendChild(top);
+
+  const pointsLabel = document.createElement("label");
+  pointsLabel.className = "mini-label";
+  pointsLabel.textContent = I18N[lang].points;
+  card.appendChild(pointsLabel);
+
+  const textarea = document.createElement("textarea");
+  textarea.id = "piecewiseInput";
+  textarea.value = piecewiseText;
+  textarea.placeholder = I18N[lang].pointsPlaceholder;
+  textarea.spellcheck = false;
+  textarea.addEventListener("input", () => {
+    piecewiseText = textarea.value;
+  });
+  card.appendChild(textarea);
+
+  const status = document.createElement("div");
+  status.id = "piecewiseStatus";
+  status.className = "status-line";
+  card.appendChild(status);
+  return card;
+}
+
+function createDcControl() {
+  const card = document.createElement("div");
+  card.className = "control-group";
+
+  const title = document.createElement("b");
+  title.innerHTML = `${I18N[lang].dc}: <span class="value" id="dc_val">${dcOffset.toFixed(3)}</span>`;
+
+  dcSlider = document.createElement("input");
+  dcSlider.type = "range";
+  const dcAbs = Math.abs(dcOffset);
+  dcSlider.min = String(Math.min(-2, Math.floor((dcOffset - dcAbs*0.1)*100)/100));
+  dcSlider.max = String(Math.max(2, Math.ceil((dcOffset + dcAbs*0.1)*100)/100));
+  dcSlider.step = "0.01";
+  dcSlider.value = String(dcOffset);
+  dcSlider.addEventListener("input", () => {
+    dcOffset = parseFloat(dcSlider.value);
+    const v = document.getElementById("dc_val");
+    if (v) v.textContent = dcOffset.toFixed(3);
+    updatePlot();
+  });
+
+  card.appendChild(title);
+  card.appendChild(dcSlider);
+  return card;
+}
+
+
+/* ====================== PIECEWISE SIGNAL ====================== */
+function parseExpression(expr, vars = {}) {
+  let text = String(expr).trim();
+  if (!text) throw new Error(I18N[lang].parseError);
+  text = text.replace(/π/g, "pi");
+  text = text.replace(/\bpi\b/gi, `(${Math.PI})`);
+  text = text.replace(/\bT\b/g, `(${period})`);
+  for (const [key, value] of Object.entries(vars)) {
+    text = text.replace(new RegExp(`\\b${key}\\b`, "g"), `(${value})`);
+  }
+  text = text.replace(/\^/g, "**");
+  if (!/^[0-9+\-*/().\sEe]+$/.test(text)) {
+    throw new Error(I18N[lang].parseError);
+  }
+  const value = Function(`"use strict"; return (${text});`)();
+  if (!Number.isFinite(value)) throw new Error(I18N[lang].parseError);
+  return value;
+}
+
+function parsePositiveExpression(expr) {
+  const value = parseExpression(expr);
+  if (!(value > 0)) throw new Error(I18N[lang].invalidPeriod);
+  return value;
+}
+
+function parsePiecewisePoints(text) {
+  const points = [];
+  const lines = text.split(/\r?\n/);
+  for (let i = 0; i < lines.length; i++) {
+    const cleaned = lines[i].replace(/#.*/, "").trim();
+    if (!cleaned) continue;
+
+    let parts = cleaned.split(/[;,]/).map(s => s.trim()).filter(Boolean);
+    if (parts.length < 2) {
+      parts = cleaned.split(/\s+/).map(s => s.trim()).filter(Boolean);
+    }
+    if (parts.length !== 2) {
+      throw new Error(`${I18N[lang].invalidLine} ${i + 1}`);
+    }
+    try {
+      points.push({ x: parseExpression(parts[0]), y: parseExpression(parts[1]) });
+    } catch (err) {
+      throw new Error(`${I18N[lang].invalidLine} ${i + 1}`);
+    }
+  }
+  if (points.length < 2) throw new Error(I18N[lang].needTwoPoints);
+  return points;
+}
+
+function makePiecewiseModel(points) {
+  const EPS = Math.max(1e-9, Math.abs(period)*1e-9);
+  for (let i = 1; i < points.length; i++) {
+    if (points[i].x < points[i-1].x - EPS) {
+      throw new Error(I18N[lang].nonMonotonic);
+    }
+  }
+
+  const start = points[0].x;
+  const end = points[points.length - 1].x;
+  if (Math.abs((end - start) - period) > EPS*10) {
+    throw new Error(I18N[lang].periodMismatch);
+  }
+
+  const segments = [];
+  const jumps = [];
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[i], p1 = points[i + 1];
+    if (Math.abs(p1.x - p0.x) <= EPS) {
+      if (Math.abs(p1.y - p0.y) > EPS) jumps.push({ x:p0.x, y0:p0.y, y1:p1.y });
+    } else {
+      segments.push({ x0:p0.x, y0:p0.y, x1:p1.x, y1:p1.y });
+    }
+  }
+  if (Math.abs(points[points.length - 1].y - points[0].y) > EPS) {
+    jumps.push({ x:end, y0:points[points.length - 1].y, y1:points[0].y });
+  }
+  if (!segments.length) throw new Error(I18N[lang].needTwoPoints);
+  return { points, start, end, period, segments, jumps };
+}
+
+function integrateSegment(segment, k) {
+  const {x0, y0, x1, y1} = segment;
+  const m = (y1 - y0)/(x1 - x0);
+  const q = y0 - m*x0;
+
+  if (k === 0) {
+    return 0.5*m*(x1*x1 - x0*x0) + q*(x1 - x0);
+  }
+
+  const a = k*TWO_PI/period;
+  const sin0 = Math.sin(a*x0), sin1 = Math.sin(a*x1);
+  const cos0 = Math.cos(a*x0), cos1 = Math.cos(a*x1);
+  const ixCos = (x1*sin1 - x0*sin0)/a + (cos1 - cos0)/(a*a);
+  const iCos = (sin1 - sin0)/a;
+  const ixSin = (-x1*cos1 + x0*cos0)/a + (sin1 - sin0)/(a*a);
+  const iSin = (-cos1 + cos0)/a;
+
+  return {
+    cos: m*ixCos + q*iCos,
+    sin: m*ixSin + q*iSin
+  };
+}
+
+function coefficientsFromPiecewise(model) {
+  let area = 0;
+  for (const segment of model.segments) {
+    area += integrateSegment(segment, 0);
+  }
+  dcOffset = area/period;
+  amplitudes.fill(0);
+  phases.fill(0);
+
+  for (let k = 1; k <= N_HARMONICS; k++) {
+    let cosIntegral = 0;
+    let sinIntegral = 0;
+    for (const segment of model.segments) {
+      const part = integrateSegment(segment, k);
+      cosIntegral += part.cos;
+      sinIntegral += part.sin;
+    }
+    const Ak = (2/period)*cosIntegral;
+    const Bk = (2/period)*sinIntegral;
+    amplitudes[k-1] = Math.hypot(Ak, Bk);
+    phases[k-1] = Math.atan2(-Bk, Ak);
+  }
+}
+
+function applyPiecewiseSignal(showStatus) {
+  try {
+    const periodInput = document.getElementById("periodInput");
+    const piecewiseInput = document.getElementById("piecewiseInput");
+    if (periodInput) periodText = periodInput.value;
+    if (piecewiseInput) piecewiseText = piecewiseInput.value;
+    period = parsePositiveExpression(periodText);
+    const points = parsePiecewisePoints(piecewiseText);
+    piecewiseModel = makePiecewiseModel(points);
+    originalSignalModel = piecewiseModel;
+    coefficientsFromPiecewise(piecewiseModel);
+    piecewiseStatus = showStatus
+      ? `${I18N[lang].appliedSignal}: ${piecewiseModel.segments.length} ${I18N[lang].segments}, ${piecewiseModel.jumps.length} ${I18N[lang].jumps}`
+      : "";
+    piecewiseStatusIsError = false;
+    reflectSliders();
+  } catch (err) {
+    piecewiseStatus = err.message || I18N[lang].parseError;
+    piecewiseStatusIsError = true;
+    refreshPiecewiseStatus();
+  }
+}
+
+function refreshPiecewiseStatus() {
+  const status = document.getElementById("piecewiseStatus");
+  if (!status) return;
+  status.textContent = piecewiseStatus;
+  status.classList.toggle("error", piecewiseStatusIsError);
+}
 
 /* ====================== PLOTTING ====================== */
-function timeVector(){
+function xVector(){
   const L = N_PERIODS*POINTS_PER_PERIOD + 1;
-  const dt = 2*Math.PI/POINTS_PER_PERIOD;
-  return Array.from({length:L},(_,i)=>i*dt);
+  const start = originalSignalModel ? originalSignalModel.start : 0;
+  const dx = period/POINTS_PER_PERIOD;
+  return Array.from({length:L},(_,i)=>start + i*dx);
 }
 function buildTraces(t){
-  const showComponents = document.getElementById("showComponents").checked;
-  const traces=[]; const yTotal=new Array(t.length).fill(0);
+  const { showOriginal, showComponents, showTotal } = getDisplayFlags();
+  const traces=[]; const yTotal=new Array(t.length).fill(dcOffset);
+  const omega0 = TWO_PI/period;
+
+  if (originalSignalModel && showOriginal) {
+    traces.push(...buildPiecewiseTraces(originalSignalModel));
+  }
 
   const addHarm = (k, a, ph) => {
-    const yk = t.map(tt => a*Math.cos(k*tt + ph));
+    const yk = t.map(xx => a*Math.cos(k*omega0*xx + ph));
     for(let i=0;i<yTotal.length;i++) yTotal[i]+=yk[i];
     if(showComponents){
       traces.push({
@@ -252,43 +735,117 @@ function buildTraces(t){
     addHarm(k, amplitudes[k-1], phases[k-1]);
   }
 
-  /* Total curve: gray in dark mode */
-  const totalColor = darkMode ? "#bfbfbf" : "#000000";
-  traces.push({
-    x:t, y:yTotal, mode:"lines",
-    line:{width:3,color:totalColor},
-    name:I18N[lang].total,
-    hoverinfo:'skip'
-  });
+  if (showComponents && Math.abs(dcOffset) > 1e-12) {
+    traces.push({
+      x:t, y:t.map(() => dcOffset), mode:"lines",
+      line:{width:1,dash:"dot",color:darkMode ? "#d6d6d6" : "#666666"},
+      name:I18N[lang].dc,
+      hoverinfo:'skip'
+    });
+  }
+
+  const totalColor = darkMode ? "#90caf9" : "#1565c0";
+  if (showTotal) {
+    traces.push({
+      x:t, y:yTotal, mode:"lines",
+      line:{width:3.5,color:totalColor},
+      name:I18N[lang].total,
+      hoverinfo:'skip'
+    });
+  }
+  return traces;
+}
+
+function buildPiecewiseTraces(model) {
+  const traces = [];
+  const signalColor = darkMode ? "#ff8a76" : "#d14f3f";
+  let legendShown = false;
+  for (let p = 0; p < N_PERIODS; p++) {
+    const shift = p*model.period;
+    for (const segment of model.segments) {
+      const x = [], y = [];
+      const samples = Math.max(2, Math.ceil(POINTS_PER_PERIOD*(segment.x1 - segment.x0)/model.period));
+      for (let i = 0; i <= samples; i++) {
+        const u = i/samples;
+        x.push(segment.x0 + shift + u*(segment.x1 - segment.x0));
+        y.push(segment.y0 + u*(segment.y1 - segment.y0));
+      }
+      traces.push({
+        x, y, mode:"lines",
+        line:{width:2,color:signalColor},
+        name:I18N[lang].signalOriginal,
+        legendgroup:"piecewise",
+        showlegend:!legendShown,
+        hoverinfo:'skip'
+      });
+      legendShown = true;
+    }
+    for (const jump of model.jumps) {
+      traces.push({
+        x:[jump.x + shift, jump.x + shift],
+        y:[jump.y0, jump.y1],
+        mode:"lines",
+        line:{width:2,color:signalColor},
+        name:I18N[lang].signalOriginal,
+        legendgroup:"piecewise",
+        showlegend:false,
+        hoverinfo:'skip'
+      });
+    }
+  }
   return traces;
 }
 function plotLayout(){
-  const bg = darkMode ? "#0f0f10" : "#ffffff";
+  const bg = darkMode ? "#222222" : "#ffffff";
+  const fg = darkMode ? "#e0e0e0" : "#212121";
+  const grid = darkMode ? "#444444" : "#e5e5e5";
   return {
     margin:{t:24,r:16,b:48,l:56},
-    xaxis:{title:I18N[lang].xaxis},
-    yaxis:{title:I18N[lang].yaxis},
+    xaxis:{title:I18N[lang].xaxis, color:fg, gridcolor:grid, zerolinecolor:grid},
+    yaxis:{title:I18N[lang].yaxis, color:fg, gridcolor:grid, zerolinecolor:grid},
     paper_bgcolor:bg, plot_bgcolor:bg,
-    template: darkMode ? "plotly_dark" : "plotly_white",
+    font:{color:fg},
+    legend:{tracegroupgap:0, itemsizing:"constant", font:{size:12,color:fg}},
+    template: "plotly_white",
     hovermode: false
   };
 }
 function updatePlot(){
-  const t=timeVector();
+  const t=xVector();
   Plotly.react("plot", buildTraces(t), plotLayout(), {
     responsive:true, scrollZoom:true, displaylogo:false
   });
 }
 
 /* ====================== PRESETS ====================== */
+function setPresetPeriod() {
+  period = TWO_PI;
+  periodText = DEFAULT_PERIOD_TEXT;
+}
+
+function setOriginalSignalFromPoints(rows) {
+  originalSignalModel = makePiecewiseModel(rows.map(([x, y]) => ({ x, y })));
+}
+
 function resetAll(){
-  amplitudes.fill(0); phases.fill(0);
-  ampSliders.forEach(s=>{ s.value="0"; s.dispatchEvent(new Event("input")); });
-  phaseSliders.forEach(s=>{ s.value="0"; s.dispatchEvent(new Event("input")); });
-  updatePlot();
+  amplitudes.fill(0); phases.fill(0); dcOffset = 0; piecewiseModel = null; originalSignalModel = null;
+  piecewiseStatus = ""; piecewiseStatusIsError = false;
+  if (dcSlider) dcSlider.value = "0";
+  reflectSliders();
+}
+function hideSignalEditor() {
+  if (!signalEditorVisible) return;
+  signalEditorVisible = false;
+  const btn = document.getElementById("toggleSignalEditor");
+  if (btn) btn.classList.remove("active");
+  createControls();
 }
 function applySquarePreset(){
-  amplitudes.fill(0); phases.fill(0);
+  setPresetPeriod();
+  amplitudes.fill(0); phases.fill(0); dcOffset = 0; piecewiseModel = null;
+  setOriginalSignalFromPoints([[0,-1],[0,1],[Math.PI,1],[Math.PI,-1],[TWO_PI,-1]]);
+  piecewiseStatus = ""; piecewiseStatusIsError = false;
+  hideSignalEditor();
   for(let k=1;k<=N_HARMONICS;k++){
     if(k%2===1){
       const ak=(4/Math.PI)/k; amplitudes[k-1]=ak; phases[k-1]=-Math.PI/2;
@@ -297,7 +854,11 @@ function applySquarePreset(){
   reflectSliders();
 }
 function applyTrianglePreset(){
-  amplitudes.fill(0); phases.fill(0);
+  setPresetPeriod();
+  amplitudes.fill(0); phases.fill(0); dcOffset = 0; piecewiseModel = null;
+  setOriginalSignalFromPoints([[0,0],[Math.PI/2,1],[Math.PI,0],[3*Math.PI/2,-1],[TWO_PI,0]]);
+  piecewiseStatus = ""; piecewiseStatusIsError = false;
+  hideSignalEditor();
   for(let k=1;k<=N_HARMONICS;k++){
     if(k%2===1){
       const m=(k-1)/2, sign=(m%2===0)?+1:-1;
@@ -309,7 +870,11 @@ function applyTrianglePreset(){
   reflectSliders();
 }
 function applySawtoothPreset(){
-  amplitudes.fill(0); phases.fill(0);
+  setPresetPeriod();
+  amplitudes.fill(0); phases.fill(0); dcOffset = 0; piecewiseModel = null;
+  setOriginalSignalFromPoints([[0,0],[Math.PI,-1],[Math.PI,1],[TWO_PI,0]]);
+  piecewiseStatus = ""; piecewiseStatusIsError = false;
+  hideSignalEditor();
   for(let k=1;k<=N_HARMONICS;k++){
     const sign = ((k+1)%2===0)?-1:+1; // (-1)^{k+1}
     const b = (2/Math.PI)/k * sign;
@@ -319,6 +884,7 @@ function applySawtoothPreset(){
   reflectSliders();
 }
 function applyZeroNegZeroPosPreset(){
+  setPresetPeriod();
   const S = 4096; const dt = (2*Math.PI)/S;
   const f = new Array(S);
   for(let i=0;i<S;i++){
@@ -328,7 +894,20 @@ function applyZeroNegZeroPosPreset(){
     else if (t < 3*Math.PI/2) f[i] = 0;
     else f[i] = 1;
   }
-  amplitudes.fill(0); phases.fill(0);
+  amplitudes.fill(0); phases.fill(0); dcOffset = 0; piecewiseModel = null;
+  setOriginalSignalFromPoints([
+    [0,0],
+    [Math.PI/2,0],
+    [Math.PI/2,-1],
+    [Math.PI,-1],
+    [Math.PI,0],
+    [3*Math.PI/2,0],
+    [3*Math.PI/2,1],
+    [TWO_PI,1],
+    [TWO_PI,0]
+  ]);
+  piecewiseStatus = ""; piecewiseStatusIsError = false;
+  hideSignalEditor();
   for(let k=1;k<=N_HARMONICS;k++){
     let Ak = 0, Bk = 0;
     for(let i=0;i<S;i++){
@@ -346,9 +925,19 @@ function applyZeroNegZeroPosPreset(){
   reflectSliders();
 }
 function reflectSliders() {
+  if (dcSlider) {
+    const dcAbs = Math.abs(dcOffset);
+    dcSlider.min = String(Math.min(-2, Math.floor((dcOffset - dcAbs*0.1)*100)/100));
+    dcSlider.max = String(Math.max(2, Math.ceil((dcOffset + dcAbs*0.1)*100)/100));
+    dcSlider.value = String(dcOffset);
+  }
+  const dv = document.getElementById("dc_val");
+  if (dv) dv.textContent = dcOffset.toFixed(3);
+
   for (let k = 1; k <= N_HARMONICS; k++) {
     // Amplitude slider: keep full precision in the control
     if (ampSliders[k - 1]) {
+      ampSliders[k - 1].max = String(Math.max(2, Math.ceil(amplitudes[k-1]*110)/100));
       ampSliders[k - 1].value = String(amplitudes[k - 1]); // no rounding here
     }
     const av = document.getElementById(`a_val_${k}`);
@@ -362,6 +951,7 @@ function reflectSliders() {
     const pv = document.getElementById(`p_val_${k}`);
     if (pv) pv.textContent = String(deg);
   }
+  refreshPiecewiseStatus();
   updatePlot();
 }
 
@@ -369,15 +959,21 @@ function reflectSliders() {
 /* ====================== LANGUAGE ====================== */
 function setLanguage(nextLang){
   lang = nextLang;
+  piecewiseStatus = "";
+  piecewiseStatusIsError = false;
   document.getElementById("mainTitle").textContent = I18N[lang].title;
+  document.querySelectorAll(".lang-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.lang === lang);
+  });
   document.getElementById("toggleControls").textContent =
     document.getElementById("controlsPanel").classList.contains("hidden") ? I18N[lang].showControls : I18N[lang].hideControls;
-  document.getElementById("toggleTheme").textContent = darkMode ? I18N[lang].lightMode : I18N[lang].darkMode;
-  document.getElementById("showComponentsText").textContent = I18N[lang].showComponents;
+  updateThemeButton();
   document.getElementById("presetSquare").textContent = I18N[lang].square;
   document.getElementById("presetTriangle").textContent = I18N[lang].triangle;
   document.getElementById("presetSawtooth").textContent = I18N[lang].sawtooth;
   document.getElementById("presetZeroNegZeroPos").textContent = I18N[lang].zeroNegZeroPos;
+  document.getElementById("toggleSignalEditor").textContent = I18N[lang].mySignal;
+  document.getElementById("toggleSignalEditor").classList.toggle("active", signalEditorVisible);
   document.getElementById("resetAll").textContent = I18N[lang].reset;
 
   createControls();
@@ -385,8 +981,33 @@ function setLanguage(nextLang){
   updatePlot();
 }
 
+function updateThemeButton() {
+  const btn = document.getElementById("toggleTheme");
+  if (!btn) return;
+  btn.textContent = darkMode ? "☀️" : "🌙";
+  btn.title = darkMode ? I18N[lang].lightMode : I18N[lang].darkMode;
+  btn.setAttribute("aria-label", btn.title);
+}
+
 /* ====================== EVENTS ====================== */
-document.getElementById("languageSelector").addEventListener("change",(e)=>setLanguage(e.target.value));
+document.querySelectorAll(".lang-btn").forEach(btn => {
+  btn.addEventListener("click", () => setLanguage(btn.dataset.lang));
+});
+
+document.getElementById("toggleSignalEditor").addEventListener("click",()=>{
+  signalEditorVisible = !signalEditorVisible;
+  document.getElementById("toggleSignalEditor").classList.toggle("active", signalEditorVisible);
+  const panel=document.getElementById("controlsPanel");
+  const wrapper=document.getElementById("wrapper");
+  const controlsBtn=document.getElementById("toggleControls");
+  if (signalEditorVisible && panel.classList.contains("hidden")) {
+    panel.classList.remove("hidden");
+    wrapper.classList.remove("controls-hidden");
+    controlsBtn.textContent = I18N[lang].hideControls;
+  }
+  createControls();
+  reflectSliders();
+});
 
 document.getElementById("toggleControls").addEventListener("click",()=>{
   const panel=document.getElementById("controlsPanel");
@@ -406,12 +1027,12 @@ document.getElementById("toggleControls").addEventListener("click",()=>{
 });
 
 document.getElementById("toggleTheme").addEventListener("click",()=>{
-  darkMode=!darkMode; document.body.classList.toggle("dark-mode",darkMode);
-  document.getElementById("toggleTheme").textContent = darkMode ? I18N[lang].lightMode : I18N[lang].darkMode;
+  darkMode=!darkMode;
+  document.body.classList.toggle("theme-dark", darkMode);
+  document.body.classList.toggle("theme-light", !darkMode);
+  updateThemeButton();
   updatePlot();
 });
-
-document.getElementById("showComponents").addEventListener("change",updatePlot);
 
 document.getElementById("resetAll").addEventListener("click",resetAll);
 document.getElementById("presetSquare").addEventListener("click",applySquarePreset);
