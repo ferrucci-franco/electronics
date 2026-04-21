@@ -171,7 +171,7 @@
       <button id="presetSquare">Square</button>
       <button id="presetTriangle">Triangle</button>
       <button id="presetSawtooth">Sawtooth</button>
-      <button id="presetZeroNegZeroPos">Square 0→−1→0→+1</button>
+      <button id="presetRcCharge">RC charge/discharge</button>
       <button id="toggleSignalEditor">My signal</button>
 
       <button id="resetAll">Reset</button>
@@ -207,7 +207,7 @@ const I18N = {
        hideControls:"Hide Controls", showControls:"Show Controls",
        darkMode:"Dark Mode", lightMode:"Light Mode", reset:"Reset",
        square:"Square", triangle:"Triangle", sawtooth:"Sawtooth",
-       zeroNegZeroPos:"Square 0→−1→0→+1",
+       rcCharge:"RC charge/discharge",
        mySignal:"My signal",
        total:"Total", xaxis:"x", yaxis:"Amplitude",
        displayTitle:"Display", showOriginalSignal:"Show original signal",
@@ -230,7 +230,7 @@ const I18N = {
        hideControls:"Ocultar controles", showControls:"Mostrar controles",
        darkMode:"Modo oscuro", lightMode:"Modo claro", reset:"Reset",
        square:"Cuadrada", triangle:"Triangular", sawtooth:"Diente de sierra",
-       zeroNegZeroPos:"Cuadrada 0→−1→0→+1",
+       rcCharge:"Carga/descarga RC",
        mySignal:"Mi señal",
        total:"Suma", xaxis:"x", yaxis:"Amplitud",
        displayTitle:"Visualización", showOriginalSignal:"Mostrar señal original",
@@ -253,7 +253,7 @@ const I18N = {
        hideControls:"Masquer contrôles", showControls:"Afficher contrôles",
        darkMode:"Mode sombre", lightMode:"Mode clair", reset:"Réinitialiser",
        square:"Carrée", triangle:"Triangulaire", sawtooth:"Dent de scie",
-       zeroNegZeroPos:"Carrée 0→−1→0→+1",
+       rcCharge:"Charge/décharge RC",
        mySignal:"Mon signal",
        total:"Total", xaxis:"x", yaxis:"Amplitude",
        displayTitle:"Affichage", showOriginalSignal:"Afficher le signal original",
@@ -715,7 +715,7 @@ function buildTraces(t){
   const omega0 = TWO_PI/period;
 
   if (originalSignalModel && showOriginal) {
-    traces.push(...buildPiecewiseTraces(originalSignalModel));
+    traces.push(...buildOriginalSignalTraces(originalSignalModel));
   }
 
   const addHarm = (k, a, ph) => {
@@ -756,6 +756,36 @@ function buildTraces(t){
   return traces;
 }
 
+function buildOriginalSignalTraces(model) {
+  return model.type === "function" ? buildFunctionSignalTraces(model) : buildPiecewiseTraces(model);
+}
+
+function buildFunctionSignalTraces(model) {
+  const traces = [];
+  const signalColor = darkMode ? "#ff8a76" : "#d14f3f";
+  let legendShown = false;
+  for (let p = 0; p < N_PERIODS; p++) {
+    const shift = p*model.period;
+    const samples = POINTS_PER_PERIOD;
+    const x = [], y = [];
+    for (let i = 0; i <= samples; i++) {
+      const localX = model.start + i*model.period/samples;
+      x.push(localX + shift);
+      y.push(model.valueAt(localX));
+    }
+    traces.push({
+      x, y, mode:"lines",
+      line:{width:2,color:signalColor},
+      name:I18N[lang].signalOriginal,
+      legendgroup:"original",
+      showlegend:!legendShown,
+      hoverinfo:'skip'
+    });
+    legendShown = true;
+  }
+  return traces;
+}
+
 function buildPiecewiseTraces(model) {
   const traces = [];
   const signalColor = darkMode ? "#ff8a76" : "#d14f3f";
@@ -774,7 +804,7 @@ function buildPiecewiseTraces(model) {
         x, y, mode:"lines",
         line:{width:2,color:signalColor},
         name:I18N[lang].signalOriginal,
-        legendgroup:"piecewise",
+        legendgroup:"original",
         showlegend:!legendShown,
         hoverinfo:'skip'
       });
@@ -787,7 +817,7 @@ function buildPiecewiseTraces(model) {
         mode:"lines",
         line:{width:2,color:signalColor},
         name:I18N[lang].signalOriginal,
-        legendgroup:"piecewise",
+        legendgroup:"original",
         showlegend:false,
         hoverinfo:'skip'
       });
@@ -825,6 +855,77 @@ function setPresetPeriod() {
 
 function setOriginalSignalFromPoints(rows) {
   originalSignalModel = makePiecewiseModel(rows.map(([x, y]) => ({ x, y })));
+  return originalSignalModel;
+}
+
+function makeRcSignalModel() {
+  const halfPeriod = period/2;
+  const tau = period/6;
+  const alpha = Math.exp(-halfPeriod/tau);
+  const minValue = alpha/(1 + alpha);
+  const maxValue = 1/(1 + alpha);
+  return {
+    type:"function",
+    start:0,
+    end:period,
+    period,
+    tau,
+    halfPeriod,
+    minValue,
+    maxValue,
+    valueAt(x) {
+      const u = ((x % period) + period) % period;
+      return u < halfPeriod
+        ? 1 - (1 - minValue)*Math.exp(-u/tau)
+        : maxValue*Math.exp(-(u - halfPeriod)/tau);
+    }
+  };
+}
+
+function integralExpCos(a, b, x0, x1) {
+  const d = a*a + b*b;
+  const F = x => Math.exp(a*x)*(a*Math.cos(b*x) + b*Math.sin(b*x))/d;
+  return F(x1) - F(x0);
+}
+
+function integralExpSin(a, b, x0, x1) {
+  const d = a*a + b*b;
+  const F = x => Math.exp(a*x)*(a*Math.sin(b*x) - b*Math.cos(b*x))/d;
+  return F(x1) - F(x0);
+}
+
+function coefficientsFromRcSignal(model) {
+  const tau = model.tau;
+  const h = model.halfPeriod;
+  const p = model.period;
+  const maxValue = model.maxValue;
+  const lambda = 1/tau;
+
+  const alpha = Math.exp(-h/tau);
+  const chargeArea = h - maxValue*tau*(1 - alpha);
+  const dischargeArea = maxValue*tau*(1 - alpha);
+  dcOffset = (chargeArea + dischargeArea)/p;
+  amplitudes.fill(0);
+  phases.fill(0);
+
+  for (let k = 1; k <= N_HARMONICS; k++) {
+    const b = k*TWO_PI/p;
+    const intCos0H = Math.sin(b*h)/b;
+    const intSin0H = (1 - Math.cos(b*h))/b;
+    const expCosCharge = integralExpCos(-lambda, b, 0, h);
+    const expSinCharge = integralExpSin(-lambda, b, 0, h);
+
+    const shiftExp = maxValue*Math.exp(h/tau);
+    const expCosDischarge = shiftExp*integralExpCos(-lambda, b, h, p);
+    const expSinDischarge = shiftExp*integralExpSin(-lambda, b, h, p);
+
+    const cosIntegral = intCos0H - maxValue*expCosCharge + expCosDischarge;
+    const sinIntegral = intSin0H - maxValue*expSinCharge + expSinDischarge;
+    const Ak = (2/p)*cosIntegral;
+    const Bk = (2/p)*sinIntegral;
+    amplitudes[k-1] = Math.hypot(Ak, Bk);
+    phases[k-1] = Math.atan2(-Bk, Ak);
+  }
 }
 
 function resetAll(){
@@ -883,45 +984,13 @@ function applySawtoothPreset(){
   }
   reflectSliders();
 }
-function applyZeroNegZeroPosPreset(){
+function applyRcChargePreset(){
   setPresetPeriod();
-  const S = 4096; const dt = (2*Math.PI)/S;
-  const f = new Array(S);
-  for(let i=0;i<S;i++){
-    const t = i*dt;
-    if (t < Math.PI/2) f[i] = 0;
-    else if (t < Math.PI) f[i] = -1;
-    else if (t < 3*Math.PI/2) f[i] = 0;
-    else f[i] = 1;
-  }
   amplitudes.fill(0); phases.fill(0); dcOffset = 0; piecewiseModel = null;
-  setOriginalSignalFromPoints([
-    [0,0],
-    [Math.PI/2,0],
-    [Math.PI/2,-1],
-    [Math.PI,-1],
-    [Math.PI,0],
-    [3*Math.PI/2,0],
-    [3*Math.PI/2,1],
-    [TWO_PI,1],
-    [TWO_PI,0]
-  ]);
+  originalSignalModel = makeRcSignalModel();
   piecewiseStatus = ""; piecewiseStatusIsError = false;
   hideSignalEditor();
-  for(let k=1;k<=N_HARMONICS;k++){
-    let Ak = 0, Bk = 0;
-    for(let i=0;i<S;i++){
-      const t = i*dt;
-      Ak += f[i]*Math.cos(k*t);
-      Bk += f[i]*Math.sin(k*t);
-    }
-    Ak = (Ak*dt)/Math.PI;
-    Bk = (Bk*dt)/Math.PI;
-    const R = Math.hypot(Ak, Bk);
-    const phi = Math.atan2(-Bk, Ak);
-    amplitudes[k-1] = R;
-    phases[k-1] = phi;
-  }
+  coefficientsFromRcSignal(originalSignalModel);
   reflectSliders();
 }
 function reflectSliders() {
@@ -971,7 +1040,7 @@ function setLanguage(nextLang){
   document.getElementById("presetSquare").textContent = I18N[lang].square;
   document.getElementById("presetTriangle").textContent = I18N[lang].triangle;
   document.getElementById("presetSawtooth").textContent = I18N[lang].sawtooth;
-  document.getElementById("presetZeroNegZeroPos").textContent = I18N[lang].zeroNegZeroPos;
+  document.getElementById("presetRcCharge").textContent = I18N[lang].rcCharge;
   document.getElementById("toggleSignalEditor").textContent = I18N[lang].mySignal;
   document.getElementById("toggleSignalEditor").classList.toggle("active", signalEditorVisible);
   document.getElementById("resetAll").textContent = I18N[lang].reset;
@@ -1038,7 +1107,7 @@ document.getElementById("resetAll").addEventListener("click",resetAll);
 document.getElementById("presetSquare").addEventListener("click",applySquarePreset);
 document.getElementById("presetTriangle").addEventListener("click",applyTrianglePreset);
 document.getElementById("presetSawtooth").addEventListener("click",applySawtoothPreset);
-document.getElementById("presetZeroNegZeroPos").addEventListener("click",applyZeroNegZeroPosPreset);
+document.getElementById("presetRcCharge").addEventListener("click",applyRcChargePreset);
 
 /* ====================== INIT ====================== */
 createControls();
