@@ -7,15 +7,22 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.20.0/plotly.min.js"></script>
 <style>
   :root{
-    --bg:#ffffff; --fg:#0f172a; --panel:#f8fafc; --panel-border:#e5e7eb;
-    --btn:#e2e8f0; --accent:#0ea5e9; --plot-bg:#ffffff; --plot-paper:#ffffff;
-    --total-light:#111827; --total-dark:#9ca3af;
-    --tab-active:#0ea5e9; --tab-inactive:#64748b;
+    --primary-color:#2196F3; --primary-hover:#1976D2; --danger-color:#d83b3b;
+    --total-light:#1565c0; --total-dark:#90caf9;
   }
-  .dark-mode{
-    --bg:#0b0b0c; --fg:#f1f5f9; --panel:#151618; --panel-border:#2a2c30;
-    --btn:#1f2937; --accent:#22d3ee; --plot-bg:#0b0b0c; --plot-paper:#0b0b0c;
-    --tab-active:#22d3ee; --tab-inactive:#64748b;
+  body.theme-light{
+    --bg:#ffffff; --fg:#212121; --muted:#757575;
+    --panel:#f5f5f5; --panel-strong:#e0e0e0; --panel-border:#cccccc;
+    --sidebar:#fafafa; --btn:#ffffff; --hover:#e8e8e8; --accent:var(--primary-color);
+    --plot-bg:#ffffff; --plot-paper:#ffffff; --shadow:0 2px 4px rgba(0,0,0,0.1);
+    --tab-active:#2196F3; --tab-inactive:#757575;
+  }
+  body.theme-dark, .dark-mode{
+    --bg:#1e1e1e; --fg:#e0e0e0; --muted:#a0a0a0;
+    --panel:#2d2d2d; --panel-strong:#3d3d3d; --panel-border:#444444;
+    --sidebar:#252525; --btn:#1e1e1e; --hover:#353535; --accent:#64b5f6;
+    --plot-bg:#222222; --plot-paper:#222222; --shadow:0 2px 6px rgba(0,0,0,0.25);
+    --tab-active:#64b5f6; --tab-inactive:#a0a0a0;
   }
   *{box-sizing:border-box}
   html,body{height:100%}
@@ -34,23 +41,77 @@
   }
   .title{margin:0; font-weight:700; font-size:1.05rem}
   .toolbar{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
-  button,select,label{font-size:0.95rem}
+  button,label{font-size:0.95rem}
+  .language-selector{
+    display:flex; gap:4px; margin-right:4px;
+    background:var(--panel-strong); padding:4px; border-radius:8px;
+  }
+  .lang-btn{
+    padding:6px 10px; border:none; background:transparent; color:var(--fg);
+    border-radius:6px; cursor:pointer; font-size:13px; transition:all 0.2s;
+  }
+  .lang-btn:hover{background:var(--hover)}
+  .lang-btn.active{
+    background:var(--primary-color); color:white; box-shadow:0 2px 4px rgba(0,0,0,0.18);
+  }
   button{
     background:var(--btn); color:var(--fg); border:1px solid var(--panel-border);
-    border-radius:10px; padding:8px 12px; cursor:pointer;
+    border-radius:8px; padding:8px 12px; cursor:pointer; transition:all 0.2s;
   }
-  button:hover{border-color:var(--accent)}
+  button:hover{border-color:var(--accent); background:var(--hover); box-shadow:var(--shadow)}
   button.active{ background:var(--accent); color:white; border-color:var(--accent); }
   button:disabled{ opacity: 0.5; cursor: not-allowed; }
 
   #sidebar{
-    grid-area:sidebar; background:var(--panel); border-right:1px solid var(--panel-border);
+    grid-area:sidebar; background:var(--sidebar); border-right:1px solid var(--panel-border);
     display:flex; flex-direction:column; gap:10px; padding:12px; overflow-y:auto; width:340px;
   }
   body.sidebar-collapsed #sidebar{ display:none; }
 
   .presets{display:flex; gap:6px; flex-wrap:wrap}
   .toggles{display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:6px}
+  .toggle-group{display:grid; gap:4px; margin:4px 0 8px}
+  .checkbox-label{display:flex; align-items:center; gap:8px; font-size:0.86rem; cursor:pointer}
+  .checkbox-label input[type="checkbox"]{accent-color:var(--primary-color)}
+  .signal-editor{
+    display:grid; gap:8px; padding:10px; border:1px dashed color-mix(in srgb, var(--primary-color) 45%, var(--panel-border));
+    border-radius:10px; background:color-mix(in srgb, var(--primary-color) 12%, var(--bg));
+  }
+  body.theme-dark .signal-editor{
+    background:color-mix(in srgb, var(--primary-color) 16%, var(--sidebar));
+    border-color:color-mix(in srgb, var(--primary-color) 55%, var(--panel-border));
+  }
+  .signal-editor.hidden{display:none}
+  .signal-editor b{font-size:0.86rem}
+  .signal-note{font-size:0.78rem; color:var(--muted); margin:0}
+  .signal-grid{display:grid; grid-template-columns:1fr auto; gap:8px; align-items:end}
+  .signal-grid label{display:grid; gap:4px; font-size:0.82rem}
+  .signal-grid input{
+    width:100%; padding:7px 8px; border:1px solid var(--panel-border);
+    border-radius:8px; background:var(--bg); color:var(--fg);
+  }
+  .signal-actions{display:flex; gap:6px; flex-wrap:wrap}
+  .primary-action{background:var(--primary-color); border-color:var(--primary-color); color:white; font-weight:600}
+  .primary-action:hover{background:var(--primary-hover); border-color:var(--primary-hover)}
+  .secondary-action{
+    background:color-mix(in srgb, var(--primary-color) 12%, var(--bg));
+    border-color:color-mix(in srgb, var(--primary-color) 45%, var(--panel-border));
+    color:var(--fg); font-weight:500;
+  }
+  textarea{
+    width:100%; min-height:130px; resize:vertical; padding:8px;
+    border:1px solid var(--panel-border); border-radius:8px;
+    background:var(--bg); color:var(--fg);
+    font:13px/1.35 ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;
+  }
+  .status-line{font-size:0.78rem; color:var(--muted); min-height:1.2em}
+  .status-line.error{color:var(--danger-color)}
+  .sidebar-author{
+    padding:12px 8px 4px; margin-top:auto; text-align:center;
+    font-size:12px; color:var(--muted); border-top:1px solid var(--panel-border);
+  }
+  .sidebar-author a{color:var(--primary-color); text-decoration:none}
+  .sidebar-author a:hover{text-decoration:underline}
   
   /* Tabs */
   .tabs-container{margin-top:10px}
@@ -140,16 +201,16 @@
   }
 </style>
 </head>
-<body>
+<body class="theme-light">
   <header>
     <h1 class="title" id="mainTitle">Fourier Series (Complex) — 3D (Animated)</h1>
     <div class="toolbar">
-      <select id="languageSelector" aria-label="Language">
-        <option value="en" selected>English</option>
-        <option value="es">Español</option>
-        <option value="fr">Français</option>
-      </select>
-      <button id="toggleTheme">Dark Mode</button>
+      <div class="language-selector" aria-label="Language">
+        <button class="lang-btn active" data-lang="en" type="button">EN</button>
+        <button class="lang-btn" data-lang="es" type="button">ES</button>
+        <button class="lang-btn" data-lang="fr" type="button">FR</button>
+      </div>
+      <button id="toggleTheme" title="Toggle theme" aria-label="Toggle theme">🌙</button>
       <button id="toggleSidebar">Hide Controls</button>
     </div>
   </header>
@@ -159,16 +220,21 @@
       <button id="presetSquare">Square</button>
       <button id="presetTriangle">Triangle</button>
       <button id="presetAll0">All 0</button>
-      <button id="presetZeroNegZeroPos">0, −1, 0, +1</button>
+      <button id="presetRcCharge">RC charge/discharge</button>
       <button id="presetFlower">Flower</button>
       <button id="presetPentagon">Pentagon</button>
       <button id="presetLissajous">Lissajous</button>
+      <button id="toggleSignalEditor">My signal</button>
     </div>
-    <div class="toggles">
-      <label><input type="checkbox" id="showComponents" checked /> <span id="labelShowComponents">Show Components</span></label>
-      <label><input type="checkbox" id="showPhasors" checked /> <span id="labelShowPhasors">Show Phasors</span></label>
-      <label><input type="checkbox" id="chainedComponents" /> <span id="labelChainedComponents">Chained Components</span></label>
+    <div class="toggle-group">
+      <label class="checkbox-label"><input type="checkbox" id="showOriginal" checked /> <span id="labelShowOriginal">Show Original Signal</span></label>
+      <label class="checkbox-label"><input type="checkbox" id="showTotal" checked /> <span id="labelShowTotal">Show Fourier Sum</span></label>
+      <label class="checkbox-label"><input type="checkbox" id="showComponents" checked /> <span id="labelShowComponents">Show Components</span></label>
+      <label class="checkbox-label"><input type="checkbox" id="showPhasors" checked /> <span id="labelShowPhasors">Show Phasors</span></label>
+      <label class="checkbox-label"><input type="checkbox" id="chainedComponents" /> <span id="labelChainedComponents">Chained Components</span></label>
     </div>
+
+    <div id="signalEditor" class="signal-editor hidden"></div>
     
     <div class="tabs-container">
       <div class="tabs-header">
@@ -182,12 +248,16 @@
         <div class="control-grid" id="controlsGridNegative"></div>
       </div>
     </div>
+    <div class="sidebar-author">
+      Franco FERRUCCI &nbsp;·&nbsp;
+      <a href="https://ferrucci-franco.github.io/electronics/" target="_blank" rel="noopener">ferrucci-franco.github.io</a>
+    </div>
   </aside>
 
   <main id="main">
     <div class="toolbar" style="margin:4px 6px">
-      <button id="viewReal">Real</button>
-      <button id="viewImag">Imag</button>
+      <button id="viewReal">Real vs t</button>
+      <button id="viewImag">Imag. vs t</button>
       <button id="viewPlane">Complex plane</button>
       <button id="view3D">3D</button>
     </div>
@@ -214,9 +284,18 @@
 /* ================= CONFIG ================= */
 const N_HARMONICS = 10;
 const N_PERIODS = 2;
-const POINTS_PER_PERIOD = 300;
-const OMEGA0 = 1;
+const POINTS_PER_PERIOD = 180;
 const RAD = Math.PI/180;
+const TWO_PI = 2*Math.PI;
+const DEFAULT_PERIOD_TEXT = "2*pi";
+const DEFAULT_COMPLEX_SIGNAL_TEXT = [
+  "0, 0, 0",
+  "pi/4, 0.8, 0",
+  "3*pi/4, 0.8, 0",
+  "5*pi/4, -0.4, 0",
+  "7*pi/4, -0.4, 0",
+  "2*pi, 0, 0"
+].join("\n");
 
 /* Line widths */
 const LINE_WIDTH_COMPONENT = 2;
@@ -260,25 +339,49 @@ let animationState = {
 const tr = {
   en:{ title:"Fourier Series (Complex) — 3D (Animated)", magnitude:"Magnitude", phase:"Phase",
        darkMode:"Dark Mode", lightMode:"Light Mode", hideControls:"Hide Controls", showControls:"Show Controls",
+       showOriginal:"Show original signal", showTotal:"Show Fourier sum",
        showComponents:"Show Components", showPhasors:"Show Phasors", chainedComponents:"Chained Components",
-       viewReal:"Real", viewImag:"Imag.", viewPlane:"Complex plane", view3D:"3D",
-       square:"Square", triangle:"Triangle", all0:"All 0", zeroNegZeroPos:"0, −1, 0, +1", flower:"Flower", pentagon:"Pentagon", lissajous:"Lissajous",
+       viewReal:"Real vs t", viewImag:"Imag. vs t", viewPlane:"Complex plane", view3D:"3D",
+       square:"Square", triangle:"Triangle", all0:"All 0", rcCharge:"RC charge/discharge", flower:"Flower", pentagon:"Pentagon", lissajous:"Lissajous",
+       mySignal:"My signal", piecewiseTitle:"Piecewise complex signal", period:"Period T", points:"Points (t, real, imag)",
+       applySignal:"Apply", loadExample:"Example", signalOriginal:"Original signal",
+       piNote:'Use columns t, real, imag. You can use "pi" and "T"; real-only examples give c_-k = conjugate(c_k).',
+       invalidPeriod:"Invalid period. Use a positive value.", invalidLine:"Invalid line",
+       needTwoPoints:"Enter at least two points.", nonMonotonic:"t values must be nondecreasing; repeat t only for jumps.",
+       periodMismatch:"The first and last t values must differ by T.", appliedSignal:"Applied",
+       segments:"segments", jumps:"jumps", parseError:"Could not parse expression",
        axisX:"Time (rad)", axisY:"Real", axisZ:"Imag", total:"Total",
        tabPositive:"k ≥ 0", tabNegative:"k < 0", 
        play:"▶ Play", pause:"⏸ Pause", reset:"Reset", animationOn:"Animation on", speed:"Speed" },
   es:{ title:"Serie de Fourier (Compleja) — 3D (Animada)", magnitude:"Módulo", phase:"Fase",
        darkMode:"Modo oscuro", lightMode:"Modo claro", hideControls:"Ocultar controles", showControls:"Mostrar controles",
+       showOriginal:"Mostrar señal original", showTotal:"Mostrar suma de Fourier",
        showComponents:"Mostrar componentes", showPhasors:"Mostrar fasores", chainedComponents:"Componentes encadenados",
-       viewReal:"Real", viewImag:"Imag.", viewPlane:"Plano complejo", view3D:"3D",
-       square:"Cuadrada", triangle:"Triangular", all0:"Todo 0", zeroNegZeroPos:"0, −1, 0, +1", flower:"Flor", pentagon:"Pentágono", lissajous:"Lissajous",
+       viewReal:"Real vs t", viewImag:"Imag. vs t", viewPlane:"Plano complejo", view3D:"3D",
+       square:"Cuadrada", triangle:"Triangular", all0:"Todo 0", rcCharge:"Carga/descarga RC", flower:"Flor", pentagon:"Pentágono", lissajous:"Lissajous",
+       mySignal:"Mi señal", piecewiseTitle:"Señal compleja por trazos", period:"Periodo T", points:"Puntos (t, real, imag)",
+       applySignal:"Aplicar", loadExample:"Ejemplo", signalOriginal:"Señal original",
+       piNote:'Usa columnas t, real, imag. Puedes usar "pi" y "T"; si imag=0, c_-k es el conjugado de c_k.',
+       invalidPeriod:"Periodo inválido. Usa un valor positivo.", invalidLine:"Línea inválida",
+       needTwoPoints:"Introduce al menos dos puntos.", nonMonotonic:"Los valores de t deben ser crecientes; repite t solo para saltos.",
+       periodMismatch:"El primer y el último valor de t deben diferir en T.", appliedSignal:"Aplicada",
+       segments:"tramos", jumps:"saltos", parseError:"No se pudo interpretar la expresión",
        axisX:"Tiempo (rad)", axisY:"Real", axisZ:"Imaginaria", total:"Total",
        tabPositive:"k ≥ 0", tabNegative:"k < 0",
        play:"▶ Reproducir", pause:"⏸ Pausar", reset:"Reiniciar", animationOn:"Animación activada", speed:"Velocidad" },
   fr:{ title:"Série de Fourier (Complexe) — 3D (Animée)", magnitude:"Module", phase:"Phase",
        darkMode:"Mode sombre", lightMode:"Mode clair", hideControls:"Masquer contrôles", showControls:"Afficher contrôles",
+       showOriginal:"Afficher le signal original", showTotal:"Afficher la somme de Fourier",
        showComponents:"Afficher composantes", showPhasors:"Afficher des phaseurs", chainedComponents:"Composantes chaînées",
-       viewReal:"Réel", viewImag:"Imag.", viewPlane:"Plan complexe", view3D:"3D",
-       square:"Carrée", triangle:"Triangulaire", all0:"Tout 0", zeroNegZeroPos:"0, −1, 0, +1", flower:"Fleur", pentagon:"Pentagone", lissajous:"Lissajous",
+       viewReal:"Réel vs t", viewImag:"Imag. vs t", viewPlane:"Plan complexe", view3D:"3D",
+       square:"Carrée", triangle:"Triangulaire", all0:"Tout 0", rcCharge:"Charge/décharge RC", flower:"Fleur", pentagon:"Pentagone", lissajous:"Lissajous",
+       mySignal:"Mon signal", piecewiseTitle:"Signal complexe par morceaux", period:"Période T", points:"Points (t, réel, imag.)",
+       applySignal:"Appliquer", loadExample:"Exemple", signalOriginal:"Signal original",
+       piNote:'Utilisez les colonnes t, réel, imag. Vous pouvez utiliser « pi » et « T »; si imag=0, c_-k est le conjugué de c_k.',
+       invalidPeriod:"Période invalide. Utilisez une valeur positive.", invalidLine:"Ligne invalide",
+       needTwoPoints:"Entrez au moins deux points.", nonMonotonic:"Les valeurs de t doivent être croissantes; répétez t seulement pour les sauts.",
+       periodMismatch:"La première et la dernière valeur de t doivent différer de T.", appliedSignal:"Appliqué",
+       segments:"segments", jumps:"sauts", parseError:"Impossible d'interpréter l'expression",
        axisX:"Temps (rad)", axisY:"Réel", axisZ:"Imaginaire", total:"Total",
        tabPositive:"k ≥ 0", tabNegative:"k < 0",
        play:"▶ Jouer", pause:"⏸ Pause", reset:"Réinitialiser", animationOn:"Animation activée", speed:"Vitesse" }
@@ -311,10 +414,21 @@ function setCustomLabel(type, k, text){
 let darkMode=false, sidebarHidden=false;
 let initialized=false;
 let activeTab = "positive";
+let currentViewMode = "3D";
 let cachedMaxAmp = null; // Cache for max amplitude to ensure consistent axis limits
+let signalEditorVisible = false;
+let period = TWO_PI;
+let periodText = DEFAULT_PERIOD_TEXT;
+let complexSignalText = DEFAULT_COMPLEX_SIGNAL_TEXT;
+let originalSignalModel = null;
+let signalStatus = "";
+let signalStatusIsError = false;
+let lastAnimationPlotTime = 0;
+let resumeAfterCameraDrag = false;
 
 /* Time vector (will be computed based on current time for animation) */
 const totalPoints = N_PERIODS*POINTS_PER_PERIOD + 1;
+function getOmega0(){ return TWO_PI/period; }
 
 /* rAF throttle */
 let rafPending=false;
@@ -425,7 +539,10 @@ function animationLoop(timestamp) {
   
   updateTimeDisplay();
   updateTimeSlider();
-  updatePlot(true);
+  if (timestamp - lastAnimationPlotTime > 50) {
+    updatePlot(true);
+    lastAnimationPlotTime = timestamp;
+  }
   
   if (animationState.isPlaying) {
     animationState.animationId = requestAnimationFrame(animationLoop);
@@ -480,6 +597,218 @@ function updateShowComponentsState() {
   } else {
     showComponentsCheckbox.disabled = false;
     showComponentsLabel.style.opacity = "1";
+  }
+}
+
+function parseExpression(expr) {
+  let text = String(expr).trim();
+  if (!text) throw new Error(tr[lang].parseError);
+  text = text.replace(/π/g, "pi");
+  text = text.replace(/\bpi\b/gi, `(${Math.PI})`);
+  text = text.replace(/\bT\b/g, `(${period})`);
+  text = text.replace(/\^/g, "**");
+  if (!/^[0-9+\-*/().\sEe]+$/.test(text)) {
+    throw new Error(tr[lang].parseError);
+  }
+  const value = Function(`"use strict"; return (${text});`)();
+  if (!Number.isFinite(value)) throw new Error(tr[lang].parseError);
+  return value;
+}
+
+function parsePositiveExpression(expr) {
+  const value = parseExpression(expr);
+  if (!(value > 0)) throw new Error(tr[lang].invalidPeriod);
+  return value;
+}
+
+function parseComplexPoints(text) {
+  const points = [];
+  const lines = text.split(/\r?\n/);
+  for (let i = 0; i < lines.length; i++) {
+    const cleaned = lines[i].replace(/#.*/, "").trim();
+    if (!cleaned) continue;
+    let parts = cleaned.split(/[;,]/).map(s => s.trim()).filter(Boolean);
+    if (parts.length < 3) parts = cleaned.split(/\s+/).map(s => s.trim()).filter(Boolean);
+    if (parts.length !== 3) throw new Error(`${tr[lang].invalidLine} ${i + 1}`);
+    try {
+      points.push({ t:parseExpression(parts[0]), re:parseExpression(parts[1]), im:parseExpression(parts[2]) });
+    } catch (err) {
+      throw new Error(`${tr[lang].invalidLine} ${i + 1}`);
+    }
+  }
+  if (points.length < 2) throw new Error(tr[lang].needTwoPoints);
+  return points;
+}
+
+function makeComplexPiecewiseModel(points) {
+  const EPS = Math.max(1e-9, Math.abs(period)*1e-9);
+  for (let i = 1; i < points.length; i++) {
+    if (points[i].t < points[i-1].t - EPS) throw new Error(tr[lang].nonMonotonic);
+  }
+  const start = points[0].t;
+  const end = points[points.length - 1].t;
+  if (Math.abs((end - start) - period) > EPS*10) throw new Error(tr[lang].periodMismatch);
+  const segments = [];
+  const jumps = [];
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[i], p1 = points[i + 1];
+    if (Math.abs(p1.t - p0.t) <= EPS) {
+      if (Math.hypot(p1.re - p0.re, p1.im - p0.im) > EPS) jumps.push({ t:p0.t, re0:p0.re, im0:p0.im, re1:p1.re, im1:p1.im });
+    } else {
+      segments.push({ t0:p0.t, re0:p0.re, im0:p0.im, t1:p1.t, re1:p1.re, im1:p1.im });
+    }
+  }
+  const last = points[points.length - 1], first = points[0];
+  if (Math.hypot(last.re - first.re, last.im - first.im) > EPS) {
+    jumps.push({ t:end, re0:last.re, im0:last.im, re1:first.re, im1:first.im });
+  }
+  if (!segments.length) throw new Error(tr[lang].needTwoPoints);
+  return { type:"piecewise", points, start, end, period, segments, jumps };
+}
+
+function integrateLinearAgainstExp(a, b, t0, t1, k) {
+  const omega = k*TWO_PI/period;
+  const m = (b - a)/(t1 - t0);
+  const q = a - m*t0;
+  if (k === 0) return { re:0.5*m*(t1*t1 - t0*t0) + q*(t1 - t0), im:0 };
+  const u0 = { re:Math.cos(-omega*t0), im:Math.sin(-omega*t0) };
+  const u1 = { re:Math.cos(-omega*t1), im:Math.sin(-omega*t1) };
+  const denom = omega*omega;
+  const iExp = { re:(u1.im - u0.im)/(-omega), im:-(u1.re - u0.re)/(-omega) };
+  const ixExp = {
+    re:(t1*u1.im - t0*u0.im)/(-omega) + (u1.re - u0.re)/denom,
+    im:-(t1*u1.re - t0*u0.re)/(-omega) + (u1.im - u0.im)/denom
+  };
+  return { re:m*ixExp.re + q*iExp.re, im:m*ixExp.im + q*iExp.im };
+}
+
+function coefficientsFromComplexPiecewise(model) {
+  resetAllCoefficients();
+  for (let k = -N_HARMONICS; k <= N_HARMONICS; k++) {
+    let realPart = 0, imagPart = 0;
+    for (const segment of model.segments) {
+      const r = integrateLinearAgainstExp(segment.re0, segment.re1, segment.t0, segment.t1, k);
+      const im = integrateLinearAgainstExp(segment.im0, segment.im1, segment.t0, segment.t1, k);
+      realPart += r.re - im.im;
+      imagPart += r.im + im.re;
+    }
+    realPart /= period;
+    imagPart /= period;
+    coefficients[k].magnitude = Math.hypot(realPart, imagPart);
+    coefficients[k].phase = Math.atan2(imagPart, realPart);
+  }
+}
+
+function buildSignalEditor() {
+  const panel = document.getElementById("signalEditor");
+  panel.classList.toggle("hidden", !signalEditorVisible);
+  panel.innerHTML = "";
+  if (!signalEditorVisible) return;
+
+  const title = document.createElement("b");
+  title.textContent = tr[lang].piecewiseTitle;
+  panel.appendChild(title);
+
+  const note = document.createElement("p");
+  note.className = "signal-note";
+  note.textContent = tr[lang].piNote;
+  panel.appendChild(note);
+
+  const top = document.createElement("div");
+  top.className = "signal-grid";
+  const periodLabel = document.createElement("label");
+  periodLabel.textContent = tr[lang].period;
+  const periodInput = document.createElement("input");
+  periodInput.id = "periodInput";
+  periodInput.value = periodText;
+  periodInput.addEventListener("change", () => {
+    periodText = periodInput.value;
+    try {
+      period = parsePositiveExpression(periodText);
+      animationState.maxTime = period*N_PERIODS;
+      document.getElementById("timeSlider").max = String(animationState.maxTime.toFixed(3));
+      if (originalSignalModel?.source === "custom") applyCustomSignal(false);
+      else updatePlot(true);
+    } catch (err) {
+      signalStatus = tr[lang].invalidPeriod;
+      signalStatusIsError = true;
+      refreshSignalStatus();
+    }
+  });
+  periodLabel.appendChild(periodInput);
+  top.appendChild(periodLabel);
+
+  const actions = document.createElement("div");
+  actions.className = "signal-actions";
+  const applyBtn = document.createElement("button");
+  applyBtn.type = "button";
+  applyBtn.className = "primary-action";
+  applyBtn.textContent = tr[lang].applySignal;
+  applyBtn.addEventListener("click", () => applyCustomSignal(true));
+  const exampleBtn = document.createElement("button");
+  exampleBtn.type = "button";
+  exampleBtn.className = "secondary-action";
+  exampleBtn.textContent = tr[lang].loadExample;
+  exampleBtn.addEventListener("click", () => {
+    periodText = DEFAULT_PERIOD_TEXT;
+    period = TWO_PI;
+    complexSignalText = DEFAULT_COMPLEX_SIGNAL_TEXT;
+    buildSignalEditor();
+    applyCustomSignal(true);
+  });
+  actions.appendChild(applyBtn);
+  actions.appendChild(exampleBtn);
+  top.appendChild(actions);
+  panel.appendChild(top);
+
+  const pointsLabel = document.createElement("label");
+  pointsLabel.className = "signal-note";
+  pointsLabel.textContent = tr[lang].points;
+  panel.appendChild(pointsLabel);
+
+  const textarea = document.createElement("textarea");
+  textarea.id = "complexSignalInput";
+  textarea.value = complexSignalText;
+  textarea.spellcheck = false;
+  textarea.addEventListener("input", () => { complexSignalText = textarea.value; });
+  panel.appendChild(textarea);
+
+  const status = document.createElement("div");
+  status.id = "signalStatus";
+  status.className = "status-line";
+  panel.appendChild(status);
+  refreshSignalStatus();
+}
+
+function refreshSignalStatus() {
+  const status = document.getElementById("signalStatus");
+  if (!status) return;
+  status.textContent = signalStatus;
+  status.classList.toggle("error", signalStatusIsError);
+}
+
+function applyCustomSignal(showStatus) {
+  try {
+    const periodInput = document.getElementById("periodInput");
+    const input = document.getElementById("complexSignalInput");
+    if (periodInput) periodText = periodInput.value;
+    if (input) complexSignalText = input.value;
+    period = parsePositiveExpression(periodText);
+    animationState.maxTime = period*N_PERIODS;
+    document.getElementById("timeSlider").max = String(animationState.maxTime.toFixed(3));
+    originalSignalModel = makeComplexPiecewiseModel(parseComplexPoints(complexSignalText));
+    originalSignalModel.source = "custom";
+    coefficientsFromComplexPiecewise(originalSignalModel);
+    signalStatus = showStatus ? `${tr[lang].appliedSignal}: ${originalSignalModel.segments.length} ${tr[lang].segments}, ${originalSignalModel.jumps.length} ${tr[lang].jumps}` : "";
+    signalStatusIsError = false;
+    resetAnimation();
+    buildControls();
+    refreshSignalStatus();
+    scheduleUpdate();
+  } catch (err) {
+    signalStatus = err.message || tr[lang].parseError;
+    signalStatusIsError = true;
+    refreshSignalStatus();
   }
 }
 
@@ -621,6 +950,122 @@ function switchTab(tabName){
 }
 
 /* ================= PRESETS ================= */
+function setPresetPeriod() {
+  period = TWO_PI;
+  periodText = DEFAULT_PERIOD_TEXT;
+  animationState.maxTime = period*N_PERIODS;
+  const slider = typeof document !== "undefined" ? document.getElementById("timeSlider") : null;
+  if (slider) slider.max = String(animationState.maxTime.toFixed(3));
+}
+
+function setOriginalSignalFromRealPoints(rows) {
+  originalSignalModel = makeComplexPiecewiseModel(rows.map(([t, re]) => ({ t, re, im:0 })));
+  originalSignalModel.source = "preset";
+  return originalSignalModel;
+}
+
+function setOriginalSignalFromCurrentCoefficients() {
+  const snapshot = {};
+  for (let k = -N_HARMONICS; k <= N_HARMONICS; k++) {
+    snapshot[k] = { magnitude:coefficients[k].magnitude, phase:coefficients[k].phase };
+  }
+  originalSignalModel = {
+    type:"function",
+    source:"preset",
+    start:0,
+    end:period,
+    period,
+    valueAt(t) {
+      let re = 0, im = 0;
+      for (let k = -N_HARMONICS; k <= N_HARMONICS; k++) {
+        const A = snapshot[k].magnitude;
+        if (A === 0) continue;
+        const th = k*getOmega0()*t + snapshot[k].phase;
+        re += A*Math.cos(th);
+        im += A*Math.sin(th);
+      }
+      return { re, im };
+    }
+  };
+}
+
+function makeRcSignalModel() {
+  const halfPeriod = period/2;
+  const tau = period/6;
+  const alpha = Math.exp(-halfPeriod/tau);
+  const minValue = alpha/(1 + alpha);
+  const maxValue = 1/(1 + alpha);
+  return {
+    type:"function",
+    source:"preset",
+    start:0,
+    end:period,
+    period,
+    tau,
+    halfPeriod,
+    minValue,
+    maxValue,
+    valueAt(t) {
+      const u = ((t % period) + period) % period;
+      const re = u < halfPeriod
+        ? 1 - (1 - minValue)*Math.exp(-u/tau)
+        : maxValue*Math.exp(-(u - halfPeriod)/tau);
+      return { re, im:0 };
+    }
+  };
+}
+
+function integralExpCos(a, b, x0, x1) {
+  const d = a*a + b*b;
+  const F = x => Math.exp(a*x)*(a*Math.cos(b*x) + b*Math.sin(b*x))/d;
+  return F(x1) - F(x0);
+}
+
+function integralExpSin(a, b, x0, x1) {
+  const d = a*a + b*b;
+  const F = x => Math.exp(a*x)*(a*Math.sin(b*x) - b*Math.cos(b*x))/d;
+  return F(x1) - F(x0);
+}
+
+function coefficientsFromRcSignal(model) {
+  resetAllCoefficients();
+  const tau = model.tau;
+  const h = model.halfPeriod;
+  const p = model.period;
+  const maxValue = model.maxValue;
+  const lambda = 1/tau;
+  const alpha = Math.exp(-h/tau);
+
+  for (let k = -N_HARMONICS; k <= N_HARMONICS; k++) {
+    if (k === 0) {
+      const area = h - maxValue*tau*(1 - alpha) + maxValue*tau*(1 - alpha);
+      coefficients[k].magnitude = Math.abs(area/p);
+      coefficients[k].phase = area >= 0 ? 0 : Math.PI;
+      continue;
+    }
+    const b = -k*TWO_PI/p;
+    const intCos0H = Math.sin(b*h)/b;
+    const intSin0H = (1 - Math.cos(b*h))/b;
+    const expCosCharge = integralExpCos(-lambda, b, 0, h);
+    const expSinCharge = integralExpSin(-lambda, b, 0, h);
+    const shiftExp = maxValue*Math.exp(h/tau);
+    const expCosDischarge = shiftExp*integralExpCos(-lambda, b, h, p);
+    const expSinDischarge = shiftExp*integralExpSin(-lambda, b, h, p);
+    const realPart = (intCos0H - maxValue*expCosCharge + expCosDischarge)/p;
+    const imagPart = (intSin0H - maxValue*expSinCharge + expSinDischarge)/p;
+    coefficients[k].magnitude = Math.hypot(realPart, imagPart);
+    coefficients[k].phase = Math.atan2(imagPart, realPart);
+  }
+}
+
+function hideSignalEditor() {
+  if (!signalEditorVisible) return;
+  signalEditorVisible = false;
+  const btn = document.getElementById("toggleSignalEditor");
+  if (btn) btn.classList.remove("active");
+  buildSignalEditor();
+}
+
 function resetAllCoefficients(){
   for(let k = -N_HARMONICS; k <= N_HARMONICS; k++){
     coefficients[k] = { magnitude: 0, phase: 0 };
@@ -628,7 +1073,10 @@ function resetAllCoefficients(){
 }
 
 function applyPresetSquare(){
+  setPresetPeriod();
   resetAllCoefficients();
+  setOriginalSignalFromRealPoints([[0,-1],[0,1],[Math.PI,1],[Math.PI,-1],[TWO_PI,-1]]);
+  hideSignalEditor();
   for(let k = 1; k <= N_HARMONICS; k++){
     if (k % 2 === 1){
       const bk = 4/(Math.PI*k);
@@ -647,7 +1095,10 @@ function applyPresetSquare(){
 }
 
 function applyPresetTriangle(){
+  setPresetPeriod();
   resetAllCoefficients();
+  setOriginalSignalFromRealPoints([[0,0],[Math.PI/2,1],[Math.PI,0],[3*Math.PI/2,-1],[TWO_PI,0]]);
+  hideSignalEditor();
   for(let k = 1; k <= N_HARMONICS; k++){
     if (k % 2 === 1){
       const signAlt = Math.pow(-1, (k-1)/2);
@@ -667,49 +1118,27 @@ function applyPresetTriangle(){
 }
 
 function applyPresetAll(){
+  setPresetPeriod();
   resetAllCoefficients();
+  originalSignalModel = null;
+  hideSignalEditor();
   resetAnimation();
   buildControls(); 
   scheduleUpdate();
 }
 
-function applyPresetZeroNegZeroPos(){
-  resetAllCoefficients();
-  const S = 4096; 
-  const dt = (2*Math.PI)/S;
-  const f = new Array(S);
-  for(let i = 0; i < S; i++){
-    const t = i * dt;
-    if (t < Math.PI/2) f[i] = 0;
-    else if (t < Math.PI) f[i] = -1;
-    else if (t < 3*Math.PI/2) f[i] = 0;
-    else f[i] = 1;
-  }
-  
-  for(let k = -N_HARMONICS; k <= N_HARMONICS; k++){
-    if(k === 0){
-      let sum = 0; for(let i = 0; i < S; i++) sum += f[i];
-      coefficients[k].magnitude = Math.abs(sum * dt / (2 * Math.PI));
-      coefficients[k].phase = 0;
-    } else {
-      let realPart = 0, imagPart = 0;
-      for(let i = 0; i < S; i++){
-        const t = i * dt;
-        realPart += f[i] * Math.cos(-k * OMEGA0 * t);
-        imagPart += f[i] * Math.sin(-k * OMEGA0 * t);
-      }
-      realPart = (realPart * dt) / (2 * Math.PI);
-      imagPart = (imagPart * dt) / (2 * Math.PI);
-      coefficients[k].magnitude = Math.hypot(realPart, imagPart);
-      coefficients[k].phase = Math.atan2(imagPart, realPart);
-    }
-  }
+function applyPresetRcCharge(){
+  setPresetPeriod();
+  originalSignalModel = makeRcSignalModel();
+  hideSignalEditor();
+  coefficientsFromRcSignal(originalSignalModel);
   resetAnimation();
   buildControls(); 
   scheduleUpdate();
 }
 
 function applyPresetFlower(){
+  setPresetPeriod();
   resetAllCoefficients();
   const n = 5;
   const eps = 0.35;
@@ -724,12 +1153,15 @@ function applyPresetFlower(){
   if (coefficients[k2] !== undefined){
     coefficients[k2].magnitude = A; coefficients[k2].phase = 0;
   }
+  setOriginalSignalFromCurrentCoefficients();
+  hideSignalEditor();
   resetAnimation();
   buildControls();
   scheduleUpdate();
 }
 
 function applyPresetPentagon(){
+  setPresetPeriod();
   resetAllCoefficients();
   
   const pentagonCoeffs = [
@@ -749,6 +1181,8 @@ function applyPresetPentagon(){
       coefficients[coeff.k].phase = coeff.phase * Math.PI / 180;
     }
   }
+  setOriginalSignalFromCurrentCoefficients();
+  hideSignalEditor();
   
   resetAnimation();
   buildControls();
@@ -756,6 +1190,7 @@ function applyPresetPentagon(){
 }
 
 function applyPresetLissajous(){
+  setPresetPeriod();
   resetAllCoefficients();
   const a = 2, b = 3;
   if (coefficients[a] !== undefined){ coefficients[a].magnitude = 0.5; coefficients[a].phase = 0; }
@@ -763,6 +1198,8 @@ function applyPresetLissajous(){
   if (coefficients[b] !== undefined){ coefficients[b].magnitude = 0.5; coefficients[b].phase = 0; }
   if (coefficients[-b] !== undefined){ coefficients[-b].magnitude = 0.5; coefficients[-b].phase = Math.PI; }
   coefficients[0].magnitude = 0; coefficients[0].phase = 0;
+  setOriginalSignalFromCurrentCoefficients();
+  hideSignalEditor();
   resetAnimation();
   buildControls();
   scheduleUpdate();
@@ -812,7 +1249,7 @@ function computeMaxAmplitude() {
       const im = new Float64Array(fullTimePoints);
       
       for(let i = 0; i < fullTimePoints; i++){
-        const th = k * OMEGA0 * fullTvec[i] + phi;
+        const th = k * getOmega0() * fullTvec[i] + phi;
         re[i] = A * Math.cos(th);
         im[i] = A * Math.sin(th);
         sumRe[i] += re[i];
@@ -858,7 +1295,7 @@ function computeMaxAmplitude() {
       for(let k = -N_HARMONICS; k <= N_HARMONICS; k++){
         const A = coefficients[k].magnitude;
         const phi = coefficients[k].phase;
-        const th = k * OMEGA0 * fullTvec[i] + phi;
+        const th = k * getOmega0() * fullTvec[i] + phi;
         sumRe += A * Math.cos(th);
         sumIm += A * Math.sin(th);
       }
@@ -930,7 +1367,7 @@ function computeData(){
       const im = new Float64Array(timePoints);
       
       for(let i = 0; i < timePoints; i++){
-        const th = k * OMEGA0 * tvec[i] + phi;
+        const th = k * getOmega0() * tvec[i] + phi;
         re[i] = A * Math.cos(th);
         im[i] = A * Math.sin(th);
         sumRe[i] += re[i];
@@ -973,7 +1410,7 @@ function computeData(){
         const re = new Float64Array(timePoints);
         const im = new Float64Array(timePoints);
         for(let i = 0; i < timePoints; i++){
-          const th = k * OMEGA0 * tvec[i] + phi;
+          const th = k * getOmega0() * tvec[i] + phi;
           re[i] = A * Math.cos(th);
           im[i] = A * Math.sin(th);
           sumRe[i] += re[i];
@@ -986,7 +1423,7 @@ function computeData(){
         const A = coefficients[k].magnitude;
         const phi = coefficients[k].phase;
         for(let i = 0; i < timePoints; i++){
-          const th = k * OMEGA0 * tvec[i] + phi;
+          const th = k * getOmega0() * tvec[i] + phi;
           sumRe[i] += A * Math.cos(th);
           sumIm[i] += A * Math.sin(th);
         }
@@ -1005,30 +1442,39 @@ const INITIAL_CAMERA = {
 };
 
 function layoutWithCamera(includeCamera=false, maxAmp=1){
+  const fg = getComputedStyle(document.body).getPropertyValue('--fg').trim();
+  const grid = getComputedStyle(document.body).getPropertyValue('--panel-border').trim();
+  const plotBg = getComputedStyle(document.body).getPropertyValue('--plot-bg').trim();
   const layout = {
     uirevision: "keep-camera",
     margin:{l:0, r:0, b:0, t:0},
     scene:{
       xaxis:{
-        title:tr[lang].axisX, 
+        title:tr[lang].axisX,
+        color:fg,
+        gridcolor:grid,
         zeroline:false, 
-        backgroundcolor:getComputedStyle(document.body).getPropertyValue('--plot-bg').trim(), 
+        backgroundcolor:plotBg,
         range:[0, animationState.maxTime],
         autorange: false,
         fixedrange: true
       },
       yaxis:{
-        title:tr[lang].axisY, 
+        title:tr[lang].axisY,
+        color:fg,
+        gridcolor:grid,
         zeroline:false, 
-        backgroundcolor:getComputedStyle(document.body).getPropertyValue('--plot-bg').trim(), 
+        backgroundcolor:plotBg,
         range:[-maxAmp, maxAmp],
         autorange: false,
         fixedrange: true
       },
       zaxis:{
-        title:tr[lang].axisZ, 
+        title:tr[lang].axisZ,
+        color:fg,
+        gridcolor:grid,
         zeroline:false, 
-        backgroundcolor:getComputedStyle(document.body).getPropertyValue('--plot-bg').trim(), 
+        backgroundcolor:plotBg,
         range:[-maxAmp, maxAmp],
         autorange: false,
         fixedrange: true
@@ -1042,9 +1488,20 @@ function layoutWithCamera(includeCamera=false, maxAmp=1){
     },
     paper_bgcolor:getComputedStyle(document.body).getPropertyValue('--plot-paper').trim(),
     plot_bgcolor:getComputedStyle(document.body).getPropertyValue('--plot-bg').trim(),
-    template: darkMode ? "plotly_dark" : "plotly_white",
+    template: "plotly_white",
+    font:{color:fg},
     hovermode:false,
-    legend:{bgcolor:"rgba(0,0,0,0)"}
+    dragmode:currentViewMode === "3D" ? "turntable" : "orbit",
+    legend:{
+      bgcolor:"rgba(0,0,0,0)",
+      tracegroupgap:0,
+      itemsizing:"constant",
+      font:{size:12,color:fg},
+      x:1,
+      xanchor:"right",
+      y:0,
+      yanchor:"bottom"
+    }
   };
   if(includeCamera){
     layout.scene.camera = INITIAL_CAMERA;
@@ -1056,13 +1513,20 @@ function getCurrentView(){
   if(!plotDiv || !plotDiv._fullLayout || !plotDiv._fullLayout.scene) return {};
   const cam = plotDiv._fullLayout.scene.camera;
   const aspect = plotDiv._fullLayout.scene.aspectmode || "auto";
-  return { camera: cam ? JSON.parse(JSON.stringify(cam)) : null, aspect };
+  const aspectratio = plotDiv._fullLayout.scene.aspectratio;
+  return {
+    camera: cam ? JSON.parse(JSON.stringify(cam)) : null,
+    aspect,
+    aspectratio: aspectratio ? JSON.parse(JSON.stringify(aspectratio)) : null
+  };
 }
 
 let plotDiv = null;
 
 function updatePlot(useReact=false){
   const {sumRe, sumIm, components, maxAmp, translatedComponents, tvec, timePoints} = computeData();
+  const showOriginal = document.getElementById("showOriginal").checked;
+  const showTotal = document.getElementById("showTotal").checked;
   const showComps = document.getElementById("showComponents").checked;
   const showPh = document.getElementById("showPhasors").checked;
   const chainedComponents = document.getElementById("chainedComponents").checked;
@@ -1070,6 +1534,11 @@ function updatePlot(useReact=false){
   const traces = [];
   const totalColor = getComputedStyle(document.body)
     .getPropertyValue('--total-' + (darkMode ? 'dark' : 'light')).trim();
+  const originalColor = darkMode ? "#ff8a76" : "#d14f3f";
+
+  if (showOriginal && originalSignalModel) {
+    traces.push(...buildOriginalSignalTraces(originalSignalModel, originalColor));
+  }
 
   if(showComps && !chainedComponents){
     for(const c of components){
@@ -1099,16 +1568,17 @@ function updatePlot(useReact=false){
     }
   }
   
-  // Total curve trace
-  traces.push({
-    type:"scatter3d", mode:"lines",
-    x:tvec, y:Array.from(sumRe), z:Array.from(sumIm),
-    line:{width:LINE_WIDTH_TOTAL, color: totalColor},
-    hoverinfo:"skip", name:tr[lang].total
-  });
+  if (showTotal) {
+    traces.push({
+      type:"scatter3d", mode:"lines",
+      x:tvec, y:Array.from(sumRe), z:Array.from(sumIm),
+      line:{width:LINE_WIDTH_TOTAL, color: totalColor},
+      hoverinfo:"skip", name:tr[lang].total
+    });
+  }
 
   // Current point on the curve (only in animation mode)
-  if (animationState.enabled && timePoints > 0) {
+  if (showTotal && animationState.enabled && timePoints > 0) {
     const currentIdx = timePoints - 1;
     traces.push({
       type:"scatter3d", mode:"markers",
@@ -1143,8 +1613,8 @@ function updatePlot(useReact=false){
         const k = kOrder[idx];
         const A = coefficients[k].magnitude;
         const phi = coefficients[k].phase;
-        const phasorRe = A * Math.cos(k * OMEGA0 * tRef + phi);
-        const phasorIm = A * Math.sin(k * OMEGA0 * tRef + phi);
+        const phasorRe = A * Math.cos(k * getOmega0() * tRef + phi);
+        const phasorIm = A * Math.sin(k * getOmega0() * tRef + phi);
         
         const nextRe = accumRe + phasorRe;
         const nextIm = accumIm + phasorIm;
@@ -1185,8 +1655,8 @@ function updatePlot(useReact=false){
         if(coefficients[k].magnitude === 0) continue;
         const A = coefficients[k].magnitude;
         const phi = coefficients[k].phase;
-        const tipRe = A * Math.cos(k * OMEGA0 * tRef + phi);
-        const tipIm = A * Math.sin(k * OMEGA0 * tRef + phi);
+        const tipRe = A * Math.cos(k * getOmega0() * tRef + phi);
+        const tipIm = A * Math.sin(k * getOmega0() * tRef + phi);
         tipReTot += tipRe; tipImTot += tipIm;
 
         if(showComps){
@@ -1204,7 +1674,7 @@ function updatePlot(useReact=false){
     }
   }
 
-  const config = {responsive: true, displaylogo: false};
+  const config = {responsive: true, displaylogo: false, scrollZoom:true};
   const view = getCurrentView();
   let layout = layoutWithCamera(!initialized, maxAmp);
   
@@ -1217,6 +1687,9 @@ function updatePlot(useReact=false){
   }
   if(view.aspect){ 
     layout.scene.aspectmode = view.aspect; 
+  }
+  if(view.aspectratio){
+    layout.scene.aspectratio = view.aspectratio;
   }
   
   // CRITICAL: Always enforce fixed ranges and disable autorange after any interaction
@@ -1231,32 +1704,136 @@ function updatePlot(useReact=false){
     Plotly.newPlot("plot3d", traces, layout, config).then(gd => { 
       plotDiv = gd; 
       initialized = true; 
+      attachPlotInteractionHandlers(gd);
     });
   } else {
     Plotly.react("plot3d", traces, layout, config);
   }
 }
 
+function attachPlotInteractionHandlers(gd) {
+  let pointerDown = false;
+  gd.addEventListener("pointerdown", function() {
+    pointerDown = true;
+    resumeAfterCameraDrag = animationState.enabled && animationState.isPlaying;
+    if (resumeAfterCameraDrag) pauseAnimation();
+  });
+  window.addEventListener("pointerup", function() {
+    if (!pointerDown) return;
+    pointerDown = false;
+    if (resumeAfterCameraDrag && animationState.enabled && !animationState.isPlaying) {
+      resumeAfterCameraDrag = false;
+      startAnimation();
+    } else {
+      resumeAfterCameraDrag = false;
+    }
+  });
+}
+
+function buildOriginalSignalTraces(model, color) {
+  return model.type === "function"
+    ? buildFunctionOriginalTraces(model, color)
+    : buildPiecewiseOriginalTraces(model, color);
+}
+
+function buildFunctionOriginalTraces(model, color) {
+  const traces = [];
+  let legendShown = false;
+  for (let p = 0; p < N_PERIODS; p++) {
+    const shift = p*model.period;
+    const x = [], y = [], z = [];
+    for (let i = 0; i <= POINTS_PER_PERIOD; i++) {
+      const localT = model.start + i*model.period/POINTS_PER_PERIOD;
+      const value = model.valueAt(localT);
+      x.push(localT + shift);
+      y.push(value.re);
+      z.push(value.im);
+    }
+    traces.push({
+      type:"scatter3d", mode:"lines", x, y, z,
+      line:{width:3, color},
+      hoverinfo:"skip", name:tr[lang].signalOriginal,
+      legendgroup:"original", showlegend:!legendShown
+    });
+    legendShown = true;
+  }
+  return traces;
+}
+
+function buildPiecewiseOriginalTraces(model, color) {
+  const traces = [];
+  let legendShown = false;
+  for (let p = 0; p < N_PERIODS; p++) {
+    const shift = p*model.period;
+    for (const segment of model.segments) {
+      const x = [], y = [], z = [];
+      const samples = Math.max(2, Math.ceil(POINTS_PER_PERIOD*(segment.t1 - segment.t0)/model.period));
+      for (let i = 0; i <= samples; i++) {
+        const u = i/samples;
+        x.push(segment.t0 + shift + u*(segment.t1 - segment.t0));
+        y.push(segment.re0 + u*(segment.re1 - segment.re0));
+        z.push(segment.im0 + u*(segment.im1 - segment.im0));
+      }
+      traces.push({
+        type:"scatter3d", mode:"lines", x, y, z,
+        line:{width:3, color},
+        hoverinfo:"skip", name:tr[lang].signalOriginal,
+        legendgroup:"original", showlegend:!legendShown
+      });
+      legendShown = true;
+    }
+    for (const jump of model.jumps) {
+      traces.push({
+        type:"scatter3d", mode:"lines",
+        x:[jump.t + shift, jump.t + shift],
+        y:[jump.re0, jump.re1],
+        z:[jump.im0, jump.im1],
+        line:{width:3, color},
+        hoverinfo:"skip", name:tr[lang].signalOriginal,
+        legendgroup:"original", showlegend:false
+      });
+    }
+  }
+  return traces;
+}
+
 /* ================= CAMERA VIEWS ================= */
 function setView(view){
+  currentViewMode = view;
   let eye, up = {x:0, y:0, z:1};
-  let aspect = "auto";
-  if(view === "real"){ eye = {x:0, y:0, z:2.8}; up = {x:0, y:1, z:0}; }
-  else if(view === "imag"){ eye = {x:0, y:-2.8, z:0}; }
+  let aspect = "manual";
+  let aspectratio = {x:2, y:1, z:1};
+  if(view === "real"){
+    eye = {x:0, y:0, z:2.8};
+    up = {x:0, y:1, z:0};
+    aspectratio = {x:2, y:1, z:1};
+  }
+  else if(view === "imag"){
+    eye = {x:0, y:-2.8, z:0};
+    up = {x:0, y:0, z:1};
+    aspectratio = {x:2, y:1, z:1};
+  }
   else if(view === "plane"){ eye = {x:2.8, y:0, z:0}; aspect = "cube"; }
   else if(view === "3D"){ eye = {x:1.8, y:-1.8, z:1.2}; aspect = "cube"; }
+  const camera = {
+    eye,
+    up,
+    center:{x:0, y:0, z:0},
+    projection:{type:"orthographic"}
+  };
   Plotly.relayout("plot3d", {
-    "scene.camera.eye": eye,
-    "scene.camera.up": up,
-    "scene.camera.projection.type": "orthographic",
-    "scene.aspectmode": aspect
+    "scene.camera": camera,
+    "scene.aspectmode": aspect,
+    "scene.aspectratio": aspectratio,
+    "dragmode": currentViewMode === "3D" ? "turntable" : "orbit"
   });
 }
 
 /* ================= LANG & THEME ================= */
 function applyLanguage(){
   document.getElementById("mainTitle").textContent = tr[lang].title;
-  document.getElementById("toggleTheme").textContent = darkMode ? tr[lang].lightMode : tr[lang].darkMode;
+  document.querySelectorAll(".lang-btn").forEach(btn => btn.classList.toggle("active", btn.dataset.lang === lang));
+  updateThemeButton();
   document.getElementById("toggleSidebar").textContent = sidebarHidden ? tr[lang].showControls : tr[lang].hideControls;
   document.getElementById("viewReal").textContent = tr[lang].viewReal;
   document.getElementById("viewImag").textContent = tr[lang].viewImag;
@@ -1265,10 +1842,14 @@ function applyLanguage(){
   document.getElementById("presetSquare").textContent = tr[lang].square;
   document.getElementById("presetTriangle").textContent = tr[lang].triangle;
   document.getElementById("presetAll0").textContent = tr[lang].all0;
-  document.getElementById("presetZeroNegZeroPos").textContent = tr[lang].zeroNegZeroPos;
+  document.getElementById("presetRcCharge").textContent = tr[lang].rcCharge;
   document.getElementById("presetFlower").textContent = tr[lang].flower;
   document.getElementById("presetPentagon").textContent = tr[lang].pentagon;
   document.getElementById("presetLissajous").textContent = tr[lang].lissajous;
+  document.getElementById("toggleSignalEditor").textContent = tr[lang].mySignal;
+  document.getElementById("toggleSignalEditor").classList.toggle("active", signalEditorVisible);
+  document.getElementById("labelShowOriginal").textContent = tr[lang].showOriginal;
+  document.getElementById("labelShowTotal").textContent = tr[lang].showTotal;
   document.getElementById("labelShowComponents").textContent = tr[lang].showComponents;
   document.getElementById("labelShowPhasors").textContent = tr[lang].showPhasors;
   document.getElementById("labelChainedComponents").textContent = tr[lang].chainedComponents;
@@ -1282,15 +1863,36 @@ function applyLanguage(){
   document.getElementById("timeSlider").max = animationState.maxTime.toFixed(2);
   
   updatePlayPauseButton();
+  buildSignalEditor();
   buildControls(); 
   updatePlot(true);
 }
 
+function updateThemeButton() {
+  const btn = document.getElementById("toggleTheme");
+  btn.textContent = darkMode ? "☀️" : "🌙";
+  btn.title = darkMode ? tr[lang].lightMode : tr[lang].darkMode;
+  btn.setAttribute("aria-label", btn.title);
+}
+
 /* ================= EVENTS ================= */
 function wireEvents(){
-  document.getElementById("languageSelector").addEventListener("change", function(e) { lang = e.target.value; applyLanguage(); });
-  document.getElementById("toggleTheme").addEventListener("click", function() { darkMode = !darkMode; document.body.classList.toggle("dark-mode", darkMode); document.getElementById("toggleTheme").textContent = darkMode ? tr[lang].lightMode : tr[lang].darkMode; updatePlot(true); });
+  document.querySelectorAll(".lang-btn").forEach(btn => btn.addEventListener("click", function() { lang = btn.dataset.lang; applyLanguage(); }));
+  document.getElementById("toggleTheme").addEventListener("click", function() {
+    darkMode = !darkMode;
+    document.body.classList.toggle("theme-dark", darkMode);
+    document.body.classList.toggle("theme-light", !darkMode);
+    updateThemeButton();
+    updatePlot(true);
+  });
   document.getElementById("toggleSidebar").addEventListener("click", function() { sidebarHidden = !sidebarHidden; document.body.classList.toggle("sidebar-collapsed", sidebarHidden); document.getElementById("toggleSidebar").textContent = sidebarHidden ? tr[lang].showControls : tr[lang].hideControls; setTimeout(()=>{ if(Plotly && Plotly.Plots) Plotly.Plots.resize("plot3d"); }, 50); });
+  document.getElementById("toggleSignalEditor").addEventListener("click", function() {
+    signalEditorVisible = !signalEditorVisible;
+    this.classList.toggle("active", signalEditorVisible);
+    buildSignalEditor();
+  });
+  document.getElementById("showOriginal").addEventListener("change", function() { updatePlot(true); });
+  document.getElementById("showTotal").addEventListener("change", function() { updatePlot(true); });
   document.getElementById("showComponents").addEventListener("change", function() { 
     cachedMaxAmp = null; // Invalidate cache
     updatePlot(true); 
@@ -1323,7 +1925,7 @@ function wireEvents(){
   document.getElementById("presetSquare").addEventListener("click", applyPresetSquare);
   document.getElementById("presetTriangle").addEventListener("click", applyPresetTriangle);
   document.getElementById("presetAll0").addEventListener("click", applyPresetAll);
-  document.getElementById("presetZeroNegZeroPos").addEventListener("click", applyPresetZeroNegZeroPos);
+  document.getElementById("presetRcCharge").addEventListener("click", applyPresetRcCharge);
   document.getElementById("presetFlower").addEventListener("click", applyPresetFlower);
   document.getElementById("presetPentagon").addEventListener("click", applyPresetPentagon);
   document.getElementById("presetLissajous").addEventListener("click", applyPresetLissajous);
@@ -1369,6 +1971,10 @@ function wireEvents(){
 
 /* ================= INIT ================= */
 function initializeApp() {
+  setPresetPeriod();
+  setOriginalSignalFromCurrentCoefficients();
+  updateThemeButton();
+  buildSignalEditor();
   buildControls(); 
   updateShowComponentsState();
   updateAnimationControlsState(); // Initialize animation controls state
