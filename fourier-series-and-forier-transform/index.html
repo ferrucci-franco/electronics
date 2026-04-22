@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Señales Periódicas & Serie de Fourier</title>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <link rel="stylesheet" href="../pendulum/lib/katex/katex.min.css">
     <style>
         * {
             margin: 0;
@@ -491,6 +492,27 @@
             margin-bottom: 6px;
         }
 
+        .help-equation-card {
+            margin: 12px 0;
+            padding: 16px 18px;
+            background: linear-gradient(135deg, rgba(216, 79, 114, 0.10), rgba(47, 128, 237, 0.08));
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--accent-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            overflow-x: auto;
+            text-align: center;
+        }
+
+        .help-equation-card .katex-display {
+            margin: 0;
+        }
+
+        .help-equation-fallback {
+            font-family: Consolas, 'Courier New', monospace;
+            white-space: nowrap;
+        }
+
         .sidebar-author {
             padding: 12px 0 0;
             margin-top: auto;
@@ -573,6 +595,11 @@
             </div>
 
             <div class="form-group">
+                <label for="phase" id="phase-input-label">Fase (-180° a +180°)</label>
+                <input type="number" id="phase" value="0" step="1" min="-180" max="180">
+            </div>
+
+            <div class="form-group">
                 <label for="duty-cycle" id="duty-label">Duty Cycle (%)</label>
                 <input type="number" id="duty-cycle" value="50" step="1" min="1" max="99" disabled>
                 <div class="info-text" id="duty-info">Solo para onda cuadrada</div>
@@ -611,6 +638,10 @@
                 <div class="form-group">
                     <label for="frequency2" id="frequency2-label">Frecuencia (Hz)</label>
                     <input type="number" id="frequency2" value="3000" step="10" min="10">
+                </div>
+                <div class="form-group">
+                    <label for="phase2" id="phase2-input-label">Fase (-180° a +180°)</label>
+                    <input type="number" id="phase2" value="0" step="1" min="-180" max="180">
                 </div>
                 <div class="form-group">
                     <label for="duty-cycle2" id="duty2-label">Duty Cycle (%)</label>
@@ -755,6 +786,7 @@
         </div>
     </div>
 
+    <script src="../pendulum/lib/katex/katex.min.js"></script>
     <script>
         // Translation dictionary
         const translations = {
@@ -780,6 +812,7 @@
                 amplitudeLabel: 'Amplitud Pico a Pico (V)',
                 offsetLabel: 'Offset (V)',
                 frequencyLabel: 'Frecuencia (Hz)',
+                signalPhaseLabel: 'Fase (-180° a +180°)',
                 dutyLabel: 'Duty Cycle (%)',
                 dutyInfo: 'Solo para onda cuadrada',
                 samplingTitle: 'Opciones de Muestra',
@@ -824,6 +857,18 @@
                         paragraphs: [
                             'Esta app conecta **dos maneras de mirar la misma señal**: en el tiempo y en frecuencia. A la izquierda ves cómo cambia la tensión con el tiempo. En el espectro ves **qué frecuencias forman esa señal** y con qué peso aparece cada una.',
                             'La meta no es solo dibujar gráficos. La meta es **entrenar la intuición**: una senoidal pura produce una línea dominante, una cuadrada necesita muchos armónicos impares, el ruido levanta un piso de energía y una señal compuesta revela sus componentes.'
+                        ]
+                    },
+                    {
+                        title: '🧩 La receta de síntesis',
+                        paragraphs: [
+                            'El espectro no es otra dimensión misteriosa: es la lista de cosinusoides que, sumadas con cariño y paciencia matemática, reconstruyen la señal temporal.'
+                        ],
+                        equation: String.raw`x(t)=\sum_k A_k\cos\left(2\pi k\omega_0 t+\phi_k\right)`,
+                        list: [
+                            '$A_k$ es la amplitud de la cosinusoide del armónico k.',
+                            '$\\phi_k$ es su fase: cuánto se adelanta o se atrasa esa pieza.',
+                            'En nuestra app entramos la amplitud pico a pico $A_{\\mathrm{pp}}$; para una cosinusoide pura, la amplitud que entra en la ecuación es $A_k = A_{\\mathrm{pp}}/2$.'
                         ]
                     },
                     {
@@ -876,6 +921,7 @@
                 amplitudeLabel: 'Peak-to-Peak Amplitude (V)',
                 offsetLabel: 'Offset (V)',
                 frequencyLabel: 'Frequency (Hz)',
+                signalPhaseLabel: 'Phase (-180° to +180°)',
                 dutyLabel: 'Duty Cycle (%)',
                 dutyInfo: 'For square wave only',
                 samplingTitle: 'Sampling Options',
@@ -920,6 +966,18 @@
                         paragraphs: [
                             'This app connects **two ways of looking at the same signal**: in time and in frequency. In the time plot you see how voltage changes over time. In the spectrum you see **which frequencies build that signal** and how strong each one is.',
                             'The goal is not just to draw plots. The goal is to **build intuition**: a pure sine wave produces one dominant line, a square wave needs many odd harmonics, noise raises a floor of energy, and a mixed signal reveals its components.'
+                        ]
+                    },
+                    {
+                        title: '🧩 The synthesis recipe',
+                        paragraphs: [
+                            'The spectrum is not a mysterious second universe: it is the list of cosines that, when added with a little mathematical patience, rebuild the time signal.'
+                        ],
+                        equation: String.raw`x(t)=\sum_k A_k\cos\left(2\pi k\omega_0 t+\phi_k\right)`,
+                        list: [
+                            '$A_k$ is the amplitude of the cosine for harmonic k.',
+                            '$\\phi_k$ is its phase: how much that piece is shifted forward or backward.',
+                            'In this app we enter peak-to-peak amplitude $A_{\\mathrm{pp}}$; for a pure cosine, the amplitude used in the equation is $A_k = A_{\\mathrm{pp}}/2$.'
                         ]
                     },
                     {
@@ -972,6 +1030,7 @@
                 amplitudeLabel: 'Amplitude Crête à Crête (V)',
                 offsetLabel: 'Offset (V)',
                 frequencyLabel: 'Fréquence (Hz)',
+                signalPhaseLabel: 'Phase (-180° à +180°)',
                 dutyLabel: 'Rapport Cyclique (%)',
                 dutyInfo: 'Pour onde carrée uniquement',
                 samplingTitle: 'Options d\'Échantillonnage',
@@ -1016,6 +1075,18 @@
                         paragraphs: [
                             'Cette app relie **deux façons de regarder le même signal** : dans le temps et en fréquence. Dans le graphe temporel, tu vois comment la tension varie avec le temps. Dans le spectre, tu vois **quelles fréquences construisent ce signal** et avec quelle importance chacune apparaît.',
                             'Le but n’est pas seulement de tracer des courbes. Le but est de **construire l’intuition** : une sinusoïde pure produit une ligne dominante, un signal carré demande beaucoup d’harmoniques impaires, le bruit élève un plancher d’énergie, et un signal composé révèle ses composantes.'
+                        ]
+                    },
+                    {
+                        title: '🧩 La recette de synthèse',
+                        paragraphs: [
+                            'Le spectre n’est pas un deuxième monde mystérieux : c’est la liste des cosinusoïdes qui, additionnées avec un peu de patience mathématique, reconstruisent le signal temporel.'
+                        ],
+                        equation: String.raw`x(t)=\sum_k A_k\cos\left(2\pi k\omega_0 t+\phi_k\right)`,
+                        list: [
+                            '$A_k$ est l’amplitude de la cosinusoïde de l’harmonique k.',
+                            '$\\phi_k$ est sa phase : le décalage vers l’avant ou vers l’arrière de cette composante.',
+                            'Dans cette app, on entre l’amplitude crête à crête $A_{\\mathrm{pp}}$ ; pour une cosinusoïde pure, l’amplitude utilisée dans l’équation est $A_k = A_{\\mathrm{pp}}/2$.'
                         ]
                     },
                     {
@@ -1072,17 +1143,43 @@
             document.getElementById('help-close').setAttribute('aria-label', t.helpClose);
         }
 
+        function renderInlineMath(tex) {
+            if (window.katex) {
+                return katex.renderToString(tex, {
+                    displayMode: false,
+                    throwOnError: false
+                });
+            }
+
+            return tex;
+        }
+
         function appendFormattedHelpText(element, text) {
-            const parts = text.split(/(\*\*[^*]+\*\*)/g);
+            const parts = text.split(/(\*\*[^*]+\*\*|\$[^$]+\$)/g);
             parts.forEach(part => {
                 if (part.startsWith('**') && part.endsWith('**')) {
                     const strong = document.createElement('strong');
                     strong.textContent = part.slice(2, -2);
                     element.appendChild(strong);
+                } else if (part.startsWith('$') && part.endsWith('$')) {
+                    const math = document.createElement('span');
+                    math.innerHTML = renderInlineMath(part.slice(1, -1));
+                    element.appendChild(math);
                 } else if (part) {
                     element.appendChild(document.createTextNode(part));
                 }
             });
+        }
+
+        function renderMath(tex) {
+            if (window.katex) {
+                return katex.renderToString(tex, {
+                    displayMode: true,
+                    throwOnError: false
+                });
+            }
+
+            return `<span class="help-equation-fallback">${tex}</span>`;
         }
 
         function renderHelpContent() {
@@ -1106,6 +1203,13 @@
                     appendFormattedHelpText(paragraphEl, paragraph);
                     sectionEl.appendChild(paragraphEl);
                 });
+
+                if (section.equation) {
+                    const equationEl = document.createElement('div');
+                    equationEl.className = 'help-equation-card';
+                    equationEl.innerHTML = renderMath(section.equation);
+                    sectionEl.appendChild(equationEl);
+                }
 
                 if (section.list) {
                     const listEl = document.createElement('ul');
@@ -1160,6 +1264,7 @@
             document.getElementById('signal2-triangle-label').textContent = t.signalTriangle;
             document.getElementById('amplitude2-label').textContent = t.amplitudeLabel;
             document.getElementById('frequency2-label').textContent = t.frequencyLabel;
+            document.getElementById('phase2-input-label').textContent = t.signalPhaseLabel;
             document.getElementById('duty2-label').textContent = t.dutyLabel;
             document.getElementById('duty2-info').textContent = t.dutyInfo;
             document.getElementById('enable-noise-label').textContent = t.enableNoise;
@@ -1169,6 +1274,7 @@
             document.getElementById('amplitude-label').textContent = t.amplitudeLabel;
             document.getElementById('offset-label').textContent = t.offsetLabel;
             document.getElementById('frequency-label').textContent = t.frequencyLabel;
+            document.getElementById('phase-input-label').textContent = t.signalPhaseLabel;
             document.getElementById('duty-label').textContent = t.dutyLabel;
             document.getElementById('duty-info').textContent = t.dutyInfo;
             document.getElementById('sampling-title').textContent = t.samplingTitle;
@@ -1274,7 +1380,9 @@
         });
 
         // Update plots when second signal parameters change
-        ['amplitude2', 'frequency2', 'duty-cycle2'].forEach(id => {
+        document.getElementById('phase').addEventListener('input', updatePlots);
+
+        ['amplitude2', 'frequency2', 'phase2', 'duty-cycle2'].forEach(id => {
             document.getElementById(id).addEventListener('input', updatePlots);
         });
 
@@ -1369,6 +1477,13 @@
             return windowed;
         }
 
+        const PHASE_ZERO_EPSILON_DEGREES = 1e-9;
+        const PLOT_NUMBER_FORMAT = '.3~g';
+
+        function snapPhaseToZero(phaseDegrees) {
+            return Math.abs(phaseDegrees) < PHASE_ZERO_EPSILON_DEGREES ? 0 : phaseDegrees;
+        }
+
         // Calculate FFT (using DFT algorithm optimized for display)
         function calculateFFT(signal, sampleRate, maxFreq) {
             const N = signal.length;
@@ -1407,6 +1522,7 @@
                     // Convert to degrees
                     phase = phase * 180 / Math.PI;
                 }
+                phase = snapPhaseToZero(phase);
 
                 freqs.push(freq);
                 magnitudes.push(magnitude);
@@ -1425,14 +1541,17 @@
         });
 
         // Generate time-domain signal
-        function generateSignal(type, amplitude, offset, frequency, dutyCycle, duration, sampleRate) {
+        function generateSignal(type, amplitude, offset, frequency, dutyCycle, duration, sampleRate, phaseDegrees = 0) {
             const numSamples = Math.floor(duration * sampleRate);
             const t = Array.from({length: numSamples}, (_, i) => i / sampleRate);
             const signal = [];
             const amp = amplitude / 2; // Convert peak-to-peak to amplitude
+            const boundedPhaseDegrees = Number.isFinite(phaseDegrees) ? Math.max(-180, Math.min(180, phaseDegrees)) : 0;
+            const phaseOffset = boundedPhaseDegrees * Math.PI / 180;
+            const normalizeCyclePosition = value => ((value % 1) + 1) % 1;
 
             for (let i = 0; i < numSamples; i++) {
-                const phase = 2 * Math.PI * frequency * t[i];
+                const phase = 2 * Math.PI * frequency * t[i] + phaseOffset;
                 let value = 0;
 
                 switch(type) {
@@ -1440,11 +1559,11 @@
                         value = amp * Math.sin(phase);
                         break;
                     case 'square':
-                        const cyclePosition = (phase / (2 * Math.PI)) % 1;
+                        const cyclePosition = normalizeCyclePosition(phase / (2 * Math.PI));
                         value = cyclePosition < (dutyCycle / 100) ? amp : -amp;
                         break;
                     case 'triangle':
-                        const trianglePhase = (phase / (2 * Math.PI)) % 1;
+                        const trianglePhase = normalizeCyclePosition(phase / (2 * Math.PI));
                         value = amp * (4 * Math.abs(trianglePhase - 0.5) - 1);
                         break;
                 }
@@ -1522,6 +1641,7 @@
                     // Convert to degrees
                     phase = phase * 180 / Math.PI;
                 }
+                phase = snapPhaseToZero(phase);
 
                 freqs.push(freq);
                 magnitudes.push(magnitude);
@@ -1533,7 +1653,7 @@
 
         // Unwrap phase (in degrees)
         function unwrapPhase(phases) {
-            const unwrapped = [phases[0]];
+            const unwrapped = [snapPhaseToZero(phases[0])];
             let offset = 0;
 
             for (let i = 1; i < phases.length; i++) {
@@ -1546,7 +1666,7 @@
                     offset += 360;
                 }
                 
-                unwrapped.push(phases[i] + offset);
+                unwrapped.push(snapPhaseToZero(phases[i] + offset));
             }
 
             return unwrapped;
@@ -1637,6 +1757,7 @@
             const amplitude = parseFloat(document.getElementById('amplitude').value);
             const offset = parseFloat(document.getElementById('offset').value);
             const frequency = parseFloat(document.getElementById('frequency').value);
+            const phase = parseFloat(document.getElementById('phase').value);
             const dutyCycle = parseFloat(document.getElementById('duty-cycle').value);
             const cycles = parseFloat(document.getElementById('cycles').value);
             const maxFreq = parseFloat(document.getElementById('max-freq').value);
@@ -1660,16 +1781,17 @@
             const sampleRate = Math.max(analysisSampleRate, displaySampleRate);
 
             // Generate first signal
-            let {t: time, signal} = generateSignal(signalType, amplitude, offset, frequency, dutyCycle, duration, sampleRate);
+            let {t: time, signal} = generateSignal(signalType, amplitude, offset, frequency, dutyCycle, duration, sampleRate, phase);
 
             // Check if second signal is enabled
             if (enableSignal2) {
                 const signalType2 = document.querySelector('input[name="signal-type2"]:checked').value;
                 const amplitude2 = parseFloat(document.getElementById('amplitude2').value);
+                const phase2 = parseFloat(document.getElementById('phase2').value);
                 const dutyCycle2 = parseFloat(document.getElementById('duty-cycle2').value);
                 
                 // Generate second signal (no offset for second signal, it adds to the first)
-                const {signal: signal2} = generateSignal(signalType2, amplitude2, 0, frequency2, dutyCycle2, duration, sampleRate);
+                const {signal: signal2} = generateSignal(signalType2, amplitude2, 0, frequency2, dutyCycle2, duration, sampleRate, phase2);
                 
                 // Add second signal to first signal
                 for (let i = 0; i < signal.length; i++) {
@@ -1723,6 +1845,10 @@
             const timeColor = styles.getPropertyValue('--accent-color').trim();
             const magnitudeColor = '#2f80ed';
             const phaseColor = '#f59e0b';
+            const magnitudeHoverUnit = yScale === 'db' ? ' dB' : ' V';
+            const frequencyHoverTemplate = `%{x:${PLOT_NUMBER_FORMAT}} Hz<br>%{y:${PLOT_NUMBER_FORMAT}}${magnitudeHoverUnit}<extra>%{fullData.name}</extra>`;
+            const timeHoverTemplate = `%{x:${PLOT_NUMBER_FORMAT}} s<br>%{y:${PLOT_NUMBER_FORMAT}} V<extra>${t.timeSignal}</extra>`;
+            const phaseHoverTemplate = `%{x:${PLOT_NUMBER_FORMAT}} Hz<br>%{y:${PLOT_NUMBER_FORMAT}}°<extra>${t.phase}</extra>`;
 
             const layout = {
                 paper_bgcolor: plotBg,
@@ -1730,10 +1856,12 @@
                 font: {color: textColor},
                 xaxis: {
                     gridcolor: gridColor,
-                    type: xScale === 'log' ? 'log' : 'linear'
+                    type: xScale === 'log' ? 'log' : 'linear',
+                    tickformat: PLOT_NUMBER_FORMAT
                 },
                 yaxis: {
-                    gridcolor: gridColor
+                    gridcolor: gridColor,
+                    tickformat: PLOT_NUMBER_FORMAT
                 },
                 showlegend: false,
                 margin: {l: 70, r: 30, t: 50, b: 60}
@@ -1747,6 +1875,7 @@
                     type: 'scatter',
                     mode: 'lines',
                     name: t.timeSignal,
+                    hovertemplate: timeHoverTemplate,
                     line: {color: timeColor, width: 2}
                 };
 
@@ -1766,6 +1895,7 @@
                     type: 'scatter',
                     mode: (isFFT && continuousMode) ? 'lines' : 'markers',
                     name: t.magnitude,
+                    hovertemplate: frequencyHoverTemplate,
                     marker: {
                         color: magnitudeColor,
                         size: 8,
@@ -1806,6 +1936,7 @@
                     type: 'scatter',
                     mode: 'lines',
                     name: t.timeSignal,
+                    hovertemplate: timeHoverTemplate,
                     line: {color: timeColor, width: 2}
                 };
 
@@ -1825,6 +1956,7 @@
                     type: 'scatter',
                     mode: (isFFT && continuousMode) ? 'lines' : 'markers',
                     name: t.magnitude,
+                    hovertemplate: frequencyHoverTemplate,
                     marker: {
                         color: magnitudeColor,
                         size: 8,
@@ -1863,6 +1995,7 @@
                     type: 'scatter',
                     mode: (isFFT && continuousMode) ? 'lines' : 'markers',
                     name: t.phase,
+                    hovertemplate: phaseHoverTemplate,
                     marker: {
                         color: phaseColor,
                         size: 8,
