@@ -5,6 +5,8 @@
 <title>Fourier Series (Complex) — 3D (Animated)</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.20.0/plotly.min.js"></script>
+<link rel="stylesheet" href="../pendulum/lib/katex/katex.min.css">
+<script defer src="../pendulum/lib/katex/katex.min.js"></script>
 <style>
   :root{
     --primary-color:#2196F3; --primary-hover:#1976D2; --danger-color:#d83b3b;
@@ -117,19 +119,24 @@
   .tabs-container{margin-top:10px}
   .tabs-header{display:flex; border-bottom:2px solid var(--panel-border); background:var(--panel)}
   .tab-button{
-    background:var(--panel-border); border:none; padding:12px 20px; cursor:pointer;
-    color:var(--fg); border-bottom:3px solid transparent;
+    --tab-color:var(--accent);
+    flex:1; min-width:0; background:var(--btn); border:none; padding:10px 8px; cursor:pointer;
+    color:var(--tab-color); border-bottom:3px solid transparent;
     font-size:0.9rem; font-weight:500; transition:all 0.2s ease;
     border-top-left-radius:8px; border-top-right-radius:8px;
-    margin-right:2px; border:1px solid var(--panel-border);
+    margin-right:2px; border:1px solid color-mix(in srgb, var(--tab-color) 48%, var(--panel-border));
+    white-space:nowrap;
   }
+  .tab-negative{--tab-color:#c2410c}
+  .tab-zero{--tab-color:#7c3aed}
+  .tab-positive{--tab-color:#15803d}
   .tab-button.active{
-    color:var(--fg); border-bottom-color:var(--accent);
-    background:var(--accent); font-weight:700; color:white;
-    border-color:var(--accent);
+    color:white; border-bottom-color:var(--tab-color);
+    background:var(--tab-color); font-weight:700;
+    border-color:var(--tab-color);
   }
   .tab-button:hover:not(.active){
-    background:var(--btn); transform:translateY(-1px);
+    background:color-mix(in srgb, var(--tab-color) 12%, var(--bg)); transform:translateY(-1px);
   }
   
   .tab-content{display:none; padding:12px 0; background:var(--bg); border-radius:0 0 8px 8px}
@@ -199,6 +206,51 @@
     #main{min-height:35vh}
     .time-control{min-width:250px}
   }
+
+  .help-backdrop{
+    position:fixed; inset:0;
+    background:rgba(0,0,0,0.45);
+    backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
+    z-index:1000; display:flex; align-items:center; justify-content:center; padding:24px;
+  }
+  .help-backdrop[hidden]{display:none}
+  .help-modal{
+    width:100%; max-width:760px; max-height:85vh;
+    background:var(--panel); color:var(--fg);
+    border:1px solid var(--panel-border); border-radius:10px;
+    box-shadow:0 12px 40px rgba(0,0,0,0.3);
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  .help-modal-header{
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
+    padding:16px 20px 12px; border-bottom:1px solid var(--panel-border); flex-shrink:0;
+  }
+  .help-modal-header h2{margin:0; font-size:22px; font-weight:650; color:var(--fg)}
+  .help-modal-close{
+    width:auto; padding:4px 10px; background:transparent; border:none;
+    border-radius:6px; color:var(--muted); font-size:22px; line-height:1; cursor:pointer;
+  }
+  .help-modal-close:hover{background:var(--hover); color:var(--fg)}
+  .help-modal-body{overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:18px}
+  .help-section h3{margin:0 0 10px; font-size:19px; font-weight:650; color:var(--primary-color)}
+  .help-section strong{color:var(--primary-color); font-weight:700}
+  .help-section p, .help-section ul{margin:0; font-size:17px; line-height:1.65; color:var(--fg)}
+  .help-section .katex{font-size:1.05em}
+  .help-equation-card .katex-display{font-size:1.15em}
+  .help-section p + p{margin-top:8px}
+  .help-section ul{padding-left:22px; margin-top:8px}
+  .help-section li{margin-bottom:6px}
+  .help-equation-card{
+    margin:12px 0; padding:16px 18px;
+    background:color-mix(in srgb, var(--primary-color) 10%, var(--panel));
+    border:1px solid var(--panel-border); border-left:4px solid var(--primary-color);
+    border-radius:8px; color:var(--fg); overflow-x:auto; text-align:center;
+  }
+  body.theme-dark .help-equation-card{
+    background:color-mix(in srgb, var(--primary-color) 18%, var(--panel));
+  }
+  .help-equation-card .katex-display{margin:0}
+  .help-equation-fallback{font-family:Consolas,'Courier New',monospace; white-space:nowrap}
 </style>
 </head>
 <body class="theme-light">
@@ -210,6 +262,7 @@
         <button class="lang-btn" data-lang="es" type="button">ES</button>
         <button class="lang-btn" data-lang="fr" type="button">FR</button>
       </div>
+      <button id="helpBtn" title="Help" aria-label="Help">❓</button>
       <button id="toggleTheme" title="Toggle theme" aria-label="Toggle theme">🌙</button>
       <button id="toggleSidebar">Hide Controls</button>
     </div>
@@ -227,25 +280,29 @@
       <button id="toggleSignalEditor">My signal</button>
     </div>
     <div class="toggle-group">
-      <label class="checkbox-label"><input type="checkbox" id="showOriginal" checked /> <span id="labelShowOriginal">Show Original Signal</span></label>
+      <label class="checkbox-label" id="showOriginalLabel"><input type="checkbox" id="showOriginal" checked /> <span id="labelShowOriginal">Show Original Signal</span></label>
       <label class="checkbox-label"><input type="checkbox" id="showTotal" checked /> <span id="labelShowTotal">Show Fourier Sum</span></label>
-      <label class="checkbox-label"><input type="checkbox" id="showComponents" checked /> <span id="labelShowComponents">Show Components</span></label>
       <label class="checkbox-label"><input type="checkbox" id="showPhasors" checked /> <span id="labelShowPhasors">Show Phasors</span></label>
-      <label class="checkbox-label"><input type="checkbox" id="chainedComponents" /> <span id="labelChainedComponents">Chained Components</span></label>
+      <label class="checkbox-label"><input type="checkbox" id="showComponents" checked /> <span id="labelShowComponents">Show Components</span></label>
+      <label class="checkbox-label" id="chainedComponentsLabel"><input type="checkbox" id="chainedComponents" /> <span id="labelChainedComponents">Chained Components</span></label>
     </div>
 
     <div id="signalEditor" class="signal-editor hidden"></div>
     
     <div class="tabs-container">
       <div class="tabs-header">
-        <button class="tab-button active" data-tab="positive" id="tabPositive">k ≥ 0</button>
-        <button class="tab-button" data-tab="negative" id="tabNegative">k &lt; 0</button>
-      </div>
-      <div class="tab-content active" id="tabContentPositive">
-        <div class="control-grid" id="controlsGridPositive"></div>
+        <button class="tab-button tab-negative" data-tab="negative" id="tabNegative">k &lt; 0</button>
+        <button class="tab-button tab-zero" data-tab="zero" id="tabZero">k = 0</button>
+        <button class="tab-button tab-positive active" data-tab="positive" id="tabPositive">k &gt; 0</button>
       </div>
       <div class="tab-content" id="tabContentNegative">
         <div class="control-grid" id="controlsGridNegative"></div>
+      </div>
+      <div class="tab-content" id="tabContentZero">
+        <div class="control-grid" id="controlsGridZero"></div>
+      </div>
+      <div class="tab-content active" id="tabContentPositive">
+        <div class="control-grid" id="controlsGridPositive"></div>
       </div>
     </div>
     <div class="sidebar-author">
@@ -280,6 +337,16 @@
     </div>
   </div>
 
+  <div id="helpBackdrop" class="help-backdrop" hidden>
+    <div class="help-modal" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+      <div class="help-modal-header">
+        <h2 id="helpTitle">Help</h2>
+        <button type="button" id="helpClose" class="help-modal-close" aria-label="Close">×</button>
+      </div>
+      <div id="helpBody" class="help-modal-body"></div>
+    </div>
+  </div>
+
 <script>
 /* ================= CONFIG ================= */
 const N_HARMONICS = 10;
@@ -289,12 +356,12 @@ const RAD = Math.PI/180;
 const TWO_PI = 2*Math.PI;
 const DEFAULT_PERIOD_TEXT = "2*pi";
 const DEFAULT_COMPLEX_SIGNAL_TEXT = [
-  "0, 0, 0",
-  "pi/4, 0.8, 0",
-  "3*pi/4, 0.8, 0",
-  "5*pi/4, -0.4, 0",
-  "7*pi/4, -0.4, 0",
-  "2*pi, 0, 0"
+  "0, 0",
+  "T/8, 0.8",
+  "3*T/8, 0.8",
+  "5*T/8, -0.4",
+  "7*T/8, -0.4",
+  "T, 0"
 ].join("\n");
 
 /* Line widths */
@@ -343,48 +410,162 @@ const tr = {
        showComponents:"Show Components", showPhasors:"Show Phasors", chainedComponents:"Chained Components",
        viewReal:"Real vs t", viewImag:"Imag. vs t", viewPlane:"Complex plane", view3D:"3D",
        square:"Square", triangle:"Triangle", all0:"All 0", rcCharge:"RC charge/discharge", flower:"Flower", pentagon:"Pentagon", lissajous:"Lissajous",
-       mySignal:"My signal", piecewiseTitle:"Piecewise complex signal", period:"Period T", points:"Points (t, real, imag)",
+       mySignal:"My signal", piecewiseTitle:"Piecewise complex signal", period:"Period T", points:"Points (t, y) or (t, real, imag)",
        applySignal:"Apply", loadExample:"Example", signalOriginal:"Original signal",
-       piNote:'Use columns t, real, imag. You can use "pi" and "T"; real-only examples give c_-k = conjugate(c_k).',
+       piNote:'Use columns t, y or t, real, imag. You can use "pi" and "T".',
        invalidPeriod:"Invalid period. Use a positive value.", invalidLine:"Invalid line",
        needTwoPoints:"Enter at least two points.", nonMonotonic:"t values must be nondecreasing; repeat t only for jumps.",
        periodMismatch:"The first and last t values must differ by T.", appliedSignal:"Applied",
        segments:"segments", jumps:"jumps", parseError:"Could not parse expression",
        axisX:"Time (rad)", axisY:"Real", axisZ:"Imag", total:"Total",
-       tabPositive:"k ≥ 0", tabNegative:"k < 0", 
-       play:"▶ Play", pause:"⏸ Pause", reset:"Reset", animationOn:"Animation on", speed:"Speed" },
+       tabNegative:"k < 0", tabZero:"k = 0", tabPositive:"k > 0",
+       play:"▶ Play", pause:"⏸ Pause", reset:"Reset", animationOn:"Animation on", speed:"Speed",
+       helpButton:"Help", helpClose:"Close", helpTitle:"Fourier series — complex exponential form",
+       helpSections:[
+         {
+           title:"🔎 Main idea",
+           paragraphs:[
+             "Any **periodic** signal with period $T$ — real or complex — can be written as an infinite sum of **complex exponentials** at integer multiples of the fundamental frequency $\\omega_0 = 2\\pi/T$.",
+             "This is the **complex exponential form** of the Fourier series. Each term is a tiny rotating phasor in the complex plane; stacking them reconstructs the signal."
+           ]
+         },
+         {
+           title:"🧮 Synthesis equation",
+           paragraphs:[
+             "The signal $x(t)$ is rebuilt from its spectrum $\\{c_k\\}$:"
+           ],
+           equation:String.raw`x(t) = \sum_{k=-\infty}^{+\infty} c_k\, e^{\,j k \omega_0 t}`,
+           list:[
+             "$c_k$ is the **complex Fourier coefficient** of harmonic $k$ (magnitude = amplitude, phase = angle).",
+             "$\\omega_0 = 2\\pi/T$ is the fundamental angular frequency.",
+             "$k < 0$ gives phasors rotating **clockwise**, $k > 0$ counter-clockwise; for real signals they come in **conjugate pairs** $c_{-k} = c_k^{*}$."
+           ]
+         },
+         {
+           title:"📐 Analysis equation",
+           paragraphs:[
+             "Given $x(t)$, each coefficient $c_k$ is obtained by integrating one period of the signal multiplied by $e^{-j k \\omega_0 t}$:"
+           ],
+           equation:String.raw`c_k = \frac{1}{T}\int_{T} x(t)\, e^{-j k \omega_0 t}\, dt`
+         },
+         {
+           title:"🧪 Try it",
+           list:[
+             "**Show Phasors**: draws each $c_k\\, e^{\\,j k \\omega_0 t}$ as an arrow at the chosen time.",
+             "**Show Components**: draws each harmonic's trajectory over time.",
+             "**Chained Components**: stacks the components head-to-tail, showing how their sum builds the Fourier sum.",
+             "Use the $|c_k|$ and $\\phi_k$ sliders to tune the spectrum; compare the **Fourier sum** against the **original signal**."
+           ]
+         }
+       ] },
   es:{ title:"Serie de Fourier (Compleja) — 3D (Animada)", magnitude:"Módulo", phase:"Fase",
        darkMode:"Modo oscuro", lightMode:"Modo claro", hideControls:"Ocultar controles", showControls:"Mostrar controles",
        showOriginal:"Mostrar señal original", showTotal:"Mostrar suma de Fourier",
        showComponents:"Mostrar componentes", showPhasors:"Mostrar fasores", chainedComponents:"Componentes encadenados",
        viewReal:"Real vs t", viewImag:"Imag. vs t", viewPlane:"Plano complejo", view3D:"3D",
        square:"Cuadrada", triangle:"Triangular", all0:"Todo 0", rcCharge:"Carga/descarga RC", flower:"Flor", pentagon:"Pentágono", lissajous:"Lissajous",
-       mySignal:"Mi señal", piecewiseTitle:"Señal compleja por trazos", period:"Periodo T", points:"Puntos (t, real, imag)",
+       mySignal:"Mi señal", piecewiseTitle:"Señal compleja por trazos", period:"Periodo T", points:"Puntos (t, y) o (t, real, imag)",
        applySignal:"Aplicar", loadExample:"Ejemplo", signalOriginal:"Señal original",
-       piNote:'Usa columnas t, real, imag. Puedes usar "pi" y "T"; si imag=0, c_-k es el conjugado de c_k.',
+       piNote:'Usa columnas t, y o t, real, imag. Puedes usar "pi" y "T".',
        invalidPeriod:"Periodo inválido. Usa un valor positivo.", invalidLine:"Línea inválida",
        needTwoPoints:"Introduce al menos dos puntos.", nonMonotonic:"Los valores de t deben ser crecientes; repite t solo para saltos.",
        periodMismatch:"El primer y el último valor de t deben diferir en T.", appliedSignal:"Aplicada",
        segments:"tramos", jumps:"saltos", parseError:"No se pudo interpretar la expresión",
        axisX:"Tiempo (rad)", axisY:"Real", axisZ:"Imaginaria", total:"Total",
-       tabPositive:"k ≥ 0", tabNegative:"k < 0",
-       play:"▶ Reproducir", pause:"⏸ Pausar", reset:"Reiniciar", animationOn:"Animación activada", speed:"Velocidad" },
+       tabNegative:"k < 0", tabZero:"k = 0", tabPositive:"k > 0",
+       play:"▶ Reproducir", pause:"⏸ Pausar", reset:"Reiniciar", animationOn:"Animación activada", speed:"Velocidad",
+       helpButton:"Ayuda", helpClose:"Cerrar", helpTitle:"Serie de Fourier — forma exponencial compleja",
+       helpSections:[
+         {
+           title:"🔎 Idea central",
+           paragraphs:[
+             "Toda señal **periódica** de período $T$ — real o compleja — puede escribirse como una suma infinita de **exponenciales complejas** a múltiplos enteros de la frecuencia fundamental $\\omega_0 = 2\\pi/T$.",
+             "Esta es la **forma exponencial compleja** de la serie de Fourier. Cada término es un pequeño fasor que rota en el plano complejo; su suma reconstruye la señal."
+           ]
+         },
+         {
+           title:"🧮 Ecuación de síntesis",
+           paragraphs:[
+             "La señal $x(t)$ se reconstruye a partir de su espectro $\\{c_k\\}$:"
+           ],
+           equation:String.raw`x(t) = \sum_{k=-\infty}^{+\infty} c_k\, e^{\,j k \omega_0 t}`,
+           list:[
+             "$c_k$ es el **coeficiente complejo de Fourier** del armónico $k$ (módulo = amplitud, fase = ángulo).",
+             "$\\omega_0 = 2\\pi/T$ es la frecuencia angular fundamental.",
+             "$k < 0$ da fasores que rotan en **sentido horario**, $k > 0$ antihorario; para señales reales aparecen en **pares conjugados** $c_{-k} = c_k^{*}$."
+           ]
+         },
+         {
+           title:"📐 Ecuación de análisis",
+           paragraphs:[
+             "Dada $x(t)$, cada coeficiente $c_k$ se obtiene integrando un período de la señal multiplicada por $e^{-j k \\omega_0 t}$:"
+           ],
+           equation:String.raw`c_k = \frac{1}{T}\int_{T} x(t)\, e^{-j k \omega_0 t}\, dt`
+         },
+         {
+           title:"🧪 Pruébalo",
+           list:[
+             "**Mostrar fasores**: dibuja cada $c_k\\, e^{\\,j k \\omega_0 t}$ como una flecha en el tiempo actual.",
+             "**Mostrar componentes**: dibuja la trayectoria de cada armónico a lo largo del tiempo.",
+             "**Componentes encadenados**: apila las componentes extremo con extremo para ver cómo su suma construye la suma de Fourier.",
+             "Usa los sliders de $|c_k|$ y $\\phi_k$ para ajustar el espectro; compara la **suma de Fourier** con la **señal original**."
+           ]
+         }
+       ] },
   fr:{ title:"Série de Fourier (Complexe) — 3D (Animée)", magnitude:"Module", phase:"Phase",
        darkMode:"Mode sombre", lightMode:"Mode clair", hideControls:"Masquer contrôles", showControls:"Afficher contrôles",
        showOriginal:"Afficher le signal original", showTotal:"Afficher la somme de Fourier",
        showComponents:"Afficher composantes", showPhasors:"Afficher des phaseurs", chainedComponents:"Composantes chaînées",
        viewReal:"Réel vs t", viewImag:"Imag. vs t", viewPlane:"Plan complexe", view3D:"3D",
        square:"Carrée", triangle:"Triangulaire", all0:"Tout 0", rcCharge:"Charge/décharge RC", flower:"Fleur", pentagon:"Pentagone", lissajous:"Lissajous",
-       mySignal:"Mon signal", piecewiseTitle:"Signal complexe par morceaux", period:"Période T", points:"Points (t, réel, imag.)",
+       mySignal:"Mon signal", piecewiseTitle:"Signal complexe par morceaux", period:"Période T", points:"Points (t, y) ou (t, réel, imag.)",
        applySignal:"Appliquer", loadExample:"Exemple", signalOriginal:"Signal original",
-       piNote:'Utilisez les colonnes t, réel, imag. Vous pouvez utiliser « pi » et « T »; si imag=0, c_-k est le conjugué de c_k.',
+       piNote:'Utilisez les colonnes t, y ou t, réel, imag. Vous pouvez utiliser « pi » et « T ».',
        invalidPeriod:"Période invalide. Utilisez une valeur positive.", invalidLine:"Ligne invalide",
        needTwoPoints:"Entrez au moins deux points.", nonMonotonic:"Les valeurs de t doivent être croissantes; répétez t seulement pour les sauts.",
        periodMismatch:"La première et la dernière valeur de t doivent différer de T.", appliedSignal:"Appliqué",
        segments:"segments", jumps:"sauts", parseError:"Impossible d'interpréter l'expression",
        axisX:"Temps (rad)", axisY:"Réel", axisZ:"Imaginaire", total:"Total",
-       tabPositive:"k ≥ 0", tabNegative:"k < 0",
-       play:"▶ Jouer", pause:"⏸ Pause", reset:"Réinitialiser", animationOn:"Animation activée", speed:"Vitesse" }
+       tabNegative:"k < 0", tabZero:"k = 0", tabPositive:"k > 0",
+       play:"▶ Jouer", pause:"⏸ Pause", reset:"Réinitialiser", animationOn:"Animation activée", speed:"Vitesse",
+       helpButton:"Aide", helpClose:"Fermer", helpTitle:"Série de Fourier — forme exponentielle complexe",
+       helpSections:[
+         {
+           title:"🔎 Idée centrale",
+           paragraphs:[
+             "Tout signal **périodique** de période $T$ — réel ou complexe — peut s'écrire comme une somme infinie d'**exponentielles complexes** aux multiples entiers de la fréquence fondamentale $\\omega_0 = 2\\pi/T$.",
+             "C'est la **forme exponentielle complexe** de la série de Fourier. Chaque terme est un petit phaseur qui tourne dans le plan complexe ; leur somme reconstruit le signal."
+           ]
+         },
+         {
+           title:"🧮 Équation de synthèse",
+           paragraphs:[
+             "Le signal $x(t)$ est reconstruit à partir de son spectre $\\{c_k\\}$ :"
+           ],
+           equation:String.raw`x(t) = \sum_{k=-\infty}^{+\infty} c_k\, e^{\,j k \omega_0 t}`,
+           list:[
+             "$c_k$ est le **coefficient complexe de Fourier** de l'harmonique $k$ (module = amplitude, phase = angle).",
+             "$\\omega_0 = 2\\pi/T$ est la pulsation fondamentale.",
+             "$k < 0$ donne des phaseurs qui tournent dans le **sens horaire**, $k > 0$ antihoraire ; pour des signaux réels ils apparaissent en **paires conjuguées** $c_{-k} = c_k^{*}$."
+           ]
+         },
+         {
+           title:"📐 Équation d'analyse",
+           paragraphs:[
+             "Étant donné $x(t)$, chaque coefficient $c_k$ s'obtient en intégrant une période du signal multipliée par $e^{-j k \\omega_0 t}$ :"
+           ],
+           equation:String.raw`c_k = \frac{1}{T}\int_{T} x(t)\, e^{-j k \omega_0 t}\, dt`
+         },
+         {
+           title:"🧪 Essayez-le",
+           list:[
+             "**Afficher des phaseurs** : dessine chaque $c_k\\, e^{\\,j k \\omega_0 t}$ comme une flèche à l'instant actuel.",
+             "**Afficher composantes** : dessine la trajectoire de chaque harmonique au fil du temps.",
+             "**Composantes chaînées** : empile les composantes bout à bout pour montrer comment leur somme construit la somme de Fourier.",
+             "Utilisez les curseurs $|c_k|$ et $\\phi_k$ pour ajuster le spectre ; comparez la **somme de Fourier** avec le **signal original**."
+           ]
+         }
+       ] }
 };
 let lang="en";
 
@@ -413,7 +594,7 @@ function setCustomLabel(type, k, text){
 
 let darkMode=false, sidebarHidden=false;
 let initialized=false;
-let activeTab = "positive";
+let activeTab = "negative";
 let currentViewMode = "3D";
 let cachedMaxAmp = null; // Cache for max amplitude to ensure consistent axis limits
 let signalEditorVisible = false;
@@ -425,6 +606,8 @@ let signalStatus = "";
 let signalStatusIsError = false;
 let lastAnimationPlotTime = 0;
 let resumeAfterCameraDrag = false;
+let seriesGeometryCache = null;
+let originalTraceCache = null;
 
 /* Time vector (will be computed based on current time for animation) */
 const totalPoints = N_PERIODS*POINTS_PER_PERIOD + 1;
@@ -432,14 +615,21 @@ function getOmega0(){ return TWO_PI/period; }
 
 /* rAF throttle */
 let rafPending=false;
-function scheduleUpdate(){ 
-  if(rafPending) return; 
-  rafPending=true; 
-  requestAnimationFrame(()=>{ 
-    cachedMaxAmp = null; // Invalidate cache when coefficients change
-    updatePlot(true); 
-    rafPending=false; 
-  }); 
+function invalidateGeometryCache(){
+  cachedMaxAmp = null;
+  seriesGeometryCache = null;
+  originalTraceCache = null;
+}
+
+function scheduleUpdate(){
+  if(rafPending) return;
+  rafPending=true;
+  requestAnimationFrame(()=>{
+    invalidateGeometryCache();
+    updateShowOriginalState();
+    updatePlot(true);
+    rafPending=false;
+  });
 }
 
 /* ================= ANIMATION CONTROL FUNCTIONS ================= */
@@ -586,17 +776,50 @@ function updatePlayPauseButton() {
 }
 
 /* ================= UI STATE MANAGEMENT ================= */
-function updateShowComponentsState() {
-  const chainedComponents = document.getElementById("chainedComponents").checked;
-  const showComponentsCheckbox = document.getElementById("showComponents");
-  const showComponentsLabel = document.getElementById("labelShowComponents");
-  
-  if(chainedComponents) {
-    showComponentsCheckbox.disabled = true;
-    showComponentsLabel.style.opacity = "0.5";
+// The "original signal" only exists for presets defined in the time domain
+// (square, triangle, RC, custom). Presets defined by their coefficients
+// (flower, pentagon, lissajous) or the empty preset (all 0) have no real
+// original, so the checkbox is greyed out.
+function hasTrueOriginalSignal() {
+  return !!originalSignalModel
+      && originalSignalModel.source !== "fromCoefficients";
+}
+
+// Remember what the user wants when the checkbox is meaningful, so we can
+// restore it the next time a real original exists (instead of leaving it
+// greyed-off after switching from flower → square, etc.).
+let showOriginalUserPreference = true;
+
+function updateShowOriginalState() {
+  const checkbox = document.getElementById("showOriginal");
+  const label = document.getElementById("showOriginalLabel");
+  if(hasTrueOriginalSignal()) {
+    checkbox.disabled = false;
+    checkbox.checked = showOriginalUserPreference;
+    label.style.opacity = "1";
+    label.style.cursor = "pointer";
   } else {
-    showComponentsCheckbox.disabled = false;
-    showComponentsLabel.style.opacity = "1";
+    checkbox.checked = false;
+    checkbox.disabled = true;
+    label.style.opacity = "0.5";
+    label.style.cursor = "not-allowed";
+  }
+}
+
+function updateShowComponentsState() {
+  const showComponentsChecked = document.getElementById("showComponents").checked;
+  const chainedCheckbox = document.getElementById("chainedComponents");
+  const chainedLabel = document.getElementById("chainedComponentsLabel");
+
+  if(!showComponentsChecked) {
+    if(chainedCheckbox.checked) chainedCheckbox.checked = false;
+    chainedCheckbox.disabled = true;
+    chainedLabel.style.opacity = "0.5";
+    chainedLabel.style.cursor = "not-allowed";
+  } else {
+    chainedCheckbox.disabled = false;
+    chainedLabel.style.opacity = "1";
+    chainedLabel.style.cursor = "pointer";
   }
 }
 
@@ -604,8 +827,11 @@ function parseExpression(expr) {
   let text = String(expr).trim();
   if (!text) throw new Error(tr[lang].parseError);
   text = text.replace(/π/g, "pi");
+  text = text.replace(/(\d|\))\s*(pi|T)\b/gi, "$1*$2");
   text = text.replace(/\bpi\b/gi, `(${Math.PI})`);
-  text = text.replace(/\bT\b/g, `(${period})`);
+  text = text.replace(/T/g, `(${period})`);
+  text = text.replace(/(\d|\))\s*\(/g, "$1*(");
+  text = text.replace(/\)\s*(\d)/g, ")*$1");
   text = text.replace(/\^/g, "**");
   if (!/^[0-9+\-*/().\sEe]+$/.test(text)) {
     throw new Error(tr[lang].parseError);
@@ -625,13 +851,15 @@ function parseComplexPoints(text) {
   const points = [];
   const lines = text.split(/\r?\n/);
   for (let i = 0; i < lines.length; i++) {
-    const cleaned = lines[i].replace(/#.*/, "").trim();
+    let cleaned = lines[i].replace(/#.*/, "").trim();
     if (!cleaned) continue;
+    if (cleaned.startsWith("(") && cleaned.endsWith(")")) cleaned = cleaned.slice(1, -1).trim();
+    if (/^t\s*[,;\s]+(y|real|re)\b/i.test(cleaned)) continue;
     let parts = cleaned.split(/[;,]/).map(s => s.trim()).filter(Boolean);
-    if (parts.length < 3) parts = cleaned.split(/\s+/).map(s => s.trim()).filter(Boolean);
-    if (parts.length !== 3) throw new Error(`${tr[lang].invalidLine} ${i + 1}`);
+    if (parts.length < 2) parts = cleaned.split(/\s+/).map(s => s.trim()).filter(Boolean);
+    if (parts.length !== 2 && parts.length !== 3) throw new Error(`${tr[lang].invalidLine} ${i + 1}`);
     try {
-      points.push({ t:parseExpression(parts[0]), re:parseExpression(parts[1]), im:parseExpression(parts[2]) });
+      points.push({ t:parseExpression(parts[0]), re:parseExpression(parts[1]), im:parts[2] === undefined ? 0 : parseExpression(parts[2]) });
     } catch (err) {
       throw new Error(`${tr[lang].invalidLine} ${i + 1}`);
     }
@@ -727,6 +955,7 @@ function buildSignalEditor() {
       period = parsePositiveExpression(periodText);
       animationState.maxTime = period*N_PERIODS;
       document.getElementById("timeSlider").max = String(animationState.maxTime.toFixed(3));
+      invalidateGeometryCache();
       if (originalSignalModel?.source === "custom") applyCustomSignal(false);
       else updatePlot(true);
     } catch (err) {
@@ -796,6 +1025,7 @@ function applyCustomSignal(showStatus) {
     period = parsePositiveExpression(periodText);
     animationState.maxTime = period*N_PERIODS;
     document.getElementById("timeSlider").max = String(animationState.maxTime.toFixed(3));
+    invalidateGeometryCache();
     originalSignalModel = makeComplexPiecewiseModel(parseComplexPoints(complexSignalText));
     originalSignalModel.source = "custom";
     coefficientsFromComplexPiecewise(originalSignalModel);
@@ -814,18 +1044,25 @@ function applyCustomSignal(showStatus) {
 
 /* ================= UI ================= */
 function buildControls(){
-  buildControlsForTab("positive");
   buildControlsForTab("negative");
+  buildControlsForTab("zero");
+  buildControlsForTab("positive");
 }
 
 function buildControlsForTab(tab){
-  const isPositive = tab === "positive";
-  const grid = document.getElementById(isPositive ? "controlsGridPositive" : "controlsGridNegative");
+  const gridIds = {
+    negative: "controlsGridNegative",
+    zero: "controlsGridZero",
+    positive: "controlsGridPositive"
+  };
+  const grid = document.getElementById(gridIds[tab]);
   grid.innerHTML = "";
   
-  const kValues = isPositive ? 
-    Array.from({length: N_HARMONICS + 1}, (_, i) => i) : 
-    Array.from({length: N_HARMONICS}, (_, i) => -(i + 1));
+  const kValues = {
+    negative: Array.from({length: N_HARMONICS}, (_, i) => -(i + 1)),
+    zero: [0],
+    positive: Array.from({length: N_HARMONICS}, (_, i) => i + 1)
+  }[tab];
   
   for(const k of kValues){
     const card  = document.createElement("div"); 
@@ -956,6 +1193,7 @@ function setPresetPeriod() {
   animationState.maxTime = period*N_PERIODS;
   const slider = typeof document !== "undefined" ? document.getElementById("timeSlider") : null;
   if (slider) slider.max = String(animationState.maxTime.toFixed(3));
+  invalidateGeometryCache();
 }
 
 function setOriginalSignalFromRealPoints(rows) {
@@ -971,7 +1209,7 @@ function setOriginalSignalFromCurrentCoefficients() {
   }
   originalSignalModel = {
     type:"function",
-    source:"preset",
+    source:"fromCoefficients",
     start:0,
     end:period,
     period,
@@ -1206,109 +1444,121 @@ function applyPresetLissajous(){
 }
 
 /* ================= COMPUTE ================= */
-function computeMaxAmplitude() {
-  // Always compute max amplitude based on complete series for consistent scaling
-  const fullTimePoints = totalPoints;
-  const fullTvec = Array.from({length: fullTimePoints}, (_, i) => i * animationState.maxTime / (fullTimePoints - 1));
-  
-  let maxAmp = 0;
-  
-  const chainedComponents = document.getElementById("chainedComponents").checked;
-  
-  if (chainedComponents) {
-    // Simulate chained components to get accurate bounds
-    function getProgressiveOrder() {
-      const order = [];
-      const nonZeroCoeffs = [];
-      
-      for(let k = -N_HARMONICS; k <= N_HARMONICS; k++){
-        if(coefficients[k].magnitude > 0) {
-          nonZeroCoeffs.push(k);
-        }
-      }
-      
-      if(nonZeroCoeffs.includes(0)) order.push(0);
-      for(let i = 1; i <= N_HARMONICS; i++) {
-        if(nonZeroCoeffs.includes(i)) order.push(i);
-        if(nonZeroCoeffs.includes(-i)) order.push(-i);
-      }
-      
-      return order;
-    }
-    
-    const kOrder = getProgressiveOrder();
-    const individualComponents = [];
-    const sumRe = new Float64Array(fullTimePoints);
-    const sumIm = new Float64Array(fullTimePoints);
-    
-    // Calculate all individual components
-    for(const k of kOrder) {
-      const A = coefficients[k].magnitude;
-      const phi = coefficients[k].phase;
-      const re = new Float64Array(fullTimePoints);
-      const im = new Float64Array(fullTimePoints);
-      
-      for(let i = 0; i < fullTimePoints; i++){
-        const th = k * getOmega0() * fullTvec[i] + phi;
-        re[i] = A * Math.cos(th);
-        im[i] = A * Math.sin(th);
-        sumRe[i] += re[i];
-        sumIm[i] += im[i];
-      }
-      
-      individualComponents.push({k, re, im});
-    }
-    
-    // Check max from total sum
-    for(let i = 0; i < fullTimePoints; i++){
-      maxAmp = Math.max(maxAmp, Math.abs(sumRe[i]), Math.abs(sumIm[i]));
-    }
-    
-    // Now apply chaining and find max from translated components
-    let offsetRe = 0, offsetIm = 0;
-    
-    for(let idx = 0; idx < individualComponents.length; idx++) {
-      const comp = individualComponents[idx];
-      
-      for(let i = 0; i < fullTimePoints; i++){
-        const translatedRe = comp.re[i] + offsetRe;
-        const translatedIm = comp.im[i] + offsetIm;
-        maxAmp = Math.max(maxAmp, Math.abs(translatedRe), Math.abs(translatedIm));
-      }
-      
-      const lastIdx = fullTimePoints - 1;
-      offsetRe += comp.re[lastIdx];
-      offsetIm += comp.im[lastIdx];
-    }
-    
-  } else {
-    // Original calculation for non-chained mode
-    // Calculate max amplitude from all components
-    for(let k = -N_HARMONICS; k <= N_HARMONICS; k++){
-      const A = coefficients[k].magnitude;
-      maxAmp = Math.max(maxAmp, A);
-    }
-    
-    // Also check the total sum at various time points
-    for(let i = 0; i < fullTimePoints; i += Math.floor(fullTimePoints / 100)) {
-      let sumRe = 0, sumIm = 0;
-      for(let k = -N_HARMONICS; k <= N_HARMONICS; k++){
-        const A = coefficients[k].magnitude;
-        const phi = coefficients[k].phase;
-        const th = k * getOmega0() * fullTvec[i] + phi;
-        sumRe += A * Math.cos(th);
-        sumIm += A * Math.sin(th);
-      }
-      maxAmp = Math.max(maxAmp, Math.abs(sumRe), Math.abs(sumIm));
-    }
+function getCoefficientSignature() {
+  const parts = [period, animationState.maxTime];
+  for(let k = -N_HARMONICS; k <= N_HARMONICS; k++){
+    parts.push(k, coefficients[k].magnitude, coefficients[k].phase);
   }
-  
-  return Math.max(1, maxAmp * 1.1);
+  return parts.join("|");
+}
+
+function getActiveHarmonics() {
+  const active = [];
+  for(let k = -N_HARMONICS; k <= N_HARMONICS; k++){
+    if(coefficients[k].magnitude > 0) active.push(k);
+  }
+  return active;
+}
+
+function getProgressiveOrder(activeHarmonics) {
+  const activeSet = new Set(activeHarmonics);
+  const order = [];
+  if(activeSet.has(0)) order.push(0);
+  for(let i = 1; i <= N_HARMONICS; i++) {
+    if(activeSet.has(i)) order.push(i);
+    if(activeSet.has(-i)) order.push(-i);
+  }
+  return order;
+}
+
+function getSeriesGeometry() {
+  const signature = getCoefficientSignature();
+  if(seriesGeometryCache && seriesGeometryCache.signature === signature) {
+    return seriesGeometryCache;
+  }
+
+  const tvec = new Float64Array(totalPoints);
+  for(let i = 0; i < totalPoints; i++) {
+    tvec[i] = i * animationState.maxTime / (totalPoints - 1);
+  }
+
+  const sumRe = new Float64Array(totalPoints);
+  const sumIm = new Float64Array(totalPoints);
+  const components = [];
+  const activeHarmonics = getActiveHarmonics();
+  let maxNormal = 1;
+
+  for(const k of activeHarmonics) {
+    const A = coefficients[k].magnitude;
+    const phi = coefficients[k].phase;
+    const re = new Float64Array(totalPoints);
+    const im = new Float64Array(totalPoints);
+    maxNormal = Math.max(maxNormal, A);
+
+    for(let i = 0; i < totalPoints; i++){
+      const th = k * getOmega0() * tvec[i] + phi;
+      re[i] = A * Math.cos(th);
+      im[i] = A * Math.sin(th);
+      sumRe[i] += re[i];
+      sumIm[i] += im[i];
+    }
+
+    components.push({k, re, im, tvec});
+  }
+
+  for(let i = 0; i < totalPoints; i++){
+    maxNormal = Math.max(maxNormal, Math.abs(sumRe[i]), Math.abs(sumIm[i]));
+  }
+
+  const translatedComponents = [];
+  const kOrder = getProgressiveOrder(activeHarmonics);
+  const componentByK = new Map(components.map(component => [component.k, component]));
+  let maxChained = maxNormal;
+  let offsetRe = 0, offsetIm = 0;
+
+  for(const k of kOrder) {
+    const comp = componentByK.get(k);
+    if(!comp) continue;
+    const translatedRe = new Float64Array(totalPoints);
+    const translatedIm = new Float64Array(totalPoints);
+
+    for(let i = 0; i < totalPoints; i++){
+      translatedRe[i] = comp.re[i] + offsetRe;
+      translatedIm[i] = comp.im[i] + offsetIm;
+      maxChained = Math.max(maxChained, Math.abs(translatedRe[i]), Math.abs(translatedIm[i]));
+    }
+
+    translatedComponents.push({k, re:translatedRe, im:translatedIm, tvec});
+    const lastIdx = totalPoints - 1;
+    offsetRe += comp.re[lastIdx];
+    offsetIm += comp.im[lastIdx];
+  }
+
+  seriesGeometryCache = {
+    signature,
+    tvec,
+    sumRe,
+    sumIm,
+    components,
+    translatedComponents,
+    activeHarmonics,
+    kOrder,
+    maxNormal: Math.max(1, maxNormal * 1.1),
+    maxChained: Math.max(1, maxChained * 1.1)
+  };
+  return seriesGeometryCache;
+}
+
+function computeMaxAmplitude() {
+  const geometry = getSeriesGeometry();
+  const chainedComponents = document.getElementById("chainedComponents").checked;
+  return chainedComponents ? geometry.maxChained : geometry.maxNormal;
 }
 
 function computeData(){
   const showComps = document.getElementById("showComponents").checked;
   const chainedComponents = document.getElementById("chainedComponents").checked;
+  const geometry = getSeriesGeometry();
   
   // Get fixed max amplitude for consistent scaling (use cache if available)
   if (cachedMaxAmp === null) {
@@ -1317,120 +1567,55 @@ function computeData(){
   const maxAmp = cachedMaxAmp;
   
   // Determine time vector based on animation mode
-  let timePoints, tvec;
+  let timePoints;
   if (animationState.enabled) {
-    // Animation mode: generate time vector up to current animation time
-    timePoints = Math.max(1, Math.floor((animationState.currentTime / animationState.maxTime) * totalPoints));
-    if (timePoints === 1) {
-      tvec = [animationState.currentTime];
-    } else {
-      tvec = Array.from({length: timePoints}, (_, i) => i * animationState.currentTime / (timePoints - 1));
-    }
+    const ratio = animationState.maxTime > 0 ? animationState.currentTime / animationState.maxTime : 0;
+    timePoints = Math.max(1, Math.min(totalPoints, Math.floor(ratio * (totalPoints - 1)) + 1));
   } else {
-    // Static mode: generate complete time vector
     timePoints = totalPoints;
-    tvec = Array.from({length: timePoints}, (_, i) => i * animationState.maxTime / (timePoints - 1));
   }
-  
-  const sumRe = new Float64Array(timePoints);
-  const sumIm = new Float64Array(timePoints);
-  const components = [];
-  const translatedComponents = [];
-  
-  function getProgressiveOrder() {
-    const order = [];
-    const nonZeroCoeffs = [];
-    
-    for(let k = -N_HARMONICS; k <= N_HARMONICS; k++){
-      if(coefficients[k].magnitude > 0) {
-        nonZeroCoeffs.push(k);
-      }
-    }
-    
-    if(nonZeroCoeffs.includes(0)) order.push(0);
-    for(let i = 1; i <= N_HARMONICS; i++) {
-      if(nonZeroCoeffs.includes(i)) order.push(i);
-      if(nonZeroCoeffs.includes(-i)) order.push(-i);
-    }
-    
-    return order;
-  }
-  
-  if(chainedComponents) {
-    const kOrder = getProgressiveOrder();
-    
-    const individualComponents = [];
-    for(const k of kOrder) {
-      const A = coefficients[k].magnitude;
-      const phi = coefficients[k].phase;
-      const re = new Float64Array(timePoints);
-      const im = new Float64Array(timePoints);
-      
-      for(let i = 0; i < timePoints; i++){
-        const th = k * getOmega0() * tvec[i] + phi;
-        re[i] = A * Math.cos(th);
-        im[i] = A * Math.sin(th);
-        sumRe[i] += re[i];
-        sumIm[i] += im[i];
-      }
-      
-      individualComponents.push({k, re, im});
-    }
-    
+
+  const tvec = geometry.tvec.subarray(0, timePoints);
+  const sumRe = geometry.sumRe.subarray(0, timePoints);
+  const sumIm = geometry.sumIm.subarray(0, timePoints);
+  const components = showComps && !chainedComponents
+    ? geometry.components.map(component => ({
+        k: component.k,
+        re: component.re.subarray(0, timePoints),
+        im: component.im.subarray(0, timePoints),
+        tvec
+      }))
+    : [];
+
+  let translatedComponents = [];
+  if(chainedComponents && animationState.enabled) {
+    const componentByK = new Map(geometry.components.map(component => [component.k, component]));
     let offsetRe = 0, offsetIm = 0;
-    
-    for(let idx = 0; idx < individualComponents.length; idx++) {
-      const comp = individualComponents[idx];
+    for(const k of geometry.kOrder) {
+      const component = componentByK.get(k);
+      if(!component) continue;
+      const baseRe = component.re.subarray(0, timePoints);
+      const baseIm = component.im.subarray(0, timePoints);
       const translatedRe = new Float64Array(timePoints);
       const translatedIm = new Float64Array(timePoints);
-      
-      for(let i = 0; i < timePoints; i++){
-        translatedRe[i] = comp.re[i] + offsetRe;
-        translatedIm[i] = comp.im[i] + offsetIm;
+      for(let i = 0; i < timePoints; i++) {
+        translatedRe[i] = baseRe[i] + offsetRe;
+        translatedIm[i] = baseIm[i] + offsetIm;
       }
-      
-      translatedComponents.push({
-        k: comp.k,
-        re: translatedRe,
-        im: translatedIm,
-        tvec: tvec
-      });
-      
+      translatedComponents.push({k, re:translatedRe, im:translatedIm, tvec});
       const lastIdx = timePoints - 1;
-      offsetRe += comp.re[lastIdx];
-      offsetIm += comp.im[lastIdx];
+      offsetRe += baseRe[lastIdx];
+      offsetIm += baseIm[lastIdx];
     }
-    
-  } else {
-    if(showComps){
-      for(let k = -N_HARMONICS; k <= N_HARMONICS; k++){
-        if(coefficients[k].magnitude === 0) continue;
-        const A = coefficients[k].magnitude;
-        const phi = coefficients[k].phase;
-        const re = new Float64Array(timePoints);
-        const im = new Float64Array(timePoints);
-        for(let i = 0; i < timePoints; i++){
-          const th = k * getOmega0() * tvec[i] + phi;
-          re[i] = A * Math.cos(th);
-          im[i] = A * Math.sin(th);
-          sumRe[i] += re[i];
-          sumIm[i] += im[i];
-        }
-        components.push({k, re, im, tvec});
-      }
-    } else {
-      for(let k = -N_HARMONICS; k <= N_HARMONICS; k++){
-        const A = coefficients[k].magnitude;
-        const phi = coefficients[k].phase;
-        for(let i = 0; i < timePoints; i++){
-          const th = k * getOmega0() * tvec[i] + phi;
-          sumRe[i] += A * Math.cos(th);
-          sumIm[i] += A * Math.sin(th);
-        }
-      }
-    }
+  } else if(chainedComponents) {
+    translatedComponents = geometry.translatedComponents.map(component => ({
+        k: component.k,
+        re: component.re.subarray(0, timePoints),
+        im: component.im.subarray(0, timePoints),
+        tvec
+      }));
   }
-  
+
   return {sumRe, sumIm, components, maxAmp, translatedComponents, tvec, timePoints};
 }
 
@@ -1438,8 +1623,16 @@ function computeData(){
 const INITIAL_CAMERA = {
   eye:{x:1.8, y:-1.8, z:1.2},
   up: {x:0, y:0, z:1},
+  center:{x:0, y:0, z:0},
   projection:{type:"orthographic"}
 };
+
+// Remember the last valid camera so that if Plotly drops the scene (e.g. when
+// every trace is toggled off), we can restore it instead of reverting to the
+// default perspective view.
+let lastCamera = JSON.parse(JSON.stringify(INITIAL_CAMERA));
+let lastAspect = "manual";
+let lastAspectratio = {x:2, y:1, z:1};
 
 function layoutWithCamera(includeCamera=false, maxAmp=1){
   const fg = getComputedStyle(document.body).getPropertyValue('--fg').trim();
@@ -1523,6 +1716,97 @@ function getCurrentView(){
 
 let plotDiv = null;
 
+function appendPolyline(targetX, targetY, targetZ, x, y, z) {
+  for(let i = 0; i < x.length; i++) {
+    targetX.push(x[i]);
+    targetY.push(y[i]);
+    targetZ.push(z[i]);
+  }
+  targetX.push(NaN);
+  targetY.push(NaN);
+  targetZ.push(NaN);
+}
+
+function pushGroupedPolylineTraces(traces, items, options) {
+  if(!items || items.length === 0) return;
+  const groups = new Map();
+  for(const item of items) {
+    const color = options.colorForItem(item);
+    if(!groups.has(color)) groups.set(color, []);
+    groups.get(color).push(item);
+  }
+
+  for(const [color, groupItems] of groups.entries()) {
+    const x = [], y = [], z = [];
+    const labels = [];
+    for(const item of groupItems) {
+      appendPolyline(x, y, z, item.tvec, item.re, item.im);
+      labels.push(`k=${item.k}`);
+    }
+    traces.push({
+      type:"scatter3d",
+      mode:"lines",
+      x, y, z,
+      line:{width:options.width, color},
+      hoverinfo:"skip",
+      name:groupItems.length === 1 ? labels[0] : labels.join(", "),
+      showlegend:options.showlegend ?? true
+    });
+  }
+}
+
+function pushGroupedSegmentTraces(traces, segments, options) {
+  if(!segments || segments.length === 0) return;
+  const groups = new Map();
+  for(const segment of segments) {
+    const color = options.colorForItem(segment);
+    if(!groups.has(color)) groups.set(color, []);
+    groups.get(color).push(segment);
+  }
+
+  for(const [color, groupSegments] of groups.entries()) {
+    const x = [], y = [], z = [];
+    for(const segment of groupSegments) {
+      x.push(segment.x0, segment.x1, NaN);
+      y.push(segment.y0, segment.y1, NaN);
+      z.push(segment.z0, segment.z1, NaN);
+    }
+    traces.push({
+      type:"scatter3d",
+      mode:"lines",
+      x, y, z,
+      line:{width:options.width, color},
+      hoverinfo:"skip",
+      name:options.name || "",
+      showlegend:options.showlegend ?? false
+    });
+  }
+}
+
+function pushGroupedMarkerTraces(traces, points, options) {
+  if(!points || points.length === 0) return;
+  const groups = new Map();
+  for(const point of points) {
+    const color = options.colorForItem(point);
+    if(!groups.has(color)) groups.set(color, []);
+    groups.get(color).push(point);
+  }
+
+  for(const [color, groupPoints] of groups.entries()) {
+    traces.push({
+      type:"scatter3d",
+      mode:"markers",
+      x:groupPoints.map(point => point.x),
+      y:groupPoints.map(point => point.y),
+      z:groupPoints.map(point => point.z),
+      marker:{size:options.size, color},
+      hoverinfo:"skip",
+      name:options.name || "",
+      showlegend:options.showlegend ?? false
+    });
+  }
+}
+
 function updatePlot(useReact=false){
   const {sumRe, sumIm, components, maxAmp, translatedComponents, tvec, timePoints} = computeData();
   const showOriginal = document.getElementById("showOriginal").checked;
@@ -1535,43 +1819,38 @@ function updatePlot(useReact=false){
   const totalColor = getComputedStyle(document.body)
     .getPropertyValue('--total-' + (darkMode ? 'dark' : 'light')).trim();
   const originalColor = darkMode ? "#ff8a76" : "#d14f3f";
+  const timeAxisColor = darkMode ? "rgba(200,200,200,0.7)" : "rgba(40,40,40,0.85)";
+
+  // Gray reference line along the time axis (Real=0, Imag=0).
+  traces.push({
+    type:"scatter3d", mode:"lines",
+    x:[0, animationState.maxTime], y:[0, 0], z:[0, 0],
+    line:{width:2, color:timeAxisColor, dash:"dot"},
+    hoverinfo:"skip", showlegend:false, name:"t-axis"
+  });
 
   if (showOriginal && originalSignalModel) {
     traces.push(...buildOriginalSignalTraces(originalSignalModel, originalColor));
   }
 
   if(showComps && !chainedComponents){
-    for(const c of components){
-      const k = c.k;
-      const color = getColorForHarmonic(k);
-      traces.push({
-        type:"scatter3d", mode:"lines",
-        x:c.tvec, y:Array.from(c.re), z:Array.from(c.im),
-        line:{width:LINE_WIDTH_COMPONENT, color},
-        hoverinfo:"skip", name:`k=${k}`
-      });
-    }
+    pushGroupedPolylineTraces(traces, components, {
+      width: LINE_WIDTH_COMPONENT,
+      colorForItem: item => getColorForHarmonic(item.k)
+    });
   }
   
   if(chainedComponents && translatedComponents && translatedComponents.length > 0) {
-    for(let i = 0; i < translatedComponents.length; i++) {
-      const tComp = translatedComponents[i];
-      const color = getColorForHarmonic(tComp.k);
-      
-      traces.push({
-        type:"scatter3d", mode:"lines",
-        x:tComp.tvec, y:Array.from(tComp.re), z:Array.from(tComp.im),
-        line:{width:LINE_WIDTH_COMPONENT, color},
-        hoverinfo:"skip", 
-        name: `k=${tComp.k}`
-      });
-    }
+    pushGroupedPolylineTraces(traces, translatedComponents, {
+      width: LINE_WIDTH_COMPONENT,
+      colorForItem: item => getColorForHarmonic(item.k)
+    });
   }
   
   if (showTotal) {
     traces.push({
       type:"scatter3d", mode:"lines",
-      x:tvec, y:Array.from(sumRe), z:Array.from(sumIm),
+      x:tvec, y:sumRe, z:sumIm,
       line:{width:LINE_WIDTH_TOTAL, color: totalColor},
       hoverinfo:"skip", name:tr[lang].total
     });
@@ -1594,21 +1873,10 @@ function updatePlot(useReact=false){
     
     if(chainedComponents) {
       let accumRe = 0, accumIm = 0;
-      
-      const nonZeroCoeffs = [];
-      for(let k = -N_HARMONICS; k <= N_HARMONICS; k++){
-        if(coefficients[k].magnitude > 0) {
-          nonZeroCoeffs.push(k);
-        }
-      }
-      
-      const kOrder = [];
-      if(nonZeroCoeffs.includes(0)) kOrder.push(0);
-      for(let i = 1; i <= N_HARMONICS; i++) {
-        if(nonZeroCoeffs.includes(i)) kOrder.push(i);
-        if(nonZeroCoeffs.includes(-i)) kOrder.push(-i);
-      }
-      
+      const kOrder = getSeriesGeometry().kOrder;
+      const phasorSegments = [];
+      const phasorMarkers = [];
+
       for(let idx = 0; idx < kOrder.length; idx++) {
         const k = kOrder[idx];
         const A = coefficients[k].magnitude;
@@ -1620,25 +1888,24 @@ function updatePlot(useReact=false){
         const nextIm = accumIm + phasorIm;
         
         const color = getColorForHarmonic(k);
-        traces.push({
-          type:"scatter3d", mode:"lines",
-          x:[tRef, tRef], y:[accumRe, nextRe], z:[accumIm, nextIm],
-          line:{width: LINE_WIDTH_PHASOR, color},
-          hoverinfo:"skip", showlegend:false
-        });
+        phasorSegments.push({ k, color, x0:tRef, x1:tRef, y0:accumRe, y1:nextRe, z0:accumIm, z1:nextIm });
         
         if(idx < kOrder.length - 1) {
-          traces.push({
-            type:"scatter3d", mode:"markers",
-            x:[tRef], y:[nextRe], z:[nextIm],
-            marker:{size:4, color},
-            hoverinfo:"skip", showlegend:false
-          });
+          phasorMarkers.push({ k, color, x:tRef, y:nextRe, z:nextIm });
         }
         
         accumRe = nextRe;
         accumIm = nextIm;
       }
+
+      pushGroupedSegmentTraces(traces, phasorSegments, {
+        width: LINE_WIDTH_PHASOR,
+        colorForItem: item => item.color
+      });
+      pushGroupedMarkerTraces(traces, phasorMarkers, {
+        size: 4,
+        colorForItem: item => item.color
+      });
       
       if(kOrder.length > 0) {
         traces.push({
@@ -1651,6 +1918,8 @@ function updatePlot(useReact=false){
       
     } else {
       let tipReTot = 0, tipImTot = 0;
+      const phasorSegments = [];
+      const phasorMarkers = [];
       for(let k = -N_HARMONICS; k <= N_HARMONICS; k++){
         if(coefficients[k].magnitude === 0) continue;
         const A = coefficients[k].magnitude;
@@ -1661,12 +1930,18 @@ function updatePlot(useReact=false){
 
         if(showComps){
           const color = getColorForHarmonic(k);
-          traces.push({ type:"scatter3d", mode:"lines", x:[tRef, tRef], y:[0, tipRe], z:[0, tipIm],
-            line:{width: LINE_WIDTH_PHASOR, color}, hoverinfo:"skip", showlegend:false });
-          traces.push({ type:"scatter3d", mode:"markers", x:[tRef], y:[tipRe], z:[tipIm],
-            marker:{size:6, color}, hoverinfo:"skip", showlegend:false });
+          phasorSegments.push({ k, color, x0:tRef, x1:tRef, y0:0, y1:tipRe, z0:0, z1:tipIm });
+          phasorMarkers.push({ k, color, x:tRef, y:tipRe, z:tipIm });
         }
       }
+      pushGroupedSegmentTraces(traces, phasorSegments, {
+        width: LINE_WIDTH_PHASOR,
+        colorForItem: item => item.color
+      });
+      pushGroupedMarkerTraces(traces, phasorMarkers, {
+        size: 6,
+        colorForItem: item => item.color
+      });
       traces.push({ type:"scatter3d", mode:"lines", x:[tRef, tRef], y:[0, tipReTot], z:[0, tipImTot],
         line:{width: LINE_WIDTH_PHASOR, color: totalColor}, hoverinfo:"skip", showlegend:false });
       traces.push({ type:"scatter3d", mode:"markers", x:[tRef], y:[tipReTot], z:[tipImTot],
@@ -1677,20 +1952,26 @@ function updatePlot(useReact=false){
   const config = {responsive: true, displaylogo: false, scrollZoom:true};
   const view = getCurrentView();
   let layout = layoutWithCamera(!initialized, maxAmp);
-  
-  // Preserve camera and aspect from current view
-  if(view.camera){
-    const cam = JSON.parse(JSON.stringify(view.camera));
-    cam.projection = cam.projection || {};
-    cam.projection.type = "orthographic";
-    layout.scene.camera = cam;
-  }
-  if(view.aspect){ 
-    layout.scene.aspectmode = view.aspect; 
-  }
-  if(view.aspectratio){
-    layout.scene.aspectratio = view.aspectratio;
-  }
+
+  // Prefer the live camera from the plot (user may have rotated it). If the
+  // scene was dropped (every trace off), fall back to the last remembered
+  // camera so the view never reverts to perspective on re-enable.
+  let cam = view.camera
+    ? JSON.parse(JSON.stringify(view.camera))
+    : JSON.parse(JSON.stringify(lastCamera));
+  cam.projection = cam.projection || {};
+  cam.projection.type = "orthographic";
+  layout.scene.camera = cam;
+  layout.scene.aspectmode = view.aspect || lastAspect;
+  layout.scene.aspectratio = view.aspectratio
+    ? JSON.parse(JSON.stringify(view.aspectratio))
+    : JSON.parse(JSON.stringify(lastAspectratio));
+
+  // Remember this camera/aspect so that the next render can restore it even
+  // when the scene has been torn down.
+  lastCamera = JSON.parse(JSON.stringify(layout.scene.camera));
+  lastAspect = layout.scene.aspectmode;
+  lastAspectratio = JSON.parse(JSON.stringify(layout.scene.aspectratio));
   
   // CRITICAL: Always enforce fixed ranges and disable autorange after any interaction
   layout.scene.xaxis.autorange = false;
@@ -1731,17 +2012,24 @@ function attachPlotInteractionHandlers(gd) {
 }
 
 function buildOriginalSignalTraces(model, color) {
-  return model.type === "function"
+  if(originalTraceCache &&
+    originalTraceCache.model === model &&
+    originalTraceCache.color === color &&
+    originalTraceCache.lang === lang) {
+    return originalTraceCache.traces;
+  }
+
+  const traces = model.type === "function"
     ? buildFunctionOriginalTraces(model, color)
     : buildPiecewiseOriginalTraces(model, color);
+  originalTraceCache = {model, color, lang, traces};
+  return traces;
 }
 
 function buildFunctionOriginalTraces(model, color) {
-  const traces = [];
-  let legendShown = false;
+  const x = [], y = [], z = [];
   for (let p = 0; p < N_PERIODS; p++) {
     const shift = p*model.period;
-    const x = [], y = [], z = [];
     for (let i = 0; i <= POINTS_PER_PERIOD; i++) {
       const localT = model.start + i*model.period/POINTS_PER_PERIOD;
       const value = model.valueAt(localT);
@@ -1749,24 +2037,23 @@ function buildFunctionOriginalTraces(model, color) {
       y.push(value.re);
       z.push(value.im);
     }
-    traces.push({
-      type:"scatter3d", mode:"lines", x, y, z,
-      line:{width:3, color},
-      hoverinfo:"skip", name:tr[lang].signalOriginal,
-      legendgroup:"original", showlegend:!legendShown
-    });
-    legendShown = true;
+    x.push(NaN);
+    y.push(NaN);
+    z.push(NaN);
   }
-  return traces;
+  return [{
+    type:"scatter3d", mode:"lines", x, y, z,
+    line:{width:3, color},
+    hoverinfo:"skip", name:tr[lang].signalOriginal,
+    legendgroup:"original", showlegend:true
+  }];
 }
 
 function buildPiecewiseOriginalTraces(model, color) {
-  const traces = [];
-  let legendShown = false;
+  const x = [], y = [], z = [];
   for (let p = 0; p < N_PERIODS; p++) {
     const shift = p*model.period;
     for (const segment of model.segments) {
-      const x = [], y = [], z = [];
       const samples = Math.max(2, Math.ceil(POINTS_PER_PERIOD*(segment.t1 - segment.t0)/model.period));
       for (let i = 0; i <= samples; i++) {
         const u = i/samples;
@@ -1774,27 +2061,22 @@ function buildPiecewiseOriginalTraces(model, color) {
         y.push(segment.re0 + u*(segment.re1 - segment.re0));
         z.push(segment.im0 + u*(segment.im1 - segment.im0));
       }
-      traces.push({
-        type:"scatter3d", mode:"lines", x, y, z,
-        line:{width:3, color},
-        hoverinfo:"skip", name:tr[lang].signalOriginal,
-        legendgroup:"original", showlegend:!legendShown
-      });
-      legendShown = true;
+      x.push(NaN);
+      y.push(NaN);
+      z.push(NaN);
     }
     for (const jump of model.jumps) {
-      traces.push({
-        type:"scatter3d", mode:"lines",
-        x:[jump.t + shift, jump.t + shift],
-        y:[jump.re0, jump.re1],
-        z:[jump.im0, jump.im1],
-        line:{width:3, color},
-        hoverinfo:"skip", name:tr[lang].signalOriginal,
-        legendgroup:"original", showlegend:false
-      });
+      x.push(jump.t + shift, jump.t + shift, NaN);
+      y.push(jump.re0, jump.re1, NaN);
+      z.push(jump.im0, jump.im1, NaN);
     }
   }
-  return traces;
+  return [{
+    type:"scatter3d", mode:"lines", x, y, z,
+    line:{width:3, color},
+    hoverinfo:"skip", name:tr[lang].signalOriginal,
+    legendgroup:"original", showlegend:true
+  }];
 }
 
 /* ================= CAMERA VIEWS ================= */
@@ -1829,6 +2111,99 @@ function setView(view){
   });
 }
 
+/* ================= HELP MODAL ================= */
+let helpLastFocus = null;
+
+function renderInlineMath(tex){
+  if(window.katex){
+    return katex.renderToString(tex, { displayMode:false, throwOnError:false });
+  }
+  return `<span class="help-equation-fallback">${tex}</span>`;
+}
+
+function renderDisplayMath(tex){
+  if(window.katex){
+    return katex.renderToString(tex, { displayMode:true, throwOnError:false });
+  }
+  return `<span class="help-equation-fallback">${tex}</span>`;
+}
+
+function appendFormattedHelpText(el, text){
+  const parts = text.split(/(\*\*[^*]+\*\*|\$[^$]+\$)/g);
+  for(const part of parts){
+    if(!part) continue;
+    if(part.startsWith("**") && part.endsWith("**")){
+      const strong = document.createElement("strong");
+      strong.textContent = part.slice(2, -2);
+      el.appendChild(strong);
+    } else if(part.startsWith("$") && part.endsWith("$")){
+      const span = document.createElement("span");
+      span.innerHTML = renderInlineMath(part.slice(1, -1));
+      el.appendChild(span);
+    } else {
+      el.appendChild(document.createTextNode(part));
+    }
+  }
+}
+
+function renderHelpContent(){
+  const t = tr[lang];
+  const titleEl = document.getElementById("helpTitle");
+  const bodyEl = document.getElementById("helpBody");
+  titleEl.textContent = t.helpTitle;
+  bodyEl.textContent = "";
+  for(const section of t.helpSections){
+    const sec = document.createElement("section");
+    sec.className = "help-section";
+    const h3 = document.createElement("h3");
+    h3.textContent = section.title;
+    sec.appendChild(h3);
+    if(section.paragraphs){
+      for(const p of section.paragraphs){
+        const pEl = document.createElement("p");
+        appendFormattedHelpText(pEl, p);
+        sec.appendChild(pEl);
+      }
+    }
+    if(section.equation){
+      const card = document.createElement("div");
+      card.className = "help-equation-card";
+      card.innerHTML = renderDisplayMath(section.equation);
+      sec.appendChild(card);
+    }
+    if(section.list){
+      const ul = document.createElement("ul");
+      for(const item of section.list){
+        const li = document.createElement("li");
+        appendFormattedHelpText(li, item);
+        ul.appendChild(li);
+      }
+      sec.appendChild(ul);
+    }
+    bodyEl.appendChild(sec);
+  }
+}
+
+function openHelpModal(){
+  helpLastFocus = document.activeElement;
+  renderHelpContent();
+  document.getElementById("helpBackdrop").hidden = false;
+  document.getElementById("helpClose").focus();
+}
+
+function closeHelpModal(){
+  document.getElementById("helpBackdrop").hidden = true;
+  if(helpLastFocus && typeof helpLastFocus.focus === "function") helpLastFocus.focus();
+}
+
+function updateHelpButton(){
+  const t = tr[lang];
+  const btn = document.getElementById("helpBtn");
+  btn.title = t.helpButton;
+  btn.setAttribute("aria-label", t.helpButton);
+  document.getElementById("helpClose").setAttribute("aria-label", t.helpClose);
+}
+
 /* ================= LANG & THEME ================= */
 function applyLanguage(){
   document.getElementById("mainTitle").textContent = tr[lang].title;
@@ -1855,16 +2230,19 @@ function applyLanguage(){
   document.getElementById("labelChainedComponents").textContent = tr[lang].chainedComponents;
   document.getElementById("labelAnimationOn").textContent = tr[lang].animationOn;
   document.getElementById("labelSpeed").textContent = tr[lang].speed + ":";
-  document.getElementById("tabPositive").textContent = tr[lang].tabPositive;
   document.getElementById("tabNegative").textContent = tr[lang].tabNegative;
+  document.getElementById("tabZero").textContent = tr[lang].tabZero;
+  document.getElementById("tabPositive").textContent = tr[lang].tabPositive;
   document.getElementById("resetBtn").textContent = tr[lang].reset;
   
   // Update time slider max value
   document.getElementById("timeSlider").max = animationState.maxTime.toFixed(2);
   
   updatePlayPauseButton();
+  updateHelpButton();
+  if(!document.getElementById("helpBackdrop").hidden) renderHelpContent();
   buildSignalEditor();
-  buildControls(); 
+  buildControls();
   updatePlot(true);
 }
 
@@ -1886,23 +2264,38 @@ function wireEvents(){
     updatePlot(true);
   });
   document.getElementById("toggleSidebar").addEventListener("click", function() { sidebarHidden = !sidebarHidden; document.body.classList.toggle("sidebar-collapsed", sidebarHidden); document.getElementById("toggleSidebar").textContent = sidebarHidden ? tr[lang].showControls : tr[lang].hideControls; setTimeout(()=>{ if(Plotly && Plotly.Plots) Plotly.Plots.resize("plot3d"); }, 50); });
+  document.getElementById("helpBtn").addEventListener("click", openHelpModal);
+  document.getElementById("helpClose").addEventListener("click", closeHelpModal);
+  document.getElementById("helpBackdrop").addEventListener("click", function(event){
+    if(event.target === this) closeHelpModal();
+  });
+  document.addEventListener("keydown", function(event){
+    if(event.key === "Escape" && !document.getElementById("helpBackdrop").hidden) closeHelpModal();
+  });
   document.getElementById("toggleSignalEditor").addEventListener("click", function() {
     signalEditorVisible = !signalEditorVisible;
     this.classList.toggle("active", signalEditorVisible);
     buildSignalEditor();
   });
-  document.getElementById("showOriginal").addEventListener("change", function() { updatePlot(true); });
+  document.getElementById("showOriginal").addEventListener("change", function() {
+    // Only remember the user's choice when the control is actually usable;
+    // programmatic changes from updateShowOriginalState don't count.
+    if(!this.disabled) showOriginalUserPreference = this.checked;
+    updatePlot(true);
+  });
   document.getElementById("showTotal").addEventListener("change", function() { updatePlot(true); });
-  document.getElementById("showComponents").addEventListener("change", function() { 
-    cachedMaxAmp = null; // Invalidate cache
-    updatePlot(true); 
+  document.getElementById("showComponents").addEventListener("change", function() {
+    // If the user turns components off, chainedComponents gets force-unchecked
+    // by updateShowComponentsState — that also changes the axis scale, so
+    // invalidate the max-amp cache unconditionally.
+    cachedMaxAmp = null;
     updateShowComponentsState();
+    updatePlot(true);
   });
   document.getElementById("showPhasors").addEventListener("change", function() { updatePlot(true); });
-  document.getElementById("chainedComponents").addEventListener("change", function() { 
-    cachedMaxAmp = null; // Invalidate cache when chained mode changes
-    updatePlot(true); 
-    updateShowComponentsState();
+  document.getElementById("chainedComponents").addEventListener("change", function() {
+    cachedMaxAmp = null; // chained/unchained changes the axis scale
+    updatePlot(true);
   });
   
   // Animation enable/disable checkbox
@@ -1974,13 +2367,15 @@ function initializeApp() {
   setPresetPeriod();
   setOriginalSignalFromCurrentCoefficients();
   updateThemeButton();
+  updateHelpButton();
   buildSignalEditor();
-  buildControls(); 
+  buildControls();
+  updateShowOriginalState();
   updateShowComponentsState();
   updateAnimationControlsState(); // Initialize animation controls state
   updateTimeDisplay();
   updatePlayPauseButton();
-  updatePlot(); 
+  updatePlot();
   wireEvents();
 }
 
