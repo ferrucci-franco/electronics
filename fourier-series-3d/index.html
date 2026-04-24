@@ -1900,8 +1900,9 @@ function updatePlot(useReact=false){
     });
   }
 
-  // Current point on the curve (only in animation mode)
-  if (showTotal && animationState.enabled && timePoints > 0) {
+  // Current point on the curve (only in animation mode). When phasors are
+  // visible, the tip of the total phasor already marks the same position.
+  if (showTotal && animationState.enabled && timePoints > 0 && !showPh) {
     const currentIdx = timePoints - 1;
     traces.push({
       type:"scatter3d", mode:"markers",
