@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Fourier Series (Real)</title>
 <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<link rel="stylesheet" href="../pendulum/lib/katex/katex.min.css">
+<script defer src="../pendulum/lib/katex/katex.min.js"></script>
 <style>
   :root{
     --primary-color:#2196F3; --primary-hover:#1976D2;
@@ -156,6 +158,50 @@
     min-height:420px; height:100%;
     border:1px solid var(--border); border-radius:14px; background:var(--plot-bg);
   }
+
+  .help-backdrop{
+    position:fixed; inset:0;
+    background:rgba(0,0,0,0.45);
+    backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
+    z-index:1000; display:flex; align-items:center; justify-content:center; padding:24px;
+  }
+  .help-backdrop[hidden]{display:none}
+  .help-modal{
+    width:100%; max-width:760px; max-height:85vh;
+    background:var(--panel); color:var(--fg);
+    border:1px solid var(--border); border-radius:10px;
+    box-shadow:0 12px 40px rgba(0,0,0,0.3);
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  .help-modal-header{
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
+    padding:16px 20px 12px; border-bottom:1px solid var(--border); flex-shrink:0;
+  }
+  .help-modal-header h2{margin:0; font-size:22px; font-weight:650; color:var(--fg)}
+  .help-modal-close{
+    width:auto; padding:4px 10px; background:transparent; border:none;
+    border-radius:6px; color:var(--muted); font-size:22px; line-height:1; cursor:pointer;
+  }
+  .help-modal-close:hover{background:var(--hover); color:var(--fg)}
+  .help-modal-body{overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:18px}
+  .help-section h3{margin:0 0 10px; font-size:19px; font-weight:650; color:var(--primary-color)}
+  .help-section strong{color:var(--primary-color); font-weight:700}
+  .help-section p, .help-section ul{margin:0; font-size:17px; line-height:1.65; color:var(--fg)}
+  .help-section .katex{font-size:1.05em}
+  .help-equation-card .katex-display{font-size:1.15em; margin:0}
+  .help-section p + p{margin-top:8px}
+  .help-section ul{padding-left:22px; margin-top:8px}
+  .help-section li{margin-bottom:6px}
+  .help-equation-card{
+    margin:12px 0; padding:16px 18px;
+    background:color-mix(in srgb, var(--primary-color) 10%, var(--panel));
+    border:1px solid var(--border); border-left:4px solid var(--primary-color);
+    border-radius:8px; color:var(--fg); overflow-x:auto; text-align:center;
+  }
+  body.theme-dark .help-equation-card{
+    background:color-mix(in srgb, var(--primary-color) 18%, var(--panel));
+  }
+  .help-equation-fallback{font-family:Consolas,'Courier New',monospace; white-space:nowrap}
 </style>
 </head>
 <body class="theme-light">
@@ -176,9 +222,20 @@
 
       <button id="resetAll">Reset</button>
       <button id="toggleControls">Hide Controls</button>
+      <button id="helpBtn" title="Help" aria-label="Help">❓</button>
       <button id="toggleTheme" title="Toggle theme" aria-label="Toggle theme">🌙</button>
     </div>
   </header>
+
+  <div id="helpBackdrop" class="help-backdrop" hidden>
+    <div class="help-modal" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+      <div class="help-modal-header">
+        <h2 id="helpTitle">Help</h2>
+        <button type="button" id="helpClose" class="help-modal-close" aria-label="Close">×</button>
+      </div>
+      <div id="helpBody" class="help-modal-body"></div>
+    </div>
+  </div>
 
   <div class="wrapper" id="wrapper">
     <aside id="controlsPanel" class="controls"></aside>
@@ -225,7 +282,49 @@ const I18N = {
        appliedSignal:"Applied",
        segments:"segments",
        jumps:"jumps",
-       parseError:"Could not parse expression" },
+       parseError:"Could not parse expression",
+       helpButton:"Help", helpClose:"Close", helpTitle:"Fourier series — real form (amplitude & phase)",
+       helpSections:[
+         {
+           title:"🔎 Main idea",
+           paragraphs:[
+             "Any **periodic** real signal with period $T$ can be written as a **DC offset** plus a sum of cosines at integer multiples of the fundamental frequency $\\omega_0 = 2\\pi/T$, each one with its own amplitude and phase.",
+             "Each harmonic is a **pure cosine** shifted in time; adding them reconstructs the signal."
+           ]
+         },
+         {
+           title:"🧮 Synthesis equation",
+           paragraphs:[
+             "The signal $x(t)$ is rebuilt from the DC term $a_0$ and the amplitudes and phases $(A_k, \\varphi_k)$:"
+           ],
+           equation:String.raw`x(t) = a_0 + \sum_{k=1}^{\infty} A_k\, \cos\!\left(k\,\omega_0\, t + \varphi_k\right)`,
+           list:[
+             "$a_0$ is the **DC component** (mean value of the signal).",
+             "$A_k \\ge 0$ is the **amplitude** of the $k$-th harmonic, $\\varphi_k$ its **phase**.",
+             "$\\omega_0 = 2\\pi/T$ is the fundamental angular frequency."
+           ]
+         },
+         {
+           title:"📐 Analysis equations",
+           paragraphs:[
+             "Given $x(t)$, compute first the sine and cosine Fourier coefficients $a_k, b_k$, and then combine them into amplitude and phase:"
+           ],
+           equation:String.raw`a_k = \tfrac{2}{T}\!\int_T x(t)\cos(k\omega_0 t)\,dt,\quad b_k = \tfrac{2}{T}\!\int_T x(t)\sin(k\omega_0 t)\,dt`,
+           list:[
+             "$A_k = \\sqrt{a_k^2 + b_k^2}$",
+             "$\\varphi_k = \\operatorname{atan2}(-b_k,\\, a_k)$",
+             "The DC term is $a_0 = \\tfrac{1}{T}\\!\\int_T x(t)\\,dt$."
+           ]
+         },
+         {
+           title:"🧪 Try it",
+           list:[
+             "Pick a preset (**Square**, **Triangle**, **Sawtooth**, **RC charge/discharge**) to load its spectrum, or **My signal** to enter your own piecewise signal.",
+             "Move $A_k$ and $\\varphi_k$ sliders; compare the **Fourier sum** against the **original signal**.",
+             "**Show components** overlays each individual cosine $A_k\\cos(k\\omega_0 t + \\varphi_k)$ so you can see how the harmonics build up the signal."
+           ]
+         }
+       ] },
   es:{ title:"Serie de Fourier", amp:"a", phase:"φ (°)",
        hideControls:"Ocultar controles", showControls:"Mostrar controles",
        darkMode:"Modo oscuro", lightMode:"Modo claro", reset:"Reset",
@@ -248,7 +347,49 @@ const I18N = {
        appliedSignal:"Aplicada",
        segments:"tramos",
        jumps:"saltos",
-       parseError:"No se pudo interpretar la expresión" },
+       parseError:"No se pudo interpretar la expresión",
+       helpButton:"Ayuda", helpClose:"Cerrar", helpTitle:"Serie de Fourier — forma real (amplitud y fase)",
+       helpSections:[
+         {
+           title:"🔎 Idea central",
+           paragraphs:[
+             "Toda señal **periódica** real de período $T$ puede escribirse como un **valor de continua** más una suma de cosenos a múltiplos enteros de la frecuencia fundamental $\\omega_0 = 2\\pi/T$, cada uno con su propia amplitud y fase.",
+             "Cada armónico es un **coseno puro** desplazado en el tiempo; al sumarlos se reconstruye la señal."
+           ]
+         },
+         {
+           title:"🧮 Ecuación de síntesis",
+           paragraphs:[
+             "La señal $x(t)$ se reconstruye a partir del término de continua $a_0$ y de las amplitudes y fases $(A_k, \\varphi_k)$:"
+           ],
+           equation:String.raw`x(t) = a_0 + \sum_{k=1}^{\infty} A_k\, \cos\!\left(k\,\omega_0\, t + \varphi_k\right)`,
+           list:[
+             "$a_0$ es la **componente de continua** (valor medio de la señal).",
+             "$A_k \\ge 0$ es la **amplitud** del armónico $k$, $\\varphi_k$ su **fase**.",
+             "$\\omega_0 = 2\\pi/T$ es la frecuencia angular fundamental."
+           ]
+         },
+         {
+           title:"📐 Ecuaciones de análisis",
+           paragraphs:[
+             "Dada $x(t)$, se calculan primero los coeficientes de Fourier en coseno y seno $a_k, b_k$, y luego se combinan en amplitud y fase:"
+           ],
+           equation:String.raw`a_k = \tfrac{2}{T}\!\int_T x(t)\cos(k\omega_0 t)\,dt,\quad b_k = \tfrac{2}{T}\!\int_T x(t)\sin(k\omega_0 t)\,dt`,
+           list:[
+             "$A_k = \\sqrt{a_k^2 + b_k^2}$",
+             "$\\varphi_k = \\operatorname{atan2}(-b_k,\\, a_k)$",
+             "El término de continua es $a_0 = \\tfrac{1}{T}\\!\\int_T x(t)\\,dt$."
+           ]
+         },
+         {
+           title:"🧪 Pruébalo",
+           list:[
+             "Elige un preset (**Cuadrada**, **Triangular**, **Diente de sierra**, **Carga/descarga RC**) para cargar su espectro, o **Mi señal** para introducir tu propia señal por trazos.",
+             "Mueve los sliders de $A_k$ y $\\varphi_k$; compara la **suma de Fourier** con la **señal original**.",
+             "**Mostrar componentes** superpone cada coseno individual $A_k\\cos(k\\omega_0 t + \\varphi_k)$ para ver cómo los armónicos construyen la señal."
+           ]
+         }
+       ] },
   fr:{ title:"Série de Fourier", amp:"a", phase:"φ (°)",
        hideControls:"Masquer contrôles", showControls:"Afficher contrôles",
        darkMode:"Mode sombre", lightMode:"Mode clair", reset:"Réinitialiser",
@@ -271,7 +412,49 @@ const I18N = {
        appliedSignal:"Appliqué",
        segments:"segments",
        jumps:"sauts",
-       parseError:"Impossible d'interpréter l'expression" }
+       parseError:"Impossible d'interpréter l'expression",
+       helpButton:"Aide", helpClose:"Fermer", helpTitle:"Série de Fourier — forme réelle (amplitude et phase)",
+       helpSections:[
+         {
+           title:"🔎 Idée centrale",
+           paragraphs:[
+             "Tout signal **périodique** réel de période $T$ peut s'écrire comme une **composante continue** plus une somme de cosinus aux multiples entiers de la fréquence fondamentale $\\omega_0 = 2\\pi/T$, chacun avec sa propre amplitude et sa propre phase.",
+             "Chaque harmonique est un **cosinus pur** décalé dans le temps ; leur somme reconstruit le signal."
+           ]
+         },
+         {
+           title:"🧮 Équation de synthèse",
+           paragraphs:[
+             "Le signal $x(t)$ est reconstruit à partir du terme continu $a_0$ et des amplitudes et phases $(A_k, \\varphi_k)$ :"
+           ],
+           equation:String.raw`x(t) = a_0 + \sum_{k=1}^{\infty} A_k\, \cos\!\left(k\,\omega_0\, t + \varphi_k\right)`,
+           list:[
+             "$a_0$ est la **composante continue** (valeur moyenne du signal).",
+             "$A_k \\ge 0$ est l'**amplitude** de l'harmonique $k$, $\\varphi_k$ sa **phase**.",
+             "$\\omega_0 = 2\\pi/T$ est la pulsation fondamentale."
+           ]
+         },
+         {
+           title:"📐 Équations d'analyse",
+           paragraphs:[
+             "Étant donné $x(t)$, on calcule d'abord les coefficients de Fourier en cosinus et sinus $a_k, b_k$, puis on les combine en amplitude et phase :"
+           ],
+           equation:String.raw`a_k = \tfrac{2}{T}\!\int_T x(t)\cos(k\omega_0 t)\,dt,\quad b_k = \tfrac{2}{T}\!\int_T x(t)\sin(k\omega_0 t)\,dt`,
+           list:[
+             "$A_k = \\sqrt{a_k^2 + b_k^2}$",
+             "$\\varphi_k = \\operatorname{atan2}(-b_k,\\, a_k)$",
+             "Le terme continu est $a_0 = \\tfrac{1}{T}\\!\\int_T x(t)\\,dt$."
+           ]
+         },
+         {
+           title:"🧪 Essayez-le",
+           list:[
+             "Choisissez un préréglage (**Carrée**, **Triangulaire**, **Dent de scie**, **Charge/décharge RC**) pour charger son spectre, ou **Mon signal** pour saisir votre propre signal par morceaux.",
+             "Déplacez les curseurs $A_k$ et $\\varphi_k$ ; comparez la **somme de Fourier** avec le **signal original**.",
+             "**Afficher les composantes** superpose chaque cosinus individuel $A_k\\cos(k\\omega_0 t + \\varphi_k)$ pour voir comment les harmoniques construisent le signal."
+           ]
+         }
+       ] }
 };
 let lang = "en";
 
@@ -1025,6 +1208,101 @@ function reflectSliders() {
 }
 
 
+/* ====================== HELP MODAL ====================== */
+let helpLastFocus = null;
+
+function renderInlineMath(tex){
+  if(window.katex){
+    return katex.renderToString(tex, { displayMode:false, throwOnError:false });
+  }
+  return `<span class="help-equation-fallback">${tex}</span>`;
+}
+
+function renderDisplayMath(tex){
+  if(window.katex){
+    return katex.renderToString(tex, { displayMode:true, throwOnError:false });
+  }
+  return `<span class="help-equation-fallback">${tex}</span>`;
+}
+
+function appendFormattedHelpText(el, text){
+  const parts = text.split(/(\*\*[^*]+\*\*|\$[^$]+\$)/g);
+  for(const part of parts){
+    if(!part) continue;
+    if(part.startsWith("**") && part.endsWith("**")){
+      const strong = document.createElement("strong");
+      strong.textContent = part.slice(2, -2);
+      el.appendChild(strong);
+    } else if(part.startsWith("$") && part.endsWith("$")){
+      const span = document.createElement("span");
+      span.innerHTML = renderInlineMath(part.slice(1, -1));
+      el.appendChild(span);
+    } else {
+      el.appendChild(document.createTextNode(part));
+    }
+  }
+}
+
+function renderHelpContent(){
+  const t = I18N[lang];
+  const titleEl = document.getElementById("helpTitle");
+  const bodyEl = document.getElementById("helpBody");
+  titleEl.textContent = t.helpTitle;
+  bodyEl.textContent = "";
+  for(const section of t.helpSections){
+    const sec = document.createElement("section");
+    sec.className = "help-section";
+    const h3 = document.createElement("h3");
+    h3.textContent = section.title;
+    sec.appendChild(h3);
+    if(section.paragraphs){
+      for(const p of section.paragraphs){
+        const pEl = document.createElement("p");
+        appendFormattedHelpText(pEl, p);
+        sec.appendChild(pEl);
+      }
+    }
+    if(section.equation){
+      const card = document.createElement("div");
+      card.className = "help-equation-card";
+      card.innerHTML = renderDisplayMath(section.equation);
+      sec.appendChild(card);
+    }
+    if(section.list){
+      const ul = document.createElement("ul");
+      for(const item of section.list){
+        const li = document.createElement("li");
+        appendFormattedHelpText(li, item);
+        ul.appendChild(li);
+      }
+      sec.appendChild(ul);
+    }
+    bodyEl.appendChild(sec);
+  }
+}
+
+function openHelpModal(){
+  helpLastFocus = document.activeElement;
+  renderHelpContent();
+  document.getElementById("helpBackdrop").hidden = false;
+  document.getElementById("helpClose").focus();
+}
+
+function closeHelpModal(){
+  document.getElementById("helpBackdrop").hidden = true;
+  if(helpLastFocus && typeof helpLastFocus.focus === "function") helpLastFocus.focus();
+}
+
+function updateHelpButton(){
+  const t = I18N[lang];
+  const btn = document.getElementById("helpBtn");
+  if(!btn) return;
+  btn.title = t.helpButton;
+  btn.setAttribute("aria-label", t.helpButton);
+  const closeBtn = document.getElementById("helpClose");
+  if(closeBtn) closeBtn.setAttribute("aria-label", t.helpClose);
+}
+
 /* ====================== LANGUAGE ====================== */
 function setLanguage(nextLang){
   lang = nextLang;
@@ -1044,6 +1322,9 @@ function setLanguage(nextLang){
   document.getElementById("toggleSignalEditor").textContent = I18N[lang].mySignal;
   document.getElementById("toggleSignalEditor").classList.toggle("active", signalEditorVisible);
   document.getElementById("resetAll").textContent = I18N[lang].reset;
+  updateHelpButton();
+  const helpBackdrop = document.getElementById("helpBackdrop");
+  if(helpBackdrop && !helpBackdrop.hidden) renderHelpContent();
 
   createControls();
   reflectSliders();
@@ -1109,8 +1390,19 @@ document.getElementById("presetTriangle").addEventListener("click",applyTriangle
 document.getElementById("presetSawtooth").addEventListener("click",applySawtoothPreset);
 document.getElementById("presetRcCharge").addEventListener("click",applyRcChargePreset);
 
+/* Help modal wiring */
+document.getElementById("helpBtn").addEventListener("click", openHelpModal);
+document.getElementById("helpClose").addEventListener("click", closeHelpModal);
+document.getElementById("helpBackdrop").addEventListener("click", function(event){
+  if(event.target === this) closeHelpModal();
+});
+document.addEventListener("keydown", function(event){
+  if(event.key === "Escape" && !document.getElementById("helpBackdrop").hidden) closeHelpModal();
+});
+
 /* ====================== INIT ====================== */
 createControls();
+updateHelpButton();
 updatePlot();
 applySquarePreset();
 </script>
