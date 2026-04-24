@@ -1637,7 +1637,8 @@
                 const threshold = 1e-6;
                 let phase = 0;
                 if (magnitude > threshold) {
-                    phase = Math.atan2(imag, real);
+                    // Convert a*cos(wt) + b*sin(wt) to A*cos(wt + phi).
+                    phase = -Math.atan2(imag, real);
                     // Convert to degrees
                     phase = phase * 180 / Math.PI;
                 }
