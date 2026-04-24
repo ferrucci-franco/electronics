@@ -84,6 +84,15 @@
     gap:6px;
   }
   @media (max-width:520px){ .row{ grid-template-columns:1fr; } }
+  .row2{display:grid; gap:6px}
+  .row2 label{
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:0.85rem; gap:8px; flex-wrap:wrap;
+  }
+  .value-input{
+    width:96px; padding:6px 8px; border-radius:8px;
+    border:1px solid var(--border); background:var(--bg); color:var(--fg);
+  }
 
   .control-group{
     border:1px dashed var(--border); border-radius:10px; padding:8px; display:grid; gap:6px;
@@ -260,7 +269,7 @@ const DEFAULT_PIECEWISE_TEXT = [
 
 /* Short UI strings (kept minimal to avoid overflow) */
 const I18N = {
-  en:{ title:"Fourier Series", amp:"a", phase:"φ (°)",
+  en:{ title:"Fourier Series", amp:"A", phase:"φ (°)",
        hideControls:"Hide Controls", showControls:"Show Controls",
        darkMode:"Dark Mode", lightMode:"Light Mode", reset:"Reset",
        square:"Square", triangle:"Triangle", sawtooth:"Sawtooth",
@@ -270,7 +279,7 @@ const I18N = {
        displayTitle:"Display", showOriginalSignal:"Show original signal",
        showFourierSum:"Show Fourier sum", showComponents:"Show components",
        piecewiseTitle:"Piecewise signal", period:"Period T", points:"Points (x, y)",
-       applySignal:"Apply", loadExample:"Example", dc:"DC",
+       applySignal:"Apply", loadExample:"Example", dc:"a_0",
        signalOriginal:"Original signal",
        piNote:'You can use "pi" and "T" in the table, for example pi/2, 2*pi or T/4.',
        pointsPlaceholder:"0, 0\nT/4, 1\nT/2, -1\nT/2, 1\nT, 0",
@@ -325,7 +334,7 @@ const I18N = {
            ]
          }
        ] },
-  es:{ title:"Serie de Fourier", amp:"a", phase:"φ (°)",
+  es:{ title:"Serie de Fourier", amp:"A", phase:"φ (°)",
        hideControls:"Ocultar controles", showControls:"Mostrar controles",
        darkMode:"Modo oscuro", lightMode:"Modo claro", reset:"Reset",
        square:"Cuadrada", triangle:"Triangular", sawtooth:"Diente de sierra",
@@ -335,7 +344,7 @@ const I18N = {
        displayTitle:"Visualización", showOriginalSignal:"Mostrar señal original",
        showFourierSum:"Mostrar suma de Fourier", showComponents:"Mostrar componentes",
        piecewiseTitle:"Señal por trazos", period:"Periodo T", points:"Puntos (x, y)",
-       applySignal:"Aplicar", loadExample:"Ejemplo", dc:"DC",
+       applySignal:"Aplicar", loadExample:"Ejemplo", dc:"a_0",
        signalOriginal:"Señal original",
        piNote:'Se puede usar "pi" y "T" en la tabla, por ejemplo pi/2, 2*pi o T/4.',
        pointsPlaceholder:"0, 0\nT/4, 1\nT/2, -1\nT/2, 1\nT, 0",
@@ -390,7 +399,7 @@ const I18N = {
            ]
          }
        ] },
-  fr:{ title:"Série de Fourier", amp:"a", phase:"φ (°)",
+  fr:{ title:"Série de Fourier", amp:"A", phase:"φ (°)",
        hideControls:"Masquer contrôles", showControls:"Afficher contrôles",
        darkMode:"Mode sombre", lightMode:"Mode clair", reset:"Réinitialiser",
        square:"Carrée", triangle:"Triangulaire", sawtooth:"Dent de scie",
@@ -400,7 +409,7 @@ const I18N = {
        displayTitle:"Affichage", showOriginalSignal:"Afficher le signal original",
        showFourierSum:"Afficher la somme de Fourier", showComponents:"Afficher les composantes",
        piecewiseTitle:"Signal par morceaux", period:"Période T", points:"Points (x, y)",
-       applySignal:"Appliquer", loadExample:"Exemple", dc:"DC",
+       applySignal:"Appliquer", loadExample:"Exemple", dc:"a_0",
        signalOriginal:"Signal original",
        piNote:'Vous pouvez utiliser « pi » et « T » dans le tableau, par exemple pi/2, 2*pi ou T/4.',
        pointsPlaceholder:"0, 0\nT/4, 1\nT/2, -1\nT/2, 1\nT, 0",
@@ -491,19 +500,24 @@ function createControls() {
     const card = document.createElement("div");
     card.className = "control-group";
 
-    const title = document.createElement("b");
-    title.innerHTML = `k = ${k}`;
-    card.appendChild(title);
-
     const row = document.createElement("div");
     row.className = "row";
 
-    /* -------- Amplitude (a_k) -------- */
+    /* -------- Amplitude (A_k) -------- */
     const ampWrap = document.createElement("div");
+    ampWrap.className = "row2";
 
     const ampLabel = document.createElement("label");
-    // Subíndice con <sub>, valor a la derecha
-    ampLabel.innerHTML = `a<sub>${k}</sub>: <span class="value" id="a_val_${k}">${amplitudes[k-1].toFixed(2)}</span>`;
+    const ampText = document.createElement("span");
+    ampText.innerHTML = `A<sub>${k}</sub>`;
+
+    const ampInput = document.createElement("input");
+    ampInput.type = "number";
+    ampInput.id = `amp_input_${k}`;
+    ampInput.className = "value-input";
+    ampInput.step = "0.01";
+    ampInput.value = amplitudes[k - 1].toFixed(2);
+    ampInput.title = "Amplitude";
 
     const ampSlider = document.createElement("input");
     ampSlider.type = "range";
@@ -513,21 +527,45 @@ function createControls() {
     ampSlider.value = amplitudes[k-1].toString();
     ampSlider.addEventListener("input", () => {
       amplitudes[k - 1] = parseFloat(ampSlider.value);
-      const v = document.getElementById(`a_val_${k}`);
-      if (v) v.textContent = amplitudes[k - 1].toFixed(2);
+      ampInput.value = amplitudes[k - 1].toFixed(2);
+      updatePlot();
+    });
+    ampSlider.addEventListener("dblclick", () => {
+      amplitudes[k - 1] = 0;
+      ampSlider.value = "0";
+      ampInput.value = "0.00";
+      updatePlot();
+    });
+    ampInput.addEventListener("change", () => {
+      let v = parseFloat(ampInput.value);
+      if (!isFinite(v)) v = 0;
+      amplitudes[k - 1] = v;
+      const sliderMax = parseFloat(ampSlider.max);
+      ampSlider.value = String(Math.min(v, sliderMax));
       updatePlot();
     });
 
+    ampLabel.appendChild(ampText);
+    ampLabel.appendChild(ampInput);
     ampWrap.appendChild(ampLabel);
     ampWrap.appendChild(ampSlider);
 
     /* -------- Phase (φ_k) -------- */
     const phaWrap = document.createElement("div");
+    phaWrap.className = "row2";
 
     const phaLabel = document.createElement("label");
-    // φ con subíndice y grados entre paréntesis, valor a la derecha
     const degText = (lang === "fr") ? "(degrés)" : (lang === "es" ? "(grados)" : "(deg)");
-    phaLabel.innerHTML = `φ<sub>${k}</sub> ${degText}: <span class="value" id="p_val_${k}">${(phases[k-1] * 180 / Math.PI).toFixed(0)}</span>`;
+    const phaText = document.createElement("span");
+    phaText.innerHTML = `φ<sub>${k}</sub> ${degText}`;
+
+    const phaInput = document.createElement("input");
+    phaInput.type = "number";
+    phaInput.id = `phase_input_${k}`;
+    phaInput.className = "value-input";
+    phaInput.step = "1";
+    phaInput.value = (phases[k - 1] * 180 / Math.PI).toFixed(0);
+    phaInput.title = "Phase (deg)";
 
     const phaSlider = document.createElement("input");
     phaSlider.type = "range";
@@ -537,11 +575,26 @@ function createControls() {
     phaSlider.value = (phases[k - 1] * 180 / Math.PI).toFixed(0);
     phaSlider.addEventListener("input", () => {
       phases[k - 1] = parseFloat(phaSlider.value) * Math.PI / 180;
-      const v = document.getElementById(`p_val_${k}`);
-      if (v) v.textContent = (phases[k - 1] * 180 / Math.PI).toFixed(0);
+      phaInput.value = String((phases[k - 1] * 180 / Math.PI).toFixed(0));
+      updatePlot();
+    });
+    phaSlider.addEventListener("dblclick", () => {
+      phases[k - 1] = 0;
+      phaSlider.value = "0";
+      phaInput.value = "0";
+      updatePlot();
+    });
+    phaInput.addEventListener("change", () => {
+      let deg = parseFloat(phaInput.value);
+      if (!isFinite(deg)) deg = 0;
+      phases[k - 1] = deg * Math.PI / 180;
+      let sdeg = ((deg + 180) % 360 + 360) % 360 - 180;
+      phaSlider.value = String(sdeg.toFixed(0));
       updatePlot();
     });
 
+    phaLabel.appendChild(phaText);
+    phaLabel.appendChild(phaInput);
     phaWrap.appendChild(phaLabel);
     phaWrap.appendChild(phaSlider);
 
@@ -705,8 +758,20 @@ function createDcControl() {
   const card = document.createElement("div");
   card.className = "control-group";
 
-  const title = document.createElement("b");
-  title.innerHTML = `${I18N[lang].dc}: <span class="value" id="dc_val">${dcOffset.toFixed(3)}</span>`;
+  const inner = document.createElement("div");
+  inner.className = "row2";
+
+  const dcLabel = document.createElement("label");
+  const dcText = document.createElement("span");
+  dcText.innerHTML = "a<sub>0</sub>";
+
+  const dcInput = document.createElement("input");
+  dcInput.type = "number";
+  dcInput.id = "dc_input";
+  dcInput.className = "value-input";
+  dcInput.step = "0.01";
+  dcInput.value = dcOffset.toFixed(3);
+  dcInput.title = "DC offset";
 
   dcSlider = document.createElement("input");
   dcSlider.type = "range";
@@ -717,13 +782,27 @@ function createDcControl() {
   dcSlider.value = String(dcOffset);
   dcSlider.addEventListener("input", () => {
     dcOffset = parseFloat(dcSlider.value);
-    const v = document.getElementById("dc_val");
-    if (v) v.textContent = dcOffset.toFixed(3);
+    dcInput.value = dcOffset.toFixed(3);
+    updatePlot();
+  });
+  dcInput.addEventListener("change", () => {
+    let v = parseFloat(dcInput.value);
+    if (!isFinite(v)) v = 0;
+    dcOffset = v;
+    const dcAbsNow = Math.abs(dcOffset);
+    dcSlider.min = String(Math.min(-2, Math.floor((dcOffset - dcAbsNow*0.1)*100)/100));
+    dcSlider.max = String(Math.max(2, Math.ceil((dcOffset + dcAbsNow*0.1)*100)/100));
+    const sliderMax = parseFloat(dcSlider.max);
+    const sliderMin = parseFloat(dcSlider.min);
+    dcSlider.value = String(Math.max(sliderMin, Math.min(v, sliderMax)));
     updatePlot();
   });
 
-  card.appendChild(title);
-  card.appendChild(dcSlider);
+  dcLabel.appendChild(dcText);
+  dcLabel.appendChild(dcInput);
+  inner.appendChild(dcLabel);
+  inner.appendChild(dcSlider);
+  card.appendChild(inner);
   return card;
 }
 
@@ -902,6 +981,7 @@ function buildTraces(t){
   }
 
   const addHarm = (k, a, ph) => {
+    if (Math.abs(a) <= 1e-12) return;
     const yk = t.map(xx => a*Math.cos(k*omega0*xx + ph));
     for(let i=0;i<yTotal.length;i++) yTotal[i]+=yk[i];
     if(showComponents){
@@ -1183,25 +1263,23 @@ function reflectSliders() {
     dcSlider.max = String(Math.max(2, Math.ceil((dcOffset + dcAbs*0.1)*100)/100));
     dcSlider.value = String(dcOffset);
   }
-  const dv = document.getElementById("dc_val");
-  if (dv) dv.textContent = dcOffset.toFixed(3);
+  const dcInput = document.getElementById("dc_input");
+  if (dcInput) dcInput.value = dcOffset.toFixed(3);
 
   for (let k = 1; k <= N_HARMONICS; k++) {
-    // Amplitude slider: keep full precision in the control
     if (ampSliders[k - 1]) {
       ampSliders[k - 1].max = String(Math.max(2, Math.ceil(amplitudes[k-1]*110)/100));
-      ampSliders[k - 1].value = String(amplitudes[k - 1]); // no rounding here
+      ampSliders[k - 1].value = String(amplitudes[k - 1]);
     }
-    const av = document.getElementById(`a_val_${k}`);
-    if (av) av.textContent = amplitudes[k - 1].toFixed(3); // display with 3 decimals
+    const ampInput = document.getElementById(`amp_input_${k}`);
+    if (ampInput) ampInput.value = amplitudes[k - 1].toFixed(2);
 
-    // Phase slider: integer degrees is fine
     const deg = Math.round(phases[k - 1] * 180 / Math.PI);
     if (phaseSliders[k - 1]) {
       phaseSliders[k - 1].value = String(deg);
     }
-    const pv = document.getElementById(`p_val_${k}`);
-    if (pv) pv.textContent = String(deg);
+    const phaseInput = document.getElementById(`phase_input_${k}`);
+    if (phaseInput) phaseInput.value = String(deg);
   }
   refreshPiecewiseStatus();
   updatePlot();
