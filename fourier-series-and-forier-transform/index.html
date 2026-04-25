@@ -532,6 +532,81 @@
         .sidebar-author a:hover {
             text-decoration: underline;
         }
+
+        body.is-busy {
+            cursor: wait;
+        }
+
+        .busy-backdrop {
+            position: fixed;
+            inset: 0;
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(18, 18, 22, 0.45);
+            backdrop-filter: blur(2px);
+        }
+
+        .busy-backdrop[hidden] {
+            display: none;
+        }
+
+        .busy-modal {
+            min-width: 220px;
+            padding: 22px 26px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            box-shadow: 0 16px 40px var(--shadow);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .busy-content {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .busy-spinner {
+            width: 32px;
+            height: 32px;
+            border: 4px solid var(--bg-tertiary);
+            border-top-color: var(--accent-color);
+            border-radius: 50%;
+            animation: busy-spin 0.8s linear infinite;
+            flex: 0 0 auto;
+        }
+
+        .busy-text {
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .busy-cancel {
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: var(--input-bg);
+            color: var(--text-primary);
+            padding: 7px 16px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .busy-cancel:hover {
+            background-color: var(--hover-bg);
+        }
+
+        @keyframes busy-spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
     </style>
 </head>
 <body data-theme="light">
@@ -591,7 +666,7 @@
 
             <div class="form-group">
                 <label for="frequency" id="frequency-label">Frecuencia (Hz)</label>
-                <input type="number" id="frequency" value="1000" step="10" min="10">
+                <input type="number" id="frequency" value="1000" step="100" min="0.1" data-dynamic-step="frequency">
             </div>
 
             <div class="form-group">
@@ -636,8 +711,12 @@
                     <input type="number" id="amplitude2" value="2" step="0.1" min="0.1">
                 </div>
                 <div class="form-group">
+                    <label for="offset2" id="offset2-label">Offset (V)</label>
+                    <input type="number" id="offset2" value="0" step="0.1">
+                </div>
+                <div class="form-group">
                     <label for="frequency2" id="frequency2-label">Frecuencia (Hz)</label>
-                    <input type="number" id="frequency2" value="3000" step="10" min="10">
+                    <input type="number" id="frequency2" value="3000" step="100" min="0.1" data-dynamic-step="frequency">
                 </div>
                 <div class="form-group">
                     <label for="phase2" id="phase2-input-label">Fase (-180° a +180°)</label>
@@ -678,7 +757,7 @@
 
             <div class="form-group">
                 <label for="max-freq" id="maxfreq-label">Frecuencia Máxima (Hz)</label>
-                <input type="number" id="max-freq" value="20000" step="10" min="10">
+                <input type="number" id="max-freq" value="20000" step="100" min="0.1" data-dynamic-step="frequency">
                 <div class="info-text" id="maxfreq-info">Default: 20 × frecuencia señal</div>
             </div>
         </div>
@@ -786,6 +865,16 @@
         </div>
     </div>
 
+    <div id="busy-backdrop" class="busy-backdrop" hidden aria-live="polite" aria-busy="true">
+        <div class="busy-modal" role="status">
+            <div class="busy-content">
+                <div class="busy-spinner" aria-hidden="true"></div>
+                <div id="busy-text" class="busy-text">Calculando...</div>
+            </div>
+            <button type="button" id="busy-cancel" class="busy-cancel">Cancelar</button>
+        </div>
+    </div>
+
     <script src="../pendulum/lib/katex/katex.min.js"></script>
     <script>
         // Translation dictionary
@@ -843,7 +932,8 @@
                 updateBtn: 'Actualizar Gráficos',
                 timeSignal: 'Señal Temporal',
                 magnitude: 'Módulo',
-                phase: 'Fase (Unwrapped)',
+                phase: 'Fase',
+                phaseUnwrapped: 'Fase (Unwrapped)',
                 time: 'Tiempo (s)',
                 frequency: 'Frecuencia (Hz)',
                 amplitude: 'Amplitud',
@@ -851,6 +941,8 @@
                 helpButton: 'Ayuda',
                 helpClose: 'Cerrar',
                 helpTitle: 'Cómo usar esta app',
+                busyText: 'Calculando...',
+                busyCancel: 'Cancelar',
                 helpSections: [
                     {
                         title: '🔎 La idea central',
@@ -952,7 +1044,8 @@
                 updateBtn: 'Update Plots',
                 timeSignal: 'Time Signal',
                 magnitude: 'Magnitude',
-                phase: 'Phase (Unwrapped)',
+                phase: 'Phase',
+                phaseUnwrapped: 'Phase (Unwrapped)',
                 time: 'Time (s)',
                 frequency: 'Frequency (Hz)',
                 amplitude: 'Amplitude',
@@ -960,6 +1053,8 @@
                 helpButton: 'Help',
                 helpClose: 'Close',
                 helpTitle: 'How to use this app',
+                busyText: 'Calculating...',
+                busyCancel: 'Cancel',
                 helpSections: [
                     {
                         title: '🔎 The main idea',
@@ -1061,7 +1156,8 @@
                 updateBtn: 'Mettre à jour',
                 timeSignal: 'Signal Temporel',
                 magnitude: 'Module',
-                phase: 'Phase (Déroulée)',
+                phase: 'Phase',
+                phaseUnwrapped: 'Phase (Déroulée)',
                 time: 'Temps (s)',
                 frequency: 'Fréquence (Hz)',
                 amplitude: 'Amplitude',
@@ -1069,6 +1165,8 @@
                 helpButton: 'Aide',
                 helpClose: 'Fermer',
                 helpTitle: 'Comment utiliser cette app',
+                busyText: 'Calcul...',
+                busyCancel: 'Annuler',
                 helpSections: [
                     {
                         title: '🔎 L’idée principale',
@@ -1251,6 +1349,8 @@
             document.getElementById('interface-title').textContent = t.interfaceTitle;
             document.getElementById('lang-label').textContent = t.langLabel;
             document.getElementById('theme-label').textContent = t.themeLabel;
+            document.getElementById('busy-text').textContent = t.busyText;
+            document.getElementById('busy-cancel').textContent = t.busyCancel;
             document.getElementById('signal-title').textContent = t.signalTitle;
             document.getElementById('signal-type-label').textContent = t.signalTypeLabel;
             document.getElementById('signal-sine-label').textContent = t.signalSine;
@@ -1263,6 +1363,7 @@
             document.getElementById('signal2-square-label').textContent = t.signalSquare;
             document.getElementById('signal2-triangle-label').textContent = t.signalTriangle;
             document.getElementById('amplitude2-label').textContent = t.amplitudeLabel;
+            document.getElementById('offset2-label').textContent = t.offsetLabel;
             document.getElementById('frequency2-label').textContent = t.frequencyLabel;
             document.getElementById('phase2-input-label').textContent = t.signalPhaseLabel;
             document.getElementById('duty2-label').textContent = t.dutyLabel;
@@ -1339,6 +1440,7 @@
         // Help handling
         document.getElementById('help-btn').addEventListener('click', openHelpModal);
         document.getElementById('help-close').addEventListener('click', closeHelpModal);
+        document.getElementById('busy-cancel').addEventListener('click', cancelPlotUpdate);
         document.getElementById('help-backdrop').addEventListener('click', function(event) {
             if (event.target === this) {
                 closeHelpModal();
@@ -1347,8 +1449,92 @@
         document.addEventListener('keydown', function(event) {
             if (event.key === 'Escape' && !document.getElementById('help-backdrop').hidden) {
                 closeHelpModal();
+            } else if (event.key === 'Escape' && !document.getElementById('busy-backdrop').hidden) {
+                cancelPlotUpdate();
             }
         });
+
+        document.addEventListener('keydown', function(event) {
+            if (document.getElementById('busy-backdrop').hidden) return;
+
+            if (event.key === 'Escape') {
+                cancelPlotUpdate();
+            }
+
+            event.preventDefault();
+            event.stopPropagation();
+        }, true);
+
+        function updateMaxFrequencyFromPrimaryFrequency() {
+            const freq = parseFloat(document.getElementById('frequency').value);
+            if (freq > 0) {
+                document.getElementById('max-freq').value = freq * 20;
+            }
+        }
+
+        function updateFrequencyStep(input) {
+            const value = Math.abs(parseFloat(input.value));
+            if (!Number.isFinite(value) || value < 10) {
+                input.step = '1';
+            } else if (value < 1000) {
+                input.step = '10';
+            } else {
+                input.step = '100';
+            }
+        }
+
+        function updateFrequencySteps() {
+            ['frequency', 'frequency2', 'max-freq'].forEach(id => {
+                updateFrequencyStep(document.getElementById(id));
+            });
+        }
+
+        function attachNumberInputBehavior(id, liveInputCallback = updatePlots) {
+            const input = document.getElementById(id);
+            let arrowAdjustmentPending = false;
+            let pointerAdjustmentUntil = 0;
+
+            input.addEventListener('keydown', event => {
+                if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown'].includes(event.key)) {
+                    if (input.dataset.dynamicStep === 'frequency') {
+                        updateFrequencyStep(input);
+                    }
+                    arrowAdjustmentPending = true;
+                    return;
+                }
+
+                if (event.key === 'Enter') {
+                    liveInputCallback();
+                    if (input.dataset.dynamicStep === 'frequency') {
+                        updateFrequencyStep(input);
+                    }
+                }
+            });
+
+            input.addEventListener('pointerdown', () => {
+                if (input.dataset.dynamicStep === 'frequency') {
+                    updateFrequencyStep(input);
+                }
+                pointerAdjustmentUntil = Date.now() + 350;
+            });
+
+            input.addEventListener('input', event => {
+                const isTextEdit = typeof InputEvent !== 'undefined' && event instanceof InputEvent && event.inputType;
+                if (isTextEdit && /^(insert|delete|history|format)/.test(event.inputType)) {
+                    arrowAdjustmentPending = false;
+                    return;
+                }
+
+                const isPointerAdjustment = Date.now() <= pointerAdjustmentUntil;
+                if (arrowAdjustmentPending || isPointerAdjustment) {
+                    arrowAdjustmentPending = false;
+                    liveInputCallback();
+                    if (input.dataset.dynamicStep === 'frequency') {
+                        updateFrequencyStep(input);
+                    }
+                }
+            });
+        }
 
         // Language handling
         document.querySelectorAll('.lang-btn').forEach(btn => {
@@ -1367,6 +1553,13 @@
         document.getElementById('enable-signal2').addEventListener('change', function() {
             const signal2Controls = document.getElementById('signal2-controls');
             signal2Controls.style.display = this.checked ? 'block' : 'none';
+            if (this.checked) {
+                const frequency = parseFloat(document.getElementById('frequency').value);
+                if (Number.isFinite(frequency) && frequency > 0) {
+                    document.getElementById('frequency2').value = frequency * 3;
+                    updateFrequencyStep(document.getElementById('frequency2'));
+                }
+            }
             updatePlots();
         });
 
@@ -1379,11 +1572,20 @@
             });
         });
 
-        // Update plots when second signal parameters change
-        document.getElementById('phase').addEventListener('input', updatePlots);
+        [
+            'amplitude', 'offset', 'phase', 'duty-cycle', 'cycles', 'max-freq',
+            'amplitude2', 'offset2', 'frequency2', 'phase2', 'duty-cycle2',
+            'noise-level'
+        ].forEach(id => attachNumberInputBehavior(id));
 
-        ['amplitude2', 'frequency2', 'phase2', 'duty-cycle2'].forEach(id => {
-            document.getElementById(id).addEventListener('input', updatePlots);
+        attachNumberInputBehavior('frequency', () => {
+            updateMaxFrequencyFromPrimaryFrequency();
+            updateFrequencySteps();
+            updatePlots();
+        });
+        document.getElementById('frequency').addEventListener('change', () => {
+            updateMaxFrequencyFromPrimaryFrequency();
+            updateFrequencySteps();
         });
 
         // Noise handling
@@ -1392,19 +1594,6 @@
             noiseControls.style.display = this.checked ? 'block' : 'none';
             updatePlots();
         });
-
-        // Update plots when noise level changes
-        document.getElementById('noise-level').addEventListener('input', updatePlots);
-
-        // Update max frequency when frequency changes
-        document.getElementById('frequency').addEventListener('input', function() {
-            const freq = parseFloat(this.value);
-            if (freq > 0) {
-                document.getElementById('max-freq').value = freq * 20;
-            }
-        });
-
-        document.getElementById('cycles').addEventListener('input', updatePlots);
 
         // Advanced mode handling
         document.getElementById('show-advanced').addEventListener('change', function() {
@@ -1484,16 +1673,41 @@
             return Math.abs(phaseDegrees) < PHASE_ZERO_EPSILON_DEGREES ? 0 : phaseDegrees;
         }
 
+        const PLOT_UPDATE_CANCELLED = 'plot-update-cancelled';
+        const CALCULATION_YIELD_INTERVAL = 50000;
+
+        function throwIfPlotUpdateCancelled(job) {
+            if (job && job.cancelled) {
+                throw new Error(PLOT_UPDATE_CANCELLED);
+            }
+        }
+
+        function yieldToBrowser(job) {
+            throwIfPlotUpdateCancelled(job);
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    try {
+                        throwIfPlotUpdateCancelled(job);
+                        resolve();
+                    } catch (error) {
+                        reject(error);
+                    }
+                }, 0);
+            });
+        }
+
         // Calculate FFT (using DFT algorithm optimized for display)
-        function calculateFFT(signal, sampleRate, maxFreq) {
+        async function calculateFFT(signal, sampleRate, maxFreq, job = null) {
             const N = signal.length;
             const freqs = [];
             const magnitudes = [];
             const phases = [];
+            let operationsSinceYield = 0;
 
             const maxBin = Math.min(Math.floor(N / 2), Math.floor(maxFreq * N / sampleRate));
 
             for (let k = 0; k <= maxBin; k++) {
+                throwIfPlotUpdateCancelled(job);
                 const freq = k * sampleRate / N;
                 if (freq > maxFreq) break;
 
@@ -1504,6 +1718,12 @@
                     const angle = -2 * Math.PI * k * n / N;
                     real += signal[n] * Math.cos(angle);
                     imag += signal[n] * Math.sin(angle);
+                    operationsSinceYield++;
+
+                    if (job && job.busyShown && operationsSinceYield >= CALCULATION_YIELD_INTERVAL) {
+                        operationsSinceYield = 0;
+                        await yieldToBrowser(job);
+                    }
                 }
 
                 // Normalize for oscilloscope-like display (RMS for sine waves)
@@ -1511,6 +1731,12 @@
                 const normFactor = 2 / N;
                 real *= normFactor;
                 imag *= normFactor;
+
+                // DC has no negative-frequency pair, so it should keep the mean value.
+                if (k === 0) {
+                    real /= 2;
+                    imag /= 2;
+                }
 
                 const magnitude = Math.sqrt(real * real + imag * imag);
                 
@@ -1532,14 +1758,6 @@
             return {freqs, magnitudes, phases};
         }
 
-        // Update max frequency based on signal frequency
-        document.getElementById('frequency').addEventListener('input', function() {
-            const freq = parseFloat(this.value);
-            if (freq > 0) {
-                document.getElementById('max-freq').value = freq * 20;
-            }
-        });
-
         // Generate time-domain signal
         function generateSignal(type, amplitude, offset, frequency, dutyCycle, duration, sampleRate, phaseDegrees = 0) {
             const numSamples = Math.floor(duration * sampleRate);
@@ -1549,6 +1767,10 @@
             const boundedPhaseDegrees = Number.isFinite(phaseDegrees) ? Math.max(-180, Math.min(180, phaseDegrees)) : 0;
             const phaseOffset = boundedPhaseDegrees * Math.PI / 180;
             const normalizeCyclePosition = value => ((value % 1) + 1) % 1;
+            const isCycleBoundary = (position, boundary) => {
+                const distance = Math.abs(position - boundary);
+                return distance < 1e-12 || Math.abs(distance - 1) < 1e-12;
+            };
 
             for (let i = 0; i < numSamples; i++) {
                 const phase = 2 * Math.PI * frequency * t[i] + phaseOffset;
@@ -1560,7 +1782,12 @@
                         break;
                     case 'square':
                         const cyclePosition = normalizeCyclePosition(phase / (2 * Math.PI));
-                        value = cyclePosition < (dutyCycle / 100) ? amp : -amp;
+                        const dutyPosition = dutyCycle / 100;
+                        if (isCycleBoundary(cyclePosition, 0) || isCycleBoundary(cyclePosition, dutyPosition)) {
+                            value = 0;
+                        } else {
+                            value = cyclePosition < dutyPosition ? amp : -amp;
+                        }
                         break;
                     case 'triangle':
                         const trianglePhase = normalizeCyclePosition(phase / (2 * Math.PI));
@@ -1592,11 +1819,12 @@
         }
 
         // Calculate Fourier Series
-        function calculateFourierSeries(signal, sampleRate, maxFreq, fundamentalFreq) {
+        async function calculateFourierSeries(signal, sampleRate, maxFreq, fundamentalFreq, job = null) {
             const N = signal.length;
             const freqs = [];
             const magnitudes = [];
             const phases = [];
+            let operationsSinceYield = 0;
 
             // Calculate up to maxFreq
             const maxHarmonic = Math.floor(maxFreq / fundamentalFreq);
@@ -1605,6 +1833,7 @@
             const samplesPerPeriod = Math.round(sampleRate / fundamentalFreq);
 
             for (let k = 0; k <= maxHarmonic; k++) {
+                throwIfPlotUpdateCancelled(job);
                 const freq = k * fundamentalFreq;
                 if (freq > maxFreq) break;
 
@@ -1620,6 +1849,12 @@
                     const angle = 2 * Math.PI * k * n / samplesPerPeriod;
                     real += signal[n] * Math.cos(angle);
                     imag += signal[n] * Math.sin(angle);
+                    operationsSinceYield++;
+
+                    if (job && job.busyShown && operationsSinceYield >= CALCULATION_YIELD_INTERVAL) {
+                        operationsSinceYield = 0;
+                        await yieldToBrowser(job);
+                    }
                 }
 
                 real *= 2 / samplesToUse;
@@ -1751,8 +1986,221 @@
             );
         }
 
-        // Update plots
+        let plotUpdateScheduled = false;
+        let plotUpdateRunning = false;
+        let plotUpdateRequested = false;
+        let activePlotJob = null;
+        let plotUpdateFrameId = null;
+        let plotUpdateTimeoutId = null;
+        let lastRenderedControlState = null;
+        const BUSY_WORK_THRESHOLD = 100000;
+
+        function captureFocusState() {
+            const element = document.activeElement;
+            if (!element || element === document.body) return null;
+
+            const state = {element};
+            try {
+                if (
+                    typeof element.selectionStart === 'number' &&
+                    typeof element.selectionEnd === 'number'
+                ) {
+                    state.selectionStart = element.selectionStart;
+                    state.selectionEnd = element.selectionEnd;
+                    state.selectionDirection = element.selectionDirection;
+                }
+            } catch (error) {
+                // Some input types, such as number, do not expose text selection.
+            }
+
+            return state;
+        }
+
+        function restoreFocusState(state) {
+            if (!state || !state.element || !document.contains(state.element)) return;
+
+            state.element.focus({preventScroll: true});
+            if (
+                typeof state.selectionStart === 'number' &&
+                typeof state.element.setSelectionRange === 'function'
+            ) {
+                state.element.setSelectionRange(
+                    state.selectionStart,
+                    state.selectionEnd,
+                    state.selectionDirection || 'none'
+                );
+            }
+        }
+
+        function setBusyState(isBusy) {
+            document.getElementById('busy-backdrop').hidden = !isBusy;
+            document.body.classList.toggle('is-busy', isBusy);
+        }
+
+        function captureControlState() {
+            return Array.from(document.querySelectorAll('.sidebar input, .sidebar select')).map(element => ({
+                id: element.id,
+                type: element.type,
+                value: element.value,
+                checked: element.checked
+            }));
+        }
+
+        function restoreControlState(state) {
+            if (!state) return;
+
+            state.forEach(item => {
+                const element = document.getElementById(item.id);
+                if (!element) return;
+
+                if (item.type === 'checkbox' || item.type === 'radio') {
+                    element.checked = item.checked;
+                } else {
+                    element.value = item.value;
+                }
+            });
+
+            const signal2Controls = document.getElementById('signal2-controls');
+            signal2Controls.style.display = document.getElementById('enable-signal2').checked ? 'block' : 'none';
+            const noiseControls = document.getElementById('noise-controls');
+            noiseControls.style.display = document.getElementById('enable-noise').checked ? 'block' : 'none';
+            const advancedSection = document.getElementById('advanced-section');
+            advancedSection.style.display = document.getElementById('show-advanced').checked ? 'block' : 'none';
+            const isFFT = document.getElementById('analysis-type').value === 'fft';
+            document.getElementById('window-group').style.display = isFFT ? 'block' : 'none';
+            document.getElementById('continuous-mode').disabled = !isFFT;
+        }
+
+        function cancelPlotUpdate() {
+            if (activePlotJob) {
+                activePlotJob.cancelled = true;
+            }
+
+            plotUpdateRequested = false;
+
+            if (plotUpdateScheduled && !plotUpdateRunning) {
+                if (plotUpdateFrameId !== null) {
+                    cancelAnimationFrame(plotUpdateFrameId);
+                }
+                if (plotUpdateTimeoutId !== null) {
+                    clearTimeout(plotUpdateTimeoutId);
+                }
+                plotUpdateScheduled = false;
+                activePlotJob = null;
+            }
+
+            restoreControlState(lastRenderedControlState);
+            setBusyState(false);
+        }
+
+        function shouldShowBusyForCurrentUpdate() {
+            const frequency = parseFloat(document.getElementById('frequency').value);
+            const cycles = parseFloat(document.getElementById('cycles').value);
+            const maxFreq = parseFloat(document.getElementById('max-freq').value);
+            if (![frequency, cycles, maxFreq].every(Number.isFinite) || frequency <= 0) {
+                return false;
+            }
+
+            const showAdvanced = document.getElementById('show-advanced').checked;
+            const analysisType = showAdvanced ? document.getElementById('analysis-type').value : 'fourier';
+            const enableSignal2 = document.getElementById('enable-signal2').checked;
+            const frequency2 = enableSignal2 ? parseFloat(document.getElementById('frequency2').value) : 0;
+            const highestSignalFrequency = Math.max(frequency, Number.isFinite(frequency2) ? frequency2 : 0);
+            const duration = cycles / frequency;
+            const analysisSampleRate = maxFreq * 10;
+            const displaySampleRate = highestSignalFrequency * 200;
+            const sampleRate = Math.max(analysisSampleRate, displaySampleRate);
+            const sampleCount = Math.max(0, Math.floor(duration * sampleRate));
+
+            if (analysisType === 'fft') {
+                const maxBin = Math.min(
+                    Math.floor(sampleCount / 2),
+                    Math.floor(maxFreq * sampleCount / sampleRate)
+                );
+                return sampleCount * Math.max(1, maxBin + 1) > BUSY_WORK_THRESHOLD;
+            }
+
+            const harmonicCount = Math.floor(maxFreq / frequency) + 1;
+            return sampleCount * Math.max(1, harmonicCount) > BUSY_WORK_THRESHOLD;
+        }
+
         function updatePlots() {
+            if (plotUpdateScheduled) {
+                return;
+            }
+
+            if (plotUpdateRunning) {
+                plotUpdateRequested = true;
+                return;
+            }
+
+            plotUpdateScheduled = true;
+            plotUpdateRequested = false;
+            const busyShown = shouldShowBusyForCurrentUpdate();
+            const focusState = busyShown ? captureFocusState() : null;
+            const job = {
+                cancelled: false,
+                controlState: captureControlState(),
+                focusState,
+                busyShown
+            };
+            activePlotJob = job;
+
+            if (busyShown) {
+                setBusyState(true);
+            }
+
+            plotUpdateFrameId = requestAnimationFrame(() => {
+                plotUpdateFrameId = null;
+                plotUpdateTimeoutId = setTimeout(() => {
+                    plotUpdateTimeoutId = null;
+                    plotUpdateScheduled = false;
+                    plotUpdateRunning = true;
+
+                    const finishPlotUpdate = (error = null) => {
+                        plotUpdateRunning = false;
+                        if (job.busyShown) {
+                            setBusyState(false);
+                            restoreFocusState(job.focusState);
+                        }
+
+                        if (error && error.message === PLOT_UPDATE_CANCELLED) {
+                            restoreControlState(lastRenderedControlState);
+                        } else if (!error) {
+                            lastRenderedControlState = captureControlState();
+                        }
+
+                        if (activePlotJob === job) {
+                            activePlotJob = null;
+                        }
+
+                        if (plotUpdateRequested) {
+                            updatePlots();
+                        }
+                    };
+
+                    try {
+                        Promise.resolve(renderPlots(job))
+                            .then(() => finishPlotUpdate())
+                            .catch(error => {
+                                finishPlotUpdate(error);
+                                if (error.message !== PLOT_UPDATE_CANCELLED) {
+                                    throw error;
+                                }
+                            });
+                    } catch (error) {
+                        finishPlotUpdate(error);
+                        if (error.message !== PLOT_UPDATE_CANCELLED) {
+                            throw error;
+                        }
+                    }
+                }, 0);
+            });
+        }
+
+        // Update plots
+        async function renderPlots(job = null) {
+            throwIfPlotUpdateCancelled(job);
             const t = translations[currentLang];
             const signalType = document.querySelector('input[name="signal-type"]:checked').value;
             const amplitude = parseFloat(document.getElementById('amplitude').value);
@@ -1788,11 +2236,12 @@
             if (enableSignal2) {
                 const signalType2 = document.querySelector('input[name="signal-type2"]:checked').value;
                 const amplitude2 = parseFloat(document.getElementById('amplitude2').value);
+                const offset2 = parseFloat(document.getElementById('offset2').value);
                 const phase2 = parseFloat(document.getElementById('phase2').value);
                 const dutyCycle2 = parseFloat(document.getElementById('duty-cycle2').value);
                 
-                // Generate second signal (no offset for second signal, it adds to the first)
-                const {signal: signal2} = generateSignal(signalType2, amplitude2, 0, frequency2, dutyCycle2, duration, sampleRate, phase2);
+                // Generate second signal and add it to the first signal.
+                const {signal: signal2} = generateSignal(signalType2, amplitude2, offset2, frequency2, dutyCycle2, duration, sampleRate, phase2);
                 
                 // Add second signal to first signal
                 for (let i = 0; i < signal.length; i++) {
@@ -1819,21 +2268,24 @@
             if (isFFT) {
                 // Apply window
                 signal = applyWindow(signal, windowType);
+                throwIfPlotUpdateCancelled(job);
                 
                 // Calculate FFT
-                const fftResult = calculateFFT(signal, sampleRate, maxFreq);
+                const fftResult = await calculateFFT(signal, sampleRate, maxFreq, job);
                 freqs = fftResult.freqs;
                 magnitudes = fftResult.magnitudes;
                 phases = fftResult.phases;
             } else {
                 // Calculate Fourier series (original behavior)
-                const fourierResult = calculateFourierSeries(signal, sampleRate, maxFreq, frequency);
+                const fourierResult = await calculateFourierSeries(signal, sampleRate, maxFreq, frequency, job);
                 freqs = fourierResult.freqs;
                 magnitudes = fourierResult.magnitudes;
                 phases = fourierResult.phases;
             }
 
-            const unwrappedPhases = unwrapPhase(phases);
+            throwIfPlotUpdateCancelled(job);
+            const phaseData = isFFT ? unwrapPhase(phases) : phases;
+            const phaseTitle = isFFT ? t.phaseUnwrapped : t.phase;
 
             // Prepare magnitude data
             const magData = yScale === 'db' ? toDecibels(magnitudes, continuousMode) : magnitudes;
@@ -1849,7 +2301,8 @@
             const magnitudeHoverUnit = yScale === 'db' ? ' dB' : ' V';
             const frequencyHoverTemplate = `%{x:${PLOT_NUMBER_FORMAT}} Hz<br>%{y:${PLOT_NUMBER_FORMAT}}${magnitudeHoverUnit}<extra>%{fullData.name}</extra>`;
             const timeHoverTemplate = `%{x:${PLOT_NUMBER_FORMAT}} s<br>%{y:${PLOT_NUMBER_FORMAT}} V<extra>${t.timeSignal}</extra>`;
-            const phaseHoverTemplate = `%{x:${PLOT_NUMBER_FORMAT}} Hz<br>%{y:${PLOT_NUMBER_FORMAT}}°<extra>${t.phase}</extra>`;
+            const phaseHoverTemplate = `%{x:${PLOT_NUMBER_FORMAT}} Hz<br>%{y:${PLOT_NUMBER_FORMAT}}°<extra>${phaseTitle}</extra>`;
+            const plotPromises = [];
 
             const layout = {
                 paper_bgcolor: plotBg,
@@ -1887,7 +2340,7 @@
                     yaxis: {...layout.yaxis, title: t.amplitude + ' (V)'}
                 };
 
-                Plotly.newPlot('plot1', [trace1], layout1, {responsive: true});
+                plotPromises.push(Plotly.newPlot('plot1', [trace1], layout1, {responsive: true}));
 
                 // Plot 2: Magnitude spectrum (stems)
                 const trace2 = {
@@ -1927,7 +2380,7 @@
                     yaxis: {...layout.yaxis, title: yAxisTitle}
                 };
 
-                Plotly.newPlot('plot2', [trace2, ...stemTraces], layout2, {responsive: true});
+                plotPromises.push(Plotly.newPlot('plot2', [trace2, ...stemTraces], layout2, {responsive: true}));
 
             } else {
                 // Plot 1: Time-domain signal in the left column
@@ -1948,7 +2401,7 @@
                     yaxis: {...layout.yaxis, title: t.amplitude + ' (V)'}
                 };
 
-                Plotly.newPlot('plot1', [trace1], layout1, {responsive: true});
+                plotPromises.push(Plotly.newPlot('plot1', [trace1], layout1, {responsive: true}));
 
                 // Plot 2: Magnitude spectrum in the upper-right row
                 const trace2 = {
@@ -1987,15 +2440,15 @@
                     yaxis: {...layout.yaxis, title: yAxisTitle}
                 };
 
-                Plotly.newPlot('plot2', [trace2, ...stemTraces2], layout2, {responsive: true});
+                plotPromises.push(Plotly.newPlot('plot2', [trace2, ...stemTraces2], layout2, {responsive: true}));
 
                 // Plot 3: Phase spectrum in the lower-right row
                 const trace3 = {
                     x: freqs,
-                    y: unwrappedPhases,
+                    y: phaseData,
                     type: 'scatter',
                     mode: (isFFT && continuousMode) ? 'lines' : 'markers',
-                    name: t.phase,
+                    name: phaseTitle,
                     hovertemplate: phaseHoverTemplate,
                     marker: {
                         color: phaseColor,
@@ -2011,7 +2464,7 @@
                 // Add stems (only if not in continuous mode)
                 const stemTraces3 = (isFFT && continuousMode) ? [] : freqs.map((f, i) => ({
                     x: [f, f],
-                    y: [0, unwrappedPhases[i]],
+                    y: [0, phaseData[i]],
                     type: 'scatter',
                     mode: 'lines',
                     line: {color: phaseColor, width: 2},
@@ -2021,14 +2474,16 @@
 
                 const layout3 = {
                     ...layout,
-                    title: t.phase,
+                    title: phaseTitle,
                     xaxis: {...layout.xaxis, title: t.frequency},
                     yaxis: {...layout.yaxis, title: t.phaseUnit}
                 };
 
-                Plotly.newPlot('plot3', [trace3, ...stemTraces3], layout3, {responsive: true});
-                linkSpectrumAxes();
+                plotPromises.push(Plotly.newPlot('plot3', [trace3, ...stemTraces3], layout3, {responsive: true}));
+                Promise.all(plotPromises).then(linkSpectrumAxes);
             }
+
+            return Promise.all(plotPromises);
         }
 
         // Initial plot
@@ -2042,6 +2497,7 @@
         
         // Initialize continuous mode as disabled (only enabled for FFT)
         document.getElementById('continuous-mode').disabled = true;
+        updateFrequencySteps();
 
         // Auto-update on any input change
         document.querySelectorAll('input, select').forEach(element => {
