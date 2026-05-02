@@ -79,6 +79,7 @@ body{font-family:var(--font-ui);font-size:15px;background:var(--bg);color:var(--
 .tp-guides-menu.open .tp-guides-dropdown{display:flex;flex-direction:column;gap:4px}
 .tp-guide-option{width:100%;border:1px solid transparent;background:transparent;color:var(--text);border-radius:var(--r-sm);padding:9px 10px;text-align:left;font:600 13px var(--font-ui);cursor:pointer}
 .tp-guide-option:hover:not(:disabled){background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
+.tp-guide-option.active:not(:disabled){background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
 .tp-guide-option:disabled{color:var(--text3);cursor:not-allowed;opacity:.65}
 .topbar-actions{display:flex;gap:9px}
 .icon-btn{width:36px;height:36px;border:1px solid var(--border);background:var(--card);border-radius:var(--r-sm);cursor:pointer;font-size:15px;color:var(--text);display:flex;align-items:center;justify-content:center;transition:all var(--tr)}
@@ -374,8 +375,8 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
         </button>
         <div class="tp-guides-dropdown" role="menu" aria-label="Guides TP">
           <button class="tp-guide-option" type="button" disabled id="t_tp_discovery">TP Découverte</button>
-          <button class="tp-guide-option" type="button" data-guide-tab="tp" id="t_tp_part1">TP pendule - Partie 1</button>
-          <button class="tp-guide-option" type="button" disabled id="t_tp_part2">TP pendule - Partie 2</button>
+          <button class="tp-guide-option" type="button" data-guide-tab="tp" data-guide-id="part1" id="t_tp_part1">TP pendule - Partie 1</button>
+          <button class="tp-guide-option" type="button" data-guide-tab="tp" data-guide-id="part2" id="t_tp_part2">TP pendule - Partie 2</button>
         </div>
       </div>
     </nav>
@@ -1866,6 +1867,7 @@ if(tpGuidesMenu&&tpGuidesBtn){
     btn.addEventListener('click',()=>{
       tpGuidesMenu.classList.remove('open');
       tpGuidesBtn.setAttribute('aria-expanded','false');
+      if(btn.dataset.guideId&&window.setTpGuide)window.setTpGuide(btn.dataset.guideId);
       openTab(btn.dataset.guideTab);
     });
   });
@@ -2988,6 +2990,85 @@ function nelderMead(cost,x0,opts={}){
 }
 
 // ============================================================
+// LEVENBERG-MARQUARDT OPTIMIZER
+// ============================================================
+// Minimizes 0.5 * sum(r_i^2) where residuals(x) -> array of length m.
+// Uses finite-difference Jacobian. Returns {x, cost (= sum r^2 / m, MSE), iter}.
+function levenbergMarquardt(residuals,x0,opts={}){
+  const{maxIter=100,tol=1e-9,lambda0=1e-3,lambdaUp=10,lambdaDown=10,fdEps=1e-6}=opts;
+  const n=x0.length;
+  let x=x0.slice();
+  let r=residuals(x);
+  if(!r||!r.length)return{x,cost:Infinity,iter:0};
+  const m=r.length;
+  const cost=rr=>{let s=0;for(let i=0;i<rr.length;i++)s+=rr[i]*rr[i];return s/rr.length;}
+  let f=cost(r);
+  let lambda=lambda0;
+  let iter=0;
+  for(;iter<maxIter;iter++){
+    // Finite-difference Jacobian J (m x n)
+    const J=Array.from({length:m},()=>new Array(n).fill(0));
+    for(let j=0;j<n;j++){
+      const h=Math.max(Math.abs(x[j])*fdEps,fdEps);
+      const xp=x.slice();xp[j]+=h;
+      const rp=residuals(xp);
+      if(!rp||rp.length!==m){return{x,cost:f,iter};}
+      for(let i=0;i<m;i++)J[i][j]=(rp[i]-r[i])/h;
+    }
+    // Build A = JᵀJ + λ·diag(JᵀJ), b = -Jᵀr
+    const A=Array.from({length:n},()=>new Array(n).fill(0));
+    const b=new Array(n).fill(0);
+    for(let j=0;j<n;j++){
+      for(let k=0;k<n;k++){
+        let s=0;for(let i=0;i<m;i++)s+=J[i][j]*J[i][k];
+        A[j][k]=s;
+      }
+      let s=0;for(let i=0;i<m;i++)s+=J[i][j]*r[i];
+      b[j]=-s;
+    }
+    // Damping on diagonal
+    const Adamp=A.map((row,i)=>row.map((v,k)=>k===i?v+lambda*v:v));
+    // Solve Adamp · dx = b via Gaussian elimination (n is tiny)
+    const dx=solveLinear(Adamp,b);
+    if(!dx){lambda*=lambdaUp;if(lambda>1e12)break;continue;}
+    const xNew=x.map((v,i)=>v+dx[i]);
+    const rNew=residuals(xNew);
+    if(!rNew||rNew.length!==m){lambda*=lambdaUp;if(lambda>1e12)break;continue;}
+    const fNew=cost(rNew);
+    if(fNew<f){
+      const rel=(f-fNew)/(Math.abs(f)+1e-30);
+      x=xNew;r=rNew;f=fNew;
+      lambda=Math.max(lambda/lambdaDown,1e-12);
+      if(rel<tol)break;
+    }else{
+      lambda*=lambdaUp;
+      if(lambda>1e12)break;
+    }
+  }
+  return{x,cost:f,iter};
+}
+// Tiny Gaussian elimination with partial pivoting for n x n.
+function solveLinear(A,b){
+  const n=A.length;
+  const M=A.map((row,i)=>row.concat([b[i]]));
+  for(let i=0;i<n;i++){
+    let p=i;for(let k=i+1;k<n;k++)if(Math.abs(M[k][i])>Math.abs(M[p][i]))p=k;
+    if(Math.abs(M[p][i])<1e-15)return null;
+    if(p!==i){const t=M[i];M[i]=M[p];M[p]=t;}
+    for(let k=i+1;k<n;k++){
+      const f=M[k][i]/M[i][i];
+      for(let j=i;j<=n;j++)M[k][j]-=f*M[i][j];
+    }
+  }
+  const x=new Array(n);
+  for(let i=n-1;i>=0;i--){
+    let s=M[i][n];for(let j=i+1;j<n;j++)s-=M[i][j]*x[j];
+    x[i]=s/M[i][i];
+  }
+  return x;
+}
+
+// ============================================================
 // ANALYSIS ①: SINUSOIDAL FIT
 // ============================================================
 function sinDecay(t,A,omega,theta,phi,B){return A*Math.exp(-theta*t)*Math.sin(omega*t-phi)+B;}
@@ -3872,11 +3953,6 @@ function _runSysId(data){
   }
   const tObs=time;
   const angObs=angle;
-  // Initial guess for L. The damping parameter is alpha = b/(mL²), so it is
-  // identifiable from theta(t) without knowing the mass.
-  const Lg=parseFloat(document.getElementById('sl_L').value)||0.5;
-  const alphaG=1;
-  const x0=[alphaG,Lg];
   const simulateAtObs=(params)=>{
     const simA=[];
     let y=[deg2rad(theta0),deg2rad(om0)];
@@ -3904,7 +3980,57 @@ function _runSysId(data){
     for(let i=0;i<n;i++){const r=simA[i]-angObs[i];s+=r*r;}
     return s/n;
   };
-  const{x:[alpha_id,L_id]}=nelderMead(cost,x0,{maxIter:3000,tol:1e-8});
+  const residuals=([alpha,L])=>{
+    if(alpha<0||alpha>200||L<=0||L>3)return null;
+    const params={b:alpha*L*L,M:1,L};
+    const simA=simulateAtObs(params);
+    const r=new Array(angObs.length);
+    for(let i=0;i<r.length;i++)r[i]=simA[i]-angObs[i];
+    return r;
+  };
+  // ── Smart seed from data: L from observed period, alpha from log-decrement ──
+  const Lg_slider=parseFloat(document.getElementById('sl_L').value)||0.5;
+  const meanA=angObs.reduce((a,b)=>a+b,0)/angObs.length;
+  const det=angObs.map(a=>a-meanA);
+  const cross=[];
+  for(let i=1;i<det.length;i++){
+    if(det[i-1]<=0&&det[i]>0){
+      const f=det[i-1]/(det[i-1]-det[i]);
+      cross.push(tObs[i-1]+f*(tObs[i]-tObs[i-1]));
+    }
+  }
+  let T_obs=null;
+  if(cross.length>=2){
+    const dts=[];for(let i=1;i<cross.length;i++)dts.push(cross[i]-cross[i-1]);
+    dts.sort((a,b)=>a-b);T_obs=dts[Math.floor(dts.length/2)];
+  }
+  let L0=Lg_slider;
+  if(T_obs&&T_obs>0.05&&T_obs<10){
+    L0=g*T_obs*T_obs/(4*Math.PI*Math.PI);
+    L0=Math.min(Math.max(L0,0.05),3);
+  }
+  let alpha0=1;
+  if(T_obs){
+    const peaks=[];
+    for(let i=1;i<det.length-1;i++){
+      const a=Math.abs(det[i]);
+      if(a>Math.abs(det[i-1])&&a>Math.abs(det[i+1]))peaks.push({t:tObs[i],a});
+    }
+    if(peaks.length>=2){
+      const p0=peaks[0],pN=peaks[peaks.length-1];
+      if(pN.t>p0.t&&p0.a>0&&pN.a>0&&pN.a<p0.a){
+        const a=2*Math.log(p0.a/pN.a)/(pN.t-p0.t);
+        if(Number.isFinite(a)&&a>0)alpha0=Math.min(Math.max(a,1e-3),50);
+      }
+    }
+  }
+  const x0=[alpha0,L0];
+  // Race two optimizers from the same seed; keep the lower-MSE result.
+  const nmRes=nelderMead(cost,x0,{maxIter:3000,tol:1e-8});
+  const lmRes=levenbergMarquardt(residuals,x0,{maxIter:60,tol:1e-9});
+  const nmCost=Number.isFinite(nmRes.cost)?nmRes.cost:cost(nmRes.x);
+  const lmCost=Number.isFinite(lmRes.cost)?cost(lmRes.x):Infinity;
+  const[alpha_id,L_id]=lmCost<nmCost?lmRes.x:nmRes.x;
   // Final simulation with identified params
   const idParams={b:alpha_id*L_id*L_id,M:1,L:L_id};
   const res=integratePendulum(theta0,om0,idParams,tObs[tObs.length-1],0.005);

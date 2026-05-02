@@ -1,5 +1,7 @@
 (function(){
   const TP_STORAGE_KEY='pendulum_tp_progress_v1';
+  const TP_DEFAULT_GUIDE='part1';
+  const TP_GUIDE_IDS=['part1','part2'];
   const TP_ALLOW_STEP_SKIP=false;
 
   const MODEL_CODE=`model PendulumTP
@@ -331,6 +333,231 @@ end PeriodMeter;`;
             {label:'Open OpenModelica viewer',href:'./../openmodelica-viewer/index.html'}
           ]
         }
+      ],
+      part2Steps:[
+        {
+          id:'p2-block-diagram',
+          requiresValidation:true,
+          title:'Pendulum model as a block diagram',
+          kicker:'Part 2 - Step 1',
+          subtitle:'Build the block diagram with a clear notation for nonlinear blocks.',
+          intro:[
+            {html:'Draw the block diagram of the pendulum model from the equations obtained in Part 1.'},
+            {html:'If a block is nonlinear, use the <strong>double-frame block notation</strong> so that nonlinear parts are immediately visible.'}
+          ],
+          instructions:[
+            {html:'Include the torque sum, the inertia term, the two integrators, and the feedback paths using <strong>θ</strong> and <strong>ω</strong>.'},
+            {html:'Mark the <strong>sin(θ)</strong> block as nonlinear with a double frame.'}
+          ],
+          questions:[
+            {type:'qcm',id:'p2_db_integrators',label:'In the block diagram, what is the role of the two integrators?',options:[
+              ['chain','They transform angular acceleration into angular velocity, then angular velocity into angle.'],
+              ['filter','They only remove sensor noise from the measured signal.'],
+              ['gain','They multiply the angle by g/L.'],
+              ['trigger','They detect zero crossings to measure the period.']
+            ],answer:'chain'},
+            {type:'qcm',id:'p2_db_nonlinear',label:'Which block makes the complete pendulum model nonlinear?',options:[
+              ['sin','The sin(θ) block in the gravity feedback path.'],
+              ['integrator','The integrators, because integration is always nonlinear.'],
+              ['sum','The summing junction, because it has several inputs.'],
+              ['scope','The plotting or visualization block.']
+            ],answer:'sin'}
+          ],
+          success:'Correct. The diagram and the equations tell the same story: torques create angular acceleration, integration creates motion, and feedback closes the loop.',
+          resources:[]
+        },
+        {
+          id:'p2-energy',
+          requiresValidation:true,
+          missionProse:true,
+          missionFirst:true,
+          title:'Energy in the pendulum model',
+          kicker:'Part 2 - Step 2',
+          subtitle:'Build the kinetic, potential, and total mechanical energy step by step.',
+          introTitle:'Deriving the energy formulas',
+          intro:[
+            {html:'Before extending the diagram, let us reconstruct the energy expressions step by step. For a point mass:'},
+            {math:String.raw`E_c=\tfrac{1}{2}m\,v^2\qquad E_p=m\,g\,h`},
+            {html:'In a pendulum the mass does not move along a straight line; it moves on an arc. To use these formulas you first need to identify <strong>(1)</strong> the tangential velocity <em>v</em> when the angle changes with angular velocity <em>ω</em>, and <strong>(2)</strong> how high the mass rises when the rod makes an angle <em>θ</em>, taking the lowest position as the reference (h = 0).'},
+            {html:'Hint — for a point on a rigid arm of length <em>r</em> rotating around a pivot, the arc length travelled is:'},
+            {math:String.raw`s=r\cdot\theta`},
+            {html:'The tangential velocity is the time derivative of that arc length, <em>v</em><sub>t</sub> = d<em>s</em>/d<em>t</em>. For the height <em>h</em>, look at the pendulum geometry and apply basic trigonometry.'},
+            {html:'Once you have <em>v</em> and <em>h</em>, the total mechanical energy is simply the sum:'},
+            {math:String.raw`E_m=E_c+E_p`}
+          ],
+          instructions:[
+            {html:'Goal: starting from the OpenModelica block diagram you already built (with <em>θ</em> and <em>ω</em>), <strong>extend it by adding the blocks needed</strong> to compute the kinetic energy <em>E<sub>c</sub></em>, the potential energy <em>E<sub>p</sub></em> and the total mechanical energy <em>E<sub>m</sub></em>. Then <strong>simulate the system and analyse how <em>E<sub>c</sub></em>, <em>E<sub>p</sub></em> and <em>E<sub>m</sub></em> evolve over time</strong> for <em>b</em> = 0, a small <em>b</em>, and a large <em>b</em>.'}
+          ],
+          questions:[
+            {type:'qcm',id:'p2_energy_extrema',label:'During the oscillation, what happens with the maxima and minima of Ec and Ep?',options:[
+              ['together','Ec and Ep reach their maxima at the same instant.'],
+              ['ec_bigger','Ec is always larger than Ep throughout the motion.'],
+              ['exchange','When Ec reaches a maximum, Ep reaches a minimum (and vice versa): the energy is exchanged between the two.'],
+              ['constant','Ec and Ep are always constant: they have no maxima or minima.']
+            ],answer:'exchange'},
+            {type:'qcm',id:'p2_energy_b_zero',label:'What happens to the total mechanical energy Em if b = 0?',options:[
+              ['grows','It grows over time.'],
+              ['conserved','It is conserved (constant in time), exchanging back and forth between kinetic and potential.'],
+              ['decays','It decays exponentially.'],
+              ['zero','It is always zero.']
+            ],answer:'conserved'},
+            {type:'qcm',id:'p2_energy_b_positive',label:'What happens to the total mechanical energy Em if b > 0?',options:[
+              ['constant','It stays constant, just like with b = 0.'],
+              ['grows','It grows because b injects energy.'],
+              ['random','It becomes random.'],
+              ['decreases','It decreases over time because damping dissipates energy.']
+            ],answer:'decreases'}
+          ],
+          success:{html:'Correct. Kinetic and potential energy alternate (one is at a maximum when the other is at a minimum) for any value of <em>b</em>. With <em>b</em> = 0 the total <em>E<sub>m</sub></em> = <em>E<sub>c</sub></em> + <em>E<sub>p</sub></em> stays constant; with <em>b</em> &gt; 0, damping dissipates energy and <em>E<sub>m</sub></em> decreases over time.'},
+          resources:[]
+        },
+        {
+          id:'p2-paper-damper',
+          requiresValidation:true,
+          title:'Paper brake accessory',
+          kicker:'Part 2 - Step 3',
+          subtitle:'Compare a small and a large paper surface.',
+          instructions:[
+            'Use the pendulum accessory that holds a paper sheet, if it is available.',
+            'Test two cases: a small sheet area and a large sheet area.',
+            'Record or observe how quickly the oscillation amplitude decays in both cases.'
+          ],
+          questions:[
+            {type:'qcm',id:'p2_paper_decay',label:'What should happen with a larger paper sheet?',options:[
+              ['slower','The amplitude should decay more slowly because the sheet stores energy.'],
+              ['same','The decay should be exactly the same as with a small sheet.'],
+              ['faster','The amplitude should decay faster because air drag is larger.'],
+              ['period_zero','The period becomes zero.']
+            ],answer:'faster'},
+            {type:'qcm',id:'p2_paper_model',label:'In the simplified viscous model, which parameter mostly represents this effect?',options:[
+              ['g','The gravitational acceleration g.'],
+              ['theta0','Only the initial angle θ(0).'],
+              ['time','The simulation final time.'],
+              ['b','The damping coefficient b.']
+            ],answer:'b'}
+          ],
+          success:'Correct. A larger sheet increases the aerodynamic braking effect, so the oscillation loses energy faster.',
+          resources:[{label:'Open Acquisition',tab:'acq'}]
+        },
+        {
+          id:'p2-sinusoidal-fit',
+          requiresValidation:true,
+          title:'Sinusoidal fit',
+          kicker:'Part 2 - Step 4',
+          subtitle:'Fit the recorded motion with a damped sinusoid.',
+          intro:[
+            {html:'In this step, we will fit experimental data to a mathematical model. "Fitting" means finding the constant values (parameters) of an equation so that the resulting curve matches your real-world measurements as closely as possible.'},
+            {html:'The model we use is an <strong>exponentially decaying sinusoid</strong>:'},
+            {math:String.raw`\theta(t) = A \cdot e^{-\delta t} \cdot \sin(\omega t - \phi) + B`},
+            {html:'This choice is not accidental and has a physical reason that the teacher will explain during the lab session (ask them!). Specifically, the parameters of this function are related to the physical parameters of the pendulum (mass, friction coefficient, L, gravity).'},
+            {html:'However, this formula is an approximation and might not adapt perfectly to the entire range of oscillation.'},
+            {html:'<strong>Objective:</strong> Determine in which region (large angles or small angles) the mathematical model describes reality more accurately.'},
+            {html:'To measure the "fidelity" of the model, we use the <strong>R² (R-squared)</strong> coefficient. A detailed explanation is available by clicking the [?] button next to the R² value in the analysis tool.'}
+          ],
+          instructions:[
+            'Load your experimental CSV or use current acquisition data.',
+            'Open the "Sinusoidal fit" analysis tool.',
+            'Try fitting the curve in different zones: first at the beginning (large angles) and then later (small angles).',
+            'Compare the R² values and pay attention to how well the envelope follows the peaks in both cases.',
+            'Open the R² help modal if needed before answering.'
+          ],
+          questions:[
+            {type:'qcm',id:'p2_fit_small_angle',label:'In which range of angles did you obtain a better fit (higher R²)?',options:[
+              ['large','Large angles (at the start of the recording).'],
+              ['inter','Only intermediate angles (between 60° and 45°).'],
+              ['small','Small angles (towards the end of the recording).'],
+              ['mixed','Large oscillations and small ones (under 10°), but it fails in the intermediate range.']
+            ],answer:'small'},
+            {type:'qcm',id:'p2_fit_r2',label:'If the fit has a high R² and the residuals stay small over the selected window, what can we conclude?',options:[
+              ['exact_global','The same fit is guaranteed to describe all amplitudes and all future data exactly.'],
+              ['good_window','The chosen damped sinusoid describes that window of data well.'],
+              ['no_damping','The pendulum has no damping.']
+            ],answer:'good_window'},
+            {type:'qcm',id:'p2_fit_residuals',label:'In the R² calculation, what is a residual?',options:[
+              ['mean','The mean value of θ over the whole experiment.'],
+              ['period','The time between two zero crossings.'],
+              ['difference','The point-by-point difference θ_data(t_k) - θ_fit(t_k).']
+            ],answer:'difference'},
+            {type:'qcm',id:'p2_fit_square',label:'Why do we square residuals before summing them?',options:[
+              ['units','So the result has units of seconds.'],
+              ['linearize','To linearize sin(θ).'],
+              ['cancel','So positive and negative errors do not cancel each other.']
+            ],answer:'cancel'},
+            {type:'qcm',id:'p2_fit_negative_r2',label:'What does a negative R² mean?',options:[
+              ['perfect','The fit is perfect but the phase is negative.'],
+              ['worse_lazy','The fitted model is worse than the lazy model that always predicts the mean angle.'],
+              ['no_units','R² has no units, so negative values have no meaning.']
+            ],answer:'worse_lazy'}
+          ],
+          success:'Correct. The sinusoidal fit is a compact experimental description of the small-angle motion: period, frequency, damping, phase, and offset in one curve.',
+          resources:[{label:'Open Sinusoidal fit',tab:'post',panel:'fit'}]
+        },
+        {
+          id:'p2-system-identification',
+          requiresValidation:true,
+          title:'System identification',
+          kicker:'Part 2 - Step 5',
+          subtitle:'Adjust physical parameters by comparing an ODE model with the measurement.',
+          intro:[
+            {html:'In the previous step we adjusted a damped sinusoid — a mathematical curve chosen because it looks like the motion. Here we take a different step: instead of fitting a curve, we fit the <strong>physical constants of the pendulum</strong> (length and damping) inside its differential equation.'},
+            {html:'The model is the pendulum ODE with linear viscous friction:'},
+            {math:String.raw`\ddot{\theta} + \frac{b}{mL^2}\,\dot{\theta} + \frac{g}{L}\sin\theta = 0`},
+            {html:'<strong>Identifying</strong> the system means asking the data: <em>which values of L and damping make this equation, simulated in time, reproduce the measured θ(t) as closely as possible?</em>'},
+            {html:'This is a case of <strong>grey-box identification</strong>: the shape of the equation comes from physics, but we are also assuming simplifications (linear viscous damping, point mass, massless rigid rod) that may not be exact. So when reading the result, a good fit means the simplified structure is reasonable in that range; a poor fit usually means the model is missing physics (Coulomb friction, aerodynamic drag, rod inertia), not just bad numbers.'},
+            {html:'A subtle but important point: from θ(t) alone, the data <strong>cannot separate</strong> b and m — only the ratio b/(mL²) is identifiable. To convert that ratio into an absolute b, you have to <strong>measure or assume</strong> a mass.'},
+            {html:'Result: instead of A, ω, δ, φ (parameters of a curve), we obtain <strong>L</strong> and <strong>b/(mL²)</strong> — numbers with direct mechanical meaning. For a wider discussion (black/white/grey box, how the algorithm works), open the <strong>💡 What are we identifying?</strong> button inside the analysis tool.'}
+          ],
+          instructions:[
+            'Open the System identification analysis on the same data.',
+            'Choose a start time and a duration where the measured signal is clean and representative.',
+            'Launch the identification and compare θ_data(t) with θ_model(t). Then read the identified L and equivalent damping parameters.'
+          ],
+          questions:[
+            {type:'qcm',id:'p2_sysid_vs_fit',label:'What is the main difference between sinusoidal fit and system identification here?',options:[
+              ['same','They are exactly the same calculation with different names.'],
+              ['visual','System identification only changes the color of the measured curve.'],
+              ['ode','System identification simulates the pendulum ODE and adjusts physical parameters so the model follows the data.'],
+              ['manual','System identification does not use measured data.']
+            ],answer:'ode'},
+            {type:'qcm',id:'p2_sysid_nonseparable',label:'With θ(t) alone, why must we be careful when interpreting b and m separately?',options:[
+              ['no_mass','Because mass never has any influence on any pendulum model.'],
+              ['ratio','Because the motion sees the ratio b/(mL²), so different b and m values can produce the same dynamics if that ratio is unchanged.'],
+              ['only_b','Because the data identify b exactly but never L.'],
+              ['only_m','Because the data identify m exactly but never b.']
+            ],answer:'ratio'}
+          ],
+          success:'Correct. System identification connects the measured curve back to the physical ODE. It is more demanding than a visual fit, but it gives parameters with mechanical meaning.',
+          resources:[{label:'Open System identification',tab:'post',panel:'sysid'}]
+        },
+        {
+          id:'p2-torsion-spring',
+          requiresValidation:true,
+          hidden:true,
+          title:'Add a torsion spring',
+          kicker:'Part 2 - Step 6',
+          subtitle:'Modify the diagram with a torque proportional to angle.',
+          instructions:[
+            {html:'Now imagine a torsion spring connected to the shaft. It creates a restoring torque proportional to the angle:'},
+            {math:String.raw`\Gamma_k=-k\theta`},
+            {html:'Modify the block diagram by adding this torque to the torque sum. Then simulate with different initial positions <strong>θ(0)</strong> and compare the motion.'}
+          ],
+          questions:[
+            {type:'qcm',id:'p2_spring_torque',label:'Which torque should be added for a torsion spring?',options:[
+              ['spring','Γ_k = -kθ.'],
+              ['viscous','Γ_k = -bω.'],
+              ['gravity','Γ_k = -mgL sin(θ).'],
+              ['constant','Γ_k = k, independent of angle.']
+            ],answer:'spring'},
+            {type:'qcm',id:'p2_spring_effect',label:'What is the qualitative effect of adding a restoring torsion spring?',options:[
+              ['stiffer','The system becomes effectively stiffer, so the oscillation frequency generally increases.'],
+              ['damping','It only adds damping and cannot change the frequency.'],
+              ['noise','It only adds measurement noise.'],
+              ['remove_gravity','It cancels gravity for every angle.']
+            ],answer:'stiffer'}
+          ],
+          success:'Correct. The torsion spring adds another restoring torque in the block diagram, so the dynamics change even with the same initial condition.',
+          resources:[{label:'Open Acquisition & Simulation',tab:'acq'}]
+        }
       ]
     },
 
@@ -596,6 +823,231 @@ end PeriodMeter;`;
             {label:'Ouvrir viewer OpenModelica',href:'./../openmodelica-viewer/index.html'}
           ]
         }
+      ],
+      part2Steps:[
+        {
+          id:'p2-block-diagram',
+          requiresValidation:true,
+          title:'Modèle du pendule en diagramme de blocs',
+          kicker:'Partie 2 - Étape 1',
+          subtitle:'Construisez le diagramme avec une notation claire pour les blocs non linéaires.',
+          intro:[
+            {html:'Dessinez le diagramme de blocs du modèle du pendule à partir des équations obtenues en Partie 1.'},
+            {html:'Si un bloc est non linéaire, utilisez la <strong>notation en double cadre</strong> pour l’identifier immédiatement.'}
+          ],
+          instructions:[
+            {html:'Incluez la somme des moments, le terme d’inertie, les deux intégrateurs, et les retours utilisant <strong>θ</strong> et <strong>ω</strong>.'},
+            {html:'Marquez le bloc <strong>sin(θ)</strong> comme non linéaire avec un double cadre.'}
+          ],
+          questions:[
+            {type:'qcm',id:'p2_db_integrators',label:'Dans le diagramme de blocs, quel est le rôle des deux intégrateurs ?',options:[
+              ['chain','Ils transforment l’accélération angulaire en vitesse angulaire, puis la vitesse angulaire en angle.'],
+              ['filter','Ils servent seulement à enlever le bruit du signal mesuré.'],
+              ['gain','Ils multiplient l’angle par g/L.'],
+              ['trigger','Ils détectent les passages par zéro pour mesurer la période.']
+            ],answer:'chain'},
+            {type:'qcm',id:'p2_db_nonlinear',label:'Quel bloc rend le modèle complet du pendule non linéaire ?',options:[
+              ['sin','Le bloc sin(θ) dans le retour de gravité.'],
+              ['integrator','Les intégrateurs, car toute intégration est non linéaire.'],
+              ['sum','Le sommateur, car il a plusieurs entrées.'],
+              ['scope','Le bloc de tracé ou de visualisation.']
+            ],answer:'sin'}
+          ],
+          success:'Correct. Le diagramme et les équations racontent la même histoire : les moments créent l’accélération angulaire, l’intégration crée le mouvement, et le retour ferme la boucle.',
+          resources:[]
+        },
+        {
+          id:'p2-energy',
+          requiresValidation:true,
+          missionProse:true,
+          missionFirst:true,
+          title:'Énergie dans le modèle du pendule',
+          kicker:'Partie 2 - Étape 2',
+          subtitle:'Construisez pas à pas l’énergie cinétique, potentielle et mécanique totale.',
+          introTitle:'Dérivation des formules d’énergie',
+          intro:[
+            {html:'Avant d’étendre le diagramme, reconstruisons pas à pas les expressions des énergies. Pour une masse ponctuelle :'},
+            {math:String.raw`E_c=\tfrac{1}{2}m\,v^2\qquad E_p=m\,g\,h`},
+            {html:'Dans un pendule, la masse ne se déplace pas en ligne droite : elle se déplace sur un arc. Pour utiliser ces formules, il faut d’abord identifier <strong>(1)</strong> la vitesse tangentielle <em>v</em> lorsque l’angle varie avec une vitesse angulaire <em>ω</em>, et <strong>(2)</strong> de combien la masse s’élève quand la tige forme un angle <em>θ</em>, en prenant la position basse comme référence (h = 0).'},
+            {html:'Indice — pour un point sur un bras rigide de longueur <em>r</em> qui tourne autour d’un pivot, la longueur d’arc parcourue est :'},
+            {math:String.raw`s=r\cdot\theta`},
+            {html:'La vitesse tangentielle est la dérivée temporelle de cette longueur d’arc, <em>v</em><sub>t</sub> = d<em>s</em>/d<em>t</em>. Pour la hauteur <em>h</em>, observez la géométrie du pendule et appliquez de la trigonométrie de base.'},
+            {html:'Une fois <em>v</em> et <em>h</em> obtenus, l’énergie mécanique totale est simplement la somme :'},
+            {math:String.raw`E_m=E_c+E_p`}
+          ],
+          instructions:[
+            {html:'Objectif : à partir du diagramme de blocs OpenModelica que vous avez déjà construit (avec <em>θ</em> et <em>ω</em>), <strong>étendez-le en ajoutant les blocs nécessaires</strong> pour calculer l’énergie cinétique <em>E<sub>c</sub></em>, l’énergie potentielle <em>E<sub>p</sub></em> et l’énergie mécanique totale <em>E<sub>m</sub></em>. Ensuite, <strong>simulez le système et analysez l’évolution de <em>E<sub>c</sub></em>, <em>E<sub>p</sub></em> et <em>E<sub>m</sub></em> au cours du temps</strong> pour <em>b</em> = 0, un petit <em>b</em> et un grand <em>b</em>.'}
+          ],
+          questions:[
+            {type:'qcm',id:'p2_energy_extrema',label:'Pendant l’oscillation, que se passe-t-il avec les maxima et minima de Ec et Ep ?',options:[
+              ['together','Ec et Ep atteignent leurs maxima au même instant.'],
+              ['ec_bigger','Ec est toujours plus grande que Ep tout au long du mouvement.'],
+              ['exchange','Quand Ec atteint un maximum, Ep atteint un minimum (et inversement) : l’énergie s’échange entre les deux.'],
+              ['constant','Ec et Ep sont toujours constantes : elles n’ont ni maxima ni minima.']
+            ],answer:'exchange'},
+            {type:'qcm',id:'p2_energy_b_zero',label:'Que devient l’énergie mécanique totale Em si b = 0 ?',options:[
+              ['grows','Elle croît avec le temps.'],
+              ['conserved','Elle se conserve (constante dans le temps), en s’échangeant entre cinétique et potentielle.'],
+              ['decays','Elle décroît exponentiellement.'],
+              ['zero','Elle est toujours nulle.']
+            ],answer:'conserved'},
+            {type:'qcm',id:'p2_energy_b_positive',label:'Que devient l’énergie mécanique totale Em si b > 0 ?',options:[
+              ['constant','Elle reste constante, comme pour b = 0.'],
+              ['grows','Elle augmente car b injecte de l’énergie.'],
+              ['random','Elle devient aléatoire.'],
+              ['decreases','Elle diminue avec le temps car l’amortissement dissipe de l’énergie.']
+            ],answer:'decreases'}
+          ],
+          success:{html:'Correct. Énergies cinétique et potentielle alternent (l’une est maximale quand l’autre est minimale) pour toute valeur de <em>b</em>. Avec <em>b</em> = 0, le total <em>E<sub>m</sub></em> = <em>E<sub>c</sub></em> + <em>E<sub>p</sub></em> reste constant ; avec <em>b</em> &gt; 0, l’amortissement dissipe de l’énergie et <em>E<sub>m</sub></em> diminue au cours du temps.'},
+          resources:[]
+        },
+        {
+          id:'p2-paper-damper',
+          requiresValidation:true,
+          title:'Accessoire frein en papier',
+          kicker:'Partie 2 - Étape 3',
+          subtitle:'Comparez une petite et une grande surface de papier.',
+          instructions:[
+            'Utilisez l’accessoire qui maintient une feuille de papier sur le pendule, s’il est disponible.',
+            'Testez deux cas : une petite surface de papier et une grande surface de papier.',
+            'Enregistrez ou observez la vitesse de décroissance de l’amplitude dans les deux cas.'
+          ],
+          questions:[
+            {type:'qcm',id:'p2_paper_decay',label:'Que devrait-on observer avec une feuille plus grande ?',options:[
+              ['slower','L’amplitude devrait décroître plus lentement car la feuille stocke de l’énergie.'],
+              ['same','La décroissance devrait être exactement la même qu’avec une petite feuille.'],
+              ['faster','L’amplitude devrait décroître plus vite car la traînée de l’air est plus grande.'],
+              ['period_zero','La période devient nulle.']
+            ],answer:'faster'},
+            {type:'qcm',id:'p2_paper_model',label:'Dans le modèle visqueux simplifié, quel paramètre représente principalement cet effet ?',options:[
+              ['g','L’accélération de la gravité g.'],
+              ['theta0','Seulement l’angle initial θ(0).'],
+              ['time','Le temps final de simulation.'],
+              ['b','Le coefficient d’amortissement b.']
+            ],answer:'b'}
+          ],
+          success:'Correct. Une plus grande feuille augmente le freinage aérodynamique : l’oscillation perd son énergie plus vite.',
+          resources:[{label:'Ouvrir Acquisition',tab:'acq'}]
+        },
+        {
+          id:'p2-sinusoidal-fit',
+          requiresValidation:true,
+          title:'Ajustement sinusoïdal',
+          kicker:'Partie 2 - Étape 4',
+          subtitle:'Ajustez le mouvement enregistré avec une sinusoïde amortie.',
+          intro:[
+            {html:'Dans cette étape, nous allons ajuster les données expérimentales à un modèle mathématique. "Ajuster" (ou "fitter") signifie trouver les valeurs des paramètres constants d\'une équation pour que la courbe résultante corresponde le mieux possible à vos mesures réelles.'},
+            {html:'Le modèle utilisé est une <strong>sinusoïde à décroissance exponentielle</strong> :'},
+            {math:String.raw`\theta(t) = A \cdot e^{-\delta t} \cdot \sin(\omega t - \phi) + B`},
+            {html:'Ce choix n\'est pas dû au hasard et possède une raison physique que l\'enseignant expliquera pendant la séance de TP (demandez-lui !). En particulier, les paramètres de cette fonction sont liés aux paramètres physiques du pendule (masse, coefficient de frottement, L, gravité).'},
+            {html:'Cependant, cette formule est une approximation et pourrait ne pas s\'adapter parfaitement à toute la plage d\'oscillation.'},
+            {html:'<strong>Objectif :</strong> Déterminer dans quelle zone (grands angles ou petits angles) le modèle mathématique décrit le mieux la réalité.'},
+            {html:'Pour mesurer la "fidélité" du modèle, nous utilisons le coefficient <strong>R²</strong>. Une explication détaillée est disponible en cliquant sur le bouton [?] à côté de la valeur de R² dans l\'outil d\'analyse.'}
+          ],
+          instructions:[
+            'Chargez votre CSV expérimental ou utilisez les données d\'acquisition actuelles.',
+            'Ouvrez l\'outil d\'analyse "Ajustement sinusoïdal".',
+            'Essayez d\'ajuster la courbe dans différentes zones : d\'abord au début (grands angles), puis plus tard (petits angles).',
+            'Comparez les valeurs de R² et observez si l\'enveloppe suit bien les pics dans les deux cas.',
+            'Ouvrez l\'aide sur le R² si nécessaire avant de répondre.'
+          ],
+          questions:[
+            {type:'qcm',id:'p2_fit_small_angle',label:'Dans quelle plage d\'angles l\'ajustement a-t-il le mieux fonctionné (R² plus élevé) ?',options:[
+              ['large','Grands angles (au début de l\'enregistrement).'],
+              ['inter','Uniquement les angles intermédiaires (entre 60° et 45°).'],
+              ['small','Petits angles (vers la fin de l\'enregistrement).'],
+              ['mixed','Grandes oscillations et très petites (moins de 10°), mais ne fonctionne pas entre les deux.']
+            ],answer:'small'},
+            {type:'qcm',id:'p2_fit_r2',label:'Si l’ajustement a un R² élevé et des résidus faibles sur la fenêtre choisie, que peut-on conclure ?',options:[
+              ['exact_global','Le même ajustement décrit forcément toutes les amplitudes et toutes les données futures exactement.'],
+              ['good_window','La sinusoïde amortie choisie décrit bien cette fenêtre de données.'],
+              ['no_damping','Le pendule n’a pas d’amortissement.']
+            ],answer:'good_window'},
+            {type:'qcm',id:'p2_fit_residuals',label:'Dans le calcul de R², qu’est-ce qu’un résidu ?',options:[
+              ['mean','La valeur moyenne de θ sur toute l’expérience.'],
+              ['period','Le temps entre deux passages par zéro.'],
+              ['difference','La différence point par point θ_data(t_k) - θ_fit(t_k).']
+            ],answer:'difference'},
+            {type:'qcm',id:'p2_fit_square',label:'Pourquoi élève-t-on les résidus au carré avant de les sommer ?',options:[
+              ['units','Pour obtenir un résultat en secondes.'],
+              ['linearize','Pour linéariser sin(θ).'],
+              ['cancel','Pour éviter que les erreurs positives et négatives s’annulent.']
+            ],answer:'cancel'},
+            {type:'qcm',id:'p2_fit_negative_r2',label:'Que signifie un R² négatif ?',options:[
+              ['perfect','L’ajustement est parfait mais la phase est négative.'],
+              ['worse_lazy','Le modelo ajusté est pire que le modèle paresseux qui prédit toujours l’angle moyen.'],
+              ['no_units','R² n’a pas d’unité, donc les valeurs négatives n’ont pas de sens.']
+            ],answer:'worse_lazy'}
+          ],
+          success:'Correct. L’ajustement sinusoïdal donne une description expérimentale compacte du mouvement aux petits angles : période, fréquence, amortissement, phase et offset dans une seule courbe.',
+          resources:[{label:'Ouvrir Ajustement sinusoïdal',tab:'post',panel:'fit'}]
+        },
+        {
+          id:'p2-system-identification',
+          requiresValidation:true,
+          title:'Identification de système',
+          kicker:'Partie 2 - Étape 5',
+          subtitle:'Ajustez les paramètres physiques en comparant un modèle EDO à la mesure.',
+          intro:[
+            {html:'À l’étape précédente, on a ajusté une sinusoïde amortie — une courbe mathématique choisie parce qu’elle ressemble au mouvement. Ici, on franchit un pas : au lieu d’ajuster une courbe, on ajuste les <strong>constantes physiques du pendule</strong> (longueur et amortissement) à l’intérieur de son équation différentielle.'},
+            {html:'Le modèle est l’EDO du pendule avec frottement visqueux linéaire :'},
+            {math:String.raw`\ddot{\theta} + \frac{b}{mL^2}\,\dot{\theta} + \frac{g}{L}\sin\theta = 0`},
+            {html:'<strong>Identifier</strong> le système, c’est poser cette question aux données : <em>quelles valeurs de L et d’amortissement font que cette équation, simulée dans le temps, reproduit au mieux la θ(t) mesurée ?</em>'},
+            {html:'Il s’agit d’une identification de type <strong>boîte grise</strong> : la forme de l’équation vient de la physique, mais on suppose aussi des simplifications (frottement visqueux linéaire, masse ponctuelle, tige rigide sans masse) qui ne sont pas forcément exactes. À la lecture du résultat : un bon ajustement signifie que la structure simplifiée est raisonnable dans cette plage ; un mauvais ajustement veut souvent dire que le modèle manque de physique (frottement de Coulomb, traînée aérodynamique, inertie de la tige), et pas seulement de meilleurs paramètres.'},
+            {html:'Point subtil mais important : à partir de θ(t) seul, les données <strong>ne peuvent pas séparer</strong> b et m — seul le rapport b/(mL²) est identifiable. Pour convertir ce rapport en un b absolu, il faut <strong>mesurer ou supposer</strong> une masse.'},
+            {html:'Résultat : au lieu de A, ω, δ, φ (paramètres d’une courbe), on obtient <strong>L</strong> et <strong>b/(mL²)</strong> — des nombres ayant un sens mécanique direct. Pour une discussion plus large (boîte noire/blanche/grise, fonctionnement de l’algorithme), ouvrez le bouton <strong>💡 Qu’identifie-t-on ?</strong> dans l’outil d’analyse.'}
+          ],
+          instructions:[
+            'Ouvrez l’analyse Identification de système sur les mêmes données.',
+            'Choisissez un temps de départ et une durée où le signal mesuré est propre et représentatif.',
+            'Lancez l’identification et comparez θ_data(t) avec θ_model(t). Lisez ensuite la longueur L identifiée et les paramètres d’amortissement équivalents.'
+          ],
+          questions:[
+            {type:'qcm',id:'p2_sysid_vs_fit',label:'Quelle est la différence principale entre l’ajustement sinusoïdal et l’identification de système ici ?',options:[
+              ['same','Ce sont exactement les mêmes calculs avec deux noms différents.'],
+              ['visual','L’identification change seulement la couleur de la courbe mesurée.'],
+              ['ode','L’identification simule l’EDO du pendule et ajuste des paramètres physiques pour suivre les données.'],
+              ['manual','L’identification n’utilise pas les données mesurées.']
+            ],answer:'ode'},
+            {type:'qcm',id:'p2_sysid_nonseparable',label:'Avec θ(t) seul, pourquoi faut-il être prudent en interprétant b et m séparément ?',options:[
+              ['no_mass','Parce que la masse n’a jamais aucune influence dans aucun modèle de pendule.'],
+              ['ratio','Parce que le mouvement voit le rapport b/(mL²) : plusieurs valeurs de b et m peuvent donner la même dynamique si ce rapport ne change pas.'],
+              ['only_b','Parce que les données identifient b exactement mais jamais L.'],
+              ['only_m','Parce que les données identifient m exactement mais jamais b.']
+            ],answer:'ratio'}
+          ],
+          success:'Correct. L’identification de système relie la courbe mesurée à l’EDO physique. C’est plus exigeant qu’un ajustement visuel, mais les paramètres obtenus ont un sens mécanique.',
+          resources:[{label:'Ouvrir Identification de système',tab:'post',panel:'sysid'}]
+        },
+        {
+          id:'p2-torsion-spring',
+          requiresValidation:true,
+          hidden:true,
+          title:'Ajouter un ressort de torsion',
+          kicker:'Partie 2 - Étape 6',
+          subtitle:'Modifiez le diagramme avec un couple proportionnel à l’angle.',
+          instructions:[
+            {html:'Imaginez maintenant un ressort de torsion connecté à l’axe. Il crée un couple de rappel proportionnel à l’angle :'},
+            {math:String.raw`\Gamma_k=-k\theta`},
+            {html:'Modifiez le diagramme de blocs en ajoutant ce couple dans la somme des moments. Simulez ensuite avec différentes positions initiales <strong>θ(0)</strong> et comparez le mouvement.'}
+          ],
+          questions:[
+            {type:'qcm',id:'p2_spring_torque',label:'Quel couple faut-il ajouter pour un ressort de torsion ?',options:[
+              ['spring','Γ_k = -kθ.'],
+              ['viscous','Γ_k = -bω.'],
+              ['gravity','Γ_k = -mgL sin(θ).'],
+              ['constant','Γ_k = k, indépendant de l’angle.']
+            ],answer:'spring'},
+            {type:'qcm',id:'p2_spring_effect',label:'Quel est l’effet qualitatif d’un ressort de torsion de rappel ?',options:[
+              ['stiffer','Le système devient effectivement plus raide, donc la fréquence d’oscillation augmente généralement.'],
+              ['damping','Il ajoute seulement de l’amortissement et ne peut pas changer la fréquence.'],
+              ['noise','Il ajoute seulement du bruit de mesure.'],
+              ['remove_gravity','Il annule la gravité pour tous les angles.']
+            ],answer:'stiffer'}
+          ],
+          success:'Correct. Le ressort de torsion ajoute un autre couple de rappel dans le diagramme de blocs ; la dynamique change donc même avec la même condition initiale.',
+          resources:[{label:'Ouvrir Acquisition et simulation',tab:'acq'}]
+        }
       ]
     },
 
@@ -858,10 +1310,236 @@ end PeriodMeter;`;
             {label:'Abrir OpenModelica viewer',href:'./../openmodelica-viewer/index.html'}
           ]
         }
+      ],
+      part2Steps:[
+        {
+          id:'p2-block-diagram',
+          requiresValidation:true,
+          title:'Modelo del péndulo en diagrama de bloques',
+          kicker:'Parte 2 - Paso 1',
+          subtitle:'Construí el diagrama con una notación clara para bloques no lineales.',
+          intro:[
+            {html:'Dibujá el diagrama de bloques del modelo del péndulo a partir de las ecuaciones obtenidas en la Parte 1.'},
+            {html:'Si un bloque es no lineal, usá la <strong>notación de doble recuadro</strong> para identificarlo fácilmente.'}
+          ],
+          instructions:[
+            {html:'Incluí la suma de torques, el término de inercia, los dos integradores, y las realimentaciones que usan <strong>θ</strong> y <strong>ω</strong>.'},
+            {html:'Marcá el bloque <strong>sin(θ)</strong> como no lineal con doble recuadro.'}
+          ],
+          questions:[
+            {type:'qcm',id:'p2_db_integrators',label:'En el diagrama de bloques, ¿cuál es el rol de los dos integradores?',options:[
+              ['chain','Transforman la aceleración angular en velocidad angular, y luego la velocidad angular en ángulo.'],
+              ['filter','Solo eliminan ruido del sensor en la señal medida.'],
+              ['gain','Multiplican el ángulo por g/L.'],
+              ['trigger','Detectan cruces por cero para medir el período.']
+            ],answer:'chain'},
+            {type:'qcm',id:'p2_db_nonlinear',label:'¿Qué bloque vuelve no lineal al modelo completo del péndulo?',options:[
+              ['sin','El bloque sin(θ) en la realimentación de gravedad.'],
+              ['integrator','Los integradores, porque integrar siempre es no lineal.'],
+              ['sum','El sumador, porque tiene varias entradas.'],
+              ['scope','El bloque de gráfico o visualización.']
+            ],answer:'sin'}
+          ],
+          success:'Correcto. El diagrama y las ecuaciones cuentan la misma historia: los torques crean aceleración angular, la integración crea movimiento y la realimentación cierra el lazo.',
+          resources:[]
+        },
+        {
+          id:'p2-energy',
+          requiresValidation:true,
+          missionProse:true,
+          missionFirst:true,
+          title:'Energía en el modelo del péndulo',
+          kicker:'Parte 2 - Paso 2',
+          subtitle:'Construí paso a paso la energía cinética, potencial y mecánica total.',
+          introTitle:'Derivación de las fórmulas de energía',
+          intro:[
+            {html:'Antes de extender el diagrama, vamos a reconstruir paso a paso las expresiones de las energías. Para una masa puntual:'},
+            {math:String.raw`E_c=\tfrac{1}{2}m\,v^2\qquad E_p=m\,g\,h`},
+            {html:'En el péndulo la masa no se mueve en línea recta sino sobre un arco. Para usar esas fórmulas hay que identificar primero <strong>(1)</strong> la velocidad tangencial <em>v</em> cuando el ángulo cambia con velocidad angular <em>ω</em>, y <strong>(2)</strong> cuánto sube la masa cuando la varilla forma un ángulo <em>θ</em>, tomando como referencia la posición más baja (h = 0).'},
+            {html:'Pista — para un punto sobre un brazo rígido de longitud <em>r</em> que gira alrededor de un pivote, la longitud de arco recorrida es:'},
+            {math:String.raw`s=r\cdot\theta`},
+            {html:'La velocidad tangencial es la derivada temporal de esa longitud de arco, <em>v</em><sub>t</sub> = d<em>s</em>/d<em>t</em>. Para la altura <em>h</em>, mirá la geometría del péndulo y aplicá trigonometría básica.'},
+            {html:'Una vez que tenemos <em>v</em> y <em>h</em>, la energía mecánica total es simplemente la suma:'},
+            {math:String.raw`E_m=E_c+E_p`}
+          ],
+          instructions:[
+            {html:'Objetivo: a partir del diagrama de bloques de OpenModelica que ya armaste (con <em>θ</em> y <em>ω</em>), <strong>extendelo agregando los bloques necesarios</strong> para calcular la energía cinética <em>E<sub>c</sub></em>, la energía potencial <em>E<sub>p</sub></em> y la energía mecánica total <em>E<sub>m</sub></em>. Después <strong>simulá el sistema y analizá cómo evolucionan <em>E<sub>c</sub></em>, <em>E<sub>p</sub></em> y <em>E<sub>m</sub></em> en el tiempo</strong> para <em>b</em> = 0, un <em>b</em> chico y un <em>b</em> grande.'}
+          ],
+          questions:[
+            {type:'qcm',id:'p2_energy_extrema',label:'Durante la oscilación, ¿qué ocurre con los máximos y mínimos de Ec y Ep?',options:[
+              ['together','Ec y Ep alcanzan sus máximos en el mismo instante.'],
+              ['ec_bigger','Ec es siempre mayor que Ep durante todo el movimiento.'],
+              ['exchange','Cuando Ec alcanza un máximo, Ep alcanza un mínimo (y viceversa): la energía se intercambia entre ambas.'],
+              ['constant','Ec y Ep son siempre constantes: no tienen máximos ni mínimos.']
+            ],answer:'exchange'},
+            {type:'qcm',id:'p2_energy_b_zero',label:'¿Qué ocurre con la energía mecánica total Em si b = 0?',options:[
+              ['grows','Crece con el tiempo.'],
+              ['conserved','Se conserva (constante en el tiempo), intercambiándose entre cinética y potencial.'],
+              ['decays','Decae exponencialmente.'],
+              ['zero','Es siempre cero.']
+            ],answer:'conserved'},
+            {type:'qcm',id:'p2_energy_b_positive',label:'¿Qué ocurre con la energía mecánica total Em si b > 0?',options:[
+              ['constant','Se mantiene constante, igual que con b = 0.'],
+              ['grows','Aumenta porque b inyecta energía.'],
+              ['random','Se vuelve aleatoria.'],
+              ['decreases','Disminuye con el tiempo porque el amortiguamiento disipa energía.']
+            ],answer:'decreases'}
+          ],
+          success:{html:'Correcto. Energía cinética y potencial se alternan (una está en su máximo cuando la otra está en su mínimo) para cualquier valor de <em>b</em>. Con <em>b</em> = 0 el total <em>E<sub>m</sub></em> = <em>E<sub>c</sub></em> + <em>E<sub>p</sub></em> se mantiene constante; con <em>b</em> &gt; 0 el amortiguamiento disipa energía y <em>E<sub>m</sub></em> disminuye con el tiempo.'},
+          resources:[]
+        },
+        {
+          id:'p2-paper-damper',
+          requiresValidation:true,
+          title:'Accesorio de freno con papel',
+          kicker:'Parte 2 - Paso 3',
+          subtitle:'Compará una superficie de papel pequeña y una grande.',
+          instructions:[
+            'Usá el accesorio que sostiene una hoja de papel en el péndulo, si está disponible.',
+            'Probá dos casos: una superficie de papel pequeña y una superficie de papel grande.',
+            'Registrá u observá qué tan rápido decae la amplitud en ambos casos.'
+          ],
+          questions:[
+            {type:'qcm',id:'p2_paper_decay',label:'¿Qué debería pasar con una hoja de papel más grande?',options:[
+              ['slower','La amplitud debería decaer más lento porque la hoja almacena energía.'],
+              ['same','El decaimiento debería ser exactamente igual que con una hoja pequeña.'],
+              ['faster','La amplitud debería decaer más rápido porque aumenta la resistencia del aire.'],
+              ['period_zero','El período se vuelve cero.']
+            ],answer:'faster'},
+            {type:'qcm',id:'p2_paper_model',label:'En el modelo viscoso simplificado, ¿qué parámetro representa principalmente este efecto?',options:[
+              ['g','La aceleración de la gravedad g.'],
+              ['theta0','Solamente el ángulo inicial θ(0).'],
+              ['time','El tiempo final de simulación.'],
+              ['b','El coeficiente de amortiguamiento b.']
+            ],answer:'b'}
+          ],
+          success:'Correcto. Una hoja más grande aumenta el frenado aerodinámico, entonces la oscilación pierde energía más rápido.',
+          resources:[{label:'Abrir Adquisición',tab:'acq'}]
+        },
+        {
+          id:'p2-sinusoidal-fit',
+          requiresValidation:true,
+          title:'Ajuste sinusoidal',
+          kicker:'Parte 2 - Paso 4',
+          subtitle:'Ajustá el movimiento registrado con una sinusoide amortiguada.',
+          intro:[
+            {html:'En esta etapa vamos a ajustar los datos experimentales a un modelo matemático. Ajustar (o "fitear") significa encontrar los valores de los parámetros constantes de una ecuación para que la curva resultante se parezca lo más posible a tus mediciones reales.'},
+            {html:'El modelo que usamos es una <strong>sinusoide con decaimiento exponencial</strong>:'},
+            {math:String.raw`\theta(t) = A \cdot e^{-\delta t} \cdot \sin(\omega t - \phi) + B`},
+            {html:'Esta elección no es por casualidad y tiene una razón física que el docente explicará durante la sesión de TP (¡pregúntenle!). Los parámetros de esta función están relacionados con los parámetros físicos del péndulo (masa, coeficiente de frotamiento, L, gravedad).'},
+            {html:'Sin embargo, esta fórmula es una aproximación y puede no adaptarse perfectamente a todo el rango de oscilación.'},
+            {html:'<strong>Objetivo:</strong> Descubrir en qué zona (ángulos grandes o ángulos pequeños) el modelo matemático describe mejor la realidad.'},
+            {html:'Para medir la "fidelidad" del ajuste, usamos el coeficiente <strong>R²</strong>. Podés encontrar una explicación detallada haciendo clic en el botón [?] junto al valor de R² en la herramienta de análisis.'}
+          ],
+          instructions:[
+            'Cargá tu CSV experimental o usá los datos de adquisición actuales.',
+            'Abrí la herramienta de "Ajuste sinusoidal".',
+            'Probá fitear la curva en distintas zonas: primero al principio (ángulos grandes) y luego más adelante (ángulos pequeños).',
+            'Compará los valores de R² y observá si la envolvente punteada sigue bien los picos en ambos casos.',
+            'Abrí la ayuda de R² si hace falta antes de responder.'
+          ],
+          questions:[
+            {type:'qcm',id:'p2_fit_small_angle',label:'¿En qué rango de ángulos se obtuvo un mejor ajuste (R² más alto)?',options:[
+              ['large','Grandes ángulos (al inicio del registro).'],
+              ['inter','Solo ángulos intermedios (entre 60° y 45°).'],
+              ['small','Pequeños ángulos (hacia el final del registro).'],
+              ['mixed','Grandes oscilaciones y pequeñas (menos de 10°), pero en el medio no funciona.']
+            ],answer:'small'},
+            {type:'qcm',id:'p2_fit_r2',label:'Si el ajuste tiene un R² alto y residuos pequeños en la ventana elegida, ¿qué podemos concluir?',options:[
+              ['exact_global','El mismo ajuste describe necesariamente todas las amplitudes y todos los datos futuros de manera exacta.'],
+              ['good_window','La sinusoide amortiguada elegida describe bien esa ventana de datos.'],
+              ['no_damping','El péndulo no tiene amortiguamiento.']
+            ],answer:'good_window'},
+            {type:'qcm',id:'p2_fit_residuals',label:'En el cálculo de R², ¿qué es un residuo?',options:[
+              ['mean','El valor medio de θ en todo el experimento.'],
+              ['period','El tiempo entre dos cruces por cero.'],
+              ['difference','La diferencia punto a punto θ_{data}(t_k) - θ_{fit}(t_k).']
+            ],answer:'difference'},
+            {type:'qcm',id:'p2_fit_square',label:'¿Por qué elevamos los residuos al cuadrado antes de sumarlos?',options:[
+              ['units','Para que el resultado tenga unidades de segundos.'],
+              ['linearize','Para linealizar sin(θ).'],
+              ['cancel','Para que los errores positivos y negativos no se cancelen entre sí.']
+            ],answer:'cancel'},
+            {type:'qcm',id:'p2_fit_negative_r2',label:'¿Qué significa un R² negativo?',options:[
+              ['perfect','El ajuste es perfecto pero la fase es negativa.'],
+              ['worse_lazy','El modelo ajustado es peor que el modelo perezoso que predice siempre el ángulo medio.'],
+              ['no_units','R² no tiene unidades, entonces los valores negativos no tienen sentido.']
+            ],answer:'worse_lazy'}
+          ],
+          success:'Correcto. El ajuste sinusoidal da una descripción experimental compacta del movimiento a pequeños ángulos: período, frecuencia, amortiguamiento, fase y offset en una sola curva.',
+          resources:[{label:'Abrir Ajuste sinusoidal',tab:'post',panel:'fit'}]
+        },
+        {
+          id:'p2-system-identification',
+          requiresValidation:true,
+          title:'Identificación de sistema',
+          kicker:'Parte 2 - Paso 5',
+          subtitle:'Ajustá parámetros físicos comparando un modelo ODE con la medición.',
+          intro:[
+            {html:'En el paso anterior ajustamos una sinusoide amortiguada — una curva matemática elegida porque se parece al movimiento. Acá damos un salto: en vez de ajustar una curva, ajustamos las <strong>constantes físicas del péndulo</strong> (longitud y amortiguamiento) dentro de su ecuación diferencial.'},
+            {html:'El modelo es la ODE del péndulo con fricción viscosa lineal:'},
+            {math:String.raw`\ddot{\theta} + \frac{b}{mL^2}\,\dot{\theta} + \frac{g}{L}\sin\theta = 0`},
+            {html:'<strong>Identificar</strong> el sistema es preguntarle a los datos: <em>¿qué valores de L y de amortiguamiento hacen que esta ecuación, simulada en el tiempo, reproduzca lo mejor posible la θ(t) medida?</em>'},
+            {html:'Estamos haciendo identificación de <strong>caja gris</strong>: la forma de la ecuación viene de la física, pero también estamos suponiendo simplificaciones (fricción viscosa lineal, masa puntual, varilla rígida sin masa) que pueden no ser exactas. Por eso, al leer el resultado: un buen ajuste indica que la estructura simplificada es razonable en ese rango; un mal ajuste suele significar que al modelo le falta física (fricción seca, arrastre aerodinámico, inercia de la varilla), no solo "números mejores".'},
+            {html:'Una sutileza importante: a partir de θ(t) solamente, los datos <strong>no pueden separar</strong> b y m — solo se identifica el cociente b/(mL²). Para convertir ese cociente en un b absoluto hay que <strong>medir o suponer</strong> una masa.'},
+            {html:'Resultado: en lugar de A, ω, δ, φ (parámetros de una curva), obtenemos <strong>L</strong> y <strong>b/(mL²)</strong> — números con significado mecánico directo. Para una discusión más amplia (caja negra/blanca/gris, cómo trabaja el algoritmo), abrí el botón <strong>💡 ¿Qué estamos identificando?</strong> dentro de la herramienta de análisis.'}
+          ],
+          instructions:[
+            'Abrí el análisis de Identificación de sistema sobre los mismos datos.',
+            'Elegí un tiempo de inicio y una duración donde la señal medida sea limpia y representativa.',
+            'Lanzá la identificación y compará θ_data(t) con θ_model(t). Después leé la longitud L identificada y los parámetros equivalentes de amortiguamiento.'
+          ],
+          questions:[
+            {type:'qcm',id:'p2_sysid_vs_fit',label:'¿Cuál es la diferencia principal entre el ajuste sinusoidal y la identificación de sistema acá?',options:[
+              ['same','Son exactamente el mismo cálculo con nombres distintos.'],
+              ['visual','La identificación solo cambia el color de la curva medida.'],
+              ['ode','La identificación simula la ODE del péndulo y ajusta parámetros físicos para que el modelo siga los datos.'],
+              ['manual','La identificación no usa datos medidos.']
+            ],answer:'ode'},
+            {type:'qcm',id:'p2_sysid_nonseparable',label:'Con θ(t) solamente, ¿por qué hay que tener cuidado al interpretar b y m por separado?',options:[
+              ['no_mass','Porque la masa nunca influye en ningún modelo de péndulo.'],
+              ['ratio','Porque el movimiento ve el cociente b/(mL²): distintos valores de b y m pueden dar la misma dinámica si ese cociente no cambia.'],
+              ['only_b','Porque los datos identifican b exactamente pero nunca L.'],
+              ['only_m','Porque los datos identifican m exactamente pero nunca b.']
+            ],answer:'ratio'}
+          ],
+          success:'Correcto. La identificación de sistema conecta la curva medida con la ODE física. Es más exigente que un ajuste visual, pero los parámetros obtenidos tienen significado mecánico.',
+          resources:[{label:'Abrir Identificación de sistema',tab:'post',panel:'sysid'}]
+        },
+        {
+          id:'p2-torsion-spring',
+          requiresValidation:true,
+          hidden:true,
+          title:'Agregar un resorte de torsión',
+          kicker:'Parte 2 - Paso 6',
+          subtitle:'Modificá el diagrama con un torque proporcional al ángulo.',
+          instructions:[
+            {html:'Ahora imaginá un resorte de torsión conectado al eje. Produce un torque restaurador proporcional al ángulo:'},
+            {math:String.raw`\Gamma_k=-k\theta`},
+            {html:'Modificá el diagrama de bloques agregando este torque a la suma de torques. Después simulá con diferentes posiciones iniciales <strong>θ(0)</strong> y compará el movimiento.'}
+          ],
+          questions:[
+            {type:'qcm',id:'p2_spring_torque',label:'¿Qué torque hay que agregar para un resorte de torsión?',options:[
+              ['spring','Γ_k = -kθ.'],
+              ['viscous','Γ_k = -bω.'],
+              ['gravity','Γ_k = -mgL sin(θ).'],
+              ['constant','Γ_k = k, independiente del ángulo.']
+            ],answer:'spring'},
+            {type:'qcm',id:'p2_spring_effect',label:'¿Cuál es el efecto cualitativo de agregar un resorte de torsión restaurador?',options:[
+              ['stiffer','El sistema se vuelve efectivamente más rígido, entonces la frecuencia de oscilación generalmente aumenta.'],
+              ['damping','Solo agrega amortiguamiento y no puede cambiar la frecuencia.'],
+              ['noise','Solo agrega ruido de medición.'],
+              ['remove_gravity','Cancela la gravedad para todos los ángulos.']
+            ],answer:'stiffer'}
+          ],
+          success:'Correcto. El resorte de torsión agrega otro torque restaurador en el diagrama de bloques, así que la dinámica cambia incluso con la misma condición inicial.',
+          resources:[{label:'Abrir Adquisición y Simulación',tab:'acq'}]
+        }
       ]
     }
   };
 
+  let activeGuide=TP_DEFAULT_GUIDE;
   let tpState={active:0,unlocked:0,completed:{},answers:{}};
   let switchTab=function(){};
   let getLang=function(){return document.documentElement.lang||'EN';};
@@ -875,7 +1553,13 @@ end PeriodMeter;`;
   }
   function langCode(){return normalizeLang(forcedLang||(getLang&&getLang())||'EN');}
   function text(){return TP_TEXT[langCode()]||TP_TEXT.EN;}
-  function steps(){return text().steps;}
+  function steps(){
+    const t=text();
+    const list=activeGuide==='part2'&&t.part2Steps?t.part2Steps:t.steps;
+    return list.filter(s=>s.hidden!==true);
+  }
+  function freshTpState(){return {active:0,unlocked:0,completed:{},answers:{}};}
+  function storageKey(){return activeGuide===TP_DEFAULT_GUIDE?TP_STORAGE_KEY:`${TP_STORAGE_KEY}_${activeGuide}`;}
   function hasChecklist(step){return !!(step&&step.checklist&&step.checklist.length);}
   function hasQcm(step){return !!(step&&step.questions&&step.questions.some(q=>q.type==='qcm'));}
   function questionComplete(q){
@@ -912,7 +1596,8 @@ end PeriodMeter;`;
 
   function loadTpState(){
     try{
-      const raw=localStorage.getItem(TP_STORAGE_KEY);
+      tpState=freshTpState();
+      const raw=localStorage.getItem(storageKey());
       if(raw)tpState={...tpState,...JSON.parse(raw)};
     }catch(_){}
     tpState.completed=tpState.completed||{};
@@ -921,10 +1606,14 @@ end PeriodMeter;`;
     tpState.active=Math.min(tpState.active||0,max);
     tpState.unlocked=Math.min(tpState.unlocked||0,max);
   }
-  function saveTpState(){localStorage.setItem(TP_STORAGE_KEY,JSON.stringify(tpState));}
+  function saveTpState(){localStorage.setItem(storageKey(),JSON.stringify(tpState));}
   function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
   function highlightTpTerms(v){
     let html=escapeHtml(v);
+    html = html.replace(/_\{([^}]+)\}/g, '<sub>$1</sub>');
+    html = html.replace(/_([a-zA-Z0-9]+)/g, '<sub>$1</sub>');
+    html = html.replace(/\^\{([^}]+)\}/g, '<sup>$1</sup>');
+    html = html.replace(/\^([0-9a-zA-Z]+)/g, '<sup>$1</sup>');
     const marked=[];
     const protect=regex=>{
       html=html.replace(regex,match=>{
@@ -937,7 +1626,6 @@ end PeriodMeter;`;
     protect(/\bModelica\b/g);
     protect(/modelling language|langage de modélisation|lenguaje de modelización|language de modelisation/gi);
     protect(/free software|logiciel libre|software libre/gi);
-    protect(/\bsimulate\b|\bsimulates\b|\bsimuler\b|\bsimule\b|\bsimula\b|\bsimular\b|\bsimulá\b/gi);
     marked.forEach((value,i)=>{html=html.replace(`%%TPHL${i}%%`,value);});
     return html;
   }
@@ -962,7 +1650,7 @@ end PeriodMeter;`;
       if(v.math)return mathBlock(v.math);
       if(v.modal)return `<div class="tp-intro-item"><button class="tp-explain-btn" type="button" data-tp-modal="${escapeHtml(v.modal)}">${v.labelHtml||escapeHtml(v.label||'More')}</button></div>`;
     }
-    return `<p>${escapeHtml(v)}</p>`;
+    return `<p>${highlightTpTerms(v)}</p>`;
   }
   function completedCount(stepList){return stepList.filter(isStepComplete).length;}
   function answerValue(id){return tpState.answers[id]??'';}
@@ -988,6 +1676,9 @@ end PeriodMeter;`;
     setText('tpPrevBtn',ui.prev);
     setText('tpValidateBtn',ui.validate);
     setText('tpNextBtn',ui.next);
+    document.querySelectorAll('[data-guide-id]').forEach(btn=>{
+      btn.classList.toggle('active',btn.dataset.guideId===activeGuide);
+    });
   }
 
   function renderTpSidebar(){
@@ -1029,9 +1720,9 @@ end PeriodMeter;`;
     target.innerHTML=`<h3>${escapeHtml(ui.questions)}</h3>${step.questions.map(q=>{
       if(q.type==='qcm'){
         return `<div class="tp-field" data-question="${escapeHtml(q.id)}">
-          <label>${escapeHtml(q.label)}</label>
+          <label>${highlightTpTerms(q.label)}</label>
           <div class="tp-qcm">${q.options.map(([value,label])=>`
-            <label class="tp-option"><input type="radio" name="tp_${escapeHtml(q.id)}" value="${escapeHtml(value)}" ${answerValue(q.id)===value?'checked':''}><span>${escapeHtml(label)}</span></label>
+            <label class="tp-option"><input type="radio" name="tp_${escapeHtml(q.id)}" value="${escapeHtml(value)}" ${answerValue(q.id)===value?'checked':''}><span>${highlightTpTerms(label)}</span></label>
           `).join('')}</div>
         </div>`;
       }
@@ -1103,7 +1794,10 @@ end PeriodMeter;`;
 
   function renderTpInstructions(step,ui){
     const target=document.getElementById('tpInstructions');
-    target.innerHTML=`<h3>${escapeHtml(ui.mission)}</h3><ul>${step.instructions.map(x=>`<li>${instructionHtml(x)}</li>`).join('')}</ul>`;
+    const body=step.missionProse
+      ?step.instructions.map(x=>`<div class="tp-mission-item">${instructionHtml(x)}</div>`).join('')
+      :`<ul>${step.instructions.map(x=>`<li>${instructionHtml(x)}</li>`).join('')}</ul>`;
+    target.innerHTML=`<h3>${escapeHtml(ui.mission)}</h3>${body}`;
     target.querySelectorAll('[data-tp-modal]').forEach(btn=>{
       btn.addEventListener('click',()=>openTpModal(btn.dataset.tpModal));
     });
@@ -1114,7 +1808,8 @@ end PeriodMeter;`;
     if(!target)return;
     if(!step.intro||!step.intro.length){target.style.display='none';target.innerHTML='';return;}
     target.style.display='';
-    target.innerHTML=`<h3>${escapeHtml(ui.intro)}</h3><div class="tp-intro-body">${step.intro.map(proseHtml).join('')}</div>`;
+    const title=step.introTitle||ui.intro;
+    target.innerHTML=`<h3>${escapeHtml(title)}</h3><div class="tp-intro-body">${step.intro.map(proseHtml).join('')}</div>`;
     target.querySelectorAll('[data-tp-modal]').forEach(btn=>{
       btn.addEventListener('click',()=>openTpModal(btn.dataset.tpModal));
     });
@@ -1169,6 +1864,8 @@ end PeriodMeter;`;
     bypassLockedStepOnce=false;
     const step=stepList[tpState.active];
     renderTpStaticUi();
+    const mainEl=document.querySelector('.tp-main');
+    if(mainEl)mainEl.classList.toggle('mission-first',!!step.missionFirst);
     document.getElementById('tpKicker').textContent=step.kicker||ui.fallbackKicker;
     document.getElementById('tpTitle').textContent=step.title||ui.fallbackTitle;
     document.getElementById('tpSubtitle').innerHTML=highlightTpTerms(step.subtitle||ui.fallbackSubtitle);
@@ -1322,6 +2019,18 @@ end PeriodMeter;`;
     if(initialized)renderTp();
   };
 
+  window.setTpGuide=function setTpGuide(guideId){
+    if(!TP_GUIDE_IDS.includes(guideId))return;
+    if(activeGuide===guideId){
+      if(initialized)renderTp();
+      return;
+    }
+    saveTpState();
+    activeGuide=guideId;
+    loadTpState();
+    if(initialized)renderTpAtTop();
+  };
+
   window.initTpGuide=function initTpGuide(options){
     switchTab=(options&&options.switchTab)||function(){};
     getLang=(options&&options.getLang)||getLang;
@@ -1341,8 +2050,8 @@ end PeriodMeter;`;
     });
     document.getElementById('tpResetBtn').addEventListener('click',()=>{
       showTpResetDialog(()=>{
-        localStorage.removeItem(TP_STORAGE_KEY);
-        tpState={active:0,unlocked:0,completed:{},answers:{}};
+        localStorage.removeItem(storageKey());
+        tpState=freshTpState();
         renderTp();
       });
     });
