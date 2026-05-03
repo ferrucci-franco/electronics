@@ -867,6 +867,17 @@
     cursor:crosshair;
   }
 
+  .plot-spectrogram > #spectrogram-canvas,
+  .plot-spectrogram > #spectrogram-notes-canvas {
+    grid-row:2;
+    grid-column:1;
+  }
+
+  .plot-overlay-canvas {
+    pointer-events:none;
+    z-index:2;
+  }
+
   .plot-hover {
     position:absolute;
     display:none;
@@ -1053,8 +1064,8 @@
             <div class="frequency-range-slider">
               <div class="frequency-range-track" aria-hidden="true"></div>
               <div id="frequency-range-fill" class="frequency-range-fill" aria-hidden="true"></div>
-              <input id="min-frequency" type="range" min="0" max="20000" step="100" value="0" aria-label="Frecuencia mínima">
-              <input id="max-frequency" type="range" min="500" max="20000" step="500" value="8000" aria-label="Frecuencia máxima">
+              <input id="min-frequency" type="range" min="0" max="1000" step="1" value="0" aria-label="Frecuencia mínima">
+              <input id="max-frequency" type="range" min="0" max="1000" step="1" value="867" aria-label="Frecuencia máxima">
             </div>
             <div class="frequency-range-values">
               <span id="minfreq-value">20 Hz</span>
@@ -1130,6 +1141,10 @@
             <input id="show-spectrogram" type="checkbox" checked>
             <span id="show-spectrogram-label">Espectrograma</span>
           </label>
+          <label class="toggle-option" for="show-notes">
+            <input id="show-notes" type="checkbox">
+            <span id="show-notes-label">Notas musicales en espectrograma</span>
+          </label>
         </div>
       </section>
 
@@ -1167,6 +1182,7 @@
           <span id="spectrogram-meta" class="plot-meta">frecuencia vs tiempo</span>
         </div>
         <canvas id="spectrogram-canvas"></canvas>
+        <canvas id="spectrogram-notes-canvas" class="plot-overlay-canvas"></canvas>
         <div id="spectrogram-hover" class="plot-hover">
           <div class="plot-hover-line vertical"></div>
           <div class="plot-hover-line horizontal"></div>
@@ -1218,6 +1234,7 @@ const I18N = {
     showTime:'Se\u00f1al temporal',
     showSpectrum:'Espectro instant\u00e1neo',
     showSpectrogram:'Espectrograma',
+    showNotes:'Notas musicales en espectrograma',
     mic:'Micr\u00f3fono',
     tones:'Tonos puros',
     chromaticScale:'Escala Crom\u00e1tica Temperada: C4 \u2192 C5',
@@ -1296,6 +1313,7 @@ const I18N = {
     showTime:'Time signal',
     showSpectrum:'Instant spectrum',
     showSpectrogram:'Spectrogram',
+    showNotes:'Musical notes on spectrogram',
     mic:'Microphone',
     tones:'Pure tones',
     chromaticScale:'Equal Tempered Chromatic Scale: C4 \u2192 C5',
@@ -1374,6 +1392,7 @@ const I18N = {
     showTime:'Signal temporel',
     showSpectrum:'Spectre instantané',
     showSpectrogram:'Spectrogramme',
+    showNotes:'Notes de musique sur spectrogramme',
     mic:'Microphone',
     tones:'Tons purs',
     chromaticScale:'Gamme chromatique tempérée : C4 \u2192 C5',
@@ -1476,9 +1495,11 @@ const els = {
   showTime: $('show-time'),
   showSpectrum: $('show-spectrum'),
   showSpectrogram: $('show-spectrogram'),
+  showNotes: $('show-notes'),
   showTimeLabel: $('show-time-label'),
   showSpectrumLabel: $('show-spectrum-label'),
   showSpectrogramLabel: $('show-spectrogram-label'),
+  showNotesLabel: $('show-notes-label'),
   timePanel: $('time-panel'),
   spectrumPanel: $('spectrum-panel'),
   spectrogramPanel: $('spectrogram-panel'),
@@ -1491,6 +1512,7 @@ const els = {
   timeCanvas: $('time-canvas'),
   spectrumCanvas: $('spectrum-canvas'),
   spectrogramCanvas: $('spectrogram-canvas'),
+  spectrogramNotesCanvas: $('spectrogram-notes-canvas'),
   spectrumHover: $('spectrum-hover'),
   spectrogramHover: $('spectrogram-hover')
 };
@@ -1551,6 +1573,7 @@ const SPECTROGRAM_GENERATED_RESUME_HOLD_FRAMES = 24;
 const MIN_FREQUENCY_LIMIT = 20;
 const MAX_FREQUENCY_LIMIT = 20000;
 const MIN_FREQUENCY_GAP = 20;
+const FREQUENCY_SLIDER_RESOLUTION = 1000;
 const DEFAULT_SOURCE = 'fire';
 const CHROMATIC_SOURCE = 'chromatic-scale';
 
@@ -1732,6 +1755,7 @@ function updateLanguage() {
   els.showTimeLabel.textContent = tr.showTime;
   els.showSpectrumLabel.textContent = tr.showSpectrum;
   els.showSpectrogramLabel.textContent = tr.showSpectrogram;
+  els.showNotesLabel.textContent = tr.showNotes;
   els.timeTitle.textContent = tr.timeTitle;
   els.spectrumTitle.textContent = tr.spectrumTitle;
   els.spectrogramTitle.textContent = tr.spectrogramTitle;
@@ -1744,6 +1768,7 @@ function updateLanguage() {
   updateSliderLabels();
   updateThemeButton();
   updateRecordedProgress();
+  refreshPlotsAfterLayout();
   if (pausedSourceKind) {
     setStatus(tr.paused);
   } else if (running && !activeHoldState && !activePureTones.size && !activeChromaticNotes.size) {
@@ -1815,7 +1840,7 @@ function applySourcePresetConfig(source) {
   if (source !== 'windowlicker') return;
   els.frequencyScale.value = 'log';
   els.minFrequency.value = '0';
-  els.maxFrequency.value = String(MAX_FREQUENCY_LIMIT);
+  els.maxFrequency.value = String(FREQUENCY_SLIDER_RESOLUTION);
   els.fftSize.value = '11';
   els.showTime.checked = false;
   els.showSpectrum.checked = false;
@@ -2243,7 +2268,7 @@ function spectrogramLayout(width, height) {
   const rightPadding = 8 * devicePixelRatio;
   const colorbarWidth = 28 * devicePixelRatio;
   const colorbarGap = 6 * devicePixelRatio;
-  const labelWidth = 58 * devicePixelRatio;
+  const labelWidth = 36 * devicePixelRatio;
   const topInset = Math.max(14 * devicePixelRatio, height * 0.03);
   const bottomInset = Math.max(34 * devicePixelRatio, height * 0.11);
   return {
@@ -2301,13 +2326,23 @@ function audioFrequencyCeiling() {
   return audioContext ? Math.min(MAX_FREQUENCY_LIMIT, audioContext.sampleRate / 2) : MAX_FREQUENCY_LIMIT;
 }
 
+function sliderPosToFrequency(pos) {
+  const p = Math.max(0, Math.min(FREQUENCY_SLIDER_RESOLUTION, pos));
+  const norm = p / FREQUENCY_SLIDER_RESOLUTION;
+  return MIN_FREQUENCY_LIMIT * Math.pow(MAX_FREQUENCY_LIMIT / MIN_FREQUENCY_LIMIT, norm);
+}
+
+function frequencyToSliderPos(freq) {
+  const clamped = Math.max(MIN_FREQUENCY_LIMIT, Math.min(MAX_FREQUENCY_LIMIT, freq));
+  const norm = Math.log(clamped / MIN_FREQUENCY_LIMIT) / Math.log(MAX_FREQUENCY_LIMIT / MIN_FREQUENCY_LIMIT);
+  return norm * FREQUENCY_SLIDER_RESOLUTION;
+}
+
 function syncFrequencyRange(activeHandle = null) {
   const ceiling = audioFrequencyCeiling();
   const maxAllowed = Math.max(MIN_FREQUENCY_LIMIT + MIN_FREQUENCY_GAP, ceiling);
-  let minFreq = parseFloat(els.minFrequency.value) <= MIN_FREQUENCY_LIMIT
-    ? MIN_FREQUENCY_LIMIT
-    : Math.round(parseFloat(els.minFrequency.value) / 100) * 100;
-  let maxFreq = Math.round(parseFloat(els.maxFrequency.value) / 500) * 500;
+  let minFreq = sliderPosToFrequency(parseFloat(els.minFrequency.value));
+  let maxFreq = sliderPosToFrequency(parseFloat(els.maxFrequency.value));
 
   minFreq = Math.max(MIN_FREQUENCY_LIMIT, Math.min(minFreq, maxAllowed - MIN_FREQUENCY_GAP));
   maxFreq = Math.max(MIN_FREQUENCY_LIMIT + MIN_FREQUENCY_GAP, Math.min(maxFreq, maxAllowed));
@@ -2320,17 +2355,18 @@ function syncFrequencyRange(activeHandle = null) {
     }
   }
 
-  els.minFrequency.max = String(maxAllowed);
-  els.maxFrequency.max = String(maxAllowed);
-  els.minFrequency.value = String(minFreq <= MIN_FREQUENCY_LIMIT ? 0 : Math.round(minFreq));
-  els.maxFrequency.value = String(Math.round(maxFreq));
+  const ceilingPos = Math.round(frequencyToSliderPos(maxAllowed));
+  els.minFrequency.max = String(ceilingPos);
+  els.maxFrequency.max = String(ceilingPos);
+  els.minFrequency.value = String(Math.round(frequencyToSliderPos(minFreq)));
+  els.maxFrequency.value = String(Math.round(frequencyToSliderPos(maxFreq)));
 }
 
 function selectedFrequencyRange() {
   syncFrequencyRange();
-  const max = Math.min(parseFloat(els.maxFrequency.value), audioFrequencyCeiling());
-  const rawMin = parseFloat(els.minFrequency.value);
-  const min = Math.max(MIN_FREQUENCY_LIMIT, Math.min(rawMin <= MIN_FREQUENCY_LIMIT ? MIN_FREQUENCY_LIMIT : rawMin, max - MIN_FREQUENCY_GAP));
+  const max = Math.min(sliderPosToFrequency(parseFloat(els.maxFrequency.value)), audioFrequencyCeiling());
+  const rawMin = sliderPosToFrequency(parseFloat(els.minFrequency.value));
+  const min = Math.max(MIN_FREQUENCY_LIMIT, Math.min(rawMin, max - MIN_FREQUENCY_GAP));
   return {
     min,
     max,
@@ -2688,16 +2724,85 @@ function drawSpectrumFrame() {
   ctx.textAlign = 'left';
 }
 
+function drawSpectrogramChrome(ctx, layout, frequencyRange, dbFloor, width) {
+  const axisWidth = Math.round(layout.axisLeft);
+  const colorbarLeft = layout.colorbarLeft;
+  const plotRight = Math.round(colorbarLeft - layout.colorbarGap);
+  const plotTop = Math.round(layout.top);
+  const plotBottom = Math.round(layout.bottom);
+  const c = colors();
+  const ticks = spectrogramTicks(frequencyRange, layout);
+
+  ctx.strokeStyle = c.border;
+  ctx.globalAlpha = 0.26;
+  ticks.forEach(freq => {
+    const y = Math.round(spectrogramYForFrequency(freq, layout, frequencyRange)) + 0.5;
+    ctx.beginPath();
+    ctx.moveTo(axisWidth, y);
+    ctx.lineTo(plotRight, y);
+    ctx.stroke();
+  });
+  ctx.globalAlpha = 1;
+
+  ctx.fillStyle = c.muted;
+  ctx.font = `${11 * devicePixelRatio}px system-ui`;
+  ctx.textAlign = 'left';
+  ticks.forEach((freq, index) => {
+    const y = spectrogramYForFrequency(freq, layout, frequencyRange);
+    ctx.textBaseline = index === 0 ? 'top' : (index === ticks.length - 1 ? 'bottom' : 'middle');
+    ctx.fillText(formatFrequencyLabel(freq), 8 * devicePixelRatio, y);
+  });
+  ctx.textBaseline = 'alphabetic';
+
+  for (let y = plotTop; y < plotBottom; y++) {
+    const ratio = 1 - (y - layout.top) / Math.max(1, layout.bottom - layout.top);
+    ctx.fillStyle = spectrogramColor(ratio);
+    ctx.fillRect(colorbarLeft, y, layout.colorbarWidth, 1);
+  }
+  ctx.strokeStyle = c.border;
+  ctx.globalAlpha = 0.55;
+  ctx.strokeRect(colorbarLeft, layout.top, layout.colorbarWidth, layout.bottom - layout.top);
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = c.muted;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  const dbLabelLeft = colorbarLeft + layout.colorbarWidth + 4 * devicePixelRatio;
+  [1, 0.66, 0.33, 0].forEach(ratio => {
+    const db = dbFloor + (SPECTROGRAM_COLOR_CEILING - dbFloor) * ratio;
+    const y = spectrogramYForRatio(layout, ratio);
+    ctx.fillText(`${Math.round(db)} dB`, dbLabelLeft, y);
+  });
+  ctx.textBaseline = 'alphabetic';
+
+  ctx.strokeStyle = c.border;
+  ctx.globalAlpha = 0.45;
+  ctx.beginPath();
+  ctx.moveTo(axisWidth - 1 * devicePixelRatio, layout.top);
+  ctx.lineTo(axisWidth - 1 * devicePixelRatio, layout.bottom);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+
 function drawSpectrogramFrame() {
   clearCanvas(els.spectrogramCanvas);
-  const ctx = els.spectrogramCanvas.getContext('2d');
-  const layout = spectrogramLayout(els.spectrogramCanvas.width, els.spectrogramCanvas.height);
+  const canvas = els.spectrogramCanvas;
+  const ctx = canvas.getContext('2d');
+  const layout = spectrogramLayout(canvas.width, canvas.height);
+  const frequencyRange = selectedFrequencyRange();
+  const dbFloor = parseFloat(els.dbFloor.value);
   fillPlotArea(ctx, {
     left: layout.axisLeft,
     right: layout.plotRight,
     top: layout.top,
     bottom: layout.bottom
   });
+  drawSpectrogramChrome(ctx, layout, frequencyRange, dbFloor, canvas.width);
+  drawSpectrogramNoteOverlay(
+    layout,
+    frequencyRange,
+    Math.round(layout.axisLeft),
+    Math.round(layout.plotRight)
+  );
 }
 
 function drawStaticCanvases() {
@@ -3910,6 +4015,91 @@ function spectrogramYForFrequency(freq, layout, range = selectedFrequencyRange()
   return layout.bottom - ((clampedFreq - range.min) / Math.max(1, range.max - range.min)) * (layout.bottom - layout.top);
 }
 
+const NOTE_NAMES_ES = ['Do', 'Do#', 'Re', 'Re#', 'Mi', 'Fa', 'Fa#', 'Sol', 'Sol#', 'La', 'La#', 'Si'];
+const NOTE_NAMES_EN = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
+function octaveSubscript(n) {
+  return String(n).split('').map(d => String.fromCharCode(0x2080 + Number(d))).join('');
+}
+
+function musicalNoteLabel(noteIdx, octave) {
+  const sub = octaveSubscript(octave);
+  const en = `${NOTE_NAMES_EN[noteIdx]}${sub}`;
+  if (lang === 'es' || lang === 'fr') {
+    return `${NOTE_NAMES_ES[noteIdx]}${sub} (${en})`;
+  }
+  return en;
+}
+
+function musicalNotesForOverlay(range, layout) {
+  const tiers = [
+    [9],            // tier 1: A (La) — contains A4=440 Hz reference
+    [0],            // tier 2: C (Do) — octave start
+    [4, 7],         // tier 3: E (Mi), G (Sol)
+    [2, 5, 11]      // tier 4: D (Re), F (Fa), B (Si)
+  ];
+  const minSpacing = 18 * devicePixelRatio;
+  const drawnY = [];
+  const result = [];
+  for (const tier of tiers) {
+    for (let oct = 0; oct <= 10; oct++) {
+      for (const ni of tier) {
+        const semis = (oct * 12 + ni) - (4 * 12 + 9);
+        const freq = 440 * Math.pow(2, semis / 12);
+        if (freq < range.min || freq > range.max) continue;
+        const y = spectrogramYForFrequency(freq, layout, range);
+        if (y < layout.top || y > layout.bottom) continue;
+        const tooClose = drawnY.some(d => Math.abs(d - y) < minSpacing);
+        if (tooClose) continue;
+        drawnY.push(y);
+        result.push({ noteIdx: ni, octave: oct, freq, y });
+      }
+    }
+  }
+  return result;
+}
+
+function drawSpectrogramNoteOverlay(layout, range, axisWidth, plotRight) {
+  const overlay = els.spectrogramNotesCanvas;
+  ensureCanvasSize(overlay);
+  const ctx = overlay.getContext('2d');
+  ctx.clearRect(0, 0, overlay.width, overlay.height);
+  if (!els.showNotes?.checked) return;
+  const notes = musicalNotesForOverlay(range, layout);
+  if (!notes.length) return;
+  const lineColor = 'rgba(124, 224, 255, 0.85)';
+  const labelColor = 'rgb(170, 235, 255)';
+  ctx.save();
+  ctx.font = `${11 * devicePixelRatio}px system-ui`;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  const labelPad = 6 * devicePixelRatio;
+  const lineGap = 6 * devicePixelRatio;
+  ctx.lineWidth = 1;
+
+  notes.forEach(note => {
+    const label = musicalNoteLabel(note.noteIdx, note.octave);
+    const textWidth = ctx.measureText(label).width;
+    const labelStart = axisWidth + labelPad;
+    const lineStart = labelStart + textWidth + lineGap;
+    const y = Math.round(note.y) + 0.5;
+
+    if (lineStart < plotRight) {
+      ctx.strokeStyle = lineColor;
+      ctx.beginPath();
+      ctx.moveTo(lineStart, y);
+      ctx.lineTo(plotRight, y);
+      ctx.stroke();
+    }
+
+    ctx.fillStyle = labelColor;
+    ctx.fillText(label, labelStart, note.y);
+  });
+
+  ctx.textBaseline = 'alphabetic';
+  ctx.restore();
+}
+
 function spectrogramTicks(range, layout) {
   const plotHeight = Math.max(1, layout.bottom - layout.top);
   if (els.frequencyScale.value === 'log') {
@@ -3993,17 +4183,16 @@ function resetLongHistory() {
   if (longHistory) longHistory.fill(0);
 }
 
-function appendToLongHistory(timeData, sampleRate) {
+function appendToLongHistory(timeData, sampleRate, audioTime) {
   ensureLongHistory(sampleRate);
-  const now = performance.now();
   let samplesToCopy;
   if (longHistoryLastFrameTime === 0) {
     samplesToCopy = timeData.length;
   } else {
-    const elapsedMs = now - longHistoryLastFrameTime;
-    samplesToCopy = Math.min(timeData.length, Math.max(1, Math.round(elapsedMs * sampleRate / 1000)));
+    const elapsed = audioTime - longHistoryLastFrameTime;
+    samplesToCopy = Math.min(timeData.length, Math.max(1, Math.round(elapsed * sampleRate)));
   }
-  longHistoryLastFrameTime = now;
+  longHistoryLastFrameTime = audioTime;
   const startSrc = timeData.length - samplesToCopy;
   const len = longHistory.length;
   let w = longHistoryWriteIdx;
@@ -4086,18 +4275,24 @@ function drawTime({ capture = true } = {}) {
   const sampleRate = audioContext.sampleRate;
   if (capture) {
     analyser.getFloatTimeDomainData(timeData);
-    appendToLongHistory(timeData, sampleRate);
+    appendToLongHistory(timeData, sampleRate, audioContext.currentTime);
   } else if (!longHistoryFilled) {
     drawTimeFrame();
     return;
   }
   const totalWindowMs = msPerDiv * SCOPE_DIVS_X;
   const desiredSamples = Math.round(sampleRate * totalWindowMs / 1000);
-  // Pull a buffer big enough to display the requested window plus a margin
-  // for the trigger search; cap at what the long history can hold.
-  const maxScratch = longHistory ? longHistory.length : timeData.length;
-  const scratchSize = Math.min(maxScratch, Math.max(timeData.length, desiredSamples * 2));
-  const samples = readLongHistoryLastN(scratchSize);
+  // Use the analyser buffer directly when the requested window fits in it —
+  // sample-contiguous, no ring-buffer alignment glitches. Fall back to the
+  // long history only for timebases that exceed one analyser window.
+  let samples;
+  if (capture && desiredSamples <= timeData.length) {
+    samples = timeData;
+  } else {
+    const maxScratch = longHistory ? longHistory.length : timeData.length;
+    const scratchSize = Math.min(maxScratch, Math.max(timeData.length, desiredSamples * 2));
+    samples = readLongHistoryLastN(scratchSize);
+  }
   const windowSamples = Math.min(samples.length, desiredSamples);
   const availableStart = Math.max(0, samples.length - windowSamples);
   const start = findTriggerStart(samples, windowSamples, availableStart);
@@ -4209,7 +4404,6 @@ function drawSpectrogram() {
   const plotWidth = Math.max(1, plotRight - axisWidth);
   const speed = Math.min(plotWidth, Math.max(1, Math.round(parseInt(els.scrollSpeed.value, 10) * devicePixelRatio)));
   const c = colors();
-  const ticks = spectrogramTicks(frequencyRange, layout);
 
   analyser.getFloatFrequencyData(floatFreqData);
 
@@ -4235,53 +4429,8 @@ function drawSpectrogram() {
     ctx.fillRect(plotRight - speed, y, speed, 1);
   }
 
-  ctx.strokeStyle = c.border;
-  ctx.globalAlpha = 0.26;
-  ticks.forEach(freq => {
-    const y = Math.round(spectrogramYForFrequency(freq, layout, frequencyRange)) + 0.5;
-    ctx.beginPath();
-    ctx.moveTo(axisWidth, y);
-    ctx.lineTo(plotRight, y);
-    ctx.stroke();
-  });
-  ctx.globalAlpha = 1;
-
-  ctx.fillStyle = c.muted;
-  ctx.font = `${11 * devicePixelRatio}px system-ui`;
-  ctx.textAlign = 'left';
-  ticks.forEach((freq, index) => {
-    const y = spectrogramYForFrequency(freq, layout, frequencyRange);
-    ctx.textBaseline = index === 0 ? 'top' : (index === ticks.length - 1 ? 'bottom' : 'middle');
-    ctx.fillText(formatFrequencyLabel(freq), 8 * devicePixelRatio, y);
-  });
-  ctx.textBaseline = 'alphabetic';
-
-  for (let y = plotTop; y < plotBottom; y++) {
-    const ratio = 1 - (y - layout.top) / Math.max(1, layout.bottom - layout.top);
-    ctx.fillStyle = spectrogramColor(ratio);
-    ctx.fillRect(colorbarLeft, y, layout.colorbarWidth, 1);
-  }
-  ctx.strokeStyle = c.border;
-  ctx.globalAlpha = 0.55;
-  ctx.strokeRect(colorbarLeft, layout.top, layout.colorbarWidth, layout.bottom - layout.top);
-  ctx.globalAlpha = 1;
-  ctx.fillStyle = c.muted;
-  ctx.textAlign = 'right';
-  ctx.textBaseline = 'middle';
-  [1, 0.66, 0.33, 0].forEach(ratio => {
-    const db = dbFloor + (SPECTROGRAM_COLOR_CEILING - dbFloor) * ratio;
-    const y = spectrogramYForRatio(layout, ratio);
-    ctx.fillText(`${Math.round(db)} dB`, width - 6 * devicePixelRatio, y);
-  });
-  ctx.textBaseline = 'alphabetic';
-
-  ctx.strokeStyle = c.border;
-  ctx.globalAlpha = 0.45;
-  ctx.beginPath();
-  ctx.moveTo(axisWidth - 1 * devicePixelRatio, layout.top);
-  ctx.lineTo(axisWidth - 1 * devicePixelRatio, layout.bottom);
-  ctx.stroke();
-  ctx.globalAlpha = 1;
+  drawSpectrogramChrome(ctx, layout, frequencyRange, dbFloor, width);
+  drawSpectrogramNoteOverlay(layout, frequencyRange, axisWidth, plotRight);
   updateSpectrogramHover();
 }
 
@@ -4488,6 +4637,8 @@ els.timeCanvas.addEventListener('mouseleave', () => {
 [els.showTime, els.showSpectrum, els.showSpectrogram].forEach(element => {
   element.addEventListener('change', updatePanelLayout);
 });
+
+els.showNotes.addEventListener('change', refreshPlotsAfterLayout);
 
 window.addEventListener('resize', refreshPlotsAfterLayout);
 
