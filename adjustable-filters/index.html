@@ -157,7 +157,11 @@
       </div>
 
       <div class="row" style="margin-top:6px">
-        <label for="bodeDb" id="bodeScaleLabel">Y scale: logarithmic / linear</label>
+        <label for="bodeXLog" id="bodeXScaleLabel">X scale logarithmic</label>
+        <input id="bodeXLog" type="checkbox" checked />
+      </div>
+      <div class="row">
+        <label for="bodeDb" id="bodeScaleLabel">Y scale: dB (log) / linear</label>
         <input id="bodeDb" type="checkbox" checked />
       </div>
       <div class="row">
@@ -208,7 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
       wave:'Type', waveOpt:{sin:'Sine',square:'Square',triangle:'Triangle',saw:'Sawtooth',trap:'Trapezoid'},
       freq:'Freq (Hz)', nmax:'Cycles Nmax', hint:'Amplitude = 1. Time window is t ∈ [0, Nmax/f].',
       order:'Order',
-      fc1:'Filter 1', fc2:'Filter 2', bodeScale:'Y scale: logarithmic / linear', showPhase:'Show phase',
+      fc1:'Filter 1', fc2:'Filter 2', bodeXScale:'X scale logarithmic', bodeScale:'Y scale: dB (log) / linear', showPhase:'Show phase',
       timeTitle:()=>'Time response', bodeTitle:'Bode — Magnitude', bodePhaseTitle:'Bode — Phase',
       traceIn:'Input', traceY1:'Output 1', traceY2:'Output 2', bodeYdB:'|H| (dB)', bodeYlin:'|H| (linear)', bodeX:'Frequency (Hz)', phaseY:'Phase (deg)',
       lp:'Low-pass', hp:'High-pass'
@@ -217,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
       wave:'Type', waveOpt:{sin:'Sinusoïdal',square:'Carré',triangle:'Triangulaire',saw:'Dent de scie',trap:'Trapézoïdal'},
       freq:'Fréq. (Hz)', nmax:'Cycles Nmax', hint:'Amplitude = 1. Fenêtre temporelle t ∈ [0, Nmax/f].',
       order:'Ordre',
-      fc1:'Filtre 1', fc2:'Filtre 2', bodeScale:'Échelle Y : logarithmique / linéaire', showPhase:'Afficher la phase',
+      fc1:'Filtre 1', fc2:'Filtre 2', bodeXScale:'Échelle X logarithmique', bodeScale:'Échelle Y : dB (log) / linéaire', showPhase:'Afficher la phase',
       timeTitle:()=>'Réponse temporelle', bodeTitle:'Bode — Magnitude', bodePhaseTitle:'Bode — Phase',
       traceIn:'Entrée', traceY1:'Sortie 1', traceY2:'Sortie 2', bodeYdB:'|H| (dB)', bodeYlin:'|H| (linéaire)', bodeX:'Fréquence (Hz)', phaseY:'Phase (deg)',
       lp:'Passe-bas', hp:'Passe-haut'
@@ -226,7 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
       wave:'Tipo', waveOpt:{sin:'Seno',square:'Cuadrada',triangle:'Triangular',saw:'Diente de sierra',trap:'Trapezoidal'},
       freq:'Frecuencia (Hz)', nmax:'Ciclos Nmax', hint:'Amplitud = 1. Ventana temporal t ∈ [0, Nmax/f].',
       order:'Orden',
-      fc1:'Filtro 1', fc2:'Filtro 2', bodeScale:'Escala Y: logarítmica / lineal', showPhase:'Mostrar fase',
+      fc1:'Filtro 1', fc2:'Filtro 2', bodeXScale:'Escala X logarítmica', bodeScale:'Escala Y: dB (log) / lineal', showPhase:'Mostrar fase',
       timeTitle:()=>'Respuesta temporal', bodeTitle:'Bode — Magnitud', bodePhaseTitle:'Bode — Fase',
       traceIn:'Entrada', traceY1:'Salida 1', traceY2:'Salida 2', bodeYdB:'|H| (dB)', bodeYlin:'|H| (lineal)', bodeX:'Frecuencia (Hz)', phaseY:'Fase (°)',
       lp:'Pasa-bajo', hp:'Pasa-alto'
@@ -266,7 +270,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fc1:250, fc2:150, f1type:'lp', f2type:'lp',
     order1:4, order2:4,
     y1:null, y2:null,
-    bodeDb:true, showPhase:false
+    bodeDb:true, xLog:true, showPhase:false
   };
 
   const getFs = () => state.fs;
@@ -275,6 +279,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const hzToSliderVal = hz => log10(Math.min(10000, Math.max(20, hz)));
   const sliderValToHz = v  => Math.round(pow10(parseFloat(v)));
   const bodeDefaultXRangeExp = () => [Math.log10(BODE_FMIN), Math.log10(BODE_FMAX)];
+  const bodeDefaultXRangeLinear = () => [BODE_FMIN, BODE_FMAX];
+  const bodeXAxisLayout = () => state.xLog
+    ? {type:'log', range: bodeDefaultXRangeExp()}
+    : {type:'linear', range: bodeDefaultXRangeLinear()};
 
   // ========= Theme toggle (solo light/dark, sin Auto) =========
   (function themeToggle(){
@@ -303,7 +311,7 @@ document.addEventListener('DOMContentLoaded', () => {
     LANG=l; const t=TXT[l];
     [['title', t.title], ['inCardTitle', t.inCard], ['waveLbl', t.wave],
      ['freqLbl', t.freq], ['nmaxLbl', t.nmax], ['inHint', t.hint],
-     ['fc1Label', t.fc1], ['fc2Label', t.fc2], ['bodeScaleLabel', t.bodeScale], ['showPhaseLabel', t.showPhase],
+     ['fc1Label', t.fc1], ['fc2Label', t.fc2], ['bodeXScaleLabel', t.bodeXScale], ['bodeScaleLabel', t.bodeScale], ['showPhaseLabel', t.showPhase],
      ['order1Label', t.order], ['order2Label', t.order]
     ].forEach(([id,txt])=>{ const el=$('#'+id); if(el) el.innerHTML=txt; });
 
@@ -545,6 +553,29 @@ document.addEventListener('DOMContentLoaded', () => {
     if(state.bodeDb) setMagYAxisdB(TXT[LANG].bodeYdB);
     else setMagYAxisLinear();
   }
+  function applyBodeXAxis(){
+    if(!(window.Plotly && bodeMagBuilt)) return;
+    const layout = state.xLog
+      ? {'xaxis.type':'log', 'xaxis.autorange':false, 'xaxis.range':bodeDefaultXRangeExp()}
+      : {'xaxis.type':'linear', 'xaxis.autorange':false, 'xaxis.range':bodeDefaultXRangeLinear()};
+    Plotly.relayout('bodeMag', layout);
+    if(state.showPhase && bodePhaseBuilt) Plotly.relayout('bodePhase', layout);
+  }
+  function resetBodeView(){
+    if(!(window.Plotly && bodeMagBuilt)) return Promise.resolve();
+    const xlayout = state.xLog
+      ? {'xaxis.type':'log','xaxis.autorange':false,'xaxis.range':bodeDefaultXRangeExp()}
+      : {'xaxis.type':'linear','xaxis.autorange':false,'xaxis.range':bodeDefaultXRangeLinear()};
+
+    _syncing = true;
+    const ops = [
+      Plotly.relayout('bodeMag', xlayout).then(enforceMagYAxis)
+    ];
+    if(state.showPhase && bodePhaseBuilt){
+      ops.push(Plotly.relayout('bodePhase', {...xlayout, 'yaxis.autorange':true}));
+    }
+    return Promise.all(ops).finally(()=>{ _syncing = false; });
+  }
 
   // ========= Construcción de gráficos =========
   async function buildPlots(){
@@ -588,7 +619,7 @@ document.addEventListener('DOMContentLoaded', () => {
       {type:'scatter', mode:'lines', name:t.fc2, x:bodeCache2.f, y:y2m, line:{color:COLORS.f2}}
     ], {
       margin:{l:70,r:16,t:60,b:40},
-      xaxis:{title:t.bodeX, type:'log', range: bodeDefaultXRangeExp()},
+      xaxis:{title:t.bodeX, ...bodeXAxisLayout()},
       yaxis:{title: state.bodeDb ? t.bodeYdB : t.bodeYlin, autorange:true},
       legend:{orientation:'h', x:0.5, xanchor:'center', y:1.005, yanchor:'bottom'},
       title:{text:'<b>'+t.bodeTitle+'</b>', x:0.5, xanchor:'center', font:{size:18}},
@@ -623,7 +654,7 @@ document.addEventListener('DOMContentLoaded', () => {
           {type:'scatter', mode:'lines', name:t.fc2, x:bodeCache2.f, y:y2p, line:{color:COLORS.f2}}
         ], {
           margin:{l:70,r:16,t:60,b:40},
-          xaxis:{title:t.bodeX, type:'log', range: bodeDefaultXRangeExp()},
+          xaxis:{title:t.bodeX, ...bodeXAxisLayout()},
           yaxis:{title: t.phaseY, autorange:true},
           legend:{orientation:'h', x:0.5, xanchor:'center', y:1.005, yanchor:'bottom'},
           title:{text:'<b>'+t.bodePhaseTitle+'</b>', x:0.5, xanchor:'center', font:{size:18}},
@@ -658,12 +689,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const xr0 = ev['xaxis.range[0]'];
       const xr1 = ev['xaxis.range[1]'];
       const autor = ev['xaxis.autorange'];
+      const xtype = ev['xaxis.type'];
 
       _syncing = true;
       if(xr0!=null && xr1!=null){
-        Plotly.relayout(toId, {'xaxis.type':'log', 'xaxis.autorange': false, 'xaxis.range':[xr0,xr1]}).then(()=>{_syncing=false;});
+        Plotly.relayout(toId, {'xaxis.type': xtype || (state.xLog ? 'log' : 'linear'), 'xaxis.autorange': false, 'xaxis.range':[xr0,xr1]}).then(()=>{_syncing=false;});
       }else if(autor){
-        Plotly.relayout(toId, {'xaxis.type':'log', 'xaxis.autorange': true}).then(()=>{_syncing=false;});
+        Plotly.relayout(toId, {'xaxis.type': xtype || (state.xLog ? 'log' : 'linear'), 'xaxis.autorange': true}).then(()=>{_syncing=false;});
       }else{
         _syncing=false;
       }
@@ -681,13 +713,8 @@ document.addEventListener('DOMContentLoaded', () => {
   function setupBodeDoubleClick(){
     const mag = document.getElementById('bodeMag');
     const ph  = document.getElementById('bodePhase');
-    const home = ()=> {
-      const xr = bodeDefaultXRangeExp();
-      Plotly.relayout('bodeMag', {'xaxis.type':'log','xaxis.autorange':false,'xaxis.range':xr})
-        .then(enforceMagYAxis);
-      if(state.showPhase){
-        Plotly.relayout('bodePhase', {'xaxis.type':'log','xaxis.autorange':false,'xaxis.range':xr,'yaxis.autorange':true});
-      }
+    const home = () => {
+      resetBodeView();
       return false;
     };
     if(mag && mag.on){
@@ -747,6 +774,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const fc1=$('#fc1'), fc2=$('#fc2'), fc1Val=$('#fc1Val'), fc2Val=$('#fc2Val');
   const f1type=$('#f1type'), f2type=$('#f2type');
   const order1Sel=$('#order1Sel'), order2Sel=$('#order2Sel');
+  const bodeXLog=$('#bodeXLog');
   const bodeDb=$('#bodeDb');
   const showPhase=$('#showPhase');
   const waveSel=$('#waveSel'), freqEl=$('#freq'), nmaxEl=$('#nmax');
@@ -763,6 +791,8 @@ document.addEventListener('DOMContentLoaded', () => {
   fc2Val.textContent = state.fc2.toLocaleString()+' Hz';
   freqVal.textContent = state.freq.toLocaleString()+' Hz';
   nmaxVal.textContent = state.nmax.toString();
+  bodeXLog.checked = state.xLog;
+  bodeDb.checked = state.bodeDb;
   showPhase.checked = state.showPhase;
   order1Sel.value = String(state.order1);
   order2Sel.value = String(state.order2);
@@ -786,6 +816,7 @@ document.addEventListener('DOMContentLoaded', () => {
     refreshAll();
   });
 
+  bodeXLog.addEventListener('change', ()=>{ state.xLog=bodeXLog.checked; applyBodeXAxis(); });
   bodeDb.addEventListener('change', ()=>{ state.bodeDb=bodeDb.checked; applyBodeMode(); });
 
   showPhase.addEventListener('change', ()=>{ state.showPhase=showPhase.checked; ensurePhasePlot().then(()=>{ setupBodeLinking(); setupBodeDoubleClick(); }); });
