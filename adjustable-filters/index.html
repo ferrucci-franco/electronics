@@ -160,7 +160,7 @@
           <label for="freq" id="freqLbl" class="grow">Freq (Hz)</label>
           <span id="freqVal" class="pill">100 Hz</span>
         </div>
-        <input id="freq" type="range" min="0.0000" max="4.0000" step="0.001" value="2.0000" />
+        <input id="freq" type="range" min="0.00000" max="4.00000" step="0.00001" value="2.00000" />
 
         <!-- Nmax slider -->
         <div class="row" style="margin-top:6px">
@@ -203,7 +203,7 @@
         </div>
 
         <div class="row disable-target" style="margin-top:6px"><span id="fc1Val" class="badge">250 Hz</span></div>
-        <input id="fc1" class="disable-target" type="range" min="1.3010" max="4.0000" step="0.001" />
+        <input id="fc1" class="disable-target" type="range" min="1.30100" max="4.00000" step="0.00001" />
         <div class="row" style="margin-top:10px">
           <button id="infoBtn1" type="button" class="subtle-btn info-action">Filter information</button>
         </div>
@@ -239,7 +239,7 @@
         </div>
 
         <div class="row disable-target" style="margin-top:6px"><span id="fc2Val" class="badge">150 Hz</span></div>
-        <input id="fc2" class="disable-target" type="range" min="1.3010" max="4.0000" step="0.001" />
+        <input id="fc2" class="disable-target" type="range" min="1.30100" max="4.00000" step="0.00001" />
         <div class="row" style="margin-top:10px">
           <button id="infoBtn2" type="button" class="subtle-btn info-action">Filter information</button>
         </div>
@@ -402,6 +402,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const SPP    = 256;
   const FREQ_MIN = 10;
   const FREQ_MAX = 10000;
+  const LOG_SLIDER_DIGITS = 5;
 
   const TRAP_EDGE_FRAC = 0.30;
 
@@ -1228,15 +1229,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const infoBtn1=$('#infoBtn1'), infoBtn2=$('#infoBtn2'), infoBackdrop=$('#infoModalBackdrop'), infoCloseBtn=$('#infoCloseBtn');
 
   // === Aplicar constantes de Nmax al slider ===
-  freqEl.min = freqHzToSliderVal(FREQ_MIN).toFixed(4);
-  freqEl.max = freqHzToSliderVal(FREQ_MAX).toFixed(4);
+  freqEl.min = freqHzToSliderVal(FREQ_MIN).toFixed(LOG_SLIDER_DIGITS);
+  freqEl.max = freqHzToSliderVal(FREQ_MAX).toFixed(LOG_SLIDER_DIGITS);
   nmaxEl.min = String(NMAX_MIN);
   nmaxEl.max = String(NMAX_MAX);
 
   // Init sliders y badges
-  fc1.value = hzToSliderVal(state.fc1).toFixed(4);
-  fc2.value = hzToSliderVal(state.fc2).toFixed(4);
-  freqEl.value = freqHzToSliderVal(state.freq).toFixed(4);
+  fc1.value = hzToSliderVal(state.fc1).toFixed(LOG_SLIDER_DIGITS);
+  fc2.value = hzToSliderVal(state.fc2).toFixed(LOG_SLIDER_DIGITS);
+  freqEl.value = freqHzToSliderVal(state.freq).toFixed(LOG_SLIDER_DIGITS);
   fc1Val.textContent = state.fc1.toLocaleString()+' Hz';
   fc2Val.textContent = state.fc2.toLocaleString()+' Hz';
   freqVal.textContent = state.freq.toLocaleString()+' Hz';
@@ -1258,20 +1259,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function setFc1(){ state.fc1=clampFc(sliderValToHz(fc1.value)); fc1Val.textContent=state.fc1.toLocaleString()+' Hz'; refreshAll(); }
   function setFc2(){ state.fc2=clampFc(sliderValToHz(fc2.value)); fc2Val.textContent=state.fc2.toLocaleString()+' Hz'; refreshAll(); }
-  function handleFilterFreqArrowKey(ev, sliderEl, currentHz, setter){
+  function handleHzArrowKey(ev, sliderEl, currentHz, clampFn, toSliderFn, setter){
     const delta = ev.key === 'ArrowLeft' || ev.key === 'ArrowDown' ? -1
       : ev.key === 'ArrowRight' || ev.key === 'ArrowUp' ? 1
       : 0;
     if(!delta) return;
     ev.preventDefault();
-    const nextHz = clampFc(currentHz + delta);
-    sliderEl.value = hzToSliderVal(nextHz).toFixed(4);
+    const nextHz = clampFn(currentHz + delta);
+    sliderEl.value = toSliderFn(nextHz).toFixed(LOG_SLIDER_DIGITS);
     setter();
   }
   fc1.addEventListener('input', setFc1);
   fc2.addEventListener('input', setFc2);
-  fc1.addEventListener('keydown', ev => handleFilterFreqArrowKey(ev, fc1, state.fc1, setFc1));
-  fc2.addEventListener('keydown', ev => handleFilterFreqArrowKey(ev, fc2, state.fc2, setFc2));
+  fc1.addEventListener('keydown', ev => handleHzArrowKey(ev, fc1, state.fc1, clampFc, hzToSliderVal, setFc1));
+  fc2.addEventListener('keydown', ev => handleHzArrowKey(ev, fc2, state.fc2, clampFc, hzToSliderVal, setFc2));
 
   f1type.addEventListener('change', ()=>{ state.f1type=f1type.value; refreshAll(); });
   f2type.addEventListener('change', ()=>{ state.f2type=f2type.value; refreshAll(); });
@@ -1321,7 +1322,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let f=Math.round(freqSliderValToHz(freqEl.value||freqHzToSliderVal(100))), N=Math.round(+nmaxEl.value||10);
     f = clampFreq(f);
     N = Math.min(NMAX_MAX, Math.max(NMAX_MIN, N));
-    freqEl.value=freqHzToSliderVal(f).toFixed(4); nmaxEl.value=N;
+    freqEl.value=freqHzToSliderVal(f).toFixed(LOG_SLIDER_DIGITS); nmaxEl.value=N;
     state.freq=f; state.nmax=N;
     freqVal.textContent = f.toLocaleString()+' Hz';
     nmaxVal.textContent = N.toString();
@@ -1332,6 +1333,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   waveSel.addEventListener('change', rebuildInputAndOutputs);
   freqEl.addEventListener('input', rebuildInputAndOutputs);
+  freqEl.addEventListener('keydown', ev => handleHzArrowKey(ev, freqEl, state.freq, clampFreq, freqHzToSliderVal, rebuildInputAndOutputs));
   nmaxEl.addEventListener('input', rebuildInputAndOutputs);
 
   function openInfoModal(filterIndex){
@@ -1356,7 +1358,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ========= Init =========
   setLang('en');
-  $('#waveSel').value=state.wave; $('#freq').value=freqHzToSliderVal(state.freq).toFixed(4); $('#nmax').value=state.nmax;
+  $('#waveSel').value=state.wave; $('#freq').value=freqHzToSliderVal(state.freq).toFixed(LOG_SLIDER_DIGITS); $('#nmax').value=state.nmax;
   $('#f1type').value=state.f1type; $('#f2type').value=state.f2type;
   order1Sel.value=String(state.order1);
   order2Sel.value=String(state.order2);
