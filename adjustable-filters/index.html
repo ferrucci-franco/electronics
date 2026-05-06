@@ -3,30 +3,41 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Signal → Two Adjustable Filters</title>
+<title>Continuous-time Filters Explorer</title>
 <meta name="description" content="Single-frequency input (amp=1)...(LP/HP), time plot and Bode plot (magnitude + optional phase).">
+<script>
+  (function(){
+    var hour = new Date().getHours();
+    var mode = (hour >= 7 && hour < 18) ? 'light' : 'dark';
+    document.documentElement.classList.add(mode);
+  })();
+</script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 <script defer src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
 <style>
   :root{
-    --bg:#ffffff; --fg:#0f1222; --muted:#5a6275; --card:#f7f8fb; --border:#e6eaf3; --link:#0b6cff;
-    --paper:#ffffff; --plot:#ffffff;
+    --bg:#ffffff; --fg:#0f1222; --muted:#5a6275; --card:#eef4ff; --border:#d7e2f4; --link:#0b6cff;
+    --paper:#ffffff; --plot:#ffffff; --panel:#f6f8fc;
+    --scroll-track:#e4ebf7; --scroll-thumb:#a8bbdb; --scroll-thumb-hover:#7f97bf;
     --c-in:#888888; --c-y1:#1f77b4; --c-y2:#ff7f0e;
   }
-  @media (prefers-color-scheme: dark){
-    :root{ --bg:#0b0e15; --fg:#eaf0ff; --muted:#a9b1c6; --card:#111624; --border:#1d2540; --link:#8ab4ff;
-           --paper:#111624; --plot:#111624; }
-  }
-  html.dark{ --bg:#0b0e15; --fg:#eaf0ff; --muted:#a9b1c6; --card:#111624; --border:#1d2540; --link:#8ab4ff; --paper:#111624; --plot:#111624; }
-  html.light{ --bg:#ffffff; --fg:#0f1222; --muted:#5a6275; --card:#f7f8fb; --border:#e6eaf3; --link:#0b6cff; --paper:#ffffff; --plot:#ffffff; }
+  html.dark{ --bg:#0b0e15; --fg:#eaf0ff; --muted:#a9b1c6; --card:#151d30; --border:#27324f; --link:#8ab4ff; --paper:#111624; --plot:#111624; --panel:#0f1524; --scroll-track:#131b2e; --scroll-thumb:#415374; --scroll-thumb-hover:#5b739d; }
+  html.light{ --bg:#ffffff; --fg:#0f1222; --muted:#5a6275; --card:#eef4ff; --border:#d7e2f4; --link:#0b6cff; --paper:#ffffff; --plot:#ffffff; --panel:#f6f8fc; --scroll-track:#e4ebf7; --scroll-thumb:#a8bbdb; --scroll-thumb-hover:#7f97bf; }
 
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--fg);font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Arial;overflow:hidden}
   a{color:var(--link);text-decoration:none}
 
-  .grid{display:grid;grid-template-columns:340px 1fr 1fr;gap:10px;padding:10px;height:100vh}
+  .grid{display:grid;grid-template-columns:340px minmax(0,1fr) minmax(0,1fr);gap:10px;padding:10px;height:100vh}
   .panel{border:1px solid var(--border);background:var(--card);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:10px;min-width:0}
-  .controls{overflow:auto}
+  .controls{background:var(--panel); overflow:auto; scrollbar-width:thin; scrollbar-color:var(--scroll-thumb) var(--scroll-track)}
+  .controls::-webkit-scrollbar{width:12px}
+  .controls::-webkit-scrollbar-track{background:var(--scroll-track); border-radius:999px}
+  .controls::-webkit-scrollbar-thumb{background:linear-gradient(180deg, var(--scroll-thumb), var(--scroll-thumb-hover)); border-radius:999px; border:2px solid var(--scroll-track)}
+  .controls::-webkit-scrollbar-thumb:hover{background:var(--scroll-thumb-hover)}
   .muted{color:var(--muted)}
+  .disabled-label{color:var(--muted); opacity:.6}
   .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   label{font-size:15px}
   input[type=range]{width:100%}
@@ -45,6 +56,7 @@
   .seg button.active{background:var(--bg);color:var(--fg)}
 
   .plotwrap{height:100%;min-height:0}
+  .plotwrap.panel{background:var(--paper)}
   #timePlot{width:100%;height:100%}
 
   .bodeWrap{display:flex;flex-direction:column;gap:8px; height:100%;}
@@ -55,8 +67,59 @@
   .card{border:1px solid var(--border);border-radius:12px;padding:10px;background:var(--paper)}
   .card h3{margin:0 0 6px;font-size:15px}
   .grow{flex:1}
+  .filter-title{font-weight:700}
   .pill{font-size:12px;padding:2px 6px;border:1px solid var(--border);border-radius:999px}
   .copyright{font-size:12px;line-height:1.25}
+  .subtle-btn{padding:7px 10px}
+  .info-action{
+    background:#4f6994 !important; color:#f7faff !important; border-color:#6a85b2 !important;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+  }
+  .info-action:hover{filter:none !important; background:#5b78a8 !important}
+  html.dark .info-action{
+    background:#24314f !important; color:#f2f6ff !important; border-color:#3c527f !important;
+  }
+  html.dark .info-action:hover{background:#2d3d64 !important}
+  .info-action:disabled{
+    cursor:not-allowed; opacity:.45; filter:none !important;
+  }
+  .card.disabled{opacity:.75}
+  .card.disabled .disable-target{pointer-events:none; opacity:.55}
+  .settings-card{gap:14px}
+  .settings-card .row{gap:14px}
+  .settings-card .row + .row{margin-top:8px}
+  .settings-card .phase-row{margin-top:14px}
+  .section-subtitle{margin:12px 0 4px; font-size:16px; color:var(--fg); font-weight:700}
+
+  .modal-backdrop{
+    position:fixed; inset:0; display:none; align-items:center; justify-content:center;
+    background:rgba(15,18,34,.35); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+    padding:20px; z-index:50;
+  }
+  .modal-backdrop.open{display:flex}
+  .modal{
+    width:min(99vw, 1520px); max-height:min(88vh, 860px); overflow:hidden;
+    border:1px solid var(--border); border-radius:18px; background:var(--card); color:var(--fg);
+    box-shadow:0 24px 80px rgba(0,0,0,.24); padding:16px; display:flex; flex-direction:column; gap:14px;
+  }
+  .modal.single-filter{width:min(99vw, 1120px); max-height:min(88vh, 640px)}
+  .modal-header{display:flex; gap:12px; align-items:center; justify-content:space-between}
+  .modal-header h3{margin:0; font-size:20px}
+  .icon-btn{min-width:42px; min-height:42px; font-size:20px; line-height:1}
+  .modal-grid{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px}
+  .modal-grid.single-filter{grid-template-columns:1fr}
+  .info-card{border:1px solid var(--border); border-radius:14px; background:var(--paper); padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0}
+  .meta{display:grid; grid-template-columns:auto 1fr; gap:6px 10px; font-size:14px}
+  .meta dt{margin:0; color:var(--muted)}
+  .meta dd{margin:0}
+  .eq-title{font-size:13px; color:var(--muted)}
+  .eq-block{display:block; width:100%; overflow-x:auto; overflow-y:hidden; max-width:100%; min-width:0; padding:8px 6px; border:1px solid var(--border); border-radius:12px; background:var(--card); white-space:nowrap}
+  .eq-block .katex-display{margin:0}
+  .eq-block .katex-display > .katex{display:inline-block; min-width:max-content}
+  .note{font-size:13px; color:var(--muted)}
+  @media (max-width: 900px){
+    .modal-grid{grid-template-columns:1fr}
+  }
 </style>
 </head>
 <body>
@@ -65,7 +128,7 @@
     <section class="panel controls">
       <div class="row hdrrow">
         <div>
-          <h2 id="title" style="margin:0 0 4px;font-size:18px">Signal → Two Adjustable Filters</h2>
+          <h2 id="title" style="margin:0 0 4px;font-size:18px">Continuous-time Filters Explorer</h2>
         </div>
         <div class="lang-theme" aria-label="language switcher">
           <div class="seg" role="tablist">
@@ -81,7 +144,7 @@
       <div class="card">
         <h3 id="inCardTitle">Input (single frequency)</h3>
 
-        <div class="row">
+        <div class="row" style="margin-bottom:4px">
           <label for="waveSel" id="waveLbl" class="grow">Type</label>
           <select id="waveSel">
             <option value="sin">Sine</option>
@@ -97,7 +160,7 @@
           <label for="freq" id="freqLbl" class="grow">Freq (Hz)</label>
           <span id="freqVal" class="pill">100 Hz</span>
         </div>
-        <input id="freq" type="range" min="1" max="10000" step="1" value="100" />
+        <input id="freq" type="range" min="0.0000" max="4.0000" step="0.001" value="2.0000" />
 
         <!-- Nmax slider -->
         <div class="row" style="margin-top:6px">
@@ -111,64 +174,110 @@
       </div>
 
       <!-- Filter 1 -->
-      <div class="card">
+      <div class="card" id="filter1Card">
         <div class="row">
-          <label id="fc1Label" class="grow"><strong>Filter 1</strong></label>
+          <label id="fc1Label" class="grow filter-title"><strong>Filter 1</strong></label>
+        </div>
+
+        <div class="row" style="margin-top:4px">
+          <label for="f1Enabled" id="f1EnabledLabel" class="grow">Enable filter 1</label>
+          <input id="f1Enabled" type="checkbox" checked />
+        </div>
+
+        <div class="row disable-target" style="margin-top:10px">
+          <label id="type1Label" class="grow">Type</label>
           <select id="f1type">
             <option value="lp">Low-pass</option>
             <option value="hp">High-pass</option>
           </select>
         </div>
 
-        <div class="row" style="margin-top:4px">
+        <div class="row disable-target" style="margin-top:4px">
           <label id="order1Label" class="grow">Order</label>
           <select id="order1Sel">
+            <option value="1">1</option>
             <option value="2">2</option>
             <option value="4" selected>4</option>
             <option value="6">6</option>
           </select>
         </div>
 
-        <div class="row" style="margin-top:6px"><span id="fc1Val" class="badge">250 Hz</span></div>
-        <input id="fc1" type="range" min="1.3010" max="4.0000" step="0.001" />
+        <div class="row disable-target" style="margin-top:6px"><span id="fc1Val" class="badge">250 Hz</span></div>
+        <input id="fc1" class="disable-target" type="range" min="1.3010" max="4.0000" step="0.001" />
+        <div class="row" style="margin-top:10px">
+          <button id="infoBtn1" type="button" class="subtle-btn info-action">Filter information</button>
+        </div>
       </div>
 
       <!-- Filter 2 -->
-      <div class="card">
+      <div class="card" id="filter2Card">
         <div class="row">
-          <label id="fc2Label" class="grow"><strong>Filter 2</strong></label>
+          <label id="fc2Label" class="grow filter-title"><strong>Filter 2</strong></label>
+        </div>
+
+        <div class="row" style="margin-top:4px">
+          <label for="f2Enabled" id="f2EnabledLabel" class="grow">Enable filter 2</label>
+          <input id="f2Enabled" type="checkbox" checked />
+        </div>
+
+        <div class="row disable-target" style="margin-top:10px">
+          <label id="type2Label" class="grow">Type</label>
           <select id="f2type">
             <option value="lp">Low-pass</option>
             <option value="hp">High-pass</option>
           </select>
         </div>
 
-        <div class="row" style="margin-top:4px">
+        <div class="row disable-target" style="margin-top:4px">
           <label id="order2Label" class="grow">Order</label>
           <select id="order2Sel">
+            <option value="1">1</option>
             <option value="2">2</option>
             <option value="4" selected>4</option>
             <option value="6">6</option>
           </select>
         </div>
 
-        <div class="row" style="margin-top:6px"><span id="fc2Val" class="badge">150 Hz</span></div>
-        <input id="fc2" type="range" min="1.3010" max="4.0000" step="0.001" />
+        <div class="row disable-target" style="margin-top:6px"><span id="fc2Val" class="badge">150 Hz</span></div>
+        <input id="fc2" class="disable-target" type="range" min="1.3010" max="4.0000" step="0.001" />
+        <div class="row" style="margin-top:10px">
+          <button id="infoBtn2" type="button" class="subtle-btn info-action">Filter information</button>
+        </div>
       </div>
 
-      <div class="row" style="margin-top:6px">
-        <label for="bodeXLog" id="bodeXScaleLabel">X scale logarithmic</label>
-        <input id="bodeXLog" type="checkbox" checked />
+      <div class="card settings-card">
+        <h3 id="layoutCardTitle">Layout</h3>
+        <div class="row" style="margin-top:2px">
+          <label for="showTimePlot" id="showTimePlotLabel">Show time response</label>
+          <input id="showTimePlot" type="checkbox" checked />
+        </div>
+        <div class="row">
+          <label for="showBodePlot" id="showBodePlotLabel">Show Bode plot</label>
+          <input id="showBodePlot" type="checkbox" checked />
+        </div>
+        <div id="bodeCardTitle" class="section-subtitle">Bode plot</div>
+        <div class="row" style="margin-top:4px">
+          <label id="bodeXScaleLabel">X scale</label>
+          <label><input id="bodeXLinear" name="bodeXScale" type="radio" /> <span id="bodeXLinearLabel">Linear</span></label>
+          <label><input id="bodeXLog" name="bodeXScale" type="radio" checked /> <span id="bodeXLogLabel">Log</span></label>
+        </div>
+        <div class="row">
+          <label id="bodeScaleLabel">Y scale</label>
+          <label><input id="bodeLin" name="bodeYScale" type="radio" /> <span id="bodeLinLabel">Linear</span></label>
+          <label><input id="bodeDb" name="bodeYScale" type="radio" checked /> <span id="bodeDbLabel">dB (log)</span></label>
+        </div>
+        <div class="row phase-row">
+          <label for="showPhase" id="showPhaseLabel">Show phase</label>
+          <input id="showPhase" type="checkbox" />
+        </div>
       </div>
-      <div class="row">
-        <label for="bodeDb" id="bodeScaleLabel">Y scale: dB (log) / linear</label>
-        <input id="bodeDb" type="checkbox" checked />
+      <div class="card">
+        <h3 id="otherOptionsTitle">Other options</h3>
+        <div class="row">
+          <label for="cascadeFilters" id="cascadeFiltersLabel">Cascade filters</label>
+          <input id="cascadeFilters" type="checkbox" />
+        </div>
       </div>
-      <div class="row">
-        <label for="showPhase" id="showPhaseLabel">Show phase</label>
-        <input id="showPhase" type="checkbox" />
-      </div>
-
       <div class="muted copyright" style="margin-top:auto">
         © 2025 Franco Ferrucci<br>
         <a href="https://ferrucci-franco.github.io/electronics/" target="_blank" rel="noopener">https://ferrucci-franco.github.io/electronics/</a>
@@ -176,13 +285,54 @@
     </section>
 
     <!-- Middle: Time plot -->
-    <section class="panel plotwrap"><div id="timePlot"></div></section>
+    <section class="panel plotwrap" id="timeSection"><div id="timePlot"></div></section>
 
     <!-- Right: Bode column (mag + optional phase) -->
-    <section class="panel plotwrap">
+    <section class="panel plotwrap" id="bodeSection">
       <div class="bodeWrap" id="bodeWrap">
         <div id="bodeMag" style="height:100%"></div>
         <div id="bodePhase" style="display:none;height:50%"></div>
+      </div>
+    </section>
+  </div>
+
+  <div id="infoModalBackdrop" class="modal-backdrop" aria-hidden="true">
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="infoModalTitle">
+      <div class="modal-header">
+        <h3 id="infoModalTitle">Filter equations</h3>
+        <button id="infoCloseBtn" type="button" class="icon-btn" aria-label="Close">×</button>
+      </div>
+      <div class="modal-grid">
+        <article class="info-card" id="infoCard1">
+          <div class="row hdrrow">
+            <strong id="infoFilter1Title">Filter 1</strong>
+          </div>
+          <dl class="meta">
+            <dt id="infoType1Label">Type</dt><dd id="infoType1Val"></dd>
+            <dt id="infoOrder1InfoLabel">Order</dt><dd id="infoOrder1Val"></dd>
+            <dt id="infoFc1InfoLabel">Cutoff frequency</dt><dd id="infoFc1Val"></dd>
+          </dl>
+          <div class="eq-title" id="infoDiffEq1Label">Differential equation</div>
+          <div id="infoDiffEq1" class="eq-block"></div>
+          <div class="eq-title" id="infoTf1Label">Transfer function</div>
+          <div id="infoTf1" class="eq-block"></div>
+          <div id="infoFilter1Note" class="note"></div>
+        </article>
+        <article class="info-card" id="infoCard2">
+          <div class="row hdrrow">
+            <strong id="infoFilter2Title">Filter 2</strong>
+          </div>
+          <dl class="meta">
+            <dt id="infoType2Label">Type</dt><dd id="infoType2Val"></dd>
+            <dt id="infoOrder2InfoLabel">Order</dt><dd id="infoOrder2Val"></dd>
+            <dt id="infoFc2InfoLabel">Cutoff frequency</dt><dd id="infoFc2Val"></dd>
+          </dl>
+          <div class="eq-title" id="infoDiffEq2Label">Differential equation</div>
+          <div id="infoDiffEq2" class="eq-block"></div>
+          <div class="eq-title" id="infoTf2Label">Transfer function</div>
+          <div id="infoTf2" class="eq-block"></div>
+          <div id="infoFilter2Note" class="note"></div>
+        </article>
       </div>
     </section>
   </div>
@@ -208,29 +358,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ========= Textos =========
   const TXT = {
-    en:{ title:'Signal → Two Adjustable Filters', inCard:'Input (single frequency)',
+    en:{ title:'Continuous-time Filters Explorer', inCard:'Input (single frequency)',
       wave:'Type', waveOpt:{sin:'Sine',square:'Square',triangle:'Triangle',saw:'Sawtooth',trap:'Trapezoid'},
-      freq:'Freq (Hz)', nmax:'Cycles Nmax', hint:'Amplitude = 1. Time window is t ∈ [0, Nmax/f].',
+      freq:'Freq (Hz)', nmax:'Cycles N<sub>max</sub>', hint:'Amplitude = 1. Time window is t ∈ [0, N<sub>max</sub>/f].',
       order:'Order',
-      fc1:'Filter 1', fc2:'Filter 2', bodeXScale:'X scale logarithmic', bodeScale:'Y scale: dB (log) / linear', showPhase:'Show phase',
+      fc1:'Filter 1', fc2:'Filter 2', fcCascade:'Cascade', f1Enabled:'Enable filter 1', f2Enabled:'Enable filter 2', filterType:'Type', layoutCard:'Layout', showTimePlot:'Show time response', showBodePlot:'Show Bode plot', bodeCard:'Bode plot', otherOptions:'Other options', bodeXScale:'X scale', bodeScale:'Y scale', bodeXLinear:'Linear', bodeXLog:'Log', bodeYLinear:'Linear', bodeYDb:'dB (log)', showPhase:'Show phase', cascadeFilters:'Cascade filters', cascadeHint:'Both filter 1 and 2 must be enabled to use this feature.',
+      infoBtn:'Filter information', infoTitle:'Filter equations', close:'Close',
+      infoType:'Type', infoCutoff:'Cutoff frequency', infoDiffEq:'Differential equation', infoTf:'Transfer function',
+      infoDisabledNote:'This filter is disabled in the plots. The equations below correspond to its configured parameters.',
       timeTitle:()=>'Time response', bodeTitle:'Bode — Magnitude', bodePhaseTitle:'Bode — Phase',
       traceIn:'Input', traceY1:'Output 1', traceY2:'Output 2', bodeYdB:'|H| (dB)', bodeYlin:'|H| (linear)', bodeX:'Frequency (Hz)', phaseY:'Phase (deg)',
       lp:'Low-pass', hp:'High-pass'
     },
-    fr:{ title:'Signal → Deux filtres réglables', inCard:'Entrée (fréquence unique)',
+    fr:{ title:'Continuous-time Filters Explorer', inCard:'Entrée (fréquence unique)',
       wave:'Type', waveOpt:{sin:'Sinusoïdal',square:'Carré',triangle:'Triangulaire',saw:'Dent de scie',trap:'Trapézoïdal'},
-      freq:'Fréq. (Hz)', nmax:'Cycles Nmax', hint:'Amplitude = 1. Fenêtre temporelle t ∈ [0, Nmax/f].',
+      freq:'Fréq. (Hz)', nmax:'Cycles N<sub>max</sub>', hint:'Amplitude = 1. Fenêtre temporelle t ∈ [0, N<sub>max</sub>/f].',
       order:'Ordre',
-      fc1:'Filtre 1', fc2:'Filtre 2', bodeXScale:'Échelle X logarithmique', bodeScale:'Échelle Y : dB (log) / linéaire', showPhase:'Afficher la phase',
+      fc1:'Filtre 1', fc2:'Filtre 2', fcCascade:'Cascade', f1Enabled:'Activer le filtre 1', f2Enabled:'Activer le filtre 2', filterType:'Type', layoutCard:'Disposition', showTimePlot:'Afficher la réponse temporelle', showBodePlot:'Afficher le diagramme de Bode', bodeCard:'Diagramme de Bode', otherOptions:'Autres options', bodeXScale:'Échelle X', bodeScale:'Échelle Y', bodeXLinear:'Linéaire', bodeXLog:'Log', bodeYLinear:'Linéaire', bodeYDb:'dB (log)', showPhase:'Afficher la phase', cascadeFilters:'Mettre les filtres en cascade', cascadeHint:'Les filtres 1 et 2 doivent être activés pour utiliser cette fonction.',
+      infoBtn:'Informations filtre', infoTitle:'Équations des filtres', close:'Fermer',
+      infoType:'Type', infoCutoff:'Fréquence de coupure', infoDiffEq:'Équation différentielle', infoTf:'Fonction de transfert',
+      infoDisabledNote:'Ce filtre est désactivé dans les graphiques. Les équations ci-dessous correspondent à ses paramètres configurés.',
       timeTitle:()=>'Réponse temporelle', bodeTitle:'Bode — Magnitude', bodePhaseTitle:'Bode — Phase',
       traceIn:'Entrée', traceY1:'Sortie 1', traceY2:'Sortie 2', bodeYdB:'|H| (dB)', bodeYlin:'|H| (linéaire)', bodeX:'Fréquence (Hz)', phaseY:'Phase (deg)',
       lp:'Passe-bas', hp:'Passe-haut'
     },
-    es:{ title:'Señal → Dos filtros ajustables', inCard:'Entrada (frecuencia única)',
+    es:{ title:'Continuous-time Filters Explorer', inCard:'Entrada (frecuencia única)',
       wave:'Tipo', waveOpt:{sin:'Seno',square:'Cuadrada',triangle:'Triangular',saw:'Diente de sierra',trap:'Trapezoidal'},
-      freq:'Frecuencia (Hz)', nmax:'Ciclos Nmax', hint:'Amplitud = 1. Ventana temporal t ∈ [0, Nmax/f].',
+      freq:'Frecuencia (Hz)', nmax:'Ciclos N<sub>max</sub>', hint:'Amplitud = 1. Ventana temporal t ∈ [0, N<sub>max</sub>/f].',
       order:'Orden',
-      fc1:'Filtro 1', fc2:'Filtro 2', bodeXScale:'Escala X logarítmica', bodeScale:'Escala Y: dB (log) / lineal', showPhase:'Mostrar fase',
+      fc1:'Filtro 1', fc2:'Filtro 2', fcCascade:'Cascada', f1Enabled:'Activar filtro 1', f2Enabled:'Activar filtro 2', filterType:'Tipo', layoutCard:'Layout', showTimePlot:'Mostrar respuesta temporal', showBodePlot:'Mostrar gráfico de Bode', bodeCard:'Gráfico de Bode', otherOptions:'Otras opciones', bodeXScale:'Escala X', bodeScale:'Escala Y', bodeXLinear:'Lineal', bodeXLog:'Log', bodeYLinear:'Lineal', bodeYDb:'dB (log)', showPhase:'Mostrar fase', cascadeFilters:'Cascadar filtros', cascadeHint:'Los filtros 1 y 2 deben estar activados para usar esta función.',
+      infoBtn:'Información filtro', infoTitle:'Ecuaciones de los filtros', close:'Cerrar',
+      infoType:'Tipo', infoCutoff:'Frecuencia de corte', infoDiffEq:'Ecuación diferencial', infoTf:'Función de transferencia',
+      infoDisabledNote:'Este filtro está desactivado en las gráficas. Las ecuaciones siguientes corresponden a sus parámetros configurados.',
       timeTitle:()=>'Respuesta temporal', bodeTitle:'Bode — Magnitud', bodePhaseTitle:'Bode — Fase',
       traceIn:'Entrada', traceY1:'Salida 1', traceY2:'Salida 2', bodeYdB:'|H| (dB)', bodeYlin:'|H| (lineal)', bodeX:'Frecuencia (Hz)', phaseY:'Fase (°)',
       lp:'Pasa-bajo', hp:'Pasa-alto'
@@ -241,6 +400,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const FS_MIN = 100000;
   const FS_MAX = 1000000;
   const SPP    = 256;
+  const FREQ_MIN = 10;
+  const FREQ_MAX = 10000;
 
   const TRAP_EDGE_FRAC = 0.30;
 
@@ -255,13 +416,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const COLORS = {
     input: getComputedStyle(document.documentElement).getPropertyValue('--c-in').trim(),
     f1:    getComputedStyle(document.documentElement).getPropertyValue('--c-y1').trim(),
-    f2:    getComputedStyle(document.documentElement).getPropertyValue('--c-y2').trim()
+    f2:    getComputedStyle(document.documentElement).getPropertyValue('--c-y2').trim(),
+    cascade:'#8b1e2d'
   };
 
   let timeBuilt=false, bodeMagBuilt=false, bodePhaseBuilt=false;
-  let bodeCache1=null, bodeCache2=null;
+  let bodeCache1=null, bodeCache2=null, bodeCacheCascade=null;
   let _syncing=false;
   let LREV = 0;
+  let infoFilterFocus = 1;
 
   const state = {
     wave:'sin', freq:100, nmax:10, duration:10/100,
@@ -270,16 +433,20 @@ document.addEventListener('DOMContentLoaded', () => {
     fc1:250, fc2:150, f1type:'lp', f2type:'lp',
     order1:4, order2:4,
     y1:null, y2:null,
-    bodeDb:true, xLog:true, showPhase:false
+    bodeDb:true, xLog:true, showPhase:false, showTimePlot:true, showBodePlot:true, f1Enabled:true, f2Enabled:true, cascadeFilters:false
   };
 
   const getFs = () => state.fs;
   const viewWindowSec = () => state.nmax / state.freq;
   const clampFc = f => Math.min(0.45*getFs(), Math.max(20, f));
+  const clampFreq = f => Math.min(FREQ_MAX, Math.max(FREQ_MIN, f));
+  const freqHzToSliderVal = hz => log10(clampFreq(hz));
+  const freqSliderValToHz = v => Math.round(pow10(parseFloat(v)));
   const hzToSliderVal = hz => log10(Math.min(10000, Math.max(20, hz)));
   const sliderValToHz = v  => Math.round(pow10(parseFloat(v)));
-  const bodeDefaultXRangeExp = () => [Math.log10(BODE_FMIN), Math.log10(BODE_FMAX)];
-  const bodeDefaultXRangeLinear = () => [BODE_FMIN, BODE_FMAX];
+  const bodeCurrentFMax = () => Math.min(getFs()/2, BODE_FMAX);
+  const bodeDefaultXRangeExp = () => [Math.log10(BODE_FMIN), Math.log10(bodeCurrentFMax())];
+  const bodeDefaultXRangeLinear = () => [BODE_FMIN, bodeCurrentFMax()];
   const bodeXAxisLayout = () => state.xLog
     ? {type:'log', range: bodeDefaultXRangeExp()}
     : {type:'linear', range: bodeDefaultXRangeLinear()};
@@ -287,20 +454,19 @@ document.addEventListener('DOMContentLoaded', () => {
   // ========= Theme toggle (solo light/dark, sin Auto) =========
   (function themeToggle(){
     const btn = $('#themeBtn'); if(!btn) return;
-    const saved = localStorage.getItem('theme');
-    const initial = (saved==='light' || saved==='dark') ? saved : 'light';
     const html=document.documentElement;
-    html.classList.remove('light','dark');
-    html.classList.add(initial);
-    localStorage.setItem('theme', initial);
+    if(!html.classList.contains('light') && !html.classList.contains('dark')){
+      const hour = new Date().getHours();
+      html.classList.add((hour >= 7 && hour < 18) ? 'light' : 'dark');
+    }
 
     btn.addEventListener('click', () => {
       const mode = html.classList.contains('dark') ? 'light' : 'dark';
       html.classList.remove('light','dark'); html.classList.add(mode);
-      localStorage.setItem('theme', mode);
       if(window.Plotly && timeBuilt) Plotly.relayout('timePlot', {paper_bgcolor: cssVar('--paper'), plot_bgcolor: cssVar('--plot')});
       if(window.Plotly && bodeMagBuilt) Plotly.relayout('bodeMag', {paper_bgcolor: cssVar('--paper'), plot_bgcolor: cssVar('--plot')});
       if(window.Plotly && bodePhaseBuilt) Plotly.relayout('bodePhase', {paper_bgcolor: cssVar('--paper'), plot_bgcolor: cssVar('--plot')});
+      sizeInfoModal();
     });
   })();
 
@@ -311,9 +477,21 @@ document.addEventListener('DOMContentLoaded', () => {
     LANG=l; const t=TXT[l];
     [['title', t.title], ['inCardTitle', t.inCard], ['waveLbl', t.wave],
      ['freqLbl', t.freq], ['nmaxLbl', t.nmax], ['inHint', t.hint],
-     ['fc1Label', t.fc1], ['fc2Label', t.fc2], ['bodeXScaleLabel', t.bodeXScale], ['bodeScaleLabel', t.bodeScale], ['showPhaseLabel', t.showPhase],
+     ['fc1Label', t.fc1], ['fc2Label', t.fc2], ['f1EnabledLabel', t.f1Enabled], ['f2EnabledLabel', t.f2Enabled], ['type1Label', t.filterType], ['type2Label', t.filterType], ['layoutCardTitle', t.layoutCard], ['showTimePlotLabel', t.showTimePlot], ['showBodePlotLabel', t.showBodePlot], ['bodeCardTitle', t.bodeCard], ['otherOptionsTitle', t.otherOptions], ['bodeXScaleLabel', t.bodeXScale], ['bodeScaleLabel', t.bodeScale], ['bodeXLinearLabel', t.bodeXLinear], ['bodeXLogLabel', t.bodeXLog], ['bodeLinLabel', t.bodeYLinear], ['bodeDbLabel', t.bodeYDb], ['showPhaseLabel', t.showPhase], ['cascadeFiltersLabel', t.cascadeFilters],
      ['order1Label', t.order], ['order2Label', t.order]
-    ].forEach(([id,txt])=>{ const el=$('#'+id); if(el) el.innerHTML=txt; });
+    ].forEach(([id,txt])=>{
+      const el=$('#'+id);
+      if(!el) return;
+      if(id==='fc1Label' || id==='fc2Label') el.innerHTML = `<strong>${txt}</strong>`;
+      else el.innerHTML=txt;
+    });
+    [['infoBtn1', t.infoBtn], ['infoBtn2', t.infoBtn], ['infoModalTitle', t.infoTitle], ['infoFilter1Title', t.fc1], ['infoFilter2Title', t.fc2],
+     ['infoType1Label', t.infoType], ['infoType2Label', t.infoType], ['infoOrder1InfoLabel', t.order], ['infoOrder2InfoLabel', t.order],
+     ['infoFc1InfoLabel', t.infoCutoff], ['infoFc2InfoLabel', t.infoCutoff], ['infoDiffEq1Label', t.infoDiffEq], ['infoDiffEq2Label', t.infoDiffEq],
+     ['infoTf1Label', t.infoTf], ['infoTf2Label', t.infoTf]
+    ].forEach(([id,txt])=>{ const el=$('#'+id); if(el) el.textContent=txt; });
+    const closeBtn = $('#infoCloseBtn');
+    if(closeBtn) closeBtn.setAttribute('aria-label', t.close);
 
     const f1sel=$('#f1type'), f2sel=$('#f2type');
     if(f1sel){ f1sel.options[0].text=t.lp; f1sel.options[1].text=t.hp; }
@@ -325,9 +503,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if(window.Plotly && bodeMagBuilt){
       Plotly.relayout('bodeMag', {'title.text':'<b>'+t.bodeTitle+'</b>', 'xaxis.title':t.bodeX, 'yaxis.title': state.bodeDb ? t.bodeYdB : t.bodeYlin});
+      applyBodeMode();
     }
     if(window.Plotly && bodePhaseBuilt){
       Plotly.relayout('bodePhase', {'title.text':'<b>'+t.bodePhaseTitle+'</b>', 'xaxis.title':t.bodeX, 'yaxis.title': t.phaseY});
+      ensurePhasePlot();
     }
     langBtns.forEach(btn => {
       const isActive = (btn.dataset.lang === l);
@@ -336,6 +516,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     document.documentElement.setAttribute('lang', l);
     localStorage.setItem('lang', l);
+    updateEnabledFiltersUI();
+    renderInfoModal();
   }
   langBtns.forEach(b=> b.addEventListener('click', ()=> setLang(b.dataset.lang)));
 
@@ -375,12 +557,25 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ========= Filtros =========
-  function butterQs(N){
+  function butterSections(N){
     const out=[];
-    for(let k=1;k<=N/2;k++){
-      out.push(1/(2*Math.cos((2*k-1)*Math.PI/(2*N))));
+    if(N % 2 === 1) out.push({order:1});
+    for(let k=1;k<=Math.floor(N/2);k++){
+      out.push({order:2, Q:1/(2*Math.cos((2*k-1)*Math.PI/(2*N)))});
     }
     return out;
+  }
+  function firstOrderLPButter(fc){
+    const fs = getFs();
+    const w0 = 2*fs * Math.tan(Math.PI*fc/fs);
+    const K = 2*fs, den = K + w0;
+    return {b0:w0/den, b1:w0/den, b2:0, a1:(w0-K)/den, a2:0};
+  }
+  function firstOrderHPButter(fc){
+    const fs = getFs();
+    const w0 = 2*fs * Math.tan(Math.PI*fc/fs);
+    const K = 2*fs, den = K + w0;
+    return {b0:K/den, b1:-K/den, b2:0, a1:(w0-K)/den, a2:0};
   }
   function biquadLPButter(fc, Q){
     const fs = getFs();
@@ -405,17 +600,229 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   function filtNx(sig, fc, kind, N){
     fc=clampFc(fc);
-    const Qs = butterQs(N);
     let y = sig;
-    for(const Q of Qs){
-      const sec = (kind==='hp') ? biquadHPButter(fc,Q) : biquadLPButter(fc,Q);
+    for(const secSpec of butterSections(N)){
+      const sec = secSpec.order===1
+        ? ((kind==='hp') ? firstOrderHPButter(fc) : firstOrderLPButter(fc))
+        : ((kind==='hp') ? biquadHPButter(fc,secSpec.Q) : biquadLPButter(fc,secSpec.Q));
       y = biquadProcess(y, sec);
     }
     return y;
   }
   function updateFilters(){
     state.y1 = filtNx(state.x, state.fc1, state.f1type, state.order1);
-    state.y2 = filtNx(state.x, state.fc2, state.f2type, state.order2);
+    const input2 = state.cascadeFilters ? state.y1 : state.x;
+    state.y2 = filtNx(input2, state.fc2, state.f2type, state.order2);
+  }
+  function analogFilterSections(fc, kind, N){
+    const w0 = 2*Math.PI*clampFc(fc);
+    return butterSections(N).map(sec => sec.order===1
+      ? {
+          b: kind==='hp' ? [1, 0] : [w0],
+          a: [1, w0]
+        }
+      : {
+          b: kind==='hp' ? [1, 0, 0] : [w0*w0],
+          a: [1, w0/sec.Q, w0*w0]
+        });
+  }
+  function polyConv(a,b){
+    const out = new Array(a.length + b.length - 1).fill(0);
+    for(let i=0;i<a.length;i++) for(let j=0;j<b.length;j++) out[i+j] += a[i]*b[j];
+    return out;
+  }
+  function analogFilterCoeffs(fc, kind, N){
+    let b=[1], a=[1];
+    for(const sec of analogFilterSections(fc, kind, N)){
+      b = polyConv(b, sec.b);
+      a = polyConv(a, sec.a);
+    }
+    return {b,a};
+  }
+  function fmtNum(v){
+    const n = Math.abs(v) < 5e-13 ? 0 : v;
+    const s = n.toFixed(4).replace(/\.?0+$/,'');
+    return s === '-0' ? '0' : s;
+  }
+  function latexPolynomial(coeffs, symbol){
+    return coeffs.map((c, idx) => {
+      if(Math.abs(c) < 5e-13) return '';
+      const sign = c < 0 ? '-' : (idx === 0 ? '' : '+');
+      const mag = Math.abs(c);
+      const coeff = (idx===0 || Math.abs(mag - 1) > 5e-13) ? fmtNum(mag) : '';
+      const power = coeffs.length - 1 - idx;
+      const term = power===0 ? '' : (power===1 ? symbol : `${symbol}^{${power}}`);
+      return `${sign}${coeff}${term}`;
+    }).filter(Boolean).join(' ');
+  }
+  function latexDerivative(varName, order){
+    if(order===0) return varName;
+    if(order===1) return `\\frac{d${varName}}{dt}`;
+    return `\\frac{d^{${order}}${varName}}{dt^{${order}}}`;
+  }
+  function latexDifferentialEquation(coeffs){
+    const n = coeffs.a.length - 1;
+    const m = coeffs.b.length - 1;
+    const left = coeffs.a.map((c, idx) => {
+      const sign = c < 0 ? '-' : (idx === 0 ? '' : '+');
+      const mag = Math.abs(c);
+      const coeff = (idx===0 || Math.abs(mag - 1) > 5e-13) ? fmtNum(mag) : '';
+      const term = `${latexDerivative('y', n-idx)}`;
+      return `${sign}${coeff}${term}`;
+    }).join(' ');
+    const right = coeffs.b.map((c, idx) => {
+      if(Math.abs(c) < 5e-13) return '';
+      const sign = c < 0 ? '-' : (idx === 0 ? '' : '+');
+      const mag = Math.abs(c);
+      const coeff = (idx===0 || Math.abs(mag - 1) > 5e-13) ? fmtNum(mag) : '';
+      const term = `${latexDerivative('x', m-idx)}`;
+      return `${sign}${coeff}${term}`;
+    }).filter(Boolean).join(' ');
+    return `${left} = ${right || '0'}`;
+  }
+  function latexTransferFunction(coeffs){
+    return `H(s)=\\frac{${latexPolynomial(coeffs.b, 's')}}{${latexPolynomial(coeffs.a, 's')}}`;
+  }
+  function renderLatex(id, latex){
+    const el = document.getElementById(id);
+    if(!el) return;
+    if(window.katex && typeof window.katex.render === 'function'){
+      window.katex.render(latex, el, {displayMode:true, throwOnError:false});
+    }else{
+      el.textContent = latex;
+    }
+  }
+  function renderFilterInfo(index, enabled, fc, kind, order){
+    const t = TXT[LANG];
+    const coeffs = analogFilterCoeffs(fc, kind, order);
+    const suffix = String(index);
+    const typeVal = $(`#infoType${suffix}Val`);
+    const orderVal = $(`#infoOrder${suffix}Val`);
+    const fcVal = $(`#infoFc${suffix}Val`);
+    const note = $(`#infoFilter${suffix}Note`);
+    if(typeVal) typeVal.textContent = kind === 'hp' ? t.hp : t.lp;
+    if(orderVal) orderVal.textContent = String(order);
+    if(fcVal) fcVal.textContent = `${fc.toLocaleString()} Hz`;
+    if(note) note.textContent = !enabled ? t.infoDisabledNote : '';
+    renderLatex(`infoDiffEq${suffix}`, latexDifferentialEquation(coeffs));
+    renderLatex(`infoTf${suffix}`, latexTransferFunction(coeffs));
+  }
+  function sizeInfoModal(){
+    const modal = document.querySelector('#infoModalBackdrop .modal');
+    const grid = document.querySelector('#infoModalBackdrop .modal-grid');
+    if(!modal || !grid) return;
+
+    const visibleCards = [$('#infoCard1'), $('#infoCard2')].filter(el => el && el.style.display !== 'none');
+    const single = visibleCards.length <= 1;
+    modal.classList.toggle('single-filter', single);
+    grid.classList.toggle('single-filter', single);
+
+    requestAnimationFrame(() => {
+      const contentWidths = visibleCards.map(card => {
+        const base = card.scrollWidth;
+        const eqWidths = Array.from(card.querySelectorAll('.eq-block .katex-display > .katex'))
+          .map(el => el.scrollWidth || 0);
+        return Math.max(base, ...eqWidths);
+      });
+      const widestCard = contentWidths.length ? Math.max(...contentWidths) : 0;
+      const equationWidths = visibleCards.flatMap(card =>
+        Array.from(card.querySelectorAll('.eq-block')).map(el => el.scrollWidth || 0)
+      );
+      const widestEquation = equationWidths.length ? Math.max(...equationWidths) : 0;
+      const gutter = single ? 160 : 160;
+      const targetWidth = single
+        ? Math.min(window.innerWidth * 0.99, Math.max(760, widestCard + 120, widestEquation + gutter))
+        : Math.min(window.innerWidth * 0.99, Math.max(1080, widestCard * 2 + gutter));
+      modal.style.width = `${Math.round(targetWidth)}px`;
+    });
+  }
+  function renderInfoModal(){
+    renderFilterInfo(1, state.f1Enabled, state.fc1, state.f1type, state.order1);
+    renderFilterInfo(2, state.f2Enabled, state.fc2, state.f2type, state.order2);
+    const card1 = $('#infoCard1'), card2 = $('#infoCard2');
+    if(card1) card1.style.display = (infoFilterFocus===1) ? '' : 'none';
+    if(card2) card2.style.display = (infoFilterFocus===2) ? '' : 'none';
+    sizeInfoModal();
+  }
+  function filter1Visible(){ return !!state.f1Enabled; }
+  function filter2Visible(){ return !!state.f2Enabled; }
+  function cascadeBodeVisible(){ return !!(state.cascadeFilters && state.f1Enabled && state.f2Enabled && bodeCacheCascade); }
+  function output2Color(){ return state.cascadeFilters ? COLORS.cascade : COLORS.f2; }
+  function cascadeAvailable(){ return state.f1Enabled && state.f2Enabled; }
+  function rebuildBodeCaches(){
+    bodeCache1 = bodeFor(state.fc1, state.f1type, state.order1);
+    bodeCache2 = bodeFor(state.fc2, state.f2type, state.order2);
+    bodeCacheCascade = state.cascadeFilters
+      ? {
+          f: bodeCache1.f,
+          mag: bodeCache1.mag.map((m, i) => m * bodeCache2.mag[i]),
+          ph: bodeCache1.ph.map((p, i) => p + bodeCache2.ph[i])
+        }
+      : null;
+  }
+  function updateFilterUI(cardId, enabled, ids){
+    const card = $(cardId);
+    if(card) card.classList.toggle('disabled', !enabled);
+    ids.forEach(id => { const el = $(id); if(el) el.disabled = !enabled; });
+  }
+  function updateEnabledFiltersUI(){
+    const t = TXT[LANG];
+    updateFilterUI('#filter1Card', state.f1Enabled, ['#f1type', '#order1Sel', '#fc1']);
+    updateFilterUI('#filter2Card', state.f2Enabled, ['#f2type', '#order2Sel', '#fc2']);
+    if($('#infoBtn1')) $('#infoBtn1').disabled = !state.f1Enabled;
+    if($('#infoBtn2')) $('#infoBtn2').disabled = !state.f2Enabled;
+    if(!cascadeAvailable()) state.cascadeFilters = false;
+    const cascadeEl = $('#cascadeFilters');
+    const cascadeLabel = $('#cascadeFiltersLabel');
+    if(cascadeEl){
+      cascadeEl.disabled = !cascadeAvailable();
+      cascadeEl.checked = state.cascadeFilters;
+      cascadeEl.title = cascadeAvailable() ? '' : t.cascadeHint;
+    }
+    if(cascadeLabel){
+      cascadeLabel.classList.toggle('disabled-label', !cascadeAvailable());
+      cascadeLabel.title = cascadeAvailable() ? '' : t.cascadeHint;
+    }
+  }
+  function visibleList(){
+    return [true, filter1Visible(), filter2Visible()];
+  }
+  function applyPlotLayout(){
+    const grid = document.querySelector('.grid');
+    const timeSection = $('#timeSection');
+    const bodeSection = $('#bodeSection');
+    if(!grid || !timeSection || !bodeSection) return;
+
+    timeSection.style.display = state.showTimePlot ? 'flex' : 'none';
+    bodeSection.style.display = state.showBodePlot ? 'flex' : 'none';
+
+    if(state.showTimePlot && state.showBodePlot){
+      grid.style.gridTemplateColumns = '340px minmax(0,1fr) minmax(0,1fr)';
+      timeSection.style.gridColumn = '2';
+      bodeSection.style.gridColumn = '3';
+    }else if(state.showTimePlot){
+      grid.style.gridTemplateColumns = '340px minmax(0,1fr)';
+      timeSection.style.gridColumn = '2';
+      bodeSection.style.gridColumn = '';
+    }else if(state.showBodePlot){
+      grid.style.gridTemplateColumns = '340px minmax(0,1fr)';
+      bodeSection.style.gridColumn = '2';
+      timeSection.style.gridColumn = '';
+    }else{
+      grid.style.gridTemplateColumns = '340px';
+      timeSection.style.gridColumn = '';
+      bodeSection.style.gridColumn = '';
+    }
+
+    requestAnimationFrame(() => {
+      if(window.Plotly){
+        if(state.showTimePlot && timeBuilt) resizePlot('timePlot');
+        if(state.showBodePlot && bodeMagBuilt){
+          resizePlot('bodeMag');
+          if(state.showPhase && bodePhaseBuilt) resizePlot('bodePhase');
+        }
+      }
+    });
   }
 
   // ========= Decimación tiempo =========
@@ -461,7 +868,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const fs = getFs();
     const fmin = BODE_FMIN;
     const fmax = Math.min(fs/2, BODE_FMAX);
-    const Qs = butterQs(N);
+    const sections = butterSections(N);
     const f=new Array(nPts), mag=new Array(nPts), ph=new Array(nPts);
 
     const logfmin = Math.log10(fmin), logfmax = Math.log10(fmax);
@@ -470,8 +877,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const a=i/(nPts-1), ff=pow10(logfmin + a*(logfmax-logfmin));
       const w=2*Math.PI*ff/fs, z1r=Math.cos(-w),z1i=Math.sin(-w), z2r=Math.cos(-2*w),z2i=Math.sin(-2*w);
 
-      function Hsec(Q){
-        const s = (kind==='hp') ? biquadHPButter(fc,Q) : biquadLPButter(fc,Q);
+      function Hsec(secSpec){
+        const s = secSpec.order===1
+          ? ((kind==='hp') ? firstOrderHPButter(fc) : firstOrderLPButter(fc))
+          : ((kind==='hp') ? biquadHPButter(fc,secSpec.Q) : biquadLPButter(fc,secSpec.Q));
         const nr=s.b0+s.b1*z1r+s.b2*z2r, ni=s.b1*z1i+s.b2*z2i;
         const dr=1+s.a1*z1r+s.a2*z2r, di=s.a1*z1i+s.a2*z2i;
         const den=dr*dr+di*di;
@@ -480,8 +889,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       let hr=1, hi=0;
-      for(const Q of Qs){
-        const h=Hsec(Q);
+      for(const secSpec of sections){
+        const h=Hsec(secSpec);
         const rr = hr*h[0] - hi*h[1];
         const ii = hr*h[1] + hi*h[0];
         hr=rr; hi=ii;
@@ -561,6 +970,17 @@ document.addEventListener('DOMContentLoaded', () => {
     Plotly.relayout('bodeMag', layout);
     if(state.showPhase && bodePhaseBuilt) Plotly.relayout('bodePhase', layout);
   }
+  function currentBodeMagXLayout(){
+    const mag = document.getElementById('bodeMag');
+    const xaxis = mag && mag.layout ? mag.layout.xaxis : null;
+    const type = state.xLog ? 'log' : 'linear';
+    if(xaxis && Array.isArray(xaxis.range) && xaxis.range.length === 2){
+      return {'xaxis.type': type, 'xaxis.autorange': false, 'xaxis.range': xaxis.range.slice()};
+    }
+    return state.xLog
+      ? {'xaxis.type':'log', 'xaxis.autorange':false, 'xaxis.range':bodeDefaultXRangeExp()}
+      : {'xaxis.type':'linear', 'xaxis.autorange':false, 'xaxis.range':bodeDefaultXRangeLinear()};
+  }
   function resetBodeView(){
     if(!(window.Plotly && bodeMagBuilt)) return Promise.resolve();
     const xlayout = state.xLog
@@ -581,11 +1001,10 @@ document.addEventListener('DOMContentLoaded', () => {
   async function buildPlots(){
     const t = TXT[LANG];
     const inD = decimateXY(state.x), y1D = decimateXY(state.y1), y2D = decimateXY(state.y2);
-
     await safeNewPlot('timePlot', [
       {type:'scatter', mode:'lines', name:t.traceIn, x:inD.x, y:inD.y, line:{width:1.5, color:COLORS.input}},
-      {type:'scatter', mode:'lines', name:t.traceY1, x:y1D.x, y:y1D.y, line:{width:2.5, color:COLORS.f1}},
-      {type:'scatter', mode:'lines', name:t.traceY2, x:y2D.x, y:y2D.y, line:{width:2.5, color:COLORS.f2}}
+      {type:'scatter', mode:'lines', name:t.traceY1, x:y1D.x, y:y1D.y, visible:filter1Visible(), line:{width:2.5, color:COLORS.f1}},
+      {type:'scatter', mode:'lines', name:t.traceY2, x:y2D.x, y:y2D.y, visible:filter2Visible(), line:{width:2.5, color:output2Color()}}
     ], {
       margin:{l:60,r:16,t:70,b:80},
       xaxis:{title:'t (s)', autorange:false, range:[0, viewWindowSec()]},
@@ -609,20 +1028,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Bode MAG
-    bodeCache1 = bodeFor(state.fc1, state.f1type, state.order1);
-    bodeCache2 = bodeFor(state.fc2, state.f2type, state.order2);
+    rebuildBodeCaches();
     const y1m = state.bodeDb ? bodeCache1.mag.map(m=>20*Math.log10(m)) : bodeCache1.mag;
     const y2m = state.bodeDb ? bodeCache2.mag.map(m=>20*Math.log10(m)) : bodeCache2.mag;
+    const ycm = state.bodeDb
+      ? (bodeCacheCascade ? bodeCacheCascade.mag.map(m=>20*Math.log10(m)) : bodeCache1.mag.map(()=>0))
+      : (bodeCacheCascade ? bodeCacheCascade.mag : bodeCache1.mag.map(()=>1));
 
     await safeNewPlot('bodeMag', [
-      {type:'scatter', mode:'lines', name:t.fc1, x:bodeCache1.f, y:y1m, line:{color:COLORS.f1}},
-      {type:'scatter', mode:'lines', name:t.fc2, x:bodeCache2.f, y:y2m, line:{color:COLORS.f2}}
+      {type:'scatter', mode:'lines', name:t.fc1, x:bodeCache1.f, y:y1m, visible:filter1Visible(), line:{color:COLORS.f1}},
+      {type:'scatter', mode:'lines', name:t.fc2, x:bodeCache2.f, y:y2m, visible:filter2Visible(), line:{color:COLORS.f2}},
+      {type:'scatter', mode:'lines', name:t.fcCascade, x:bodeCacheCascade ? bodeCacheCascade.f : bodeCache1.f, y:ycm, visible:cascadeBodeVisible(), line:{color:COLORS.cascade, width:2}}
     ], {
-      margin:{l:70,r:16,t:60,b:40},
+      margin:{l:70,r:16,t:78,b:48},
       xaxis:{title:t.bodeX, ...bodeXAxisLayout()},
       yaxis:{title: state.bodeDb ? t.bodeYdB : t.bodeYlin, autorange:true},
-      legend:{orientation:'h', x:0.5, xanchor:'center', y:1.005, yanchor:'bottom'},
-      title:{text:'<b>'+t.bodeTitle+'</b>', x:0.5, xanchor:'center', font:{size:18}},
+      legend:{orientation:'h', x:0.5, xanchor:'center', y:1.01, yanchor:'bottom'},
+      title:{text:'<b>'+t.bodeTitle+'</b>', x:0.5, xanchor:'center', y:0.99, yanchor:'top', font:{size:18}},
       uirevision:'keep',
       paper_bgcolor: cssVar('--paper'), plot_bgcolor: cssVar('--plot'),
       shapes:[{ type:'line', x0:state.freq, x1:state.freq, y0:0, y1:1, xref:'x', yref:'paper', line:{color:'red', width:2, dash:'dot'} }]
@@ -648,28 +1070,36 @@ document.addEventListener('DOMContentLoaded', () => {
       resizePlot('bodeMag');
 
       const y1p = bodeCache1.ph, y2p = bodeCache2.ph;
+      const ycp = bodeCacheCascade ? bodeCacheCascade.ph : bodeCache1.ph.map(()=>0);
       if(!bodePhaseBuilt){
         await safeNewPlot('bodePhase', [
-          {type:'scatter', mode:'lines', name:t.fc1, x:bodeCache1.f, y:y1p, line:{color:COLORS.f1}},
-          {type:'scatter', mode:'lines', name:t.fc2, x:bodeCache2.f, y:y2p, line:{color:COLORS.f2}}
+          {type:'scatter', mode:'lines', name:t.fc1, x:bodeCache1.f, y:y1p, visible:filter1Visible(), line:{color:COLORS.f1}},
+          {type:'scatter', mode:'lines', name:t.fc2, x:bodeCache2.f, y:y2p, visible:filter2Visible(), line:{color:COLORS.f2}},
+          {type:'scatter', mode:'lines', name:t.fcCascade, x:bodeCacheCascade ? bodeCacheCascade.f : bodeCache1.f, y:ycp, visible:cascadeBodeVisible(), line:{color:COLORS.cascade, width:2}}
         ], {
-          margin:{l:70,r:16,t:60,b:40},
+          margin:{l:70,r:16,t:86,b:40},
           xaxis:{title:t.bodeX, ...bodeXAxisLayout()},
           yaxis:{title: t.phaseY, autorange:true},
-          legend:{orientation:'h', x:0.5, xanchor:'center', y:1.005, yanchor:'bottom'},
-          title:{text:'<b>'+t.bodePhaseTitle+'</b>', x:0.5, xanchor:'center', font:{size:18}},
+          legend:{orientation:'h', x:0.5, xanchor:'center', y:1.01, yanchor:'bottom'},
+          title:{text:'<b>'+t.bodePhaseTitle+'</b>', x:0.5, xanchor:'center', y:0.99, yanchor:'top', font:{size:18}},
           uirevision:'keep',
           paper_bgcolor: cssVar('--paper'), plot_bgcolor: cssVar('--plot'),
           shapes:[{ type:'line', x0:state.freq, x1:state.freq, y0:0, y1:1, xref:'x', yref:'paper', line:{color:'red', width:2, dash:'dot'} }]
         });
         bodePhaseBuilt=true;
       }else{
-        Plotly.update('bodePhase', {x:[bodeCache1.f,bodeCache2.f], y:[y1p,y2p]}, {}, [0,1]);
+        Plotly.update('bodePhase', {
+          x:[bodeCache1.f, bodeCache2.f, bodeCacheCascade ? bodeCacheCascade.f : bodeCache1.f],
+          y:[y1p, y2p, ycp],
+          name:[t.fc1, t.fc2, t.fcCascade],
+          visible:[filter1Visible(), filter2Visible(), cascadeBodeVisible()]
+        }, {}, [0,1,2]);
         Plotly.relayout('bodePhase', {
-          'margin.t':60, 'margin.b':40,
-          'legend.orientation':'h', 'legend.x':0.5, 'legend.xanchor':'center', 'legend.y':1.005, 'legend.yanchor':'bottom'
+          'margin.t':86, 'margin.b':40,
+          'legend.orientation':'h', 'legend.x':0.5, 'legend.xanchor':'center', 'legend.y':1.01, 'legend.yanchor':'bottom'
         });
       }
+      Plotly.relayout('bodePhase', currentBodeMagXLayout());
       resizePlot('bodePhase');
 
     }else{
@@ -714,7 +1144,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const mag = document.getElementById('bodeMag');
     const ph  = document.getElementById('bodePhase');
     const home = () => {
-      resetBodeView();
+      requestAnimationFrame(() => { resetBodeView(); });
       return false;
     };
     if(mag && mag.on){
@@ -732,10 +1162,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const t=TXT[LANG];
     const y1m = state.bodeDb ? bodeCache1.mag.map(m=>20*Math.log10(m)) : bodeCache1.mag;
     const y2m = state.bodeDb ? bodeCache2.mag.map(m=>20*Math.log10(m)) : bodeCache2.mag;
-    Plotly.update('bodeMag', {y:[y1m,y2m], name:[t.fc1, t.fc2]}, {}, [0,1]);
+    const ycm = state.bodeDb
+      ? (bodeCacheCascade ? bodeCacheCascade.mag.map(m=>20*Math.log10(m)) : bodeCache1.mag.map(()=>0))
+      : (bodeCacheCascade ? bodeCacheCascade.mag : bodeCache1.mag.map(()=>1));
+    Plotly.update('bodeMag', {
+      x:[bodeCache1.f, bodeCache2.f, bodeCacheCascade ? bodeCacheCascade.f : bodeCache1.f],
+      y:[y1m, y2m, ycm],
+      name:[t.fc1, t.fc2, t.fcCascade],
+      visible:[filter1Visible(), filter2Visible(), cascadeBodeVisible()]
+    }, {}, [0,1,2]);
     Plotly.relayout('bodeMag', {
-      'margin.t':60, 'margin.b':40,
-      'legend.orientation':'h', 'legend.x':0.5, 'legend.xanchor':'center', 'legend.y':1.005, 'legend.yanchor':'bottom'
+      'margin.t':78, 'margin.b':48,
+      'legend.orientation':'h', 'legend.x':0.5, 'legend.xanchor':'center', 'legend.y':1.01, 'legend.yanchor':'bottom'
     });
     enforceMagYAxis();
   }
@@ -745,7 +1183,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if(window.Plotly && timeBuilt){
       const inD = decimateXY(state.x), y1D = decimateXY(state.y1), y2D = decimateXY(state.y2);
-      Plotly.update('timePlot', {x:[inD.x,y1D.x,y2D.x], y:[inD.y,y1D.y,y2D.y]}, {}, [0,1,2]);
+      Plotly.update('timePlot', {x:[inD.x,y1D.x,y2D.x], y:[inD.y,y1D.y,y2D.y], visible:visibleList()}, {}, [0,1,2]);
+      Plotly.restyle('timePlot', {'line.color': output2Color()}, [2]);
       Plotly.relayout('timePlot', {
         'title.text':'<b>'+TXT[LANG].timeTitle()+'</b>',
         'xaxis.autorange': false,
@@ -754,9 +1193,9 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    bodeCache1 = bodeFor(state.fc1, state.f1type, state.order1);
-    bodeCache2 = bodeFor(state.fc2, state.f2type, state.order2);
+    rebuildBodeCaches();
     applyBodeMode();
+    renderInfoModal();
 
     Plotly.relayout('bodeMag', {
       shapes: [{ type:'line', x0:state.freq, x1:state.freq, y0:0, y1:1, xref:'x', yref:'paper', line:{color:'red', width:2, dash:'dot'} }]
@@ -774,58 +1213,115 @@ document.addEventListener('DOMContentLoaded', () => {
   const fc1=$('#fc1'), fc2=$('#fc2'), fc1Val=$('#fc1Val'), fc2Val=$('#fc2Val');
   const f1type=$('#f1type'), f2type=$('#f2type');
   const order1Sel=$('#order1Sel'), order2Sel=$('#order2Sel');
+  const f1Enabled=$('#f1Enabled');
+  const f2Enabled=$('#f2Enabled');
+  const showTimePlot=$('#showTimePlot');
+  const showBodePlot=$('#showBodePlot');
+  const bodeXLinear=$('#bodeXLinear');
   const bodeXLog=$('#bodeXLog');
+  const bodeLin=$('#bodeLin');
   const bodeDb=$('#bodeDb');
   const showPhase=$('#showPhase');
+  const cascadeFilters=$('#cascadeFilters');
   const waveSel=$('#waveSel'), freqEl=$('#freq'), nmaxEl=$('#nmax');
   const freqVal=$('#freqVal'), nmaxVal=$('#nmaxVal');
+  const infoBtn1=$('#infoBtn1'), infoBtn2=$('#infoBtn2'), infoBackdrop=$('#infoModalBackdrop'), infoCloseBtn=$('#infoCloseBtn');
 
   // === Aplicar constantes de Nmax al slider ===
+  freqEl.min = freqHzToSliderVal(FREQ_MIN).toFixed(4);
+  freqEl.max = freqHzToSliderVal(FREQ_MAX).toFixed(4);
   nmaxEl.min = String(NMAX_MIN);
   nmaxEl.max = String(NMAX_MAX);
 
   // Init sliders y badges
   fc1.value = hzToSliderVal(state.fc1).toFixed(4);
   fc2.value = hzToSliderVal(state.fc2).toFixed(4);
+  freqEl.value = freqHzToSliderVal(state.freq).toFixed(4);
   fc1Val.textContent = state.fc1.toLocaleString()+' Hz';
   fc2Val.textContent = state.fc2.toLocaleString()+' Hz';
   freqVal.textContent = state.freq.toLocaleString()+' Hz';
   nmaxVal.textContent = state.nmax.toString();
+  f1Enabled.checked = state.f1Enabled;
+  f2Enabled.checked = state.f2Enabled;
+  showTimePlot.checked = state.showTimePlot;
+  showBodePlot.checked = state.showBodePlot;
+  bodeXLinear.checked = !state.xLog;
   bodeXLog.checked = state.xLog;
+  bodeLin.checked = !state.bodeDb;
   bodeDb.checked = state.bodeDb;
   showPhase.checked = state.showPhase;
+  cascadeFilters.checked = state.cascadeFilters;
   order1Sel.value = String(state.order1);
   order2Sel.value = String(state.order2);
+  updateEnabledFiltersUI();
+  applyPlotLayout();
 
   function setFc1(){ state.fc1=clampFc(sliderValToHz(fc1.value)); fc1Val.textContent=state.fc1.toLocaleString()+' Hz'; refreshAll(); }
   function setFc2(){ state.fc2=clampFc(sliderValToHz(fc2.value)); fc2Val.textContent=state.fc2.toLocaleString()+' Hz'; refreshAll(); }
+  function handleFilterFreqArrowKey(ev, sliderEl, currentHz, setter){
+    const delta = ev.key === 'ArrowLeft' || ev.key === 'ArrowDown' ? -1
+      : ev.key === 'ArrowRight' || ev.key === 'ArrowUp' ? 1
+      : 0;
+    if(!delta) return;
+    ev.preventDefault();
+    const nextHz = clampFc(currentHz + delta);
+    sliderEl.value = hzToSliderVal(nextHz).toFixed(4);
+    setter();
+  }
   fc1.addEventListener('input', setFc1);
   fc2.addEventListener('input', setFc2);
+  fc1.addEventListener('keydown', ev => handleFilterFreqArrowKey(ev, fc1, state.fc1, setFc1));
+  fc2.addEventListener('keydown', ev => handleFilterFreqArrowKey(ev, fc2, state.fc2, setFc2));
 
   f1type.addEventListener('change', ()=>{ state.f1type=f1type.value; refreshAll(); });
   f2type.addEventListener('change', ()=>{ state.f2type=f2type.value; refreshAll(); });
 
   order1Sel.addEventListener('change', ()=>{
     const o = parseInt(order1Sel.value,10);
-    state.order1 = (o===2||o===4||o===6) ? o : 4;
+    state.order1 = (o===1||o===2||o===4||o===6) ? o : 4;
     refreshAll();
   });
   order2Sel.addEventListener('change', ()=>{
     const o = parseInt(order2Sel.value,10);
-    state.order2 = (o===2||o===4||o===6) ? o : 4;
+    state.order2 = (o===1||o===2||o===4||o===6) ? o : 4;
+    refreshAll();
+  });
+  f1Enabled.addEventListener('change', ()=>{
+    state.f1Enabled = f1Enabled.checked;
+    updateEnabledFiltersUI();
+    refreshAll();
+  });
+  f2Enabled.addEventListener('change', ()=>{
+    state.f2Enabled = f2Enabled.checked;
+    updateEnabledFiltersUI();
+    refreshAll();
+  });
+  showTimePlot.addEventListener('change', ()=>{
+    state.showTimePlot = showTimePlot.checked;
+    applyPlotLayout();
+  });
+  showBodePlot.addEventListener('change', ()=>{
+    state.showBodePlot = showBodePlot.checked;
+    applyPlotLayout();
+  });
+  cascadeFilters.addEventListener('change', ()=>{
+    state.cascadeFilters = cascadeFilters.checked && cascadeAvailable();
+    updateEnabledFiltersUI();
     refreshAll();
   });
 
-  bodeXLog.addEventListener('change', ()=>{ state.xLog=bodeXLog.checked; applyBodeXAxis(); });
-  bodeDb.addEventListener('change', ()=>{ state.bodeDb=bodeDb.checked; applyBodeMode(); });
+  bodeXLinear.addEventListener('change', ()=>{ if(bodeXLinear.checked){ state.xLog=false; applyBodeXAxis(); } });
+  bodeXLog.addEventListener('change', ()=>{ if(bodeXLog.checked){ state.xLog=true; applyBodeXAxis(); } });
+  bodeLin.addEventListener('change', ()=>{ if(bodeLin.checked){ state.bodeDb=false; applyBodeMode(); } });
+  bodeDb.addEventListener('change', ()=>{ if(bodeDb.checked){ state.bodeDb=true; applyBodeMode(); } });
 
   showPhase.addEventListener('change', ()=>{ state.showPhase=showPhase.checked; ensurePhasePlot().then(()=>{ setupBodeLinking(); setupBodeDoubleClick(); }); });
 
   function sanitizeInputs(){
-    let f=Math.round(+freqEl.value||100), N=Math.round(+nmaxEl.value||10);
-    f = Math.min(10000, Math.max(1, f));
+    let f=Math.round(freqSliderValToHz(freqEl.value||freqHzToSliderVal(100))), N=Math.round(+nmaxEl.value||10);
+    f = clampFreq(f);
     N = Math.min(NMAX_MAX, Math.max(NMAX_MIN, N));
-    freqEl.value=f; nmaxEl.value=N;
+    freqEl.value=freqHzToSliderVal(f).toFixed(4); nmaxEl.value=N;
     state.freq=f; state.nmax=N;
     freqVal.textContent = f.toLocaleString()+' Hz';
     nmaxVal.textContent = N.toString();
@@ -838,14 +1334,35 @@ document.addEventListener('DOMContentLoaded', () => {
   freqEl.addEventListener('input', rebuildInputAndOutputs);
   nmaxEl.addEventListener('input', rebuildInputAndOutputs);
 
+  function openInfoModal(filterIndex){
+    infoFilterFocus = filterIndex;
+    renderInfoModal();
+    if(infoBackdrop){
+      infoBackdrop.classList.add('open');
+      infoBackdrop.setAttribute('aria-hidden', 'false');
+    }
+  }
+  function closeInfoModal(){
+    if(infoBackdrop){
+      infoBackdrop.classList.remove('open');
+      infoBackdrop.setAttribute('aria-hidden', 'true');
+    }
+  }
+  if(infoBtn1) infoBtn1.addEventListener('click', ()=> openInfoModal(1));
+  if(infoBtn2) infoBtn2.addEventListener('click', ()=> openInfoModal(2));
+  if(infoCloseBtn) infoCloseBtn.addEventListener('click', closeInfoModal);
+  if(infoBackdrop) infoBackdrop.addEventListener('click', ev => { if(ev.target === infoBackdrop) closeInfoModal(); });
+  window.addEventListener('keydown', ev => { if(ev.key === 'Escape') closeInfoModal(); });
+
   // ========= Init =========
   setLang('en');
-  $('#waveSel').value=state.wave; $('#freq').value=state.freq; $('#nmax').value=state.nmax;
+  $('#waveSel').value=state.wave; $('#freq').value=freqHzToSliderVal(state.freq).toFixed(4); $('#nmax').value=state.nmax;
   $('#f1type').value=state.f1type; $('#f2type').value=state.f2type;
   order1Sel.value=String(state.order1);
   order2Sel.value=String(state.order2);
 
   buildInput(); updateFilters();
+  renderInfoModal();
   (function waitPlotly(){
     if(window.Plotly){ buildPlots(); }
     else { requestAnimationFrame(waitPlotly); }
@@ -860,6 +1377,7 @@ document.addEventListener('DOMContentLoaded', () => {
         resizePlot('bodePhase');
       }
     }
+    sizeInfoModal();
   });
 });
 </script>
