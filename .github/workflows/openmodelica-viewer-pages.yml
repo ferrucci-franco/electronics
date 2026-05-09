@@ -21,9 +21,6 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: openmodelica-viewer
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -36,10 +33,29 @@ jobs:
           cache-dependency-path: openmodelica-viewer/package-lock.json
 
       - name: Install dependencies
+        working-directory: openmodelica-viewer
         run: npm ci
 
       - name: Build
+        working-directory: openmodelica-viewer
         run: npm run build
+
+      - name: Assemble Pages site
+        run: |
+          mkdir -p site
+          rsync -a \
+            --exclude='.git/' \
+            --exclude='.github/' \
+            --exclude='.temp/' \
+            --exclude='site/' \
+            --exclude='openmodelica-viewer/node_modules/' \
+            --exclude='openmodelica-viewer/dist/' \
+            --exclude='openmodelica-viewer/backup/' \
+            ./ ./site/
+          rm -rf site/openmodelica-viewer
+          mkdir -p site/openmodelica-viewer
+          cp -R openmodelica-viewer/dist/. site/openmodelica-viewer/
+          touch site/.nojekyll
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -47,7 +63,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: openmodelica-viewer/dist
+          path: site
 
   deploy:
     environment:
