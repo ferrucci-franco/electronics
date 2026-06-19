@@ -330,7 +330,7 @@ end PeriodMeter;`;
           ],
           success:'Correct. You can now write the two missing equations in the Modelica skeleton, simulate the model in OpenModelica, and inspect the curves with the viewer.',
           resources:[
-            {label:'Open OpenModelica viewer',href:'./../openmodelica-viewer/index.html'}
+            {label:'Open Time Series Explorer',href:'./../timeseries-explorer/index.html'}
           ]
         }
       ],
@@ -820,7 +820,7 @@ end PeriodMeter;`;
           ],
           success:{html:'Correct. Vous pouvez maintenant écrire les deux équations manquantes dans le squelette <strong>Modelica</strong>, <strong>simuler</strong> le modèle dans <strong>OpenModelica</strong>, puis inspecter les courbes avec le viewer.'},
           resources:[
-            {label:'Ouvrir viewer OpenModelica',href:'./../openmodelica-viewer/index.html'}
+            {label:'Ouvrir Time Series Explorer',href:'./../timeseries-explorer/index.html'}
           ]
         }
       ],
@@ -1307,7 +1307,7 @@ end PeriodMeter;`;
           ],
           success:'Correcto. Ahora podés escribir las dos ecuaciones que faltan en el esqueleto Modelica, simular el modelo en OpenModelica y mirar las curvas con el viewer.',
           resources:[
-            {label:'Abrir OpenModelica viewer',href:'./../openmodelica-viewer/index.html'}
+            {label:'Abrir Time Series Explorer',href:'./../timeseries-explorer/index.html'}
           ]
         }
       ],

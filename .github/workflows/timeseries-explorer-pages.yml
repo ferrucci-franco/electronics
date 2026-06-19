@@ -1,12 +1,12 @@
-name: Deploy OpenModelica Viewer to GitHub Pages
+name: Deploy Time Series Explorer to GitHub Pages
 
 on:
   push:
     branches:
       - main
     paths:
-      - '.github/workflows/openmodelica-viewer-pages.yml'
-      - 'openmodelica-viewer/**'
+      - '.github/workflows/timeseries-explorer-pages.yml'
+      - 'timeseries-explorer/**'
   workflow_dispatch:
 
 permissions:
@@ -15,7 +15,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: openmodelica-viewer-pages
+  group: timeseries-explorer-pages
   cancel-in-progress: true
 
 jobs:
@@ -30,14 +30,14 @@ jobs:
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: openmodelica-viewer/package-lock.json
+          cache-dependency-path: timeseries-explorer/package-lock.json
 
       - name: Install dependencies
-        working-directory: openmodelica-viewer
+        working-directory: timeseries-explorer
         run: npm ci
 
       - name: Build
-        working-directory: openmodelica-viewer
+        working-directory: timeseries-explorer
         run: npm run build
 
       - name: Assemble Pages site
@@ -48,13 +48,14 @@ jobs:
             --exclude='.github/' \
             --exclude='.temp/' \
             --exclude='site/' \
-            --exclude='openmodelica-viewer/node_modules/' \
-            --exclude='openmodelica-viewer/dist/' \
-            --exclude='openmodelica-viewer/backup/' \
+            --exclude='timeseries-explorer/node_modules/' \
+            --exclude='timeseries-explorer/dist/' \
+            --exclude='timeseries-explorer/backup/' \
             ./ ./site/
           rm -rf site/openmodelica-viewer
-          mkdir -p site/openmodelica-viewer
-          cp -R openmodelica-viewer/dist/. site/openmodelica-viewer/
+          rm -rf site/timeseries-explorer
+          mkdir -p site/timeseries-explorer
+          cp -R timeseries-explorer/dist/. site/timeseries-explorer/
           touch site/.nojekyll
 
       - name: Setup Pages
