@@ -1,12 +1,9 @@
-name: Deploy Time Series Explorer to GitHub Pages
+name: Deploy electronics site to GitHub Pages
 
 on:
   push:
     branches:
       - main
-    paths:
-      - '.github/workflows/timeseries-explorer-pages.yml'
-      - 'timeseries-explorer/**'
   workflow_dispatch:
 
 permissions:
@@ -15,7 +12,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: timeseries-explorer-pages
+  group: pages
   cancel-in-progress: true
 
 jobs:
@@ -25,21 +22,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: timeseries-explorer/package-lock.json
-
-      - name: Install dependencies
-        working-directory: timeseries-explorer
-        run: npm ci
-
-      - name: Build
-        working-directory: timeseries-explorer
-        run: npm run build
-
       - name: Assemble Pages site
         run: |
           mkdir -p site
@@ -48,14 +30,7 @@ jobs:
             --exclude='.github/' \
             --exclude='.temp/' \
             --exclude='site/' \
-            --exclude='timeseries-explorer/node_modules/' \
-            --exclude='timeseries-explorer/dist/' \
-            --exclude='timeseries-explorer/backup/' \
             ./ ./site/
-          rm -rf site/openmodelica-viewer
-          rm -rf site/timeseries-explorer
-          mkdir -p site/timeseries-explorer
-          cp -R timeseries-explorer/dist/. site/timeseries-explorer/
           touch site/.nojekyll
 
       - name: Setup Pages
