@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Explorateur H(s)</title>
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<div id="main">
+
+  <!-- ===== sidebar ===== -->
+  <div id="sidebar">
+    <div class="sb-section">
+      <h4 data-i18n="add">Ajouter au plan s</h4>
+      <button class="btn" id="btn-add-pole-real">
+        <svg class="bicon" viewBox="0 0 16 16"><path class="ic-pole" d="M4.5 4.5l7 7M11.5 4.5l-7 7"/></svg>
+        <span data-i18n="poleR">Pôle réel</span></button>
+      <button class="btn" id="btn-add-pole-pair">
+        <svg class="bicon" viewBox="0 0 16 16"><path class="ic-pole" d="M5.4 1.4l5.2 5.2M10.6 1.4L5.4 6.6M5.4 9.4l5.2 5.2M10.6 9.4l-5.2 5.2"/></svg>
+        <span data-i18n="poleC">Paire de pôles conjugués</span></button>
+      <button class="btn" id="btn-add-zero-real">
+        <svg class="bicon" viewBox="0 0 16 16"><circle class="ic-zero" cx="8" cy="8" r="4.2"/></svg>
+        <span data-i18n="zeroR">Zéro réel</span></button>
+      <button class="btn" id="btn-add-zero-pair">
+        <svg class="bicon" viewBox="0 0 16 16"><circle class="ic-zero" cx="8" cy="4.2" r="2.9"/><circle class="ic-zero" cx="8" cy="11.8" r="2.9"/></svg>
+        <span data-i18n="zeroC">Paire de zéros conjugués</span></button>
+      <div class="kv" id="order-counter" style="margin-top:2px"></div>
+    </div>
+
+    <div class="sb-section">
+      <h4 data-i18n="inventory">Inventaire</h4>
+      <div id="inventory"></div>
+    </div>
+
+    <div class="sb-section">
+      <h4 data-i18n="selected">Élément sélectionné</h4>
+      <div id="readout" class="empty"></div>
+    </div>
+
+    <div class="sb-section">
+      <h4 data-i18n="gain">Gain</h4>
+      <div class="slider-row">K <input type="range" id="k-slider" min="-3" max="3" step="0.01" value="0">
+        <button type="button" id="k-sign" class="sign-btn">±</button>
+        <input type="number" id="k-input" class="knum" step="0.1"></div>
+      <div class="kv" id="h0-value"></div>
+      <label class="chk"><input type="checkbox" id="k-auto-chk" checked>
+        <span data-i18n="kAuto">Auto : H(0) = 1</span></label>
+    </div>
+
+    <div class="sb-section">
+      <h4 data-i18n="delay">Retard pur</h4>
+      <div class="slider-row" id="delay-row">T <input type="number" id="delay-input"
+        class="knum" step="0.05" min="0" value="0"> <span class="kv">s</span></div>
+      <div class="kv" id="delay-note"></div>
+    </div>
+
+    <div class="sb-section">
+      <h4 data-i18n="ruler">Règle et compas</h4>
+      <label class="chk"><input type="checkbox" id="ruler-on">
+        <span data-i18n="rulerOn">Construction géométrique</span></label>
+      <div class="slider-row hidden" id="ruler-mode-row">
+        <select id="ruler-mode" style="flex:1">
+          <option value="dist" data-i18n="rulerDist">Distances</option>
+          <option value="angles" data-i18n="rulerAngles">Angles</option>
+          <option value="both" selected data-i18n="rulerBoth">Les deux</option>
+        </select>
+      </div>
+      <div id="ruler-readout" class="hidden"></div>
+    </div>
+
+    <div class="sb-section">
+      <h4 data-i18n="views">Vues</h4>
+      <label class="chk"><input type="checkbox" checked disabled>
+        <span data-i18n="splane">Plan s</span> <span class="kv" data-i18n="fixed">(fixe)</span></label>
+      <label class="chk"><input type="checkbox" id="view-3d">
+        <span data-i18n="surf">Surface 3D |H(s)|</span></label>
+      <label class="chk"><input type="checkbox" id="view-bode" checked>
+        <span data-i18n="bode">Bode |H| et phase</span></label>
+      <label class="chk"><input type="checkbox" id="view-time" checked>
+        <span data-i18n="timeresp">Réponse temporelle</span></label>
+    </div>
+
+    <div class="sb-section">
+      <h4 data-i18n="prefs">Préférences</h4>
+      <div class="slider-row"><span data-i18n="lang">Langue</span>
+        <select id="lang-sel" style="flex:1">
+          <option value="fr" selected>Français</option>
+          <option value="en">English</option>
+          <option value="es">Español</option>
+          <option value="it">Italiano</option>
+        </select>
+      </div>
+      <label class="chk" style="margin-top:5px"><input type="checkbox" id="theme-chk">
+        <span data-i18n="dark">Thème sombre</span></label>
+    </div>
+
+    <div class="sb-section" style="margin-top:auto">
+      <button class="btn" id="btn-reset" style="justify-content:center">
+        ↺ <span data-i18n="reset">Réinitialiser</span></button>
+    </div>
+  </div>
+
+  <!-- poignée de repli du panneau latéral : la flèche indique ce qui va arriver -->
+  <div id="sb-edge">
+    <button id="sb-toggle" type="button">
+      <svg viewBox="0 0 8 16" width="7" height="14" aria-hidden="true">
+        <path d="M5.4 3.4L2.6 8l2.8 4.6"/></svg>
+    </button>
+  </div>
+
+  <!-- ===== panels ===== -->
+  <div id="panels">
+    <div class="col" id="col-sp">
+      <div class="panel" id="panel-splane">
+        <div class="panel-head">
+          <span data-i18n="splane">Plan s</span>
+          <span class="local">
+            <label class="chk"><input type="checkbox" id="aspect-lock" checked> 1:1</label>
+            <span class="badge hidden" id="aspect-badge"></span>
+          </span>
+        </div>
+        <div class="panel-body" id="splane-body">
+          <svg id="splane-svg"></svg>
+          <div id="toast" class="hidden"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="vsplit" id="vsplit-sp"></div>
+
+    <div class="col hidden" id="col-3d">
+      <div class="panel" id="panel-3d">
+        <div class="panel-head">
+          <span data-i18n="surf3d">Surface 3D</span>
+          <span class="local">
+            <span class="ctrl-group">
+            <span data-i18n="surface">Surface</span> :
+            <select id="surf-mode">
+              <option value="mag">|H(s)|</option>
+              <option value="phase">arg H(s)</option>
+              <option value="both" data-i18n="both">Les deux</option>
+            </select>
+            <span id="clip-wrap"><span data-i18n="clip">Écrêtage |H|</span> :
+              <input type="range" id="clip-slider" min="0" max="100" step="1" value="50" style="width:80px">
+              <span class="kv" id="clip-value"></span></span>
+            </span>
+            <span class="ctrl-group">
+              <span data-i18n="detail">Détail</span> :
+              <select id="surf-detail">
+                <option value="med" data-i18n="detailMed">Normal</option>
+                <option value="high" data-i18n="detailHigh">Élevé</option>
+              </select>
+              <span id="palette-wrap"><span data-i18n="palette">Palette</span> :
+                <select id="surf-palette">
+                  <option value="greys">Gris</option>
+                  <option value="viridis" selected>Viridis</option>
+                  <option value="hot">Chaud</option>
+                </select></span>
+            </span>
+          </span>
+        </div>
+        <div class="panel-body" id="surf-body">
+          <div id="surf-plot"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="vsplit hidden" id="vsplit-3d"></div>
+
+    <div class="col" id="col-right">
+      <div class="panel" id="panel-bode">
+        <div class="panel-head">
+          <span data-i18n="bodehd">Bode — |H(jω)| et phase</span>
+          <span class="local">
+            <span class="ctrl-group">
+              <span data-i18n="bodeView">Vue</span> :
+              <select id="bode-mode">
+                <option value="bode">Bode</option>
+                <option value="nyquist">Nyquist</option>
+                <option value="both" data-i18n="both">Les deux</option>
+              </select>
+            </span>
+            <span class="ctrl-group" id="bode-opts">
+              <label class="chk"><input type="checkbox" id="bode-phase" checked> <span data-i18n="bodePhase">Afficher la phase</span></label>
+              <label class="chk"><input type="checkbox" id="bode-unwrap" checked> <span data-i18n="bodeUnwrap">Phase déroulée</span></label>
+              <label class="chk" id="log-wrap"><input type="checkbox" id="bode-log">
+                <span data-i18n="logScale">Échelle log</span></label>
+              <span id="bode-dec-wrap" class="hidden"><span data-i18n="bodeDec">Décades</span> :
+                <select id="bode-dec">
+                  <option value="1">1</option><option value="2">2</option>
+                  <option value="3" selected>3</option><option value="4">4</option>
+                  <option value="5">5</option><option value="6">6</option>
+                  <option value="7">7</option><option value="8">8</option>
+                </select></span>
+            </span>
+            <span class="ctrl-group hidden" id="nyq-opts">
+              <label class="chk"><input type="checkbox" id="nyq-revers">
+                <span data-i18n="revers">Critère du revers</span></label>
+            </span>
+          </span>
+        </div>
+        <div class="panel-body" id="bode-body">
+          <div id="bode-split">
+            <div class="plot-pane" id="bode-pane"><svg id="bode-svg"></svg></div>
+            <div class="plot-pane hidden" id="nyq-pane"><svg id="nyq-svg"></svg></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hsplit" id="hsplit-right"></div>
+
+      <div class="panel" id="panel-time">
+        <div class="panel-head">
+          <span data-i18n="resp">Réponse</span>
+          <span class="local">
+            <span data-i18n="input">Entrée</span> :
+            <select id="input-type">
+              <option value="step" data-i18n="step">Échelon</option>
+              <option value="impulse" data-i18n="impulse">Impulsion</option>
+              <option value="sine" data-i18n="sine">Sinusoïdale</option>
+            </select>
+            <span id="win-wrap" class="hidden">ω<sub>in</sub> : <input type="number" id="win-num" class="knum" step="0.1" min="0.01"></span>
+            <label class="chk hidden" id="trans-wrap"><input type="checkbox" id="show-trans" checked>
+              <span data-i18n="transient">Transitoire</span></label>
+            <span>T : <input type="number" id="time-T" class="knum" step="0.5" min="0.001"></span>
+            <label class="chk"><input type="checkbox" id="time-T-auto" checked>
+              <span data-i18n="tAuto">auto</span></label>
+          </span>
+        </div>
+        <div class="panel-body" id="time-body">
+          <svg id="time-svg"></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== bandeau équations ===== -->
+<div id="eqstrip" class="collapsed">
+  <button id="eq-toggle" type="button">
+    <svg viewBox="0 0 16 8" width="14" height="7" aria-hidden="true">
+      <path d="M3.4 2.6L8 5.4l4.6-2.8"/></svg>
+  </button>
+  <div class="eq-head" id="eq-head">
+    <span id="eq-caret">▸</span> <span data-i18n="equations">Équations</span>
+    <span class="kv" data-i18n="collapse" style="font-weight:400">(plier/déplier)</span>
+    <label class="chk" id="eq-freq-label" style="margin-left:12px">
+      <input type="checkbox" id="eq-freq-chk"> <span data-i18n="eqFreq">Transformée de Fourier</span>
+    </label>
+    <label class="chk" id="eq-fit-label" style="margin-left:12px">
+      <input type="checkbox" id="eq-fit-chk" checked> <span data-i18n="eqFit">Ajuster à la largeur</span>
+    </label>
+  </div>
+  <div class="eq-body">
+    <div class="eq-row">
+      <div class="eq-block"><span class="eq-label" data-i18n="factored">Factorisée</span>
+        <div class="eq-scroll"><span class="eq" id="eq-factored"></span></div></div>
+      <div class="eq-block"><span class="eq-label" data-i18n="expanded">Développée</span>
+        <div class="eq-scroll"><span class="eq" id="eq-expanded"></span></div></div>
+      <div class="eq-block"><span class="eq-label" data-i18n="ode">Équation différentielle</span>
+        <div class="eq-scroll"><span class="eq" id="eq-ode"></span></div></div>
+    </div>
+    <div class="eq-row hidden" id="eq-row-freq">
+      <div class="eq-block"><span class="eq-label" data-i18n="eqMod">Module</span>
+        <div class="eq-scroll"><span class="eq" id="eq-mod"></span></div></div>
+      <div class="eq-block"><span class="eq-label" data-i18n="eqArg">Phase</span>
+        <div class="eq-scroll"><span class="eq" id="eq-arg"></span></div></div>
+    </div>
+  </div>
+</div>
+
+<script src="vendor/katex/katex.min.js"></script>
+<script src="vendor/three/three.min.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/model.js"></script>
+<script src="js/splane.js"></script>
+<script src="js/bode.js"></script>
+<script src="js/nyquist.js"></script>
+<script src="js/time.js"></script>
+<script src="js/surface3d.js"></script>
+<script src="js/sidebar.js"></script>
+<script src="js/tex.js"></script>
+<script src="js/equations.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

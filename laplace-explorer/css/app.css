@@ -1,0 +1,359 @@
+/* Palette : variables CSS reprises de la maquette v5 (fait foi).
+   Le bloc body.dark est présent (inerte en J1) — le basculement arrive au jalon J7. */
+:root{
+  --upf-blue:#004987; --upf-blue-soft:#e8f0f7; --accent:#e67e22;
+  --ink:#2b3440; --muted:#7a8694; --panel-bg:#fff; --app-bg:#eef1f4;
+  --border:#ccd4dc; --pole:#c0392b; --zero:#27ae60;
+  --head-bg:#f7f9fb; --btn-bg:#fafbfc; --forbidden:#f6e9e7;
+  --readout-bg:#fbf7f2; --readout-border:#ecd9c4; --sel-bg:#fdf0e6;
+  --grid:#e3e8ec; --axis:#9aa5b0; --ghost:#9aa5b0; --win:#8e44ad;
+  /* une seule couleur pour LA trace de |H(jω)| : la courbe du Bode et la trace
+     de coupe de la surface 3D sont le même objet, elles doivent se répondre */
+  --trace:#8c1f3f;
+}
+body.dark{
+  --upf-blue:#5ea3e0; --upf-blue-soft:#1d2b3a; --accent:#f0913c;
+  --ink:#d7dde3; --muted:#8b96a2; --panel-bg:#1b2028; --app-bg:#12161c;
+  --border:#333c48; --pole:#e06055; --zero:#4fc98a;
+  --head-bg:#20262f; --btn-bg:#232a34; --forbidden:#2b2022;
+  --readout-bg:#2a251d; --readout-border:#4a3d28; --sel-bg:#3a2d1e;
+  --grid:#242b34; --axis:#59636e; --ghost:#6b7682; --win:#b07cc6;
+  --trace:#e8809a;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Segoe UI",system-ui,sans-serif;background:var(--app-bg);color:var(--ink);
+     height:100vh;display:flex;flex-direction:column;overflow:hidden;font-size:13px}
+
+#main{flex:1;display:flex;min-height:0}
+
+/* ===== sidebar ===== */
+/* largeur portée à ~252 px et typographie agrandie (retour enseignant : lisibilité en projection) */
+#sidebar{width:252px;flex-shrink:0;background:var(--panel-bg);border-right:1px solid var(--border);
+         padding:11px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;
+         scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+/* poignée de repli du panneau latéral. Une languette sur le bord plutôt qu'un
+   bouton dans la barre d'outils : elle est là où on regarde quand on veut de la
+   place, et la flèche dit ce qui va arriver, pas l'état courant. */
+/* La gouttière fait 7 px, comme l'écart entre deux panneaux : le panneau des
+   panneaux (padding 8 px) cède son bord gauche, sinon on cumulait 19 px. */
+#sb-edge{flex:0 0 7px;display:flex;align-items:center;justify-content:center;
+         background:var(--app-bg)}
+/* La languette est pleine et bleue, pas discrète : elle doit se repérer d'un
+   coup d'œil, panneau ouvert comme replié. Le chevron prend la couleur du fond
+   des panneaux, ce qui donne du blanc sur bleu foncé en thème clair et du
+   sombre sur bleu clair en thème sombre — contrasté des deux côtés. */
+#sb-toggle{width:7px;height:58px;padding:0;background:var(--upf-blue);color:var(--panel-bg);
+           border:1px solid var(--upf-blue);border-left:none;border-radius:0 5px 5px 0;
+           display:flex;align-items:center;justify-content:center;cursor:pointer;
+           position:relative}
+/* fine à l'œil, pas sous le curseur — mais le débord reste discret, une zone
+   de clic invisible qui mord sur le panneau voisin vole des clics */
+#sb-toggle::before{content:"";position:absolute;inset:-6px -3px}
+#sb-toggle svg path{fill:none;stroke:currentColor;stroke-width:2;
+                    stroke-linecap:round;stroke-linejoin:round}
+#sb-toggle:hover{background:var(--accent);border-color:var(--accent)}
+#sb-toggle:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+body.sb-hidden #sidebar{display:none}
+body.sb-hidden #sb-toggle svg{transform:scaleX(-1)}
+
+.sb-section h4{font-size:11.5px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);
+               margin-bottom:7px;border-bottom:1px solid var(--border);padding-bottom:3px}
+#sidebar select{font-size:13px;padding:4px 7px;border:1px solid var(--border);border-radius:4px;
+                background:var(--btn-bg);color:var(--ink)}
+#sidebar select:hover{border-color:var(--upf-blue)}
+.btn{display:flex;align-items:center;gap:8px;width:100%;text-align:left;margin-bottom:4px;
+     padding:6px 8px;border:1px solid var(--border);
+     border-radius:4px;background:var(--btn-bg);cursor:pointer;font-size:14px;color:var(--ink)}
+.btn:hover:not(:disabled){background:var(--upf-blue-soft);border-color:var(--upf-blue)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+/* icônes vectorielles des boutons et de l'inventaire */
+.bicon{width:15px;height:15px;flex-shrink:0}
+.gicon{width:13px;height:13px;display:block;margin:0 auto}
+.ic-pole{stroke:var(--pole);stroke-width:1.8;stroke-linecap:round;fill:none}
+.ic-zero{stroke:var(--zero);stroke-width:1.8;fill:none}
+.chk{display:flex;align-items:center;gap:7px;padding:3px 2px;cursor:pointer;font-size:13.5px}
+.chk input{accent-color:var(--upf-blue)}
+.slider-row{display:flex;align-items:center;gap:6px;font-size:13px;margin-top:5px}
+.slider-row input[type=range]{flex:1;accent-color:var(--upf-blue);min-width:0}
+.kv{font-family:Consolas,monospace;font-size:12.5px;color:var(--muted)}
+input[type=number]{background:var(--btn-bg);color:var(--ink);border:1px solid var(--border);border-radius:3px}
+
+/* inventaire */
+#inventory .inv-item{display:flex;align-items:center;gap:6px;padding:4px;border-radius:4px;
+                     font-family:Consolas,monospace;font-size:12.5px;cursor:pointer}
+#inventory .inv-item:hover{background:var(--upf-blue-soft)}
+#inventory .inv-item.selected{background:var(--sel-bg);outline:1px solid var(--accent)}
+.inv-glyph{width:14px;text-align:center;font-weight:700;flex-shrink:0}
+.inv-val{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.inv-edit-label{font-family:"Segoe UI",sans-serif;font-size:11.5px;font-weight:600;
+                color:var(--muted);flex-shrink:0}
+.inv-edit-label.pole{color:var(--pole)}
+.inv-edit-label.zero{color:var(--zero)}
+.jlbl{margin-right:3px}
+.inv-actions{margin-left:auto;display:flex;gap:3px;flex-shrink:0}
+.inv-btn{border:none;background:none;color:var(--muted);cursor:pointer;font-size:13px;
+         width:20px;height:20px;line-height:1;padding:0;border-radius:3px;
+         display:inline-flex;align-items:center;justify-content:center}
+.inv-btn.edit:hover{color:#fff;background:var(--upf-blue)}
+.inv-btn.del:hover,.inv-btn.cancel:hover{color:#fff;background:var(--pole)}
+.inv-btn.ok{border:1px solid var(--border);background:var(--btn-bg)}
+.inv-btn.cancel{border:1px solid var(--border);background:var(--btn-bg)}
+.inv-btn.ok:hover{color:#fff;background:var(--zero);border-color:var(--zero)}
+.inv-btn.cancel:hover{border-color:var(--pole)}
+/* formulaire d'édition */
+#inventory .inv-item.editing{cursor:default;align-items:flex-start;padding:6px 8px 6px 6px}
+.inv-edit-form{display:flex;flex-direction:column;gap:5px;flex:1;min-width:0}
+.inv-edit-row{display:flex;align-items:center;gap:5px;font-family:Consolas,monospace;font-size:12.5px}
+.inv-edit-form input[type=number]{width:58px;font-size:12.5px;font-family:Consolas,monospace;
+    text-align:right;padding:3px 5px;border-radius:3px;appearance:textfield;-moz-appearance:textfield}
+.inv-edit-form input[type=number]::-webkit-inner-spin-button,
+.inv-edit-form input[type=number]::-webkit-outer-spin-button,
+.knum::-webkit-inner-spin-button,
+.knum::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.knum{width:58px;font-size:11.5px;font-family:Consolas,monospace;text-align:right;
+      padding:2px 4px;border-radius:3px;appearance:textfield;-moz-appearance:textfield}
+.knum:focus{outline:none;border-color:var(--accent)}
+.sign-btn{width:20px;height:20px;flex-shrink:0;border:1px solid var(--border);border-radius:3px;
+          background:var(--btn-bg);color:var(--ink);cursor:pointer;font-size:12px;line-height:1;
+          display:inline-flex;align-items:center;justify-content:center;padding:0}
+.sign-btn:hover{background:var(--upf-blue-soft);border-color:var(--upf-blue)}
+#h0-value{margin-top:3px}
+.inv-edit-form input[type=number]:focus{outline:none;border-color:var(--accent)}
+.inv-edit-form select.mult{width:62px;font-size:12.5px;font-family:Consolas,monospace;
+    padding:3px 5px;border-radius:3px;background:var(--btn-bg);color:var(--ink);
+    border:1px solid var(--border)}
+.inv-edit-form select.mult:focus{outline:none;border-color:var(--accent)}
+#inventory .empty-note{color:var(--muted);font-style:italic;font-size:11.5px;padding:2px}
+
+/* readout */
+#readout{background:var(--readout-bg);border:1px solid var(--readout-border);border-radius:5px;padding:7px 9px;
+         font-family:Consolas,monospace;font-size:12.5px;line-height:1.7}
+#readout .ro-title{font-family:"Segoe UI",sans-serif;font-size:11.5px;color:var(--accent);
+                   font-weight:600;text-transform:uppercase;letter-spacing:.6px}
+#readout.empty{color:var(--muted);font-style:italic;font-family:"Segoe UI",sans-serif}
+
+/* ===== panneaux ===== */
+#panels{flex:1;display:flex;min-width:0;min-height:0;padding:8px 8px 8px 0}
+.col{display:flex;flex-direction:column;min-width:0;min-height:0;flex:1}
+.vsplit{flex:0 0 7px;cursor:col-resize;display:flex;align-items:center;justify-content:center}
+.vsplit::after{content:"";width:2px;height:46px;background:var(--border);border-radius:2px}
+.vsplit:hover::after{background:var(--upf-blue)}
+.hsplit{flex:0 0 7px;cursor:row-resize;display:flex;align-items:center;justify-content:center}
+.hsplit::after{content:"";height:2px;width:46px;background:var(--border);border-radius:2px}
+.hsplit:hover::after{background:var(--upf-blue)}
+.panel{background:var(--panel-bg);border:1px solid var(--border);border-radius:6px;
+       display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden;flex:1}
+.panel-head{padding:4px 10px;font-size:11px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;
+            color:var(--upf-blue);border-bottom:1px solid var(--border);background:var(--head-bg);
+            display:flex;justify-content:space-between;align-items:center;flex-shrink:0;gap:8px;flex-wrap:wrap}
+.panel-head .local{font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted);font-size:10.5px;
+                   display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.panel-head .chk{font-size:10.5px;padding:0;gap:4px}
+/* commandes groupées : le retour à la ligne se fait ENTRE les groupes, jamais
+   au milieu de l'un — l'en-tête se coupe donc à un endroit qui a du sens */
+.panel-head .ctrl-group{display:inline-flex;align-items:center;gap:6px;flex-wrap:nowrap}
+.panel-body{flex:1;position:relative;min-height:0}
+.panel-body svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hidden{display:none !important}
+.badge{background:var(--accent);color:#fff;border-radius:3px;padding:0 5px;font-size:10px;font-family:Consolas,monospace}
+
+/* plan s */
+svg text{font-family:"Segoe UI",sans-serif;user-select:none}
+.axis{stroke:var(--axis);stroke-width:1}
+.axis.snapped{stroke:var(--accent);stroke-width:1.6}
+.gridline{stroke:var(--grid);stroke-width:1}
+.gridline.minor{opacity:.45}
+.dec-tick{stroke:var(--upf-blue);stroke-width:1.6;opacity:.75}
+.tick{font-size:9px;fill:var(--muted)}
+.axis-name{font-size:12.5px;font-weight:700;font-style:italic;fill:var(--ink);opacity:.8;
+           paint-order:stroke;stroke:var(--panel-bg);stroke-width:3px;stroke-linejoin:round}
+.sp-item{cursor:grab}
+.sp-item.dragging{cursor:grabbing}
+.sp-item line.marker-x{stroke:var(--pole);stroke-width:2.4;stroke-linecap:round}
+.sp-item circle.marker{stroke:var(--zero);stroke-width:2;fill:none}
+.sp-item text.mult-exp{font-size:12.5px;font-weight:700;
+    paint-order:stroke;stroke:var(--panel-bg);stroke-width:3px;stroke-linejoin:round}
+.sp-item text.mult-exp.pole{fill:var(--pole)}
+.sp-item text.mult-exp.zero{fill:var(--zero)}
+.halo{fill:none;stroke:var(--accent);stroke-width:1.5;stroke-dasharray:3 2}
+.fuse-ring{fill:none;stroke:var(--accent);stroke-width:2}
+.fuse-ring.refused{stroke:var(--pole)}
+.guide{stroke:var(--accent);fill:none;stroke-width:1.1;stroke-dasharray:4 3;opacity:.85}
+.guide-label{font-size:13px;font-weight:600;fill:var(--accent);
+    paint-order:stroke;stroke:var(--panel-bg);stroke-width:3.5px;stroke-linejoin:round}
+.hit{fill:rgba(0,0,0,0);stroke:none}
+
+/* surface 3D (Three.js) */
+#surf-plot{position:absolute;inset:0;overflow:hidden;display:flex}
+/* mode « les deux » : deux vues côte à côte, caméras synchronisées */
+/* min-width ET min-height à 0 : sans cela un panneau ne peut pas descendre
+   sous la taille de son canvas, et les deux vues se partagent mal la place */
+.surf-pane{position:relative;flex:1;min-width:0;min-height:0}
+.surf-pane + .surf-pane{border-left:1px dashed var(--border)}
+#surf-plot.stacked .surf-pane + .surf-pane{border-left:none;border-top:1px dashed var(--border)}
+/* sans ces règles, devicePixelRatio fait déborder le canvas (contrainte 6) */
+.surf-canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+.surf-canvas:active{cursor:grabbing}
+/* légende des gestes du panneau 3D */
+/* left/right plutôt que left:50% + translate : sinon la largeur disponible se
+   limite à la moitié droite du panneau et la légende se replie pour rien */
+.surf-help{position:absolute;bottom:5px;left:8px;right:8px;text-align:center;
+  pointer-events:none;font-size:10.5px;color:var(--muted);opacity:.9;line-height:1.35}
+/* étiquettes d'axes du panneau 3D, en surimpression HTML (texte net, thème suivi) */
+/* nappe de phase non représentable : le maillage replierait le retard (§1 bis) */
+.surf-warn{display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+           max-width:78%;text-align:center;font-size:12px;line-height:1.5;color:var(--muted);
+           background:var(--panel-bg);border:1px dashed var(--border);border-radius:6px;
+           padding:10px 14px;pointer-events:none}
+.surf-pane.aliased .surf-canvas{visibility:hidden}
+.surf-pane.aliased .surf-axis-label{display:none}
+.surf-pane.aliased .surf-warn{display:block}
+.surf-axis-label{position:absolute;transform:translate(-50%,-50%);pointer-events:none;
+  font-family:"Segoe UI",system-ui,sans-serif;font-size:12px;font-weight:700;font-style:italic;
+  color:var(--ink);opacity:.85;white-space:nowrap;
+  text-shadow:0 0 3px var(--panel-bg),0 0 3px var(--panel-bg),0 0 3px var(--panel-bg)}
+.panel-head input[type=range]{accent-color:var(--upf-blue);vertical-align:middle}
+#clip-wrap{display:inline-flex;align-items:center;gap:5px}
+#clip-value{min-width:38px}
+
+/* Bode et Nyquist partagent le panneau : côte à côte si large, empilés sinon */
+#bode-split{position:absolute;inset:0;display:flex}
+.plot-pane{position:relative;flex:1;min-width:0;min-height:0}
+.plot-pane + .plot-pane{border-left:1px dashed var(--border)}
+#bode-split.stacked{flex-direction:column}
+#bode-split.stacked .plot-pane + .plot-pane{border-left:none;border-top:1px dashed var(--border)}
+
+/* Nyquist */
+.nyq-curve{fill:none;stroke:var(--trace);stroke-width:2;stroke-linejoin:round}
+.nyq-arrow{fill:var(--trace);stroke:none}
+.nyq-unit{fill:none;stroke:var(--axis);stroke-width:1;stroke-dasharray:4 3}
+.nyq-crit{stroke:var(--pole);stroke-width:2;fill:none}
+.nyq-crit-lab{font-size:11px;font-weight:700;fill:var(--pole);
+              paint-order:stroke;stroke:var(--panel-bg);stroke-width:3px;stroke-linejoin:round}
+.nyq-radius{stroke-width:1.2;stroke-dasharray:3 2}
+.nyq-radius.eval{stroke:var(--accent)}
+.nyq-radius.win{stroke:var(--win)}
+.nyq-marg{font-size:11px;font-weight:600;fill:var(--ink);opacity:.85;
+          paint-order:stroke;stroke:var(--panel-bg);stroke-width:3px;stroke-linejoin:round}
+
+/* Bode */
+.bode-curve{fill:none;stroke:var(--trace);stroke-width:2;stroke-linejoin:round}
+.axis-title{font-size:12px;font-weight:700;font-style:italic;fill:var(--ink);opacity:.8}
+.wdrag{fill:transparent;cursor:ew-resize}
+.ydrag{fill:transparent;cursor:ns-resize}
+/* ruban de contexte (échelle log) : la fenêtre affichée située dans tout le
+   spectre du système — le nombre de décades ne dit pas *lesquelles* on regarde */
+.rib-track{fill:var(--grid);stroke:var(--border);stroke-width:1}
+.rib-win{fill:var(--upf-blue);fill-opacity:.15;stroke:var(--upf-blue);stroke-width:1;cursor:grab}
+.rib-grip{fill:var(--upf-blue);cursor:ew-resize}
+.rib-tick{stroke-width:1.6}
+.rib-tick.pole{stroke:var(--pole)}
+.rib-tick.zero{stroke:var(--zero)}
+.rib-lab{font-size:9px;fill:var(--muted)}
+
+/* ===== règle et compas (cahier §6 bis) ===== */
+/* segments et arcs dans le plan s : zéros = numérateur, pôles = dénominateur */
+.ruler-seg{stroke-width:1.6;fill:none}
+.ruler-seg.num{stroke:var(--zero)}
+.ruler-seg.den{stroke:var(--pole)}
+.ruler-ref{stroke-width:1;stroke-dasharray:3 3;opacity:.45;fill:none}
+.ruler-ref.num{stroke:var(--zero)} .ruler-ref.den{stroke:var(--pole)}
+.ruler-arc{stroke-width:1.4;fill:none}
+.ruler-arc.num{stroke:var(--zero)} .ruler-arc.den{stroke:var(--pole)}
+.ruler-lab{font-size:13px;font-weight:700;text-anchor:middle;
+           paint-order:stroke;stroke:var(--panel-bg);stroke-width:3.5px;stroke-linejoin:round}
+.ruler-lab.num{fill:var(--zero)} .ruler-lab.den{fill:var(--pole)}
+/* point d'évaluation sur l'axe jω — draggable */
+.eval-pt{cursor:ns-resize}
+.eval-core{fill:var(--accent);stroke:var(--panel-bg);stroke-width:1.5}
+.eval-halo{fill:none;stroke:var(--accent);stroke-width:1.2;opacity:.45}
+.eval-lab{font-size:13px;font-weight:700;fill:var(--accent);
+          paint-order:stroke;stroke:var(--panel-bg);stroke-width:3.5px;stroke-linejoin:round}
+/* en entrée sinusoïdale, c'est ω_in qui tient le rôle : point violet */
+.eval-pt.sine .eval-core{fill:var(--win)}
+.eval-pt.sine .eval-halo{stroke:var(--win)}
+.eval-pt.sine .eval-lab{fill:var(--win)}
+/* marqueur unique du Bode (suit le curseur, ou fixe si la construction est cochée) */
+.eval-line{stroke:var(--accent);stroke-width:1.4;stroke-dasharray:4 3}
+.eval-dot{fill:var(--accent)}
+.eval-label{font-size:13px;font-weight:600;fill:var(--accent);
+            paint-order:stroke;stroke:var(--panel-bg);stroke-width:3.5px;stroke-linejoin:round}
+.eval-hit{fill:transparent;cursor:ew-resize}
+/* lecture chiffrée dans la sidebar */
+#ruler-readout{margin-top:6px;font-family:Consolas,monospace;font-size:11.5px;line-height:1.6;
+               background:var(--readout-bg);border:1px solid var(--readout-border);
+               border-radius:5px;padding:6px 8px;overflow-wrap:anywhere}
+.ruler-head{font-weight:700;color:var(--accent);margin-bottom:2px}
+.ruler-group{font-family:"Segoe UI",sans-serif;font-size:10.5px;text-transform:uppercase;
+             letter-spacing:.5px;margin-top:4px}
+.ruler-group.num{color:var(--zero)} .ruler-group.den{color:var(--pole)}
+.ruler-item{padding-left:4px}
+.ruler-item.num{color:var(--zero)} .ruler-item.den{color:var(--pole)}
+.ruler-calc{margin-top:4px;padding-top:4px;border-top:1px solid var(--readout-border);color:var(--ink)}
+.ruler-hint{margin-top:5px;color:var(--muted);font-family:"Segoe UI",sans-serif;font-size:10.5px}
+.ruler-empty{color:var(--muted);font-style:italic}
+
+/* marqueur ω_in — violet, distinct du hover (gris) et de ω_éval (orange) */
+.win-line{stroke:var(--win);stroke-width:1.6;stroke-dasharray:6 3}
+.win-dot{fill:var(--win)}
+.win-label{font-size:13px;font-weight:600;fill:var(--win);
+           paint-order:stroke;stroke:var(--panel-bg);stroke-width:3.5px;stroke-linejoin:round}
+.win-hit{fill:transparent;cursor:ew-resize}
+
+/* réponse temporelle */
+.time-curve{fill:none;stroke:var(--upf-blue);stroke-width:2;stroke-linejoin:round}
+.ghost{fill:none;stroke:var(--ghost);stroke-width:1.3;opacity:.65}
+.envelope{stroke:var(--win);stroke-width:1.4;stroke-dasharray:5 3;opacity:.9}
+.env-label{font-size:12px;font-weight:600;fill:var(--win);
+           paint-order:stroke;stroke:var(--panel-bg);stroke-width:3.5px;stroke-linejoin:round}
+.steady{stroke:var(--accent);stroke-width:1.6;stroke-dasharray:5 3;opacity:.9}
+.zoombox{fill:var(--accent);opacity:.18;stroke:var(--accent);stroke-width:1;stroke-dasharray:4 3}
+.dirac{stroke:var(--pole);stroke-width:2}
+.dirac-head{fill:var(--pole)}
+.dirac-label{font-size:12.5px;font-weight:600;fill:var(--pole);
+             paint-order:stroke;stroke:var(--panel-bg);stroke-width:3.5px;stroke-linejoin:round}
+.panel-head select{font-size:11.5px;background:var(--btn-bg);color:var(--ink);
+             border:1px solid var(--border);border-radius:3px;padding:2px 5px}
+.panel-head select:hover{border-color:var(--upf-blue)}
+.refline{stroke:var(--axis);stroke-width:1;stroke-dasharray:5 3}
+
+#toast{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);white-space:nowrap;
+       background:var(--ink);color:var(--panel-bg);padding:5px 12px;border-radius:4px;
+       font-size:12px;opacity:.92;pointer-events:none;z-index:5}
+
+/* ===== bandeau équations ===== */
+#eqstrip{flex-shrink:0;background:var(--panel-bg);border-top:1px solid var(--border);
+         position:relative}
+/* même languette que celle du panneau latéral, couchée sur le bord haut :
+   chevron vers le bas quand le bandeau est ouvert, vers le haut une fois plié */
+#eq-toggle{position:absolute;left:50%;bottom:100%;transform:translateX(-50%);
+           width:58px;height:7px;padding:0;background:var(--upf-blue);color:var(--panel-bg);
+           border:1px solid var(--upf-blue);border-bottom:none;border-radius:5px 5px 0 0;
+           display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:5}
+/* le débord va vers le haut, jamais vers le bas : en dessous il y a l'en-tête
+   et ses cases à cocher, qui ne doivent pas perdre de clics */
+#eq-toggle::before{content:"";position:absolute;inset:-10px -6px -1px}
+#eq-toggle svg path{fill:none;stroke:currentColor;stroke-width:2;
+                    stroke-linecap:round;stroke-linejoin:round}
+#eq-toggle:hover{background:var(--accent);border-color:var(--accent)}
+#eq-toggle:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+#eqstrip.collapsed #eq-toggle svg{transform:scaleY(-1)}
+#eqstrip .eq-head{padding:3px 12px;font-size:11px;color:var(--upf-blue);font-weight:600;cursor:pointer;
+                  display:flex;gap:8px;align-items:center;user-select:none}
+#eqstrip .eq-body{padding:4px 20px 12px;display:flex;flex-direction:column;gap:10px}
+#eqstrip .eq-row{display:flex;gap:40px;align-items:stretch;flex-wrap:wrap}
+#eqstrip.collapsed .eq-body{display:none}
+/* blocs en colonnes de même hauteur : les barres de défilement s'alignent en bas */
+.eq-block{flex:1 1 280px;min-width:0;display:flex;flex-direction:column}
+/* au-delà du degré 4 : affichage compact = défilement horizontal (cahier §1),
+   ou mise à l'échelle si « ajuster à la largeur » est coché */
+.eq-scroll{flex:1;display:flex;align-items:center;overflow-x:auto;overflow-y:hidden;
+           max-width:100%;padding:4px 0 6px;
+           scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.eq-scroll:hover{scrollbar-color:var(--muted) transparent}
+.eq-scroll.fit{overflow-x:hidden}
+.eq{font-size:15px;white-space:nowrap;display:inline-block;transform-origin:left center}
+#eq-fit-label,#eq-freq-label{font-weight:400;color:var(--muted);font-size:11px;padding:0;gap:4px}
+.eq-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;
+          font-family:"Segoe UI",sans-serif;display:block;margin-bottom:2px}
