@@ -44,5 +44,19 @@
         es: "Inversor, accionamiento de motor CC y conexión a red con PWM bipolar o unipolar.",
       }),
     }),
+    Object.freeze({
+      id: "pv-grid",
+      status: "available",
+      name: Object.freeze({
+        en: "Solar PV → grid",
+        fr: "PV solaire → réseau",
+        es: "PV solar → red",
+      }),
+      description: Object.freeze({
+        en: "Full chain: solar array, MPPT boost, DC bus and H-bridge injecting sinusoidal current into the grid.",
+        fr: "Chaîne complète : champ PV, boost MPPT, bus continu et pont en H injectant un courant sinusoïdal au réseau.",
+        es: "Cadena completa: campo PV, boost con MPPT, bus continuo y puente H inyectando corriente senoidal a la red.",
+      }),
+    }),
   ]);
 })();

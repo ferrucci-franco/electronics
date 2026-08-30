@@ -1,0 +1,859 @@
+(() => {
+  "use strict";
+
+  const text = (en, fr, es) => Object.freeze({ en, fr, es });
+  const clamp = (value, low, high) => Math.min(high, Math.max(low, value));
+  const mean = (points, key) => points.reduce((sum, point) => sum + point[key], 0) / Math.max(points.length, 1);
+  const rms = (points, key) => Math.sqrt(points.reduce((sum, point) => sum + point[key] ** 2, 0) / Math.max(points.length, 1));
+  const triangle = (time, frequency) => { const phase = (time * frequency) % 1; return phase < .5 ? -1 + 4 * phase : 3 - 4 * phase; };
+  const harmonic = (points, key, frequency) => {
+    let sine = 0; let cosine = 0;
+    points.forEach((point) => { sine += point[key] * Math.sin(2 * Math.PI * frequency * point.t); cosine += point[key] * Math.cos(2 * Math.PI * frequency * point.t); });
+    return { rms: Math.SQRT2 * Math.hypot(sine, cosine) / Math.max(points.length, 1), phase: Math.atan2(cosine, sine) };
+  };
+  const thdOf = (points, key, frequency) => {
+    const fundamental = harmonic(points, key, frequency).rms; const dc = mean(points, key); const totalAc2 = Math.max(0, rms(points, key) ** 2 - dc ** 2);
+    return fundamental > 1e-9 ? Math.sqrt(Math.max(0, totalAc2 - fundamental ** 2)) / fundamental * 100 : 0;
+  };
+
+  // ------------------------------------------------------------------ i18n --
+  const locales = { en: "en-US", fr: "fr-FR", es: "es-ES" };
+  const dict = {
+    en: {
+      curvesTitle: "PV characteristics I–V · P–V", mppt: "MPPT", manual: "Manual", clouds: "Clouds", playDay: "Play the day", pause: "Pause",
+      east: "East", west: "West", boostBox: "boost", bridgeBox: "H-bridge", gridBox: "grid", modules: "modules", kwc: "kWp",
+      sunlight: "Sunlight", pvArray: "PV array", boostCol: "Boost · MPPT", gridCol: "Grid injection",
+      pvPower: "PV power", acPower: "Injected power", gridCurrent: "Grid current (RMS)", vpvOp: "PV voltage", busRipple: "DC-bus ripple", thdI: "Current THD",
+      pvModelTitle: "PV panel model", chainTitle: "Conversion chain", operatingPoint: "Operating point", openCircuit: "Open-circuit voltage", shortCircuit: "Short-circuit current", mppLabel: "Maximum power point",
+      dutyLabel: "Boost duty cycle", simulation: "Simulation", approximation: "Approximation", relativeError: "Relative error", conversionEff: "P<sub>ac</sub> / P<sub>pv</sub>",
+      pvNote: "Explicit single-diode model: the photocurrent scales with irradiance, the diode saturation current sets the temperature dependence of V<sub>oc</sub>, and the cell heats above ambient following the NOCT law.",
+      chainNote: "The boost duty cycle pins the PV voltage to the selected operating point on the I–V curve. The H-bridge (unipolar PWM, 10 kHz) injects a sinusoidal current in phase with the grid; the 100 Hz power pulsation of a single-phase link explains the DC-bus voltage ripple.",
+      sceneAria: "Interactive solar scene: drag the sun along its path, drag the clouds, and watch the PV array feed the grid.",
+      curvesAria: "PV array characteristics. In manual mode, drag the operating point along the curve.",
+      night: "night", wpm2: "W/m²",
+    },
+    fr: {
+      curvesTitle: "Caractéristiques PV I–V · P–V", mppt: "MPPT", manual: "Manuel", clouds: "Nuages", playDay: "Faire défiler la journée", pause: "Pause",
+      east: "Est", west: "Ouest", boostBox: "boost", bridgeBox: "pont en H", gridBox: "réseau", modules: "modules", kwc: "kWc",
+      sunlight: "Ensoleillement", pvArray: "Champ PV", boostCol: "Boost · MPPT", gridCol: "Injection réseau",
+      pvPower: "Puissance PV", acPower: "Puissance injectée", gridCurrent: "Courant réseau (eff.)", vpvOp: "Tension PV", busRipple: "Ondulation du bus", thdI: "THD du courant",
+      pvModelTitle: "Modèle du panneau PV", chainTitle: "Chaîne de conversion", operatingPoint: "Point de fonctionnement", openCircuit: "Tension à vide", shortCircuit: "Courant de court-circuit", mppLabel: "Point de puissance maximale",
+      dutyLabel: "Rapport cyclique du boost", simulation: "Simulation", approximation: "Approximation", relativeError: "Écart relatif", conversionEff: "P<sub>ac</sub> / P<sub>pv</sub>",
+      pvNote: "Modèle à une diode explicite : le photocourant est proportionnel à l’éclairement, le courant de saturation de la diode fixe la dépendance de V<sub>oc</sub> à la température, et la cellule s’échauffe au-dessus de l’ambiante selon la loi NOCT.",
+      chainNote: "Le rapport cyclique du boost impose la tension du champ PV, donc le point de fonctionnement sur la courbe I–V. Le pont en H (PWM unipolaire, 10 kHz) injecte un courant sinusoïdal en phase avec le réseau ; la pulsation de puissance à 100 Hz d’une liaison monophasée explique l’ondulation de la tension du bus continu.",
+      sceneAria: "Scène solaire interactive : faites glisser le soleil sur sa trajectoire, déplacez les nuages et observez le champ PV alimenter le réseau.",
+      curvesAria: "Caractéristiques du champ PV. En mode manuel, faites glisser le point de fonctionnement le long de la courbe.",
+      night: "nuit", wpm2: "W/m²",
+    },
+    es: {
+      curvesTitle: "Características PV I–V · P–V", mppt: "MPPT", manual: "Manual", clouds: "Nubes", playDay: "Reproducir el día", pause: "Pausa",
+      east: "Este", west: "Oeste", boostBox: "boost", bridgeBox: "puente H", gridBox: "red", modules: "módulos", kwc: "kWp",
+      sunlight: "Irradiancia", pvArray: "Campo PV", boostCol: "Boost · MPPT", gridCol: "Inyección a red",
+      pvPower: "Potencia PV", acPower: "Potencia inyectada", gridCurrent: "Corriente de red (ef.)", vpvOp: "Tensión PV", busRipple: "Rizado del bus", thdI: "THD de corriente",
+      pvModelTitle: "Modelo del panel PV", chainTitle: "Cadena de conversión", operatingPoint: "Punto de operación", openCircuit: "Tensión de circuito abierto", shortCircuit: "Corriente de cortocircuito", mppLabel: "Punto de máxima potencia",
+      dutyLabel: "Ciclo de trabajo del boost", simulation: "Simulación", approximation: "Aproximación", relativeError: "Error relativo", conversionEff: "P<sub>ac</sub> / P<sub>pv</sub>",
+      pvNote: "Modelo explícito de un diodo: la fotocorriente es proporcional a la irradiancia, la corriente de saturación del diodo fija la dependencia de V<sub>oc</sub> con la temperatura y la celda se calienta sobre la ambiente según la ley NOCT.",
+      chainNote: "El ciclo de trabajo del boost impone la tensión del campo PV, es decir, el punto de operación sobre la curva I–V. El puente H (PWM unipolar, 10 kHz) inyecta una corriente senoidal en fase con la red; la pulsación de potencia a 100 Hz de un enlace monofásico explica el rizado de tensión del bus continuo.",
+      sceneAria: "Escena solar interactiva: arrastre el sol por su trayectoria, mueva las nubes y observe el campo PV alimentar la red.",
+      curvesAria: "Características del campo PV. En modo manual, arrastre el punto de operación a lo largo de la curva.",
+      night: "noche", wpm2: "W/m²",
+    },
+  };
+  const lang = () => (dict[document.documentElement.lang] ? document.documentElement.lang : "fr");
+  const t = (key) => dict[lang()][key];
+  const fmt = (digits = 2) => new Intl.NumberFormat(locales[lang()], { maximumFractionDigits: digits });
+
+  // ------------------------------------------------- PV module & irradiance --
+  const MODULE = { voc: 49.2, isc: 10.9, cells: 72, ideality: 1.25, alphaIsc: .0005, betaVoc: -.0028, noct: 45 };
+  const K_BOLTZ_Q = 8.617e-5;
+
+  function pvParams(irradiance, cellTemp) {
+    const kelvin = cellTemp + 273.15;
+    const nVt = MODULE.ideality * MODULE.cells * K_BOLTZ_Q * kelvin;
+    const dT = cellTemp - 25;
+    const iphStc = MODULE.isc * (1 + MODULE.alphaIsc * dT);
+    const iph = iphStc * Math.max(irradiance, 0) / 1000;
+    const vocT = Math.max(1, MODULE.voc * (1 + MODULE.betaVoc * dT));
+    const i0 = iphStc / Math.expm1(vocT / nVt);
+    return { iph, i0, nVt };
+  }
+  function makeArray(irradiance, cellTemp, seriesCount, parallelCount) {
+    const pars = pvParams(irradiance, cellTemp);
+    const current = (voltage) => {
+      const perModule = voltage / seriesCount;
+      const diode = pars.i0 * Math.expm1(Math.min(perModule / pars.nVt, 60));
+      return Math.max(parallelCount * (pars.iph - diode), -1);
+    };
+    const voc = pars.iph > 1e-7 ? seriesCount * pars.nVt * Math.log(pars.iph / pars.i0 + 1) : 0;
+    return { current, voc, isc: parallelCount * pars.iph };
+  }
+  function sampleCurve(array, vocLimit, samples = 170) {
+    const points = [];
+    const top = Math.max(vocLimit, 1e-3);
+    for (let index = 0; index <= samples; index += 1) {
+      const v = top * index / samples;
+      const i = Math.max(array.current(v), 0);
+      points.push({ v, i, p: v * i });
+    }
+    return points;
+  }
+  function findMpp(array) {
+    if (array.voc < .5) return { v: 0, i: 0, p: 0 };
+    let best = { v: 0, i: 0, p: 0 };
+    for (let index = 0; index <= 240; index += 1) {
+      const v = array.voc * index / 240;
+      const i = array.current(v);
+      const p = v * i;
+      if (p > best.p) best = { v, i, p };
+    }
+    return best;
+  }
+
+  // ----------------------------------------------------------- scene state --
+  const sceneDefaults = () => ({ u: .34, cloudiness: .12, cloudShift: [0, 0, 0], mppt: true, manualV: null, playing: false });
+  let scene = sceneDefaults();
+  let requestUpdate = null;
+  let lastResult = null;
+  let lastState = null;
+
+  // Scene geometry (SVG viewBox 1000 × 520, horizon at y = 400).
+  const HORIZON = 400;
+  const PANEL = { x: 540, y: 315 };
+  const CLOUD_BASES = [{ x: 250, y: 122, s: 1.45 }, { x: 520, y: 86, s: 1.85 }, { x: 770, y: 138, s: 1.2 }];
+  const sunPos = (u) => ({ x: 900 - 790 * u, y: HORIZON - 330 * Math.sin(Math.PI * u) });
+
+  function cloudInfo(index) {
+    const base = CLOUD_BASES[index];
+    const c = scene.cloudiness;
+    const scale = base.s * (.72 + .58 * c);
+    const opacity = clamp((c - index * .1) * 5, 0, 1) * (.4 + .6 * c);
+    return { x: clamp(base.x + scene.cloudShift[index], 60, 940), y: base.y, scale, opacity, radius: 62 * scale };
+  }
+  function occlusionFactor() {
+    const sun = sunPos(scene.u);
+    let total = 0;
+    for (let index = 0; index < CLOUD_BASES.length; index += 1) {
+      const cloud = cloudInfo(index);
+      if (cloud.opacity < .05) continue;
+      const dx = PANEL.x - sun.x; const dy = PANEL.y - sun.y;
+      const length2 = dx * dx + dy * dy;
+      const along = length2 > 1e-6 ? clamp(((cloud.x - sun.x) * dx + (cloud.y - sun.y) * dy) / length2, 0, 1) : 0;
+      const px = sun.x + along * dx; const py = sun.y + along * dy;
+      const distance = Math.hypot(cloud.x - px, cloud.y - py);
+      total += clamp(1 - distance / (cloud.radius + 34), 0, 1) * clamp(cloud.opacity * 1.3, 0, 1);
+    }
+    return clamp(total, 0, 1);
+  }
+  function computeEnvironment(state) {
+    const u = scene.u;
+    const cloudiness = scene.cloudiness;
+    const tilt = (state?.tiltAngle ?? 30) * Math.PI / 180;
+    const elevation = 62 * Math.PI / 180 * Math.sin(Math.PI * u);
+    const sinElevation = Math.max(Math.sin(elevation), 0);
+    const airMass = 1 / Math.max(sinElevation, .075);
+    const gNormal = 1361 * Math.pow(.7, Math.pow(airMass, .678));
+    const theta = Math.PI * u;
+    const incidence = Math.max(0, Math.cos(theta - (Math.PI / 2 - tilt)));
+    const occlusion = occlusionFactor();
+    const shade = clamp(.8 * cloudiness + occlusion, 0, 1);
+    const beam = gNormal * incidence * (1 - .92 * shade);
+    const diffuse = 105 * Math.pow(sinElevation, .6) * (1 - .55 * cloudiness) + 55 * cloudiness * sinElevation;
+    const irradiance = Math.max(0, beam + diffuse);
+    const ambient = state?.ambientTemp ?? 25;
+    const cellTemp = ambient + (MODULE.noct - 20) / 800 * irradiance;
+    return { g: irradiance, tc: cellTemp, ambient, elevation, incidence, shade, beamShare: clamp(incidence * (1 - .92 * shade) * clamp(gNormal / 750, 0, 1), 0, 1) };
+  }
+
+  // ------------------------------------------------------ chain simulation --
+  function simulateChain(state, operating, array) {
+    const gridRms = 230; const gridFrequency = 50; const omega = 2 * Math.PI * gridFrequency;
+    const fsBoost = 20000; const fsInverter = 10000;
+    const boostInductance = 2.5e-3; const boostResistance = .25; const pvCapacitance = 200e-6;
+    const gridInductance = 4e-3; const gridResistance = .3;
+    const busCapacitance = (state.busCapacitance || 1500) / 1e6;
+    const busReference = state.dcVoltage || 400;
+    const duty = clamp(1 - operating.v / busReference, .02, .97);
+    const standby = operating.p < 5;
+    const targetPower = standby ? 0 : operating.p;
+    const busGain = .25; const currentGain = 25; const filterTau = .02;
+    const dt = 1 / (fsBoost * 24);
+    const settle = .06; const window = .04;
+
+    let vPv = operating.v; let iL = operating.i; let vDc = busReference; let iG = 0; let vDcFiltered = busReference;
+    const stepOnce = (time, record) => {
+      const iAmp = standby ? 0 : clamp(targetPower / gridRms + busGain * (vDcFiltered - busReference), 0, 120);
+      const sinWt = Math.sin(omega * time); const cosWt = Math.cos(omega * time);
+      const gridVoltage = Math.SQRT2 * gridRms * sinWt;
+      const reference = Math.SQRT2 * iAmp * sinWt;
+      const command = clamp(gridVoltage + gridResistance * reference + gridInductance * omega * Math.SQRT2 * iAmp * cosWt + currentGain * (reference - iG), -vDc, vDc);
+      const carrier = triangle(time, fsInverter);
+      const normalized = vDc > 1 ? command / vDc : 0;
+      const bridgeState = (normalized >= carrier ? 1 : 0) - (-normalized >= carrier ? 1 : 0);
+      // Fraction of this step spent with the boost switch open (exact sub-step switching
+      // avoids quantizing the duty cycle to the integration grid).
+      const phase0 = (time * fsBoost) % 1;
+      const stepPhase = dt * fsBoost;
+      const offShare = phase0 >= duty ? 1 : phase0 + stepPhase <= duty ? 0 : (phase0 + stepPhase - duty) / stepPhase;
+      const iPv = array.current(vPv);
+      iL += dt * (vPv - boostResistance * iL - offShare * vDc) / boostInductance;
+      iG += dt * (bridgeState * vDc - gridVoltage - gridResistance * iG) / gridInductance;
+      vPv = clamp(vPv + dt * (iPv - iL) / pvCapacitance, 0, busReference * 1.05);
+      vDc = Math.max(1, vDc + dt * (offShare * iL - bridgeState * iG) / busCapacitance);
+      vDcFiltered += dt / filterTau * (vDc - vDcFiltered);
+      if (record) record({ t: time - settle, vGrid: gridVoltage, iGrid: iG, iRef: reference, vPv, vDc, iL, iPv });
+    };
+    const settleSteps = Math.round(settle / dt);
+    for (let index = 0; index < settleSteps; index += 1) stepOnce(index * dt, null);
+    const totalSteps = Math.round(window / dt);
+    const points = [];
+    for (let index = 0; index <= totalSteps; index += 1) stepOnce(settle + index * dt, (point) => points.push(point));
+
+    const pvPower = points.reduce((sum, point) => sum + point.vPv * point.iPv, 0) / points.length;
+    const activePower = points.reduce((sum, point) => sum + point.vGrid * point.iGrid, 0) / points.length;
+    const currentFundamental = harmonic(points, "iGrid", gridFrequency);
+    const voltageFundamental = harmonic(points, "vGrid", gridFrequency);
+    const currentRms = rms(points, "iGrid");
+    const apparent = gridRms * currentRms;
+    const vDcValues = points.map((point) => point.vDc);
+    const vDcMean = mean(points, "vDc");
+    const rippleSlice = points.filter((point) => point.t >= .0199 && point.t <= .0199 + 3 / fsBoost);
+    const iLValues = rippleSlice.map((point) => point.iL);
+    return {
+      points, duration: window, duty, standby,
+      pvPower, activePower,
+      reactivePower: gridRms * currentFundamental.rms * Math.sin(currentFundamental.phase - voltageFundamental.phase),
+      powerFactor: apparent > 1e-9 ? Math.abs(activePower) / apparent : 0,
+      currentRms, currentThd: thdOf(points, "iGrid", gridFrequency),
+      trackingErrorRms: Math.sqrt(points.reduce((sum, point) => sum + (point.iGrid - point.iRef) ** 2, 0) / points.length),
+      vDcMean, vDcRipple: Math.max(...vDcValues) - Math.min(...vDcValues),
+      vPvMean: mean(points, "vPv"),
+      iLMean: mean(points, "iL"),
+      iLRipple: iLValues.length ? Math.max(...iLValues) - Math.min(...iLValues) : 0,
+      busRippleApprox: Math.abs(activePower) / (omega * busCapacitance * Math.max(vDcMean, 1)),
+      iLRippleApprox: mean(points, "vPv") * duty / (boostInductance * fsBoost),
+      busReference,
+    };
+  }
+
+  // ------------------------------------------------------------ scene SVG --
+  const el = {};
+  const lerpColor = (from, to, k) => {
+    const parse = (hex) => [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
+    const [r1, g1, b1] = parse(from); const [r2, g2, b2] = parse(to);
+    const mix = (a, b) => Math.round(a + (b - a) * k);
+    return `rgb(${mix(r1, r2)}, ${mix(g1, g2)}, ${mix(b1, b2)})`;
+  };
+
+  function arcPath() {
+    const parts = [];
+    for (let index = 0; index <= 40; index += 1) {
+      const position = sunPos(.02 + .96 * index / 40);
+      parts.push(`${index === 0 ? "M" : "L"} ${position.x.toFixed(1)} ${position.y.toFixed(1)}`);
+    }
+    return parts.join(" ");
+  }
+  function cloudShape() {
+    return '<ellipse cx="0" cy="0" rx="46" ry="17"/><ellipse cx="-31" cy="6" rx="30" ry="13"/><ellipse cx="29" cy="7" rx="32" ry="14"/><ellipse cx="-3" cy="-13" rx="30" ry="14"/>';
+  }
+  function sceneMarkup() {
+    const rays = Array.from({ length: 8 }, (_, index) => {
+      const angle = index * Math.PI / 4;
+      return `<line x1="${(30 * Math.cos(angle)).toFixed(1)}" y1="${(30 * Math.sin(angle)).toFixed(1)}" x2="${(43 * Math.cos(angle)).toFixed(1)}" y2="${(43 * Math.sin(angle)).toFixed(1)}"/>`;
+    }).join("");
+    const clouds = CLOUD_BASES.map((base, index) => `<g id="pv-cloud-${index}" class="pv-cloud" fill="#ffffff">${cloudShape()}</g>`).join("");
+    return `
+    <svg viewBox="0 0 1000 520" preserveAspectRatio="xMidYMax slice" role="img" aria-label="">
+      <style>
+        .pv-txt { fill: #24405c; font-family: Inter, "Segoe UI", Arial, sans-serif; font-size: 16.5px; font-weight: 760; text-anchor: middle; paint-order: stroke; stroke: rgba(255,255,255,.72); stroke-width: 3.4px; }
+        .pv-txt-small { font-size: 14px; font-weight: 720; }
+        .pv-txt-big { font-size: 24px; font-weight: 850; fill: #0b6b62; }
+        .pv-txt-dim { fill: rgba(28,44,64,.62); font-size: 13.5px; letter-spacing: .12em; font-weight: 850; }
+        .pv-box { fill: rgba(255,253,248,.92); stroke: #33566f; stroke-width: 2.6; }
+        .pv-box-label { font-size: 18px; font-weight: 850; fill: #16324a; }
+        .pv-wire { stroke: #3d5266; stroke-width: 3; fill: none; stroke-linecap: round; }
+      </style>
+      <rect id="pv-sky" x="-500" y="-320" width="2000" height="${HORIZON + 320}" fill="url(#pv-sky-gradient)"/>
+      <defs>
+        <linearGradient id="pv-sky-gradient" x1="0" y1="0" x2="0" y2="1">
+          <stop id="pv-sky-top" offset="0" stop-color="#5fa8dc"/>
+          <stop id="pv-sky-bottom" offset="1" stop-color="#bfe3f2"/>
+        </linearGradient>
+        <radialGradient id="pv-sun-glow-gradient">
+          <stop offset="0" stop-color="#ffdf8a" stop-opacity=".85"/>
+          <stop offset="1" stop-color="#ffdf8a" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <path id="pv-arc" d="${arcPath()}" fill="none" stroke="rgba(255,255,255,.66)" stroke-width="2.4" stroke-dasharray="3 9"/>
+      <text id="pv-east" class="pv-txt pv-txt-dim" x="880" y="392">EST</text>
+      <text id="pv-west" class="pv-txt pv-txt-dim" x="188" y="392">OUEST</text>
+      <polygon id="pv-beam" points="" fill="#ffd45c" opacity="0"/>
+      <g id="pv-sun" class="pv-sun-group">
+        <circle r="58" fill="url(#pv-sun-glow-gradient)"/>
+        <g class="pv-sun-rays" stroke="#ffca4d" stroke-width="3.4" stroke-linecap="round">${rays}</g>
+        <circle r="24" fill="#ffd45c" stroke="#eda63a" stroke-width="2.4"/>
+        <circle id="pv-sun-hit" r="50" fill="rgba(0,0,0,0)"/>
+      </g>
+      ${clouds}
+      <text id="pv-g-text" class="pv-txt" x="0" y="0">— W/m²</text>
+      <rect id="pv-ground" x="-500" y="${HORIZON}" width="2000" height="440" fill="#7fb46a"/>
+      <ellipse cx="820" cy="${HORIZON + 6}" rx="330" ry="26" fill="rgba(0,0,0,.06)"/>
+      <g id="pv-pylon" stroke="#46647e" stroke-width="3.4" fill="none" stroke-linecap="round">
+        <line x1="96" y1="400" x2="112" y2="248"/><line x1="132" y1="400" x2="116" y2="248"/>
+        <line x1="100" y1="365" x2="128" y2="365"/><line x1="103" y1="330" x2="125" y2="330"/><line x1="106" y1="296" x2="122" y2="296"/><line x1="109" y1="264" x2="119" y2="264"/>
+        <line x1="100" y1="365" x2="125" y2="330"/><line x1="128" y1="365" x2="103" y2="330"/><line x1="103" y1="330" x2="122" y2="296"/><line x1="125" y1="330" x2="106" y2="296"/>
+        <line x1="72" y1="256" x2="156" y2="256"/>
+        <line x1="80" y1="256" x2="80" y2="268"/><line x1="148" y1="256" x2="148" y2="268"/>
+        <path d="M 80 268 C 40 282, 0 290, -40 294"/><path d="M 148 268 C 165 300, 160 336, 152 362"/>
+      </g>
+      <g id="pv-panel-stand" fill="#5a6b7c"><rect x="534" y="330" width="12" height="72" rx="3"/><rect x="506" y="398" width="68" height="8" rx="4"/></g>
+      <g id="pv-panel-rot">
+        <rect x="450" y="306" width="180" height="15" rx="3" fill="#1d3f66" stroke="#0e2740" stroke-width="2.4"/>
+        <g stroke="rgba(160,200,240,.55)" stroke-width="1.4">
+          <line x1="472" y1="306" x2="472" y2="321"/><line x1="494" y1="306" x2="494" y2="321"/><line x1="516" y1="306" x2="516" y2="321"/><line x1="538" y1="306" x2="538" y2="321"/><line x1="560" y1="306" x2="560" y2="321"/><line x1="582" y1="306" x2="582" y2="321"/><line x1="604" y1="306" x2="604" y2="321"/>
+        </g>
+        <line x1="450" y1="313.5" x2="630" y2="313.5" stroke="rgba(160,200,240,.4)" stroke-width="1.2"/>
+      </g>
+      <path id="pv-tilt-arc" d="" fill="none" stroke="rgba(20,40,60,.5)" stroke-width="2" stroke-dasharray="4 4"/>
+      <text id="pv-tilt-text" class="pv-txt pv-txt-small" x="478" y="278">β = 30°</text>
+      <rect class="pv-box" x="380" y="332" width="90" height="52" rx="9"/>
+      <text class="pv-box-label pv-txt" x="425" y="355">DC/DC</text>
+      <text id="pv-boost-name" class="pv-txt pv-txt-small" x="425" y="374">boost</text>
+      <rect class="pv-box" x="235" y="332" width="90" height="52" rx="9"/>
+      <text class="pv-box-label pv-txt" x="280" y="355">DC/AC</text>
+      <text id="pv-bridge-name" class="pv-txt pv-txt-small" x="280" y="374">pont en H</text>
+      <path class="pv-wire" d="M 534 368 H 470 M 380 368 H 325 M 235 368 H 152 L 118 268"/>
+      <path id="pv-flow" class="pv-wire pv-flow-wire" d="M 534 368 H 470 M 380 368 H 325 M 235 368 H 152 L 118 268" stroke="#ffb253" stroke-width="3.6"/>
+      <text id="pv-array-line" class="pv-txt" x="560" y="428">—</text>
+      <text id="pv-temp-line" class="pv-txt pv-txt-small" x="560" y="450">—</text>
+      <text id="pv-vpv-text" class="pv-txt" x="412" y="428">—</text>
+      <text id="pv-duty-text" class="pv-txt pv-txt-small" x="412" y="450">—</text>
+      <text id="pv-vdc-text" class="pv-txt" x="262" y="428">—</text>
+      <text id="pv-hz-text" class="pv-txt pv-txt-small" x="262" y="450">230 V ~ 50 Hz</text>
+      <text id="pv-power-text" class="pv-txt pv-txt-big" x="160" y="436">—</text>
+    </svg>
+    <div class="pv-hud">
+      <label class="pv-hud-card">
+        <svg width="21" height="14" viewBox="0 0 26 16" aria-hidden="true"><path d="M6 15 a5.4 5.4 0 1 1 1.6-10.6 a6.4 6.4 0 0 1 12.2 1.9 a4.4 4.4 0 0 1 -.6 8.7 z" fill="#8fb6d8"/></svg>
+        <input id="pv-cloud-slider" type="range" min="0" max="100" step="1" value="12" aria-label="" />
+        <output id="pv-cloud-output">12 %</output>
+      </label>
+      <button id="pv-play" class="pv-play-button" type="button" aria-pressed="false"><span id="pv-play-glyph">▶</span><span id="pv-play-label"></span></button>
+    </div>`;
+  }
+
+  function svgCoords(svg, event) {
+    const point = svg.createSVGPoint();
+    point.x = event.clientX; point.y = event.clientY;
+    const matrix = svg.getScreenCTM();
+    return matrix ? point.matrixTransform(matrix.inverse()) : { x: 0, y: 0 };
+  }
+
+  function mountScene() {
+    const root = document.querySelector("#pv-scene-root");
+    if (!root) return;
+    if (root._pvMounted && root._pvLang === lang()) return;
+    root._pvMounted = true; root._pvLang = lang();
+    root.innerHTML = sceneMarkup();
+    const svg = root.querySelector("svg");
+    svg.setAttribute("aria-label", t("sceneAria"));
+    el.svg = svg;
+    el.skyTop = root.querySelector("#pv-sky-top"); el.skyBottom = root.querySelector("#pv-sky-bottom");
+    el.ground = root.querySelector("#pv-ground");
+    el.sun = root.querySelector("#pv-sun"); el.sunHit = root.querySelector("#pv-sun-hit");
+    el.beam = root.querySelector("#pv-beam");
+    el.gText = root.querySelector("#pv-g-text");
+    el.clouds = CLOUD_BASES.map((_, index) => root.querySelector(`#pv-cloud-${index}`));
+    el.panelRot = root.querySelector("#pv-panel-rot");
+    el.tiltArc = root.querySelector("#pv-tilt-arc"); el.tiltText = root.querySelector("#pv-tilt-text");
+    el.arrayLine = root.querySelector("#pv-array-line"); el.tempLine = root.querySelector("#pv-temp-line");
+    el.vpvText = root.querySelector("#pv-vpv-text"); el.dutyText = root.querySelector("#pv-duty-text");
+    el.vdcText = root.querySelector("#pv-vdc-text");
+    el.powerText = root.querySelector("#pv-power-text");
+    el.flow = root.querySelector("#pv-flow");
+    el.east = root.querySelector("#pv-east"); el.west = root.querySelector("#pv-west");
+    el.boostName = root.querySelector("#pv-boost-name"); el.bridgeName = root.querySelector("#pv-bridge-name");
+    el.cloudSlider = root.querySelector("#pv-cloud-slider"); el.cloudOutput = root.querySelector("#pv-cloud-output");
+    el.playButton = root.querySelector("#pv-play"); el.playGlyph = root.querySelector("#pv-play-glyph"); el.playLabel = root.querySelector("#pv-play-label");
+    el.east.textContent = t("east").toUpperCase(); el.west.textContent = t("west").toUpperCase();
+    el.boostName.textContent = t("boostBox"); el.bridgeName.textContent = t("bridgeBox");
+    el.playLabel.textContent = t("playDay");
+    el.cloudSlider.value = String(Math.round(scene.cloudiness * 100));
+    el.cloudSlider.setAttribute("aria-label", t("clouds"));
+
+    el.cloudSlider.addEventListener("input", () => {
+      scene.cloudiness = Number(el.cloudSlider.value) / 100;
+      updateSceneVisual();
+      if (requestUpdate) requestUpdate();
+    });
+    el.playButton.addEventListener("click", () => { setPlaying(!scene.playing); });
+
+    const dragState = { mode: null, cloudIndex: -1, pointerId: null };
+    svg.addEventListener("pointerdown", (event) => {
+      const target = event.target;
+      if (target === el.sunHit || el.sun.contains(target)) { dragState.mode = "sun"; setPlaying(false); el.sun.classList.add("pv-dragging"); }
+      else {
+        const cloudIndex = el.clouds.findIndex((cloud) => cloud.contains(target));
+        if (cloudIndex < 0) return;
+        dragState.mode = "cloud"; dragState.cloudIndex = cloudIndex; el.clouds[cloudIndex].classList.add("pv-dragging");
+      }
+      dragState.pointerId = event.pointerId;
+      event.preventDefault();
+      try { svg.setPointerCapture(event.pointerId); } catch (_error) {}
+    });
+    svg.addEventListener("pointermove", (event) => {
+      if (!dragState.mode || dragState.pointerId !== event.pointerId) return;
+      const point = svgCoords(svg, event);
+      if (dragState.mode === "sun") scene.u = clamp((900 - point.x) / 790, .02, .98);
+      else {
+        const base = CLOUD_BASES[dragState.cloudIndex];
+        scene.cloudShift[dragState.cloudIndex] = clamp(point.x, 60, 940) - base.x;
+      }
+      event.preventDefault();
+      updateSceneVisual();
+      if (requestUpdate) requestUpdate();
+    });
+    const endDrag = (event) => {
+      if (!dragState.mode || (event && dragState.pointerId !== event.pointerId)) return;
+      if (dragState.mode === "sun") el.sun.classList.remove("pv-dragging");
+      if (dragState.mode === "cloud" && dragState.cloudIndex >= 0) el.clouds[dragState.cloudIndex].classList.remove("pv-dragging");
+      dragState.mode = null; dragState.cloudIndex = -1; dragState.pointerId = null;
+      if (requestUpdate) requestUpdate();
+    };
+    svg.addEventListener("pointerup", endDrag);
+    svg.addEventListener("pointercancel", endDrag);
+    updateSceneVisual();
+  }
+
+  let playTimer = null; let playLastTs = null; let playLastSim = 0;
+  function setPlaying(value) {
+    scene.playing = value;
+    if (el.playButton) {
+      el.playButton.setAttribute("aria-pressed", String(value));
+      el.playGlyph.textContent = value ? "❚❚" : "▶";
+      el.playLabel.textContent = value ? t("pause") : t("playDay");
+    }
+    if (!value) {
+      if (playTimer !== null) { clearInterval(playTimer); playTimer = null; }
+      return;
+    }
+    if (playTimer !== null) return;
+    playLastTs = performance.now();
+    playTimer = setInterval(() => {
+      if (!scene.playing || !el.svg || !el.svg.isConnected) { clearInterval(playTimer); playTimer = null; return; }
+      const now = performance.now();
+      const delta = Math.min(now - playLastTs, 1000);
+      playLastTs = now;
+      scene.u += delta / 42000;
+      if (scene.u > .98) scene.u = .02;
+      updateSceneVisual();
+      if (now - playLastSim > 150 && requestUpdate) { playLastSim = now; requestUpdate(); }
+    }, 33);
+  }
+
+  function panelCorners(tiltDegrees) {
+    const angle = tiltDegrees * Math.PI / 180;
+    const cos = Math.cos(angle); const sin = Math.sin(angle);
+    const half = 90;
+    const cx = PANEL.x; const cy = PANEL.y - 1.5;
+    return [
+      { x: cx - half * cos, y: cy - half * sin },
+      { x: cx + half * cos, y: cy + half * sin },
+    ];
+  }
+
+  function updateSceneVisual() {
+    if (!el.svg || !el.svg.isConnected) return;
+    const state = lastState || {};
+    const tiltDegrees = state.tiltAngle ?? 30;
+    const env = computeEnvironment(state);
+    const sun = sunPos(scene.u);
+    const daylight = clamp(Math.sin(Math.PI * scene.u), 0, 1) ** .7;
+    el.skyTop.setAttribute("stop-color", lerpColor("#e89a6b", "#4f9fd8", daylight));
+    el.skyBottom.setAttribute("stop-color", lerpColor("#f8cf94", "#bfe3f2", daylight));
+    el.ground.setAttribute("fill", lerpColor("#6d9159", "#7fb46a", daylight));
+    el.sun.setAttribute("transform", `translate(${sun.x.toFixed(1)} ${sun.y.toFixed(1)})`);
+    el.gText.setAttribute("x", clamp(sun.x, 96, 904).toFixed(1));
+    el.gText.setAttribute("y", Math.min(sun.y + 84, HORIZON - 14).toFixed(1));
+    el.gText.textContent = `${fmt(0).format(env.g)} ${t("wpm2")}`;
+    el.clouds.forEach((cloud, index) => {
+      const info = cloudInfo(index);
+      cloud.setAttribute("transform", `translate(${info.x.toFixed(1)} ${info.y.toFixed(1)}) scale(${info.scale.toFixed(3)})`);
+      cloud.setAttribute("opacity", info.opacity.toFixed(3));
+      cloud.style.pointerEvents = info.opacity < .05 ? "none" : "auto";
+    });
+    el.panelRot.setAttribute("transform", `rotate(${tiltDegrees.toFixed(1)} ${PANEL.x} ${PANEL.y})`);
+    el.tiltText.textContent = `β = ${fmt(0).format(tiltDegrees)}°`;
+    const arcRadius = 118;
+    const arcAngle = tiltDegrees * Math.PI / 180;
+    el.tiltArc.setAttribute("d", `M ${PANEL.x - arcRadius} ${PANEL.y} A ${arcRadius} ${arcRadius} 0 0 1 ${(PANEL.x - arcRadius * Math.cos(arcAngle)).toFixed(1)} ${(PANEL.y - arcRadius * Math.sin(arcAngle)).toFixed(1)}`);
+    const corners = panelCorners(tiltDegrees);
+    el.beam.setAttribute("points", `${sun.x.toFixed(1)},${sun.y.toFixed(1)} ${corners[0].x.toFixed(1)},${corners[0].y.toFixed(1)} ${corners[1].x.toFixed(1)},${corners[1].y.toFixed(1)}`);
+    el.beam.setAttribute("opacity", (0.3 * env.beamShare).toFixed(3));
+    if (el.cloudSlider && document.activeElement !== el.cloudSlider) {
+      el.cloudSlider.value = String(Math.round(scene.cloudiness * 100));
+    }
+    el.cloudSlider.style.setProperty("--range-progress", `${Math.round(scene.cloudiness * 100)}%`);
+    el.cloudOutput.textContent = `${fmt(0).format(scene.cloudiness * 100)} %`;
+    updateSceneReadouts();
+  }
+
+  function updateSceneReadouts() {
+    if (!el.svg || !el.svg.isConnected || !lastResult) return;
+    const result = lastResult;
+    const format = fmt(1);
+    el.arrayLine.textContent = `${result.ns} × ${result.np} = ${result.ns * result.np} ${t("modules")} · ${format.format(result.stc.pmp / 1000)} ${t("kwc")}`;
+    el.tempLine.textContent = `T amb ${fmt(0).format(result.env.ambient)} °C · T cell ${fmt(0).format(result.env.tc)} °C`;
+    el.vpvText.textContent = `Vpv ${fmt(0).format(result.vPvMean)} V`;
+    el.dutyText.textContent = `δ = ${fmt(2).format(result.duty)}`;
+    el.vdcText.textContent = `Vdc ${fmt(0).format(result.vDcMean)} V`;
+    const kw = result.activePower / 1000;
+    el.powerText.textContent = result.standby ? `0 W · ${t("night")}` : (Math.abs(result.activePower) < 1000 ? `${fmt(0).format(result.activePower)} W` : `${format.format(kw)} kW`);
+    const flowing = Math.abs(result.activePower) > 25;
+    el.flow.classList.toggle("paused", !flowing);
+    if (flowing) el.flow.style.animationDuration = `${clamp(2400 / Math.max(Math.abs(kw), .05), 260, 8000).toFixed(0)}ms`;
+  }
+
+  // -------------------------------------------------------------- curves --
+  const curves = { canvas: null, ctx: null, host: null, buttons: {}, dragging: false, layout: null, observer: null };
+  function mountCurves() {
+    const host = document.querySelector("#pv-curves");
+    if (!host) return;
+    if (host._pvMounted && host._pvLang === lang()) return;
+    host._pvMounted = true; host._pvLang = lang();
+    host.innerHTML = `
+      <div class="pv-curves-header">
+        <span class="pv-curves-title">${t("curvesTitle")}</span>
+        <div class="pv-mode-toggle" role="group" aria-label="MPPT">
+          <button type="button" data-pv-mode="mppt" aria-pressed="true">${t("mppt")}</button>
+          <button type="button" data-pv-mode="manual" aria-pressed="false">${t("manual")}</button>
+        </div>
+      </div>
+      <canvas class="pv-curves-canvas" aria-label="${t("curvesAria")}"></canvas>`;
+    curves.host = host;
+    curves.canvas = host.querySelector("canvas");
+    curves.ctx = curves.canvas.getContext("2d");
+    curves.buttons = {
+      mppt: host.querySelector('[data-pv-mode="mppt"]'),
+      manual: host.querySelector('[data-pv-mode="manual"]'),
+    };
+    const applyMode = (mppt) => {
+      scene.mppt = mppt;
+      if (!mppt && scene.manualV === null && lastResult) scene.manualV = lastResult.op.v;
+      syncModeButtons();
+      if (requestUpdate) requestUpdate();
+    };
+    curves.buttons.mppt.addEventListener("click", () => applyMode(true));
+    curves.buttons.manual.addEventListener("click", () => applyMode(false));
+    const pickVoltage = (event) => {
+      if (!curves.layout || !lastResult) return null;
+      const rect = curves.canvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      const plot = curves.layout.plots.find((candidate) => x >= candidate.x - 14 && x <= candidate.x + candidate.width + 14 && y >= candidate.y - 10 && y <= candidate.y + candidate.height + 24);
+      if (!plot) return null;
+      const fraction = clamp((x - plot.x) / plot.width, 0, 1);
+      return fraction * curves.layout.vMax;
+    };
+    curves.canvas.addEventListener("pointerdown", (event) => {
+      const voltage = pickVoltage(event);
+      if (voltage === null) return;
+      curves.dragging = true;
+      scene.mppt = false;
+      scene.manualV = voltage;
+      syncModeButtons();
+      event.preventDefault();
+      try { curves.canvas.setPointerCapture(event.pointerId); } catch (_error) {}
+      if (requestUpdate) requestUpdate();
+    });
+    curves.canvas.addEventListener("pointermove", (event) => {
+      if (!curves.dragging) return;
+      const voltage = pickVoltage(event);
+      if (voltage === null) return;
+      scene.manualV = voltage;
+      event.preventDefault();
+      if (requestUpdate) requestUpdate();
+    });
+    const endCurveDrag = () => { curves.dragging = false; };
+    curves.canvas.addEventListener("pointerup", endCurveDrag);
+    curves.canvas.addEventListener("pointercancel", endCurveDrag);
+    if (curves.observer) curves.observer.disconnect();
+    if ("ResizeObserver" in window) {
+      curves.observer = new ResizeObserver(() => drawCurves());
+      curves.observer.observe(curves.canvas);
+    }
+    syncModeButtons();
+  }
+  function syncModeButtons() {
+    if (!curves.buttons.mppt) return;
+    curves.buttons.mppt.setAttribute("aria-pressed", String(scene.mppt));
+    curves.buttons.manual.setAttribute("aria-pressed", String(!scene.mppt));
+  }
+
+  function drawCurves() {
+    if (!curves.canvas || !curves.canvas.isConnected || !lastResult) return;
+    const result = lastResult;
+    const css = getComputedStyle(document.body);
+    const color = (name) => css.getPropertyValue(name).trim();
+    const rect = curves.canvas.getBoundingClientRect();
+    if (rect.width < 60 || rect.height < 60) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    curves.canvas.width = Math.round(rect.width * dpr);
+    curves.canvas.height = Math.round(rect.height * dpr);
+    const ctx = curves.ctx;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, rect.width, rect.height);
+    ctx.font = '600 12.5px Inter, "Segoe UI", Arial, sans-serif';
+    const format = fmt(1);
+    const vMax = Math.max(result.stc.voc * 1.05, 1);
+    const iMax = Math.max(result.stc.isc * 1.14, .1);
+    const pMax = Math.max(result.stc.pmp * 1.12, 1);
+    const marginLeft = 48; const marginRight = 12; const gap = 52; const marginTop = 14; const marginBottom = 28;
+    const plotWidth = (rect.width - marginLeft * 2 - marginRight - gap) / 2;
+    const plotHeight = rect.height - marginTop - marginBottom;
+    const plots = [
+      { x: marginLeft, y: marginTop, width: plotWidth, height: plotHeight, key: "i", max: iMax, unit: "A", trace: color("--trace-il"), title: "I–V" },
+      { x: marginLeft * 2 + plotWidth + gap - marginLeft + 8, y: marginTop, width: plotWidth, height: plotHeight, key: "p", max: pMax, unit: pMax >= 1200 ? "kW" : "W", trace: color("--trace-vr"), title: "P–V" },
+    ];
+    curves.layout = { plots, vMax };
+    const gridColor = color("--scope-grid");
+    const textColor = color("--scope-text");
+    plots.forEach((plot) => {
+      ctx.strokeStyle = gridColor; ctx.lineWidth = 1;
+      for (let column = 0; column <= 4; column += 1) {
+        const x = plot.x + column / 4 * plot.width;
+        ctx.beginPath(); ctx.moveTo(x, plot.y); ctx.lineTo(x, plot.y + plot.height); ctx.stroke();
+      }
+      for (let row = 0; row <= 3; row += 1) {
+        const y = plot.y + row / 3 * plot.height;
+        ctx.beginPath(); ctx.moveTo(plot.x, y); ctx.lineTo(plot.x + plot.width, y); ctx.stroke();
+      }
+      const xAt = (v) => plot.x + v / vMax * plot.width;
+      const yAt = (value) => plot.y + plot.height - clamp(value / plot.max, 0, 1.02) * plot.height;
+      const scaleValue = (value) => plot.unit === "kW" ? value / 1000 : value;
+      ctx.fillStyle = textColor; ctx.textAlign = "right";
+      ctx.fillText(`${format.format(scaleValue(plot.max))}`, plot.x - 5, plot.y + 10);
+      ctx.fillText("0", plot.x - 5, plot.y + plot.height + 1);
+      ctx.textAlign = "left";
+      ctx.fillText(plot.unit, plot.x + 4, plot.y + 11);
+      ctx.textAlign = "center";
+      ctx.fillText(`${fmt(0).format(vMax)} V`, plot.x + plot.width, plot.y + plot.height + 17);
+      ctx.fillText("0", plot.x, plot.y + plot.height + 17);
+      ctx.fillStyle = textColor; ctx.textAlign = "left";
+      ctx.font = '800 13px Inter, "Segoe UI", Arial, sans-serif';
+      ctx.fillText(plot.title, plot.x + 8, plot.y + plot.height - 8);
+      ctx.font = '600 12.5px Inter, "Segoe UI", Arial, sans-serif';
+      // Reference curve at STC (dashed).
+      ctx.beginPath(); ctx.setLineDash([5, 5]); ctx.strokeStyle = textColor; ctx.globalAlpha = .42; ctx.lineWidth = 1.6;
+      result.stc.curve.forEach((point, index) => {
+        const x = xAt(point.v); const y = yAt(point[plot.key]);
+        if (index === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
+      // Area fill for the live P–V curve.
+      if (plot.key === "p") {
+        ctx.beginPath();
+        ctx.moveTo(xAt(0), yAt(0));
+        result.curve.forEach((point) => ctx.lineTo(xAt(point.v), yAt(point.p)));
+        ctx.lineTo(xAt(result.curve.at(-1)?.v || 0), yAt(0));
+        ctx.closePath();
+        ctx.fillStyle = plot.trace; ctx.globalAlpha = .08; ctx.fill(); ctx.globalAlpha = 1;
+      }
+      // Live curve.
+      ctx.beginPath(); ctx.strokeStyle = plot.trace; ctx.lineWidth = 2.6; ctx.lineJoin = "round";
+      result.curve.forEach((point, index) => {
+        const x = xAt(point.v); const y = yAt(point[plot.key]);
+        if (index === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+      // MPP marker.
+      if (result.mpp.p > 1) {
+        const mx = xAt(result.mpp.v); const my = yAt(plot.key === "i" ? result.mpp.i : result.mpp.p);
+        ctx.strokeStyle = color("--trace-vin"); ctx.lineWidth = 1.8;
+        ctx.beginPath(); ctx.moveTo(mx - 5, my); ctx.lineTo(mx + 5, my); ctx.moveTo(mx, my - 5); ctx.lineTo(mx, my + 5); ctx.stroke();
+        if (plot.key === "p") {
+          ctx.fillStyle = color("--trace-vin"); ctx.textAlign = "left";
+          ctx.fillText("MPP", mx + 7, my - 6);
+        }
+      }
+      // Operating point.
+      const opY = yAt(plot.key === "i" ? result.op.i : result.op.p);
+      const opX = xAt(result.op.v);
+      ctx.beginPath(); ctx.arc(opX, opY, 6.4, 0, Math.PI * 2);
+      ctx.fillStyle = color("--trace-vx"); ctx.fill();
+      ctx.lineWidth = 2.2; ctx.strokeStyle = color("--scope-screen"); ctx.stroke();
+      ctx.beginPath(); ctx.arc(opX, opY, 10.5, 0, Math.PI * 2);
+      ctx.strokeStyle = color("--trace-vx"); ctx.globalAlpha = .4; ctx.lineWidth = 1.6; ctx.stroke(); ctx.globalAlpha = 1;
+    });
+    // Environment caption in the corner of the I–V plot.
+    ctx.fillStyle = textColor; ctx.textAlign = "right";
+    ctx.fillText(`${fmt(0).format(result.env.g)} ${t("wpm2")} · ${fmt(0).format(result.env.tc)} °C`, plots[0].x + plots[0].width - 6, plots[0].y + 12);
+  }
+
+  // ------------------------------------------------------- model interface --
+  const control = (key, symbol, labels, min, max, step, unit, extra = {}) => ({ key, symbol, label: text(...labels), aria: text(...labels), min, max, step, unit, ...extra });
+  const controls = {
+    top: [
+      control("tiltAngle", "β", ["Panel tilt", "Inclinaison du panneau", "Inclinación del panel"], 0, 60, 2, "°"),
+      control("panelsPerString", "N<sub>s</sub>", ["Panels per string", "Panneaux par string", "Paneles por string"], 2, 8, 1, ""),
+      control("strings", "N<sub>p</sub>", ["Parallel strings", "Strings en parallèle", "Strings en paralelo"], 1, 4, 1, ""),
+      control("ambientTemp", "T<sub>amb</sub>", ["Ambient temperature", "Température ambiante", "Temperatura ambiente"], -10, 45, 1, "°C"),
+    ],
+    bottom: [
+      control("dcVoltage", "V<sub>dc</sub>", ["DC bus voltage", "Tension du bus continu", "Tensión del bus continuo"], 320, 600, 20, "V", { advanced: true }),
+      control("busCapacitance", "C<sub>dc</sub>", ["DC bus capacitance", "Capacité du bus continu", "Capacidad del bus continuo"], 500, 4000, 100, "µF", { advanced: true }),
+    ],
+  };
+
+  const plots = {
+    main: [
+      { key: "vGrid", label: "v<sub>g</sub>", color: "--trace-vin", width: 3 },
+      { key: "iRef", label: "i<sub>g</sub>*", color: "--trace-vx", axis: "right", dash: [8, 5] },
+      { key: "iGrid", label: "i<sub>g</sub>", color: "--trace-vr", axis: "right", width: 3 },
+    ],
+    second: [
+      { key: "vPv", label: "v<sub>pv</sub>", color: "--trace-ic", width: 2.7 },
+      { key: "vDc", label: "v<sub>dc</sub>", color: "--trace-vl", width: 3 },
+    ],
+    third: [
+      { key: "iL", label: "i<sub>L</sub>", color: "--trace-il", width: 2.5 },
+      { key: "iPv", label: "i<sub>pv</sub>", color: "--trace-iout", dash: [6, 4] },
+    ],
+  };
+
+  const texPower = (helpers, value) => Math.abs(value) >= 1000 ? `${helpers.texNumber(value / 1000)}\\,\\mathrm{kW}` : `${helpers.texNumber(value)}\\,\\mathrm{W}`;
+
+  const model = {
+    id: "pv-grid",
+    defaults: { tiltAngle: 30, panelsPerString: 6, strings: 2, ambientTemp: 25, dcVoltage: 400, busCapacitance: 1500 },
+    controls,
+    controlsFor(_application, options = {}) {
+      if (!options.advanced) return { top: controls.top, bottom: [] };
+      const ambient = controls.top.find((item) => item.key === "ambientTemp");
+      return { top: controls.top.filter((item) => item.key !== "ambientTemp"), bottom: [ambient, ...controls.bottom] };
+    },
+    diagram: { type: "inline", aria: text("Interactive PV-to-grid scene", "Scène interactive PV vers réseau", "Escena interactiva PV a red") },
+    diagramFor() { return '<div class="pv-scene" id="pv-scene-root"></div>'; },
+    plots,
+    plotsFor() { return plots; },
+    basicPlotsFor() { return [plots.main, plots.second]; },
+    axesFor() {
+      return [
+        { label: text("grid voltage", "tension réseau", "tensión de red"), unit: "V", rightLabel: text("grid current", "courant réseau", "corriente de red"), rightUnit: "A" },
+        { label: text("voltage", "tension", "tensión"), unit: "V" },
+        { label: text("current", "courant", "corriente"), unit: "A" },
+      ];
+    },
+    calculate(state) {
+      const ns = Math.round(state.panelsPerString);
+      const np = Math.round(state.strings);
+      const env = computeEnvironment(state);
+      const array = makeArray(env.g, env.tc, ns, np);
+      const stcArray = makeArray(1000, 25, ns, np);
+      const stcMpp = findMpp(stcArray);
+      const stc = { voc: stcArray.voc, isc: stcArray.isc, pmp: stcMpp.p, curve: sampleCurve(stcArray, stcArray.voc * 1.02) };
+      const mpp = findMpp(array);
+      const curve = sampleCurve(array, Math.max(array.voc, stcArray.voc) * 1.02);
+      const vLimit = Math.min(stcArray.voc * 1.02, (state.dcVoltage || 400) * .95);
+      let opVoltage = scene.mppt || scene.manualV === null ? mpp.v : clamp(scene.manualV, 2, vLimit);
+      opVoltage = clamp(opVoltage, 0, vLimit);
+      const op = { v: opVoltage, i: Math.max(array.current(opVoltage), 0), p: 0 };
+      op.p = op.v * op.i;
+      const sim = simulateChain(state, op, array);
+      return { ...sim, env, ns, np, curve, stc, mpp, op, vocArr: array.voc, iscArr: array.isc };
+    },
+    onResult(result, state, context) {
+      requestUpdate = context.requestUpdate;
+      lastResult = result;
+      lastState = state;
+      mountScene();
+      mountCurves();
+      updateSceneVisual();
+      drawCurves();
+    },
+    onTheme() {
+      if (lastResult) drawCurves();
+    },
+    resetInteractive() {
+      setPlaying(false);
+      scene = sceneDefaults();
+      const host = document.querySelector("#pv-curves");
+      if (host) host._pvMounted = false;
+      const root = document.querySelector("#pv-scene-root");
+      if (root) root._pvMounted = false;
+    },
+    metricsFor(result, _state, advanced) {
+      const format = fmt(2);
+      const power = (value) => Math.abs(value) >= 1000 ? `${format.format(value / 1000)} kW` : `${fmt(1).format(value)} W`;
+      if (!advanced) {
+        return [
+          { label: `${t("pvPower")} P<span class="symbol-index">pv</span>`, value: power(result.pvPower) },
+          { label: `${t("acPower")} P<span class="symbol-index">ac</span>`, value: power(result.activePower) },
+          { label: `${t("gridCurrent")} I<span class="symbol-index">g</span>`, value: `${format.format(result.currentRms)} A` },
+        ];
+      }
+      return [
+        { label: `${t("vpvOp")} V<span class="symbol-index">pv</span>`, value: `${fmt(1).format(result.vPvMean)} V` },
+        { label: `${t("busRipple")} ΔV<span class="symbol-index">dc</span>`, value: `${fmt(1).format(result.vDcRipple)} V` },
+        { label: t("thdI"), value: `${format.format(result.currentThd)} %` },
+      ];
+    },
+    infoBandHtml() {
+      return `
+        <div><span>${t("sunlight")}</span><div class="info-lines"><span class="math info-equation" id="pv-info-g"></span><span class="math info-equation" id="pv-info-tc"></span></div></div>
+        <div><span>${t("pvArray")}</span><div class="info-lines"><span class="math info-equation" id="pv-info-p"></span><span class="math info-equation" id="pv-info-vp"></span></div></div>
+        <div><span>${t("boostCol")}</span><div class="info-lines"><span class="math info-equation" id="pv-info-duty"></span><span class="math info-equation" id="pv-info-eta"></span></div></div>
+        <div><span>${t("gridCol")}</span><div class="info-lines"><span class="math info-equation" id="pv-info-pac"></span><span class="math info-equation" id="pv-info-pf"></span></div></div>`;
+    },
+    infoValuesFor(result, _state, helpers) {
+      helpers.setInfoMath("pv-info-g", `G=${helpers.texNumber(result.env.g)}\\,\\mathrm{W/m^2}`);
+      helpers.setInfoMath("pv-info-tc", `T_{cell}=${helpers.texNumber(result.env.tc)}\\,^{\\circ}\\mathrm{C}`);
+      helpers.setInfoMath("pv-info-p", `P_{pv}=${texPower(helpers, result.pvPower)}`);
+      helpers.setInfoMath("pv-info-vp", `V_{pv}=${helpers.texNumber(result.vPvMean)}\\,\\mathrm{V}\\;\\; I_{pv}=${helpers.texNumber(result.iLMean)}\\,\\mathrm{A}`);
+      helpers.setInfoMath("pv-info-duty", `\\delta=1-\\tfrac{V_{pv}}{V_{dc}}=${helpers.texNumber(result.duty)}`);
+      const tracking = result.mpp.p > 1 ? clamp(result.pvPower / result.mpp.p * 100, 0, 100) : 100;
+      helpers.setInfoMath("pv-info-eta", `\\eta_{MPPT}=${helpers.texNumber(tracking)}\\,\\%`);
+      document.querySelector("#pv-info-eta")?.classList.toggle("warning", tracking < 96);
+      helpers.setInfoMath("pv-info-pac", `P=${texPower(helpers, result.activePower)}`);
+      helpers.setInfoMath("pv-info-pf", `\\mathrm{FP}=${helpers.texNumber(result.powerFactor)}\\;\\; \\mathrm{THD}_i=${helpers.texNumber(result.currentThd)}\\,\\%`);
+    },
+    theoryHtml() {
+      const comparison = (rows) => `<div class="comparison-grid">${rows.map(([label, id]) => `<span>${label}</span><strong id="${id}"></strong>`).join("")}</div>`;
+      return `
+        <section><h3>${t("pvModelTitle")}</h3>
+          <div class="approximation-formula math" data-tex="\\displaystyle I=I_{ph}-I_0\\left(e^{V/(n\\,N_s V_T)}-1\\right)"></div>
+          <div class="approximation-formula math" data-tex="\\displaystyle T_{cell}=T_{amb}+\\frac{NOCT-20}{800}\\,G"></div>
+          ${comparison([[t("openCircuit"), "pv-th-voc"], [t("shortCircuit"), "pv-th-isc"], [t("mppLabel"), "pv-th-mpp"], [t("operatingPoint"), "pv-th-op"]])}
+          <p>${t("pvNote")}</p>
+        </section>
+        <section class="approximation-section"><h3>${t("chainTitle")}</h3>
+          <div class="approximation-formula math" data-tex="\\displaystyle V_{pv}=(1-\\delta)\\,V_{dc}"></div>
+          ${comparison([[t("dutyLabel"), "pv-th-duty"], [`V<sub>pv</sub> — ${t("simulation").toLowerCase()}`, "pv-th-vpv"], [`(1−δ)·V<sub>dc</sub>`, "pv-th-vpv-law"]])}
+          <div class="approximation-formula math" data-tex="\\displaystyle \\Delta V_{dc}\\simeq\\frac{P}{\\omega\\,C_{dc}\\,V_{dc}}"></div>
+          ${comparison([[t("simulation"), "pv-th-ripple-sim"], [t("approximation"), "pv-th-ripple-approx"], [t("relativeError"), "pv-th-ripple-err"]])}
+          <div class="approximation-formula math" data-tex="\\displaystyle P_{ac}=V_gI_g\\cos\\varphi\\simeq P_{pv}"></div>
+          ${comparison([[`P<sub>pv</sub>`, "pv-th-ppv"], [`P<sub>ac</sub>`, "pv-th-pac"], [t("conversionEff"), "pv-th-eff"]])}
+          <p>${t("chainNote")}</p>
+        </section>`;
+    },
+    theoryValuesFor(result, _state, helpers) {
+      const format = fmt(1);
+      const power = (value) => Math.abs(value) >= 1000 ? `${fmt(2).format(value / 1000)} kW` : `${format.format(value)} W`;
+      helpers.setText("pv-th-voc", helpers.displayVoltage(result.vocArr));
+      helpers.setText("pv-th-isc", helpers.displayCurrent(result.iscArr));
+      helpers.setText("pv-th-mpp", `${power(result.mpp.p)} @ ${format.format(result.mpp.v)} V`);
+      helpers.setText("pv-th-op", `${power(result.op.p)} @ ${format.format(result.op.v)} V`);
+      helpers.setText("pv-th-duty", helpers.number.format(result.duty));
+      helpers.setText("pv-th-vpv", helpers.displayVoltage(result.vPvMean));
+      helpers.setText("pv-th-vpv-law", helpers.displayVoltage((1 - result.duty) * result.vDcMean));
+      helpers.setText("pv-th-ripple-sim", helpers.displayVoltage(result.vDcRipple));
+      helpers.setText("pv-th-ripple-approx", helpers.displayVoltage(result.busRippleApprox));
+      helpers.setText("pv-th-ripple-err", `${helpers.number.format(helpers.relativeError(result.busRippleApprox, result.vDcRipple))} %`);
+      helpers.setText("pv-th-ppv", power(result.pvPower));
+      helpers.setText("pv-th-pac", power(result.activePower));
+      helpers.setText("pv-th-eff", result.pvPower > 1 ? `${format.format(clamp(result.activePower / result.pvPower * 100, 0, 120))} %` : "—");
+    },
+  };
+
+  window.converterModels = window.converterModels || {};
+  window.converterModels["pv-grid"] = Object.freeze(model);
+})();

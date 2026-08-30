@@ -7,6 +7,7 @@
     <title>Simulateur de convertisseurs — Convertisseur buck</title>
     <link rel="stylesheet" href="vendor/katex/katex.min.css" />
     <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="pv.css" />
   </head>
   <body>
     <main>
@@ -161,6 +162,7 @@
         </article>
 
         <article class="panel scope-panel">
+          <div class="pv-curves-host" id="pv-curves" hidden></div>
           <div class="scope-screen">
             <div id="scope-legends"></div>
             <canvas id="scope" aria-label="Tracés superposés de Vin, V0x et de la tension de la résistance" data-i18n-aria="scopeAria"></canvas>
@@ -231,6 +233,7 @@
     <script src="topologies/buck.js"></script>
     <script src="topologies/boost.js"></script>
     <script src="topologies/pont-h.js"></script>
+    <script src="topologies/pv-grid.js"></script>
     <script src="app.js"></script>
   </body>
 </html>

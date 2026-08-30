@@ -78,11 +78,12 @@
   const states = {};
   const commutationModes = { buck: "synchronous", boost: "synchronous" };
   const bridgeMode = { application: "standalone", switching: "bipolar", direction: "forward", motorView: "transient", currentControl: "pwm" };
-  const hiddenTraces = { buck: new Set(), boost: new Set(), "pont-h": new Set() };
+  const hiddenTraces = { buck: new Set(), boost: new Set(), "pont-h": new Set(), "pv-grid": new Set() };
   const zoomStates = {
     buck: { x: null, y: [null, null, null] },
     boost: { x: null, y: [null, null, null] },
     "pont-h": { x: null, y: [null, null, null] },
+    "pv-grid": { x: null, y: [null, null, null] },
   };
   const ZOOM_BAND = 12;
   const ZOOM_MIN_DRAG = 8;
@@ -181,7 +182,7 @@
     const currentModel = activeModel();
     const values = { ...currentModel.defaults, ...(states[currentTopology] || {}) };
     const definitions = activeControls();
-    const twoByTwoLayout = currentTopology === "pont-h" && !advanced && definitions.top.length === 4;
+    const twoByTwoLayout = !advanced && definitions.top.length === 4;
     topSlots[0].parentElement.classList.toggle("four-controls", twoByTwoLayout);
     const renderRow = (slots, rowDefinitions) => {
       slots.forEach((card, index) => {
@@ -270,6 +271,13 @@
   }
 
   function renderInfoBand() {
+    const customModel = activeModel();
+    if (typeof customModel.infoBandHtml === "function") {
+      infoBand.classList.add("four-columns");
+      infoBand.innerHTML = customModel.infoBandHtml(language, advanced);
+      renderMath(infoBand);
+      return;
+    }
     infoBand.classList.toggle("four-columns", currentTopology === "buck" || currentTopology === "pont-h");
     if (currentTopology === "buck" || currentTopology === "boost") {
       const boost = currentTopology === "boost";
@@ -317,6 +325,12 @@
   function comparison(rows) { return `<div class="comparison-grid">${rows.map(([label, id]) => `<span>${label}</span><strong id="${id}"></strong>`).join("")}</div>`; }
   function balance(tex, id) { return `<div class="balance-equation"><strong class="math" data-tex="${tex}"></strong><div><span>${tr().numericalResidual}</span><b id="${id}"></b></div></div>`; }
   function renderTheoryShell() {
+    const customModel = activeModel();
+    if (typeof customModel.theoryHtml === "function") {
+      theoryGrid.innerHTML = customModel.theoryHtml(language, advanced);
+      renderMath(theoryGrid);
+      return;
+    }
     if (currentTopology === "buck" || currentTopology === "boost") {
       const boost = currentTopology === "boost";
       const diodeMode = commutationMode() === "diode";
@@ -370,11 +384,16 @@
     themeButton.setAttribute("aria-label", tr()[dark ? "themeLight" : "themeDark"]); renderCatalog();
   }
   function setLanguage(value) { if (!translations[value]) return; saveState(); language = value; number = new Intl.NumberFormat(locales[value], { maximumFractionDigits: 2 }); applyTranslations(); renderTopology(); }
-  function setTheme(value) { dark = value; document.body.classList.toggle("dark-theme", dark); themeButton.setAttribute("aria-pressed", String(dark)); themeButton.setAttribute("aria-label", tr()[dark ? "themeLight" : "themeDark"]); if (currentPoints.length) draw(currentPoints); }
+  function setTheme(value) { dark = value; document.body.classList.toggle("dark-theme", dark); themeButton.setAttribute("aria-pressed", String(dark)); themeButton.setAttribute("aria-label", tr()[dark ? "themeLight" : "themeDark"]); if (currentPoints.length) draw(currentPoints); const themedModel = activeModel(); if (themedModel && typeof themedModel.onTheme === "function") themedModel.onTheme(dark); }
 
-  function setMetric(index, label, value) { document.querySelector(`#metric-label-${index}`).innerHTML = label; document.querySelector(`#metric-value-${index}`).textContent = value; }
+  function setMetric(index, label, value) { document.querySelector(`#metric-label-${index}`).innerHTML = label; document.querySelector(`#metric-value-${index}`).innerHTML = value; }
   function renderMeasurements(result, state) {
     const third = document.querySelector("#metric-3"); third.classList.remove("reverse-current");
+    const customModel = activeModel();
+    if (typeof customModel.metricsFor === "function") {
+      customModel.metricsFor(result, state, advanced, language).slice(0, 3).forEach((metric, index) => setMetric(index + 1, metric.label, metric.value));
+      return;
+    }
     if (currentTopology === "pont-h") {
       if (bridgeMode.application === "motor") {
         setMetric(1, tr().speed, `${number.format(result.speedRpm)} tr/min`); setMetric(2, tr().armatureCurrent, displayCurrent(advanced ? result.currentRms : result.currentMean)); setMetric(3, tr().torque, `${number.format(result.electromagneticTorque)} N·m`);
@@ -390,7 +409,10 @@
     third.classList.toggle("reverse-current", commutationMode() === "synchronous" && result.currentMin < 0);
   }
   function relativeError(approximation, simulation) { return Math.abs(approximation - simulation) / Math.max(Math.abs(simulation), 1e-12) * 100; }
+  const modelHelpers = () => ({ setText, setInfoMath, texNumber, texVoltage, texFrequency, number, displayVoltage, displayCurrent, displayFrequency, displayTime, relativeError, language, advanced });
   function renderTheoryValues(result, state) {
+    const customModel = activeModel();
+    if (typeof customModel.theoryValuesFor === "function") { customModel.theoryValuesFor(result, state, modelHelpers()); return; }
     setText("balance-vl", displayVoltage(result.voltageBalance));
     if (currentTopology !== "pont-h") {
       setText("balance-ic", displayCurrent(result.currentBalance)); setText("theory-il-sim", displayCurrent(result.currentRipple)); setText("theory-il-approx", displayCurrent(result.currentRippleApprox)); setText("theory-il-error", `${number.format(relativeError(result.currentRippleApprox, result.currentRipple))} %`); setText("theory-vo-sim", displayVoltage(result.ripple)); setText("theory-vo-approx", displayVoltage(result.voltageRippleApprox)); setText("theory-vo-error", `${number.format(relativeError(result.voltageRippleApprox, result.ripple))} %`);
@@ -411,6 +433,8 @@
     setText("theory-v1-sim", displayVoltage(result.fundamentalVoltageRms)); setText("theory-v1-approx", displayVoltage(result.expectedVoltageRms)); setText("theory-v1-error", `${number.format(relativeError(result.expectedVoltageRms, result.fundamentalVoltageRms))} %`); setText("theory-filter-resonance", displayFrequency(result.resonance)); setText("theory-filter-thd", `${number.format(result.thd)} %`); setText("theory-i1-sim", displayCurrent(result.currentRms)); setText("theory-i1-approx", displayCurrent(result.expectedCurrentRms)); setText("theory-phase", `${number.format(result.phaseDegrees)}°`);
   }
   function renderInfoValues(result, state) {
+    const customModel = activeModel();
+    if (typeof customModel.infoValuesFor === "function") { customModel.infoValuesFor(result, state, modelHelpers()); return; }
     if (currentTopology === "buck" || currentTopology === "boost") {
       setInfoMath("info-vin", `V_{in}=${texVoltage(state.inputVoltage)}`);
       setInfoMath("info-output", `\\langle V_o\\rangle=${texVoltage(result.mean)}`);
@@ -531,13 +555,21 @@
     groups.forEach((_, index) => { ctx.save(); ctx.translate(15, tops[index] + plotHeight / 2); ctx.rotate(-Math.PI / 2); ctx.fillStyle = index === 1 ? color("--trace-vl") : index === 2 ? color("--trace-il") : color("--scope-text"); ctx.fillText(`${axes[index].label} (${axes[index].unit})`, 0, 0); ctx.restore(); if (axes[index].rightLabel) { ctx.save(); ctx.translate(width - 12, tops[index] + plotHeight / 2); ctx.rotate(Math.PI / 2); ctx.fillStyle = color("--trace-vr"); ctx.fillText(`${axes[index].rightLabel} (${axes[index].rightUnit})`, 0, 0); ctx.restore(); } });
   }
 
+  let modelUpdateQueued = false;
+  function scheduleModelUpdate() {
+    if (modelUpdateQueued) return;
+    modelUpdateQueued = true;
+    requestAnimationFrame(() => { modelUpdateQueued = false; update(); });
+  }
   function update() {
     const state = getState(); states[currentTopology] = state;
     inputs.forEach((input) => { input.closest(".control").querySelector("output").textContent = displayControl(input._definition, Number(input.value)); updateRange(input); });
     const result = activeModel().calculate(state, commutationMode(), modelOptions()); currentPoints = result.points; renderInfoValues(result, state); renderMeasurements(result, state); renderTheoryValues(result, state); draw(currentPoints);
+    if (typeof activeModel().onResult === "function") activeModel().onResult(result, state, { language, advanced, dark, requestUpdate: scheduleModelUpdate });
   }
   function renderTopology() {
     const topology = catalog.find((item) => item.id === currentTopology); document.title = `${tr().documentTitle} — ${localize(topology?.name)}`; document.querySelector('meta[name="description"]').setAttribute("content", tr().metaDescription); canvas.setAttribute("aria-label", `${tr().scopeAria}: ${localize(topology?.name)}. ${tr().zoomAria}`);
+    const curvesHost = document.querySelector("#pv-curves"); if (curvesHost) curvesHost.hidden = typeof activeModel().onResult !== "function";
     renderControls(); renderCommutationSelector(); renderBridgeModePanel(); renderDiagram(); renderInfoBand(); renderLegends(); renderTheoryShell(); update();
   }
 
@@ -670,7 +702,7 @@
   document.querySelector("#topology-close").addEventListener("click", () => topologyDialog.close());
   topologyDialog.addEventListener("click", (event) => { if (event.target === topologyDialog) topologyDialog.close(); });
   advancedButton.addEventListener("click", () => { advanced = !advanced; advancedButton.setAttribute("aria-pressed", String(advanced)); document.body.classList.toggle("advanced-mode", advanced); renderControls(); renderCommutationSelector(); renderBridgeModePanel(); renderLegends(); update(); });
-  document.querySelector("#reset").addEventListener("click", () => { states[currentTopology] = { ...activeModel().defaults }; hiddenTraces[currentTopology]?.clear(); resetZoom(); if (currentTopology in commutationModes) commutationModes[currentTopology] = "synchronous"; if (currentTopology === "pont-h") { bridgeMode.switching = "bipolar"; bridgeMode.direction = "forward"; bridgeMode.motorView = "transient"; bridgeMode.currentControl = "pwm"; } renderTopology(); });
+  document.querySelector("#reset").addEventListener("click", () => { states[currentTopology] = { ...activeModel().defaults }; hiddenTraces[currentTopology]?.clear(); resetZoom(); if (currentTopology in commutationModes) commutationModes[currentTopology] = "synchronous"; if (currentTopology === "pont-h") { bridgeMode.switching = "bipolar"; bridgeMode.direction = "forward"; bridgeMode.motorView = "transient"; bridgeMode.currentControl = "pwm"; } if (typeof activeModel().resetInteractive === "function") activeModel().resetInteractive(); renderTopology(); });
   document.addEventListener("contextmenu", (event) => event.preventDefault());
   window.addEventListener("hashchange", () => { const requested = decodeURIComponent(window.location.hash.slice(1)); if (models[requested]) selectTopology(requested, false); else syncRoute(); });
   if ("ResizeObserver" in window) new ResizeObserver(() => currentPoints.length && draw(currentPoints)).observe(canvas); else window.addEventListener("resize", () => currentPoints.length && draw(currentPoints));
