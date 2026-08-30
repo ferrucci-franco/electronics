@@ -1,0 +1,679 @@
+(() => {
+  "use strict";
+
+  const WHEEL_ARM_DELAY = 200;
+  const locales = { en: "en-US", fr: "fr-FR", es: "es-ES" };
+  const translations = {
+    en: {
+      documentTitle: "Power Converter Simulator", metaDescription: "Interactive steady-state laboratory for power converters.", workspace: "Power converter simulator",
+      topology: "Topology", topologySelectorAria: "Choose a converter topology", topologyDialogKicker: "Power conversion laboratory", chooseTopology: "Choose a topology", closeTopology: "Close topology selector", available: "Available", comingSoon: "Coming soon",
+      languageSelector: "Language", themeDark: "Switch to dark theme", themeLight: "Switch to light theme", advanced: "Advanced", reset: "Reset", upperSettings: "Upper controls", lowerSettings: "Lower controls", commutation: "Switching", commutationAria: "Choose the switching implementation", synchronousSwitch: "Synchronous", switchAndDiode: "Switch + diode", hideTrace: "Hide trace", showTrace: "Show trace",
+      legend: "Legend", advancedLegend: "Advanced legend", scopeAria: "Steady-state converter waveforms", zoomAria: "Drag with the left button to zoom and with the right button to pan. Double-click or double-tap to reset the zoom.", mean: "Average", ripple: "Peak-to-peak ripple", period: "Period", currentAverage: "Average current", currentRipple: "Current ripple", currentRange: "Current range", currentRms: "RMS current", voltageRms: "Fundamental RMS voltage", phaseShift: "Phase shift", switchingRatio: "Switching ratio",
+      outputVoltage: "Output voltage", conductionMode: "Conduction mode", minimumCurrent: "Minimum current", fundamentalFrequency: "Fundamental frequency", formula: "Formula", ratio: "Ratio", resonanceFrequency: "LC circuit resonant frequency", conversionLaw: "Conversion law", conversionLawCcm: "Conversion law · CCM", voltages: "Voltages", lcFilter: "LC filter", ripples: "Ripples",
+      theoryButtonAria: "Open more information", theoryOpen: "More info", theoryKicker: "Electrical analysis", theoryTitle: "Steady state", closeTheory: "Close", balanceTitle: "Balances", numericalResidual: "Numerical residual", rippleTheoryTitle: "Ripple approximation", fundamentalTitle: "Fundamental component", loadTitle: "Series R–L load", simulation: "Simulation", approximation: "Approximation", relativeError: "Relative error", loadType: "Load", seriesRl: "Series resistance and inductance", criticalInductanceRatio: "Critical inductance ratio",
+      approximationNote: "These approximations assume low ripple and a switching frequency well above the natural dynamics.", synchronousNote: "The synchronous switch always provides a current path; negative inductor current is therefore possible.", diodeNote: "The diode blocks reverse current, so the model can enter CCM or DCM. V<sub>D</sub> is measured from anode to cathode; ripple formulas are CCM estimates.", hBridgeNote: "The bridge is modeled with ideal complementary switches.", schematicPending: "Circuit SVG placeholder", schematicTomorrow: "The simulation is active. The final circuit drawing can be inserted here without changing the model.", time: "Time", voltage: "voltage", currentAxis: "current",
+      bridgeApplication: "Application", inverter: "Inverter", dcMotor: "DC motor", grid: "Grid", modulationType: "PWM pattern", bipolar: "Bipolar", unipolar: "Unipolar", motorBipolar: "50% = stop", motorUnipolar: "Direction + coast", direction: "Direction", forward: "Forward", reverse: "Reverse", motorView: "Display", motorTransient: "Start-up", motorSteady: "Steady state", motorViewAria: "Choose the motor time window", bridgeApplicationAria: "Choose the H-bridge application", bridgeSwitchingAria: "Choose the PWM pattern", motorDirectionAria: "Choose motor direction", gridCurrentControlMode: "Current control", gridCurrentControlAria: "Choose the grid current-control algorithm", pwmControl: "PWM", hysteresisControl: "Hysteresis",
+      strategy: "Strategy", filteredOutput: "Filtered output", filterQuality: "Output filter", voltageThd: "Voltage THD", motorCommand: "Manual command", motorResult: "Motor response", speed: "Speed", torque: "Torque", armatureCurrent: "Armature current", averageArmatureVoltage: "Average armature voltage", power: "Power", activePower: "Active power", reactivePower: "Reactive power", powerFactor: "Power factor", currentThd: "Current THD", trackingError: "Tracking error", setpoint: "Setpoint", electricalModel: "Electrical model", mechanicalModel: "Mechanical model", currentControl: "Current tracking", filterAndLoad: "Filter and load", measured: "Measured", expected: "Expected", dcBus: "DC bus", motorNote: "No speed controller is used: duty cycle and direction are set manually.", gridNote: "A stiff 50 Hz grid and a proportional current tracker with voltage feedforward are used. No PLL is required in this introductory model.", gridHysteresisNote: "The bridge changes state when the current reaches either limit. The switching frequency is therefore variable and is not imposed by a carrier.", standaloneNote: "The output LC filter includes a small damping resistance and supplies a fixed series R–L load.", percent: "Percent",
+    },
+    fr: {
+      documentTitle: "Simulateur de convertisseurs", metaDescription: "Laboratoire interactif de convertisseurs de puissance en régime permanent.", workspace: "Simulateur de convertisseurs de puissance",
+      topology: "Topologie", topologySelectorAria: "Choisir une topologie de convertisseur", topologyDialogKicker: "Laboratoire de conversion", chooseTopology: "Choisir une topologie", closeTopology: "Fermer le sélecteur de topologie", available: "Disponible", comingSoon: "Bientôt disponible",
+      languageSelector: "Langue", themeDark: "Activer le thème sombre", themeLight: "Activer le thème clair", advanced: "Avancé", reset: "Réinitialiser", upperSettings: "Réglages supérieurs", lowerSettings: "Réglages inférieurs", commutation: "Commutation", commutationAria: "Choisir la réalisation de la commutation", synchronousSwitch: "Synchrone", switchAndDiode: "Interrupteur + diode", hideTrace: "Masquer la trace", showTrace: "Afficher la trace",
+      legend: "Légende", advancedLegend: "Légende avancée", scopeAria: "Formes d’onde du convertisseur en régime permanent", zoomAria: "Faites glisser avec le bouton gauche pour zoomer et avec le bouton droit pour déplacer la vue. Double-cliquez ou touchez deux fois pour réinitialiser le zoom.", mean: "Moyenne", ripple: "Ondulation crête à crête", period: "Période", currentAverage: "Courant moyen", currentRipple: "Ondulation du courant", currentRange: "Plage du courant", currentRms: "Courant efficace", voltageRms: "Tension fondamentale efficace", phaseShift: "Déphasage", switchingRatio: "Rapport de fréquences",
+      outputVoltage: "Tension de sortie", conductionMode: "Mode de conduction", minimumCurrent: "Courant minimal", fundamentalFrequency: "Fréquence fondamentale", formula: "Formule", ratio: "Rapport", resonanceFrequency: "Fréquence de résonance du circuit LC", conversionLaw: "Loi de conversion", conversionLawCcm: "Loi de conversion · CCM", voltages: "Tensions", lcFilter: "Filtre LC", ripples: "Ondulations",
+      theoryButtonAria: "Ouvrir les informations complémentaires", theoryOpen: "Plus d’infos", theoryKicker: "Analyse électrique", theoryTitle: "Régime permanent", closeTheory: "Fermer", balanceTitle: "Équilibres", numericalResidual: "Résidu numérique", rippleTheoryTitle: "Approximation des ondulations", fundamentalTitle: "Composante fondamentale", loadTitle: "Charge R–L série", simulation: "Simulation", approximation: "Approximation", relativeError: "Écart relatif", loadType: "Charge", seriesRl: "Résistance et inductance en série", criticalInductanceRatio: "Rapport d’inductance critique",
+      approximationNote: "Ces approximations supposent une faible ondulation et une fréquence de découpage nettement supérieure à la dynamique naturelle.", synchronousNote: "L’interrupteur synchrone offre toujours un chemin au courant ; le courant de l’inductance peut donc devenir négatif.", diodeNote: "La diode bloque le courant inverse : le modèle peut être en CCM ou DCM. V<sub>D</sub> est mesurée de l’anode vers la cathode ; les formules d’ondulation sont des estimations CCM.", hBridgeNote: "Le pont est modélisé avec des interrupteurs complémentaires idéaux.", schematicPending: "Emplacement du SVG du circuit", schematicTomorrow: "La simulation est active. Le dessin définitif pourra être inséré ici sans modifier le modèle.", time: "Temps", voltage: "tension", currentAxis: "courant",
+      bridgeApplication: "Application", inverter: "Onduleur", dcMotor: "Moteur CC", grid: "Réseau", modulationType: "Modulation PWM", bipolar: "Bipolaire", unipolar: "Unipolaire", motorBipolar: "50 % = arrêt", motorUnipolar: "Sens + roue libre", direction: "Sens", forward: "Avant", reverse: "Arrière", motorView: "Affichage", motorTransient: "Démarrage", motorSteady: "Régime permanent", motorViewAria: "Choisir la fenêtre temporelle du moteur", bridgeApplicationAria: "Choisir l’application du pont en H", bridgeSwitchingAria: "Choisir la modulation PWM", motorDirectionAria: "Choisir le sens de rotation", gridCurrentControlMode: "Commande du courant", gridCurrentControlAria: "Choisir l’algorithme de commande du courant réseau", pwmControl: "PWM", hysteresisControl: "Hystérésis",
+      strategy: "Stratégie", filteredOutput: "Sortie filtrée", filterQuality: "Filtre de sortie", voltageThd: "THD de la tension", motorCommand: "Commande manuelle", motorResult: "Réponse du moteur", speed: "Vitesse", torque: "Couple", armatureCurrent: "Courant d’induit", averageArmatureVoltage: "Tension moyenne d’induit", power: "Puissances", activePower: "Puissance active", reactivePower: "Puissance réactive", powerFactor: "Facteur de puissance", currentThd: "THD du courant", trackingError: "Erreur de suivi", setpoint: "Consigne", electricalModel: "Modèle électrique", mechanicalModel: "Modèle mécanique", currentControl: "Suivi du courant", filterAndLoad: "Filtre et charge", measured: "Mesuré", expected: "Attendu", dcBus: "Bus continu", motorNote: "Aucun régulateur de vitesse n’est utilisé : le rapport cyclique et le sens sont imposés manuellement.", gridNote: "Le réseau est supposé rigide à 50 Hz. Le suivi du courant utilise une action proportionnelle et une anticipation de tension, sans PLL dans ce modèle introductif.", gridHysteresisNote: "Le pont change d’état lorsque le courant atteint l’une des deux limites. La fréquence de commutation est donc variable et n’est pas imposée par une porteuse.", standaloneNote: "Le filtre LC de sortie inclut une faible résistance d’amortissement et alimente une charge R–L série fixe.", percent: "Pourcentage",
+    },
+    es: {
+      documentTitle: "Simulador de convertidores", metaDescription: "Laboratorio interactivo de convertidores de potencia en régimen permanente.", workspace: "Simulador de convertidores de potencia",
+      topology: "Topología", topologySelectorAria: "Elegir una topología de convertidor", topologyDialogKicker: "Laboratorio de conversión", chooseTopology: "Elegir una topología", closeTopology: "Cerrar el selector de topología", available: "Disponible", comingSoon: "Próximamente",
+      languageSelector: "Idioma", themeDark: "Activar el tema oscuro", themeLight: "Activar el tema claro", advanced: "Avanzado", reset: "Reinicializar", upperSettings: "Controles superiores", lowerSettings: "Controles inferiores", commutation: "Conmutación", commutationAria: "Elegir la implementación de la conmutación", synchronousSwitch: "Síncrono", switchAndDiode: "Interruptor + diodo", hideTrace: "Ocultar traza", showTrace: "Mostrar traza",
+      legend: "Leyenda", advancedLegend: "Leyenda avanzada", scopeAria: "Formas de onda del convertidor en régimen permanente", zoomAria: "Arrastre con el botón izquierdo para ampliar y con el derecho para desplazar la vista. Haga doble clic o toque dos veces para restablecer el zoom.", mean: "Promedio", ripple: "Ondulación pico a pico", period: "Período", currentAverage: "Corriente media", currentRipple: "Ondulación de corriente", currentRange: "Rango de corriente", currentRms: "Corriente eficaz", voltageRms: "Tensión fundamental eficaz", phaseShift: "Desfase", switchingRatio: "Relación de frecuencias",
+      outputVoltage: "Tensión de salida", conductionMode: "Modo de conducción", minimumCurrent: "Corriente mínima", fundamentalFrequency: "Frecuencia fundamental", formula: "Fórmula", ratio: "Relación", resonanceFrequency: "Frecuencia de resonancia del circuito LC", conversionLaw: "Ley de conversión", conversionLawCcm: "Ley de conversión · CCM", voltages: "Tensiones", lcFilter: "Filtro LC", ripples: "Ondulaciones",
+      theoryButtonAria: "Abrir más información", theoryOpen: "Más info", theoryKicker: "Análisis eléctrico", theoryTitle: "Régimen permanente", closeTheory: "Cerrar", balanceTitle: "Equilibrios", numericalResidual: "Residuo numérico", rippleTheoryTitle: "Aproximación de las ondulaciones", fundamentalTitle: "Componente fundamental", loadTitle: "Carga R–L serie", simulation: "Simulación", approximation: "Aproximación", relativeError: "Error relativo", loadType: "Carga", seriesRl: "Resistencia e inductancia en serie", criticalInductanceRatio: "Relación de inductancia crítica",
+      approximationNote: "Estas aproximaciones suponen una ondulación pequeña y una frecuencia de conmutación muy superior a la dinámica natural.", synchronousNote: "El interruptor síncrono siempre ofrece un camino para la corriente; por eso la corriente de la inductancia puede hacerse negativa.", diodeNote: "El diodo bloquea la corriente inversa: el modelo puede estar en CCM o DCM. V<sub>D</sub> se mide del ánodo al cátodo; las fórmulas de ondulación son estimaciones CCM.", hBridgeNote: "El puente se modela con interruptores complementarios ideales.", schematicPending: "Espacio para el SVG del circuito", schematicTomorrow: "La simulación está activa. El dibujo definitivo podrá insertarse aquí sin modificar el modelo.", time: "Tiempo", voltage: "tensión", currentAxis: "corriente",
+      bridgeApplication: "Aplicación", inverter: "Inversor", dcMotor: "Motor CC", grid: "Red", modulationType: "Modulación PWM", bipolar: "Bipolar", unipolar: "Unipolar", motorBipolar: "50 % = paro", motorUnipolar: "Sentido + rueda libre", direction: "Sentido", forward: "Adelante", reverse: "Atrás", motorView: "Visualización", motorTransient: "Arranque", motorSteady: "Régimen permanente", motorViewAria: "Elegir la ventana temporal del motor", bridgeApplicationAria: "Elegir la aplicación del puente H", bridgeSwitchingAria: "Elegir la modulación PWM", motorDirectionAria: "Elegir el sentido de giro", gridCurrentControlMode: "Control de corriente", gridCurrentControlAria: "Elegir el algoritmo de control de la corriente de red", pwmControl: "PWM", hysteresisControl: "Histéresis",
+      strategy: "Estrategia", filteredOutput: "Salida filtrada", filterQuality: "Filtro de salida", voltageThd: "THD de tensión", motorCommand: "Mando manual", motorResult: "Respuesta del motor", speed: "Velocidad", torque: "Par", armatureCurrent: "Corriente de armadura", averageArmatureVoltage: "Tensión media de armadura", power: "Potencias", activePower: "Potencia activa", reactivePower: "Potencia reactiva", powerFactor: "Factor de potencia", currentThd: "THD de corriente", trackingError: "Error de seguimiento", setpoint: "Consigna", electricalModel: "Modelo eléctrico", mechanicalModel: "Modelo mecánico", currentControl: "Seguimiento de corriente", filterAndLoad: "Filtro y carga", measured: "Medido", expected: "Esperado", dcBus: "Bus continuo", motorNote: "No se utiliza un regulador de velocidad: el ciclo de trabajo y el sentido se imponen manualmente.", gridNote: "La red se supone rígida a 50 Hz. El seguimiento de corriente usa una acción proporcional y anticipación de tensión, sin PLL en este modelo introductorio.", gridHysteresisNote: "El puente cambia de estado cuando la corriente alcanza uno de los dos límites. Por eso, la frecuencia de conmutación es variable y no la impone una portadora.", standaloneNote: "El filtro LC de salida incluye una pequeña resistencia de amortiguamiento y alimenta una carga R–L serie fija.", percent: "Porcentaje",
+    },
+  };
+
+  const catalog = window.converterTopologies || [];
+  const models = window.converterModels || {};
+  const canvas = document.querySelector("#scope");
+  const ctx = canvas.getContext("2d");
+  const scopeScreen = document.querySelector(".scope-screen");
+  const scopeLegends = document.querySelector("#scope-legends");
+  const zoomSelection = document.querySelector("#zoom-selection");
+  const diagram = document.querySelector(".circuit-diagram");
+  const infoBand = document.querySelector(".lc-info");
+  const topSlots = [...document.querySelectorAll(".controls-top .control")];
+  const bottomSlots = [...document.querySelectorAll(".controls-bottom .control")];
+  const languageButtons = [...document.querySelectorAll("[data-lang]")];
+  const advancedButton = document.querySelector("#advanced-toggle");
+  const theoryButton = document.querySelector("#theory-trigger");
+  const themeButton = document.querySelector("#theme-toggle");
+  const theoryDialog = document.querySelector("#theory-dialog");
+  const theoryGrid = document.querySelector(".theory-grid");
+  const topologyDialog = document.querySelector("#topology-dialog");
+  const topologyGrid = document.querySelector("#topology-grid");
+  const topologyName = document.querySelector("#topology-name");
+  const commutationSelector = document.querySelector("#commutation-selector");
+  const commutationLabel = document.querySelector("#commutation-label");
+  const commutationOptions = document.querySelector("#commutation-options");
+  const commutationButtons = [...document.querySelectorAll("[data-commutation]")];
+  const bridgeApplicationPanel = document.querySelector("#bridge-application-panel");
+  const bridgeModePanel = document.querySelector("#bridge-mode-panel");
+  const bridgeApplicationButtons = [...document.querySelectorAll("[data-bridge-application]")];
+  const bridgeSwitchingButtons = [...document.querySelectorAll("[data-bridge-switching]")];
+  const bridgeSwitchingGroup = document.querySelector("#bridge-switching-group");
+  const gridCurrentControlButtons = [...document.querySelectorAll("[data-grid-current-control]")];
+  const gridCurrentControlGroup = document.querySelector("#grid-current-control-group");
+  const motorDirectionButtons = [...document.querySelectorAll("[data-motor-direction]")];
+  const motorDirectionGroup = document.querySelector("#motor-direction-group");
+  const motorViewButtons = [...document.querySelectorAll("[data-motor-view]")];
+  const motorViewGroup = document.querySelector("#motor-view-group");
+  const wheelTimers = new WeakMap();
+  const states = {};
+  const commutationModes = { buck: "synchronous", boost: "synchronous" };
+  const bridgeMode = { application: "standalone", switching: "bipolar", direction: "forward", motorView: "transient", currentControl: "pwm" };
+  const hiddenTraces = { buck: new Set(), boost: new Set(), "pont-h": new Set() };
+  const zoomStates = {
+    buck: { x: null, y: [null, null, null] },
+    boost: { x: null, y: [null, null, null] },
+    "pont-h": { x: null, y: [null, null, null] },
+  };
+  const ZOOM_BAND = 12;
+  const ZOOM_MIN_DRAG = 8;
+  let inputs = [];
+  let language = "fr";
+  let number = new Intl.NumberFormat(locales.fr, { maximumFractionDigits: 2 });
+  let currentTopology = "buck";
+  let advanced = false;
+  let dark = false;
+  let currentPoints = [];
+  let plotView = null;
+  let zoomDrag = null;
+  let panDrag = null;
+  let lastCanvasTap = null;
+
+  const tr = () => translations[language];
+  const activeModel = () => models[currentTopology];
+  const commutationMode = () => commutationModes[currentTopology] || "synchronous";
+  const modelOptions = () => currentTopology === "pont-h" ? { ...bridgeMode } : {};
+  const activeControls = () => {
+    const model = activeModel();
+    return typeof model.controlsFor === "function" ? model.controlsFor(bridgeMode.application, { ...bridgeMode, advanced }) : model.controls;
+  };
+  const activePlots = () => {
+    const model = activeModel();
+    return typeof model.plotsFor === "function" ? model.plotsFor(currentTopology === "pont-h" ? bridgeMode.application : commutationMode(), bridgeMode.switching, bridgeMode.motorView, bridgeMode.currentControl) : model.plots;
+  };
+  const activePlotGroups = () => {
+    const model = activeModel();
+    if (!advanced && typeof model.basicPlotsFor === "function") {
+      const basic = model.basicPlotsFor(bridgeMode.application, bridgeMode.motorView);
+      if (basic) return basic;
+    }
+    const plots = activePlots();
+    return advanced ? [plots.main, plots.second, plots.third] : [plots.main];
+  };
+  const activeAxes = () => {
+    const model = activeModel();
+    if (typeof model.axesFor === "function") return model.axesFor(bridgeMode.application, advanced).map((axis) => ({ ...axis, label: localize(axis.label), rightLabel: localize(axis.rightLabel) }));
+    return [{ label: tr().voltage, unit: "V" }, { label: tr().voltage, unit: "V" }, { label: tr().currentAxis, unit: "A" }];
+  };
+  const traceIsVisible = (trace) => !hiddenTraces[currentTopology]?.has(trace.key);
+  const activeZoom = () => zoomStates[currentTopology];
+  const localize = (value) => value?.[language] || value?.fr || value || "";
+  const setText = (id, value) => { const element = document.querySelector(`#${id}`); if (element) element.textContent = value; };
+  const sub = (value) => `<span class="symbol-index">${value}</span>`;
+
+  function renderTex(element, expression) {
+    if (window.katex && element) window.katex.render(expression, element, { throwOnError: false, output: "htmlAndMathml", strict: false });
+  }
+  function renderMath(root = document) {
+    root.querySelectorAll("[data-tex]").forEach((element) => renderTex(element, element.dataset.tex));
+  }
+  function displayFrequency(value) { return value >= 1000 ? `${number.format(value / 1000)} kHz` : `${number.format(value)} Hz`; }
+  function displayTime(value) { return value >= 1 ? `${number.format(value)} s` : value >= .001 ? `${number.format(value * 1000)} ms` : `${number.format(value * 1e6)} µs`; }
+  function displayVoltage(value) { const v = Math.abs(value) < 1e-12 ? 0 : value; return Math.abs(v) < 1 ? `${number.format(v * 1000)} mV` : `${number.format(v)} V`; }
+  function displayCurrent(value) { const i = Math.abs(value) < 1e-12 ? 0 : value; return Math.abs(i) < 1 ? `${number.format(i * 1000)} mA` : `${number.format(i)} A`; }
+  function texNumber(value) {
+    return number.formatToParts(value).map((part) => {
+      if (part.type === "decimal") return part.value === "," ? "{,}" : part.value;
+      if (part.type === "group") return "\\,";
+      if (part.type === "minusSign") return "-";
+      return part.value;
+    }).join("");
+  }
+  function texFrequency(value) { return value >= 1000 ? `${texNumber(value / 1000)}\\,\\mathrm{kHz}` : `${texNumber(value)}\\,\\mathrm{Hz}`; }
+  function texVoltage(value) { const v = Math.abs(value) < 1e-12 ? 0 : value; return Math.abs(v) < 1 ? `${texNumber(v * 1000)}\\,\\mathrm{mV}` : `${texNumber(v)}\\,\\mathrm{V}`; }
+  function setInfoMath(id, expression) { renderTex(document.querySelector(`#${id}`), `\\displaystyle ${expression}`); }
+  function displayControl(def, value) { return `${number.format(value * (def.scale || 1))} ${def.unit}`; }
+  function updateRange(input) {
+    const value = (Number(input.value) - Number(input.min)) / (Number(input.max) - Number(input.min)) * 100;
+    input.style.setProperty("--range-progress", `${value}%`);
+  }
+  function getState() { return { ...(states[currentTopology] || activeModel()?.defaults || {}), ...Object.fromEntries(inputs.map((input) => [input.dataset.key, Number(input.value)])) }; }
+  function saveState() { if (inputs.length && activeModel()) states[currentTopology] = getState(); }
+
+  function bindControl(card, input) {
+    input.addEventListener("input", update);
+    if (card._wheelBound) return;
+    card._wheelBound = true;
+    card.addEventListener("mouseenter", () => {
+      clearTimeout(wheelTimers.get(card)); card.dataset.wheelReady = "false";
+      wheelTimers.set(card, setTimeout(() => { card.dataset.wheelReady = "true"; card.classList.add("wheel-ready"); }, WHEEL_ARM_DELAY));
+    });
+    card.addEventListener("mouseleave", () => { clearTimeout(wheelTimers.get(card)); card.dataset.wheelReady = "false"; card.classList.remove("wheel-ready"); });
+    card.addEventListener("wheel", (event) => {
+      if (card.dataset.wheelReady !== "true") return;
+      event.preventDefault();
+      const activeInput = card.querySelector("input");
+      const next = Math.min(Number(activeInput.max), Math.max(Number(activeInput.min), Number(activeInput.value) + (event.deltaY < 0 ? 1 : -1) * (Number(activeInput.step) || 1)));
+      if (next !== Number(activeInput.value)) { activeInput.value = String(next); activeInput.dispatchEvent(new Event("input", { bubbles: true })); }
+    }, { passive: false });
+  }
+
+  function renderControls() {
+    const currentModel = activeModel();
+    const values = { ...currentModel.defaults, ...(states[currentTopology] || {}) };
+    const definitions = activeControls();
+    const twoByTwoLayout = currentTopology === "pont-h" && !advanced && definitions.top.length === 4;
+    topSlots[0].parentElement.classList.toggle("four-controls", twoByTwoLayout);
+    const renderRow = (slots, rowDefinitions) => {
+      slots.forEach((card, index) => {
+        const def = rowDefinitions[index];
+        if (!def) { card.hidden = true; card.classList.remove("advanced-control"); card.replaceChildren(); return; }
+        const value = values[def.key] ?? currentModel.defaults[def.key];
+        card.classList.toggle("advanced-control", Boolean(def.advanced));
+        card.hidden = Boolean(def.advanced && !advanced);
+        card.innerHTML = `<span class="control-copy"><b>${def.symbol}</b><small>${localize(def.label)}</small></span><output>${displayControl(def, value)}</output><input data-key="${def.key}" type="range" min="${def.min}" max="${def.max}" step="${def.step}" value="${value}" aria-label="${localize(def.aria)}" />`;
+        const input = card.querySelector("input"); input._definition = def; updateRange(input); bindControl(card, input);
+      });
+      slots[0].parentElement.hidden = !rowDefinitions.some((def) => !def.advanced || advanced);
+    };
+    renderRow(topSlots, definitions.top); renderRow(bottomSlots, definitions.bottom);
+    inputs = [...document.querySelectorAll(".control input[data-key]")];
+  }
+
+  function renderCommutationSelector() {
+    const supported = currentTopology === "buck" || currentTopology === "boost";
+    commutationSelector.hidden = !advanced || !supported;
+    commutationLabel.textContent = tr().commutation;
+    commutationOptions.setAttribute("aria-label", tr().commutationAria);
+    commutationButtons.forEach((button) => {
+      button.textContent = tr()[button.dataset.commutation === "diode" ? "switchAndDiode" : "synchronousSwitch"];
+      button.setAttribute("aria-pressed", String(button.dataset.commutation === commutationMode()));
+    });
+  }
+
+  function renderBridgeModePanel() {
+    const visible = currentTopology === "pont-h";
+    bridgeApplicationPanel.hidden = !visible;
+    bridgeModePanel.hidden = !visible;
+    if (!visible) return;
+    document.querySelector("#bridge-application-label").textContent = tr().bridgeApplication;
+    document.querySelector("#bridge-switching-label").textContent = tr().modulationType;
+    document.querySelector("#grid-current-control-label").textContent = tr().gridCurrentControlMode;
+    document.querySelector("#motor-direction-label").textContent = tr().direction;
+    document.querySelector("#motor-view-label").textContent = tr().motorView;
+    document.querySelector("#bridge-application-options").setAttribute("aria-label", tr().bridgeApplicationAria);
+    document.querySelector("#bridge-switching-options").setAttribute("aria-label", tr().bridgeSwitchingAria);
+    gridCurrentControlGroup.querySelector("div").setAttribute("aria-label", tr().gridCurrentControlAria);
+    motorDirectionGroup.querySelector("div").setAttribute("aria-label", tr().motorDirectionAria);
+    motorViewGroup.querySelector("div").setAttribute("aria-label", tr().motorViewAria);
+    bridgeApplicationButtons.forEach((button) => { button.textContent = tr()[button.dataset.bridgeApplication === "standalone" ? "inverter" : button.dataset.bridgeApplication === "motor" ? "dcMotor" : "grid"]; button.setAttribute("aria-pressed", String(button.dataset.bridgeApplication === bridgeMode.application)); });
+    const gridHysteresis = bridgeMode.application === "grid" && bridgeMode.currentControl === "hysteresis";
+    bridgeSwitchingButtons.forEach((button) => {
+      const motorKey = button.dataset.bridgeSwitching === "bipolar" ? "motorBipolar" : "motorUnipolar";
+      button.textContent = tr()[bridgeMode.application === "motor" ? motorKey : button.dataset.bridgeSwitching];
+      button.setAttribute("aria-pressed", String(button.dataset.bridgeSwitching === bridgeMode.switching));
+      button.disabled = gridHysteresis;
+    });
+    gridCurrentControlGroup.hidden = bridgeMode.application !== "grid" || !advanced;
+    gridCurrentControlButtons.forEach((button) => { button.textContent = tr()[button.dataset.gridCurrentControl === "hysteresis" ? "hysteresisControl" : "pwmControl"]; button.setAttribute("aria-pressed", String(button.dataset.gridCurrentControl === bridgeMode.currentControl)); });
+    bridgeSwitchingGroup.hidden = bridgeMode.application === "grid" && !advanced;
+    bridgeSwitchingGroup.classList.toggle("is-disabled", gridHysteresis);
+    bridgeSwitchingGroup.setAttribute("aria-disabled", String(gridHysteresis));
+    const motorDirectionDisabled = bridgeMode.application === "motor" && bridgeMode.switching !== "unipolar";
+    motorDirectionGroup.hidden = bridgeMode.application !== "motor";
+    motorDirectionGroup.classList.toggle("is-disabled", motorDirectionDisabled);
+    motorDirectionGroup.setAttribute("aria-disabled", String(motorDirectionDisabled));
+    motorDirectionButtons.forEach((button) => {
+      button.textContent = tr()[button.dataset.motorDirection];
+      button.setAttribute("aria-pressed", String(button.dataset.motorDirection === bridgeMode.direction));
+      button.disabled = motorDirectionDisabled;
+    });
+    motorViewGroup.hidden = bridgeMode.application !== "motor";
+    motorViewButtons.forEach((button) => { button.textContent = tr()[button.dataset.motorView === "steady" ? "motorSteady" : "motorTransient"]; button.setAttribute("aria-pressed", String(button.dataset.motorView === bridgeMode.motorView)); });
+    bridgeModePanel.hidden = bridgeMode.application === "grid" && !advanced;
+  }
+
+  function renderDiagram() {
+    const currentModel = activeModel();
+    diagram.setAttribute("aria-label", localize(currentModel.diagram.aria));
+    diagram.classList.remove("has-mode-title");
+    if (typeof currentModel.diagramFor === "function") {
+      const modeTitle = typeof currentModel.diagramTitleFor === "function" ? currentModel.diagramTitleFor(bridgeMode.application, bridgeMode.switching, language, bridgeMode.currentControl) : "";
+      diagram.classList.toggle("has-mode-title", Boolean(modeTitle));
+      diagram.innerHTML = `${modeTitle ? `<div class="diagram-mode-title">${modeTitle}</div>` : ""}${currentModel.diagramFor(bridgeMode.application, bridgeMode.switching, language, bridgeMode.currentControl)}`;
+    } else if (currentModel.diagram.type === "svg") {
+      const source = currentModel.diagrams?.[commutationMode()] || currentModel.diagram.src;
+      diagram.innerHTML = `<div class="schematic-frame"><img class="converter-schematic" src="${source}" alt="" draggable="false" /><b class="schematic-vin-value" aria-hidden="true"><span id="vin-label-value">24</span> V</b></div>`;
+    } else {
+      const topology = catalog.find((item) => item.id === currentTopology);
+      diagram.innerHTML = `<div class="schematic-placeholder"><span>${tr().schematicPending}</span><strong>${localize(topology.name)}</strong><p>${tr().schematicTomorrow}</p></div>`;
+    }
+  }
+
+  function renderInfoBand() {
+    infoBand.classList.toggle("four-columns", currentTopology === "buck" || currentTopology === "pont-h");
+    if (currentTopology === "buck" || currentTopology === "boost") {
+      const boost = currentTopology === "boost";
+      const lawLabel = commutationMode() === "diode" ? tr().conversionLawCcm : tr().conversionLaw;
+      const law = boost ? "\\displaystyle \\langle V_o\\rangle=\\frac{V_{in}}{1-\\delta}" : "\\displaystyle \\langle V_o\\rangle=\\delta V_{in}";
+      const rippleCell = `<div><span>${tr().ripples}</span><div class="info-lines"><span class="math info-equation" id="info-current-ripple"></span><span class="math info-equation" id="info-voltage-ripple"></span></div></div>`;
+      const filterCell = `<div><span>${tr().lcFilter}</span><div class="info-lines"><span class="math info-equation" id="info-resonance"></span><span class="math info-equation" id="info-secondary"></span></div></div>`;
+      infoBand.innerHTML = `<div><span>${lawLabel}</span><strong class="math conversion-formula" data-tex="${law}"></strong></div><div><span>${tr().voltages}</span><div class="info-lines"><span class="math info-equation" id="info-vin"></span><span class="math info-equation" id="info-output"></span></div></div>${boost ? "" : filterCell}${rippleCell}`;
+    } else if (bridgeMode.application === "motor") {
+      const law = bridgeMode.switching === "bipolar" ? "\\displaystyle \\langle V_a\\rangle=(2\\delta-1)V_{dc}" : "\\displaystyle \\langle V_a\\rangle=\\pm\\delta V_{dc}";
+      infoBand.innerHTML = `<div><span>${tr().motorCommand}</span><strong class="math conversion-formula" data-tex="${law}"></strong></div><div><span>${tr().averageArmatureVoltage}</span><strong class="math info-equation" id="info-primary"></strong></div><div><span>${tr().motorResult}</span><div class="info-lines"><span class="math info-equation" id="info-secondary"></span><span class="math info-equation" id="info-tertiary"></span></div></div><div><span>${tr().torque}</span><div class="info-lines"><span class="math info-equation" id="info-quaternary"></span><span class="math info-equation" id="info-quinary"></span></div></div>`;
+    } else if (bridgeMode.application === "grid") {
+      infoBand.innerHTML = `<div><span>${tr().setpoint}</span><div class="info-lines"><span class="math info-equation" id="info-primary"></span><span class="math info-equation" id="info-secondary"></span></div></div><div><span>${tr().power}</span><div class="info-lines"><span class="math info-equation" id="info-tertiary"></span><span class="math info-equation" id="info-quaternary"></span></div></div><div><span>${tr().powerFactor}</span><strong class="math info-equation" id="info-quinary"></strong></div><div><span>${tr().currentThd}</span><strong class="math info-equation" id="info-senary"></strong></div>`;
+    } else {
+      infoBand.innerHTML = `<div><span>${tr().strategy}</span><strong id="info-primary"></strong></div><div><span>${tr().filteredOutput}</span><div class="info-lines"><span class="math info-equation" id="info-secondary"></span><span class="math info-equation" id="info-tertiary"></span></div></div><div><span>${tr().filterQuality}</span><div class="info-lines"><span class="math info-equation" id="info-quaternary"></span><span class="math info-equation" id="info-quinary"></span></div></div><div><span>${tr().voltageThd}</span><strong class="math info-equation" id="info-senary"></strong></div>`;
+    }
+    renderMath(infoBand);
+  }
+
+  function renderLegendGroup(traces, classes, hidden) {
+    const legend = document.createElement("div"); legend.className = `legend ${classes}`.trim(); legend.hidden = hidden;
+    legend.setAttribute("aria-label", classes ? tr().advancedLegend : tr().legend);
+    traces.forEach((trace) => {
+      const visible = traceIsVisible(trace);
+      const item = document.createElement("button"); const line = document.createElement("i"); const label = document.createElement("b");
+      item.type = "button"; item.className = "legend-trace"; item.dataset.traceKey = trace.key; item.setAttribute("aria-pressed", String(visible));
+      line.style.setProperty("--legend-color", `var(${trace.color})`); if (trace.dash?.length) line.classList.add("dashed"); label.innerHTML = trace.label;
+      const accessibleLabel = label.textContent.trim();
+      item.setAttribute("aria-label", `${tr()[visible ? "hideTrace" : "showTrace"]}: ${accessibleLabel}`);
+      item.addEventListener("click", () => {
+        const hiddenSet = hiddenTraces[currentTopology];
+        if (hiddenSet.has(trace.key)) hiddenSet.delete(trace.key); else hiddenSet.add(trace.key);
+        renderLegends();
+        if (currentPoints.length) draw(currentPoints);
+      });
+      item.append(line, label); legend.append(item);
+    });
+    scopeLegends.append(legend);
+  }
+  function renderLegends() {
+    scopeLegends.replaceChildren();
+    activePlotGroups().forEach((traces, index) => renderLegendGroup(traces, index === 0 ? "" : index === 1 ? "voltage-legend" : "current-legend", false));
+  }
+
+  function comparison(rows) { return `<div class="comparison-grid">${rows.map(([label, id]) => `<span>${label}</span><strong id="${id}"></strong>`).join("")}</div>`; }
+  function balance(tex, id) { return `<div class="balance-equation"><strong class="math" data-tex="${tex}"></strong><div><span>${tr().numericalResidual}</span><b id="${id}"></b></div></div>`; }
+  function renderTheoryShell() {
+    if (currentTopology === "buck" || currentTopology === "boost") {
+      const boost = currentTopology === "boost";
+      const diodeMode = commutationMode() === "diode";
+      const currentFormula = boost ? "\\displaystyle \\Delta I_L\\simeq\\frac{V_{in}\\delta}{Lf_s}" : "\\displaystyle \\Delta I_L\\simeq\\frac{(V_{in}-V_o)\\delta}{Lf_s}";
+      const voltageFormula = boost ? "\\displaystyle \\Delta V_o\\simeq\\frac{V_o\\delta}{RCf_s}" : "\\displaystyle \\Delta V_o\\simeq\\frac{\\Delta I_L}{8Cf_s}";
+      const note = diodeMode ? tr().diodeNote : `${tr().approximationNote} ${tr().synchronousNote}`;
+      const conductionDetails = boost && diodeMode ? comparison([[tr().conductionMode, "theory-conduction-mode"], [tr().criticalInductanceRatio, "theory-critical-ratio"]]) : "";
+      const resonanceDetails = !boost ? `<div class="balance-equation"><strong class="math" data-tex="\\displaystyle f_0=\\frac{1}{2\\pi\\sqrt{LC}}"></strong><div><span>${tr().resonanceFrequency}</span><b id="theory-resonance"></b></div></div>` : "";
+      theoryGrid.innerHTML = `<section><h3>${tr().balanceTitle}</h3>${balance("\\left\\langle V_L\\right\\rangle=0", "balance-vl")}${balance("\\left\\langle i_C\\right\\rangle=0", "balance-ic")}${resonanceDetails}${conductionDetails}</section><section class="approximation-section"><h3>${tr().rippleTheoryTitle}</h3><div class="approximation-formula math" data-tex="${currentFormula}"></div>${comparison([[tr().simulation, "theory-il-sim"], [tr().approximation, "theory-il-approx"], [tr().relativeError, "theory-il-error"]])}<div class="approximation-formula math" data-tex="${voltageFormula}"></div>${comparison([[tr().simulation, "theory-vo-sim"], [tr().approximation, "theory-vo-approx"], [tr().relativeError, "theory-vo-error"]])}<p>${note}</p></section>`;
+    } else if (bridgeMode.application === "motor") {
+      const voltageLaw = bridgeMode.switching === "bipolar" ? "\\displaystyle \\langle V_a\\rangle=(2\\delta-1)V_{dc}" : "\\displaystyle \\langle V_a\\rangle=\\pm\\delta V_{dc}";
+      theoryGrid.innerHTML = `<section><h3>${tr().electricalModel}</h3><div class="approximation-formula math" data-tex="${voltageLaw}"></div><div class="approximation-formula math" data-tex="\\displaystyle L_a\\frac{di_a}{dt}=V_a-R_ai_a-K_e\\omega"></div>${comparison([[tr().averageArmatureVoltage, "theory-motor-voltage"], [tr().armatureCurrent, "theory-motor-current"], [tr().dcBus, "theory-motor-bus"]])}</section><section class="approximation-section"><h3>${tr().mechanicalModel}</h3><div class="approximation-formula math" data-tex="\\displaystyle J\\frac{d\\omega}{dt}=K_ti_a-B\\omega-T_L"></div>${comparison([[tr().speed, "theory-motor-speed"], [tr().torque, "theory-motor-torque"], [tr().loadType, "theory-load"]])}<p>${tr().motorNote}</p></section>`;
+    } else if (bridgeMode.application === "grid") {
+      const controlFormula = bridgeMode.currentControl === "hysteresis" ? "\\displaystyle i_g^*-h_i\\leq i_g\\leq i_g^*+h_i" : "\\displaystyle L_g\\frac{di_g}{dt}=v_{ab}-v_g-R_gi_g";
+      const controlNote = bridgeMode.currentControl === "hysteresis" ? tr().gridHysteresisNote : tr().gridNote;
+      theoryGrid.innerHTML = `<section><h3>${tr().currentControl}</h3><div class="approximation-formula math" data-tex="\\displaystyle i_g^*=\\sqrt{2}I_g^*\\sin(\\omega_gt+\\varphi)"></div><div class="approximation-formula math" data-tex="${controlFormula}"></div>${comparison([[tr().currentRms, "theory-grid-current"], [tr().phaseShift, "theory-grid-phase"], [tr().trackingError, "theory-grid-error"]])}</section><section class="approximation-section"><h3>${tr().power}</h3><div class="approximation-formula math" data-tex="\\displaystyle P=V_gI_g\\cos\\varphi\\qquad Q=V_gI_g\\sin\\varphi"></div>${comparison([[tr().activePower, "theory-grid-p"], [tr().reactivePower, "theory-grid-q"], [tr().powerFactor, "theory-grid-pf"], [tr().currentThd, "theory-grid-thd"]])}<p>${controlNote}</p></section>`;
+    } else {
+      theoryGrid.innerHTML = `<section><h3>${tr().fundamentalTitle}</h3><div class="approximation-formula math" data-tex="\\displaystyle V_{1,\\mathrm{rms}}\\simeq\\frac{mV_{dc}}{\\sqrt{2}}"></div>${comparison([[tr().measured, "theory-v1-sim"], [tr().expected, "theory-v1-approx"], [tr().relativeError, "theory-v1-error"]])}<div class="approximation-formula math" data-tex="\\displaystyle f_0=\\frac{1}{2\\pi\\sqrt{L_fC_f}}"></div>${comparison([[tr().resonanceFrequency, "theory-filter-resonance"], [tr().voltageThd, "theory-filter-thd"]])}</section><section class="approximation-section"><h3>${tr().filterAndLoad}</h3><div class="approximation-formula math" data-tex="\\displaystyle L_f\\frac{di_f}{dt}=v_{ab}-v_o\\qquad C_f\\frac{dv_C}{dt}=i_f-i_o"></div>${comparison([[tr().currentRms, "theory-i1-sim"], [tr().expected, "theory-i1-approx"], [tr().phaseShift, "theory-phase"]])}${balance("\\left\\langle V_{L_f}\\right\\rangle=0", "balance-vl")}<p>${tr().standaloneNote} ${tr().hBridgeNote}</p></section>`;
+    }
+    renderMath(theoryGrid);
+  }
+
+  function renderCatalog() {
+    const active = catalog.find((item) => item.id === currentTopology); topologyName.textContent = localize(active?.name); topologyGrid.replaceChildren();
+    catalog.forEach((topology) => {
+      const available = topology.status === "available" && Boolean(models[topology.id]);
+      const card = document.createElement(available ? "button" : "article"); card.className = "topology-card";
+      if (available) { card.type = "button"; card.setAttribute("aria-current", String(topology.id === currentTopology)); card.addEventListener("click", () => selectTopology(topology.id)); }
+      else card.setAttribute("aria-disabled", "true");
+      const name = document.createElement("h3"); name.textContent = localize(topology.name);
+      const description = document.createElement("p"); description.textContent = localize(topology.description);
+      const status = document.createElement("span"); status.className = "topology-status"; status.textContent = tr()[available ? "available" : "comingSoon"];
+      card.append(name, description, status); topologyGrid.append(card);
+    });
+  }
+
+  function syncRoute() {
+    const hash = `#${currentTopology}`; if (window.location.hash === hash) return;
+    try { history.replaceState(null, "", hash); } catch (_error) { window.location.hash = hash; }
+  }
+  function selectTopology(id, sync = true) {
+    if (!models[id]) return; saveState(); currentTopology = id; if (sync) syncRoute(); renderCatalog(); renderTopology(); if (topologyDialog.open) topologyDialog.close();
+  }
+  function initializeRoute() { const requested = decodeURIComponent(window.location.hash.slice(1)); currentTopology = models[requested] ? requested : "buck"; syncRoute(); }
+
+  function applyTranslations() {
+    document.documentElement.lang = language;
+    document.querySelectorAll("[data-i18n]").forEach((element) => { const value = tr()[element.dataset.i18n]; if (value) element.textContent = value; });
+    document.querySelectorAll("[data-i18n-aria]").forEach((element) => { const value = tr()[element.dataset.i18nAria]; if (value) element.setAttribute("aria-label", value); });
+    languageButtons.forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.lang === language)));
+    themeButton.setAttribute("aria-label", tr()[dark ? "themeLight" : "themeDark"]); renderCatalog();
+  }
+  function setLanguage(value) { if (!translations[value]) return; saveState(); language = value; number = new Intl.NumberFormat(locales[value], { maximumFractionDigits: 2 }); applyTranslations(); renderTopology(); }
+  function setTheme(value) { dark = value; document.body.classList.toggle("dark-theme", dark); themeButton.setAttribute("aria-pressed", String(dark)); themeButton.setAttribute("aria-label", tr()[dark ? "themeLight" : "themeDark"]); if (currentPoints.length) draw(currentPoints); }
+
+  function setMetric(index, label, value) { document.querySelector(`#metric-label-${index}`).innerHTML = label; document.querySelector(`#metric-value-${index}`).textContent = value; }
+  function renderMeasurements(result, state) {
+    const third = document.querySelector("#metric-3"); third.classList.remove("reverse-current");
+    if (currentTopology === "pont-h") {
+      if (bridgeMode.application === "motor") {
+        setMetric(1, tr().speed, `${number.format(result.speedRpm)} tr/min`); setMetric(2, tr().armatureCurrent, displayCurrent(advanced ? result.currentRms : result.currentMean)); setMetric(3, tr().torque, `${number.format(result.electromagneticTorque)} N·m`);
+      } else if (bridgeMode.application === "grid") {
+        setMetric(1, tr().activePower, `${number.format(result.activePower)} W`); setMetric(2, tr().reactivePower, `${number.format(result.reactivePower)} var`); setMetric(3, advanced ? tr().trackingError : tr().powerFactor, advanced ? displayCurrent(result.trackingErrorRms) : number.format(result.powerFactor));
+      } else if (!advanced) { setMetric(1, tr().voltageRms, displayVoltage(result.fundamentalVoltageRms)); setMetric(2, tr().currentRms, displayCurrent(result.currentRms)); setMetric(3, tr().period, displayTime(1 / state.fundamentalFrequency)); }
+      else { setMetric(1, tr().currentRms, displayCurrent(result.currentRms)); setMetric(2, tr().phaseShift, `${number.format(result.phaseDegrees)}°`); setMetric(3, tr().switchingRatio, `f${sub("PWM")} / f${sub("1")} = ${number.format(result.switchingRatio)}`); }
+      return;
+    }
+    const voltageLabel = currentTopology === "boost" ? `V${sub("o")}` : `V${sub("R")}`;
+    if (!advanced) { setMetric(1, `${tr().mean} ${voltageLabel}`, displayVoltage(result.mean)); setMetric(2, tr().ripple, displayVoltage(result.ripple)); setMetric(3, tr().period, displayTime(1 / state.frequency)); return; }
+    setMetric(1, `${tr().currentAverage} I${sub("L")}`, displayCurrent(result.currentMean)); setMetric(2, `${tr().currentRipple} ΔI${sub("L")}`, displayCurrent(result.currentRipple)); setMetric(3, `${tr().currentRange} I${sub("L")}`, `${displayCurrent(result.currentMin)} → ${displayCurrent(result.currentMax)}`);
+    third.classList.toggle("reverse-current", commutationMode() === "synchronous" && result.currentMin < 0);
+  }
+  function relativeError(approximation, simulation) { return Math.abs(approximation - simulation) / Math.max(Math.abs(simulation), 1e-12) * 100; }
+  function renderTheoryValues(result, state) {
+    setText("balance-vl", displayVoltage(result.voltageBalance));
+    if (currentTopology !== "pont-h") {
+      setText("balance-ic", displayCurrent(result.currentBalance)); setText("theory-il-sim", displayCurrent(result.currentRipple)); setText("theory-il-approx", displayCurrent(result.currentRippleApprox)); setText("theory-il-error", `${number.format(relativeError(result.currentRippleApprox, result.currentRipple))} %`); setText("theory-vo-sim", displayVoltage(result.ripple)); setText("theory-vo-approx", displayVoltage(result.voltageRippleApprox)); setText("theory-vo-error", `${number.format(relativeError(result.voltageRippleApprox, result.ripple))} %`);
+      if (currentTopology === "buck") setText("theory-resonance", displayFrequency(result.resonance));
+      if (currentTopology === "boost" && commutationMode() === "diode") {
+        setText("theory-conduction-mode", result.mode);
+        const criticalRatio = document.querySelector("#theory-critical-ratio");
+        if (criticalRatio) criticalRatio.innerHTML = `L/L${sub("crit")} = ${number.format((state.inductance / 1e6) / result.criticalInductance)}`;
+      }
+      return;
+    }
+    if (bridgeMode.application === "motor") {
+      setText("theory-motor-voltage", displayVoltage(result.averageVoltage)); setText("theory-motor-current", displayCurrent(result.currentMean)); setText("theory-motor-bus", displayVoltage(state.motorDcVoltage)); setText("theory-motor-speed", `${number.format(result.speedRpm)} tr/min`); setText("theory-motor-torque", `${number.format(result.electromagneticTorque)} N·m`); setText("theory-load", `${number.format(result.loadTorque)} N·m`); return;
+    }
+    if (bridgeMode.application === "grid") {
+      setText("theory-grid-current", displayCurrent(result.currentRms)); setText("theory-grid-phase", `${number.format(result.measuredPhase)}°`); setText("theory-grid-error", displayCurrent(result.trackingErrorRms)); setText("theory-grid-p", `${number.format(result.activePower)} W`); setText("theory-grid-q", `${number.format(result.reactivePower)} var`); setText("theory-grid-pf", number.format(result.powerFactor)); setText("theory-grid-thd", `${number.format(result.currentThd)} %`); return;
+    }
+    setText("theory-v1-sim", displayVoltage(result.fundamentalVoltageRms)); setText("theory-v1-approx", displayVoltage(result.expectedVoltageRms)); setText("theory-v1-error", `${number.format(relativeError(result.expectedVoltageRms, result.fundamentalVoltageRms))} %`); setText("theory-filter-resonance", displayFrequency(result.resonance)); setText("theory-filter-thd", `${number.format(result.thd)} %`); setText("theory-i1-sim", displayCurrent(result.currentRms)); setText("theory-i1-approx", displayCurrent(result.expectedCurrentRms)); setText("theory-phase", `${number.format(result.phaseDegrees)}°`);
+  }
+  function renderInfoValues(result, state) {
+    if (currentTopology === "buck" || currentTopology === "boost") {
+      setInfoMath("info-vin", `V_{in}=${texVoltage(state.inputVoltage)}`);
+      setInfoMath("info-output", `\\langle V_o\\rangle=${texVoltage(result.mean)}`);
+      const currentRipplePercent = result.currentRipple / Math.max(Math.abs(result.currentMean), 1e-12) * 100;
+      const voltageRipplePercent = result.ripple / Math.max(Math.abs(result.mean), 1e-12) * 100;
+      setInfoMath("info-current-ripple", `\\Delta i_L/\\langle i_L\\rangle=${texNumber(currentRipplePercent)}\\,\\%`);
+      setInfoMath("info-voltage-ripple", `\\Delta V_o/\\langle V_o\\rangle=${texNumber(voltageRipplePercent)}\\,\\%`);
+    }
+    if (currentTopology === "buck") {
+      setInfoMath("info-resonance", `f_0=${texFrequency(result.resonance)}`);
+      setInfoMath("info-secondary", `f_s/f_0=${texNumber(result.ratio)}`);
+      document.querySelector("#info-secondary")?.classList.toggle("warning", result.ratio >= .8 && result.ratio <= 1.2);
+    }
+    if (currentTopology === "buck" || currentTopology === "boost") { const vin = document.querySelector("#vin-label-value"); if (vin) vin.textContent = number.format(state.inputVoltage); }
+    if (currentTopology === "pont-h") {
+      if (bridgeMode.application === "motor") {
+        setInfoMath("info-primary", `\\langle V_a\\rangle=${texVoltage(result.averageVoltage)}`);
+        setInfoMath("info-secondary", `n=${texNumber(result.speedRpm)}\\,\\mathrm{tr/min}`);
+        setInfoMath("info-tertiary", `\\langle i_a\\rangle=${texNumber(result.currentMean)}\\,\\mathrm{A}`);
+        setInfoMath("info-quaternary", `T_e=${texNumber(result.electromagneticTorque)}\\,\\mathrm{N\\,m}`);
+        setInfoMath("info-quinary", `T_L=${texNumber(result.loadTorque)}\\,\\mathrm{N\\,m}`);
+      } else if (bridgeMode.application === "grid") {
+        if (bridgeMode.currentControl === "hysteresis") {
+          setInfoMath("info-primary", `h_i=${texNumber(result.hysteresisBand)}\\,\\mathrm{A}`);
+          setInfoMath("info-secondary", `\\overline{f}_{sw}\\simeq${texFrequency(result.switchingFrequencyMeasured)}`);
+        } else {
+          setInfoMath("info-primary", `I_g^*=${texNumber(state.gridCurrentRms)}\\,\\mathrm{A_{rms}}`);
+          setInfoMath("info-secondary", `\\varphi^*=${texNumber(state.gridPhase)}^\\circ`);
+        }
+        setInfoMath("info-tertiary", `P=${texNumber(result.activePower)}\\,\\mathrm{W}`);
+        setInfoMath("info-quaternary", `Q=${texNumber(result.reactivePower)}\\,\\mathrm{var}`);
+        setInfoMath("info-quinary", `\\mathrm{FP}=${texNumber(result.powerFactor)}`);
+        setInfoMath("info-senary", `\\mathrm{THD}_i=${texNumber(result.currentThd)}\\,\\%`);
+      } else {
+        setText("info-primary", tr()[bridgeMode.switching]);
+        setInfoMath("info-secondary", `V_{o,1,\\mathrm{rms}}=${texVoltage(result.fundamentalVoltageRms)}`);
+        setInfoMath("info-tertiary", `I_{o,\\mathrm{rms}}=${texNumber(result.currentRms)}\\,\\mathrm{A}`);
+        setInfoMath("info-quaternary", `f_0=${texFrequency(result.resonance)}`);
+        setInfoMath("info-quinary", `f_{PWM}/f_0=${texNumber(state.switchingFrequency / result.resonance)}`);
+        setInfoMath("info-senary", `\\mathrm{THD}_V=${texNumber(result.thd)}\\,\\%`);
+      }
+    }
+  }
+
+  function paddedRange(values) {
+    let rawMin = 0; let rawMax = 0;
+    values.forEach((value) => { if (Number.isFinite(value)) { rawMin = Math.min(rawMin, value); rawMax = Math.max(rawMax, value); } });
+    const span = Math.max(rawMax - rawMin, Math.max(Math.abs(rawMax), 1) * .04, .001);
+    return { rawMin, rawMax, min: rawMin - span * .1, max: rawMax + span * .1 };
+  }
+  function resetZoom(topology = currentTopology) {
+    zoomStates[topology] = { x: null, y: [null, null, null] };
+    zoomDrag = null;
+    panDrag = null;
+    canvas.classList.remove("panning");
+    zoomSelection.hidden = true;
+  }
+  function plotAtPosition(x, y) {
+    if (!plotView || x < plotView.left || x > plotView.right) return null;
+    return plotView.plots.find((plot) => y >= plot.top && y <= plot.top + plot.height) || null;
+  }
+  function selectionGeometry() {
+    if (!zoomDrag || !plotView) return null;
+    const plot = plotView.plots[zoomDrag.groupIndex];
+    if (!plot) return null;
+    const x0 = Math.max(plotView.left, Math.min(plotView.right, zoomDrag.x0));
+    const x1 = Math.max(plotView.left, Math.min(plotView.right, zoomDrag.x1));
+    const y0 = Math.max(plot.top, Math.min(plot.top + plot.height, zoomDrag.y0));
+    const y1 = Math.max(plot.top, Math.min(plot.top + plot.height, zoomDrag.y1));
+    const width = Math.abs(x1 - x0); const height = Math.abs(y1 - y0);
+    if (width >= ZOOM_BAND && height < ZOOM_BAND) return { mode: "x", x: Math.min(x0, x1), y: plot.top, width, height: plot.height, plot, x0, x1, y0, y1 };
+    if (height >= ZOOM_BAND && width < ZOOM_BAND) return { mode: "y", x: plotView.left, y: Math.min(y0, y1), width: plotView.plotWidth, height, plot, x0, x1, y0, y1 };
+    return { mode: "xy", x: Math.min(x0, x1), y: Math.min(y0, y1), width: Math.max(width, 1), height: Math.max(height, 1), plot, x0, x1, y0, y1 };
+  }
+  function updateZoomSelection() {
+    const selection = selectionGeometry();
+    if (!selection) { zoomSelection.hidden = true; return; }
+    zoomSelection.style.left = `${selection.x}px`; zoomSelection.style.top = `${selection.y}px`; zoomSelection.style.width = `${selection.width}px`; zoomSelection.style.height = `${selection.height}px`;
+    zoomSelection.hidden = false;
+  }
+  function draw(points) {
+    if (!points.length) return;
+    const css = getComputedStyle(document.body); const color = (name) => css.getPropertyValue(name).trim(); const rect = canvas.getBoundingClientRect(); const dpr = Math.min(window.devicePixelRatio || 1, 2); const width = Math.max(rect.width, 280); const height = Math.max(rect.height, 280);
+    canvas.width = Math.round(width * dpr); canvas.height = Math.round(height * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, width, height); ctx.font = '500 15px Inter, "Segoe UI", Arial, sans-serif';
+    const groups = activePlotGroups(); const axes = activeAxes(); const hasRightAxis = groups.some((group) => group.some((trace) => trace.axis === "right")); const hasSpeedAxis = axes.some((axis) => axis.unit === "tr/min"); const axisInteger = new Intl.NumberFormat(locales[language], { maximumFractionDigits: 0 }); const axisValue = (value, unit) => unit === "tr/min" ? axisInteger.format(value) : number.format(value);
+    const left = width < 520 ? (hasSpeedAxis ? 72 : 58) : (hasSpeedAxis ? 104 : 76); const right = hasRightAxis ? (width < 520 ? 58 : 76) : 17; const top = 46; const bottom = 36; const gap = groups.length > 1 ? 54 : 0; const plotHeight = groups.length > 1 ? Math.max(72, (height - top - bottom - gap * (groups.length - 1)) / groups.length) : height - top - bottom; const plotWidth = width - left - right; const duration = points.at(-1).t;
+    const zoom = activeZoom(); const xMinFraction = zoom.x?.min ?? 0; const xMaxFraction = zoom.x?.max ?? 1; const xMinTime = duration * xMinFraction; const xMaxTime = duration * xMaxFraction;
+    const xAt = (time) => left + (time - xMinTime) / (xMaxTime - xMinTime) * plotWidth;
+    const tops = groups.map((_, index) => top + index * (plotHeight + gap));
+    const grid = (plotTop) => { ctx.lineWidth = 1; ctx.strokeStyle = color("--scope-grid"); for (let column = 0; column <= 8; column += 1) { const x = left + column / 8 * plotWidth; ctx.beginPath(); ctx.moveTo(x, plotTop); ctx.lineTo(x, plotTop + plotHeight); ctx.stroke(); } for (let row = 0; row <= 5; row += 1) { const y = plotTop + row / 5 * plotHeight; ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(left + plotWidth, y); ctx.stroke(); } };
+    let visibleStart = 0; while (visibleStart < points.length - 1 && points[visibleStart].t < xMinTime) visibleStart += 1;
+    let visibleEnd = visibleStart; while (visibleEnd < points.length - 1 && points[visibleEnd].t <= xMaxTime) visibleEnd += 1;
+    const visiblePoints = points.slice(Math.max(0, visibleStart - 1), Math.min(points.length, visibleEnd + 1));
+    const trace = (definition, yAt) => { ctx.beginPath(); ctx.setLineDash(definition.dash || []); let previousY; visiblePoints.forEach((point, index) => { const x = xAt(point.t); const y = yAt(point[definition.key]); if (index === 0) ctx.moveTo(x, y); else if (definition.step) { ctx.lineTo(x, previousY); ctx.lineTo(x, y); } else ctx.lineTo(x, y); previousY = y; }); ctx.strokeStyle = color(definition.color); ctx.lineWidth = definition.width || 2.7; ctx.lineJoin = definition.step ? "miter" : "round"; ctx.stroke(); ctx.setLineDash([]); };
+    const plotLayouts = [];
+    groups.forEach((traces, groupIndex) => {
+      const plotTop = tops[groupIndex]; const visibleTraces = traces.filter(traceIsVisible); const leftTraces = visibleTraces.filter((item) => item.axis !== "right"); const rightTraces = visibleTraces.filter((item) => item.axis === "right"); const hasVisibleTrace = visibleTraces.length > 0;
+      const automaticRange = leftTraces.length ? paddedRange(points.flatMap((point) => leftTraces.map((item) => point[item.key]))) : { rawMin: 0, rawMax: 0, min: -1, max: 1 };
+      const automaticRightRange = rightTraces.length ? paddedRange(points.flatMap((point) => rightTraces.map((item) => point[item.key]))) : null;
+      const yZoom = zoom.y[groupIndex]; const range = yZoom ? { rawMin: yZoom.min, rawMax: yZoom.max, min: yZoom.min, max: yZoom.max } : automaticRange;
+      const rightRange = automaticRightRange && Number.isFinite(yZoom?.rightMin) && Number.isFinite(yZoom?.rightMax) ? { rawMin: yZoom.rightMin, rawMax: yZoom.rightMax, min: yZoom.rightMin, max: yZoom.rightMax } : automaticRightRange;
+      const yAt = (value) => plotTop + (range.max - value) / (range.max - range.min) * plotHeight; const yAtRight = (value) => plotTop + (rightRange.max - value) / (rightRange.max - rightRange.min) * plotHeight; grid(plotTop); const zero = yAt(0);
+      plotLayouts.push({ groupIndex, top: plotTop, height: plotHeight, min: range.min, max: range.max, rightMin: rightRange?.min, rightMax: rightRange?.max });
+      ctx.save(); ctx.beginPath(); ctx.rect(left, plotTop, plotWidth, plotHeight); ctx.clip();
+      if (zero >= plotTop && zero <= plotTop + plotHeight) { ctx.beginPath(); ctx.moveTo(left, zero); ctx.lineTo(left + plotWidth, zero); ctx.strokeStyle = color("--scope-zero"); ctx.stroke(); }
+      [...visibleTraces].sort((a, b) => (a.layer || 0) - (b.layer || 0)).forEach((item) => trace(item, item.axis === "right" && rightRange ? yAtRight : yAt)); ctx.restore(); ctx.fillStyle = groupIndex === 1 ? color("--trace-vl") : groupIndex === 2 ? color("--trace-il") : color("--scope-text"); ctx.textAlign = "right";
+      if (!hasVisibleTrace) ctx.fillText("—", left - 8, zero + 5);
+      else {
+        if (Math.abs(range.rawMax - range.rawMin) < 1e-12) ctx.fillText(`0 ${axes[groupIndex].unit}`, left - 8, zero + 5);
+        else { ctx.fillText(`${axisValue(range.rawMax, axes[groupIndex].unit)} ${axes[groupIndex].unit}`, left - 8, yAt(range.rawMax) + 5); if (range.rawMin < -1e-9) ctx.fillText(`${axisValue(range.rawMin, axes[groupIndex].unit)} ${axes[groupIndex].unit}`, left - 8, yAt(range.rawMin) + 5); else ctx.fillText(`0 ${axes[groupIndex].unit}`, left - 8, Math.min(plotTop + plotHeight - 3, Math.max(plotTop + 13, zero + 5))); }
+        if (rightRange) { ctx.fillStyle = color("--trace-vr"); ctx.textAlign = "left"; if (Math.abs(rightRange.rawMax - rightRange.rawMin) < 1e-12) ctx.fillText(`0 ${axes[groupIndex].rightUnit}`, left + plotWidth + 8, yAtRight(0) + 5); else { ctx.fillText(`${axisValue(rightRange.rawMax, axes[groupIndex].rightUnit)} ${axes[groupIndex].rightUnit}`, left + plotWidth + 8, yAtRight(rightRange.rawMax) + 5); ctx.fillText(`${axisValue(rightRange.rawMin, axes[groupIndex].rightUnit)} ${axes[groupIndex].rightUnit}`, left + plotWidth + 8, yAtRight(rightRange.rawMin) + 5); } }
+      }
+    });
+    plotView = { left, right: left + plotWidth, plotWidth, duration, xMinFraction, xMaxFraction, xMinTime, xMaxTime, plots: plotLayouts };
+    if (groups.length > 1) scopeScreen.style.setProperty("--voltage-legend-top", `${tops[1] - 38}px`);
+    if (groups.length > 2) scopeScreen.style.setProperty("--current-legend-top", `${tops[2] - 38}px`);
+    const plotBottom = tops.at(-1) + plotHeight; ctx.fillStyle = color("--scope-text"); ctx.textAlign = "left"; ctx.fillText(xMinTime <= 1e-15 ? "0" : displayTime(xMinTime), left, plotBottom + 25); ctx.textAlign = "right"; ctx.fillText(displayTime(xMaxTime), left + plotWidth, plotBottom + 25); ctx.textAlign = "center"; ctx.fillText(tr().time, left + plotWidth / 2, plotBottom + 25);
+    groups.forEach((_, index) => { ctx.save(); ctx.translate(15, tops[index] + plotHeight / 2); ctx.rotate(-Math.PI / 2); ctx.fillStyle = index === 1 ? color("--trace-vl") : index === 2 ? color("--trace-il") : color("--scope-text"); ctx.fillText(`${axes[index].label} (${axes[index].unit})`, 0, 0); ctx.restore(); if (axes[index].rightLabel) { ctx.save(); ctx.translate(width - 12, tops[index] + plotHeight / 2); ctx.rotate(Math.PI / 2); ctx.fillStyle = color("--trace-vr"); ctx.fillText(`${axes[index].rightLabel} (${axes[index].rightUnit})`, 0, 0); ctx.restore(); } });
+  }
+
+  function update() {
+    const state = getState(); states[currentTopology] = state;
+    inputs.forEach((input) => { input.closest(".control").querySelector("output").textContent = displayControl(input._definition, Number(input.value)); updateRange(input); });
+    const result = activeModel().calculate(state, commutationMode(), modelOptions()); currentPoints = result.points; renderInfoValues(result, state); renderMeasurements(result, state); renderTheoryValues(result, state); draw(currentPoints);
+  }
+  function renderTopology() {
+    const topology = catalog.find((item) => item.id === currentTopology); document.title = `${tr().documentTitle} — ${localize(topology?.name)}`; document.querySelector('meta[name="description"]').setAttribute("content", tr().metaDescription); canvas.setAttribute("aria-label", `${tr().scopeAria}: ${localize(topology?.name)}. ${tr().zoomAria}`);
+    renderControls(); renderCommutationSelector(); renderBridgeModePanel(); renderDiagram(); renderInfoBand(); renderLegends(); renderTheoryShell(); update();
+  }
+
+  function canvasPoint(event) {
+    const rect = canvas.getBoundingClientRect();
+    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+  }
+  function finishZoom(event, cancelled = false) {
+    if (!zoomDrag || (event && zoomDrag.pointerId !== event.pointerId)) return;
+    if (event) { const point = canvasPoint(event); zoomDrag.x1 = point.x; zoomDrag.y1 = point.y; }
+    const selection = cancelled ? null : selectionGeometry();
+    if (selection && (selection.width >= ZOOM_MIN_DRAG || selection.height >= ZOOM_MIN_DRAG)) {
+      const zoom = activeZoom();
+      if ((selection.mode === "x" || selection.mode === "xy") && selection.width >= ZOOM_MIN_DRAG) {
+        const fractionAt = (x) => plotView.xMinFraction + (x - plotView.left) / plotView.plotWidth * (plotView.xMaxFraction - plotView.xMinFraction);
+        zoom.x = { min: Math.max(0, Math.min(fractionAt(selection.x0), fractionAt(selection.x1))), max: Math.min(1, Math.max(fractionAt(selection.x0), fractionAt(selection.x1))) };
+      }
+      if ((selection.mode === "y" || selection.mode === "xy") && selection.height >= ZOOM_MIN_DRAG) {
+        const valueAt = (y) => selection.plot.max - (y - selection.plot.top) / selection.plot.height * (selection.plot.max - selection.plot.min);
+        const nextRange = { min: Math.min(valueAt(selection.y0), valueAt(selection.y1)), max: Math.max(valueAt(selection.y0), valueAt(selection.y1)) };
+        if (Number.isFinite(selection.plot.rightMin) && Number.isFinite(selection.plot.rightMax)) {
+          const rightValueAt = (y) => selection.plot.rightMax - (y - selection.plot.top) / selection.plot.height * (selection.plot.rightMax - selection.plot.rightMin);
+          nextRange.rightMin = Math.min(rightValueAt(selection.y0), rightValueAt(selection.y1)); nextRange.rightMax = Math.max(rightValueAt(selection.y0), rightValueAt(selection.y1));
+        }
+        zoom.y[selection.plot.groupIndex] = nextRange;
+      }
+    }
+    zoomDrag = null;
+    zoomSelection.hidden = true;
+    if (currentPoints.length) draw(currentPoints);
+  }
+
+  canvas.addEventListener("pointerdown", (event) => {
+    if (!plotView) return;
+    const point = canvasPoint(event); const plot = plotAtPosition(point.x, point.y);
+    if (!plot) return;
+    if (event.button === 2) {
+      const zoom = activeZoom();
+      panDrag = {
+        pointerId: event.pointerId, groupIndex: plot.groupIndex, x0: point.x, y0: point.y,
+        x: zoom.x ? { ...zoom.x } : { min: 0, max: 1 },
+        y: zoom.y[plot.groupIndex] ? { ...zoom.y[plot.groupIndex] } : { min: plot.min, max: plot.max },
+        yRight: Number.isFinite(plot.rightMin) && Number.isFinite(plot.rightMax) ? { min: plot.rightMin, max: plot.rightMax } : null,
+      };
+      canvas.classList.add("panning");
+      event.preventDefault();
+      try { canvas.setPointerCapture(event.pointerId); } catch (_error) {}
+      return;
+    }
+    if (event.button !== 0) return;
+    zoomDrag = { pointerId: event.pointerId, groupIndex: plot.groupIndex, x0: point.x, y0: point.y, x1: point.x, y1: point.y };
+    event.preventDefault();
+    try { canvas.setPointerCapture(event.pointerId); } catch (_error) {}
+  });
+  canvas.addEventListener("pointermove", (event) => {
+    if (panDrag && panDrag.pointerId === event.pointerId) {
+      const point = canvasPoint(event); const zoom = activeZoom();
+      const xSpan = panDrag.x.max - panDrag.x.min;
+      const xShift = -(point.x - panDrag.x0) / plotView.plotWidth * xSpan;
+      const xMin = Math.max(0, Math.min(1 - xSpan, panDrag.x.min + xShift));
+      zoom.x = xSpan < 1 - 1e-9 ? { min: xMin, max: xMin + xSpan } : null;
+      const plot = plotView.plots[panDrag.groupIndex]; const ySpan = panDrag.y.max - panDrag.y.min;
+      const yShift = (point.y - panDrag.y0) / plot.height * ySpan;
+      const nextRange = { min: panDrag.y.min + yShift, max: panDrag.y.max + yShift };
+      if (panDrag.yRight) { const rightSpan = panDrag.yRight.max - panDrag.yRight.min; const rightShift = (point.y - panDrag.y0) / plot.height * rightSpan; nextRange.rightMin = panDrag.yRight.min + rightShift; nextRange.rightMax = panDrag.yRight.max + rightShift; }
+      zoom.y[panDrag.groupIndex] = nextRange;
+      event.preventDefault(); draw(currentPoints); return;
+    }
+    if (!zoomDrag || zoomDrag.pointerId !== event.pointerId) return;
+    const point = canvasPoint(event); zoomDrag.x1 = point.x; zoomDrag.y1 = point.y; event.preventDefault(); updateZoomSelection();
+  });
+  canvas.addEventListener("pointerup", (event) => {
+    if (panDrag && panDrag.pointerId === event.pointerId) {
+      panDrag = null; canvas.classList.remove("panning");
+      try { canvas.releasePointerCapture(event.pointerId); } catch (_error) {}
+      return;
+    }
+    const drag = zoomDrag; const point = canvasPoint(event); const moved = drag ? Math.hypot(point.x - drag.x0, point.y - drag.y0) >= ZOOM_MIN_DRAG : true;
+    finishZoom(event);
+    if (!moved) {
+      const now = performance.now();
+      if (lastCanvasTap && now - lastCanvasTap.time < 350 && Math.hypot(point.x - lastCanvasTap.x, point.y - lastCanvasTap.y) < 24) { resetZoom(); draw(currentPoints); lastCanvasTap = null; }
+      else lastCanvasTap = { time: now, x: point.x, y: point.y };
+    }
+  });
+  canvas.addEventListener("pointercancel", (event) => {
+    if (panDrag && panDrag.pointerId === event.pointerId) { panDrag = null; canvas.classList.remove("panning"); return; }
+    finishZoom(event, true);
+  });
+  canvas.addEventListener("dblclick", (event) => { if (!plotAtPosition(canvasPoint(event).x, canvasPoint(event).y)) return; resetZoom(); draw(currentPoints); });
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    if (zoomDrag) finishZoom(null, true);
+    if (panDrag) { panDrag = null; canvas.classList.remove("panning"); }
+  });
+
+  languageButtons.forEach((button) => button.addEventListener("click", () => setLanguage(button.dataset.lang)));
+  commutationButtons.forEach((button) => button.addEventListener("click", () => {
+    if (currentTopology !== "buck" && currentTopology !== "boost") return;
+    saveState();
+    commutationModes[currentTopology] = button.dataset.commutation;
+    resetZoom();
+    renderTopology();
+  }));
+  bridgeApplicationButtons.forEach((button) => button.addEventListener("click", () => {
+    if (currentTopology !== "pont-h" || bridgeMode.application === button.dataset.bridgeApplication) return;
+    saveState(); bridgeMode.application = button.dataset.bridgeApplication; resetZoom(); renderTopology();
+  }));
+  bridgeSwitchingButtons.forEach((button) => button.addEventListener("click", () => {
+    if (currentTopology !== "pont-h" || bridgeMode.switching === button.dataset.bridgeSwitching) return;
+    saveState(); bridgeMode.switching = button.dataset.bridgeSwitching; resetZoom(); renderTopology();
+  }));
+  gridCurrentControlButtons.forEach((button) => button.addEventListener("click", () => {
+    if (currentTopology !== "pont-h" || bridgeMode.application !== "grid" || bridgeMode.currentControl === button.dataset.gridCurrentControl) return;
+    saveState(); bridgeMode.currentControl = button.dataset.gridCurrentControl; resetZoom(); renderTopology();
+  }));
+  motorDirectionButtons.forEach((button) => button.addEventListener("click", () => {
+    if (currentTopology !== "pont-h" || bridgeMode.direction === button.dataset.motorDirection) return;
+    bridgeMode.direction = button.dataset.motorDirection; resetZoom(); renderTopology();
+  }));
+  motorViewButtons.forEach((button) => button.addEventListener("click", () => {
+    if (currentTopology !== "pont-h" || bridgeMode.application !== "motor" || bridgeMode.motorView === button.dataset.motorView) return;
+    bridgeMode.motorView = button.dataset.motorView; resetZoom(); renderTopology();
+  }));
+  themeButton.addEventListener("click", () => setTheme(!dark));
+  theoryButton.addEventListener("click", () => theoryDialog.showModal());
+  document.querySelector("#theory-close").addEventListener("click", () => theoryDialog.close());
+  theoryDialog.addEventListener("click", (event) => { if (event.target === theoryDialog) theoryDialog.close(); });
+  document.querySelector("#topology-trigger").addEventListener("click", () => topologyDialog.showModal());
+  document.querySelector("#topology-close").addEventListener("click", () => topologyDialog.close());
+  topologyDialog.addEventListener("click", (event) => { if (event.target === topologyDialog) topologyDialog.close(); });
+  advancedButton.addEventListener("click", () => { advanced = !advanced; advancedButton.setAttribute("aria-pressed", String(advanced)); document.body.classList.toggle("advanced-mode", advanced); renderControls(); renderCommutationSelector(); renderBridgeModePanel(); renderLegends(); update(); });
+  document.querySelector("#reset").addEventListener("click", () => { states[currentTopology] = { ...activeModel().defaults }; hiddenTraces[currentTopology]?.clear(); resetZoom(); if (currentTopology in commutationModes) commutationModes[currentTopology] = "synchronous"; if (currentTopology === "pont-h") { bridgeMode.switching = "bipolar"; bridgeMode.direction = "forward"; bridgeMode.motorView = "transient"; bridgeMode.currentControl = "pwm"; } renderTopology(); });
+  document.addEventListener("contextmenu", (event) => event.preventDefault());
+  window.addEventListener("hashchange", () => { const requested = decodeURIComponent(window.location.hash.slice(1)); if (models[requested]) selectTopology(requested, false); else syncRoute(); });
+  if ("ResizeObserver" in window) new ResizeObserver(() => currentPoints.length && draw(currentPoints)).observe(canvas); else window.addEventListener("resize", () => currentPoints.length && draw(currentPoints));
+
+  initializeRoute(); renderMath(); setTheme(false); setLanguage("fr");
+})();

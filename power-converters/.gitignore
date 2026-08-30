@@ -1,0 +1,7 @@
+# Restes locaux de l’ancienne version avec serveur (non nécessaires)
+node_modules/
+dist/
+build/
+.vinext/
+.wrangler/
+public/
