@@ -156,12 +156,14 @@
     const incidence = Math.max(0, Math.cos(theta - (Math.PI / 2 - tilt)));
     const occlusion = occlusionFactor();
     const shade = clamp(.8 * cloudiness + occlusion, 0, 1);
-    const beam = gNormal * incidence * (1 - .92 * shade);
+    const attenuatedNormal = gNormal * (1 - .92 * shade);
+    const beam = attenuatedNormal * incidence;
     const diffuse = 105 * Math.pow(sinElevation, .6) * (1 - .55 * cloudiness) + 55 * cloudiness * sinElevation;
     const irradiance = Math.max(0, beam + diffuse);
+    const horizontal = Math.max(0, attenuatedNormal * Math.max(Math.sin(theta), 0) + diffuse);
     const ambient = state?.ambientTemp ?? 25;
     const cellTemp = ambient + (MODULE.noct - 20) / 800 * irradiance;
-    return { g: irradiance, tc: cellTemp, ambient, elevation, incidence, shade, beamShare: clamp(incidence * (1 - .92 * shade) * clamp(gNormal / 750, 0, 1), 0, 1) };
+    return { g: irradiance, ghi: horizontal, dni: Math.max(0, attenuatedNormal), tc: cellTemp, ambient, elevation, incidence, shade, beamShare: clamp(incidence * (1 - .92 * shade) * clamp(gNormal / 750, 0, 1), 0, 1) };
   }
 
   // ------------------------------------------------------ chain simulation --
@@ -316,7 +318,8 @@
         <line x1="450" y1="313.5" x2="630" y2="313.5" stroke="rgba(160,200,240,.4)" stroke-width="1.2"/>
       </g>
       <path id="pv-tilt-arc" d="" fill="none" stroke="rgba(20,40,60,.5)" stroke-width="2" stroke-dasharray="4 4"/>
-      <text id="pv-tilt-text" class="pv-txt pv-txt-small" x="478" y="278">β = 30°</text>
+      <text id="pv-tilt-text" class="pv-txt pv-txt-small" x="410" y="284">β = 30°</text>
+      <text id="pv-gpanel-text" class="pv-txt" x="410" y="304">—</text>
       <rect class="pv-box" x="380" y="332" width="90" height="52" rx="9"/>
       <text class="pv-box-label pv-txt" x="425" y="355">DC/DC</text>
       <text id="pv-boost-name" class="pv-txt pv-txt-small" x="425" y="374">boost</text>
@@ -366,7 +369,7 @@
     el.gText = root.querySelector("#pv-g-text");
     el.clouds = CLOUD_BASES.map((_, index) => root.querySelector(`#pv-cloud-${index}`));
     el.panelRot = root.querySelector("#pv-panel-rot");
-    el.tiltArc = root.querySelector("#pv-tilt-arc"); el.tiltText = root.querySelector("#pv-tilt-text");
+    el.tiltArc = root.querySelector("#pv-tilt-arc"); el.tiltText = root.querySelector("#pv-tilt-text"); el.gPanelText = root.querySelector("#pv-gpanel-text");
     el.arrayLine = root.querySelector("#pv-array-line"); el.tempLine = root.querySelector("#pv-temp-line");
     el.vpvText = root.querySelector("#pv-vpv-text"); el.dutyText = root.querySelector("#pv-duty-text");
     el.vdcText = root.querySelector("#pv-vdc-text");
@@ -476,7 +479,7 @@
     el.sun.setAttribute("transform", `translate(${sun.x.toFixed(1)} ${sun.y.toFixed(1)})`);
     el.gText.setAttribute("x", clamp(sun.x, 96, 904).toFixed(1));
     el.gText.setAttribute("y", Math.min(sun.y + 84, HORIZON - 14).toFixed(1));
-    el.gText.textContent = `${fmt(0).format(env.g)} ${t("wpm2")}`;
+    el.gText.textContent = `${fmt(0).format(env.dni)} ${t("wpm2")}`;
     el.clouds.forEach((cloud, index) => {
       const info = cloudInfo(index);
       cloud.setAttribute("transform", `translate(${info.x.toFixed(1)} ${info.y.toFixed(1)}) scale(${info.scale.toFixed(3)})`);
@@ -488,6 +491,12 @@
     const arcRadius = 118;
     const arcAngle = tiltDegrees * Math.PI / 180;
     el.tiltArc.setAttribute("d", `M ${PANEL.x - arcRadius} ${PANEL.y} A ${arcRadius} ${arcRadius} 0 0 1 ${(PANEL.x - arcRadius * Math.cos(arcAngle)).toFixed(1)} ${(PANEL.y - arcRadius * Math.sin(arcAngle)).toFixed(1)}`);
+    const labelAngle = Math.max(tiltDegrees, 8) / 2 * Math.PI / 180;
+    const labelX = PANEL.x - 148 * Math.cos(labelAngle);
+    const labelY = PANEL.y - 148 * Math.sin(labelAngle);
+    el.tiltText.setAttribute("x", labelX.toFixed(1)); el.tiltText.setAttribute("y", (labelY + 2).toFixed(1));
+    el.gPanelText.setAttribute("x", labelX.toFixed(1)); el.gPanelText.setAttribute("y", (labelY + 22).toFixed(1));
+    el.gPanelText.textContent = `G = ${fmt(0).format(env.g)} ${t("wpm2")}`;
     const corners = panelCorners(tiltDegrees);
     el.beam.setAttribute("points", `${sun.x.toFixed(1)},${sun.y.toFixed(1)} ${corners[0].x.toFixed(1)},${corners[0].y.toFixed(1)} ${corners[1].x.toFixed(1)},${corners[1].y.toFixed(1)}`);
     el.beam.setAttribute("opacity", (0.3 * env.beamShare).toFixed(3));
@@ -813,12 +822,13 @@
     infoBandHtml() {
       const lines = (ids) => `<div class="info-lines pv-info-lines">${ids.map((id) => `<span class="math info-equation" id="${id}"></span>`).join("")}</div>`;
       return `
-        <div><span>${t("sunlight")}</span>${lines(["pv-info-g", "pv-info-tc"])}</div>
+        <div><span>${t("sunlight")}</span>${lines(["pv-info-ghi", "pv-info-g", "pv-info-tc"])}</div>
         <div><span>${t("pvArray")}</span>${lines(["pv-info-p", "pv-info-vpv", "pv-info-ipv"])}</div>
         <div><span>${t("boostCol")}</span>${lines(["pv-info-duty", "pv-info-eta"])}</div>
         <div><span>${t("gridCol")}</span>${lines(["pv-info-pac", "pv-info-fp", "pv-info-thd"])}</div>`;
     },
     infoValuesFor(result, _state, helpers) {
+      helpers.setInfoMath("pv-info-ghi", `\\mathrm{GHI}=${helpers.texNumber(result.env.ghi)}\\,\\mathrm{W/m^2}`);
       helpers.setInfoMath("pv-info-g", `G=${helpers.texNumber(result.env.g)}\\,\\mathrm{W/m^2}`);
       helpers.setInfoMath("pv-info-tc", `T_{cell}=${helpers.texNumber(result.env.tc)}\\,^{\\circ}\\mathrm{C}`);
       helpers.setInfoMath("pv-info-p", `P_{pv}=${texPower(helpers, result.pvPower)}`);
