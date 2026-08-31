@@ -864,7 +864,7 @@
         <div><span>${t("sunlight")}</span>${lines(["pv-info-ghi", "pv-info-g", "pv-info-tc"])}</div>
         <div><span>${t("pvArray")}</span>${lines(["pv-info-p", "pv-info-vpv", "pv-info-ipv"])}</div>
         <div><span>${t("boostCol")}</span>${lines(["pv-info-duty", "pv-info-eta"])}</div>
-        <div><span>${t("gridCol")}</span>${lines(["pv-info-pac", "pv-info-fp", "pv-info-thd"])}</div>`;
+        <div><span>${t("gridCol")} · 230 V</span>${lines(["pv-info-pac", "pv-info-ig", "pv-info-thd"])}</div>`;
     },
     infoValuesFor(result, _state, helpers) {
       helpers.setInfoMath("pv-info-ghi", `\\mathrm{GHI}=${helpers.texNumber(result.env.ghi)}\\,\\mathrm{W/m^2}`);
@@ -878,7 +878,7 @@
       helpers.setInfoMath("pv-info-eta", `\\eta_{MPPT}=${helpers.texNumber(tracking)}\\,\\%`);
       document.querySelector("#pv-info-eta")?.classList.toggle("warning", tracking < 96);
       helpers.setInfoMath("pv-info-pac", `P=${texPower(helpers, result.activePower)}`);
-      helpers.setInfoMath("pv-info-fp", `\\mathrm{FP}=${helpers.texNumber(result.powerFactor)}`);
+      helpers.setInfoMath("pv-info-ig", `I_{g,\\mathrm{eff}}=${helpers.texNumber(result.currentRms)}\\,\\mathrm{A}`);
       helpers.setInfoMath("pv-info-thd", `\\mathrm{THD}_i=${helpers.texNumber(result.currentThd)}\\,\\%`);
     },
     theoryHtml() {
