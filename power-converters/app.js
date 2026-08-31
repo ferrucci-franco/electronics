@@ -562,11 +562,25 @@
       plotLayouts.push({ groupIndex, top: plotTop, height: plotHeight, min: range.min, max: range.max, rightMin: rightRange?.min, rightMax: rightRange?.max });
       ctx.save(); ctx.beginPath(); ctx.rect(left, plotTop, plotWidth, plotHeight); ctx.clip();
       if (zero >= plotTop && zero <= plotTop + plotHeight) { ctx.beginPath(); ctx.moveTo(left, zero); ctx.lineTo(left + plotWidth, zero); ctx.strokeStyle = color("--scope-zero"); ctx.stroke(); }
-      [...visibleTraces].sort((a, b) => (a.layer || 0) - (b.layer || 0)).forEach((item) => { if (item.ghost) return; trace(item, item.axis === "right" && rightRange ? yAtRight : yAt); }); ctx.restore(); ctx.fillStyle = axes[groupIndex].tint ? color(axes[groupIndex].tint) : groupIndex === 1 ? color("--trace-vl") : groupIndex === 2 ? color("--trace-il") : color("--scope-text"); ctx.textAlign = "right";
+      [...visibleTraces].sort((a, b) => (a.layer || 0) - (b.layer || 0)).forEach((item) => { if (item.ghost) return; trace(item, item.axis === "right" && rightRange ? yAtRight : yAt); }); ctx.restore(); const leftTickColor = axes[groupIndex].tint ? color(axes[groupIndex].tint) : groupIndex === 1 ? color("--trace-vl") : groupIndex === 2 ? color("--trace-il") : color("--scope-text"); ctx.fillStyle = leftTickColor; ctx.textAlign = "right";
       if (!hasVisibleTrace) ctx.fillText("—", left - 8, zero + 5);
       else {
         if (Math.abs(range.rawMax - range.rawMin) < 1e-12) ctx.fillText(`0 ${axes[groupIndex].unit}`, left - 8, zero + 5);
         else { if (!axes[groupIndex].hideMax) ctx.fillText(`${axisValue(range.rawMax, axes[groupIndex].unit)} ${axes[groupIndex].unit}`, left - 8, yAt(range.rawMax) + 5); if (range.rawMin < -1e-9) ctx.fillText(`${axisValue(range.rawMin, axes[groupIndex].unit)} ${axes[groupIndex].unit}`, left - 8, yAt(range.rawMin) + 5); else ctx.fillText(`0 ${axes[groupIndex].unit}`, left - 8, Math.min(plotTop + plotHeight - 3, Math.max(plotTop + 13, zero + 5))); }
+        // Small tick values on each horizontal gridline, skipping spots taken by the extreme labels.
+        if (Math.abs(range.max - range.min) > 1e-9) {
+          const avoidYs = Math.abs(range.rawMax - range.rawMin) < 1e-12 ? [zero] : [yAt(range.rawMax), range.rawMin < -1e-9 ? yAt(range.rawMin) : Math.min(plotTop + plotHeight - 3, Math.max(plotTop + 13, zero + 5)) - 4];
+          ctx.save();
+          ctx.font = '500 11px Inter, "Segoe UI", Arial, sans-serif';
+          ctx.globalAlpha = .68;
+          ctx.fillStyle = leftTickColor;
+          for (let row = 0; row <= 5; row += 1) {
+            const gridY = plotTop + row / 5 * plotHeight;
+            if (avoidYs.some((avoidY) => Math.abs(gridY - avoidY) < 13)) continue;
+            ctx.fillText(axisValue(range.max - row / 5 * (range.max - range.min), axes[groupIndex].unit), left - 8, gridY + 4);
+          }
+          ctx.restore();
+        }
         if (rightRange && !axes[groupIndex].hideRightAxis) { ctx.fillStyle = color(rightTraces.at(-1)?.color || "--trace-vr"); ctx.textAlign = "left"; if (Math.abs(rightRange.rawMax - rightRange.rawMin) < 1e-12) ctx.fillText(`0 ${axes[groupIndex].rightUnit}`, left + plotWidth + 8, yAtRight(0) + 5); else { ctx.fillText(`${axisValue(rightRange.rawMax, axes[groupIndex].rightUnit)} ${axes[groupIndex].rightUnit}`, left + plotWidth + 8, yAtRight(rightRange.rawMax) + 5); ctx.fillText(`${axisValue(rightRange.rawMin, axes[groupIndex].rightUnit)} ${axes[groupIndex].rightUnit}`, left + plotWidth + 8, yAtRight(rightRange.rawMin) + 5); } }
       }
       const marksModel = activeModel();

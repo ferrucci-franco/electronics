@@ -280,6 +280,7 @@
         .pv-box { fill: rgba(255,253,248,.92); stroke: #33566f; stroke-width: 2.6; }
         .pv-box-label { font-size: 18px; font-weight: 850; fill: #16324a; }
         .pv-wire { stroke: #3d5266; stroke-width: 3; fill: none; stroke-linecap: round; }
+        .pv-flow-wire { stroke: #f2c230; }
       </style>
       <rect id="pv-sky" x="-500" y="-320" width="2000" height="${HORIZON + 320}" fill="url(#pv-sky-gradient)"/>
       <defs>
@@ -750,6 +751,8 @@
       { key: "iGrid", label: "i<sub>g</sub>", color: "--trace-vr", width: 3 },
       { key: "iBest", label: "î<sub>g</sub> (STC)", color: "--scope-text", dash: [6, 6], width: 1.7, layer: -2 },
       { key: "iBestNeg", legendKey: "iBest", legendHidden: true, label: "", color: "--scope-text", dash: [6, 6], width: 1.7, layer: -2 },
+      { key: "iPad", legendHidden: true, ghost: true, label: "", color: "--scope-text" },
+      { key: "iPadNeg", legendHidden: true, ghost: true, label: "", color: "--scope-text" },
       { key: "vPad", legendHidden: true, ghost: true, axis: "right", label: "", color: "--scope-text" },
       { key: "vPadNeg", legendHidden: true, ghost: true, axis: "right", label: "", color: "--scope-text" },
       { key: "vGrid", label: "v<sub>g</sub>", color: "--trace-vin", axis: "right", width: 3, layer: -1 },
@@ -777,7 +780,7 @@
     axesFor(_application, isAdvanced = false) {
       const dcAxis = { label: text("DC voltages", "tensions DC", "tensiones DC"), unit: "V" };
       const currentAxis = { label: text("DC currents", "courants DC", "corrientes DC"), unit: "A", tint: "--trace-il" };
-      const acAxis = { label: text("AC grid", "réseau AC", "red AC"), unit: "A", rightUnit: "V", hideRightAxis: true, tint: "--scope-text" };
+      const acAxis = { label: text("AC grid", "réseau AC", "red AC"), unit: "A", rightUnit: "V", tint: "--scope-text" };
       return isAdvanced ? [dcAxis, currentAxis, acAxis] : [dcAxis, acAxis, acAxis];
     },
     axisMarksFor(groupIndex, isAdvanced = false) {
@@ -808,10 +811,11 @@
       op.p = op.v * op.i;
       const sim = simulateChain(state, op, array);
       // Plafond d'amplitude : courant crête qui correspondrait à la puissance STC du champ.
-      // Les traces fantômes vPad donnent de la marge à l'axe droit pour que v_g
-      // reste visuellement sous le plafond STC.
+      // Traces fantômes : iPad écrase l'échelle des courants et vPad dilate v_g,
+      // pour que la tension culmine nettement au-dessus des courants.
       const iBestAmp = Math.SQRT2 * stc.pmp / 230;
-      sim.points.forEach((point) => { point.iBest = iBestAmp; point.iBestNeg = -iBestAmp; point.vPad = 410; point.vPadNeg = -410; });
+      const iPadValue = iBestAmp * 1.5;
+      sim.points.forEach((point) => { point.iBest = iBestAmp; point.iBestNeg = -iBestAmp; point.iPad = iPadValue; point.iPadNeg = -iPadValue; point.vPad = 355; point.vPadNeg = -355; });
       const outcome = { ...sim, env, ns, np, curve, stc, mpp, op, vocArr: array.voc, iscArr: array.isc };
       // Mémorisé avant le tracé : les repères d'axe (axisMarksFor) lisent lastResult.
       lastResult = outcome;
