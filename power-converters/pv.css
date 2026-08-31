@@ -29,6 +29,11 @@ body.dark-theme .pv-hud-card, body.dark-theme .pv-play-button { border-color: #9
 body.dark-theme .pv-play-button:hover { border-color: #55d2c6; color: #a4eee6; }
 body.dark-theme .pv-play-button[aria-pressed="true"] { background: var(--teal); color: #ffffff; }
 
+/* Topologie PV : la rangée « avancée » se place au-dessus de la scène pour
+   que l'animation ne bouge pas quand on active le mode avancé. */
+.circuit-content:has(.pv-scene) .controls-top { order: -2; }
+.circuit-content:has(.pv-scene) .controls-bottom { order: -1; }
+
 /* Bandeau d'infos : lignes compactes pour trois équations par colonne. */
 .lc-info .pv-info-lines { gap: 4px; }
 .lc-info .pv-info-lines .info-equation { min-height: 1.28em; }
