@@ -33,6 +33,9 @@ body.dark-theme .pv-play-button[aria-pressed="true"] { background: var(--teal); 
    que l'animation ne bouge pas quand on active le mode avancé. */
 .circuit-content:has(.pv-scene) .controls-top { order: -2; }
 .circuit-content:has(.pv-scene) .controls-bottom { order: -1; }
+@media (min-width: 1101px) {
+  .circuit-content:has(.pv-scene) .control { height: clamp(82px, 10vh, 98px); }
+}
 
 /* Bandeau d'infos : lignes compactes pour trois équations par colonne. */
 .lc-info .pv-info-lines { gap: 4px; }

@@ -742,8 +742,10 @@
     defaults: { tiltAngle: 30, panelsPerString: 6, strings: 2, ambientTemp: 25, dcVoltage: 400, busCapacitance: 1500 },
     controls,
     controlsFor(_application, options = {}) {
-      if (!options.advanced) return { top: controls.top, bottom: [] };
+      // Toujours deux rangées de cartes : la scène garde la même taille
+      // en mode simple (2 + 2) et en mode avancé (3 + 2).
       const ambient = controls.top.find((item) => item.key === "ambientTemp");
+      if (!options.advanced) return { top: controls.top.slice(0, 2), bottom: controls.top.slice(2) };
       return { top: controls.top.filter((item) => item.key !== "ambientTemp"), bottom: [ambient, ...controls.bottom] };
     },
     diagram: { type: "inline", aria: text("Interactive PV-to-grid scene", "Scène interactive PV vers réseau", "Escena interactiva PV a red") },

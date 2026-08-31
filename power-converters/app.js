@@ -8,7 +8,7 @@
       documentTitle: "Power Converter Simulator", metaDescription: "Interactive steady-state laboratory for power converters.", workspace: "Power converter simulator",
       topology: "Topology", topologySelectorAria: "Choose a converter topology", topologyDialogKicker: "Power conversion laboratory", chooseTopology: "Choose a topology", closeTopology: "Close topology selector", available: "Available", comingSoon: "Coming soon",
       languageSelector: "Language", themeDark: "Switch to dark theme", themeLight: "Switch to light theme", advanced: "Advanced", reset: "Reset", upperSettings: "Upper controls", lowerSettings: "Lower controls", commutation: "Switching", commutationAria: "Choose the switching implementation", synchronousSwitch: "Synchronous", switchAndDiode: "Switch + diode", hideTrace: "Hide trace", showTrace: "Show trace",
-      legend: "Legend", advancedLegend: "Advanced legend", scopeAria: "Steady-state converter waveforms", zoomAria: "Drag with the left button to zoom. Double-click or double-tap to reset the zoom.", mean: "Average", ripple: "Peak-to-peak ripple", period: "Period", currentAverage: "Average current", currentRipple: "Current ripple", currentRange: "Current range", currentRms: "RMS current", voltageRms: "Fundamental RMS voltage", phaseShift: "Phase shift", switchingRatio: "Switching ratio",
+      legend: "Legend", advancedLegend: "Advanced legend", scopeAria: "Steady-state converter waveforms", zoomAria: "Drag with the left button to zoom and with the right button to pan. Double-click or double-tap to reset the zoom.", mean: "Average", ripple: "Peak-to-peak ripple", period: "Period", currentAverage: "Average current", currentRipple: "Current ripple", currentRange: "Current range", currentRms: "RMS current", voltageRms: "Fundamental RMS voltage", phaseShift: "Phase shift", switchingRatio: "Switching ratio",
       outputVoltage: "Output voltage", conductionMode: "Conduction mode", minimumCurrent: "Minimum current", fundamentalFrequency: "Fundamental frequency", formula: "Formula", ratio: "Ratio", resonanceFrequency: "LC circuit resonant frequency", conversionLaw: "Conversion law", conversionLawCcm: "Conversion law · CCM", voltages: "Voltages", lcFilter: "LC filter", ripples: "Ripples",
       theoryButtonAria: "Open more information", theoryOpen: "More info", theoryKicker: "Electrical analysis", theoryTitle: "Steady state", closeTheory: "Close", balanceTitle: "Balances", numericalResidual: "Numerical residual", rippleTheoryTitle: "Ripple approximation", fundamentalTitle: "Fundamental component", loadTitle: "Series R–L load", simulation: "Simulation", approximation: "Approximation", relativeError: "Relative error", loadType: "Load", seriesRl: "Series resistance and inductance", criticalInductanceRatio: "Critical inductance ratio",
       approximationNote: "These approximations assume low ripple and a switching frequency well above the natural dynamics.", synchronousNote: "The synchronous switch always provides a current path; negative inductor current is therefore possible.", diodeNote: "The diode blocks reverse current, so the model can enter CCM or DCM. V<sub>D</sub> is measured from anode to cathode; ripple formulas are CCM estimates.", hBridgeNote: "The bridge is modeled with ideal complementary switches.", schematicPending: "Circuit SVG placeholder", schematicTomorrow: "The simulation is active. The final circuit drawing can be inserted here without changing the model.", time: "Time", voltage: "voltage", currentAxis: "current",
@@ -19,7 +19,7 @@
       documentTitle: "Simulateur de convertisseurs", metaDescription: "Laboratoire interactif de convertisseurs de puissance en régime permanent.", workspace: "Simulateur de convertisseurs de puissance",
       topology: "Topologie", topologySelectorAria: "Choisir une topologie de convertisseur", topologyDialogKicker: "Laboratoire de conversion", chooseTopology: "Choisir une topologie", closeTopology: "Fermer le sélecteur de topologie", available: "Disponible", comingSoon: "Bientôt disponible",
       languageSelector: "Langue", themeDark: "Activer le thème sombre", themeLight: "Activer le thème clair", advanced: "Avancé", reset: "Réinitialiser", upperSettings: "Réglages supérieurs", lowerSettings: "Réglages inférieurs", commutation: "Commutation", commutationAria: "Choisir la réalisation de la commutation", synchronousSwitch: "Synchrone", switchAndDiode: "Interrupteur + diode", hideTrace: "Masquer la trace", showTrace: "Afficher la trace",
-      legend: "Légende", advancedLegend: "Légende avancée", scopeAria: "Formes d’onde du convertisseur en régime permanent", zoomAria: "Faites glisser avec le bouton gauche pour zoomer. Double-cliquez ou touchez deux fois pour réinitialiser le zoom.", mean: "Moyenne", ripple: "Ondulation crête à crête", period: "Période", currentAverage: "Courant moyen", currentRipple: "Ondulation du courant", currentRange: "Plage du courant", currentRms: "Courant efficace", voltageRms: "Tension fondamentale efficace", phaseShift: "Déphasage", switchingRatio: "Rapport de fréquences",
+      legend: "Légende", advancedLegend: "Légende avancée", scopeAria: "Formes d’onde du convertisseur en régime permanent", zoomAria: "Faites glisser avec le bouton gauche pour zoomer et avec le bouton droit pour déplacer la vue. Double-cliquez ou touchez deux fois pour réinitialiser le zoom.", mean: "Moyenne", ripple: "Ondulation crête à crête", period: "Période", currentAverage: "Courant moyen", currentRipple: "Ondulation du courant", currentRange: "Plage du courant", currentRms: "Courant efficace", voltageRms: "Tension fondamentale efficace", phaseShift: "Déphasage", switchingRatio: "Rapport de fréquences",
       outputVoltage: "Tension de sortie", conductionMode: "Mode de conduction", minimumCurrent: "Courant minimal", fundamentalFrequency: "Fréquence fondamentale", formula: "Formule", ratio: "Rapport", resonanceFrequency: "Fréquence de résonance du circuit LC", conversionLaw: "Loi de conversion", conversionLawCcm: "Loi de conversion · CCM", voltages: "Tensions", lcFilter: "Filtre LC", ripples: "Ondulations",
       theoryButtonAria: "Ouvrir les informations complémentaires", theoryOpen: "Plus d’infos", theoryKicker: "Analyse électrique", theoryTitle: "Régime permanent", closeTheory: "Fermer", balanceTitle: "Équilibres", numericalResidual: "Résidu numérique", rippleTheoryTitle: "Approximation des ondulations", fundamentalTitle: "Composante fondamentale", loadTitle: "Charge R–L série", simulation: "Simulation", approximation: "Approximation", relativeError: "Écart relatif", loadType: "Charge", seriesRl: "Résistance et inductance en série", criticalInductanceRatio: "Rapport d’inductance critique",
       approximationNote: "Ces approximations supposent une faible ondulation et une fréquence de découpage nettement supérieure à la dynamique naturelle.", synchronousNote: "L’interrupteur synchrone offre toujours un chemin au courant ; le courant de l’inductance peut donc devenir négatif.", diodeNote: "La diode bloque le courant inverse : le modèle peut être en CCM ou DCM. V<sub>D</sub> est mesurée de l’anode vers la cathode ; les formules d’ondulation sont des estimations CCM.", hBridgeNote: "Le pont est modélisé avec des interrupteurs complémentaires idéaux.", schematicPending: "Emplacement du SVG du circuit", schematicTomorrow: "La simulation est active. Le dessin définitif pourra être inséré ici sans modifier le modèle.", time: "Temps", voltage: "tension", currentAxis: "courant",
@@ -30,7 +30,7 @@
       documentTitle: "Simulador de convertidores", metaDescription: "Laboratorio interactivo de convertidores de potencia en régimen permanente.", workspace: "Simulador de convertidores de potencia",
       topology: "Topología", topologySelectorAria: "Elegir una topología de convertidor", topologyDialogKicker: "Laboratorio de conversión", chooseTopology: "Elegir una topología", closeTopology: "Cerrar el selector de topología", available: "Disponible", comingSoon: "Próximamente",
       languageSelector: "Idioma", themeDark: "Activar el tema oscuro", themeLight: "Activar el tema claro", advanced: "Avanzado", reset: "Reinicializar", upperSettings: "Controles superiores", lowerSettings: "Controles inferiores", commutation: "Conmutación", commutationAria: "Elegir la implementación de la conmutación", synchronousSwitch: "Síncrono", switchAndDiode: "Interruptor + diodo", hideTrace: "Ocultar traza", showTrace: "Mostrar traza",
-      legend: "Leyenda", advancedLegend: "Leyenda avanzada", scopeAria: "Formas de onda del convertidor en régimen permanente", zoomAria: "Arrastre con el botón izquierdo para ampliar. Haga doble clic o toque dos veces para restablecer el zoom.", mean: "Promedio", ripple: "Ondulación pico a pico", period: "Período", currentAverage: "Corriente media", currentRipple: "Ondulación de corriente", currentRange: "Rango de corriente", currentRms: "Corriente eficaz", voltageRms: "Tensión fundamental eficaz", phaseShift: "Desfase", switchingRatio: "Relación de frecuencias",
+      legend: "Leyenda", advancedLegend: "Leyenda avanzada", scopeAria: "Formas de onda del convertidor en régimen permanente", zoomAria: "Arrastre con el botón izquierdo para ampliar y con el derecho para desplazar la vista. Haga doble clic o toque dos veces para restablecer el zoom.", mean: "Promedio", ripple: "Ondulación pico a pico", period: "Período", currentAverage: "Corriente media", currentRipple: "Ondulación de corriente", currentRange: "Rango de corriente", currentRms: "Corriente eficaz", voltageRms: "Tensión fundamental eficaz", phaseShift: "Desfase", switchingRatio: "Relación de frecuencias",
       outputVoltage: "Tensión de salida", conductionMode: "Modo de conducción", minimumCurrent: "Corriente mínima", fundamentalFrequency: "Frecuencia fundamental", formula: "Fórmula", ratio: "Relación", resonanceFrequency: "Frecuencia de resonancia del circuito LC", conversionLaw: "Ley de conversión", conversionLawCcm: "Ley de conversión · CCM", voltages: "Tensiones", lcFilter: "Filtro LC", ripples: "Ondulaciones",
       theoryButtonAria: "Abrir más información", theoryOpen: "Más info", theoryKicker: "Análisis eléctrico", theoryTitle: "Régimen permanente", closeTheory: "Cerrar", balanceTitle: "Equilibrios", numericalResidual: "Residuo numérico", rippleTheoryTitle: "Aproximación de las ondulaciones", fundamentalTitle: "Componente fundamental", loadTitle: "Carga R–L serie", simulation: "Simulación", approximation: "Aproximación", relativeError: "Error relativo", loadType: "Carga", seriesRl: "Resistencia e inductancia en serie", criticalInductanceRatio: "Relación de inductancia crítica",
       approximationNote: "Estas aproximaciones suponen una ondulación pequeña y una frecuencia de conmutación muy superior a la dinámica natural.", synchronousNote: "El interruptor síncrono siempre ofrece un camino para la corriente; por eso la corriente de la inductancia puede hacerse negativa.", diodeNote: "El diodo bloquea la corriente inversa: el modelo puede estar en CCM o DCM. V<sub>D</sub> se mide del ánodo al cátodo; las fórmulas de ondulación son estimaciones CCM.", hBridgeNote: "El puente se modela con interruptores complementarios ideales.", schematicPending: "Espacio para el SVG del circuito", schematicTomorrow: "La simulación está activa. El dibujo definitivo podrá insertarse aquí sin modificar el modelo.", time: "Tiempo", voltage: "tensión", currentAxis: "corriente",
@@ -153,6 +153,18 @@
   function texVoltage(value) { const v = Math.abs(value) < 1e-12 ? 0 : value; return Math.abs(v) < 1 ? `${texNumber(v * 1000)}\\,\\mathrm{mV}` : `${texNumber(v)}\\,\\mathrm{V}`; }
   function setInfoMath(id, expression) { renderTex(document.querySelector(`#${id}`), `\\displaystyle ${expression}`); }
   function displayControl(def, value) { return `${number.format(value * (def.scale || 1))} ${def.unit}`; }
+  const outputMeasure = document.createElement("canvas").getContext("2d");
+  function reserveOutputWidth(card, def) {
+    const output = card.querySelector("output");
+    if (!output) return;
+    const style = getComputedStyle(output);
+    outputMeasure.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+    const step = Number(def.step) || 0;
+    const candidates = [Number(def.min), Number(def.max), Number(def.min) + step, Number(def.max) - step];
+    const widest = Math.max(...candidates.map((value) => outputMeasure.measureText(displayControl(def, value)).width));
+    output.style.minWidth = `${Math.ceil(widest) + 2}px`;
+    output.style.textAlign = "right";
+  }
   function updateRange(input) {
     const value = (Number(input.value) - Number(input.min)) / (Number(input.max) - Number(input.min)) * 100;
     input.style.setProperty("--range-progress", `${value}%`);
@@ -192,7 +204,7 @@
         card.classList.toggle("advanced-control", Boolean(def.advanced));
         card.hidden = Boolean(def.advanced && !advanced);
         card.innerHTML = `<span class="control-copy"><b>${def.symbol}</b><small>${localize(def.label)}</small></span><output>${displayControl(def, value)}</output><input data-key="${def.key}" type="range" min="${def.min}" max="${def.max}" step="${def.step}" value="${value}" aria-label="${localize(def.aria)}" />`;
-        const input = card.querySelector("input"); input._definition = def; updateRange(input); bindControl(card, input);
+        const input = card.querySelector("input"); input._definition = def; updateRange(input); bindControl(card, input); reserveOutputWidth(card, def);
       });
       slots[0].parentElement.hidden = !rowDefinitions.some((def) => !def.advanced || advanced);
     };
@@ -608,7 +620,19 @@
     if (!plotView) return;
     const point = canvasPoint(event); const plot = plotAtPosition(point.x, point.y);
     if (!plot) return;
-    if (event.button === 2) { event.preventDefault(); return; }
+    if (event.button === 2) {
+      const zoom = activeZoom();
+      panDrag = {
+        pointerId: event.pointerId, groupIndex: plot.groupIndex, x0: point.x, y0: point.y,
+        x: zoom.x ? { ...zoom.x } : { min: 0, max: 1 },
+        y: zoom.y[plot.groupIndex] ? { ...zoom.y[plot.groupIndex] } : { min: plot.min, max: plot.max },
+        yRight: Number.isFinite(plot.rightMin) && Number.isFinite(plot.rightMax) ? { min: plot.rightMin, max: plot.rightMax } : null,
+      };
+      canvas.classList.add("panning");
+      event.preventDefault();
+      try { canvas.setPointerCapture(event.pointerId); } catch (_error) {}
+      return;
+    }
     if (event.button !== 0) return;
     zoomDrag = { pointerId: event.pointerId, groupIndex: plot.groupIndex, x0: point.x, y0: point.y, x1: point.x, y1: point.y };
     event.preventDefault();
