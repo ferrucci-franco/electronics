@@ -125,7 +125,7 @@
     if (typeof model.axesFor === "function") return model.axesFor(bridgeMode.application, advanced).map((axis) => ({ ...axis, label: localize(axis.label), rightLabel: localize(axis.rightLabel) }));
     return [{ label: tr().voltage, unit: "V" }, { label: tr().voltage, unit: "V" }, { label: tr().currentAxis, unit: "A" }];
   };
-  const traceIsVisible = (trace) => !hiddenTraces[currentTopology]?.has(trace.key);
+  const traceIsVisible = (trace) => !hiddenTraces[currentTopology]?.has(trace.legendKey || trace.key);
   const activeZoom = () => zoomStates[currentTopology];
   const localize = (value) => value?.[language] || value?.fr || value || "";
   const setText = (id, value) => { const element = document.querySelector(`#${id}`); if (element) element.textContent = value; };
@@ -313,6 +313,7 @@
     const legend = document.createElement("div"); legend.className = `legend ${classes}`.trim(); legend.hidden = hidden;
     legend.setAttribute("aria-label", classes ? tr().advancedLegend : tr().legend);
     traces.forEach((trace) => {
+      if (trace.legendHidden) return;
       const visible = traceIsVisible(trace);
       const item = document.createElement("button"); const line = document.createElement("i"); const label = document.createElement("b");
       item.type = "button"; item.className = "legend-trace"; item.dataset.traceKey = trace.key; item.setAttribute("aria-pressed", String(visible));
@@ -552,12 +553,27 @@
       plotLayouts.push({ groupIndex, top: plotTop, height: plotHeight, min: range.min, max: range.max, rightMin: rightRange?.min, rightMax: rightRange?.max });
       ctx.save(); ctx.beginPath(); ctx.rect(left, plotTop, plotWidth, plotHeight); ctx.clip();
       if (zero >= plotTop && zero <= plotTop + plotHeight) { ctx.beginPath(); ctx.moveTo(left, zero); ctx.lineTo(left + plotWidth, zero); ctx.strokeStyle = color("--scope-zero"); ctx.stroke(); }
-      [...visibleTraces].sort((a, b) => (a.layer || 0) - (b.layer || 0)).forEach((item) => trace(item, item.axis === "right" && rightRange ? yAtRight : yAt)); ctx.restore(); ctx.fillStyle = groupIndex === 1 ? color("--trace-vl") : groupIndex === 2 ? color("--trace-il") : color("--scope-text"); ctx.textAlign = "right";
+      [...visibleTraces].sort((a, b) => (a.layer || 0) - (b.layer || 0)).forEach((item) => trace(item, item.axis === "right" && rightRange ? yAtRight : yAt)); ctx.restore(); ctx.fillStyle = axes[groupIndex].tint ? color(axes[groupIndex].tint) : groupIndex === 1 ? color("--trace-vl") : groupIndex === 2 ? color("--trace-il") : color("--scope-text"); ctx.textAlign = "right";
       if (!hasVisibleTrace) ctx.fillText("—", left - 8, zero + 5);
       else {
         if (Math.abs(range.rawMax - range.rawMin) < 1e-12) ctx.fillText(`0 ${axes[groupIndex].unit}`, left - 8, zero + 5);
         else { ctx.fillText(`${axisValue(range.rawMax, axes[groupIndex].unit)} ${axes[groupIndex].unit}`, left - 8, yAt(range.rawMax) + 5); if (range.rawMin < -1e-9) ctx.fillText(`${axisValue(range.rawMin, axes[groupIndex].unit)} ${axes[groupIndex].unit}`, left - 8, yAt(range.rawMin) + 5); else ctx.fillText(`0 ${axes[groupIndex].unit}`, left - 8, Math.min(plotTop + plotHeight - 3, Math.max(plotTop + 13, zero + 5))); }
         if (rightRange) { ctx.fillStyle = color(rightTraces.at(-1)?.color || "--trace-vr"); ctx.textAlign = "left"; if (Math.abs(rightRange.rawMax - rightRange.rawMin) < 1e-12) ctx.fillText(`0 ${axes[groupIndex].rightUnit}`, left + plotWidth + 8, yAtRight(0) + 5); else { ctx.fillText(`${axisValue(rightRange.rawMax, axes[groupIndex].rightUnit)} ${axes[groupIndex].rightUnit}`, left + plotWidth + 8, yAtRight(rightRange.rawMax) + 5); ctx.fillText(`${axisValue(rightRange.rawMin, axes[groupIndex].rightUnit)} ${axes[groupIndex].rightUnit}`, left + plotWidth + 8, yAtRight(rightRange.rawMin) + 5); } }
+      }
+      const marksModel = activeModel();
+      if (!rightRange && typeof marksModel.axisMarksFor === "function") {
+        let previousY = null;
+        ctx.textAlign = "left";
+        (marksModel.axisMarksFor(groupIndex) || []).forEach((mark) => {
+          if (!Number.isFinite(mark.value)) return;
+          let markY = yAt(mark.value);
+          if (markY < plotTop + 10 || markY > plotTop + plotHeight - 4) return;
+          if (previousY !== null && Math.abs(markY - previousY) < 14) markY = previousY + 14;
+          previousY = markY;
+          ctx.fillStyle = color(mark.color || "--scope-text");
+          ctx.fillRect(left + plotWidth + 1, markY - 1, 6, 2);
+          ctx.fillText(`${axisValue(mark.value, axes[groupIndex].unit)} ${axes[groupIndex].unit}`, left + plotWidth + 9, markY + 4);
+        });
       }
     });
     plotView = { left, right: left + plotWidth, plotWidth, duration, xMinFraction, xMaxFraction, xMinTime, xMaxTime, plots: plotLayouts };
@@ -566,7 +582,7 @@
     const plotBottom = tops.at(-1) + plotHeight; ctx.fillStyle = color("--scope-text"); ctx.textAlign = "left"; ctx.fillText(xMinTime <= 1e-15 ? "0" : displayTime(xMinTime), left, plotBottom + 25); ctx.textAlign = "right"; ctx.fillText(displayTime(xMaxTime), left + plotWidth, plotBottom + 25); ctx.textAlign = "center"; ctx.fillText(tr().time, left + plotWidth / 2, plotBottom + 25);
     const labelInset = width < 520 ? 12 : 24;
     const axisLabel = (value) => value ? value.charAt(0).toUpperCase() + value.slice(1) : value;
-    groups.forEach((_, index) => { ctx.save(); ctx.translate(labelInset, tops[index] + plotHeight / 2); ctx.rotate(-Math.PI / 2); ctx.fillStyle = index === 1 ? color("--trace-vl") : index === 2 ? color("--trace-il") : color("--scope-text"); ctx.fillText(`${axisLabel(axes[index].label)} (${axes[index].unit})`, 0, 0); ctx.restore(); if (axes[index].rightLabel) { ctx.save(); ctx.translate(width - labelInset, tops[index] + plotHeight / 2); ctx.rotate(Math.PI / 2); ctx.fillStyle = color(groups[index].filter((item) => item.axis === "right").at(-1)?.color || "--trace-vr"); ctx.fillText(`${axisLabel(axes[index].rightLabel)} (${axes[index].rightUnit})`, 0, 0); ctx.restore(); } });
+    groups.forEach((_, index) => { ctx.save(); ctx.translate(labelInset, tops[index] + plotHeight / 2); ctx.rotate(-Math.PI / 2); ctx.fillStyle = axes[index].tint ? color(axes[index].tint) : index === 1 ? color("--trace-vl") : index === 2 ? color("--trace-il") : color("--scope-text"); ctx.fillText(`${axisLabel(axes[index].label)} (${axes[index].unit})`, 0, 0); ctx.restore(); if (axes[index].rightLabel) { ctx.save(); ctx.translate(width - labelInset, tops[index] + plotHeight / 2); ctx.rotate(Math.PI / 2); ctx.fillStyle = color(groups[index].filter((item) => item.axis === "right").at(-1)?.color || "--trace-vr"); ctx.fillText(`${axisLabel(axes[index].rightLabel)} (${axes[index].rightUnit})`, 0, 0); ctx.restore(); } });
   }
 
   let modelUpdateQueued = false;

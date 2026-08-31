@@ -11,6 +11,9 @@
 @keyframes pv-sun-spin { to { transform: rotate(360deg); } }
 .pv-cloud { cursor: grab; transition: opacity 260ms ease; }
 .pv-cloud.pv-dragging { cursor: grabbing; }
+#pv-panel-rot { cursor: grab; }
+#pv-panel-rot.pv-dragging { cursor: grabbing; }
+.workspace:has(.pv-scene) .measurements { display: none; }
 .pv-flow-wire { stroke-dasharray: 10 12; animation: pv-flow 1.4s linear infinite; }
 .pv-flow-paused .pv-flow-wire, .pv-flow-wire.paused { animation-play-state: paused; opacity: .25; }
 @keyframes pv-flow { to { stroke-dashoffset: -88; } }

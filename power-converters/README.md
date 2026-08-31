@@ -38,7 +38,7 @@ La scène solaire est interactive :
 - faites glisser le soleil le long de sa trajectoire est-ouest (l’éclairement suit la hauteur du soleil via la masse d’air et l’angle d’incidence) ;
 - faites glisser les nuages, ou réglez la nébulosité avec le curseur : un nuage placé devant le soleil occulte le faisceau direct ;
 - le bouton « Faire défiler la journée » anime le passage du soleil ;
-- l’inclinaison du panneau, la température ambiante et la taille du champ (panneaux par string, strings en parallèle) se règlent par les curseurs.
+- l’inclinaison du panneau se règle au curseur ou en faisant glisser le panneau lui-même ; la température ambiante et la taille du champ (panneaux par string, strings en parallèle) se règlent par les curseurs.
 
 Les courbes I–V et P–V du champ sont tracées en direct (la référence STC reste en pointillé). En mode MPPT le point de fonctionnement suit le point de puissance maximale ; en mode manuel, faites-le glisser le long de la courbe pour visualiser la puissance perdue hors du MPP.
 

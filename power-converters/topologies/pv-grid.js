@@ -171,7 +171,7 @@
     const gridRms = 230; const gridFrequency = 50; const omega = 2 * Math.PI * gridFrequency;
     const fsBoost = 20000; const fsInverter = 10000;
     const boostInductance = 2.5e-3; const boostResistance = .25; const pvCapacitance = 200e-6;
-    const gridInductance = 4e-3; const gridResistance = .3;
+    const gridInductance = (state.gridInductance || 4) / 1000; const gridResistance = .3;
     const busCapacitance = (state.busCapacitance || 1500) / 1e6;
     const busReference = state.dcVoltage || 400;
     const duty = clamp(1 - operating.v / busReference, .02, .97);
@@ -202,7 +202,7 @@
       vPv = clamp(vPv + dt * (iPv - iL) / pvCapacitance, 0, busReference * 1.05);
       vDc = Math.max(1, vDc + dt * (offShare * iL - bridgeState * iG) / busCapacitance);
       vDcFiltered += dt / filterTau * (vDc - vDcFiltered);
-      if (record) record({ t: time - settle, vGrid: gridVoltage, iGrid: iG, iRef: reference, vPv, vDc, iL, iPv });
+      if (record) record({ t: time - settle, vGrid: gridVoltage, iGrid: iG, iRef: reference, vPv, vDc, iL, iPv, iOut: offShare * iL });
     };
     const settleSteps = Math.round(settle / dt);
     for (let index = 0; index < settleSteps; index += 1) stepOnce(index * dt, null);
@@ -219,7 +219,6 @@
     const vDcValues = points.map((point) => point.vDc);
     const vDcMean = mean(points, "vDc");
     const vPvMean = mean(points, "vPv");
-    points.forEach((point) => { point.vPvAvg = vPvMean; point.vDcAvg = vDcMean; });
     const rippleSlice = points.filter((point) => point.t >= .0199 && point.t <= .0199 + 3 / fsBoost);
     const iLValues = rippleSlice.map((point) => point.iL);
     return {
@@ -302,7 +301,7 @@
       <text id="pv-g-text" class="pv-txt" x="0" y="0">— W/m²</text>
       <rect id="pv-ground" x="-500" y="${HORIZON}" width="2000" height="440" fill="#7fb46a"/>
       <ellipse cx="820" cy="${HORIZON + 6}" rx="330" ry="26" fill="rgba(0,0,0,.06)"/>
-      <g id="pv-pylon" stroke="#46647e" stroke-width="3.4" fill="none" stroke-linecap="round">
+      <g id="pv-pylon" transform="translate(18 0)" stroke="#46647e" stroke-width="3.4" fill="none" stroke-linecap="round">
         <line x1="96" y1="400" x2="112" y2="248"/><line x1="132" y1="400" x2="116" y2="248"/>
         <line x1="100" y1="365" x2="128" y2="365"/><line x1="103" y1="330" x2="125" y2="330"/><line x1="106" y1="296" x2="122" y2="296"/><line x1="109" y1="264" x2="119" y2="264"/>
         <line x1="100" y1="365" x2="125" y2="330"/><line x1="128" y1="365" x2="103" y2="330"/><line x1="103" y1="330" x2="122" y2="296"/><line x1="125" y1="330" x2="106" y2="296"/>
@@ -312,6 +311,7 @@
       </g>
       <g id="pv-panel-stand" fill="#5a6b7c"><rect x="534" y="330" width="12" height="72" rx="3"/><rect x="506" y="398" width="68" height="8" rx="4"/></g>
       <g id="pv-panel-rot">
+        <rect x="436" y="292" width="208" height="46" fill="rgba(0,0,0,0)"/>
         <rect x="450" y="306" width="180" height="15" rx="3" fill="#1d3f66" stroke="#0e2740" stroke-width="2.4"/>
         <g stroke="rgba(160,200,240,.55)" stroke-width="1.4">
           <line x1="472" y1="306" x2="472" y2="321"/><line x1="494" y1="306" x2="494" y2="321"/><line x1="516" y1="306" x2="516" y2="321"/><line x1="538" y1="306" x2="538" y2="321"/><line x1="560" y1="306" x2="560" y2="321"/><line x1="582" y1="306" x2="582" y2="321"/><line x1="604" y1="306" x2="604" y2="321"/>
@@ -327,8 +327,8 @@
       <rect class="pv-box" x="235" y="332" width="90" height="52" rx="9"/>
       <text class="pv-box-label pv-txt" x="280" y="355">DC/AC</text>
       <text id="pv-bridge-name" class="pv-txt pv-txt-small" x="280" y="374">pont en H</text>
-      <path class="pv-wire" d="M 534 358 H 470 M 380 358 H 325 M 235 358 H 182 Q 156 356 148 267"/>
-      <path id="pv-flow" class="pv-wire pv-flow-wire" d="M 534 358 H 470 M 380 358 H 325 M 235 358 H 182 Q 156 356 148 267" stroke="#ffb253" stroke-width="3.6"/>
+      <path class="pv-wire" d="M 534 358 H 470 M 380 358 H 325 M 235 358 H 196 Q 172 356 166 267"/>
+      <path id="pv-flow" class="pv-wire pv-flow-wire" d="M 534 358 H 470 M 380 358 H 325 M 235 358 H 196 Q 172 356 166 267" stroke="#ffb253" stroke-width="3.6"/>
       <text id="pv-array-line" class="pv-txt" x="660" y="428">—</text>
       <text id="pv-temp-line" class="pv-txt pv-txt-small" x="660" y="450">—</text>
       <text id="pv-vpv-text" class="pv-txt" x="412" y="428">—</text>
@@ -397,6 +397,7 @@
     svg.addEventListener("pointerdown", (event) => {
       const target = event.target;
       if (target === el.sunHit || el.sun.contains(target)) { dragState.mode = "sun"; setPlaying(false); el.sun.classList.add("pv-dragging"); }
+      else if (el.panelRot.contains(target)) { dragState.mode = "tilt"; el.panelRot.classList.add("pv-dragging"); }
       else {
         const cloudIndex = el.clouds.findIndex((cloud) => cloud.contains(target));
         if (cloudIndex < 0) return;
@@ -410,6 +411,13 @@
       if (!dragState.mode || dragState.pointerId !== event.pointerId) return;
       const point = svgCoords(svg, event);
       if (dragState.mode === "sun") scene.u = clamp((900 - point.x) / 790, .02, .98);
+      else if (dragState.mode === "tilt") {
+        let angle = Math.atan2(PANEL.y - point.y, PANEL.x - point.x) * 180 / Math.PI;
+        if (angle > 90) angle -= 180; else if (angle < -90) angle += 180;
+        const beta = clamp(Math.round(angle / 2) * 2, 0, 60);
+        const tiltInput = document.querySelector('input[data-key="tiltAngle"]');
+        if (tiltInput && Number(tiltInput.value) !== beta) { tiltInput.value = String(beta); tiltInput.dispatchEvent(new Event("input", { bubbles: true })); }
+      }
       else {
         const base = CLOUD_BASES[dragState.cloudIndex];
         scene.cloudShift[dragState.cloudIndex] = clamp(point.x, 60, 940) - base.x;
@@ -421,6 +429,7 @@
     const endDrag = (event) => {
       if (!dragState.mode || (event && dragState.pointerId !== event.pointerId)) return;
       if (dragState.mode === "sun") el.sun.classList.remove("pv-dragging");
+      if (dragState.mode === "tilt") el.panelRot.classList.remove("pv-dragging");
       if (dragState.mode === "cloud" && dragState.cloudIndex >= 0) el.clouds[dragState.cloudIndex].classList.remove("pv-dragging");
       dragState.mode = null; dragState.cloudIndex = -1; dragState.pointerId = null;
       if (requestUpdate) requestUpdate();
@@ -714,24 +723,26 @@
     ],
     bottom: [
       control("dcVoltage", "V<sub>dc</sub>", ["DC bus voltage", "Tension du bus continu", "Tensión del bus continuo"], 360, 600, 20, "V", { advanced: true }),
+      control("gridInductance", "L<sub>g</sub>", ["Grid coupling inductance", "Inductance de couplage réseau", "Inductancia de acople a red"], 2, 15, 1, "mH", { advanced: true }),
     ],
   };
 
   const plots = {
-    main: [
+    dc: [
+      { key: "vPv", label: "v<sub>pv</sub>", color: "--trace-ic", width: 2.7 },
+      { key: "vDc", label: "v<sub>dc</sub>", color: "--trace-vl", width: 3 },
+    ],
+    currents: [
+      { key: "iPv", label: "i<sub>pv</sub>", color: "--trace-iout", dash: [6, 4], width: 2 },
+      { key: "iL", label: "i<sub>L</sub>", color: "--trace-il", width: 2.4 },
+      { key: "iOut", label: "i<sub>out</sub>", color: "--trace-ic", step: true, width: 1.7 },
+    ],
+    ac: [
       { key: "iRef", label: "i<sub>g</sub>*", color: "--trace-vx", dash: [8, 5] },
       { key: "iGrid", label: "i<sub>g</sub>", color: "--trace-vr", width: 3 },
+      { key: "iBest", label: "î<sub>g</sub> (STC)", color: "--scope-text", dash: [6, 6], width: 1.7, layer: -2 },
+      { key: "iBestNeg", legendKey: "iBest", legendHidden: true, label: "", color: "--scope-text", dash: [6, 6], width: 1.7, layer: -2 },
       { key: "vGrid", label: "v<sub>g</sub>", color: "--trace-vin", axis: "right", width: 3, layer: -1 },
-    ],
-    second: [
-      { key: "vPv", label: "v<sub>pv</sub>", color: "--trace-ic", width: 2.7 },
-      { key: "vPvAvg", label: "⟨v<sub>pv</sub>⟩", color: "--trace-ic", dash: [3, 6], width: 1.6 },
-      { key: "vDc", label: "v<sub>dc</sub>", color: "--trace-vl", width: 3 },
-      { key: "vDcAvg", label: "⟨v<sub>dc</sub>⟩", color: "--trace-vl", dash: [3, 6], width: 1.6 },
-    ],
-    third: [
-      { key: "iL", label: "i<sub>L</sub>", color: "--trace-il", width: 2.5 },
-      { key: "iPv", label: "i<sub>pv</sub>", color: "--trace-iout", dash: [6, 4] },
     ],
   };
 
@@ -739,7 +750,7 @@
 
   const model = {
     id: "pv-grid",
-    defaults: { tiltAngle: 30, panelsPerString: 6, strings: 2, ambientTemp: 25, dcVoltage: 400, busCapacitance: 1500 },
+    defaults: { tiltAngle: 30, panelsPerString: 6, strings: 2, ambientTemp: 25, dcVoltage: 400, busCapacitance: 1500, gridInductance: 4 },
     controls,
     controlsFor(_application, options = {}) {
       // Toujours deux rangées de cartes : la scène garde la même taille
@@ -750,14 +761,20 @@
     },
     diagram: { type: "inline", aria: text("Interactive PV-to-grid scene", "Scène interactive PV vers réseau", "Escena interactiva PV a red") },
     diagramFor() { return '<div class="pv-scene" id="pv-scene-root"></div>'; },
-    plots,
-    plotsFor() { return plots; },
-    basicPlotsFor() { return [plots.main, plots.second]; },
-    axesFor() {
+    plots: { main: plots.dc, second: plots.currents, third: plots.ac },
+    plotsFor() { return { main: plots.dc, second: plots.currents, third: plots.ac }; },
+    basicPlotsFor() { return [plots.dc, plots.ac]; },
+    axesFor(_application, isAdvanced = false) {
+      const dcAxis = { label: text("DC voltages", "tensions DC", "tensiones DC"), unit: "V" };
+      const currentAxis = { label: text("DC currents", "courants DC", "corrientes DC"), unit: "A", tint: "--trace-il" };
+      const acAxis = { label: text("grid current", "courant réseau", "corriente de red"), unit: "A", rightLabel: text("grid voltage", "tension réseau", "tensión de red"), rightUnit: "V", tint: "--scope-text" };
+      return isAdvanced ? [dcAxis, currentAxis, acAxis] : [dcAxis, acAxis, acAxis];
+    },
+    axisMarksFor(groupIndex) {
+      if (groupIndex !== 0 || !lastResult) return [];
       return [
-        { label: text("grid current", "courant réseau", "corriente de red"), unit: "A", rightLabel: text("grid voltage", "tension réseau", "tensión de red"), rightUnit: "V" },
-        { label: text("voltage", "tension", "tensión"), unit: "V" },
-        { label: text("current", "courant", "corriente"), unit: "A" },
+        { value: lastResult.vDcMean, color: "--trace-vl" },
+        { value: lastResult.vPvMean, color: "--trace-ic" },
       ];
     },
     calculate(state) {
@@ -776,6 +793,9 @@
       const op = { v: opVoltage, i: Math.max(array.current(opVoltage), 0), p: 0 };
       op.p = op.v * op.i;
       const sim = simulateChain(state, op, array);
+      // Plafond d'amplitude : courant crête qui correspondrait à la puissance STC du champ.
+      const iBestAmp = Math.SQRT2 * stc.pmp / 230;
+      sim.points.forEach((point) => { point.iBest = iBestAmp; point.iBestNeg = -iBestAmp; });
       return { ...sim, env, ns, np, curve, stc, mpp, op, vocArr: array.voc, iscArr: array.isc };
     },
     onResult(result, state, context) {
@@ -786,9 +806,6 @@
       mountCurves();
       updateSceneVisual();
       drawCurves();
-      const patchLegend = (key, html) => document.querySelectorAll(`.legend-trace[data-trace-key="${key}"] b`).forEach((node) => { node.innerHTML = html; });
-      patchLegend("vPvAvg", `⟨v<sub>pv</sub>⟩ = ${fmt(0).format(result.vPvMean)} V`);
-      patchLegend("vDcAvg", `⟨v<sub>dc</sub>⟩ = ${fmt(0).format(result.vDcMean)} V`);
     },
     onTheme() {
       if (lastResult) drawCurves();
