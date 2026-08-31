@@ -79,6 +79,7 @@ h1, h2 { margin: 0; font-size: clamp(1.08rem, 1.35vw, 1.72rem); line-height: 1.0
 .advanced-mode .controls-top, .advanced-mode .controls-bottom { grid-template-columns: repeat(3, minmax(0, 1fr)); padding-inline: 0; }
 .controls-top.four-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); padding-inline: 4%; }
 .controls-row[hidden] { display: none; }
+.control, .commutation-selector, .bridge-mode-group { user-select: none; -webkit-user-select: none; }
 .control { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) max-content; grid-template-rows: minmax(46px, auto) auto; column-gap: clamp(8px, .8vw, 13px); row-gap: 5px; min-height: clamp(82px, 10vh, 98px); height: auto; align-items: center; border: 1px solid #88827538; border-radius: 15px; padding: clamp(9px, 1vh, 13px) clamp(13px, 1vw, 17px); background: #fffdf8; box-shadow: 0 6px 16px #17243810; transition: border-color 140ms ease, box-shadow 140ms ease; }
 .control.wheel-ready { border-color: #0b93886e; box-shadow: 0 5px 16px #0b93881c; }
 .control-copy { display: flex; min-width: 0; align-self: stretch; flex-direction: column; justify-content: center; gap: 5px; }

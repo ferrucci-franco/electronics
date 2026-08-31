@@ -182,6 +182,9 @@
     const settle = .06; const window = .04;
 
     let vPv = operating.v; let iL = operating.i; let vDc = busReference; let iG = 0; let vDcFiltered = busReference;
+    // Moyennes glissantes des courants côté bus : apport du boost et demande du pont.
+    const busTau = 6e-4;
+    let busInFiltered = (1 - duty) * operating.i; let busOutFiltered = 0;
     const stepOnce = (time, record) => {
       const iAmp = standby ? 0 : clamp(targetPower / gridRms + busGain * (vDcFiltered - busReference), 0, 120);
       const sinWt = Math.sin(omega * time); const cosWt = Math.cos(omega * time);
@@ -202,7 +205,9 @@
       vPv = clamp(vPv + dt * (iPv - iL) / pvCapacitance, 0, busReference * 1.05);
       vDc = Math.max(1, vDc + dt * (offShare * iL - bridgeState * iG) / busCapacitance);
       vDcFiltered += dt / filterTau * (vDc - vDcFiltered);
-      if (record) record({ t: time - settle, vGrid: gridVoltage, iGrid: iG, iRef: reference, vPv, vDc, iL, iPv });
+      busInFiltered += dt / busTau * (offShare * iL - busInFiltered);
+      busOutFiltered += dt / busTau * (bridgeState * iG - busOutFiltered);
+      if (record) record({ t: time - settle, vGrid: gridVoltage, iGrid: iG, iRef: reference, vPv, vDc, iL, iPv, iBusIn: busInFiltered, iBusOut: busOutFiltered });
     };
     const settleSteps = Math.round(settle / dt);
     for (let index = 0; index < settleSteps; index += 1) stepOnce(index * dt, null);
@@ -733,8 +738,9 @@
       { key: "vDc", label: "v<sub>dc</sub>", color: "--trace-vl", width: 3 },
     ],
     currents: [
-      { key: "iPv", label: "i<sub>pv</sub>", color: "--trace-iout", dash: [6, 4], width: 2 },
-      { key: "iL", label: "i<sub>L</sub>", color: "--trace-il", width: 2.4 },
+      { key: "iL", label: "i<sub>L</sub>", color: "--trace-il", width: 2.2 },
+      { key: "iBusIn", label: "⟨i<sub>in</sub>⟩", color: "--trace-ic", width: 2.6 },
+      { key: "iBusOut", label: "⟨i<sub>out</sub>⟩", color: "--trace-vx", dash: [7, 4], width: 2.6 },
     ],
     ac: [
       { key: "iRef", label: "i<sub>g</sub>*", color: "--trace-vx", dash: [8, 5] },
@@ -799,7 +805,11 @@
       // reste visuellement sous le plafond STC.
       const iBestAmp = Math.SQRT2 * stc.pmp / 230;
       sim.points.forEach((point) => { point.iBest = iBestAmp; point.iBestNeg = -iBestAmp; point.vPad = 410; point.vPadNeg = -410; });
-      return { ...sim, env, ns, np, curve, stc, mpp, op, vocArr: array.voc, iscArr: array.isc };
+      const outcome = { ...sim, env, ns, np, curve, stc, mpp, op, vocArr: array.voc, iscArr: array.isc };
+      // Mémorisé avant le tracé : les repères d'axe (axisMarksFor) lisent lastResult.
+      lastResult = outcome;
+      lastState = state;
+      return outcome;
     },
     onResult(result, state, context) {
       requestUpdate = context.requestUpdate;
