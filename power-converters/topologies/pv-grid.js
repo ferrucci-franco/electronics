@@ -323,8 +323,8 @@
       <rect class="pv-box" x="235" y="332" width="90" height="52" rx="9"/>
       <text class="pv-box-label pv-txt" x="280" y="355">DC/AC</text>
       <text id="pv-bridge-name" class="pv-txt pv-txt-small" x="280" y="374">pont en H</text>
-      <path class="pv-wire" d="M 534 368 H 470 M 380 368 H 325 M 235 368 H 182 Q 158 366 148 267"/>
-      <path id="pv-flow" class="pv-wire pv-flow-wire" d="M 534 368 H 470 M 380 368 H 325 M 235 368 H 182 Q 158 366 148 267" stroke="#ffb253" stroke-width="3.6"/>
+      <path class="pv-wire" d="M 534 358 H 470 M 380 358 H 325 M 235 358 H 182 Q 156 356 148 267"/>
+      <path id="pv-flow" class="pv-wire pv-flow-wire" d="M 534 358 H 470 M 380 358 H 325 M 235 358 H 182 Q 156 356 148 267" stroke="#ffb253" stroke-width="3.6"/>
       <text id="pv-array-line" class="pv-txt" x="660" y="428">—</text>
       <text id="pv-temp-line" class="pv-txt pv-txt-small" x="660" y="450">—</text>
       <text id="pv-vpv-text" class="pv-txt" x="412" y="428">—</text>
@@ -563,19 +563,27 @@
       scene.mppt = false;
       scene.manualV = voltage;
       syncModeButtons();
+      curves.canvas.style.cursor = "grabbing";
       event.preventDefault();
       try { curves.canvas.setPointerCapture(event.pointerId); } catch (_error) {}
       if (requestUpdate) requestUpdate();
     });
     curves.canvas.addEventListener("pointermove", (event) => {
-      if (!curves.dragging) return;
+      if (!curves.dragging) {
+        if (!curves.layout) return;
+        const rect = curves.canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left; const y = event.clientY - rect.top;
+        const nearPoint = curves.layout.plots.some((plot) => Number.isFinite(plot.opX) && Math.hypot(x - plot.opX, y - plot.opY) < 14);
+        curves.canvas.style.cursor = nearPoint ? "grab" : "crosshair";
+        return;
+      }
       const voltage = pickVoltage(event);
       if (voltage === null) return;
       scene.manualV = voltage;
       event.preventDefault();
       if (requestUpdate) requestUpdate();
     });
-    const endCurveDrag = () => { curves.dragging = false; };
+    const endCurveDrag = () => { curves.dragging = false; curves.canvas.style.cursor = "crosshair"; };
     curves.canvas.addEventListener("pointerup", endCurveDrag);
     curves.canvas.addEventListener("pointercancel", endCurveDrag);
     if (curves.observer) curves.observer.disconnect();
@@ -678,6 +686,7 @@
       // Operating point.
       const opY = yAt(plot.key === "i" ? result.op.i : result.op.p);
       const opX = xAt(result.op.v);
+      plot.opX = opX; plot.opY = opY;
       ctx.beginPath(); ctx.arc(opX, opY, 6.4, 0, Math.PI * 2);
       ctx.fillStyle = color("--trace-vx"); ctx.fill();
       ctx.lineWidth = 2.2; ctx.strokeStyle = color("--scope-screen"); ctx.stroke();
@@ -700,7 +709,6 @@
     ],
     bottom: [
       control("dcVoltage", "V<sub>dc</sub>", ["DC bus voltage", "Tension du bus continu", "Tensión del bus continuo"], 360, 600, 20, "V", { advanced: true }),
-      control("busCapacitance", "C<sub>dc</sub>", ["DC bus capacitance", "Capacité du bus continu", "Capacidad del bus continuo"], 500, 4000, 100, "µF", { advanced: true }),
     ],
   };
 
@@ -771,6 +779,9 @@
       mountCurves();
       updateSceneVisual();
       drawCurves();
+      const patchLegend = (key, html) => document.querySelectorAll(`.legend-trace[data-trace-key="${key}"] b`).forEach((node) => { node.innerHTML = html; });
+      patchLegend("vPvAvg", `⟨v<sub>pv</sub>⟩ = ${fmt(0).format(result.vPvMean)} V`);
+      patchLegend("vDcAvg", `⟨v<sub>dc</sub>⟩ = ${fmt(0).format(result.vDcMean)} V`);
     },
     onTheme() {
       if (lastResult) drawCurves();
