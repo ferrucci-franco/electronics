@@ -544,26 +544,35 @@
     const trace = (definition, yAt) => { ctx.beginPath(); ctx.setLineDash(definition.dash || []); let previousY; visiblePoints.forEach((point, index) => { const x = xAt(point.t); const y = yAt(point[definition.key]); if (index === 0) ctx.moveTo(x, y); else if (definition.step) { ctx.lineTo(x, previousY); ctx.lineTo(x, y); } else ctx.lineTo(x, y); previousY = y; }); ctx.strokeStyle = color(definition.color); ctx.lineWidth = definition.width || 2.7; ctx.lineJoin = definition.step ? "miter" : "round"; ctx.stroke(); ctx.setLineDash([]); };
     const plotLayouts = [];
     groups.forEach((traces, groupIndex) => {
-      const plotTop = tops[groupIndex]; const visibleTraces = traces.filter(traceIsVisible); const leftTraces = visibleTraces.filter((item) => item.axis !== "right"); const rightTraces = visibleTraces.filter((item) => item.axis === "right"); const hasVisibleTrace = visibleTraces.length > 0;
-      const automaticRange = leftTraces.length ? paddedRange(points.flatMap((point) => leftTraces.map((item) => point[item.key]))) : { rawMin: 0, rawMax: 0, min: -1, max: 1 };
-      const automaticRightRange = rightTraces.length ? paddedRange(points.flatMap((point) => rightTraces.map((item) => point[item.key]))) : null;
+      const plotTop = tops[groupIndex]; const visibleTraces = traces.filter(traceIsVisible); const hasVisibleTrace = visibleTraces.some((item) => !item.ghost);
+      // Ghost traces widen the scale but never appear as drawn curves or tick values.
+      const scaledRange = (items, labelItems) => {
+        if (!labelItems.length) return null;
+        const scale = paddedRange(points.flatMap((point) => items.map((item) => point[item.key])));
+        const labels = paddedRange(points.flatMap((point) => labelItems.map((item) => point[item.key])));
+        return { min: scale.min, max: scale.max, rawMin: labels.rawMin, rawMax: labels.rawMax };
+      };
+      const leftScaleTraces = visibleTraces.filter((item) => item.axis !== "right"); const leftTraces = leftScaleTraces.filter((item) => !item.ghost);
+      const rightScaleTraces = visibleTraces.filter((item) => item.axis === "right"); const rightTraces = rightScaleTraces.filter((item) => !item.ghost);
+      const automaticRange = scaledRange(leftScaleTraces, leftTraces) || { rawMin: 0, rawMax: 0, min: -1, max: 1 };
+      const automaticRightRange = scaledRange(rightScaleTraces, rightTraces);
       const yZoom = zoom.y[groupIndex]; const range = yZoom ? { rawMin: yZoom.min, rawMax: yZoom.max, min: yZoom.min, max: yZoom.max } : automaticRange;
       const rightRange = automaticRightRange && Number.isFinite(yZoom?.rightMin) && Number.isFinite(yZoom?.rightMax) ? { rawMin: yZoom.rightMin, rawMax: yZoom.rightMax, min: yZoom.rightMin, max: yZoom.rightMax } : automaticRightRange;
       const yAt = (value) => plotTop + (range.max - value) / (range.max - range.min) * plotHeight; const yAtRight = (value) => plotTop + (rightRange.max - value) / (rightRange.max - rightRange.min) * plotHeight; grid(plotTop); const zero = yAt(0);
       plotLayouts.push({ groupIndex, top: plotTop, height: plotHeight, min: range.min, max: range.max, rightMin: rightRange?.min, rightMax: rightRange?.max });
       ctx.save(); ctx.beginPath(); ctx.rect(left, plotTop, plotWidth, plotHeight); ctx.clip();
       if (zero >= plotTop && zero <= plotTop + plotHeight) { ctx.beginPath(); ctx.moveTo(left, zero); ctx.lineTo(left + plotWidth, zero); ctx.strokeStyle = color("--scope-zero"); ctx.stroke(); }
-      [...visibleTraces].sort((a, b) => (a.layer || 0) - (b.layer || 0)).forEach((item) => trace(item, item.axis === "right" && rightRange ? yAtRight : yAt)); ctx.restore(); ctx.fillStyle = axes[groupIndex].tint ? color(axes[groupIndex].tint) : groupIndex === 1 ? color("--trace-vl") : groupIndex === 2 ? color("--trace-il") : color("--scope-text"); ctx.textAlign = "right";
+      [...visibleTraces].sort((a, b) => (a.layer || 0) - (b.layer || 0)).forEach((item) => { if (item.ghost) return; trace(item, item.axis === "right" && rightRange ? yAtRight : yAt); }); ctx.restore(); ctx.fillStyle = axes[groupIndex].tint ? color(axes[groupIndex].tint) : groupIndex === 1 ? color("--trace-vl") : groupIndex === 2 ? color("--trace-il") : color("--scope-text"); ctx.textAlign = "right";
       if (!hasVisibleTrace) ctx.fillText("—", left - 8, zero + 5);
       else {
         if (Math.abs(range.rawMax - range.rawMin) < 1e-12) ctx.fillText(`0 ${axes[groupIndex].unit}`, left - 8, zero + 5);
-        else { ctx.fillText(`${axisValue(range.rawMax, axes[groupIndex].unit)} ${axes[groupIndex].unit}`, left - 8, yAt(range.rawMax) + 5); if (range.rawMin < -1e-9) ctx.fillText(`${axisValue(range.rawMin, axes[groupIndex].unit)} ${axes[groupIndex].unit}`, left - 8, yAt(range.rawMin) + 5); else ctx.fillText(`0 ${axes[groupIndex].unit}`, left - 8, Math.min(plotTop + plotHeight - 3, Math.max(plotTop + 13, zero + 5))); }
+        else { if (!axes[groupIndex].hideMax) ctx.fillText(`${axisValue(range.rawMax, axes[groupIndex].unit)} ${axes[groupIndex].unit}`, left - 8, yAt(range.rawMax) + 5); if (range.rawMin < -1e-9) ctx.fillText(`${axisValue(range.rawMin, axes[groupIndex].unit)} ${axes[groupIndex].unit}`, left - 8, yAt(range.rawMin) + 5); else ctx.fillText(`0 ${axes[groupIndex].unit}`, left - 8, Math.min(plotTop + plotHeight - 3, Math.max(plotTop + 13, zero + 5))); }
         if (rightRange) { ctx.fillStyle = color(rightTraces.at(-1)?.color || "--trace-vr"); ctx.textAlign = "left"; if (Math.abs(rightRange.rawMax - rightRange.rawMin) < 1e-12) ctx.fillText(`0 ${axes[groupIndex].rightUnit}`, left + plotWidth + 8, yAtRight(0) + 5); else { ctx.fillText(`${axisValue(rightRange.rawMax, axes[groupIndex].rightUnit)} ${axes[groupIndex].rightUnit}`, left + plotWidth + 8, yAtRight(rightRange.rawMax) + 5); ctx.fillText(`${axisValue(rightRange.rawMin, axes[groupIndex].rightUnit)} ${axes[groupIndex].rightUnit}`, left + plotWidth + 8, yAtRight(rightRange.rawMin) + 5); } }
       }
       const marksModel = activeModel();
-      if (!rightRange && typeof marksModel.axisMarksFor === "function") {
+      if (typeof marksModel.axisMarksFor === "function") {
         let previousY = null;
-        ctx.textAlign = "left";
+        ctx.textAlign = "right";
         (marksModel.axisMarksFor(groupIndex) || []).forEach((mark) => {
           if (!Number.isFinite(mark.value)) return;
           let markY = yAt(mark.value);
@@ -571,8 +580,8 @@
           if (previousY !== null && Math.abs(markY - previousY) < 14) markY = previousY + 14;
           previousY = markY;
           ctx.fillStyle = color(mark.color || "--scope-text");
-          ctx.fillRect(left + plotWidth + 1, markY - 1, 6, 2);
-          ctx.fillText(`${axisValue(mark.value, axes[groupIndex].unit)} ${axes[groupIndex].unit}`, left + plotWidth + 9, markY + 4);
+          ctx.fillRect(left - 7, markY - 1, 6, 2);
+          ctx.fillText(`${axisValue(mark.value, axes[groupIndex].unit)} ${axes[groupIndex].unit}`, left - 10, markY + 4);
         });
       }
     });

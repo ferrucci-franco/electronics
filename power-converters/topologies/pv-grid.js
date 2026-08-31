@@ -202,7 +202,7 @@
       vPv = clamp(vPv + dt * (iPv - iL) / pvCapacitance, 0, busReference * 1.05);
       vDc = Math.max(1, vDc + dt * (offShare * iL - bridgeState * iG) / busCapacitance);
       vDcFiltered += dt / filterTau * (vDc - vDcFiltered);
-      if (record) record({ t: time - settle, vGrid: gridVoltage, iGrid: iG, iRef: reference, vPv, vDc, iL, iPv, iOut: offShare * iL });
+      if (record) record({ t: time - settle, vGrid: gridVoltage, iGrid: iG, iRef: reference, vPv, vDc, iL, iPv });
     };
     const settleSteps = Math.round(settle / dt);
     for (let index = 0; index < settleSteps; index += 1) stepOnce(index * dt, null);
@@ -735,13 +735,14 @@
     currents: [
       { key: "iPv", label: "i<sub>pv</sub>", color: "--trace-iout", dash: [6, 4], width: 2 },
       { key: "iL", label: "i<sub>L</sub>", color: "--trace-il", width: 2.4 },
-      { key: "iOut", label: "i<sub>out</sub>", color: "--trace-ic", step: true, width: 1.7 },
     ],
     ac: [
       { key: "iRef", label: "i<sub>g</sub>*", color: "--trace-vx", dash: [8, 5] },
       { key: "iGrid", label: "i<sub>g</sub>", color: "--trace-vr", width: 3 },
       { key: "iBest", label: "î<sub>g</sub> (STC)", color: "--scope-text", dash: [6, 6], width: 1.7, layer: -2 },
       { key: "iBestNeg", legendKey: "iBest", legendHidden: true, label: "", color: "--scope-text", dash: [6, 6], width: 1.7, layer: -2 },
+      { key: "vPad", legendHidden: true, ghost: true, axis: "right", label: "", color: "--scope-text" },
+      { key: "vPadNeg", legendHidden: true, ghost: true, axis: "right", label: "", color: "--scope-text" },
       { key: "vGrid", label: "v<sub>g</sub>", color: "--trace-vin", axis: "right", width: 3, layer: -1 },
     ],
   };
@@ -765,7 +766,7 @@
     plotsFor() { return { main: plots.dc, second: plots.currents, third: plots.ac }; },
     basicPlotsFor() { return [plots.dc, plots.ac]; },
     axesFor(_application, isAdvanced = false) {
-      const dcAxis = { label: text("DC voltages", "tensions DC", "tensiones DC"), unit: "V" };
+      const dcAxis = { label: text("DC voltages", "tensions DC", "tensiones DC"), unit: "V", hideMax: true };
       const currentAxis = { label: text("DC currents", "courants DC", "corrientes DC"), unit: "A", tint: "--trace-il" };
       const acAxis = { label: text("grid current", "courant réseau", "corriente de red"), unit: "A", rightLabel: text("grid voltage", "tension réseau", "tensión de red"), rightUnit: "V", tint: "--scope-text" };
       return isAdvanced ? [dcAxis, currentAxis, acAxis] : [dcAxis, acAxis, acAxis];
@@ -794,8 +795,10 @@
       op.p = op.v * op.i;
       const sim = simulateChain(state, op, array);
       // Plafond d'amplitude : courant crête qui correspondrait à la puissance STC du champ.
+      // Les traces fantômes vPad donnent de la marge à l'axe droit pour que v_g
+      // reste visuellement sous le plafond STC.
       const iBestAmp = Math.SQRT2 * stc.pmp / 230;
-      sim.points.forEach((point) => { point.iBest = iBestAmp; point.iBestNeg = -iBestAmp; });
+      sim.points.forEach((point) => { point.iBest = iBestAmp; point.iBestNeg = -iBestAmp; point.vPad = 410; point.vPadNeg = -410; });
       return { ...sim, env, ns, np, curve, stc, mpp, op, vocArr: array.voc, iscArr: array.isc };
     },
     onResult(result, state, context) {
