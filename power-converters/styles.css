@@ -81,7 +81,7 @@ h1, h2 { margin: 0; font-size: clamp(1.08rem, 1.35vw, 1.72rem); line-height: 1.0
 .controls-row[hidden] { display: none; }
 .control { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) max-content; grid-template-rows: minmax(46px, auto) auto; column-gap: clamp(8px, .8vw, 13px); row-gap: 5px; min-height: clamp(82px, 10vh, 98px); height: auto; align-items: center; border: 1px solid #88827538; border-radius: 15px; padding: clamp(9px, 1vh, 13px) clamp(13px, 1vw, 17px); background: #fffdf8; box-shadow: 0 6px 16px #17243810; transition: border-color 140ms ease, box-shadow 140ms ease; }
 .control.wheel-ready { border-color: #0b93886e; box-shadow: 0 5px 16px #0b93881c; }
-.control-copy { display: flex; min-width: 0; align-self: stretch; flex-direction: column; justify-content: center; }
+.control-copy { display: flex; min-width: 0; align-self: stretch; flex-direction: column; justify-content: center; gap: 5px; }
 .control b { color: var(--teal); font-size: clamp(1rem, 1.08vw, 1.22rem); }
 .control b sub, .legend b sub { position: relative; bottom: -.23em; margin-left: .03em; font-size: .68em; font-weight: inherit; line-height: 0; }
 .control small { color: var(--muted); font-size: clamp(.82rem, .88vw, .98rem); font-weight: 700; hyphens: auto; line-height: 1.12; overflow-wrap: break-word; text-wrap: balance; white-space: normal; }

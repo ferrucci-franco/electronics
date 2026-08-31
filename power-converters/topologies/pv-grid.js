@@ -270,6 +270,7 @@
       <style>
         .pv-txt { fill: #24405c; font-family: Inter, "Segoe UI", Arial, sans-serif; font-size: 15.5px; font-weight: 760; text-anchor: middle; paint-order: stroke; stroke: rgba(255,255,255,.72); stroke-width: 3.4px; }
         .pv-txt-small { font-size: 13px; font-weight: 720; }
+        .pv-txt-end { text-anchor: end; }
         .pv-txt-big { font-size: 24px; font-weight: 850; fill: #0b6b62; }
         .pv-txt-dim { fill: rgba(28,44,64,.62); font-size: 13.5px; letter-spacing: .12em; font-weight: 850; }
         .pv-box { fill: rgba(255,253,248,.92); stroke: #33566f; stroke-width: 2.6; }
@@ -318,8 +319,8 @@
         <line x1="450" y1="313.5" x2="630" y2="313.5" stroke="rgba(160,200,240,.4)" stroke-width="1.2"/>
       </g>
       <path id="pv-tilt-arc" d="" fill="none" stroke="rgba(20,40,60,.5)" stroke-width="2" stroke-dasharray="4 4"/>
-      <text id="pv-tilt-text" class="pv-txt pv-txt-small" x="410" y="284">β = 30°</text>
-      <text id="pv-gpanel-text" class="pv-txt" x="410" y="304">—</text>
+      <text id="pv-tilt-text" class="pv-txt pv-txt-small pv-txt-end" x="413" y="294">β = 30°</text>
+      <text id="pv-gpanel-text" class="pv-txt pv-txt-end" x="413" y="314">—</text>
       <rect class="pv-box" x="380" y="332" width="90" height="52" rx="9"/>
       <text class="pv-box-label pv-txt" x="425" y="355">DC/DC</text>
       <text id="pv-boost-name" class="pv-txt pv-txt-small" x="425" y="374">boost</text>
@@ -479,7 +480,7 @@
     el.sun.setAttribute("transform", `translate(${sun.x.toFixed(1)} ${sun.y.toFixed(1)})`);
     el.gText.setAttribute("x", clamp(sun.x, 96, 904).toFixed(1));
     el.gText.setAttribute("y", Math.min(sun.y + 84, HORIZON - 14).toFixed(1));
-    el.gText.textContent = `${fmt(0).format(env.dni)} ${t("wpm2")}`;
+    el.gText.textContent = `GHI = ${fmt(0).format(env.ghi)} ${t("wpm2")}`;
     el.clouds.forEach((cloud, index) => {
       const info = cloudInfo(index);
       cloud.setAttribute("transform", `translate(${info.x.toFixed(1)} ${info.y.toFixed(1)}) scale(${info.scale.toFixed(3)})`);
@@ -491,11 +492,6 @@
     const arcRadius = 118;
     const arcAngle = tiltDegrees * Math.PI / 180;
     el.tiltArc.setAttribute("d", `M ${PANEL.x - arcRadius} ${PANEL.y} A ${arcRadius} ${arcRadius} 0 0 1 ${(PANEL.x - arcRadius * Math.cos(arcAngle)).toFixed(1)} ${(PANEL.y - arcRadius * Math.sin(arcAngle)).toFixed(1)}`);
-    const labelAngle = Math.max(tiltDegrees, 8) / 2 * Math.PI / 180;
-    const labelX = PANEL.x - 148 * Math.cos(labelAngle);
-    const labelY = PANEL.y - 148 * Math.sin(labelAngle);
-    el.tiltText.setAttribute("x", labelX.toFixed(1)); el.tiltText.setAttribute("y", (labelY + 2).toFixed(1));
-    el.gPanelText.setAttribute("x", labelX.toFixed(1)); el.gPanelText.setAttribute("y", (labelY + 22).toFixed(1));
     el.gPanelText.textContent = `G = ${fmt(0).format(env.g)} ${t("wpm2")}`;
     const corners = panelCorners(tiltDegrees);
     el.beam.setAttribute("points", `${sun.x.toFixed(1)},${sun.y.toFixed(1)} ${corners[0].x.toFixed(1)},${corners[0].y.toFixed(1)} ${corners[1].x.toFixed(1)},${corners[1].y.toFixed(1)}`);
