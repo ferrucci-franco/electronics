@@ -706,9 +706,9 @@
 
   const plots = {
     main: [
-      { key: "vGrid", label: "v<sub>g</sub>", color: "--trace-vin", width: 3 },
-      { key: "iRef", label: "i<sub>g</sub>*", color: "--trace-vx", axis: "right", dash: [8, 5] },
-      { key: "iGrid", label: "i<sub>g</sub>", color: "--trace-vr", axis: "right", width: 3 },
+      { key: "iRef", label: "i<sub>g</sub>*", color: "--trace-vx", dash: [8, 5] },
+      { key: "iGrid", label: "i<sub>g</sub>", color: "--trace-vr", width: 3 },
+      { key: "vGrid", label: "v<sub>g</sub>", color: "--trace-vin", axis: "right", width: 3, layer: -1 },
     ],
     second: [
       { key: "vPv", label: "v<sub>pv</sub>", color: "--trace-ic", width: 2.7 },
@@ -740,7 +740,7 @@
     basicPlotsFor() { return [plots.main, plots.second]; },
     axesFor() {
       return [
-        { label: text("grid voltage", "tension réseau", "tensión de red"), unit: "V", rightLabel: text("grid current", "courant réseau", "corriente de red"), rightUnit: "A" },
+        { label: text("grid current", "courant réseau", "corriente de red"), unit: "A", rightLabel: text("grid voltage", "tension réseau", "tensión de red"), rightUnit: "V" },
         { label: text("voltage", "tension", "tensión"), unit: "V" },
         { label: text("current", "courant", "corriente"), unit: "A" },
       ];
