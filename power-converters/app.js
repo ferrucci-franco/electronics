@@ -537,7 +537,27 @@
     const zoom = activeZoom(); const xMinFraction = zoom.x?.min ?? 0; const xMaxFraction = zoom.x?.max ?? 1; const xMinTime = duration * xMinFraction; const xMaxTime = duration * xMaxFraction;
     const xAt = (time) => left + (time - xMinTime) / (xMaxTime - xMinTime) * plotWidth;
     const tops = groups.map((_, index) => top + index * (plotHeight + gap));
-    const grid = (plotTop) => { ctx.lineWidth = 1; ctx.strokeStyle = color("--scope-grid"); for (let column = 0; column <= 8; column += 1) { const x = left + column / 8 * plotWidth; ctx.beginPath(); ctx.moveTo(x, plotTop); ctx.lineTo(x, plotTop + plotHeight); ctx.stroke(); } for (let row = 0; row <= 5; row += 1) { const y = plotTop + row / 5 * plotHeight; ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(left + plotWidth, y); ctx.stroke(); } };
+    const grid = (plotTop, tickList, yAt) => {
+      ctx.lineWidth = 1; ctx.strokeStyle = color("--scope-grid");
+      for (let column = 0; column <= 8; column += 1) { const x = left + column / 8 * plotWidth; ctx.beginPath(); ctx.moveTo(x, plotTop); ctx.lineTo(x, plotTop + plotHeight); ctx.stroke(); }
+      if (tickList && tickList.length) tickList.forEach((value) => { const y = yAt(value); ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(left + plotWidth, y); ctx.stroke(); });
+      else for (let row = 0; row <= 5; row += 1) { const y = plotTop + row / 5 * plotHeight; ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(left + plotWidth, y); ctx.stroke(); }
+    };
+    // Round tick values (1/2/2.5/5 × 10^n steps) covering the axis range.
+    const axisTicks = (minValue, maxValue) => {
+      const span = maxValue - minValue;
+      if (!(span > 1e-9)) return [];
+      const rough = span / 5;
+      const magnitude = Math.pow(10, Math.floor(Math.log10(rough)));
+      let step = magnitude * 10;
+      for (const multiplier of [1, 2, 2.5, 5, 10]) { if (magnitude * multiplier >= rough) { step = magnitude * multiplier; break; } }
+      const values = [];
+      for (let index = Math.ceil(minValue / step - 1e-9); index * step <= maxValue + step * 1e-6; index += 1) {
+        const value = index * step;
+        values.push(Math.abs(value) < step * 1e-6 ? 0 : value);
+      }
+      return values;
+    };
     let visibleStart = 0; while (visibleStart < points.length - 1 && points[visibleStart].t < xMinTime) visibleStart += 1;
     let visibleEnd = visibleStart; while (visibleEnd < points.length - 1 && points[visibleEnd].t <= xMaxTime) visibleEnd += 1;
     const visiblePoints = points.slice(Math.max(0, visibleStart - 1), Math.min(points.length, visibleEnd + 1));
@@ -558,27 +578,19 @@
       const automaticRightRange = scaledRange(rightScaleTraces, rightTraces);
       const yZoom = zoom.y[groupIndex]; const range = yZoom ? { rawMin: yZoom.min, rawMax: yZoom.max, min: yZoom.min, max: yZoom.max } : automaticRange;
       const rightRange = automaticRightRange && Number.isFinite(yZoom?.rightMin) && Number.isFinite(yZoom?.rightMax) ? { rawMin: yZoom.rightMin, rawMax: yZoom.rightMax, min: yZoom.rightMin, max: yZoom.rightMax } : automaticRightRange;
-      const yAt = (value) => plotTop + (range.max - value) / (range.max - range.min) * plotHeight; const yAtRight = (value) => plotTop + (rightRange.max - value) / (rightRange.max - rightRange.min) * plotHeight; grid(plotTop); const zero = yAt(0);
+      const yAt = (value) => plotTop + (range.max - value) / (range.max - range.min) * plotHeight; const yAtRight = (value) => plotTop + (rightRange.max - value) / (rightRange.max - rightRange.min) * plotHeight; const ticks = hasVisibleTrace && Math.abs(range.rawMax - range.rawMin) >= 1e-12 ? axisTicks(range.min, range.max) : []; grid(plotTop, ticks, yAt); const zero = yAt(0);
       plotLayouts.push({ groupIndex, top: plotTop, height: plotHeight, min: range.min, max: range.max, rightMin: rightRange?.min, rightMax: rightRange?.max });
       ctx.save(); ctx.beginPath(); ctx.rect(left, plotTop, plotWidth, plotHeight); ctx.clip();
       if (zero >= plotTop && zero <= plotTop + plotHeight) { ctx.beginPath(); ctx.moveTo(left, zero); ctx.lineTo(left + plotWidth, zero); ctx.strokeStyle = color("--scope-zero"); ctx.stroke(); }
       [...visibleTraces].sort((a, b) => (a.layer || 0) - (b.layer || 0)).forEach((item) => { if (item.ghost) return; trace(item, item.axis === "right" && rightRange ? yAtRight : yAt); }); ctx.restore(); const leftTickColor = axes[groupIndex].tint ? color(axes[groupIndex].tint) : groupIndex === 1 ? color("--trace-vl") : groupIndex === 2 ? color("--trace-il") : color("--scope-text"); ctx.fillStyle = leftTickColor; ctx.textAlign = "right";
       if (!hasVisibleTrace) ctx.fillText("—", left - 8, zero + 5);
       else {
-        if (Math.abs(range.rawMax - range.rawMin) < 1e-12) ctx.fillText(`0 ${axes[groupIndex].unit}`, left - 8, zero + 5);
-        else { if (!axes[groupIndex].hideMax) ctx.fillText(`${axisValue(range.rawMax, axes[groupIndex].unit)} ${axes[groupIndex].unit}`, left - 8, yAt(range.rawMax) + 5); if (range.rawMin < -1e-9) ctx.fillText(`${axisValue(range.rawMin, axes[groupIndex].unit)} ${axes[groupIndex].unit}`, left - 8, yAt(range.rawMin) + 5); else ctx.fillText(`0 ${axes[groupIndex].unit}`, left - 8, Math.min(plotTop + plotHeight - 3, Math.max(plotTop + 13, zero + 5))); }
-        // Small tick values on each horizontal gridline, skipping spots taken by the extreme labels.
-        if (Math.abs(range.max - range.min) > 1e-9) {
-          const avoidYs = Math.abs(range.rawMax - range.rawMin) < 1e-12 ? [zero] : [yAt(range.rawMax), range.rawMin < -1e-9 ? yAt(range.rawMin) : Math.min(plotTop + plotHeight - 3, Math.max(plotTop + 13, zero + 5)) - 4];
+        if (!ticks.length) ctx.fillText(`0 ${axes[groupIndex].unit}`, left - 8, zero + 5);
+        else {
           ctx.save();
-          ctx.font = '500 11px Inter, "Segoe UI", Arial, sans-serif';
-          ctx.globalAlpha = .68;
-          ctx.fillStyle = leftTickColor;
-          for (let row = 0; row <= 5; row += 1) {
-            const gridY = plotTop + row / 5 * plotHeight;
-            if (avoidYs.some((avoidY) => Math.abs(gridY - avoidY) < 13)) continue;
-            ctx.fillText(axisValue(range.max - row / 5 * (range.max - range.min), axes[groupIndex].unit), left - 8, gridY + 4);
-          }
+          ctx.font = '500 12.5px Inter, "Segoe UI", Arial, sans-serif';
+          const topTick = ticks[ticks.length - 1];
+          ticks.forEach((value) => { ctx.fillText(`${axisValue(value, axes[groupIndex].unit)}${value === topTick ? ` ${axes[groupIndex].unit}` : ""}`, left - 8, yAt(value) + 4); });
           ctx.restore();
         }
         if (rightRange && !axes[groupIndex].hideRightAxis) { ctx.fillStyle = color(rightTraces.at(-1)?.color || "--trace-vr"); ctx.textAlign = "left"; if (Math.abs(rightRange.rawMax - rightRange.rawMin) < 1e-12) ctx.fillText(`0 ${axes[groupIndex].rightUnit}`, left + plotWidth + 8, yAtRight(0) + 5); else { ctx.fillText(`${axisValue(rightRange.rawMax, axes[groupIndex].rightUnit)} ${axes[groupIndex].rightUnit}`, left + plotWidth + 8, yAtRight(rightRange.rawMax) + 5); ctx.fillText(`${axisValue(rightRange.rawMin, axes[groupIndex].rightUnit)} ${axes[groupIndex].rightUnit}`, left + plotWidth + 8, yAtRight(rightRange.rawMin) + 5); } }
