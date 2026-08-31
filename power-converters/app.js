@@ -589,8 +589,7 @@
         else {
           ctx.save();
           ctx.font = '500 12.5px Inter, "Segoe UI", Arial, sans-serif';
-          const topTick = ticks[ticks.length - 1];
-          ticks.forEach((value) => { ctx.fillText(`${axisValue(value, axes[groupIndex].unit)}${value === topTick ? ` ${axes[groupIndex].unit}` : ""}`, left - 8, yAt(value) + 4); });
+          ticks.forEach((value) => { ctx.fillText(axisValue(value, axes[groupIndex].unit), left - 8, yAt(value) + 4); });
           ctx.restore();
         }
         if (rightRange && !axes[groupIndex].hideRightAxis) { ctx.fillStyle = color(rightTraces.at(-1)?.color || "--trace-vr"); ctx.textAlign = "left"; if (Math.abs(rightRange.rawMax - rightRange.rawMin) < 1e-12) ctx.fillText(`0 ${axes[groupIndex].rightUnit}`, left + plotWidth + 8, yAtRight(0) + 5); else { ctx.fillText(`${axisValue(rightRange.rawMax, axes[groupIndex].rightUnit)} ${axes[groupIndex].rightUnit}`, left + plotWidth + 8, yAtRight(rightRange.rawMax) + 5); ctx.fillText(`${axisValue(rightRange.rawMin, axes[groupIndex].rightUnit)} ${axes[groupIndex].rightUnit}`, left + plotWidth + 8, yAtRight(rightRange.rawMin) + 5); } }
