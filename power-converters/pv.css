@@ -29,6 +29,11 @@ body.dark-theme .pv-hud-card, body.dark-theme .pv-play-button { border-color: #9
 body.dark-theme .pv-play-button:hover { border-color: #55d2c6; color: #a4eee6; }
 body.dark-theme .pv-play-button[aria-pressed="true"] { background: var(--teal); color: #ffffff; }
 
+/* Bandeau d'infos : lignes compactes pour trois équations par colonne. */
+.lc-info .pv-info-lines { gap: 4px; }
+.lc-info .pv-info-lines .info-equation { min-height: 1.28em; }
+.lc-info .pv-info-lines .info-equation .katex { font-size: clamp(.92rem, 1vw, 1.08rem); }
+
 /* Bandeau des courbes caractéristiques (panneau oscilloscope). */
 .pv-curves-host { display: flex; flex: 0 0 auto; flex-direction: column; height: clamp(190px, 27vh, 260px); margin: clamp(10px, 1vw, 17px) clamp(10px, 1vw, 17px) 0; overflow: hidden; border: 1px solid var(--scope-border); border-radius: 12px; background: var(--scope-screen); }
 .pv-curves-header { display: flex; flex: 0 0 auto; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 12px 2px; }

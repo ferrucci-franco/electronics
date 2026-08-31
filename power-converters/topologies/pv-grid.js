@@ -216,6 +216,8 @@
     const apparent = gridRms * currentRms;
     const vDcValues = points.map((point) => point.vDc);
     const vDcMean = mean(points, "vDc");
+    const vPvMean = mean(points, "vPv");
+    points.forEach((point) => { point.vPvAvg = vPvMean; point.vDcAvg = vDcMean; });
     const rippleSlice = points.filter((point) => point.t >= .0199 && point.t <= .0199 + 3 / fsBoost);
     const iLValues = rippleSlice.map((point) => point.iL);
     return {
@@ -226,7 +228,7 @@
       currentRms, currentThd: thdOf(points, "iGrid", gridFrequency),
       trackingErrorRms: Math.sqrt(points.reduce((sum, point) => sum + (point.iGrid - point.iRef) ** 2, 0) / points.length),
       vDcMean, vDcRipple: Math.max(...vDcValues) - Math.min(...vDcValues),
-      vPvMean: mean(points, "vPv"),
+      vPvMean,
       iLMean: mean(points, "iL"),
       iLRipple: iLValues.length ? Math.max(...iLValues) - Math.min(...iLValues) : 0,
       busRippleApprox: Math.abs(activePower) / (omega * busCapacitance * Math.max(vDcMean, 1)),
@@ -264,8 +266,8 @@
     return `
     <svg viewBox="0 0 1000 520" preserveAspectRatio="xMidYMax slice" role="img" aria-label="">
       <style>
-        .pv-txt { fill: #24405c; font-family: Inter, "Segoe UI", Arial, sans-serif; font-size: 16.5px; font-weight: 760; text-anchor: middle; paint-order: stroke; stroke: rgba(255,255,255,.72); stroke-width: 3.4px; }
-        .pv-txt-small { font-size: 14px; font-weight: 720; }
+        .pv-txt { fill: #24405c; font-family: Inter, "Segoe UI", Arial, sans-serif; font-size: 15.5px; font-weight: 760; text-anchor: middle; paint-order: stroke; stroke: rgba(255,255,255,.72); stroke-width: 3.4px; }
+        .pv-txt-small { font-size: 13px; font-weight: 720; }
         .pv-txt-big { font-size: 24px; font-weight: 850; fill: #0b6b62; }
         .pv-txt-dim { fill: rgba(28,44,64,.62); font-size: 13.5px; letter-spacing: .12em; font-weight: 850; }
         .pv-box { fill: rgba(255,253,248,.92); stroke: #33566f; stroke-width: 2.6; }
@@ -302,8 +304,8 @@
         <line x1="100" y1="365" x2="128" y2="365"/><line x1="103" y1="330" x2="125" y2="330"/><line x1="106" y1="296" x2="122" y2="296"/><line x1="109" y1="264" x2="119" y2="264"/>
         <line x1="100" y1="365" x2="125" y2="330"/><line x1="128" y1="365" x2="103" y2="330"/><line x1="103" y1="330" x2="122" y2="296"/><line x1="125" y1="330" x2="106" y2="296"/>
         <line x1="72" y1="256" x2="156" y2="256"/>
-        <line x1="80" y1="256" x2="80" y2="268"/><line x1="148" y1="256" x2="148" y2="268"/>
-        <path d="M 80 268 C 40 282, 0 290, -40 294"/><path d="M 148 268 C 165 300, 160 336, 152 362"/>
+        <line x1="80" y1="256" x2="80" y2="267"/><line x1="148" y1="256" x2="148" y2="267"/>
+        <path d="M 80 267 C 34 279, -6 285, -40 288"/>
       </g>
       <g id="pv-panel-stand" fill="#5a6b7c"><rect x="534" y="330" width="12" height="72" rx="3"/><rect x="506" y="398" width="68" height="8" rx="4"/></g>
       <g id="pv-panel-rot">
@@ -321,10 +323,10 @@
       <rect class="pv-box" x="235" y="332" width="90" height="52" rx="9"/>
       <text class="pv-box-label pv-txt" x="280" y="355">DC/AC</text>
       <text id="pv-bridge-name" class="pv-txt pv-txt-small" x="280" y="374">pont en H</text>
-      <path class="pv-wire" d="M 534 368 H 470 M 380 368 H 325 M 235 368 H 152 L 118 268"/>
-      <path id="pv-flow" class="pv-wire pv-flow-wire" d="M 534 368 H 470 M 380 368 H 325 M 235 368 H 152 L 118 268" stroke="#ffb253" stroke-width="3.6"/>
-      <text id="pv-array-line" class="pv-txt" x="560" y="428">—</text>
-      <text id="pv-temp-line" class="pv-txt pv-txt-small" x="560" y="450">—</text>
+      <path class="pv-wire" d="M 534 368 H 470 M 380 368 H 325 M 235 368 H 182 Q 158 366 148 267"/>
+      <path id="pv-flow" class="pv-wire pv-flow-wire" d="M 534 368 H 470 M 380 368 H 325 M 235 368 H 182 Q 158 366 148 267" stroke="#ffb253" stroke-width="3.6"/>
+      <text id="pv-array-line" class="pv-txt" x="660" y="428">—</text>
+      <text id="pv-temp-line" class="pv-txt pv-txt-small" x="660" y="450">—</text>
       <text id="pv-vpv-text" class="pv-txt" x="412" y="428">—</text>
       <text id="pv-duty-text" class="pv-txt pv-txt-small" x="412" y="450">—</text>
       <text id="pv-vdc-text" class="pv-txt" x="262" y="428">—</text>
@@ -607,12 +609,12 @@
     const vMax = Math.max(result.stc.voc * 1.05, 1);
     const iMax = Math.max(result.stc.isc * 1.14, .1);
     const pMax = Math.max(result.stc.pmp * 1.12, 1);
-    const marginLeft = 48; const marginRight = 12; const gap = 52; const marginTop = 14; const marginBottom = 28;
-    const plotWidth = (rect.width - marginLeft * 2 - marginRight - gap) / 2;
+    const labelWidth = 56; const innerGap = 20; const marginRight = 12; const marginTop = 24; const marginBottom = 28;
+    const plotWidth = (rect.width - labelWidth * 2 - innerGap - marginRight) / 2;
     const plotHeight = rect.height - marginTop - marginBottom;
     const plots = [
-      { x: marginLeft, y: marginTop, width: plotWidth, height: plotHeight, key: "i", max: iMax, unit: "A", trace: color("--trace-il"), title: "I–V" },
-      { x: marginLeft * 2 + plotWidth + gap - marginLeft + 8, y: marginTop, width: plotWidth, height: plotHeight, key: "p", max: pMax, unit: pMax >= 1200 ? "kW" : "W", trace: color("--trace-vr"), title: "P–V" },
+      { x: labelWidth, y: marginTop, width: plotWidth, height: plotHeight, key: "i", max: iMax, unit: "A", trace: color("--trace-il"), title: "I–V" },
+      { x: labelWidth * 2 + plotWidth + innerGap, y: marginTop, width: plotWidth, height: plotHeight, key: "p", max: pMax, unit: pMax >= 1200 ? "kW" : "W", trace: color("--trace-vr"), title: "P–V" },
     ];
     curves.layout = { plots, vMax };
     const gridColor = color("--scope-grid");
@@ -631,16 +633,14 @@
       const yAt = (value) => plot.y + plot.height - clamp(value / plot.max, 0, 1.02) * plot.height;
       const scaleValue = (value) => plot.unit === "kW" ? value / 1000 : value;
       ctx.fillStyle = textColor; ctx.textAlign = "right";
-      ctx.fillText(`${format.format(scaleValue(plot.max))}`, plot.x - 5, plot.y + 10);
-      ctx.fillText("0", plot.x - 5, plot.y + plot.height + 1);
-      ctx.textAlign = "left";
-      ctx.fillText(plot.unit, plot.x + 4, plot.y + 11);
+      ctx.fillText(`${format.format(scaleValue(plot.max))} ${plot.unit}`, plot.x - 6, plot.y + 10);
+      ctx.fillText("0", plot.x - 6, plot.y + plot.height + 1);
       ctx.textAlign = "center";
       ctx.fillText(`${fmt(0).format(vMax)} V`, plot.x + plot.width, plot.y + plot.height + 17);
       ctx.fillText("0", plot.x, plot.y + plot.height + 17);
-      ctx.fillStyle = textColor; ctx.textAlign = "left";
+      ctx.textAlign = "left";
       ctx.font = '800 13px Inter, "Segoe UI", Arial, sans-serif';
-      ctx.fillText(plot.title, plot.x + 8, plot.y + plot.height - 8);
+      ctx.fillText(plot.title, plot.x + 2, plot.y - 9);
       ctx.font = '600 12.5px Inter, "Segoe UI", Arial, sans-serif';
       // Reference curve at STC (dashed).
       ctx.beginPath(); ctx.setLineDash([5, 5]); ctx.strokeStyle = textColor; ctx.globalAlpha = .42; ctx.lineWidth = 1.6;
@@ -684,9 +684,9 @@
       ctx.beginPath(); ctx.arc(opX, opY, 10.5, 0, Math.PI * 2);
       ctx.strokeStyle = color("--trace-vx"); ctx.globalAlpha = .4; ctx.lineWidth = 1.6; ctx.stroke(); ctx.globalAlpha = 1;
     });
-    // Environment caption in the corner of the I–V plot.
+    // Environment caption in the strip above the I–V plot.
     ctx.fillStyle = textColor; ctx.textAlign = "right";
-    ctx.fillText(`${fmt(0).format(result.env.g)} ${t("wpm2")} · ${fmt(0).format(result.env.tc)} °C`, plots[0].x + plots[0].width - 6, plots[0].y + 12);
+    ctx.fillText(`${fmt(0).format(result.env.g)} ${t("wpm2")} · ${fmt(0).format(result.env.tc)} °C`, plots[0].x + plots[0].width - 2, plots[0].y - 9);
   }
 
   // ------------------------------------------------------- model interface --
@@ -699,7 +699,7 @@
       control("ambientTemp", "T<sub>amb</sub>", ["Ambient temperature", "Température ambiante", "Temperatura ambiente"], -10, 45, 1, "°C"),
     ],
     bottom: [
-      control("dcVoltage", "V<sub>dc</sub>", ["DC bus voltage", "Tension du bus continu", "Tensión del bus continuo"], 320, 600, 20, "V", { advanced: true }),
+      control("dcVoltage", "V<sub>dc</sub>", ["DC bus voltage", "Tension du bus continu", "Tensión del bus continuo"], 360, 600, 20, "V", { advanced: true }),
       control("busCapacitance", "C<sub>dc</sub>", ["DC bus capacitance", "Capacité du bus continu", "Capacidad del bus continuo"], 500, 4000, 100, "µF", { advanced: true }),
     ],
   };
@@ -712,7 +712,9 @@
     ],
     second: [
       { key: "vPv", label: "v<sub>pv</sub>", color: "--trace-ic", width: 2.7 },
+      { key: "vPvAvg", label: "⟨v<sub>pv</sub>⟩", color: "--trace-ic", dash: [3, 6], width: 1.6 },
       { key: "vDc", label: "v<sub>dc</sub>", color: "--trace-vl", width: 3 },
+      { key: "vDcAvg", label: "⟨v<sub>dc</sub>⟩", color: "--trace-vl", dash: [3, 6], width: 1.6 },
     ],
     third: [
       { key: "iL", label: "i<sub>L</sub>", color: "--trace-il", width: 2.5 },
@@ -750,9 +752,9 @@
       const array = makeArray(env.g, env.tc, ns, np);
       const stcArray = makeArray(1000, 25, ns, np);
       const stcMpp = findMpp(stcArray);
-      const stc = { voc: stcArray.voc, isc: stcArray.isc, pmp: stcMpp.p, curve: sampleCurve(stcArray, stcArray.voc * 1.02) };
+      const stc = { voc: stcArray.voc, isc: stcArray.isc, pmp: stcMpp.p, curve: sampleCurve(stcArray, stcArray.voc) };
       const mpp = findMpp(array);
-      const curve = sampleCurve(array, Math.max(array.voc, stcArray.voc) * 1.02);
+      const curve = sampleCurve(array, array.voc);
       const vLimit = Math.min(stcArray.voc * 1.02, (state.dcVoltage || 400) * .95);
       let opVoltage = scene.mppt || scene.manualV === null ? mpp.v : clamp(scene.manualV, 2, vLimit);
       opVoltage = clamp(opVoltage, 0, vLimit);
@@ -798,23 +800,26 @@
       ];
     },
     infoBandHtml() {
+      const lines = (ids) => `<div class="info-lines pv-info-lines">${ids.map((id) => `<span class="math info-equation" id="${id}"></span>`).join("")}</div>`;
       return `
-        <div><span>${t("sunlight")}</span><div class="info-lines"><span class="math info-equation" id="pv-info-g"></span><span class="math info-equation" id="pv-info-tc"></span></div></div>
-        <div><span>${t("pvArray")}</span><div class="info-lines"><span class="math info-equation" id="pv-info-p"></span><span class="math info-equation" id="pv-info-vp"></span></div></div>
-        <div><span>${t("boostCol")}</span><div class="info-lines"><span class="math info-equation" id="pv-info-duty"></span><span class="math info-equation" id="pv-info-eta"></span></div></div>
-        <div><span>${t("gridCol")}</span><div class="info-lines"><span class="math info-equation" id="pv-info-pac"></span><span class="math info-equation" id="pv-info-pf"></span></div></div>`;
+        <div><span>${t("sunlight")}</span>${lines(["pv-info-g", "pv-info-tc"])}</div>
+        <div><span>${t("pvArray")}</span>${lines(["pv-info-p", "pv-info-vpv", "pv-info-ipv"])}</div>
+        <div><span>${t("boostCol")}</span>${lines(["pv-info-duty", "pv-info-eta"])}</div>
+        <div><span>${t("gridCol")}</span>${lines(["pv-info-pac", "pv-info-fp", "pv-info-thd"])}</div>`;
     },
     infoValuesFor(result, _state, helpers) {
       helpers.setInfoMath("pv-info-g", `G=${helpers.texNumber(result.env.g)}\\,\\mathrm{W/m^2}`);
       helpers.setInfoMath("pv-info-tc", `T_{cell}=${helpers.texNumber(result.env.tc)}\\,^{\\circ}\\mathrm{C}`);
       helpers.setInfoMath("pv-info-p", `P_{pv}=${texPower(helpers, result.pvPower)}`);
-      helpers.setInfoMath("pv-info-vp", `V_{pv}=${helpers.texNumber(result.vPvMean)}\\,\\mathrm{V}\\;\\; I_{pv}=${helpers.texNumber(result.iLMean)}\\,\\mathrm{A}`);
+      helpers.setInfoMath("pv-info-vpv", `V_{pv}=${helpers.texNumber(result.vPvMean)}\\,\\mathrm{V}`);
+      helpers.setInfoMath("pv-info-ipv", `I_{pv}=${helpers.texNumber(result.iLMean)}\\,\\mathrm{A}`);
       helpers.setInfoMath("pv-info-duty", `\\delta=1-\\tfrac{V_{pv}}{V_{dc}}=${helpers.texNumber(result.duty)}`);
       const tracking = result.mpp.p > 1 ? clamp(result.pvPower / result.mpp.p * 100, 0, 100) : 100;
       helpers.setInfoMath("pv-info-eta", `\\eta_{MPPT}=${helpers.texNumber(tracking)}\\,\\%`);
       document.querySelector("#pv-info-eta")?.classList.toggle("warning", tracking < 96);
       helpers.setInfoMath("pv-info-pac", `P=${texPower(helpers, result.activePower)}`);
-      helpers.setInfoMath("pv-info-pf", `\\mathrm{FP}=${helpers.texNumber(result.powerFactor)}\\;\\; \\mathrm{THD}_i=${helpers.texNumber(result.currentThd)}\\,\\%`);
+      helpers.setInfoMath("pv-info-fp", `\\mathrm{FP}=${helpers.texNumber(result.powerFactor)}`);
+      helpers.setInfoMath("pv-info-thd", `\\mathrm{THD}_i=${helpers.texNumber(result.currentThd)}\\,\\%`);
     },
     theoryHtml() {
       const comparison = (rows) => `<div class="comparison-grid">${rows.map(([label, id]) => `<span>${label}</span><strong id="${id}"></strong>`).join("")}</div>`;

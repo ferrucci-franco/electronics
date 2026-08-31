@@ -67,9 +67,9 @@ h1, h2 { margin: 0; font-size: clamp(1.08rem, 1.35vw, 1.72rem); line-height: 1.0
 #theory-trigger { border-color: #0b93888f; background: #fffdf8; color: #087f76; }
 #theme-toggle:hover, #advanced-toggle:hover, #reset:hover { border-color: var(--teal); }
 #theory-trigger:hover { border-color: var(--teal); background: var(--teal-soft); color: #075f59; }
-#advanced-toggle::before { display: inline-block; width: .9em; margin-right: 4px; content: "✓"; opacity: 0; transform: scale(.8); transition: opacity 130ms ease, transform 130ms ease; }
+#advanced-toggle::before { display: inline-block; width: .74em; height: .74em; margin-right: 6px; content: ""; border: 1.6px solid currentColor; border-radius: 50%; background: transparent; vertical-align: -.08em; transition: background-color 130ms ease, box-shadow 130ms ease; }
 #advanced-toggle[aria-pressed="true"] { border-color: #087f76; background: var(--teal); color: white; box-shadow: inset 0 3px 5px #075f596b, 0 0 0 1px #0b93882b; }
-#advanced-toggle[aria-pressed="true"]::before { opacity: 1; transform: scale(1); }
+#advanced-toggle[aria-pressed="true"]::before { background: currentColor; box-shadow: inset 0 0 0 2.5px var(--teal); }
 #theme-toggle:focus-visible, #advanced-toggle:focus-visible, #theory-trigger:focus-visible, #reset:focus-visible, .language-switch button:focus-visible, input[type="range"]:focus-visible { outline: 3px solid #0b93883b; outline-offset: 2px; }
 
 .circuit-panel, .scope-panel { display: flex; flex-direction: column; }
