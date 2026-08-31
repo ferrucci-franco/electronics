@@ -316,12 +316,14 @@
       </g>
       <g id="pv-panel-stand" fill="#5a6b7c"><rect x="534" y="330" width="12" height="72" rx="3"/><rect x="506" y="398" width="68" height="8" rx="4"/></g>
       <g id="pv-panel-rot">
-        <rect x="436" y="292" width="208" height="46" fill="rgba(0,0,0,0)"/>
-        <rect x="450" y="306" width="180" height="15" rx="3" fill="#1d3f66" stroke="#0e2740" stroke-width="2.4"/>
-        <g stroke="rgba(160,200,240,.55)" stroke-width="1.4">
-          <line x1="472" y1="306" x2="472" y2="321"/><line x1="494" y1="306" x2="494" y2="321"/><line x1="516" y1="306" x2="516" y2="321"/><line x1="538" y1="306" x2="538" y2="321"/><line x1="560" y1="306" x2="560" y2="321"/><line x1="582" y1="306" x2="582" y2="321"/><line x1="604" y1="306" x2="604" y2="321"/>
+        <rect x="428" y="286" width="224" height="52" fill="rgba(0,0,0,0)"/>
+        <rect x="434" y="301" width="212" height="26" rx="3" fill="#0d2440"/>
+        <rect x="438" y="305" width="204" height="18" fill="#1e4a7e"/>
+        <g stroke="rgba(160,205,250,.6)" stroke-width="1.2">
+          <line x1="455" y1="305" x2="455" y2="323"/><line x1="472" y1="305" x2="472" y2="323"/><line x1="489" y1="305" x2="489" y2="323"/><line x1="506" y1="305" x2="506" y2="323"/><line x1="523" y1="305" x2="523" y2="323"/><line x1="540" y1="305" x2="540" y2="323"/><line x1="557" y1="305" x2="557" y2="323"/><line x1="574" y1="305" x2="574" y2="323"/><line x1="591" y1="305" x2="591" y2="323"/><line x1="608" y1="305" x2="608" y2="323"/><line x1="625" y1="305" x2="625" y2="323"/>
+          <line x1="438" y1="314" x2="642" y2="314"/>
         </g>
-        <line x1="450" y1="313.5" x2="630" y2="313.5" stroke="rgba(160,200,240,.4)" stroke-width="1.2"/>
+        <polygon points="438,305 520,305 478,323 438,323" fill="#ffffff" opacity=".13"/>
       </g>
       <path id="pv-tilt-arc" d="" fill="none" stroke="rgba(20,40,60,.5)" stroke-width="2" stroke-dasharray="4 4"/>
       <text id="pv-tilt-text" class="pv-txt pv-txt-small pv-txt-end" x="413" y="294">β = 30°</text>
@@ -333,7 +335,7 @@
       <text class="pv-box-label pv-txt" x="280" y="355">DC/AC</text>
       <text id="pv-bridge-name" class="pv-txt pv-txt-small" x="280" y="374">pont en H</text>
       <path class="pv-wire" d="M 534 358 H 470 M 380 358 H 325 M 235 358 H 196 Q 172 356 166 267"/>
-      <path id="pv-flow" class="pv-wire pv-flow-wire" d="M 534 358 H 470 M 380 358 H 325 M 235 358 H 196 Q 172 356 166 267" stroke="#ffb253" stroke-width="3.6"/>
+      <path id="pv-flow" class="pv-wire pv-flow-wire" d="M 534 358 H 470 M 380 358 H 325 M 235 358 H 196 Q 172 356 166 267" stroke="#f2c230" stroke-width="4.4"/>
       <text id="pv-array-line" class="pv-txt" x="660" y="428">—</text>
       <text id="pv-temp-line" class="pv-txt pv-txt-small" x="660" y="450">—</text>
       <text id="pv-vpv-text" class="pv-txt" x="412" y="428">—</text>
@@ -473,7 +475,7 @@
   function panelCorners(tiltDegrees) {
     const angle = tiltDegrees * Math.PI / 180;
     const cos = Math.cos(angle); const sin = Math.sin(angle);
-    const half = 90;
+    const half = 106;
     const cx = PANEL.x; const cy = PANEL.y - 1.5;
     return [
       { x: cx - half * cos, y: cy - half * sin },
@@ -531,7 +533,8 @@
     el.powerText.textContent = result.standby ? `0 W · ${t("night")}` : (Math.abs(result.activePower) < 1000 ? `${fmt(0).format(result.activePower)} W` : `${format.format(kw)} kW`);
     const flowing = Math.abs(result.activePower) > 25;
     el.flow.classList.toggle("paused", !flowing);
-    if (flowing) el.flow.style.animationDuration = `${clamp(2400 / Math.max(Math.abs(kw), .05), 260, 8000).toFixed(0)}ms`;
+    // Cadence douce et plafonnée : lisible sans jamais clignoter (photosensibilité).
+    if (flowing) el.flow.style.animationDuration = `${clamp(16000 / Math.max(Math.abs(kw), .05), 3000, 20000).toFixed(0)}ms`;
   }
 
   // -------------------------------------------------------------- curves --
@@ -772,17 +775,21 @@
     plotsFor() { return { main: plots.dc, second: plots.currents, third: plots.ac }; },
     basicPlotsFor() { return [plots.dc, plots.ac]; },
     axesFor(_application, isAdvanced = false) {
-      const dcAxis = { label: text("DC voltages", "tensions DC", "tensiones DC"), unit: "V", hideMax: true };
+      const dcAxis = { label: text("DC voltages", "tensions DC", "tensiones DC"), unit: "V" };
       const currentAxis = { label: text("DC currents", "courants DC", "corrientes DC"), unit: "A", tint: "--trace-il" };
-      const acAxis = { label: text("grid current", "courant réseau", "corriente de red"), unit: "A", rightLabel: text("grid voltage", "tension réseau", "tensión de red"), rightUnit: "V", tint: "--scope-text" };
+      const acAxis = { label: text("AC grid", "réseau AC", "red AC"), unit: "A", rightUnit: "V", hideRightAxis: true, tint: "--scope-text" };
       return isAdvanced ? [dcAxis, currentAxis, acAxis] : [dcAxis, acAxis, acAxis];
     },
-    axisMarksFor(groupIndex) {
-      if (groupIndex !== 0 || !lastResult) return [];
-      return [
-        { value: lastResult.vDcMean, color: "--trace-vl" },
-        { value: lastResult.vPvMean, color: "--trace-ic" },
-      ];
+    axisMarksFor(groupIndex, isAdvanced = false) {
+      if (!lastResult) return [];
+      if (groupIndex === 0) {
+        return [
+          { value: lastResult.vDcMean, color: "--trace-vl" },
+          { value: lastResult.vPvMean, color: "--trace-ic" },
+        ];
+      }
+      if (isAdvanced && groupIndex === 1) return [{ value: lastResult.iLMean, color: "--trace-il" }];
+      return [];
     },
     calculate(state) {
       const ns = Math.round(state.panelsPerString);

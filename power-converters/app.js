@@ -567,21 +567,21 @@
       else {
         if (Math.abs(range.rawMax - range.rawMin) < 1e-12) ctx.fillText(`0 ${axes[groupIndex].unit}`, left - 8, zero + 5);
         else { if (!axes[groupIndex].hideMax) ctx.fillText(`${axisValue(range.rawMax, axes[groupIndex].unit)} ${axes[groupIndex].unit}`, left - 8, yAt(range.rawMax) + 5); if (range.rawMin < -1e-9) ctx.fillText(`${axisValue(range.rawMin, axes[groupIndex].unit)} ${axes[groupIndex].unit}`, left - 8, yAt(range.rawMin) + 5); else ctx.fillText(`0 ${axes[groupIndex].unit}`, left - 8, Math.min(plotTop + plotHeight - 3, Math.max(plotTop + 13, zero + 5))); }
-        if (rightRange) { ctx.fillStyle = color(rightTraces.at(-1)?.color || "--trace-vr"); ctx.textAlign = "left"; if (Math.abs(rightRange.rawMax - rightRange.rawMin) < 1e-12) ctx.fillText(`0 ${axes[groupIndex].rightUnit}`, left + plotWidth + 8, yAtRight(0) + 5); else { ctx.fillText(`${axisValue(rightRange.rawMax, axes[groupIndex].rightUnit)} ${axes[groupIndex].rightUnit}`, left + plotWidth + 8, yAtRight(rightRange.rawMax) + 5); ctx.fillText(`${axisValue(rightRange.rawMin, axes[groupIndex].rightUnit)} ${axes[groupIndex].rightUnit}`, left + plotWidth + 8, yAtRight(rightRange.rawMin) + 5); } }
+        if (rightRange && !axes[groupIndex].hideRightAxis) { ctx.fillStyle = color(rightTraces.at(-1)?.color || "--trace-vr"); ctx.textAlign = "left"; if (Math.abs(rightRange.rawMax - rightRange.rawMin) < 1e-12) ctx.fillText(`0 ${axes[groupIndex].rightUnit}`, left + plotWidth + 8, yAtRight(0) + 5); else { ctx.fillText(`${axisValue(rightRange.rawMax, axes[groupIndex].rightUnit)} ${axes[groupIndex].rightUnit}`, left + plotWidth + 8, yAtRight(rightRange.rawMax) + 5); ctx.fillText(`${axisValue(rightRange.rawMin, axes[groupIndex].rightUnit)} ${axes[groupIndex].rightUnit}`, left + plotWidth + 8, yAtRight(rightRange.rawMin) + 5); } }
       }
       const marksModel = activeModel();
-      if (typeof marksModel.axisMarksFor === "function") {
+      const rightAxisShown = rightRange && !axes[groupIndex].hideRightAxis;
+      if (!rightAxisShown && typeof marksModel.axisMarksFor === "function") {
         let previousY = null;
-        ctx.textAlign = "right";
-        (marksModel.axisMarksFor(groupIndex) || []).forEach((mark) => {
+        ctx.textAlign = "left";
+        (marksModel.axisMarksFor(groupIndex, advanced) || []).forEach((mark) => {
           if (!Number.isFinite(mark.value)) return;
-          let markY = yAt(mark.value);
-          if (markY < plotTop + 10 || markY > plotTop + plotHeight - 4) return;
+          let markY = Math.min(plotTop + plotHeight - 4, Math.max(plotTop + 9, yAt(mark.value)));
           if (previousY !== null && Math.abs(markY - previousY) < 14) markY = previousY + 14;
           previousY = markY;
           ctx.fillStyle = color(mark.color || "--scope-text");
-          ctx.fillRect(left - 7, markY - 1, 6, 2);
-          ctx.fillText(`${axisValue(mark.value, axes[groupIndex].unit)} ${axes[groupIndex].unit}`, left - 10, markY + 4);
+          ctx.fillRect(left + plotWidth + 1, markY - 1, 6, 2);
+          ctx.fillText(`${axisValue(mark.value, axes[groupIndex].unit)} ${axes[groupIndex].unit}`, left + plotWidth + 9, markY + 4);
         });
       }
     });
@@ -591,7 +591,7 @@
     const plotBottom = tops.at(-1) + plotHeight; ctx.fillStyle = color("--scope-text"); ctx.textAlign = "left"; ctx.fillText(xMinTime <= 1e-15 ? "0" : displayTime(xMinTime), left, plotBottom + 25); ctx.textAlign = "right"; ctx.fillText(displayTime(xMaxTime), left + plotWidth, plotBottom + 25); ctx.textAlign = "center"; ctx.fillText(tr().time, left + plotWidth / 2, plotBottom + 25);
     const labelInset = width < 520 ? 12 : 24;
     const axisLabel = (value) => value ? value.charAt(0).toUpperCase() + value.slice(1) : value;
-    groups.forEach((_, index) => { ctx.save(); ctx.translate(labelInset, tops[index] + plotHeight / 2); ctx.rotate(-Math.PI / 2); ctx.fillStyle = axes[index].tint ? color(axes[index].tint) : index === 1 ? color("--trace-vl") : index === 2 ? color("--trace-il") : color("--scope-text"); ctx.fillText(`${axisLabel(axes[index].label)} (${axes[index].unit})`, 0, 0); ctx.restore(); if (axes[index].rightLabel) { ctx.save(); ctx.translate(width - labelInset, tops[index] + plotHeight / 2); ctx.rotate(Math.PI / 2); ctx.fillStyle = color(groups[index].filter((item) => item.axis === "right").at(-1)?.color || "--trace-vr"); ctx.fillText(`${axisLabel(axes[index].rightLabel)} (${axes[index].rightUnit})`, 0, 0); ctx.restore(); } });
+    groups.forEach((_, index) => { ctx.save(); ctx.translate(labelInset, tops[index] + plotHeight / 2); ctx.rotate(-Math.PI / 2); ctx.fillStyle = axes[index].tint ? color(axes[index].tint) : index === 1 ? color("--trace-vl") : index === 2 ? color("--trace-il") : color("--scope-text"); ctx.fillText(`${axisLabel(axes[index].label)} (${axes[index].unit})`, 0, 0); ctx.restore(); if (axes[index].rightLabel && !axes[index].hideRightAxis) { ctx.save(); ctx.translate(width - labelInset, tops[index] + plotHeight / 2); ctx.rotate(Math.PI / 2); ctx.fillStyle = color(groups[index].filter((item) => item.axis === "right").at(-1)?.color || "--trace-vr"); ctx.fillText(`${axisLabel(axes[index].rightLabel)} (${axes[index].rightUnit})`, 0, 0); ctx.restore(); } });
   }
 
   let modelUpdateQueued = false;

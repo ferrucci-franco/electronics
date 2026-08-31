@@ -14,9 +14,9 @@
 #pv-panel-rot { cursor: grab; }
 #pv-panel-rot.pv-dragging { cursor: grabbing; }
 .workspace:has(.pv-scene) .measurements { display: none; }
-.pv-flow-wire { stroke-dasharray: 10 12; animation: pv-flow 1.4s linear infinite; }
+.pv-flow-wire { stroke-dasharray: 15 13; animation: pv-flow 5s linear infinite; }
 .pv-flow-paused .pv-flow-wire, .pv-flow-wire.paused { animation-play-state: paused; opacity: .25; }
-@keyframes pv-flow { to { stroke-dashoffset: -88; } }
+@keyframes pv-flow { to { stroke-dashoffset: -56; } }
 
 .pv-hud { position: absolute; z-index: 3; display: flex; flex-direction: column; gap: 6px; top: 10px; left: 12px; }
 .pv-hud-card { display: flex; align-items: center; gap: 8px; border: 1px solid #ffffff66; border-radius: 999px; padding: 5px 12px; background: #ffffffb8; box-shadow: 0 4px 14px #17243822; backdrop-filter: blur(4px); color: #21374f; font-size: clamp(.72rem, .8vw, .86rem); font-weight: 750; }
