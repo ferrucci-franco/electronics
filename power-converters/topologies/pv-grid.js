@@ -749,8 +749,7 @@
     ac: [
       { key: "iRef", label: "i<sub>g</sub>*", color: "--trace-vx", dash: [8, 5] },
       { key: "iGrid", label: "i<sub>g</sub>", color: "--trace-vr", width: 3 },
-      { key: "iBest", label: "î<sub>g</sub> (STC)", color: "--scope-text", dash: [6, 6], width: 1.7, layer: -2 },
-      { key: "iBestNeg", legendKey: "iBest", legendHidden: true, label: "", color: "--scope-text", dash: [6, 6], width: 1.7, layer: -2 },
+      { key: "iBest", label: "i<sub>g</sub> (STC)", color: "--scope-text", dash: [6, 6], width: 1.7, layer: -2 },
       { key: "iPad", legendHidden: true, ghost: true, label: "", color: "--scope-text" },
       { key: "iPadNeg", legendHidden: true, ghost: true, label: "", color: "--scope-text" },
       { key: "vPad", legendHidden: true, ghost: true, axis: "right", label: "", color: "--scope-text" },
@@ -810,12 +809,12 @@
       const op = { v: opVoltage, i: Math.max(array.current(opVoltage), 0), p: 0 };
       op.p = op.v * op.i;
       const sim = simulateChain(state, op, array);
-      // Plafond d'amplitude : courant crête qui correspondrait à la puissance STC du champ.
+      // Sinusoïde de référence : courant qui correspondrait à la puissance STC du champ.
       // Traces fantômes : iPad écrase l'échelle des courants et vPad dilate v_g,
-      // pour que la tension culmine nettement au-dessus des courants.
+      // pour que la tension culmine nettement au-dessus de la référence STC.
       const iBestAmp = Math.SQRT2 * stc.pmp / 230;
       const iPadValue = iBestAmp * 1.5;
-      sim.points.forEach((point) => { point.iBest = iBestAmp; point.iBestNeg = -iBestAmp; point.iPad = iPadValue; point.iPadNeg = -iPadValue; point.vPad = 355; point.vPadNeg = -355; });
+      sim.points.forEach((point) => { point.iBest = iBestAmp * Math.sin(100 * Math.PI * point.t); point.iPad = iPadValue; point.iPadNeg = -iPadValue; point.vPad = 355; point.vPadNeg = -355; });
       const outcome = { ...sim, env, ns, np, curve, stc, mpp, op, vocArr: array.voc, iscArr: array.isc };
       // Mémorisé avant le tracé : les repères d'axe (axisMarksFor) lisent lastResult.
       lastResult = outcome;
