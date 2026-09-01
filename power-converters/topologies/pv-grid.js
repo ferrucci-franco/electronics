@@ -398,6 +398,17 @@
       updateSceneVisual();
       if (requestUpdate) requestUpdate();
     });
+    // Molette sur la carte des nuages, comme sur les cartes de réglage standard.
+    const cloudCard = el.cloudSlider.closest(".pv-hud-card");
+    let cloudWheelTimer = null; let cloudWheelReady = false;
+    cloudCard.addEventListener("mouseenter", () => { clearTimeout(cloudWheelTimer); cloudWheelReady = false; cloudWheelTimer = setTimeout(() => { cloudWheelReady = true; }, 200); });
+    cloudCard.addEventListener("mouseleave", () => { clearTimeout(cloudWheelTimer); cloudWheelReady = false; });
+    cloudCard.addEventListener("wheel", (event) => {
+      if (!cloudWheelReady) return;
+      event.preventDefault();
+      const next = clamp(Number(el.cloudSlider.value) + (event.deltaY < 0 ? 1 : -1) * 5, 0, 100);
+      if (next !== Number(el.cloudSlider.value)) { el.cloudSlider.value = String(next); el.cloudSlider.dispatchEvent(new Event("input", { bubbles: true })); }
+    }, { passive: false });
     el.playButton.addEventListener("click", () => { setPlaying(!scene.playing); });
 
     const dragState = { mode: null, cloudIndex: -1, pointerId: null };
