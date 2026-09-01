@@ -712,8 +712,21 @@
         ctx.strokeStyle = color("--trace-vin"); ctx.lineWidth = 1.8;
         ctx.beginPath(); ctx.moveTo(mx - 5, my); ctx.lineTo(mx + 5, my); ctx.moveTo(mx, my - 5); ctx.lineTo(mx, my + 5); ctx.stroke();
         if (plot.key === "p") {
-          ctx.fillStyle = color("--trace-vin"); ctx.textAlign = "left";
-          ctx.fillText("MPP", mx + 7, my - 6);
+          // Badge « MPP » : rectangle arrondi opaque, décalé pour ne pas couvrir la croix.
+          ctx.save();
+          ctx.font = '800 11.5px Inter, "Segoe UI", Arial, sans-serif';
+          const badgeWidth = ctx.measureText("MPP").width + 12;
+          const badgeHeight = 17;
+          let badgeX = mx + 9;
+          if (badgeX + badgeWidth > plot.x + plot.width - 2) badgeX = mx - 9 - badgeWidth;
+          let badgeY = my - 9 - badgeHeight;
+          if (badgeY < plot.y + 2) badgeY = my + 9;
+          ctx.beginPath(); ctx.roundRect(badgeX, badgeY, badgeWidth, badgeHeight, 6);
+          ctx.fillStyle = color("--scope-screen"); ctx.fill();
+          ctx.lineWidth = 1.4; ctx.strokeStyle = color("--trace-vin"); ctx.stroke();
+          ctx.fillStyle = color("--trace-vin"); ctx.textAlign = "center";
+          ctx.fillText("MPP", badgeX + badgeWidth / 2, badgeY + badgeHeight - 5);
+          ctx.restore();
         }
       }
       // Operating point.
