@@ -169,7 +169,7 @@
   // ------------------------------------------------------ chain simulation --
   function simulateChain(state, operating, array) {
     const gridRms = 230; const gridFrequency = 50; const omega = 2 * Math.PI * gridFrequency;
-    const fsBoost = 20000; const fsInverter = clamp(state.inverterFrequency || 10000, 2000, fsBoost);
+    const fsBoost = clamp(state.boostFrequency || 20000, 8000, 40000); const fsInverter = 10000;
     const boostInductance = 2.5e-3; const boostResistance = .25; const pvCapacitance = 200e-6;
     const gridInductance = 4e-3; const gridResistance = .3;
     const busCapacitance = (state.busCapacitance || 1500) / 1e6;
@@ -742,7 +742,7 @@
     ],
     bottom: [
       control("dcVoltage", "V<sub>bus DC</sub>", ["DC bus voltage", "Tension du bus continu", "Tensión del bus continuo"], 360, 600, 20, "V", { advanced: true }),
-      control("inverterFrequency", "f<sub>PWM</sub>", ["H-bridge PWM frequency", "Fréquence PWM du pont", "Frecuencia PWM del puente"], 4000, 20000, 2000, "kHz", { scale: .001, advanced: true }),
+      control("boostFrequency", "f<sub>boost</sub>", ["Boost switching frequency", "Fréquence de découpage du boost", "Frecuencia de conmutación del boost"], 8000, 40000, 2000, "kHz", { scale: .001, advanced: true }),
     ],
   };
 
@@ -772,7 +772,7 @@
 
   const model = {
     id: "pv-grid",
-    defaults: { tiltAngle: 30, panelsPerString: 6, strings: 2, ambientTemp: 25, dcVoltage: 400, busCapacitance: 1500, inverterFrequency: 10000 },
+    defaults: { tiltAngle: 30, panelsPerString: 6, strings: 2, ambientTemp: 25, dcVoltage: 400, busCapacitance: 1500, boostFrequency: 20000 },
     defaultHiddenTraces: ["iBusInRaw"],
     controls,
     controlsFor(_application, options = {}) {
