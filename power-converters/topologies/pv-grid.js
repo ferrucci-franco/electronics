@@ -27,7 +27,7 @@
       pvModelTitle: "PV panel model", chainTitle: "Conversion chain", operatingPoint: "Operating point", openCircuit: "Open-circuit voltage", shortCircuit: "Short-circuit current", mppLabel: "Maximum power point",
       dutyLabel: "Boost duty cycle", simulation: "Simulation", approximation: "Approximation", relativeError: "Relative error", conversionEff: "P<sub>ac</sub> / P<sub>pv</sub>",
       pvNote: "Explicit single-diode model: the photocurrent scales with irradiance, the diode saturation current sets the temperature dependence of V<sub>oc</sub>, and the cell heats above ambient following the NOCT law.",
-      chainNote: "The boost duty cycle pins the PV voltage to the selected operating point on the I–V curve. The H-bridge (unipolar PWM, 10 kHz) injects a sinusoidal current in phase with the grid; the 100 Hz power pulsation of a single-phase link explains the DC-bus voltage ripple.",
+      chainNote: "The boost duty cycle pins the PV voltage to the selected operating point on the I–V curve. The H-bridge (unipolar PWM, 10 kHz) injects a sinusoidal current in phase with the grid; the 100 Hz power pulsation of a single-phase link explains the DC-bus voltage ripple. The displayed bus currents are averaged over the switching period: the instantaneous currents through the switches and diodes are chopped at the switching frequency.",
       sceneAria: "Interactive solar scene: drag the sun along its path, drag the clouds, and watch the PV array feed the grid.",
       curvesAria: "PV array characteristics. In manual mode, drag the operating point along the curve.",
       night: "night", wpm2: "W/m²",
@@ -40,7 +40,7 @@
       pvModelTitle: "Modèle du panneau PV", chainTitle: "Chaîne de conversion", operatingPoint: "Point de fonctionnement", openCircuit: "Tension à vide", shortCircuit: "Courant de court-circuit", mppLabel: "Point de puissance maximale",
       dutyLabel: "Rapport cyclique du boost", simulation: "Simulation", approximation: "Approximation", relativeError: "Écart relatif", conversionEff: "P<sub>ac</sub> / P<sub>pv</sub>",
       pvNote: "Modèle à une diode explicite : le photocourant est proportionnel à l’éclairement, le courant de saturation de la diode fixe la dépendance de V<sub>oc</sub> à la température, et la cellule s’échauffe au-dessus de l’ambiante selon la loi NOCT.",
-      chainNote: "Le rapport cyclique du boost impose la tension du champ PV, donc le point de fonctionnement sur la courbe I–V. Le pont en H (PWM unipolaire, 10 kHz) injecte un courant sinusoïdal en phase avec le réseau ; la pulsation de puissance à 100 Hz d’une liaison monophasée explique l’ondulation de la tension du bus continu.",
+      chainNote: "Le rapport cyclique du boost impose la tension du champ PV, donc le point de fonctionnement sur la courbe I–V. Le pont en H (PWM unipolaire, 10 kHz) injecte un courant sinusoïdal en phase avec le réseau ; la pulsation de puissance à 100 Hz d’une liaison monophasée explique l’ondulation de la tension du bus continu. Les courants du bus affichés sont moyennés sur la période de découpage : les courants instantanés traversant interrupteurs et diodes sont hachés à la fréquence de commutation.",
       sceneAria: "Scène solaire interactive : faites glisser le soleil sur sa trajectoire, déplacez les nuages et observez le champ PV alimenter le réseau.",
       curvesAria: "Caractéristiques du champ PV. En mode manuel, faites glisser le point de fonctionnement le long de la courbe.",
       night: "nuit", wpm2: "W/m²",
@@ -53,7 +53,7 @@
       pvModelTitle: "Modelo del panel PV", chainTitle: "Cadena de conversión", operatingPoint: "Punto de operación", openCircuit: "Tensión de circuito abierto", shortCircuit: "Corriente de cortocircuito", mppLabel: "Punto de máxima potencia",
       dutyLabel: "Ciclo de trabajo del boost", simulation: "Simulación", approximation: "Aproximación", relativeError: "Error relativo", conversionEff: "P<sub>ac</sub> / P<sub>pv</sub>",
       pvNote: "Modelo explícito de un diodo: la fotocorriente es proporcional a la irradiancia, la corriente de saturación del diodo fija la dependencia de V<sub>oc</sub> con la temperatura y la celda se calienta sobre la ambiente según la ley NOCT.",
-      chainNote: "El ciclo de trabajo del boost impone la tensión del campo PV, es decir, el punto de operación sobre la curva I–V. El puente H (PWM unipolar, 10 kHz) inyecta una corriente senoidal en fase con la red; la pulsación de potencia a 100 Hz de un enlace monofásico explica el rizado de tensión del bus continuo.",
+      chainNote: "El ciclo de trabajo del boost impone la tensión del campo PV, es decir, el punto de operación sobre la curva I–V. El puente H (PWM unipolar, 10 kHz) inyecta una corriente senoidal en fase con la red; la pulsación de potencia a 100 Hz de un enlace monofásico explica el rizado de tensión del bus continuo. Las corrientes del bus mostradas están promediadas sobre el período de conmutación: las corrientes instantáneas por interruptores y diodos son troceadas a la frecuencia de conmutación.",
       sceneAria: "Escena solar interactiva: arrastre el sol por su trayectoria, mueva las nubes y observe el campo PV alimentar la red.",
       curvesAria: "Características del campo PV. En modo manual, arrastre el punto de operación a lo largo de la curva.",
       night: "noche", wpm2: "W/m²",
@@ -529,7 +529,7 @@
     el.tempLine.textContent = `T amb ${fmt(0).format(result.env.ambient)} °C · T cell ${fmt(0).format(result.env.tc)} °C`;
     el.vpvText.textContent = `Vpv ${fmt(0).format(result.vPvMean)} V`;
     el.dutyText.textContent = `δ = ${fmt(2).format(result.duty)}`;
-    el.vdcText.textContent = `Vdc ${fmt(0).format(result.vDcMean)} V`;
+    el.vdcText.textContent = `V bus ${fmt(0).format(result.vDcMean)} V`;
     const kw = result.activePower / 1000;
     el.powerText.textContent = result.standby ? `0 W · ${t("night")}` : (Math.abs(result.activePower) < 1000 ? `${fmt(0).format(result.activePower)} W` : `${format.format(kw)} kW`);
     const flowing = Math.abs(result.activePower) > 25;
@@ -731,7 +731,7 @@
       control("ambientTemp", "T<sub>amb</sub>", ["Ambient temperature", "Température ambiante", "Temperatura ambiente"], -10, 45, 1, "°C"),
     ],
     bottom: [
-      control("dcVoltage", "V<sub>dc</sub>", ["DC bus voltage", "Tension du bus continu", "Tensión del bus continuo"], 360, 600, 20, "V", { advanced: true }),
+      control("dcVoltage", "V<sub>bus DC</sub>", ["DC bus voltage", "Tension du bus continu", "Tensión del bus continuo"], 360, 600, 20, "V", { advanced: true }),
       control("gridInductance", "L<sub>g</sub>", ["Grid coupling inductance", "Inductance de couplage réseau", "Inductancia de acople a red"], 2, 15, 1, "mH", { advanced: true }),
     ],
   };
@@ -739,12 +739,12 @@
   const plots = {
     dc: [
       { key: "vPv", label: "v<sub>pv</sub>", color: "--trace-ic", width: 2.7 },
-      { key: "vDc", label: "v<sub>dc</sub>", color: "--trace-vl", width: 3 },
+      { key: "vDc", label: "v<sub>bus DC</sub>", color: "--trace-vl", width: 3 },
     ],
     currents: [
       { key: "iL", label: "i<sub>L</sub>", color: "--trace-il", width: 2.2 },
-      { key: "iBusIn", label: "⟨i<sub>in</sub>⟩", color: "--trace-ic", width: 2.6 },
-      { key: "iBusOut", label: "⟨i<sub>out</sub>⟩", color: "--trace-vx", dash: [7, 4], width: 2.6 },
+      { key: "iBusIn", label: "i<sub>bus DC, in</sub>", color: "--trace-ic", width: 2.6 },
+      { key: "iBusOut", label: "i<sub>bus DC, out</sub>", color: "--trace-vx", dash: [7, 4], width: 2.6 },
     ],
     ac: [
       { key: "iRef", label: "i<sub>g</sub>*", color: "--trace-vx", dash: [8, 5] },
@@ -853,7 +853,7 @@
       }
       return [
         { label: `${t("vpvOp")} V<span class="symbol-index">pv</span>`, value: `${fmt(1).format(result.vPvMean)} V` },
-        { label: `${t("busRipple")} ΔV<span class="symbol-index">dc</span>`, value: `${fmt(1).format(result.vDcRipple)} V` },
+        { label: `${t("busRipple")} ΔV<span class="symbol-index">bus DC</span>`, value: `${fmt(1).format(result.vDcRipple)} V` },
         { label: t("thdI"), value: `${format.format(result.currentThd)} %` },
       ];
     },
@@ -872,7 +872,7 @@
       helpers.setInfoMath("pv-info-p", `P_{pv}=${texPower(helpers, result.pvPower)}`);
       helpers.setInfoMath("pv-info-vpv", `V_{pv}=${helpers.texNumber(result.vPvMean)}\\,\\mathrm{V}`);
       helpers.setInfoMath("pv-info-ipv", `I_{pv}=${helpers.texNumber(result.iLMean)}\\,\\mathrm{A}`);
-      helpers.setInfoMath("pv-info-duty", `\\delta=1-\\tfrac{V_{pv}}{V_{dc}}=${helpers.texNumber(result.duty)}`);
+      helpers.setInfoMath("pv-info-duty", `\\delta=1-\\tfrac{V_{pv}}{V_{bus}}=${helpers.texNumber(result.duty)}`);
       const tracking = result.mpp.p > 1 ? clamp(result.pvPower / result.mpp.p * 100, 0, 100) : 100;
       helpers.setInfoMath("pv-info-eta", `\\eta_{MPPT}=${helpers.texNumber(tracking)}\\,\\%`);
       document.querySelector("#pv-info-eta")?.classList.toggle("warning", tracking < 96);
@@ -890,9 +890,9 @@
           <p>${t("pvNote")}</p>
         </section>
         <section class="approximation-section"><h3>${t("chainTitle")}</h3>
-          <div class="approximation-formula math" data-tex="\\displaystyle V_{pv}=(1-\\delta)\\,V_{dc}"></div>
-          ${comparison([[t("dutyLabel"), "pv-th-duty"], [`V<sub>pv</sub> — ${t("simulation").toLowerCase()}`, "pv-th-vpv"], [`(1−δ)·V<sub>dc</sub>`, "pv-th-vpv-law"]])}
-          <div class="approximation-formula math" data-tex="\\displaystyle \\Delta V_{dc}\\simeq\\frac{P}{\\omega\\,C_{dc}\\,V_{dc}}"></div>
+          <div class="approximation-formula math" data-tex="\\displaystyle V_{pv}=(1-\\delta)\\,V_{bus}"></div>
+          ${comparison([[t("dutyLabel"), "pv-th-duty"], [`V<sub>pv</sub> — ${t("simulation").toLowerCase()}`, "pv-th-vpv"], [`(1−δ)·V<sub>bus DC</sub>`, "pv-th-vpv-law"]])}
+          <div class="approximation-formula math" data-tex="\\displaystyle \\Delta V_{bus}\\simeq\\frac{P}{\\omega\\,C_{dc}\\,V_{bus}}"></div>
           ${comparison([[t("simulation"), "pv-th-ripple-sim"], [t("approximation"), "pv-th-ripple-approx"], [t("relativeError"), "pv-th-ripple-err"]])}
           <div class="approximation-formula math" data-tex="\\displaystyle P_{ac}=V_gI_g\\cos\\varphi\\simeq P_{pv}"></div>
           ${comparison([[`P<sub>pv</sub>`, "pv-th-ppv"], [`P<sub>ac</sub>`, "pv-th-pac"], [t("conversionEff"), "pv-th-eff"]])}
