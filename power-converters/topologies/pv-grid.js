@@ -182,9 +182,9 @@
     const settle = .06; const window = .04;
 
     let vPv = operating.v; let iL = operating.i; let vDc = busReference; let iG = 0; let vDcFiltered = busReference;
-    // Moyennes glissantes des courants côté bus : apport du boost et demande du pont.
+    // Moyenne glissante du courant que le boost fournit au bus.
     const busTau = 6e-4;
-    let busInFiltered = (1 - duty) * operating.i; let busOutFiltered = 0;
+    let busInFiltered = (1 - duty) * operating.i;
     const stepOnce = (time, record) => {
       const iAmp = standby ? 0 : clamp(targetPower / gridRms + busGain * (vDcFiltered - busReference), 0, 120);
       const sinWt = Math.sin(omega * time); const cosWt = Math.cos(omega * time);
@@ -206,8 +206,7 @@
       vDc = Math.max(1, vDc + dt * (offShare * iL - bridgeState * iG) / busCapacitance);
       vDcFiltered += dt / filterTau * (vDc - vDcFiltered);
       busInFiltered += dt / busTau * (offShare * iL - busInFiltered);
-      busOutFiltered += dt / busTau * (bridgeState * iG - busOutFiltered);
-      if (record) record({ t: time - settle, vGrid: gridVoltage, iGrid: iG, iRef: reference, vPv, vDc, iL, iPv, iBusIn: busInFiltered, iBusOut: busOutFiltered });
+      if (record) record({ t: time - settle, vGrid: gridVoltage, iGrid: iG, iRef: reference, vPv, vDc, iL, iPv, iBusIn: busInFiltered, iBusInRaw: offShare * iL });
     };
     const settleSteps = Math.round(settle / dt);
     for (let index = 0; index < settleSteps; index += 1) stepOnce(index * dt, null);
@@ -742,9 +741,9 @@
       { key: "vDc", label: "v<sub>bus DC</sub>", color: "--trace-vl", width: 3 },
     ],
     currents: [
-      { key: "iL", label: "i<sub>L</sub>", color: "--trace-il", width: 2.2 },
-      { key: "iBusIn", label: "i<sub>bus DC, in</sub>", color: "--trace-ic", width: 2.6 },
-      { key: "iBusOut", label: "i<sub>bus DC, out</sub>", color: "--trace-vx", dash: [7, 4], width: 2.6 },
+      { key: "iPv", label: "i<sub>pv</sub>", color: "--trace-il", width: 2.4 },
+      { key: "iBusInRaw", label: "i<sub>bus DC, in</sub>", color: "--trace-vx", step: true, width: 1.4 },
+      { key: "iBusIn", label: "⟨i<sub>bus DC, in</sub>⟩", color: "--trace-ic", width: 2.6 },
     ],
     ac: [
       { key: "iRef", label: "i<sub>g</sub>*", color: "--trace-vx", dash: [8, 5] },
@@ -763,6 +762,7 @@
   const model = {
     id: "pv-grid",
     defaults: { tiltAngle: 30, panelsPerString: 6, strings: 2, ambientTemp: 25, dcVoltage: 400, busCapacitance: 1500, gridInductance: 4 },
+    defaultHiddenTraces: ["iBusInRaw"],
     controls,
     controlsFor(_application, options = {}) {
       // Toujours deux rangées de cartes : la scène garde la même taille

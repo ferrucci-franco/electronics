@@ -78,7 +78,7 @@
   const states = {};
   const commutationModes = { buck: "synchronous", boost: "synchronous" };
   const bridgeMode = { application: "standalone", switching: "bipolar", direction: "forward", motorView: "transient", currentControl: "pwm" };
-  const hiddenTraces = { buck: new Set(), boost: new Set(), "pont-h": new Set(), "pv-grid": new Set() };
+  const hiddenTraces = { buck: new Set(), boost: new Set(), "pont-h": new Set(), "pv-grid": new Set(models["pv-grid"]?.defaultHiddenTraces || []) };
   const zoomStates = {
     buck: { x: null, y: [null, null, null] },
     boost: { x: null, y: [null, null, null] },
@@ -766,7 +766,7 @@
   document.querySelector("#topology-close").addEventListener("click", () => topologyDialog.close());
   topologyDialog.addEventListener("click", (event) => { if (event.target === topologyDialog) topologyDialog.close(); });
   advancedButton.addEventListener("click", () => { advanced = !advanced; advancedButton.setAttribute("aria-pressed", String(advanced)); document.body.classList.toggle("advanced-mode", advanced); renderControls(); renderCommutationSelector(); renderBridgeModePanel(); renderLegends(); update(); });
-  document.querySelector("#reset").addEventListener("click", () => { states[currentTopology] = { ...activeModel().defaults }; hiddenTraces[currentTopology]?.clear(); resetZoom(); if (currentTopology in commutationModes) commutationModes[currentTopology] = "synchronous"; if (currentTopology === "pont-h") { bridgeMode.switching = "bipolar"; bridgeMode.direction = "forward"; bridgeMode.motorView = "transient"; bridgeMode.currentControl = "pwm"; } if (typeof activeModel().resetInteractive === "function") activeModel().resetInteractive(); renderTopology(); });
+  document.querySelector("#reset").addEventListener("click", () => { states[currentTopology] = { ...activeModel().defaults }; hiddenTraces[currentTopology] = new Set(activeModel().defaultHiddenTraces || []); resetZoom(); if (currentTopology in commutationModes) commutationModes[currentTopology] = "synchronous"; if (currentTopology === "pont-h") { bridgeMode.switching = "bipolar"; bridgeMode.direction = "forward"; bridgeMode.motorView = "transient"; bridgeMode.currentControl = "pwm"; } if (typeof activeModel().resetInteractive === "function") activeModel().resetInteractive(); renderTopology(); });
   document.addEventListener("contextmenu", (event) => event.preventDefault());
   window.addEventListener("hashchange", () => { const requested = decodeURIComponent(window.location.hash.slice(1)); if (models[requested]) selectTopology(requested, false); else syncRoute(); });
   if ("ResizeObserver" in window) new ResizeObserver(() => currentPoints.length && draw(currentPoints)).observe(canvas); else window.addEventListener("resize", () => currentPoints.length && draw(currentPoints));
