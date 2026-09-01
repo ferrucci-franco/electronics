@@ -539,7 +539,8 @@
     const tops = groups.map((_, index) => top + index * (plotHeight + gap));
     const grid = (plotTop, tickList, yAt) => {
       ctx.lineWidth = 1; ctx.strokeStyle = color("--scope-grid");
-      for (let column = 0; column <= 8; column += 1) { const x = left + column / 8 * plotWidth; ctx.beginPath(); ctx.moveTo(x, plotTop); ctx.lineTo(x, plotTop + plotHeight); ctx.stroke(); }
+      if (xTicks.length > 1) xTicks.forEach((tickTime) => { const x = xAt(tickTime); ctx.beginPath(); ctx.moveTo(x, plotTop); ctx.lineTo(x, plotTop + plotHeight); ctx.stroke(); });
+      else for (let column = 0; column <= 8; column += 1) { const x = left + column / 8 * plotWidth; ctx.beginPath(); ctx.moveTo(x, plotTop); ctx.lineTo(x, plotTop + plotHeight); ctx.stroke(); }
       if (tickList && tickList.length) tickList.forEach((value) => { const y = yAt(value); ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(left + plotWidth, y); ctx.stroke(); });
       else for (let row = 0; row <= 5; row += 1) { const y = plotTop + row / 5 * plotHeight; ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(left + plotWidth, y); ctx.stroke(); }
     };
@@ -558,6 +559,7 @@
       }
       return values;
     };
+    const xTicks = axisTicks(xMinTime, xMaxTime, 8);
     let visibleStart = 0; while (visibleStart < points.length - 1 && points[visibleStart].t < xMinTime) visibleStart += 1;
     let visibleEnd = visibleStart; while (visibleEnd < points.length - 1 && points[visibleEnd].t <= xMaxTime) visibleEnd += 1;
     const visiblePoints = points.slice(Math.max(0, visibleStart - 1), Math.min(points.length, visibleEnd + 1));
@@ -613,7 +615,17 @@
     plotView = { left, right: left + plotWidth, plotWidth, duration, xMinFraction, xMaxFraction, xMinTime, xMaxTime, plots: plotLayouts };
     if (groups.length > 1) scopeScreen.style.setProperty("--voltage-legend-top", `${tops[1] - 38}px`);
     if (groups.length > 2) scopeScreen.style.setProperty("--current-legend-top", `${tops[2] - 38}px`);
-    const plotBottom = tops.at(-1) + plotHeight; ctx.fillStyle = color("--scope-text"); ctx.textAlign = "left"; ctx.fillText(xMinTime <= 1e-15 ? "0" : displayTime(xMinTime), left, plotBottom + 25); ctx.textAlign = "right"; ctx.fillText(displayTime(xMaxTime), left + plotWidth, plotBottom + 25); ctx.textAlign = "center"; ctx.fillText(tr().time, left + plotWidth / 2, plotBottom + 25);
+    const plotBottom = tops.at(-1) + plotHeight; ctx.fillStyle = color("--scope-text");
+    const timeUnit = xMaxTime >= 1 ? { label: "s", scale: 1 } : xMaxTime >= .001 ? { label: "ms", scale: 1e3 } : { label: "µs", scale: 1e6 };
+    if (xTicks.length > 1) {
+      const stepInUnit = (xTicks[1] - xTicks[0]) * timeUnit.scale;
+      const decimals = Math.min(3, Math.max(0, Math.ceil(-Math.log10(stepInUnit) - 1e-9)));
+      const tickFormat = new Intl.NumberFormat(locales[language], { maximumFractionDigits: decimals });
+      ctx.save(); ctx.font = '500 12.5px Inter, "Segoe UI", Arial, sans-serif'; ctx.textAlign = "center";
+      xTicks.forEach((tickTime) => ctx.fillText(tickFormat.format(tickTime * timeUnit.scale), xAt(tickTime), plotBottom + 17));
+      ctx.restore();
+      ctx.textAlign = "center"; ctx.fillText(`${tr().time} (${timeUnit.label})`, left + plotWidth / 2, plotBottom + 33);
+    } else { ctx.textAlign = "center"; ctx.fillText(tr().time, left + plotWidth / 2, plotBottom + 25); }
     const labelInset = width < 520 ? 12 : 24;
     const axisLabel = (value) => value ? value.charAt(0).toUpperCase() + value.slice(1) : value;
     groups.forEach((_, index) => { ctx.save(); ctx.translate(labelInset, tops[index] + plotHeight / 2); ctx.rotate(-Math.PI / 2); ctx.fillStyle = axes[index].tint ? color(axes[index].tint) : index === 1 ? color("--trace-vl") : index === 2 ? color("--trace-il") : color("--scope-text"); ctx.fillText(`${axisLabel(axes[index].label)} (${axes[index].unit})`, 0, 0); ctx.restore(); if (axes[index].rightLabel && !axes[index].hideRightAxis) { ctx.save(); ctx.translate(width - labelInset, tops[index] + plotHeight / 2); ctx.rotate(Math.PI / 2); ctx.fillStyle = color(groups[index].filter((item) => item.axis === "right").at(-1)?.color || "--trace-vr"); ctx.fillText(`${axisLabel(axes[index].rightLabel)} (${axes[index].rightUnit})`, 0, 0); ctx.restore(); } });

@@ -169,9 +169,9 @@
   // ------------------------------------------------------ chain simulation --
   function simulateChain(state, operating, array) {
     const gridRms = 230; const gridFrequency = 50; const omega = 2 * Math.PI * gridFrequency;
-    const fsBoost = 20000; const fsInverter = 10000;
+    const fsBoost = 20000; const fsInverter = clamp(state.inverterFrequency || 10000, 2000, fsBoost);
     const boostInductance = 2.5e-3; const boostResistance = .25; const pvCapacitance = 200e-6;
-    const gridInductance = (state.gridInductance || 4) / 1000; const gridResistance = .3;
+    const gridInductance = 4e-3; const gridResistance = .3;
     const busCapacitance = (state.busCapacitance || 1500) / 1e6;
     const busReference = state.dcVoltage || 400;
     const duty = clamp(1 - operating.v / busReference, .02, .97);
@@ -742,7 +742,7 @@
     ],
     bottom: [
       control("dcVoltage", "V<sub>bus DC</sub>", ["DC bus voltage", "Tension du bus continu", "Tensión del bus continuo"], 360, 600, 20, "V", { advanced: true }),
-      control("gridInductance", "L<sub>g</sub>", ["Grid coupling inductance", "Inductance de couplage réseau", "Inductancia de acople a red"], 2, 15, 1, "mH", { advanced: true }),
+      control("inverterFrequency", "f<sub>PWM</sub>", ["H-bridge PWM frequency", "Fréquence PWM du pont", "Frecuencia PWM del puente"], 4000, 20000, 2000, "kHz", { scale: .001, advanced: true }),
     ],
   };
 
@@ -772,7 +772,7 @@
 
   const model = {
     id: "pv-grid",
-    defaults: { tiltAngle: 30, panelsPerString: 6, strings: 2, ambientTemp: 25, dcVoltage: 400, busCapacitance: 1500, gridInductance: 4 },
+    defaults: { tiltAngle: 30, panelsPerString: 6, strings: 2, ambientTemp: 25, dcVoltage: 400, busCapacitance: 1500, inverterFrequency: 10000 },
     defaultHiddenTraces: ["iBusInRaw"],
     controls,
     controlsFor(_application, options = {}) {
