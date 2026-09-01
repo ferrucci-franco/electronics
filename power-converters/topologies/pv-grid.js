@@ -677,7 +677,7 @@
       ctx.fillText(`${format.format(scaleValue(plot.max))} ${plot.unit}`, plot.x - 6, plot.y + 10);
       ctx.fillText("0", plot.x - 6, plot.y + plot.height + 1);
       ctx.textAlign = "center";
-      ctx.fillText(`${fmt(0).format(vMax)} V`, plot.x + plot.width, plot.y + plot.height + 17);
+      ctx.fillText(`${fmt(0).format(vMax)} V`, Math.min(plot.x + plot.width, rect.width - 26), plot.y + plot.height + 17);
       ctx.fillText("0", plot.x, plot.y + plot.height + 17);
       ctx.textAlign = "left";
       ctx.font = '800 13px Inter, "Segoe UI", Arial, sans-serif';
