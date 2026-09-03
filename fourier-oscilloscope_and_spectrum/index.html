@@ -192,9 +192,12 @@
   }
 
   /* Firefox no soporta ::-webkit-scrollbar; usa las propiedades estándar
-     (heredadas) con el mismo color de pulgar y pista transparente. Chrome y
-     Safari no entran aquí para no perder el pulgar personalizado. */
-  @supports not selector(::-webkit-scrollbar) {
+     (heredadas) con el mismo color de pulgar y pista transparente. Se limita
+     a Firefox con una propiedad que solo él reconoce: en Chrome esas
+     propiedades anularían el pulgar personalizado de arriba, y
+     `@supports selector(::-webkit-scrollbar)` también da verdadero en Firefox
+     porque acepta cualquier pseudoelemento -webkit- por compatibilidad. */
+  @supports (-moz-appearance:none) {
     body {
       scrollbar-width:thin;
       scrollbar-color:var(--border) transparent;
@@ -5238,9 +5241,10 @@ function musicalNotesForOverlay(range, layout) {
     [9],            // tier 1: A (La) — contains A4=440 Hz reference
     [0],            // tier 2: C (Do) — octave start
     [4, 7],         // tier 3: E (Mi), G (Sol)
-    [2, 5, 11]      // tier 4: D (Re), F (Fa), B (Si)
+    [2, 5, 11],     // tier 4: D (Re), F (Fa), B (Si)
+    [1, 3, 6, 8, 10] // tier 5: sostenidos, solo si queda lugar
   ];
-  const minSpacing = 18 * canvasScale();
+  const minSpacing = 20 * canvasScale();
   const drawnY = [];
   const result = [];
   for (const tier of tiers) {
@@ -5272,7 +5276,7 @@ function drawSpectrogramNoteOverlay(layout, range, axisWidth, plotRight) {
   const lineColor = 'rgba(124, 224, 255, 0.85)';
   const labelColor = 'rgb(170, 235, 255)';
   ctx.save();
-  ctx.font = `${11 * canvasScale()}px system-ui`;
+  ctx.font = `${12.5 * canvasScale()}px system-ui`;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   const labelPad = 6 * canvasScale();
@@ -5866,7 +5870,8 @@ function timeAxisZoneAt(event) {
   const bottomInset = Math.max(32, rect.height * 0.12);
   if (x < leftAxisWidth) return 'y';
   if (y > rect.height - bottomInset) return 'x';
-  return null;
+  // Sobre la señal misma la rueda también cambia la base de tiempo.
+  return 'plot';
 }
 
 els.timeCanvas.addEventListener('wheel', (event) => {
@@ -5887,6 +5892,71 @@ els.timeCanvas.addEventListener('mousemove', (event) => {
 
 els.timeCanvas.addEventListener('mouseleave', () => {
   els.timeCanvas.style.cursor = '';
+});
+
+// Rueda del mouse sobre los sliders: se habilita cuando el puntero lleva un
+// momento quieto sobre el control, así desplazar la página no cambia valores
+// al pasar. Cada muesca mueve el 1 % del rango (nunca menos de un paso).
+const SLIDER_WHEEL_ARM_MS = 300;
+const SLIDER_WHEEL_MIN_INTERVAL_MS = 30;
+
+function sliderWheelStep(input) {
+  const min = parseFloat(input.min);
+  const max = parseFloat(input.max);
+  const step = parseFloat(input.step) || 1;
+  const onePercent = (max - min) / 100;
+  return Math.max(step, Math.round(onePercent / step) * step);
+}
+
+function nudgeSlider(input, direction) {
+  const min = parseFloat(input.min);
+  const max = parseFloat(input.max);
+  const step = parseFloat(input.step) || 1;
+  const current = parseFloat(input.value);
+  let next = Math.min(max, Math.max(min, current + sliderWheelStep(input) * direction));
+  next = min + Math.round((next - min) / step) * step;
+  const decimals = (String(step).split('.')[1] || '').length;
+  next = Number(next.toFixed(decimals));
+  if (next === current) return false;
+  input.value = String(next);
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+  input.dispatchEvent(new Event('change', { bubbles: true }));
+  return true;
+}
+
+function bindSliderWheel(target, pickInput = null) {
+  let armedAt = 0;
+  let lastTick = 0;
+  target.addEventListener('pointerenter', event => {
+    if (event.pointerType === 'mouse') armedAt = performance.now();
+  });
+  target.addEventListener('pointerleave', () => {
+    armedAt = 0;
+  });
+  target.addEventListener('wheel', event => {
+    const now = performance.now();
+    if (!armedAt || now - armedAt < SLIDER_WHEEL_ARM_MS) return;
+    const input = pickInput ? pickInput(event) : target;
+    if (!input) return;
+    event.preventDefault();
+    if (now - lastTick < SLIDER_WHEEL_MIN_INTERVAL_MS) return;
+    lastTick = now;
+    nudgeSlider(input, event.deltaY < 0 ? 1 : -1);
+  }, { passive: false });
+}
+
+[els.sourceVolume, els.fftSize, els.smoothing, els.dbFloor, els.scrollSpeed].forEach(input => bindSliderWheel(input));
+
+// Rango de frecuencia: dos pulgares en la misma pista; la rueda mueve el más
+// cercano al puntero.
+const frequencyRangeWrap = els.minFrequency.parentElement;
+bindSliderWheel(frequencyRangeWrap, event => {
+  const rect = frequencyRangeWrap.getBoundingClientRect();
+  const ratio = (event.clientX - rect.left) / Math.max(1, rect.width);
+  const position = input => (parseFloat(input.value) - parseFloat(input.min)) / (parseFloat(input.max) - parseFloat(input.min));
+  return Math.abs(ratio - position(els.minFrequency)) <= Math.abs(ratio - position(els.maxFrequency))
+    ? els.minFrequency
+    : els.maxFrequency;
 });
 
 [els.showTime, els.showSpectrum, els.showSpectrogram].forEach(element => {
