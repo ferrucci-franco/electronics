@@ -58,6 +58,16 @@
     height:100%;
   }
 
+  /* Las variables de tema viven en <body>; en <html> se usan literales para
+     que el rebote de iOS al desplazar no muestre blanco. */
+  html {
+    background:#04090f;
+  }
+
+  html:has(body.theme-light) {
+    background:#dfe9f5;
+  }
+
   body {
     height:100dvh;
     overflow:hidden;
@@ -66,6 +76,8 @@
     background:
       radial-gradient(circle at top left, var(--page-glow), transparent 32%),
       linear-gradient(180deg, var(--bg) 0%, var(--bg-deep) 100%);
+    background-color:var(--bg-deep);
+    background-repeat:no-repeat;
     color:var(--fg);
   }
 
@@ -1135,6 +1147,8 @@
   @media (max-width:900px) {
     body {
       overflow:auto;
+      height:auto;
+      min-height:100dvh;
     }
 
     .wrapper {
@@ -1157,7 +1171,12 @@
     .controls > .display-panel { order:4; }
     .controls > .sidebar-author { order:5; }
 
-    .plots {
+    /* Filas con tope en alto de pantalla. Sin tope (1fr con altura auto) el
+       canvas, que mide 100% de la fila, y la fila, que crece con el canvas,
+       se realimentan y el gráfico crece sin fin. */
+    .plots,
+    .plots[data-layout="stack"],
+    .plots[data-layout="single"] {
       grid-template-columns:1fr !important;
       grid-template-areas:none !important;
       grid-template-rows:none !important;
@@ -1165,9 +1184,18 @@
       height:auto;
     }
 
+    .plots[data-layout="stack"] {
+      grid-auto-rows:minmax(240px, 46vh);
+    }
+
+    .plots[data-layout="single"] {
+      grid-auto-rows:minmax(280px, 62vh);
+    }
+
     .plot-card {
       grid-area:auto !important;
       min-height:240px;
+      max-height:62vh;
     }
   }
 
