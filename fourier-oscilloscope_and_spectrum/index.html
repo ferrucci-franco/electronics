@@ -167,7 +167,7 @@
   .controls {
     background:linear-gradient(180deg, rgba(255,255,255,0.03), transparent 28%), var(--sidebar);
     border:1px solid var(--border);
-    border-radius:22px;
+    border-radius:16px;
     padding:14px;
     display:grid;
     grid-template-columns:1fr;
@@ -178,30 +178,52 @@
     box-shadow:var(--shadow);
   }
 
+  /* Barra de desplazamiento propia del panel lateral, igual en todos los
+     navegadores: la nativa se oculta (en Firefox no se puede estilizar como
+     en Chrome) y un pulgar fino y redondeado se dibuja encima. */
+  .sidebar {
+    position:relative;
+    min-height:0;
+    display:grid;
+    grid-template-rows:minmax(0, 1fr);
+  }
+
+  .controls {
+    scrollbar-width:none;
+  }
+
   .controls::-webkit-scrollbar {
-    width:8px;
+    display:none;
   }
 
-  .controls::-webkit-scrollbar-track {
-    background:transparent;
-  }
-
-  .controls::-webkit-scrollbar-thumb {
-    background:var(--border);
+  .sidebar-scrollbar {
+    position:absolute;
+    top:12px;
+    bottom:12px;
+    right:5px;
+    width:6px;
     border-radius:999px;
+    z-index:2;
   }
 
-  /* Firefox no soporta ::-webkit-scrollbar; usa las propiedades estándar
-     (heredadas) con el mismo color de pulgar y pista transparente. Se limita
-     a Firefox con una propiedad que solo él reconoce: en Chrome esas
-     propiedades anularían el pulgar personalizado de arriba, y
-     `@supports selector(::-webkit-scrollbar)` también da verdadero en Firefox
-     porque acepta cualquier pseudoelemento -webkit- por compatibilidad. */
-  @supports (-moz-appearance:none) {
-    body {
-      scrollbar-width:thin;
-      scrollbar-color:var(--border) transparent;
-    }
+  .sidebar-scrollbar[hidden] {
+    display:none !important;
+  }
+
+  .sidebar-scrollbar-thumb {
+    position:absolute;
+    left:0;
+    right:0;
+    top:0;
+    border-radius:999px;
+    background:var(--border);
+    cursor:pointer;
+    transition:background 0.15s ease;
+  }
+
+  .sidebar-scrollbar-thumb:hover,
+  .sidebar-scrollbar.is-dragging .sidebar-scrollbar-thumb {
+    background:var(--accent);
   }
 
   .control-group {
@@ -519,6 +541,38 @@
     background:var(--accent);
   }
 
+  .plot-frozen {
+    font-size:11px;
+    font-weight:650;
+    letter-spacing:0.04em;
+    text-transform:uppercase;
+    color:var(--accent);
+    border:1px solid color-mix(in srgb, var(--accent) 55%, var(--border));
+    border-radius:999px;
+    padding:1px 8px;
+  }
+
+  .plot-frozen[hidden] {
+    display:none !important;
+  }
+
+  .plot-card.is-frozen canvas {
+    cursor:grabbing;
+  }
+
+  .plot-zoom-box {
+    position:absolute;
+    display:none;
+    pointer-events:none;
+    z-index:4;
+    background:color-mix(in srgb, var(--accent) 18%, transparent);
+    border:1px dashed var(--accent);
+  }
+
+  .plot-zoom-box.is-visible {
+    display:block;
+  }
+
   .recorded-progress {
     display:grid;
     gap:5px;
@@ -834,7 +888,7 @@
     min-height:0;
     position:relative;
     border:1px solid var(--border);
-    border-radius:22px;
+    border-radius:16px;
     background:linear-gradient(180deg, rgba(255,255,255,0.03), transparent 16%), var(--plot-bg);
     display:grid;
     grid-template-rows:auto minmax(0, 1fr);
@@ -1164,8 +1218,13 @@
        directas de .wrapper para poder intercalar los gráficos justo después
        de la fuente de audio. Título y fuente arriba, gráficos, y luego
        análisis y visualización. */
+    .sidebar,
     .controls {
       display:contents;
+    }
+
+    .sidebar-scrollbar {
+      display:none !important;
     }
 
     .controls > .interface-panel { order:0; }
@@ -1249,6 +1308,7 @@
 </head>
 <body class="theme-dark">
   <div class="wrapper">
+    <div class="sidebar">
     <aside class="controls">
       <section class="control-group interface-panel">
         <div class="sidebar-header">
@@ -1450,6 +1510,8 @@
         <a href="https://ferrucci-franco.github.io/electronics/" target="_blank" rel="noopener">ferrucci-franco.github.io</a>
       </div>
     </aside>
+    <div id="sidebar-scrollbar" class="sidebar-scrollbar" hidden aria-hidden="true"><div class="sidebar-scrollbar-thumb"></div></div>
+    </div>
 
     <main id="plots" class="plots" data-layout="triple">
       <section class="plot-card plot-time" id="time-panel">
@@ -1457,6 +1519,7 @@
           <div class="plot-title-left">
             <span id="time-title">Señal temporal</span>
             <span id="time-legend" class="plot-legend"><span class="legend-in"><i></i><span id="time-legend-in">entrada</span></span><span class="legend-out"><i></i><span id="time-legend-out">salida</span></span></span>
+            <span id="time-frozen" class="plot-frozen" hidden>congelado</span>
           </div>
           <span id="time-meta" class="plot-meta">--</span>
         </div>
@@ -1468,10 +1531,12 @@
           <div class="plot-title-left">
             <span id="spectrum-title">Espectro instantáneo</span>
             <span id="spectrum-legend" class="plot-legend"><span class="legend-in"><i></i><span id="spectrum-legend-in">entrada</span></span><span class="legend-out"><i></i><span id="spectrum-legend-out">salida</span></span></span>
+            <span id="spectrum-frozen" class="plot-frozen" hidden>congelado</span>
           </div>
           <span id="spectrum-meta" class="plot-meta">--</span>
         </div>
         <canvas id="spectrum-canvas"></canvas>
+        <div id="spectrum-zoom-box" class="plot-zoom-box" aria-hidden="true"></div>
         <div id="spectrum-hover" class="plot-hover">
           <div class="plot-hover-line vertical"></div>
           <div class="plot-hover-line horizontal"></div>
@@ -1553,6 +1618,9 @@ const I18N = {
     channelInput:'Entrada del sistema',
     legendInput:'entrada',
     legendOutput:'salida',
+    frozen:'congelado',
+    timeCanvasHint:'Mantén presionado para congelar la imagen. Rueda: cambia ms/div.',
+    spectrumCanvasHint:'Mantén presionado para congelar. Arrastra para hacer zoom en una ventana. Doble clic: vuelve a la vista anterior.',
     stickyNote:'Activa una o varias notas; Detener apaga todas.',
     fileNote:'Selecciona un archivo de audio local para analizarlo.',
     systemNote:'Audio del sistema es experimental: si el navegador no muestra una opci\u00f3n para compartir audio, la web no puede redirigirlo. Suele funcionar solo al compartir una pesta\u00f1a con audio desde localhost/HTTPS.',
@@ -1665,6 +1733,9 @@ const I18N = {
     channelInput:'System input',
     legendInput:'input',
     legendOutput:'output',
+    frozen:'frozen',
+    timeCanvasHint:'Press and hold to freeze the picture. Wheel: change ms/div.',
+    spectrumCanvasHint:'Press and hold to freeze. Drag to zoom into a window. Double-click: back to the previous view.',
     stickyNote:'Toggle one or more notes; Stop turns them all off.',
     fileNote:'Choose a local audio file to analyze.',
     systemNote:'System audio is experimental: if the browser does not show a share-audio option, the web page cannot redirect it. It usually only works when sharing a tab with audio from localhost/HTTPS.',
@@ -1777,6 +1848,9 @@ const I18N = {
     channelInput:'Entrée du système',
     legendInput:'entrée',
     legendOutput:'sortie',
+    frozen:'figé',
+    timeCanvasHint:'Maintiens appuyé pour figer l\'image. Molette : change les ms/div.',
+    spectrumCanvasHint:'Maintiens appuyé pour figer. Glisse pour zoomer sur une fenêtre. Double-clic : retour à la vue précédente.',
     stickyNote:'Active une ou plusieurs notes ; Arrêter les coupe toutes.',
     fileNote:'Choisis un fichier audio local à analyser.',
     systemNote:'L\'audio système est expérimental : si le navigateur ne propose pas de partager l\'audio, la page web ne peut pas le rediriger. Cela fonctionne surtout en partageant un onglet avec audio depuis localhost/HTTPS.',
@@ -1906,6 +1980,9 @@ const els = {
   spectrumLegend: $('spectrum-legend'),
   spectrumLegendIn: $('spectrum-legend-in'),
   spectrumLegendOut: $('spectrum-legend-out'),
+  timeFrozen: $('time-frozen'),
+  spectrumFrozen: $('spectrum-frozen'),
+  spectrumZoomBox: $('spectrum-zoom-box'),
   analysisTitle: $('analysis-title'),
   fftLabel: $('fft-label'),
   fftSize: $('fft-size'),
@@ -2253,6 +2330,10 @@ function updateLanguage() {
   els.spectrumLegendIn.textContent = tr.legendInput;
   els.timeLegendOut.textContent = tr.legendOutput;
   els.spectrumLegendOut.textContent = tr.legendOutput;
+  els.timeFrozen.textContent = tr.frozen;
+  els.spectrumFrozen.textContent = tr.frozen;
+  els.timeCanvas.title = tr.timeCanvasHint;
+  els.spectrumCanvas.title = tr.spectrumCanvasHint;
   renderEffectButtons();
   updateRecordingUI();
   updateLegends();
@@ -2663,8 +2744,8 @@ function refreshPlotsAfterLayout() {
   requestAnimationFrame(() => {
     drawStaticCanvases();
     if (running && analyser) {
-      drawTime();
-      drawSpectrum();
+      drawTime({ capture: !plotsFrozen });
+      drawSpectrum({ capture: !plotsFrozen });
       drawSpectrogram();
     }
     updateSpectrumHover();
@@ -2675,7 +2756,7 @@ function refreshPlotsAfterLayout() {
 function refreshTimePlotOnly() {
   requestAnimationFrame(() => {
     if (analyser && audioContext && timeData) {
-      drawTime({ capture:running });
+      drawTime({ capture: running && !plotsFrozen });
     } else {
       drawTimeFrame();
     }
@@ -2912,10 +2993,37 @@ function frequencyForSpectrumX(x, area, range = selectedFrequencyRange()) {
   return range.min + norm * (range.max - range.min);
 }
 
-function dbForSpectrumY(y, area, dbFloor) {
+function dbForSpectrumY(y, area, dbFloor, dbCeiling = DB_CEILING) {
   const clampedY = Math.max(area.top, Math.min(area.bottom, y));
   const norm = 1 - (clampedY - area.top) / Math.max(1, area.bottom - area.top);
-  return dbFloor + norm * (DB_CEILING - dbFloor);
+  return dbFloor + norm * (dbCeiling - dbFloor);
+}
+
+// Zoom de ventana del espectro: en X se aplica sobre el rango de frecuencia
+// (los mismos deslizadores), en Y sobre una ventana de dB propia del panel.
+let spectrumDbWindow = null;
+let spectrumZoomHome = null;
+
+function spectrumDbRange() {
+  const floor = parseFloat(els.dbFloor.value);
+  if (spectrumDbWindow) {
+    return { min: Math.max(floor, spectrumDbWindow.min), max: Math.min(DB_CEILING, spectrumDbWindow.max) };
+  }
+  return { min: floor, max: DB_CEILING };
+}
+
+// "Foto": mientras se mantiene presionado el mouse sobre la señal temporal o
+// el espectro, esos dos paneles dejan de redibujarse. El audio y el
+// espectrograma siguen.
+let plotsFrozen = false;
+
+function setPlotsFrozen(state) {
+  if (plotsFrozen === state) return;
+  plotsFrozen = state;
+  els.timePanel.classList.toggle('is-frozen', state);
+  els.spectrumPanel.classList.toggle('is-frozen', state);
+  els.timeFrozen.hidden = !state;
+  els.spectrumFrozen.hidden = !state;
 }
 
 function currentDbForFrequency(freq, data = floatFreqData) {
@@ -3003,9 +3111,9 @@ function updateSpectrumHover() {
     return;
   }
   const frequencyRange = selectedFrequencyRange();
-  const dbFloor = parseFloat(els.dbFloor.value);
+  const dbRange = spectrumDbRange();
   const freq = frequencyForSpectrumX(spectrumHoverState.x, area, frequencyRange);
-  const db = dbForSpectrumY(spectrumHoverState.y, area, dbFloor);
+  const db = dbForSpectrumY(spectrumHoverState.y, area, dbRange.min, dbRange.max);
   setHoverOverlay(
     els.spectrumHover,
     canvas,
@@ -3202,7 +3310,8 @@ function drawSpectrumFrame() {
   const area = spectrumArea(els.spectrumCanvas.width, els.spectrumCanvas.height);
   const c = colors();
   const frequencyRange = selectedFrequencyRange();
-  const dbFloor = parseFloat(els.dbFloor.value);
+  const dbRange = spectrumDbRange();
+  const dbFloor = dbRange.min;
   const logScale = els.frequencyScale.value === 'log';
   let xTicks = logScale
     ? [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000].filter(freq => freq >= frequencyRange.min && freq <= frequencyRange.max)
@@ -3225,15 +3334,27 @@ function drawSpectrumFrame() {
     ctx.strokeStyle = c.border;
     ctx.stroke();
     ctx.globalAlpha = 1;
-    ctx.textAlign = freq === frequencyRange.min ? 'left' : 'center';
+    // La etiqueta se mantiene dentro del área del gráfico: la última no se
+    // corta contra el borde derecho ni la primera contra el eje.
+    const label = formatFrequencyLabel(freq);
+    const halfWidth = ctx.measureText(label).width / 2;
+    let labelX = x;
+    ctx.textAlign = 'center';
+    if (x - halfWidth < area.left) {
+      ctx.textAlign = 'left';
+      labelX = area.left;
+    } else if (x + halfWidth > area.right) {
+      ctx.textAlign = 'right';
+      labelX = area.right;
+    }
     ctx.textBaseline = 'top';
-    ctx.fillText(formatFrequencyLabel(freq), x, area.bottom + 8 * canvasScale());
+    ctx.fillText(label, labelX, area.bottom + 8 * canvasScale());
   });
   ctx.textBaseline = 'alphabetic';
 
   ctx.textAlign = 'right';
   for (let step = 0; step <= 4; step++) {
-    const db = dbFloor + (-dbFloor) * (1 - step / 4);
+    const db = dbRange.max - (dbRange.max - dbRange.min) * step / 4;
     const y = area.top + (area.bottom - area.top) * step / 4;
     ctx.fillText(`${Math.round(db)} dB`, area.left - 8 * canvasScale(), y + 4 * canvasScale());
   }
@@ -5565,7 +5686,7 @@ function drawTime({ capture = true } = {}) {
   ]);
 }
 
-function drawSpectrum() {
+function drawSpectrum({ capture = true } = {}) {
   ensureCanvasSize(els.spectrumCanvas);
   const ctx = els.spectrumCanvas.getContext('2d');
   const width = els.spectrumCanvas.width;
@@ -5573,11 +5694,15 @@ function drawSpectrum() {
   const c = colors();
   const area = spectrumArea(width, height);
   drawSpectrumFrame();
-  analyser.getFloatFrequencyData(floatFreqData);
   const dual = dualChannelEnabled();
-  if (dual) inputAnalyser.getFloatFrequencyData(inputFloatFreqData);
+  if (capture) {
+    analyser.getFloatFrequencyData(floatFreqData);
+    if (dual) inputAnalyser.getFloatFrequencyData(inputFloatFreqData);
+  }
   const frequencyRange = selectedFrequencyRange();
-  const dbFloor = parseFloat(els.dbFloor.value);
+  const dbRange = spectrumDbRange();
+  const dbFloor = dbRange.min;
+  const dbCeiling = dbRange.max;
   const top = area.top;
   const bottom = area.bottom;
   let peakValue = dbFloor;
@@ -5592,13 +5717,13 @@ function drawSpectrum() {
       const freq = i * audioContext.sampleRate / analyser.fftSize;
       if (freq < frequencyRange.min) continue;
       if (freq > frequencyRange.max) break;
-      const value = Math.max(dbFloor, Math.min(DB_CEILING, data[i]));
+      const value = Math.max(dbFloor, Math.min(dbCeiling, data[i]));
       if (trackPeak && value > peakValue) {
         peakValue = value;
         peakFreq = freq;
       }
       const x = xForFrequency(freq, width, frequencyRange);
-      const normalized = (value - dbFloor) / Math.max(1, DB_CEILING - dbFloor);
+      const normalized = (value - dbFloor) / Math.max(1, dbCeiling - dbFloor);
       const y = bottom - Math.max(0, Math.min(1, normalized)) * (bottom - top);
       if (!started) {
         ctx.moveTo(x, y);
@@ -5700,8 +5825,10 @@ function animate(time = performance.now()) {
   const elapsed = time - lastFrameTime;
   lastFrameTime = time;
   updateRecordedProgress();
-  drawTime();
-  drawSpectrum();
+  if (!plotsFrozen) {
+    drawTime();
+    drawSpectrum();
+  }
   if (spectrogramResumeHoldFrames > 0) {
     spectrogramResumeHoldFrames -= 1;
     updateSpectrogramHover();
@@ -5809,6 +5936,159 @@ function bindHoverPointer(canvas, getArea, setState, update) {
   });
 }
 
+// Mantener presionado congela la señal temporal y el espectro. En el espectro,
+// arrastrar con el mouse dibuja una ventana de zoom sobre la foto congelada:
+// horizontal -> zoom en frecuencia, vertical -> zoom en dB, diagonal -> ambos.
+const ZOOM_BAND_PX = 12;
+const ZOOM_MIN_DRAG_PX = 8;
+let spectrumDrag = null;
+
+function bindFreezeOnPress(canvas) {
+  canvas.addEventListener('pointerdown', event => {
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    try { canvas.setPointerCapture(event.pointerId); } catch (error) {}
+    setPlotsFrozen(true);
+  });
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(type => {
+    canvas.addEventListener(type, () => setPlotsFrozen(false));
+  });
+}
+
+function applySpectrumFrequencyZoom(minFreq, maxFreq) {
+  if (!spectrumZoomHome) spectrumZoomHome = selectedFrequencyRange();
+  const ceiling = audioFrequencyCeiling();
+  let lo = Math.max(MIN_FREQUENCY_LIMIT, Math.min(minFreq, maxFreq));
+  let hi = Math.min(ceiling, Math.max(minFreq, maxFreq));
+  if (hi - lo < MIN_FREQUENCY_GAP) {
+    const center = (lo + hi) / 2;
+    lo = Math.max(MIN_FREQUENCY_LIMIT, center - MIN_FREQUENCY_GAP / 2);
+    hi = Math.min(ceiling, lo + MIN_FREQUENCY_GAP);
+  }
+  els.minFrequency.value = String(Math.round(frequencyToSliderPos(lo)));
+  els.maxFrequency.value = String(Math.round(frequencyToSliderPos(hi)));
+  syncFrequencyRange();
+}
+
+function resetSpectrumZoom() {
+  let changed = false;
+  if (spectrumDbWindow) {
+    spectrumDbWindow = null;
+    changed = true;
+  }
+  if (spectrumZoomHome) {
+    const home = spectrumZoomHome;
+    spectrumZoomHome = null;
+    els.minFrequency.value = String(Math.round(frequencyToSliderPos(home.min)));
+    els.maxFrequency.value = String(Math.round(frequencyToSliderPos(home.max)));
+    syncFrequencyRange();
+    changed = true;
+  }
+  if (changed) {
+    updateSliderLabels();
+    refreshPlotsAfterLayout();
+  }
+}
+
+function spectrumDragShape(drag) {
+  const w = Math.abs(drag.x1 - drag.x0);
+  const h = Math.abs(drag.y1 - drag.y0);
+  const horizontal = w >= ZOOM_BAND_PX && h < ZOOM_BAND_PX;
+  const vertical = h >= ZOOM_BAND_PX && w < ZOOM_BAND_PX;
+  return { w, h, zoomX: horizontal || (!vertical && w >= ZOOM_BAND_PX), zoomY: vertical || (!horizontal && h >= ZOOM_BAND_PX) };
+}
+
+function updateSpectrumZoomBox(drag) {
+  const box = els.spectrumZoomBox;
+  const canvas = els.spectrumCanvas;
+  const panelRect = canvas.parentElement.getBoundingClientRect();
+  const canvasRect = canvas.getBoundingClientRect();
+  const scaleX = canvasRect.width / Math.max(1, canvas.width);
+  const scaleY = canvasRect.height / Math.max(1, canvas.height);
+  const area = spectrumArea(canvas.width, canvas.height);
+  const shape = spectrumDragShape(drag);
+  if (shape.w < ZOOM_MIN_DRAG_PX && shape.h < ZOOM_MIN_DRAG_PX) {
+    box.classList.remove('is-visible');
+    return;
+  }
+  const clampX = x => Math.max(area.left, Math.min(area.right, x));
+  const clampY = y => Math.max(area.top, Math.min(area.bottom, y));
+  const left = shape.zoomX ? Math.min(clampX(drag.x0), clampX(drag.x1)) : area.left;
+  const right = shape.zoomX ? Math.max(clampX(drag.x0), clampX(drag.x1)) : area.right;
+  const top = shape.zoomY ? Math.min(clampY(drag.y0), clampY(drag.y1)) : area.top;
+  const bottom = shape.zoomY ? Math.max(clampY(drag.y0), clampY(drag.y1)) : area.bottom;
+  const offsetX = canvasRect.left - panelRect.left;
+  const offsetY = canvasRect.top - panelRect.top;
+  box.style.left = `${offsetX + left * scaleX}px`;
+  box.style.top = `${offsetY + top * scaleY}px`;
+  box.style.width = `${Math.max(1, (right - left) * scaleX)}px`;
+  box.style.height = `${Math.max(1, (bottom - top) * scaleY)}px`;
+  box.classList.add('is-visible');
+}
+
+function finishSpectrumZoom(drag) {
+  els.spectrumZoomBox.classList.remove('is-visible');
+  const shape = spectrumDragShape(drag);
+  if (shape.w < ZOOM_MIN_DRAG_PX && shape.h < ZOOM_MIN_DRAG_PX) return;
+  const canvas = els.spectrumCanvas;
+  const area = spectrumArea(canvas.width, canvas.height);
+  const frequencyRange = selectedFrequencyRange();
+  const dbRange = spectrumDbRange();
+  let changed = false;
+  if (shape.zoomX) {
+    const f0 = frequencyForSpectrumX(Math.min(drag.x0, drag.x1), area, frequencyRange);
+    const f1 = frequencyForSpectrumX(Math.max(drag.x0, drag.x1), area, frequencyRange);
+    applySpectrumFrequencyZoom(f0, f1);
+    changed = true;
+  }
+  if (shape.zoomY) {
+    const dbTop = dbForSpectrumY(Math.min(drag.y0, drag.y1), area, dbRange.min, dbRange.max);
+    const dbBottom = dbForSpectrumY(Math.max(drag.y0, drag.y1), area, dbRange.min, dbRange.max);
+    if (dbTop - dbBottom >= 3) {
+      spectrumDbWindow = { min: dbBottom, max: dbTop };
+      changed = true;
+    }
+  }
+  if (changed) {
+    updateSliderLabels();
+    refreshPlotsAfterLayout();
+  }
+}
+
+bindFreezeOnPress(els.timeCanvas);
+bindFreezeOnPress(els.spectrumCanvas);
+
+els.spectrumCanvas.addEventListener('pointerdown', event => {
+  if (event.pointerType === 'touch') return;
+  if (event.button !== 0) return;
+  const point = hoverPointForEvent(els.spectrumCanvas, event);
+  const area = spectrumArea(els.spectrumCanvas.width, els.spectrumCanvas.height);
+  if (!isInsideArea(point, area)) return;
+  spectrumDrag = { pointerId: event.pointerId, x0: point.x, y0: point.y, x1: point.x, y1: point.y };
+});
+
+els.spectrumCanvas.addEventListener('pointermove', event => {
+  if (!spectrumDrag || event.pointerId !== spectrumDrag.pointerId) return;
+  const point = hoverPointForEvent(els.spectrumCanvas, event);
+  spectrumDrag.x1 = point.x;
+  spectrumDrag.y1 = point.y;
+  updateSpectrumZoomBox(spectrumDrag);
+});
+
+['pointerup', 'pointercancel'].forEach(type => {
+  els.spectrumCanvas.addEventListener(type, event => {
+    if (!spectrumDrag || event.pointerId !== spectrumDrag.pointerId) return;
+    const drag = spectrumDrag;
+    spectrumDrag = null;
+    if (type === 'pointerup') finishSpectrumZoom(drag);
+    else els.spectrumZoomBox.classList.remove('is-visible');
+  });
+});
+
+els.spectrumCanvas.addEventListener('dblclick', event => {
+  event.preventDefault();
+  resetSpectrumZoom();
+});
+
 bindHoverPointer(
   els.spectrumCanvas,
   () => spectrumArea(els.spectrumCanvas.width, els.spectrumCanvas.height),
@@ -5826,6 +6106,8 @@ bindHoverPointer(
   updateSpectrogramHover
 );
 
+els.dbFloor.addEventListener('input', () => { spectrumDbWindow = null; });
+
 [els.fftSize, els.smoothing, els.dbFloor].forEach(element => {
   const refreshAnalysis = () => {
     if (audioContext) configureAnalyser();
@@ -5838,6 +6120,7 @@ bindHoverPointer(
 
 [els.minFrequency, els.maxFrequency].forEach(element => {
   const refreshFrequencyRange = () => {
+    spectrumZoomHome = null;
     syncFrequencyRange(element === els.minFrequency ? 'min' : 'max');
     updateSliderLabels();
     refreshPlotsAfterLayout();
@@ -5966,6 +6249,64 @@ bindSliderWheel(frequencyRangeWrap, event => {
 els.showNotes.addEventListener('change', refreshPlotsAfterLayout);
 
 window.addEventListener('resize', refreshPlotsAfterLayout);
+
+// Barra de desplazamiento propia del panel lateral.
+(function initSidebarScrollbar() {
+  const scroller = document.querySelector('.controls');
+  const track = document.getElementById('sidebar-scrollbar');
+  if (!scroller || !track) return;
+  const thumb = track.firstElementChild;
+  let drag = null;
+
+  const geometry = () => {
+    const trackHeight = track.clientHeight;
+    const thumbHeight = Math.max(28, trackHeight * scroller.clientHeight / Math.max(1, scroller.scrollHeight));
+    return { trackHeight, thumbHeight, maxTop: Math.max(0, trackHeight - thumbHeight), maxScroll: Math.max(1, scroller.scrollHeight - scroller.clientHeight) };
+  };
+
+  const update = () => {
+    const scrollable = scroller.scrollHeight > scroller.clientHeight + 1 && getComputedStyle(scroller).display !== 'contents';
+    track.hidden = !scrollable;
+    if (!scrollable) return;
+    const g = geometry();
+    thumb.style.height = `${g.thumbHeight}px`;
+    thumb.style.transform = `translateY(${g.maxTop * scroller.scrollTop / g.maxScroll}px)`;
+  };
+
+  scroller.addEventListener('scroll', update, { passive: true });
+  window.addEventListener('resize', update);
+  if (typeof ResizeObserver === 'function') {
+    const observer = new ResizeObserver(update);
+    observer.observe(scroller);
+    [...scroller.children].forEach(child => observer.observe(child));
+  }
+
+  thumb.addEventListener('pointerdown', event => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    drag = { pointerId: event.pointerId, startY: event.clientY, startScroll: scroller.scrollTop };
+    track.classList.add('is-dragging');
+    try { thumb.setPointerCapture(event.pointerId); } catch (error) {}
+  });
+  thumb.addEventListener('pointermove', event => {
+    if (!drag || event.pointerId !== drag.pointerId) return;
+    const g = geometry();
+    scroller.scrollTop = drag.startScroll + (event.clientY - drag.startY) * g.maxScroll / Math.max(1, g.maxTop);
+  });
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(type => {
+    thumb.addEventListener(type, () => {
+      drag = null;
+      track.classList.remove('is-dragging');
+    });
+  });
+  track.addEventListener('pointerdown', event => {
+    if (event.target !== track) return;
+    const rect = thumb.getBoundingClientRect();
+    scroller.scrollBy({ top: (event.clientY < rect.top ? -0.9 : 0.9) * scroller.clientHeight, behavior: 'smooth' });
+  });
+
+  update();
+})();
 
 updateLanguage();
 updateSourceSelectionState();
