@@ -1625,7 +1625,7 @@ const I18N = {
     frozen:'pausado',
     timeCanvasHint:'Mantén presionado para pausar todo, audio incluido. Rueda: cambia ms/div.',
     spectrumCanvasHint:'Arrastra para hacer zoom en una ventana. Botón derecho o rueda: desplazar. Sobre los ejes: el centro desplaza y los extremos hacen zoom. Doble clic: vista anterior.',
-    spectrogramCanvasHint:'Arrastra verticalmente para hacer zoom en frecuencia. Rueda: cambia el piso de dB. Eje de frecuencia: el centro desplaza y los extremos hacen zoom. Doble clic: vista anterior.',
+    spectrogramCanvasHint:'Arrastra verticalmente para hacer zoom en frecuencia. Botón derecho o rueda: desplazar en frecuencia. Rueda: cambia el piso de dB. Eje de frecuencia: el centro desplaza y los extremos hacen zoom. Doble clic: vista anterior.',
     stickyNote:'Activa una o varias notas; Detener apaga todas.',
     fileNote:'Selecciona un archivo de audio local para analizarlo.',
     systemNote:'Audio del sistema es experimental: si el navegador no muestra una opci\u00f3n para compartir audio, la web no puede redirigirlo. Suele funcionar solo al compartir una pesta\u00f1a con audio desde localhost/HTTPS.',
@@ -1741,7 +1741,7 @@ const I18N = {
     frozen:'paused',
     timeCanvasHint:'Press and hold to pause everything, audio included. Wheel: change ms/div.',
     spectrumCanvasHint:'Drag to zoom into a window. Right or middle button: pan. On the axes: the middle pans, the ends zoom. Double-click: previous view.',
-    spectrogramCanvasHint:'Drag vertically to zoom in frequency. Wheel: change the dB floor. Frequency axis: the middle pans, the ends zoom. Double-click: previous view.',
+    spectrogramCanvasHint:'Drag vertically to zoom in frequency. Right or middle button: pan in frequency. Wheel: change the dB floor. Frequency axis: the middle pans, the ends zoom. Double-click: previous view.',
     stickyNote:'Toggle one or more notes; Stop turns them all off.',
     fileNote:'Choose a local audio file to analyze.',
     systemNote:'System audio is experimental: if the browser does not show a share-audio option, the web page cannot redirect it. It usually only works when sharing a tab with audio from localhost/HTTPS.',
@@ -1857,7 +1857,7 @@ const I18N = {
     frozen:'en pause',
     timeCanvasHint:'Maintiens appuyé pour tout mettre en pause, audio compris. Molette : change les ms/div.',
     spectrumCanvasHint:'Glisse pour zoomer sur une fenêtre. Bouton droit ou molette : déplacer. Sur les axes : le centre déplace, les extrémités zooment. Double-clic : vue précédente.',
-    spectrogramCanvasHint:'Glisse verticalement pour zoomer en fréquence. Molette : change le plancher en dB. Axe des fréquences : le centre déplace, les extrémités zooment. Double-clic : vue précédente.',
+    spectrogramCanvasHint:'Glisse verticalement pour zoomer en fréquence. Bouton droit ou molette : déplacer en fréquence. Molette : change le plancher en dB. Axe des fréquences : le centre déplace, les extrémités zooment. Double-clic : vue précédente.',
     stickyNote:'Active une ou plusieurs notes ; Arrêter les coupe toutes.',
     fileNote:'Choisis un fichier audio local à analyser.',
     systemNote:'L\'audio système est expérimental : si le navigateur ne propose pas de partager l\'audio, la page web ne peut pas le rediriger. Cela fonctionne surtout en partageant un onglet avec audio depuis localhost/HTTPS.',
@@ -2752,13 +2752,14 @@ function updateSliderLabels() {
   updateRecordedProgress();
 }
 
-function refreshPlotsAfterLayout() {
+function refreshPlotsAfterLayout({ rangeChange = false } = {}) {
   requestAnimationFrame(() => {
     drawTimeFrame();
     drawSpectrumFrame();
-    // el espectrograma se repinta desde su historial: cambiar el piso, el
-    // rango o el tamaño no reinicia el dibujo
-    renderSpectrogramFromHistory();
+    // el espectrograma se repinta desde su historial: cambiar el piso o el
+    // tamaño no reinicia el dibujo; para los cambios de rango decide el flag
+    if (rangeChange) spectrogramRangeChanged();
+    else renderSpectrogramFromHistory();
     if (running && analyser) {
       drawTime({ capture: !plotsFrozen });
       drawSpectrum();
@@ -5823,6 +5824,13 @@ function drawSpectrum() {
 const SPECTROGRAM_DB_OFFSET = 130;
 let spectrogramHistory = null;
 
+// Al cambiar el rango o la escala del eje de frecuencia (deslizadores, zoom o
+// arrastre desde el espectro o el espectrograma), la imagen del espectrograma
+// se repinta entera desde el historial para que las frecuencias sigan teniendo
+// sentido. Con `false` se vuelve al comportamiento anterior: las columnas ya
+// dibujadas conservan la escala vieja y solo se actualizan el eje y las notas.
+let SPECTROGRAM_REMAP_ON_RANGE_CHANGE = true;
+
 function spectrogramSpeed(plotWidth) {
   return Math.min(plotWidth, Math.max(1, Math.round(parseInt(els.scrollSpeed.value, 10) * canvasScale())));
 }
@@ -5860,6 +5868,31 @@ function resetSpectrogramHistory() {
     spectrogramHistory.write = 0;
     spectrogramHistory.count = 0;
   }
+}
+
+// Repinta solo el marco del espectrograma (eje, barra de color, notas) sin
+// tocar la imagen ya dibujada.
+function refreshSpectrogramChrome() {
+  const canvas = els.spectrogramCanvas;
+  if (!canvas.width || !canvas.height) return;
+  const ctx = canvas.getContext('2d');
+  const layout = spectrogramLayout(canvas.width, canvas.height);
+  const range = selectedFrequencyRange();
+  const axisWidth = Math.round(layout.axisLeft);
+  const plotRight = Math.round(layout.plotRight);
+  const c = colors();
+  ctx.fillStyle = c.bg;
+  ctx.fillRect(0, 0, axisWidth, canvas.height);
+  ctx.fillRect(plotRight, 0, canvas.width - plotRight, canvas.height);
+  drawSpectrogramChrome(ctx, layout, range, parseFloat(els.dbFloor.value), canvas.width);
+  drawSpectrogramNoteOverlay(layout, range, axisWidth, plotRight);
+}
+
+// Tras un cambio de rango o escala de frecuencia: remapear o solo el marco,
+// según el flag.
+function spectrogramRangeChanged() {
+  if (SPECTROGRAM_REMAP_ON_RANGE_CHANGE) renderSpectrogramFromHistory();
+  else refreshSpectrogramChrome();
 }
 
 // Vuelve a pintar el espectrograma entero desde el historial con el piso, el
@@ -6225,16 +6258,19 @@ function scaleDbEnd(startWindow, end, factor) {
 
 // Tras cambiar la vista: con audio en marcha el bucle redibuja solo; parado o
 // en pausa se redibuja desde los datos en memoria para no perder la foto.
-function afterViewChange() {
+function afterViewChange(frequencyChanged = true) {
   updateSliderLabels();
-  if (running) return;
-  if (analyser && audioContext && timeData && floatFreqData) {
+  if (!(analyser && audioContext && timeData && floatFreqData)) {
+    refreshPlotsAfterLayout({ rangeChange: frequencyChanged });
+    return;
+  }
+  if (!running) {
     drawTime({ capture: false });
     drawSpectrum();
-    renderSpectrogramFromHistory();
-  } else {
-    refreshPlotsAfterLayout();
   }
+  // con audio en marcha el bucle solo agrega columnas: el remapeo del
+  // espectrograma hay que pedirlo aquí igualmente
+  if (frequencyChanged) spectrogramRangeChanged();
 }
 
 function spectrumZoneAt(point, area) {
@@ -6316,7 +6352,7 @@ function resetSpectrumZoom() {
   }
   if (changed) {
     updateSliderLabels();
-    refreshPlotsAfterLayout();
+    refreshPlotsAfterLayout({ rangeChange: true });
   }
 }
 
@@ -6381,7 +6417,7 @@ function finishSpectrumZoom(drag) {
   }
   if (changed) {
     updateSliderLabels();
-    refreshPlotsAfterLayout();
+    refreshPlotsAfterLayout({ rangeChange: true });
   }
 }
 
@@ -6398,7 +6434,7 @@ bindHoldToPause(els.timeCanvas);
 // dispara al soltar, y el puntero puede haber salido del canvas).
 let suppressContextMenuUntil = 0;
 document.addEventListener('contextmenu', event => {
-  if (event.target === els.spectrumCanvas || performance.now() < suppressContextMenuUntil) {
+  if (event.target === els.spectrumCanvas || event.target === els.spectrogramCanvas || performance.now() < suppressContextMenuUntil) {
     event.preventDefault();
   }
 });
@@ -6473,7 +6509,7 @@ els.spectrumCanvas.addEventListener('pointermove', event => {
     if (!d.end) panDbWindow(d.db, fy * dbSpan);
     else scaleDbEnd(d.db, d.end, Math.exp((d.end === 'max' ? dy : -dy) / AXIS_SCALE_PX));
   }
-  afterViewChange();
+  afterViewChange(d.mode !== 'axis-y');
 });
 
 ['pointerup', 'pointercancel'].forEach(type => {
@@ -6500,6 +6536,7 @@ els.spectrumCanvas.addEventListener('dblclick', event => {
 //  - doble clic: vista anterior al primer zoom.
 let spectrogramAxisDrag = null;
 let spectrogramBandDrag = null;
+let spectrogramPanDrag = null;
 
 function spectrogramAxisHit(point, layout) {
   return point.x < layout.axisLeft && point.y >= layout.top && point.y <= layout.bottom;
@@ -6544,22 +6581,29 @@ function finishSpectrogramBandZoom(drag) {
 }
 
 els.spectrogramCanvas.addEventListener('pointerdown', event => {
-  if (event.pointerType === 'touch' || event.button !== 0) return;
+  if (event.pointerType === 'touch') return;
   const canvas = els.spectrogramCanvas;
   const point = hoverPointForEvent(canvas, event);
   const layout = spectrogramLayout(canvas.width, canvas.height);
   const rect = canvas.getBoundingClientRect();
-  if (spectrogramAxisHit(point, layout)) {
+  const plotHeightCss = (layout.bottom - layout.top) * rect.height / Math.max(1, canvas.height);
+  const inPlot = spectrogramPlotHit(point, layout);
+  if (event.button === 0 && spectrogramAxisHit(point, layout)) {
     const fraction = 1 - (point.y - layout.top) / Math.max(1, layout.bottom - layout.top);
     spectrogramAxisDrag = {
       pointerId: event.pointerId,
       end: axisEndAt(fraction),
       startY: event.clientY,
       range: selectedFrequencyRange(),
-      plotHeightCss: (layout.bottom - layout.top) * rect.height / Math.max(1, canvas.height)
+      plotHeightCss
     };
-  } else if (spectrogramPlotHit(point, layout)) {
+  } else if (event.button === 0 && inPlot) {
     spectrogramBandDrag = { pointerId: event.pointerId, y0: point.y, y1: point.y };
+  } else if ((event.button === 1 || event.button === 2) && inPlot) {
+    // botón derecho o rueda: desplazar en frecuencia
+    spectrogramPanDrag = { pointerId: event.pointerId, startY: event.clientY, range: selectedFrequencyRange(), plotHeightCss };
+    canvas.style.cursor = 'grabbing';
+    suppressContextMenuUntil = Infinity;
   } else {
     return;
   }
@@ -6569,6 +6613,12 @@ els.spectrogramCanvas.addEventListener('pointerdown', event => {
 
 els.spectrogramCanvas.addEventListener('pointermove', event => {
   const canvas = els.spectrogramCanvas;
+  if (spectrogramPanDrag && event.pointerId === spectrogramPanDrag.pointerId) {
+    const d = spectrogramPanDrag;
+    panFrequencyRange(d.range, (event.clientY - d.startY) / Math.max(1, d.plotHeightCss));
+    afterViewChange(true);
+    return;
+  }
   if (spectrogramBandDrag && event.pointerId === spectrogramBandDrag.pointerId) {
     spectrogramBandDrag.y1 = hoverPointForEvent(canvas, event).y;
     updateSpectrogramZoomBox(spectrogramBandDrag);
@@ -6591,6 +6641,11 @@ els.spectrogramCanvas.addEventListener('pointermove', event => {
 ['pointerup', 'pointercancel'].forEach(type => {
   els.spectrogramCanvas.addEventListener(type, event => {
     if (spectrogramAxisDrag && event.pointerId === spectrogramAxisDrag.pointerId) spectrogramAxisDrag = null;
+    if (spectrogramPanDrag && event.pointerId === spectrogramPanDrag.pointerId) {
+      spectrogramPanDrag = null;
+      els.spectrogramCanvas.style.cursor = '';
+      suppressContextMenuUntil = performance.now() + 500;
+    }
     if (spectrogramBandDrag && event.pointerId === spectrogramBandDrag.pointerId) {
       const drag = spectrogramBandDrag;
       spectrogramBandDrag = null;
@@ -6639,7 +6694,7 @@ els.dbFloor.addEventListener('input', () => { spectrumDbWindow = null; });
     spectrumZoomHome = null;
     syncFrequencyRange(element === els.minFrequency ? 'min' : 'max');
     updateSliderLabels();
-    refreshPlotsAfterLayout();
+    refreshPlotsAfterLayout({ rangeChange: true });
   };
   element.addEventListener('input', refreshFrequencyRange);
   element.addEventListener('change', refreshFrequencyRange);
@@ -6648,8 +6703,9 @@ els.dbFloor.addEventListener('input', () => { spectrumDbWindow = null; });
 [els.frequencyScale, els.scrollSpeed].forEach(element => {
   element.addEventListener('input', updateSliderLabels);
   element.addEventListener('change', updateSliderLabels);
-  element.addEventListener('change', refreshPlotsAfterLayout);
 });
+els.frequencyScale.addEventListener('change', () => refreshPlotsAfterLayout({ rangeChange: true }));
+els.scrollSpeed.addEventListener('change', () => refreshPlotsAfterLayout());
 
 [els.timeMsDiv, els.timeYDiv].forEach(element => {
   element.addEventListener('input', updateSliderLabels);
