@@ -1624,7 +1624,7 @@ const I18N = {
     frozen:'pausado',
     timeCanvasHint:'Mantén presionado para pausar todo, audio incluido. Rueda: cambia ms/div.',
     spectrumCanvasHint:'Arrastra para hacer zoom en una ventana. Botón derecho o rueda: desplazar. Sobre los ejes: el centro desplaza y los extremos hacen zoom. Doble clic: vista anterior.',
-    spectrogramCanvasHint:'Eje de frecuencia: el centro desplaza y los extremos hacen zoom. Doble clic sobre el eje: vista anterior.',
+    spectrogramCanvasHint:'Rueda: cambia el piso de dB. Eje de frecuencia: el centro desplaza y los extremos hacen zoom. Doble clic sobre el eje: vista anterior.',
     stickyNote:'Activa una o varias notas; Detener apaga todas.',
     fileNote:'Selecciona un archivo de audio local para analizarlo.',
     systemNote:'Audio del sistema es experimental: si el navegador no muestra una opci\u00f3n para compartir audio, la web no puede redirigirlo. Suele funcionar solo al compartir una pesta\u00f1a con audio desde localhost/HTTPS.',
@@ -1740,7 +1740,7 @@ const I18N = {
     frozen:'paused',
     timeCanvasHint:'Press and hold to pause everything, audio included. Wheel: change ms/div.',
     spectrumCanvasHint:'Drag to zoom into a window. Right or middle button: pan. On the axes: the middle pans, the ends zoom. Double-click: previous view.',
-    spectrogramCanvasHint:'Frequency axis: the middle pans, the ends zoom. Double-click on the axis: previous view.',
+    spectrogramCanvasHint:'Wheel: change the dB floor. Frequency axis: the middle pans, the ends zoom. Double-click on the axis: previous view.',
     stickyNote:'Toggle one or more notes; Stop turns them all off.',
     fileNote:'Choose a local audio file to analyze.',
     systemNote:'System audio is experimental: if the browser does not show a share-audio option, the web page cannot redirect it. It usually only works when sharing a tab with audio from localhost/HTTPS.',
@@ -1856,7 +1856,7 @@ const I18N = {
     frozen:'en pause',
     timeCanvasHint:'Maintiens appuyé pour tout mettre en pause, audio compris. Molette : change les ms/div.',
     spectrumCanvasHint:'Glisse pour zoomer sur une fenêtre. Bouton droit ou molette : déplacer. Sur les axes : le centre déplace, les extrémités zooment. Double-clic : vue précédente.',
-    spectrogramCanvasHint:'Axe des fréquences : le centre déplace, les extrémités zooment. Double-clic sur l\'axe : vue précédente.',
+    spectrogramCanvasHint:'Molette : change le plancher en dB. Axe des fréquences : le centre déplace, les extrémités zooment. Double-clic sur l\'axe : vue précédente.',
     stickyNote:'Active une ou plusieurs notes ; Arrêter les coupe toutes.',
     fileNote:'Choisis un fichier audio local à analyser.',
     systemNote:'L\'audio système est expérimental : si le navigateur ne propose pas de partager l\'audio, la page web ne peut pas le rediriger. Cela fonctionne surtout en partageant un onglet avec audio depuis localhost/HTTPS.',
@@ -6548,6 +6548,17 @@ function bindSliderWheel(target, pickInput = null) {
 }
 
 [els.sourceVolume, els.fftSize, els.smoothing, els.dbFloor, els.scrollSpeed].forEach(input => bindSliderWheel(input));
+
+// Rueda sobre el espectrograma: mueve el piso de dB (el mismo deslizador),
+// 5 dB por muesca, sin espera previa como en la señal temporal.
+let lastSpectrogramWheel = 0;
+els.spectrogramCanvas.addEventListener('wheel', event => {
+  event.preventDefault();
+  const now = performance.now();
+  if (now - lastSpectrogramWheel < SLIDER_WHEEL_MIN_INTERVAL_MS) return;
+  lastSpectrogramWheel = now;
+  nudgeSlider(els.dbFloor, event.deltaY < 0 ? 1 : -1);
+}, { passive: false });
 
 // Rango de frecuencia: dos pulgares en la misma pista; la rueda mueve el más
 // cercano al puntero.
