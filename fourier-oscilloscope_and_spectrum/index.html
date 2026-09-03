@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Osciloscopio &amp; Espectrograma</title>
 <style>
   :root {
@@ -23,6 +23,7 @@
     --sidebar:#eef5fc;
     --hover:#dce9f5;
     --accent:#2d8ee8;
+    --trace-in:#d8731c;
     --chromatic-orange:#c76412;
     --chromatic-green:#2f8d3a;
     --plot-bg:#ffffff;
@@ -42,6 +43,7 @@
     --sidebar:#0d1a28;
     --hover:#16314b;
     --accent:#6ebcff;
+    --trace-in:#ffb15c;
     --chromatic-orange:#ff9a45;
     --chromatic-green:#6fe36f;
     --plot-bg:#0c1723;
@@ -146,6 +148,7 @@
     gap:14px;
     height:100%;
     padding:14px;
+    padding:max(14px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
     min-height:0;
   }
 
@@ -385,6 +388,119 @@
     border-color:var(--accent);
     background:var(--hover);
     box-shadow:var(--shadow);
+  }
+
+  .system-panel .source-action-grid {
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+  }
+
+  .mic-panel {
+    gap:6px;
+  }
+
+  .record-actions {
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+
+  .record-actions > button {
+    flex:1 1 140px;
+    min-height:40px;
+    font-size:12px;
+    font-weight:650;
+  }
+
+  .record-btn {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+  }
+
+  .record-btn .rec-dot {
+    width:10px;
+    height:10px;
+    border-radius:50%;
+    background:var(--danger-color);
+    flex:0 0 auto;
+  }
+
+  .record-btn.recording {
+    border-color:var(--danger-color);
+    color:var(--danger-color);
+    background:color-mix(in srgb, var(--danger-color) 14%, transparent);
+  }
+
+  .record-btn.recording .rec-dot {
+    border-radius:2px;
+    animation:rec-blink 1s steps(2, start) infinite;
+  }
+
+  @keyframes rec-blink {
+    to { visibility:hidden; }
+  }
+
+  .record-status {
+    display:grid;
+    gap:5px;
+    font-size:12px;
+    color:var(--danger-color);
+    font-variant-numeric:tabular-nums;
+  }
+
+  .record-status[hidden] {
+    display:none !important;
+  }
+
+  .record-progress {
+    height:4px;
+    border-radius:999px;
+    background:color-mix(in srgb, var(--border) 70%, transparent);
+    overflow:hidden;
+  }
+
+  .record-progress-fill {
+    height:100%;
+    width:0;
+    background:var(--danger-color);
+    transition:width 0.1s linear;
+  }
+
+  .plot-title-left {
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:4px 12px;
+    min-width:0;
+  }
+
+  .plot-legend {
+    display:inline-flex;
+    gap:10px;
+    align-items:center;
+    font-size:11px;
+  }
+
+  .plot-legend[hidden] {
+    display:none !important;
+  }
+
+  .plot-legend i {
+    display:inline-block;
+    width:14px;
+    height:3px;
+    border-radius:2px;
+    margin-right:5px;
+    vertical-align:middle;
+  }
+
+  .plot-legend .legend-in i {
+    background:var(--trace-in);
+  }
+
+  .plot-legend .legend-out i {
+    background:var(--accent);
   }
 
   .recorded-progress {
@@ -812,6 +928,56 @@
     margin-left:8px;
   }
 
+  .app-dialog {
+    border:1px solid var(--border);
+    border-radius:18px;
+    padding:0;
+    background:var(--panel);
+    color:var(--fg);
+    box-shadow:var(--shadow);
+    width:min(92vw, 420px);
+  }
+
+  .app-dialog::backdrop {
+    background:rgba(5, 12, 22, 0.55);
+    backdrop-filter:blur(2px);
+  }
+
+  .app-dialog-body {
+    display:grid;
+    gap:14px;
+    padding:20px 22px;
+    margin:0;
+  }
+
+  .app-dialog-body h2 {
+    margin:0;
+    font-size:13px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--accent);
+  }
+
+  .app-dialog-body p {
+    margin:0;
+    font-size:14px;
+    line-height:1.5;
+    color:var(--fg);
+  }
+
+  .app-dialog-actions {
+    display:flex;
+    justify-content:flex-end;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+
+  .app-dialog-actions button {
+    min-width:110px;
+    min-height:40px;
+    font-weight:650;
+  }
+
   .meta-popover {
     position:absolute;
     z-index:50;
@@ -860,6 +1026,26 @@
     display:block;
     align-self:stretch;
     background:transparent;
+  }
+
+  /* Táctil: arrastre horizontal sobre el gráfico mueve el cursor de lectura,
+     el vertical sigue desplazando la página. Sin menú de selección al mantener. */
+  .plot-card canvas {
+    touch-action:pan-y;
+    -webkit-touch-callout:none;
+    -webkit-user-select:none;
+    user-select:none;
+  }
+
+  button,
+  .toggle-option,
+  .source-action-btn,
+  .lang-btn {
+    touch-action:manipulation;
+    -webkit-tap-highlight-color:transparent;
+    -webkit-touch-callout:none;
+    -webkit-user-select:none;
+    user-select:none;
   }
 
   #spectrum-canvas,
@@ -956,6 +1142,21 @@
       height:auto;
     }
 
+    /* Una sola columna: las secciones del panel lateral pasan a ser hijas
+       directas de .wrapper para poder intercalar los gráficos justo después
+       de la fuente de audio. Título y fuente arriba, gráficos, y luego
+       análisis y visualización. */
+    .controls {
+      display:contents;
+    }
+
+    .controls > .interface-panel { order:0; }
+    .controls > .source-panel { order:1; }
+    .wrapper > .plots { order:2; }
+    .controls > .analysis-panel { order:3; }
+    .controls > .display-panel { order:4; }
+    .controls > .sidebar-author { order:5; }
+
     .plots {
       grid-template-columns:1fr !important;
       grid-template-areas:none !important;
@@ -983,6 +1184,35 @@
       width:100%;
     }
   }
+
+  /* Pantallas táctiles: sin zoom automático de iOS al tocar un selector
+     (requiere 16px), y controles un poco más grandes para el dedo. */
+  @media (pointer:coarse) {
+    select,
+    input[type="number"],
+    input[type="file"] {
+      font-size:16px;
+    }
+
+    .lang-btn {
+      padding:10px 8px;
+    }
+
+    .meta-segment.meta-control {
+      padding:5px 10px 5px 12px;
+    }
+
+    .frequency-range-slider input[type="range"]::-webkit-slider-thumb {
+      width:26px;
+      height:26px;
+      transform:translateY(-9.5px);
+    }
+
+    .frequency-range-slider input[type="range"]::-moz-range-thumb {
+      width:26px;
+      height:26px;
+    }
+  }
 </style>
 </head>
 <body class="theme-dark">
@@ -1003,7 +1233,7 @@
         </div>
       </section>
 
-      <section class="control-group">
+      <section class="control-group source-panel">
         <b id="source-title">Fuente de audio</b>
         <label>
           <span id="source-label">Entrada</span>
@@ -1030,6 +1260,30 @@
           <span id="source-action-title" class="source-action-title">Acciones</span>
           <div id="source-action-grid" class="source-action-grid"></div>
         </div>
+        <div id="system-panel" class="source-action-panel system-panel">
+          <span id="system-title" class="source-action-title">Sistema / efecto</span>
+          <div id="effect-grid" class="source-action-grid"></div>
+        </div>
+        <div id="mic-panel" class="source-action-panel mic-panel" hidden>
+          <label class="toggle-option" for="mic-monitor">
+            <input id="mic-monitor" type="checkbox">
+            <span id="mic-monitor-label">Escuchar en auriculares</span>
+          </label>
+          <div id="mic-monitor-note" class="hint">Activa la escucha solo con auriculares: con parlantes se produce acople (realimentación).</div>
+        </div>
+        <div id="record-panel" class="source-action-panel record-panel" hidden>
+          <span id="record-title" class="source-action-title">Grabación</span>
+          <div class="record-actions">
+            <button type="button" id="record-btn" class="record-btn"><span class="rec-dot" aria-hidden="true"></span><span id="record-btn-label">Grabar</span></button>
+            <button type="button" id="download-wav-btn" hidden>Descargar WAV</button>
+            <button type="button" id="delete-recording-btn" class="danger" hidden>Borrar grabación</button>
+          </div>
+          <div id="record-status" class="record-status" hidden>
+            <span id="record-status-text">REC 0:00 / 1:00</span>
+            <div class="record-progress"><div id="record-progress-fill" class="record-progress-fill"></div></div>
+          </div>
+          <div id="record-hint" class="hint"></div>
+        </div>
         <div id="recorded-progress" class="recorded-progress" hidden role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
           <div id="recorded-progress-track" class="recorded-progress-track">
             <div id="recorded-progress-fill" class="recorded-progress-fill"></div>
@@ -1045,10 +1299,10 @@
           <button type="button" id="clear-btn">Limpiar</button>
         </div>
         <div id="status" class="status-line">Listo.</div>
-        <p id="mic-note" class="hint">El micrófono requiere permiso del navegador y normalmente funciona en HTTPS o localhost.</p>
+        <p id="mic-note" class="hint">Al iniciar, el navegador te pedirá permiso para usar el micrófono. Acéptalo para ver tu voz en pantalla.</p>
       </section>
 
-      <section class="control-group">
+      <section class="control-group analysis-panel">
         <b id="analysis-title">Análisis</b>
         <div class="row">
           <label>
@@ -1083,7 +1337,7 @@
         </label>
       </section>
 
-      <section class="control-group">
+      <section class="control-group display-panel">
         <b id="display-title">Visualización</b>
         <div class="row" hidden>
           <label>
@@ -1145,7 +1399,18 @@
             <input id="show-notes" type="checkbox">
             <span id="show-notes-label">Notas musicales en espectrograma</span>
           </label>
+          <label class="toggle-option" for="show-input">
+            <input id="show-input" type="checkbox" checked>
+            <span id="show-input-label">Entrada y salida (2 canales)</span>
+          </label>
         </div>
+        <label>
+          <span id="spectrogram-channel-label">Espectrograma muestra</span>
+          <select id="spectrogram-channel">
+            <option value="output" selected>Salida del sistema</option>
+            <option value="input">Entrada del sistema</option>
+          </select>
+        </label>
       </section>
 
       <div class="sidebar-author">
@@ -1157,7 +1422,10 @@
     <main id="plots" class="plots" data-layout="triple">
       <section class="plot-card plot-time" id="time-panel">
         <div class="plot-title">
-          <span id="time-title">Señal temporal</span>
+          <div class="plot-title-left">
+            <span id="time-title">Señal temporal</span>
+            <span id="time-legend" class="plot-legend"><span class="legend-in"><i></i><span id="time-legend-in">entrada</span></span><span class="legend-out"><i></i><span id="time-legend-out">salida</span></span></span>
+          </div>
           <span id="time-meta" class="plot-meta">--</span>
         </div>
         <canvas id="time-canvas"></canvas>
@@ -1165,7 +1433,10 @@
 
       <section class="plot-card plot-spectrum" id="spectrum-panel">
         <div class="plot-title">
-          <span id="spectrum-title">Espectro instantáneo</span>
+          <div class="plot-title-left">
+            <span id="spectrum-title">Espectro instantáneo</span>
+            <span id="spectrum-legend" class="plot-legend"><span class="legend-in"><i></i><span id="spectrum-legend-in">entrada</span></span><span class="legend-out"><i></i><span id="spectrum-legend-out">salida</span></span></span>
+          </div>
           <span id="spectrum-meta" class="plot-meta">--</span>
         </div>
         <canvas id="spectrum-canvas"></canvas>
@@ -1192,6 +1463,17 @@
     </main>
   </div>
 
+  <dialog id="confirm-dialog" class="app-dialog" aria-labelledby="confirm-dialog-title">
+    <form method="dialog" class="app-dialog-body">
+      <h2 id="confirm-dialog-title">Borrar grabación</h2>
+      <p id="confirm-dialog-text">¿Borrar la grabación guardada? Esta acción no se puede deshacer.</p>
+      <div class="app-dialog-actions">
+        <button type="button" id="confirm-dialog-cancel">Cancelar</button>
+        <button type="button" id="confirm-dialog-ok" class="danger">Borrar</button>
+      </div>
+    </form>
+  </dialog>
+
 <script src="assets/audio/police-siren-3-soundbible-data.js"></script>
 <script src="assets/audio/Windowlicker_spectrogram-data.js"></script>
 <script>
@@ -1208,7 +1490,39 @@ const I18N = {
     stop:'Detener',
     clear:'Limpiar',
     ready:'Listo.',
-    micNote:'El micr\u00f3fono requiere permiso del navegador y normalmente funciona en HTTPS o localhost.',
+    micNote:'Al iniciar, el navegador te pedirá permiso para usar el micrófono. Acéptalo para ver tu voz en pantalla.',
+    systemTitle:'Sistema / efecto',
+    micMonitor:'Escuchar en auriculares',
+    micMonitorNote:'Activa la escucha solo con auriculares: con parlantes se produce acople (realimentación).',
+    effectNone:'Sin efecto',
+    effectRobot:'Robot',
+    effectEcho:'Eco',
+    effectVibrato:'Vibrato',
+    effectRobotHint:'Modulación en anillo con portadora de 50 Hz: cada armónico se desdobla en dos bandas laterales.',
+    effectEchoHint:'Retardo de 280 ms con realimentación y filtro pasabajos: repeticiones que se van apagando.',
+    effectVibratoHint:'Retardo modulado por un LFO de 6 Hz: la frecuencia oscila alrededor de la original.',
+    recordTitle:'Grabación',
+    record:'Grabar',
+    recordStop:'Detener grabación',
+    recordAgain:'Grabar de nuevo',
+    recordRec:'REC',
+    recordHintMic:'Graba la señal del micrófono sin efecto, hasta 1 minuto. Al detener, la grabación se reproduce en bucle y se le puede aplicar cualquier efecto.',
+    recordHintClip:'Esta grabación se guardó sin efecto. Mientras se reproduce en bucle, elige un efecto arriba para ver y escuchar esa misma voz procesada. Vuelve a «Sin efecto» para comparar.',
+    recordSaved:'Grabación guardada sin efecto',
+    recordError:'No se pudo grabar.',
+    recordingSource:'Grabación sin efecto',
+    downloadWav:'Descargar WAV',
+    deleteRecording:'Borrar grabación',
+    deleteRecordingConfirm:'¿Borrar la grabación guardada? Esta acción no se puede deshacer.',
+    recordDeleted:'Grabación borrada.',
+    dialogCancel:'Cancelar',
+    dialogDelete:'Borrar',
+    showInput:'Entrada y salida (2 canales)',
+    spectrogramChannel:'Espectrograma muestra',
+    channelOutput:'Salida del sistema',
+    channelInput:'Entrada del sistema',
+    legendInput:'entrada',
+    legendOutput:'salida',
     stickyNote:'Activa una o varias notas; Detener apaga todas.',
     fileNote:'Selecciona un archivo de audio local para analizarlo.',
     systemNote:'Audio del sistema es experimental: si el navegador no muestra una opci\u00f3n para compartir audio, la web no puede redirigirlo. Suele funcionar solo al compartir una pesta\u00f1a con audio desde localhost/HTTPS.',
@@ -1287,7 +1601,39 @@ const I18N = {
     stop:'Stop',
     clear:'Clear',
     ready:'Ready.',
-    micNote:'Microphone input requires browser permission and normally works on HTTPS or localhost.',
+    micNote:'When you press play, the browser will ask for permission to use the microphone. Allow it to see your voice on screen.',
+    systemTitle:'System / effect',
+    micMonitor:'Listen on headphones',
+    micMonitorNote:'Enable listening only with headphones: with speakers you will get feedback.',
+    effectNone:'No effect',
+    effectRobot:'Robot',
+    effectEcho:'Echo',
+    effectVibrato:'Vibrato',
+    effectRobotHint:'Ring modulation with a 50 Hz carrier: every harmonic splits into two sidebands.',
+    effectEchoHint:'280 ms delay with feedback and a low-pass filter: repetitions that fade away.',
+    effectVibratoHint:'Delay modulated by a 6 Hz LFO: the frequency wobbles around the original.',
+    recordTitle:'Recording',
+    record:'Record',
+    recordStop:'Stop recording',
+    recordAgain:'Record again',
+    recordRec:'REC',
+    recordHintMic:'Records the dry microphone signal, up to 1 minute. When you stop, the clip loops and any effect can be applied to it.',
+    recordHintClip:'This recording is stored without any effect. While it loops, pick an effect above to see and hear that same voice processed. Go back to "No effect" to compare.',
+    recordSaved:'Recording saved without effect',
+    recordError:'Could not record.',
+    recordingSource:'Recording without effect',
+    downloadWav:'Download WAV',
+    deleteRecording:'Delete recording',
+    deleteRecordingConfirm:'Delete the saved recording? This cannot be undone.',
+    recordDeleted:'Recording deleted.',
+    dialogCancel:'Cancel',
+    dialogDelete:'Delete',
+    showInput:'Input and output (2 channels)',
+    spectrogramChannel:'Spectrogram shows',
+    channelOutput:'System output',
+    channelInput:'System input',
+    legendInput:'input',
+    legendOutput:'output',
     stickyNote:'Toggle one or more notes; Stop turns them all off.',
     fileNote:'Choose a local audio file to analyze.',
     systemNote:'System audio is experimental: if the browser does not show a share-audio option, the web page cannot redirect it. It usually only works when sharing a tab with audio from localhost/HTTPS.',
@@ -1366,7 +1712,39 @@ const I18N = {
     stop:'Arrêter',
     clear:'Effacer',
     ready:'Prêt.',
-    micNote:'Le microphone nécessite une permission du navigateur et fonctionne normalement en HTTPS ou localhost.',
+    micNote:'Au démarrage, le navigateur te demandera l\'autorisation d\'utiliser le microphone. Accepte pour voir ta voix à l\'écran.',
+    systemTitle:'Système / effet',
+    micMonitor:'Écouter au casque',
+    micMonitorNote:'Active l\'écoute uniquement avec un casque : avec des haut-parleurs, il y aura du larsen.',
+    effectNone:'Sans effet',
+    effectRobot:'Robot',
+    effectEcho:'Écho',
+    effectVibrato:'Vibrato',
+    effectRobotHint:'Modulation en anneau avec une porteuse de 50 Hz : chaque harmonique se dédouble en deux bandes latérales.',
+    effectEchoHint:'Retard de 280 ms avec réinjection et filtre passe-bas : des répétitions qui s\'estompent.',
+    effectVibratoHint:'Retard modulé par un LFO de 6 Hz : la fréquence oscille autour de l\'originale.',
+    recordTitle:'Enregistrement',
+    record:'Enregistrer',
+    recordStop:'Arrêter l\'enregistrement',
+    recordAgain:'Enregistrer à nouveau',
+    recordRec:'REC',
+    recordHintMic:'Enregistre le signal du microphone sans effet, jusqu\'à 1 minute. À l\'arrêt, l\'extrait est lu en boucle et n\'importe quel effet peut lui être appliqué.',
+    recordHintClip:'Cet enregistrement est conservé sans effet. Pendant qu\'il tourne en boucle, choisis un effet ci-dessus pour voir et entendre cette même voix traitée. Reviens à « Sans effet » pour comparer.',
+    recordSaved:'Enregistrement sauvegardé sans effet',
+    recordError:'Impossible d\'enregistrer.',
+    recordingSource:'Enregistrement sans effet',
+    downloadWav:'Télécharger WAV',
+    deleteRecording:'Supprimer l\'enregistrement',
+    deleteRecordingConfirm:'Supprimer l\'enregistrement sauvegardé ? Cette action est irréversible.',
+    recordDeleted:'Enregistrement supprimé.',
+    dialogCancel:'Annuler',
+    dialogDelete:'Supprimer',
+    showInput:'Entrée et sortie (2 voies)',
+    spectrogramChannel:'Le spectrogramme montre',
+    channelOutput:'Sortie du système',
+    channelInput:'Entrée du système',
+    legendInput:'entrée',
+    legendOutput:'sortie',
     stickyNote:'Active une ou plusieurs notes ; Arrêter les coupe toutes.',
     fileNote:'Choisis un fichier audio local à analyser.',
     systemNote:'L\'audio système est expérimental : si le navigateur ne propose pas de partager l\'audio, la page web ne peut pas le rediriger. Cela fonctionne surtout en partageant un onglet avec audio depuis localhost/HTTPS.',
@@ -1463,6 +1841,38 @@ const els = {
   clearBtn: $('clear-btn'),
   status: $('status'),
   micNote: $('mic-note'),
+  systemPanel: $('system-panel'),
+  systemTitle: $('system-title'),
+  effectGrid: $('effect-grid'),
+  micPanel: $('mic-panel'),
+  micMonitor: $('mic-monitor'),
+  micMonitorLabel: $('mic-monitor-label'),
+  micMonitorNote: $('mic-monitor-note'),
+  recordPanel: $('record-panel'),
+  recordTitle: $('record-title'),
+  recordBtn: $('record-btn'),
+  recordBtnLabel: $('record-btn-label'),
+  downloadWavBtn: $('download-wav-btn'),
+  deleteRecordingBtn: $('delete-recording-btn'),
+  confirmDialog: $('confirm-dialog'),
+  confirmDialogTitle: $('confirm-dialog-title'),
+  confirmDialogText: $('confirm-dialog-text'),
+  confirmDialogCancel: $('confirm-dialog-cancel'),
+  confirmDialogOk: $('confirm-dialog-ok'),
+  recordStatus: $('record-status'),
+  recordStatusText: $('record-status-text'),
+  recordProgressFill: $('record-progress-fill'),
+  recordHint: $('record-hint'),
+  showInput: $('show-input'),
+  showInputLabel: $('show-input-label'),
+  spectrogramChannelLabel: $('spectrogram-channel-label'),
+  spectrogramChannel: $('spectrogram-channel'),
+  timeLegend: $('time-legend'),
+  timeLegendIn: $('time-legend-in'),
+  timeLegendOut: $('time-legend-out'),
+  spectrumLegend: $('spectrum-legend'),
+  spectrumLegendIn: $('spectrum-legend-in'),
+  spectrumLegendOut: $('spectrum-legend-out'),
   analysisTitle: $('analysis-title'),
   fftLabel: $('fft-label'),
   fftSize: $('fft-size'),
@@ -1525,6 +1935,34 @@ let sourceNode = null;
 let analysisNode = null;
 let gainNode = null;
 let mediaStream = null;
+// Sistema / efecto: toda fuente pasa por effectInput -> [nodos del efecto] ->
+// effectOutput antes del analizador de salida (CH2). La señal seca se deriva
+// además a un segundo analizador, la entrada del sistema (CH1).
+const EFFECTS = ['none', 'robot', 'echo', 'vibrato'];
+const MIC_MONITOR_LEVEL = 1;
+const ROBOT_CARRIER_HZ = 50;
+const ECHO_DELAY_S = 0.28;
+const ECHO_FEEDBACK = 0.45;
+const ECHO_TONE_HZ = 2500;
+const ECHO_WET = 0.6;
+const VIBRATO_RATE_HZ = 6;
+const VIBRATO_BASE_DELAY_S = 0.02;
+const VIBRATO_DEPTH_S = 0.0025;
+let currentEffect = 'none';
+let effectInput = null;
+let effectOutput = null;
+let effectNodes = [];
+let effectOscillators = [];
+let inputAnalyser = null;
+let inputTimeData = null;
+let inputFloatFreqData = null;
+// Grabación: una sola, de la señal del micrófono sin efecto.
+const RECORDING_SOURCE = 'recording';
+const RECORDING_MAX_SECONDS = 60;
+const RECORDER_CHUNK_SAMPLES = 2048;
+let recordedClip = null;
+let recorder = null;
+let recorderWorkletReady = null;
 let audioElement = null;
 let audioBufferSource = null;
 let audioBufferStartedAt = 0;
@@ -1630,6 +2068,10 @@ const AUDIO_PRESETS = {
   'windowlicker': {
     src:'assets/audio/Windowlicker_spectrogram.wav',
     embedded:'WINDOWLICKER_SPECTROGRAM_WAV',
+    loop:true
+  },
+  'recording': {
+    buffer:true,
     loop:true
   }
 };
@@ -1762,6 +2204,24 @@ function updateLanguage() {
   els.spectrogramMeta.textContent = tr.spectrogramMeta;
   els.frequencyScale.options[0].textContent = tr.linear;
   els.frequencyScale.options[1].textContent = tr.log;
+  els.systemTitle.textContent = tr.systemTitle;
+  els.micMonitorLabel.textContent = tr.micMonitor;
+  els.micMonitorNote.textContent = tr.micMonitorNote;
+  els.recordTitle.textContent = tr.recordTitle;
+  els.downloadWavBtn.textContent = tr.downloadWav;
+  els.deleteRecordingBtn.textContent = tr.deleteRecording;
+  els.showInputLabel.textContent = tr.showInput;
+  els.spectrogramChannelLabel.textContent = tr.spectrogramChannel;
+  els.spectrogramChannel.options[0].textContent = tr.channelOutput;
+  els.spectrogramChannel.options[1].textContent = tr.channelInput;
+  els.timeLegendIn.textContent = tr.legendInput;
+  els.spectrumLegendIn.textContent = tr.legendInput;
+  els.timeLegendOut.textContent = tr.legendOutput;
+  els.spectrumLegendOut.textContent = tr.legendOutput;
+  renderEffectButtons();
+  updateRecordingUI();
+  updateLegends();
+  updateSpectrogramTitle();
   renderSourceOptions();
   updateSourceModeUI();
   updateTransportControls();
@@ -1806,8 +2266,12 @@ function updateTransportControls() {
 function renderSourceOptions() {
   const current = els.sourceSelect.value || DEFAULT_SOURCE;
   const tr = t();
+  const recordingEntry = recordedClip
+    ? [[RECORDING_SOURCE, `${tr.recordingSource} (${formatProgressTime(recordedClip.duration)})`]]
+    : [];
   els.sourceSelect.innerHTML = [
     ['mic', tr.mic],
+    ...recordingEntry,
     ['tones', tr.tones],
     [CHROMATIC_SOURCE, tr.chromaticScale],
     ['piano-chords', tr.pianoChords],
@@ -2121,6 +2585,8 @@ function updateSourceModeUI() {
   applySourcePresetConfig(source);
   const hint = sourceHintText(source);
   els.fileInput.hidden = source !== 'file';
+  els.micPanel.hidden = source !== 'mic';
+  updateRecordPanel();
   els.micNote.textContent = hint;
   els.micNote.hidden = !hint;
   renderSourceActions();
@@ -2206,10 +2672,18 @@ function updatePanelLayout() {
   refreshPlotsAfterLayout();
 }
 
+// Escala de los canvas: la relación de píxeles del dispositivo (DPR) con tope 2. En
+// teléfonos con DPR 3 el espectrograma sería 2,25 veces más caro de pintar
+// sin ganancia visible en un gráfico.
+const MAX_CANVAS_SCALE = 2;
+function canvasScale() {
+  return Math.min(window.devicePixelRatio || 1, MAX_CANVAS_SCALE);
+}
+
 function ensureCanvasSize(canvas) {
   const rect = canvas.getBoundingClientRect();
-  const width = Math.max(1, Math.floor(rect.width * devicePixelRatio));
-  const height = Math.max(1, Math.floor(rect.height * devicePixelRatio));
+  const width = Math.max(1, Math.floor(rect.width * canvasScale()));
+  const height = Math.max(1, Math.floor(rect.height * canvasScale()));
   if (canvas.width !== width || canvas.height !== height) {
     canvas.width = width;
     canvas.height = height;
@@ -2226,7 +2700,8 @@ function colors() {
     fg: style.getPropertyValue('--fg').trim(),
     muted: style.getPropertyValue('--muted').trim(),
     border: style.getPropertyValue('--border').trim(),
-    accent: style.getPropertyValue('--accent').trim()
+    accent: style.getPropertyValue('--accent').trim(),
+    traceIn: style.getPropertyValue('--trace-in').trim()
   };
 }
 
@@ -2245,34 +2720,34 @@ function fillPlotArea(ctx, area) {
 }
 
 function plotArea(width, height) {
-  const bottomInset = Math.max(32 * devicePixelRatio, height * 0.12);
+  const bottomInset = Math.max(32 * canvasScale(), height * 0.12);
   return {
-    left: 54 * devicePixelRatio,
-    right: width - 14 * devicePixelRatio,
-    top: 18 * devicePixelRatio,
+    left: 54 * canvasScale(),
+    right: width - 14 * canvasScale(),
+    top: 18 * canvasScale(),
     bottom: height - bottomInset
   };
 }
 
 function spectrumArea(width, height) {
-  const bottomInset = Math.max(52 * devicePixelRatio, height * 0.16);
+  const bottomInset = Math.max(52 * canvasScale(), height * 0.16);
   return {
-    left: 74 * devicePixelRatio,
-    right: width - 16 * devicePixelRatio,
-    top: 18 * devicePixelRatio,
+    left: 74 * canvasScale(),
+    right: width - 16 * canvasScale(),
+    top: 18 * canvasScale(),
     bottom: height - bottomInset
   };
 }
 
 function spectrogramLayout(width, height) {
-  const rightPadding = 8 * devicePixelRatio;
-  const colorbarWidth = 28 * devicePixelRatio;
-  const colorbarGap = 6 * devicePixelRatio;
-  const labelWidth = 36 * devicePixelRatio;
-  const topInset = Math.max(14 * devicePixelRatio, height * 0.03);
-  const bottomInset = Math.max(34 * devicePixelRatio, height * 0.11);
+  const rightPadding = 8 * canvasScale();
+  const colorbarWidth = 28 * canvasScale();
+  const colorbarGap = 6 * canvasScale();
+  const labelWidth = 36 * canvasScale();
+  const topInset = Math.max(14 * canvasScale(), height * 0.03);
+  const bottomInset = Math.max(34 * canvasScale(), height * 0.11);
   return {
-    axisLeft: 58 * devicePixelRatio,
+    axisLeft: 58 * canvasScale(),
     colorbarWidth,
     colorbarGap,
     labelWidth,
@@ -2288,7 +2763,7 @@ function drawGrid(ctx, area, xDivs = SCOPE_DIVS_X, yDivs = SCOPE_DIVS_Y, emphasi
   const width = area.right - area.left;
   const height = area.bottom - area.top;
   ctx.strokeStyle = c.border;
-  ctx.lineWidth = 1 * devicePixelRatio;
+  ctx.lineWidth = 1 * canvasScale();
 
   for (let i = 0; i <= xDivs; i++) {
     const x = area.left + width * i / xDivs;
@@ -2309,7 +2784,7 @@ function drawGrid(ctx, area, xDivs = SCOPE_DIVS_X, yDivs = SCOPE_DIVS_Y, emphasi
   }
 
   ctx.globalAlpha = 1;
-  ctx.lineWidth = 1.3 * devicePixelRatio;
+  ctx.lineWidth = 1.3 * canvasScale();
   ctx.beginPath();
   ctx.rect(area.left, area.top, width, height);
   ctx.stroke();
@@ -2318,6 +2793,14 @@ function drawGrid(ctx, area, xDivs = SCOPE_DIVS_X, yDivs = SCOPE_DIVS_Y, emphasi
 function formatFrequencyLabel(freq) {
   if (freq >= 1000) {
     return `${(freq / 1000).toFixed(freq >= 10000 ? 0 : 1)} kHz`;
+  }
+  return `${Math.round(freq)} Hz`;
+}
+
+// Lectura del cursor (hover): más resolución que las etiquetas de los ejes.
+function formatFrequencyReadout(freq) {
+  if (freq >= 1000) {
+    return `${(freq / 1000).toFixed(2)} kHz`;
   }
   return `${Math.round(freq)} Hz`;
 }
@@ -2401,23 +2884,23 @@ function dbForSpectrumY(y, area, dbFloor) {
   return dbFloor + norm * (DB_CEILING - dbFloor);
 }
 
-function currentDbForFrequency(freq) {
-  if (!audioContext || !analyser || !floatFreqData?.length) return NaN;
+function currentDbForFrequency(freq, data = floatFreqData) {
+  if (!audioContext || !analyser || !data?.length) return NaN;
   const bin = Math.min(
-    floatFreqData.length - 1,
+    data.length - 1,
     Math.max(0, Math.round(freq / audioContext.sampleRate * analyser.fftSize))
   );
   const dbFloor = parseFloat(els.dbFloor.value);
-  return Math.max(dbFloor, Math.min(DB_CEILING, floatFreqData[bin]));
+  return Math.max(dbFloor, Math.min(DB_CEILING, data[bin]));
 }
 
-function interpolatedDbForFrequency(freq) {
-  if (!audioContext || !analyser || !floatFreqData?.length) return NaN;
+function interpolatedDbForFrequency(freq, data = floatFreqData) {
+  if (!audioContext || !analyser || !data?.length) return NaN;
   const binPosition = freq / audioContext.sampleRate * analyser.fftSize;
-  const left = Math.max(0, Math.min(floatFreqData.length - 1, Math.floor(binPosition)));
-  const right = Math.max(0, Math.min(floatFreqData.length - 1, left + 1));
+  const left = Math.max(0, Math.min(data.length - 1, Math.floor(binPosition)));
+  const right = Math.max(0, Math.min(data.length - 1, left + 1));
   const ratio = Math.max(0, Math.min(1, binPosition - left));
-  return floatFreqData[left] + (floatFreqData[right] - floatFreqData[left]) * ratio;
+  return data[left] + (data[right] - data[left]) * ratio;
 }
 
 function formatVoltageRatio(db) {
@@ -2494,7 +2977,7 @@ function updateSpectrumHover() {
     canvas,
     area,
     spectrumHoverState,
-    `f: ${formatFrequencyLabel(freq)}<br>dB: ${db.toFixed(1)}<br>${formatVoltageRatio(db)}`,
+    `f: ${formatFrequencyReadout(freq)}<br>dB: ${db.toFixed(1)}<br>${formatVoltageRatio(db)}`,
     'right'
   );
 }
@@ -2518,14 +3001,14 @@ function updateSpectrogramHover() {
   }
   const frequencyRange = selectedFrequencyRange();
   const freq = frequencyForY(spectrogramHoverState.y, layout.top, layout.bottom, frequencyRange);
-  const db = currentDbForFrequency(freq);
+  const db = currentDbForFrequency(freq, spectrogramFreqData());
   const dbText = Number.isFinite(db) ? db.toFixed(1) : '--';
   setHoverOverlay(
     els.spectrogramHover,
     canvas,
     area,
     spectrogramHoverState,
-    `f: ${formatFrequencyLabel(freq)}<br>dB: ${dbText}<br>${formatVoltageRatio(db)}`,
+    `f: ${formatFrequencyReadout(freq)}<br>dB: ${dbText}<br>${formatVoltageRatio(db)}`,
     'left'
   );
 }
@@ -2675,8 +3158,8 @@ function drawTimeFrame() {
   fillPlotArea(ctx, area);
   drawGrid(ctx, area);
   ctx.fillStyle = c.muted;
-  ctx.font = `${11 * devicePixelRatio}px system-ui`;
-  ctx.fillText('0', 18 * devicePixelRatio, area.top + (area.bottom - area.top) / 2 + 4 * devicePixelRatio);
+  ctx.font = `${11 * canvasScale()}px system-ui`;
+  ctx.fillText('0', 18 * canvasScale(), area.top + (area.bottom - area.top) / 2 + 4 * canvasScale());
 }
 
 function drawSpectrumFrame() {
@@ -2698,7 +3181,7 @@ function drawSpectrumFrame() {
   drawGrid(ctx, area, 10, 8, false);
 
   ctx.fillStyle = c.muted;
-  ctx.font = `${11 * devicePixelRatio}px system-ui`;
+  ctx.font = `${11 * canvasScale()}px system-ui`;
   xTicks.forEach(freq => {
     const x = xForFrequency(freq, els.spectrumCanvas.width, frequencyRange);
     ctx.globalAlpha = 0.45;
@@ -2710,7 +3193,7 @@ function drawSpectrumFrame() {
     ctx.globalAlpha = 1;
     ctx.textAlign = freq === frequencyRange.min ? 'left' : 'center';
     ctx.textBaseline = 'top';
-    ctx.fillText(formatFrequencyLabel(freq), x, area.bottom + 8 * devicePixelRatio);
+    ctx.fillText(formatFrequencyLabel(freq), x, area.bottom + 8 * canvasScale());
   });
   ctx.textBaseline = 'alphabetic';
 
@@ -2718,7 +3201,7 @@ function drawSpectrumFrame() {
   for (let step = 0; step <= 4; step++) {
     const db = dbFloor + (-dbFloor) * (1 - step / 4);
     const y = area.top + (area.bottom - area.top) * step / 4;
-    ctx.fillText(`${Math.round(db)} dB`, area.left - 8 * devicePixelRatio, y + 4 * devicePixelRatio);
+    ctx.fillText(`${Math.round(db)} dB`, area.left - 8 * canvasScale(), y + 4 * canvasScale());
   }
 
   ctx.textAlign = 'left';
@@ -2745,12 +3228,12 @@ function drawSpectrogramChrome(ctx, layout, frequencyRange, dbFloor, width) {
   ctx.globalAlpha = 1;
 
   ctx.fillStyle = c.muted;
-  ctx.font = `${11 * devicePixelRatio}px system-ui`;
+  ctx.font = `${11 * canvasScale()}px system-ui`;
   ctx.textAlign = 'left';
   ticks.forEach((freq, index) => {
     const y = spectrogramYForFrequency(freq, layout, frequencyRange);
     ctx.textBaseline = index === 0 ? 'top' : (index === ticks.length - 1 ? 'bottom' : 'middle');
-    ctx.fillText(formatFrequencyLabel(freq), 8 * devicePixelRatio, y);
+    ctx.fillText(formatFrequencyLabel(freq), 8 * canvasScale(), y);
   });
   ctx.textBaseline = 'alphabetic';
 
@@ -2766,7 +3249,7 @@ function drawSpectrogramChrome(ctx, layout, frequencyRange, dbFloor, width) {
   ctx.fillStyle = c.muted;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
-  const dbLabelLeft = colorbarLeft + layout.colorbarWidth + 4 * devicePixelRatio;
+  const dbLabelLeft = colorbarLeft + layout.colorbarWidth + 4 * canvasScale();
   [1, 0.66, 0.33, 0].forEach(ratio => {
     const db = dbFloor + (SPECTROGRAM_COLOR_CEILING - dbFloor) * ratio;
     const y = spectrogramYForRatio(layout, ratio);
@@ -2777,8 +3260,8 @@ function drawSpectrogramChrome(ctx, layout, frequencyRange, dbFloor, width) {
   ctx.strokeStyle = c.border;
   ctx.globalAlpha = 0.45;
   ctx.beginPath();
-  ctx.moveTo(axisWidth - 1 * devicePixelRatio, layout.top);
-  ctx.lineTo(axisWidth - 1 * devicePixelRatio, layout.bottom);
+  ctx.moveTo(axisWidth - 1 * canvasScale(), layout.top);
+  ctx.lineTo(axisWidth - 1 * canvasScale(), layout.bottom);
   ctx.stroke();
   ctx.globalAlpha = 1;
 }
@@ -2812,11 +3295,46 @@ function drawStaticCanvases() {
   drawSpectrogramFrame();
 }
 
+const IS_IOS = /iP(hone|ad|od)/.test(navigator.userAgent)
+  || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+let iosUnlockAudio = null;
+
+// iOS silencia Web Audio con el interruptor de silencio salvo que haya un
+// elemento <audio> reproduciendo. Un bucle de silencio, iniciado desde el
+// gesto del usuario, pasa la sesión de audio a modo reproducción.
+function unlockIosAudioSession() {
+  if (!IS_IOS) return;
+  if (!iosUnlockAudio) {
+    const blob = encodeWav(new Float32Array(800), 8000);
+    iosUnlockAudio = new Audio(URL.createObjectURL(blob));
+    iosUnlockAudio.loop = true;
+    iosUnlockAudio.setAttribute('playsinline', '');
+  }
+  iosUnlockAudio.play().catch(() => {});
+}
+
+// En iOS la frecuencia de muestreo del hardware puede cambiar al abrir el
+// micrófono; un AudioContext creado antes a otra frecuencia produce audio
+// distorsionado. Si no coinciden, se recrea el contexto.
+async function matchAudioContextToStream(stream) {
+  if (!IS_IOS || !audioContext) return;
+  const rate = stream.getAudioTracks()[0]?.getSettings?.().sampleRate;
+  if (!rate || audioContext.sampleRate === rate) return;
+  try { await audioContext.close(); } catch (error) {}
+  audioContext = null;
+  analyser = null;
+  inputAnalyser = null;
+  recorderWorkletReady = null;
+  decodedAudioBuffers.clear();
+  await ensureAudioContext();
+}
+
 async function ensureAudioContext() {
   if (!audioContext) {
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
   }
-  if (audioContext.state === 'suspended') {
+  unlockIosAudioSession();
+  if (audioContext.state !== 'running') {
     await audioContext.resume();
   }
   configureAnalyser();
@@ -2827,13 +3345,20 @@ function configureAnalyser() {
   if (!analyser) {
     analyser = audioContext.createAnalyser();
   }
-  analyser.fftSize = fftSize;
-  analyser.smoothingTimeConstant = parseFloat(els.smoothing.value);
-  analyser.minDecibels = parseFloat(els.dbFloor.value);
-  analyser.maxDecibels = DB_CEILING;
+  if (!inputAnalyser) {
+    inputAnalyser = audioContext.createAnalyser();
+  }
+  [analyser, inputAnalyser].forEach(node => {
+    node.fftSize = fftSize;
+    node.smoothingTimeConstant = parseFloat(els.smoothing.value);
+    node.minDecibels = parseFloat(els.dbFloor.value);
+    node.maxDecibels = DB_CEILING;
+  });
   timeData = new Float32Array(analyser.fftSize);
   freqData = new Uint8Array(analyser.frequencyBinCount);
   floatFreqData = new Float32Array(analyser.frequencyBinCount);
+  inputTimeData = new Float32Array(inputAnalyser.fftSize);
+  inputFloatFreqData = new Float32Array(inputAnalyser.frequencyBinCount);
 }
 
 function clearPauseState() {
@@ -2902,13 +3427,605 @@ function connectSource(node, monitor = false, monitorLevel = 0.15) {
   gainNode = audioContext.createGain();
   gainNode.outputBaseGain = monitor ? monitorLevel : 0;
   gainNode.gain.value = gainNode.outputBaseGain * outputVolume();
-  sourceNode.connect(analysisNode);
+  const wet = attachEffectChain(sourceNode);
+  wet.connect(analysisNode);
   analysisNode.connect(analyser);
-  sourceNode.connect(gainNode);
+  wet.connect(gainNode);
   gainNode.connect(audioContext.destination);
 }
 
+function effectLabel(kind) {
+  const tr = t();
+  return {
+    none: tr.effectNone,
+    robot: tr.effectRobot,
+    echo: tr.effectEcho,
+    vibrato: tr.effectVibrato
+  }[kind] || kind;
+}
+
+function effectHint(kind) {
+  const tr = t();
+  return {
+    robot: tr.effectRobotHint,
+    echo: tr.effectEchoHint,
+    vibrato: tr.effectVibratoHint
+  }[kind] || '';
+}
+
+function renderEffectButtons() {
+  els.effectGrid.innerHTML = '';
+  EFFECTS.forEach(kind => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'source-action-btn';
+    button.dataset.effect = kind;
+    button.textContent = effectLabel(kind);
+    const hint = effectHint(kind);
+    if (hint) button.title = hint;
+    button.classList.toggle('active', kind === currentEffect);
+    button.addEventListener('click', () => setEffect(kind));
+    els.effectGrid.appendChild(button);
+  });
+}
+
+function updateEffectButtons() {
+  [...els.effectGrid.children].forEach(button => {
+    button.classList.toggle('active', button.dataset.effect === currentEffect);
+  });
+}
+
+function setEffect(kind) {
+  currentEffect = EFFECTS.includes(kind) ? kind : 'none';
+  updateEffectButtons();
+  if (effectInput && effectOutput) {
+    wireEffect(currentEffect);
+  }
+}
+
+function teardownEffectNodes() {
+  effectOscillators.forEach(osc => {
+    try { osc.stop(); } catch (error) {}
+  });
+  effectOscillators = [];
+  effectNodes.forEach(node => {
+    try { node.disconnect(); } catch (error) {}
+  });
+  effectNodes = [];
+  if (effectInput) {
+    try { effectInput.disconnect(); } catch (error) {}
+  }
+}
+
+function wireEffect(kind) {
+  teardownEffectNodes();
+  const ctx = audioContext;
+  const input = effectInput;
+  const output = effectOutput;
+  if (!ctx || !input || !output) return;
+  const now = ctx.currentTime;
+
+  if (kind === 'robot') {
+    // Modulación en anillo: y(t) = x(t) * sin(2*pi*fc*t).
+    // Cada componente en f pasa a f - fc y f + fc (bandas laterales).
+    const ring = ctx.createGain();
+    ring.gain.value = 0;
+    const carrier = ctx.createOscillator();
+    carrier.type = 'sine';
+    carrier.frequency.value = ROBOT_CARRIER_HZ;
+    carrier.connect(ring.gain);
+    input.connect(ring);
+    ring.connect(output);
+    carrier.start(now);
+    effectNodes.push(ring, carrier);
+    effectOscillators.push(carrier);
+    return;
+  }
+
+  if (kind === 'echo') {
+    // Señal directa + línea de retardo con realimentación y pasabajos
+    // en el lazo (cada repetición pierde agudos, como una cinta).
+    const delay = ctx.createDelay(1);
+    delay.delayTime.value = ECHO_DELAY_S;
+    const tone = ctx.createBiquadFilter();
+    tone.type = 'lowpass';
+    tone.frequency.value = ECHO_TONE_HZ;
+    const feedback = ctx.createGain();
+    feedback.gain.value = ECHO_FEEDBACK;
+    const wet = ctx.createGain();
+    wet.gain.value = ECHO_WET;
+    input.connect(output);
+    input.connect(delay);
+    delay.connect(tone);
+    tone.connect(feedback);
+    feedback.connect(delay);
+    tone.connect(wet);
+    wet.connect(output);
+    effectNodes.push(delay, tone, feedback, wet);
+    return;
+  }
+
+  if (kind === 'vibrato') {
+    // Retardo variable: un LFO senoidal mueve delayTime alrededor de
+    // su valor base, lo que modula la frecuencia instantánea.
+    const delay = ctx.createDelay(VIBRATO_BASE_DELAY_S * 2);
+    delay.delayTime.value = VIBRATO_BASE_DELAY_S;
+    const lfo = ctx.createOscillator();
+    lfo.type = 'sine';
+    lfo.frequency.value = VIBRATO_RATE_HZ;
+    const depth = ctx.createGain();
+    depth.gain.value = VIBRATO_DEPTH_S;
+    lfo.connect(depth);
+    depth.connect(delay.delayTime);
+    input.connect(delay);
+    delay.connect(output);
+    lfo.start(now);
+    effectNodes.push(delay, lfo, depth);
+    effectOscillators.push(lfo);
+    return;
+  }
+
+  input.connect(output);
+}
+
+// Inserta el sistema entre la fuente seca y el analizador/salida, y deriva la
+// señal seca al analizador de entrada (CH1). Devuelve el nodo de salida (CH2).
+function attachEffectChain(dryNode) {
+  effectInput = audioContext.createGain();
+  effectOutput = audioContext.createGain();
+  dryNode.connect(effectInput);
+  if (inputAnalyser) dryNode.connect(inputAnalyser);
+  wireEffect(currentEffect);
+  return effectOutput;
+}
+
+function destroyEffectChain() {
+  teardownEffectNodes();
+  [effectInput, effectOutput].forEach(node => {
+    if (!node) return;
+    try { node.disconnect(); } catch (error) {}
+  });
+  effectInput = null;
+  effectOutput = null;
+}
+
+function updateMicMonitorRouting() {
+  const micActive = activeSourceKind === 'mic' || pausedSourceKind === 'mic';
+  if (!gainNode || !micActive) return;
+  gainNode.outputBaseGain = els.micMonitor.checked ? MIC_MONITOR_LEVEL : 0;
+  applyOutputVolume();
+}
+
+function dualChannelEnabled() {
+  return Boolean(els.showInput.checked && inputAnalyser && inputTimeData);
+}
+
+function spectrogramShowsInput() {
+  return els.spectrogramChannel.value === 'input' && Boolean(inputAnalyser && inputFloatFreqData);
+}
+
+function spectrogramFreqData() {
+  return spectrogramShowsInput() ? inputFloatFreqData : floatFreqData;
+}
+
+function updateLegends() {
+  const show = els.showInput.checked;
+  els.timeLegend.hidden = !show;
+  els.spectrumLegend.hidden = !show;
+}
+
+function updateSpectrogramTitle() {
+  const tr = t();
+  const channel = els.spectrogramChannel.value === 'input' ? tr.legendInput : tr.legendOutput;
+  els.spectrogramTitle.textContent = `${tr.spectrogramTitle} · ${channel}`;
+}
+
+// ---------------------------------------------------------------- Grabación
+// Captura la señal seca del micrófono (antes del sistema) en bloques PCM
+// mediante un AudioWorklet; si no está disponible, con ScriptProcessorNode.
+const RECORDER_WORKLET_SOURCE = `
+class DemoRecorderProcessor extends AudioWorkletProcessor {
+  constructor() {
+    super();
+    this.buffer = new Float32Array(${RECORDER_CHUNK_SAMPLES});
+    this.fill = 0;
+  }
+  process(inputs) {
+    const channel = inputs[0] && inputs[0][0];
+    if (channel) {
+      for (let i = 0; i < channel.length; i++) {
+        this.buffer[this.fill++] = channel[i];
+        if (this.fill === this.buffer.length) {
+          this.port.postMessage(this.buffer.slice(0));
+          this.fill = 0;
+        }
+      }
+    }
+    return true;
+  }
+}
+registerProcessor('demo-recorder', DemoRecorderProcessor);
+`;
+
+function ensureRecorderWorklet() {
+  if (!audioContext?.audioWorklet) return Promise.resolve(false);
+  if (!recorderWorkletReady) {
+    const url = URL.createObjectURL(new Blob([RECORDER_WORKLET_SOURCE], { type: 'application/javascript' }));
+    recorderWorkletReady = audioContext.audioWorklet.addModule(url)
+      .then(() => true)
+      .catch(error => {
+        console.warn('AudioWorklet no disponible, se usa ScriptProcessorNode', error);
+        return false;
+      });
+  }
+  return recorderWorkletReady;
+}
+
+function isRecording() {
+  return Boolean(recorder);
+}
+
+async function startCapture() {
+  if (recorder || !audioContext || !sourceNode || activeSourceKind !== 'mic') return false;
+  const useWorklet = await ensureRecorderWorklet();
+  if (recorder || !sourceNode || activeSourceKind !== 'mic') return false;
+  const sampleRate = audioContext.sampleRate;
+  const state = {
+    chunks: [],
+    samples: 0,
+    sampleRate,
+    maxSamples: Math.round(RECORDING_MAX_SECONDS * sampleRate),
+    node: null,
+    sink: audioContext.createGain(),
+    timer: null
+  };
+  state.sink.gain.value = 0;
+  const push = chunk => {
+    if (recorder !== state) return;
+    state.chunks.push(chunk);
+    state.samples += chunk.length;
+    if (state.samples >= state.maxSamples) finishRecording(true);
+  };
+  if (useWorklet) {
+    state.node = new AudioWorkletNode(audioContext, 'demo-recorder', {
+      numberOfInputs: 1,
+      numberOfOutputs: 1,
+      channelCount: 1,
+      channelCountMode: 'explicit'
+    });
+    state.node.port.onmessage = event => push(event.data);
+  } else if (audioContext.createScriptProcessor) {
+    state.node = audioContext.createScriptProcessor(RECORDER_CHUNK_SAMPLES, 1, 1);
+    state.node.onaudioprocess = event => push(new Float32Array(event.inputBuffer.getChannelData(0)));
+  } else {
+    return false;
+  }
+  sourceNode.connect(state.node);
+  state.node.connect(state.sink);
+  state.sink.connect(audioContext.destination);
+  recorder = state;
+  state.timer = setInterval(updateRecordingUI, 100);
+  updateRecordingUI();
+  return true;
+}
+
+function finishRecording(autoPlay = false) {
+  const state = recorder;
+  if (!state) return;
+  recorder = null;
+  clearInterval(state.timer);
+  if (state.node.port) state.node.port.onmessage = null;
+  if ('onaudioprocess' in state.node) state.node.onaudioprocess = null;
+  try { state.node.disconnect(); } catch (error) {}
+  try { state.sink.disconnect(); } catch (error) {}
+
+  const total = Math.min(state.samples, state.maxSamples);
+  if (total > 0) {
+    const samples = new Float32Array(total);
+    let offset = 0;
+    for (const chunk of state.chunks) {
+      if (offset >= total) break;
+      const take = Math.min(chunk.length, total - offset);
+      samples.set(take === chunk.length ? chunk : chunk.subarray(0, take), offset);
+      offset += take;
+    }
+    setRecordedClip({
+      samples,
+      sampleRate: state.sampleRate,
+      duration: total / state.sampleRate,
+      createdAt: Date.now()
+    });
+    saveClipToDb(recordedClip);
+    setStatus(`${t().recordSaved} (${formatProgressTime(recordedClip.duration)})`);
+  }
+  updateRecordingUI();
+  if (autoPlay && recordedClip) {
+    playRecordedClip();
+  }
+}
+
+function recordedClipBuffer() {
+  if (!recordedClip || !audioContext) return null;
+  if (!decodedAudioBuffers.has(RECORDING_SOURCE)) {
+    const buffer = audioContext.createBuffer(1, recordedClip.samples.length, recordedClip.sampleRate);
+    buffer.copyToChannel(recordedClip.samples, 0);
+    decodedAudioBuffers.set(RECORDING_SOURCE, buffer);
+  }
+  return decodedAudioBuffers.get(RECORDING_SOURCE);
+}
+
+function setRecordedClip(clip) {
+  recordedClip = clip;
+  decodedAudioBuffers.delete(RECORDING_SOURCE);
+  recordedClipBuffer();
+  renderSourceOptions();
+  updateRecordPanel();
+}
+
+async function playRecordedClip() {
+  if (!recordedClip) return;
+  stopCurrentSource();
+  els.sourceSelect.value = RECORDING_SOURCE;
+  updateSourceModeUI();
+  await start();
+}
+
+async function handleRecordButton() {
+  if (recorder) {
+    finishRecording(true);
+    return;
+  }
+  if (els.sourceSelect.value !== 'mic') {
+    stopCurrentSource();
+    els.sourceSelect.value = 'mic';
+    updateSourceModeUI();
+  }
+  if (!running || activeSourceKind !== 'mic') {
+    await start();
+  }
+  if (!running || activeSourceKind !== 'mic') return;
+  const ok = await startCapture();
+  if (!ok) setStatus(t().recordError, true);
+}
+
+function updateRecordButtonLabel() {
+  const tr = t();
+  const label = recorder
+    ? tr.recordStop
+    : (els.sourceSelect.value === RECORDING_SOURCE ? tr.recordAgain : tr.record);
+  els.recordBtnLabel.textContent = label;
+  els.recordBtn.setAttribute('aria-pressed', recorder ? 'true' : 'false');
+}
+
+function updateRecordingUI() {
+  const active = Boolean(recorder);
+  els.recordBtn.classList.toggle('recording', active);
+  els.recordStatus.hidden = !active;
+  if (active) {
+    const seconds = recorder.samples / recorder.sampleRate;
+    els.recordStatusText.textContent = `${t().recordRec} ${formatProgressTime(seconds)} / ${formatProgressTime(RECORDING_MAX_SECONDS)}`;
+    els.recordProgressFill.style.width = `${Math.min(100, seconds / RECORDING_MAX_SECONDS * 100)}%`;
+  }
+  updateRecordButtonLabel();
+}
+
+function updateRecordPanel() {
+  const source = els.sourceSelect.value;
+  const tr = t();
+  els.recordPanel.hidden = !(source === 'mic' || source === RECORDING_SOURCE);
+  els.downloadWavBtn.hidden = !(recordedClip && source === RECORDING_SOURCE);
+  els.deleteRecordingBtn.hidden = !(recordedClip && source === RECORDING_SOURCE);
+  els.recordHint.textContent = source === RECORDING_SOURCE ? tr.recordHintClip : tr.recordHintMic;
+  updateRecordButtonLabel();
+}
+
+function encodeWav(samples, sampleRate) {
+  const bytesPerSample = 2;
+  const dataBytes = samples.length * bytesPerSample;
+  const buffer = new ArrayBuffer(44 + dataBytes);
+  const view = new DataView(buffer);
+  const writeString = (offset, text) => {
+    for (let i = 0; i < text.length; i++) view.setUint8(offset + i, text.charCodeAt(i));
+  };
+  writeString(0, 'RIFF');
+  view.setUint32(4, 36 + dataBytes, true);
+  writeString(8, 'WAVE');
+  writeString(12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * bytesPerSample, true);
+  view.setUint16(32, bytesPerSample, true);
+  view.setUint16(34, 16, true);
+  writeString(36, 'data');
+  view.setUint32(40, dataBytes, true);
+  let offset = 44;
+  for (let i = 0; i < samples.length; i++, offset += bytesPerSample) {
+    const s = Math.max(-1, Math.min(1, samples[i]));
+    view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+  }
+  return new Blob([buffer], { type: 'audio/wav' });
+}
+
+function downloadRecordedClip() {
+  if (!recordedClip) return;
+  const blob = encodeWav(recordedClip.samples, recordedClip.sampleRate);
+  const url = URL.createObjectURL(blob);
+  const stamp = new Date(recordedClip.createdAt || Date.now());
+  const pad = value => String(value).padStart(2, '0');
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `grabacion-${stamp.getFullYear()}${pad(stamp.getMonth() + 1)}${pad(stamp.getDate())}-${pad(stamp.getHours())}${pad(stamp.getMinutes())}.wav`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// Persistencia de la última grabación en IndexedDB (sobrevive a un F5).
+const CLIP_DB_NAME = 'oscilloscope-demo';
+const CLIP_STORE = 'clips';
+
+function openClipDb() {
+  return new Promise((resolve, reject) => {
+    if (!window.indexedDB) {
+      reject(new Error('IndexedDB no disponible'));
+      return;
+    }
+    const request = indexedDB.open(CLIP_DB_NAME, 1);
+    request.onupgradeneeded = () => {
+      request.result.createObjectStore(CLIP_STORE);
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function saveClipToDb(clip) {
+  try {
+    const db = await openClipDb();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(CLIP_STORE, 'readwrite');
+      tx.objectStore(CLIP_STORE).put({
+        samples: clip.samples,
+        sampleRate: clip.sampleRate,
+        createdAt: clip.createdAt
+      }, 'last');
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+    db.close();
+  } catch (error) {
+    console.warn('No se pudo guardar la grabación', error);
+  }
+}
+
+async function deleteClipFromDb() {
+  try {
+    const db = await openClipDb();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(CLIP_STORE, 'readwrite');
+      tx.objectStore(CLIP_STORE).delete('last');
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+    db.close();
+  } catch (error) {
+    console.warn('No se pudo borrar la grabación guardada', error);
+  }
+}
+
+// Diálogo de confirmación propio de la app (en lugar del confirm() del navegador).
+// Resuelve true si se acepta; false al cancelar, con Escape o clic fuera.
+function showConfirmDialog({ title, text, confirmLabel, cancelLabel, danger = true }) {
+  return new Promise(resolve => {
+    const dialog = els.confirmDialog;
+    const ok = els.confirmDialogOk;
+    const cancel = els.confirmDialogCancel;
+    if (!dialog || typeof dialog.showModal !== 'function') {
+      resolve(window.confirm(text));
+      return;
+    }
+    els.confirmDialogTitle.textContent = title;
+    els.confirmDialogText.textContent = text;
+    ok.textContent = confirmLabel;
+    cancel.textContent = cancelLabel;
+    ok.classList.toggle('danger', danger);
+
+    let settled = false;
+    const cleanup = () => {
+      ok.removeEventListener('click', onOk);
+      cancel.removeEventListener('click', onCancel);
+      dialog.removeEventListener('close', onClose);
+      dialog.removeEventListener('cancel', onClose);
+      dialog.removeEventListener('keydown', onKeyDown);
+      dialog.removeEventListener('click', onBackdrop);
+    };
+    const finish = value => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      if (dialog.open) dialog.close();
+      resolve(value);
+    };
+    const onOk = () => finish(true);
+    const onCancel = () => finish(false);
+    const onClose = () => finish(false);
+    // Escape: el navegador emite 'cancel' y luego 'close'; el keydown es un
+    // respaldo para entornos donde esos eventos no llegan.
+    const onKeyDown = event => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        finish(false);
+      }
+    };
+    const onBackdrop = event => {
+      if (event.target === dialog) finish(false);
+    };
+    ok.addEventListener('click', onOk);
+    cancel.addEventListener('click', onCancel);
+    dialog.addEventListener('close', onClose);
+    dialog.addEventListener('cancel', onClose);
+    dialog.addEventListener('keydown', onKeyDown);
+    dialog.addEventListener('click', onBackdrop);
+    dialog.showModal();
+    cancel.focus();
+  });
+}
+
+async function deleteRecordedClip() {
+  if (!recordedClip) return;
+  const tr = t();
+  const confirmed = await showConfirmDialog({
+    title: tr.deleteRecording,
+    text: tr.deleteRecordingConfirm,
+    confirmLabel: tr.dialogDelete,
+    cancelLabel: tr.dialogCancel
+  });
+  if (!confirmed || !recordedClip) return;
+  const wasSelected = els.sourceSelect.value === RECORDING_SOURCE
+    || activeSourceKind === RECORDING_SOURCE
+    || pausedSourceKind === RECORDING_SOURCE;
+  if (activeSourceKind === RECORDING_SOURCE || pausedSourceKind === RECORDING_SOURCE) {
+    stopCurrentSource();
+  }
+  recordedClip = null;
+  decodedAudioBuffers.delete(RECORDING_SOURCE);
+  deleteClipFromDb();
+  renderSourceOptions();
+  if (wasSelected) {
+    els.sourceSelect.value = 'mic';
+  }
+  updateSourceModeUI();
+  setStatus(t().recordDeleted);
+}
+
+async function loadClipFromDb() {
+  try {
+    const db = await openClipDb();
+    const stored = await new Promise((resolve, reject) => {
+      const tx = db.transaction(CLIP_STORE, 'readonly');
+      const request = tx.objectStore(CLIP_STORE).get('last');
+      request.onsuccess = () => resolve(request.result || null);
+      request.onerror = () => reject(request.error);
+    });
+    db.close();
+    if (!stored?.samples?.length || !stored.sampleRate || recordedClip) return;
+    const samples = stored.samples instanceof Float32Array ? stored.samples : new Float32Array(stored.samples);
+    setRecordedClip({
+      samples,
+      sampleRate: stored.sampleRate,
+      duration: samples.length / stored.sampleRate,
+      createdAt: stored.createdAt || Date.now()
+    });
+  } catch (error) {
+    console.warn('No se pudo leer la grabación guardada', error);
+  }
+}
+
 function disconnectAudioGraphOnly() {
+  destroyEffectChain();
   if (sourceNode) {
     try { sourceNode.disconnect(); } catch (error) {}
     sourceNode = null;
@@ -2938,6 +4055,7 @@ function stopGeneratedPresetNodesOnly() {
 }
 
 function stopCurrentSource(preserveHoldState = false, preservePauseState = false) {
+  if (recorder) finishRecording(false);
   running = false;
   if (!preservePauseState) {
     resetLongHistory();
@@ -3018,13 +4136,14 @@ function createMasterBus(level = 0.18, monitor = true) {
   master.gain.value = level;
   analysisNode = audioContext.createGain();
   analysisNode.gain.value = 1;
-  master.connect(analysisNode);
+  const wet = attachEffectChain(master);
+  wet.connect(analysisNode);
   analysisNode.connect(analyser);
   if (monitor) {
     gainNode = audioContext.createGain();
     gainNode.outputBaseGain = 1;
     gainNode.gain.value = outputVolume();
-    master.connect(gainNode);
+    wet.connect(gainNode);
     gainNode.connect(audioContext.destination);
   } else {
     gainNode = null;
@@ -3597,7 +4716,7 @@ function isAudioPreset(source) {
 }
 
 function isBufferAudioPreset(source) {
-  return Boolean(AUDIO_PRESETS[source]?.embedded);
+  return Boolean(AUDIO_PRESETS[source]?.embedded || AUDIO_PRESETS[source]?.buffer);
 }
 
 function isRecordedAudioSource(source) {
@@ -3624,7 +4743,7 @@ function recordedProgressState(source) {
   }
 
   const buffer = audioBufferSource?.buffer || decodedAudioBuffers.get(source);
-  const duration = buffer?.duration || 0;
+  const duration = buffer?.duration || (source === RECORDING_SOURCE ? recordedClip?.duration || 0 : 0);
   const elapsed = audioContext && audioBufferStartedAt ? audioContext.currentTime - audioBufferStartedAt : 0;
   const current = duration ? ((elapsed % duration) + duration) % duration : 0;
   return { visible:true, current, duration };
@@ -3707,6 +4826,11 @@ function base64ToArrayBuffer(base64) {
 }
 
 async function loadAudioBufferPreset(kind) {
+  if (kind === RECORDING_SOURCE) {
+    const buffer = recordedClipBuffer();
+    if (!buffer) throw new Error('No recording available');
+    return buffer;
+  }
   if (decodedAudioBuffers.has(kind)) {
     return decodedAudioBuffers.get(kind);
   }
@@ -3770,7 +4894,8 @@ async function start() {
           autoGainControl: false
         }
       });
-      connectSource(audioContext.createMediaStreamSource(mediaStream), false);
+      await matchAudioContextToStream(mediaStream);
+      connectSource(audioContext.createMediaStreamSource(mediaStream), els.micMonitor.checked, MIC_MONITOR_LEVEL);
     } else if (source === 'file') {
       if (!els.fileInput.files.length) {
         els.fileInput.click();
@@ -3988,8 +5113,12 @@ async function togglePlayback() {
 }
 
 function stop() {
+  const wasRecording = Boolean(recorder);
   stopCurrentSource();
-  setStatus(t().stopped);
+  if (iosUnlockAudio) iosUnlockAudio.pause();
+  setStatus(wasRecording && recordedClip
+    ? `${t().recordSaved} (${formatProgressTime(recordedClip.duration)})`
+    : t().stopped);
 }
 
 function frequencyForY(y, top, bottom, range = selectedFrequencyRange()) {
@@ -4038,7 +5167,7 @@ function musicalNotesForOverlay(range, layout) {
     [4, 7],         // tier 3: E (Mi), G (Sol)
     [2, 5, 11]      // tier 4: D (Re), F (Fa), B (Si)
   ];
-  const minSpacing = 18 * devicePixelRatio;
+  const minSpacing = 18 * canvasScale();
   const drawnY = [];
   const result = [];
   for (const tier of tiers) {
@@ -4070,11 +5199,11 @@ function drawSpectrogramNoteOverlay(layout, range, axisWidth, plotRight) {
   const lineColor = 'rgba(124, 224, 255, 0.85)';
   const labelColor = 'rgb(170, 235, 255)';
   ctx.save();
-  ctx.font = `${11 * devicePixelRatio}px system-ui`;
+  ctx.font = `${11 * canvasScale()}px system-ui`;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
-  const labelPad = 6 * devicePixelRatio;
-  const lineGap = 6 * devicePixelRatio;
+  const labelPad = 6 * canvasScale();
+  const lineGap = 6 * canvasScale();
   ctx.lineWidth = 1;
 
   notes.forEach(note => {
@@ -4105,7 +5234,7 @@ function spectrogramTicks(range, layout) {
   if (els.frequencyScale.value === 'log') {
     const allTicks = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000]
       .filter(freq => freq >= range.min && freq <= range.max);
-    const minSpacing = 64 * devicePixelRatio;
+    const minSpacing = 64 * canvasScale();
     const ticks = [];
     let lastY = Infinity;
     allTicks.forEach(freq => {
@@ -4118,10 +5247,10 @@ function spectrogramTicks(range, layout) {
     return ticks.length ? ticks : [range.max, range.min];
   }
 
-  if (plotHeight < 240 * devicePixelRatio) {
+  if (plotHeight < 240 * canvasScale()) {
     return [range.max, (range.min + range.max) / 2, range.min];
   }
-  if (plotHeight < 360 * devicePixelRatio) {
+  if (plotHeight < 360 * canvasScale()) {
     return [range.max, (range.min + range.max) / 2, range.min];
   }
   return [
@@ -4134,7 +5263,7 @@ function spectrogramTicks(range, layout) {
 }
 
 function xForFrequency(freq, width, range = selectedFrequencyRange()) {
-  const area = spectrumArea(width, Math.max(200 * devicePixelRatio, width));
+  const area = spectrumArea(width, Math.max(200 * canvasScale(), width));
   const left = area.left;
   const right = area.right;
   const scale = els.frequencyScale.value;
@@ -4159,70 +5288,77 @@ function sampleAt(samples, index) {
 // much real signal we can show. We append the latest samples to a ring buffer
 // each frame and read from it for ms/div ≥ analyser-window.
 const LONG_HISTORY_SECONDS = 1;
-let longHistory = null;
-let longHistorySampleRate = 0;
-let longHistoryWriteIdx = 0;
-let longHistoryFilled = 0;
-let longHistoryLastFrameTime = 0;
-let scratchTimeBuffer = null;
 
-function ensureLongHistory(sampleRate) {
-  if (longHistory && longHistorySampleRate === sampleRate) return;
+function createHistoryChannel() {
+  return { buffer:null, sampleRate:0, writeIdx:0, filled:0, lastFrameTime:0, scratch:null };
+}
+
+// Un historial por canal: salida del sistema (CH2) y entrada (CH1).
+const outputHistory = createHistoryChannel();
+const inputHistory = createHistoryChannel();
+
+function ensureLongHistory(history, sampleRate) {
+  if (history.buffer && history.sampleRate === sampleRate) return;
   const len = Math.max(8192, Math.ceil(LONG_HISTORY_SECONDS * sampleRate));
-  longHistory = new Float32Array(len);
-  longHistorySampleRate = sampleRate;
-  longHistoryWriteIdx = 0;
-  longHistoryFilled = 0;
-  longHistoryLastFrameTime = 0;
+  history.buffer = new Float32Array(len);
+  history.sampleRate = sampleRate;
+  history.writeIdx = 0;
+  history.filled = 0;
+  history.lastFrameTime = 0;
 }
 
 function resetLongHistory() {
-  longHistoryWriteIdx = 0;
-  longHistoryFilled = 0;
-  longHistoryLastFrameTime = 0;
-  if (longHistory) longHistory.fill(0);
+  [outputHistory, inputHistory].forEach(history => {
+    history.writeIdx = 0;
+    history.filled = 0;
+    history.lastFrameTime = 0;
+    if (history.buffer) history.buffer.fill(0);
+  });
 }
 
-function appendToLongHistory(timeData, sampleRate, audioTime) {
-  ensureLongHistory(sampleRate);
+function appendToLongHistory(history, data, sampleRate, audioTime) {
+  ensureLongHistory(history, sampleRate);
   let samplesToCopy;
-  if (longHistoryLastFrameTime === 0) {
-    samplesToCopy = timeData.length;
+  if (history.lastFrameTime === 0) {
+    samplesToCopy = data.length;
   } else {
-    const elapsed = audioTime - longHistoryLastFrameTime;
-    samplesToCopy = Math.min(timeData.length, Math.max(1, Math.round(elapsed * sampleRate)));
+    const elapsed = audioTime - history.lastFrameTime;
+    samplesToCopy = Math.min(data.length, Math.max(1, Math.round(elapsed * sampleRate)));
   }
-  longHistoryLastFrameTime = audioTime;
-  const startSrc = timeData.length - samplesToCopy;
-  const len = longHistory.length;
-  let w = longHistoryWriteIdx;
+  history.lastFrameTime = audioTime;
+  const startSrc = data.length - samplesToCopy;
+  const buffer = history.buffer;
+  const len = buffer.length;
+  let w = history.writeIdx;
   for (let i = 0; i < samplesToCopy; i++) {
-    longHistory[w] = timeData[startSrc + i];
+    buffer[w] = data[startSrc + i];
     w++;
     if (w >= len) w = 0;
   }
-  longHistoryWriteIdx = w;
-  longHistoryFilled = Math.min(len, longHistoryFilled + samplesToCopy);
+  history.writeIdx = w;
+  history.filled = Math.min(len, history.filled + samplesToCopy);
 }
 
-function readLongHistoryLastN(n) {
-  if (!scratchTimeBuffer || scratchTimeBuffer.length !== n) {
-    scratchTimeBuffer = new Float32Array(n);
+function readLongHistoryLastN(history, n) {
+  if (!history.scratch || history.scratch.length !== n) {
+    history.scratch = new Float32Array(n);
   } else {
-    scratchTimeBuffer.fill(0);
+    history.scratch.fill(0);
   }
-  if (!longHistory) return scratchTimeBuffer;
-  const len = longHistory.length;
-  const have = Math.min(n, longHistoryFilled);
+  const out = history.scratch;
+  if (!history.buffer) return out;
+  const buffer = history.buffer;
+  const len = buffer.length;
+  const have = Math.min(n, history.filled);
   // Right-align: pad zeros at the start when we don't have enough yet.
   const startOut = n - have;
-  let r = (longHistoryWriteIdx - have + len) % len;
+  let r = (history.writeIdx - have + len) % len;
   for (let i = 0; i < have; i++) {
-    scratchTimeBuffer[startOut + i] = longHistory[r];
+    out[startOut + i] = buffer[r];
     r++;
     if (r >= len) r = 0;
   }
-  return scratchTimeBuffer;
+  return out;
 }
 
 function findTriggerStart(samples, windowSamples, availableStart) {
@@ -4273,10 +5409,16 @@ function drawTime({ capture = true } = {}) {
   const area = plotArea(width, height);
   const msPerDiv = parseFloat(els.timeMsDiv.value);
   const sampleRate = audioContext.sampleRate;
+  const dual = dualChannelEnabled();
   if (capture) {
+    const audioTime = audioContext.currentTime;
     analyser.getFloatTimeDomainData(timeData);
-    appendToLongHistory(timeData, sampleRate, audioContext.currentTime);
-  } else if (!longHistoryFilled) {
+    appendToLongHistory(outputHistory, timeData, sampleRate, audioTime);
+    if (dual) {
+      inputAnalyser.getFloatTimeDomainData(inputTimeData);
+      appendToLongHistory(inputHistory, inputTimeData, sampleRate, audioTime);
+    }
+  } else if (!outputHistory.filled) {
     drawTimeFrame();
     return;
   }
@@ -4285,30 +5427,36 @@ function drawTime({ capture = true } = {}) {
   // Use the analyser buffer directly when the requested window fits in it —
   // sample-contiguous, no ring-buffer alignment glitches. Fall back to the
   // long history only for timebases that exceed one analyser window.
-  let samples;
-  if (capture && desiredSamples <= timeData.length) {
-    samples = timeData;
-  } else {
-    const maxScratch = longHistory ? longHistory.length : timeData.length;
-    const scratchSize = Math.min(maxScratch, Math.max(timeData.length, desiredSamples * 2));
-    samples = readLongHistoryLastN(scratchSize);
-  }
-  const windowSamples = Math.min(samples.length, desiredSamples);
-  const availableStart = Math.max(0, samples.length - windowSamples);
-  const start = findTriggerStart(samples, windowSamples, availableStart);
+  const pickSamples = (data, history) => {
+    if (capture && desiredSamples <= data.length) return data;
+    const maxScratch = history.buffer ? history.buffer.length : data.length;
+    const scratchSize = Math.min(maxScratch, Math.max(data.length, desiredSamples * 2));
+    return readLongHistoryLastN(history, scratchSize);
+  };
+  const outSamples = pickSamples(timeData, outputHistory);
+  const showInput = dual && (capture || inputHistory.filled > 0);
+  const inSamples = showInput ? pickSamples(inputTimeData, inputHistory) : null;
+  const windowSamples = Math.min(outSamples.length, desiredSamples);
+  const availableStart = Math.max(0, outSamples.length - windowSamples);
+  // El disparo se toma de la entrada (CH1) cuando hay dos canales; la salida
+  // comparte el mismo origen de tiempo, así se aprecia el retardo del sistema.
+  const triggerSamples = inSamples && inSamples.length === outSamples.length ? inSamples : outSamples;
+  const start = findTriggerStart(triggerSamples, windowSamples, availableStart);
   const left = area.left;
   const right = area.right;
   const mid = area.top + (area.bottom - area.top) / 2;
   const divHeight = (area.bottom - area.top) / SCOPE_DIVS_Y;
   let peakVolts = 0;
+  let inputPeakVolts = 0;
 
   for (let i = 0; i < windowSamples; i++) {
-    peakVolts = Math.max(peakVolts, Math.abs(sampleAt(samples, start + i)));
+    peakVolts = Math.max(peakVolts, Math.abs(sampleAt(outSamples, start + i)));
+    if (inSamples) inputPeakVolts = Math.max(inputPeakVolts, Math.abs(sampleAt(inSamples, start + i)));
   }
 
   const autoScale = els.timeYDiv.value === 'auto';
   const voltsPerDiv = autoScale
-    ? Math.max(50e-6, peakVolts / 3.2 || 1e-3)
+    ? Math.max(50e-6, Math.max(peakVolts, inputPeakVolts) / 3.2 || 1e-3)
     : parseFloat(els.timeYDiv.value);
   const pixelsPerVolt = divHeight / voltsPerDiv;
   drawTimeFrame();
@@ -4317,17 +5465,20 @@ function drawTime({ capture = true } = {}) {
   ctx.beginPath();
   ctx.rect(area.left, area.top, area.right - area.left, area.bottom - area.top);
   ctx.clip();
-  ctx.strokeStyle = c.accent;
-  ctx.lineWidth = 2 * devicePixelRatio;
-  ctx.beginPath();
-  for (let i = 0; i < windowSamples; i++) {
-    const x = left + i / Math.max(1, windowSamples - 1) * (right - left);
-    const sampleVolts = sampleAt(samples, start + i);
-    const y = mid - sampleVolts * pixelsPerVolt;
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  }
-  ctx.stroke();
+  const drawTrace = (samples, color, lineWidth) => {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lineWidth;
+    ctx.beginPath();
+    for (let i = 0; i < windowSamples; i++) {
+      const x = left + i / Math.max(1, windowSamples - 1) * (right - left);
+      const y = mid - sampleAt(samples, start + i) * pixelsPerVolt;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  };
+  if (inSamples) drawTrace(inSamples, c.traceIn, 1.6 * canvasScale());
+  drawTrace(outSamples, c.accent, 2 * canvasScale());
   ctx.restore();
 
   setMetaSegments(els.timeMeta, [
@@ -4346,40 +5497,44 @@ function drawSpectrum() {
   const area = spectrumArea(width, height);
   drawSpectrumFrame();
   analyser.getFloatFrequencyData(floatFreqData);
+  const dual = dualChannelEnabled();
+  if (dual) inputAnalyser.getFloatFrequencyData(inputFloatFreqData);
   const frequencyRange = selectedFrequencyRange();
   const dbFloor = parseFloat(els.dbFloor.value);
-  const left = area.left;
-  const right = area.right;
   const top = area.top;
   const bottom = area.bottom;
   let peakValue = dbFloor;
   let peakFreq = 0;
 
-  ctx.strokeStyle = c.accent;
-  ctx.lineWidth = 2 * devicePixelRatio;
-  ctx.beginPath();
-  let started = false;
+  const plotCurve = (data, color, lineWidth, trackPeak) => {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lineWidth;
+    ctx.beginPath();
+    let started = false;
+    for (let i = 0; i < data.length; i++) {
+      const freq = i * audioContext.sampleRate / analyser.fftSize;
+      if (freq < frequencyRange.min) continue;
+      if (freq > frequencyRange.max) break;
+      const value = Math.max(dbFloor, Math.min(DB_CEILING, data[i]));
+      if (trackPeak && value > peakValue) {
+        peakValue = value;
+        peakFreq = freq;
+      }
+      const x = xForFrequency(freq, width, frequencyRange);
+      const normalized = (value - dbFloor) / Math.max(1, DB_CEILING - dbFloor);
+      const y = bottom - Math.max(0, Math.min(1, normalized)) * (bottom - top);
+      if (!started) {
+        ctx.moveTo(x, y);
+        started = true;
+      } else {
+        ctx.lineTo(x, y);
+      }
+    }
+    ctx.stroke();
+  };
 
-  for (let i = 0; i < floatFreqData.length; i++) {
-    const freq = i * audioContext.sampleRate / analyser.fftSize;
-    if (freq < frequencyRange.min) continue;
-    if (freq > frequencyRange.max) break;
-    const value = Math.max(dbFloor, Math.min(DB_CEILING, floatFreqData[i]));
-    if (value > peakValue) {
-      peakValue = value;
-      peakFreq = freq;
-    }
-    const x = xForFrequency(freq, width, frequencyRange);
-    const normalized = (value - dbFloor) / Math.max(1, DB_CEILING - dbFloor);
-    const y = bottom - Math.max(0, Math.min(1, normalized)) * (bottom - top);
-    if (!started) {
-      ctx.moveTo(x, y);
-      started = true;
-    } else {
-      ctx.lineTo(x, y);
-    }
-  }
-  ctx.stroke();
+  if (dual) plotCurve(inputFloatFreqData, c.traceIn, 1.6 * canvasScale(), false);
+  plotCurve(floatFreqData, c.accent, 2 * canvasScale(), true);
 
   setMetaSegments(els.spectrumMeta, [
     { text: `${formatFrequencyLabel(frequencyRange.min)} - ${formatFrequencyLabel(frequencyRange.max)} ${t().frequencySpan}`, className: 'meta-spectrum-span' },
@@ -4402,16 +5557,16 @@ function drawSpectrogram() {
   const plotTop = Math.round(layout.top);
   const plotBottom = Math.round(layout.bottom);
   const plotWidth = Math.max(1, plotRight - axisWidth);
-  const speed = Math.min(plotWidth, Math.max(1, Math.round(parseInt(els.scrollSpeed.value, 10) * devicePixelRatio)));
+  const speed = Math.min(plotWidth, Math.max(1, Math.round(parseInt(els.scrollSpeed.value, 10) * canvasScale())));
   const c = colors();
 
-  analyser.getFloatFrequencyData(floatFreqData);
+  const spectrogramData = spectrogramFreqData();
+  (spectrogramShowsInput() ? inputAnalyser : analyser).getFloatFrequencyData(spectrogramData);
 
   const plotHeight = Math.max(1, plotBottom - plotTop);
   const copyWidth = Math.max(0, plotWidth - speed);
   if (copyWidth > 0) {
-    const image = ctx.getImageData(axisWidth + speed, plotTop, copyWidth, plotHeight);
-    ctx.putImageData(image, axisWidth, plotTop);
+    ctx.drawImage(ctx.canvas, axisWidth + speed, plotTop, copyWidth, plotHeight, axisWidth, plotTop, copyWidth, plotHeight);
   }
   ctx.fillStyle = c.bg;
   ctx.fillRect(0, 0, axisWidth, height);
@@ -4422,7 +5577,7 @@ function drawSpectrogram() {
 
   for (let y = plotTop; y < plotBottom; y++) {
     const freq = frequencyForY(y, layout.top, layout.bottom, frequencyRange);
-    const db = Math.max(dbFloor, Math.min(SPECTROGRAM_COLOR_CEILING, interpolatedDbForFrequency(freq)));
+    const db = Math.max(dbFloor, Math.min(SPECTROGRAM_COLOR_CEILING, interpolatedDbForFrequency(freq, spectrogramData)));
     const normalized = Math.max(0, Math.min(1, (db - dbFloor) / Math.max(1, SPECTROGRAM_COLOR_CEILING - dbFloor)));
     const boosted = Math.pow(normalized, 0.74);
     ctx.fillStyle = spectrogramColor(boosted);
@@ -4523,6 +5678,20 @@ els.sourceVolume.addEventListener('input', () => {
   applyOutputVolume();
 });
 
+els.micMonitor.addEventListener('change', updateMicMonitorRouting);
+els.recordBtn.addEventListener('click', () => { handleRecordButton(); });
+els.downloadWavBtn.addEventListener('click', downloadRecordedClip);
+els.deleteRecordingBtn.addEventListener('click', () => { deleteRecordedClip(); });
+els.showInput.addEventListener('change', () => {
+  updateLegends();
+  refreshPlotsAfterLayout();
+});
+els.spectrogramChannel.addEventListener('change', () => {
+  updateSpectrogramTitle();
+  drawSpectrogramFrame();
+  refreshPlotsAfterLayout();
+});
+
 els.sourceSelect.addEventListener('change', () => {
   if (pausedSourceKind || activeSourceKind) {
     stopCurrentSource();
@@ -4542,30 +5711,43 @@ els.fileInput.addEventListener('change', () => {
   }
 });
 
-els.spectrumCanvas.addEventListener('mousemove', event => {
-  const point = hoverPointForEvent(els.spectrumCanvas, event);
-  const area = spectrumArea(els.spectrumCanvas.width, els.spectrumCanvas.height);
-  spectrumHoverState = isInsideArea(point, area) ? point : null;
-  updateSpectrumHover();
-});
+// Cursor de lectura con eventos pointer: funciona con mouse y con el dedo
+// (arrastre sobre el gráfico). Al levantar el dedo o salir, se oculta.
+function bindHoverPointer(canvas, getArea, setState, update) {
+  const move = event => {
+    const point = hoverPointForEvent(canvas, event);
+    setState(isInsideArea(point, getArea()) ? point : null);
+    update();
+  };
+  const clear = () => {
+    setState(null);
+    update();
+  };
+  canvas.addEventListener('pointermove', move);
+  canvas.addEventListener('pointerdown', move);
+  canvas.addEventListener('pointerleave', clear);
+  canvas.addEventListener('pointercancel', clear);
+  canvas.addEventListener('pointerup', event => {
+    if (event.pointerType !== 'mouse') clear();
+  });
+}
 
-els.spectrumCanvas.addEventListener('mouseleave', () => {
-  spectrumHoverState = null;
-  updateSpectrumHover();
-});
+bindHoverPointer(
+  els.spectrumCanvas,
+  () => spectrumArea(els.spectrumCanvas.width, els.spectrumCanvas.height),
+  point => { spectrumHoverState = point; },
+  updateSpectrumHover
+);
 
-els.spectrogramCanvas.addEventListener('mousemove', event => {
-  const point = hoverPointForEvent(els.spectrogramCanvas, event);
-  const layout = spectrogramLayout(els.spectrogramCanvas.width, els.spectrogramCanvas.height);
-  const area = { left: layout.axisLeft, right: layout.plotRight, top: layout.top, bottom: layout.bottom };
-  spectrogramHoverState = isInsideArea(point, area) ? point : null;
-  updateSpectrogramHover();
-});
-
-els.spectrogramCanvas.addEventListener('mouseleave', () => {
-  spectrogramHoverState = null;
-  updateSpectrogramHover();
-});
+bindHoverPointer(
+  els.spectrogramCanvas,
+  () => {
+    const layout = spectrogramLayout(els.spectrogramCanvas.width, els.spectrogramCanvas.height);
+    return { left: layout.axisLeft, right: layout.plotRight, top: layout.top, bottom: layout.bottom };
+  },
+  point => { spectrogramHoverState = point; },
+  updateSpectrogramHover
+);
 
 [els.fftSize, els.smoothing, els.dbFloor].forEach(element => {
   const refreshAnalysis = () => {
@@ -4645,6 +5827,7 @@ window.addEventListener('resize', refreshPlotsAfterLayout);
 updateLanguage();
 updateSourceSelectionState();
 updatePanelLayout();
+loadClipFromDb();
 </script>
 </body>
 </html>
