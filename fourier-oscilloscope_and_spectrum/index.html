@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Osciloscopio &amp; Espectrograma</title>
 <style>
   :root {
@@ -148,6 +148,7 @@
     gap:14px;
     height:100%;
     padding:14px;
+    padding:max(14px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
     min-height:0;
   }
 
@@ -1027,6 +1028,26 @@
     background:transparent;
   }
 
+  /* Táctil: arrastre horizontal sobre el gráfico mueve el cursor de lectura,
+     el vertical sigue desplazando la página. Sin menú de selección al mantener. */
+  .plot-card canvas {
+    touch-action:pan-y;
+    -webkit-touch-callout:none;
+    -webkit-user-select:none;
+    user-select:none;
+  }
+
+  button,
+  .toggle-option,
+  .source-action-btn,
+  .lang-btn {
+    touch-action:manipulation;
+    -webkit-tap-highlight-color:transparent;
+    -webkit-touch-callout:none;
+    -webkit-user-select:none;
+    user-select:none;
+  }
+
   #spectrum-canvas,
   #spectrogram-canvas {
     cursor:crosshair;
@@ -1121,6 +1142,21 @@
       height:auto;
     }
 
+    /* Una sola columna: las secciones del panel lateral pasan a ser hijas
+       directas de .wrapper para poder intercalar los gráficos justo después
+       de la fuente de audio. Título y fuente arriba, gráficos, y luego
+       análisis y visualización. */
+    .controls {
+      display:contents;
+    }
+
+    .controls > .interface-panel { order:0; }
+    .controls > .source-panel { order:1; }
+    .wrapper > .plots { order:2; }
+    .controls > .analysis-panel { order:3; }
+    .controls > .display-panel { order:4; }
+    .controls > .sidebar-author { order:5; }
+
     .plots {
       grid-template-columns:1fr !important;
       grid-template-areas:none !important;
@@ -1148,6 +1184,35 @@
       width:100%;
     }
   }
+
+  /* Pantallas táctiles: sin zoom automático de iOS al tocar un selector
+     (requiere 16px), y controles un poco más grandes para el dedo. */
+  @media (pointer:coarse) {
+    select,
+    input[type="number"],
+    input[type="file"] {
+      font-size:16px;
+    }
+
+    .lang-btn {
+      padding:10px 8px;
+    }
+
+    .meta-segment.meta-control {
+      padding:5px 10px 5px 12px;
+    }
+
+    .frequency-range-slider input[type="range"]::-webkit-slider-thumb {
+      width:26px;
+      height:26px;
+      transform:translateY(-9.5px);
+    }
+
+    .frequency-range-slider input[type="range"]::-moz-range-thumb {
+      width:26px;
+      height:26px;
+    }
+  }
 </style>
 </head>
 <body class="theme-dark">
@@ -1168,7 +1233,7 @@
         </div>
       </section>
 
-      <section class="control-group">
+      <section class="control-group source-panel">
         <b id="source-title">Fuente de audio</b>
         <label>
           <span id="source-label">Entrada</span>
@@ -1237,7 +1302,7 @@
         <p id="mic-note" class="hint">Al iniciar, el navegador te pedirá permiso para usar el micrófono. Acéptalo para ver tu voz en pantalla.</p>
       </section>
 
-      <section class="control-group">
+      <section class="control-group analysis-panel">
         <b id="analysis-title">Análisis</b>
         <div class="row">
           <label>
@@ -1272,7 +1337,7 @@
         </label>
       </section>
 
-      <section class="control-group">
+      <section class="control-group display-panel">
         <b id="display-title">Visualización</b>
         <div class="row" hidden>
           <label>
@@ -2607,10 +2672,18 @@ function updatePanelLayout() {
   refreshPlotsAfterLayout();
 }
 
+// Escala de los canvas: la relación de píxeles del dispositivo (DPR) con tope 2. En
+// teléfonos con DPR 3 el espectrograma sería 2,25 veces más caro de pintar
+// sin ganancia visible en un gráfico.
+const MAX_CANVAS_SCALE = 2;
+function canvasScale() {
+  return Math.min(window.devicePixelRatio || 1, MAX_CANVAS_SCALE);
+}
+
 function ensureCanvasSize(canvas) {
   const rect = canvas.getBoundingClientRect();
-  const width = Math.max(1, Math.floor(rect.width * devicePixelRatio));
-  const height = Math.max(1, Math.floor(rect.height * devicePixelRatio));
+  const width = Math.max(1, Math.floor(rect.width * canvasScale()));
+  const height = Math.max(1, Math.floor(rect.height * canvasScale()));
   if (canvas.width !== width || canvas.height !== height) {
     canvas.width = width;
     canvas.height = height;
@@ -2647,34 +2720,34 @@ function fillPlotArea(ctx, area) {
 }
 
 function plotArea(width, height) {
-  const bottomInset = Math.max(32 * devicePixelRatio, height * 0.12);
+  const bottomInset = Math.max(32 * canvasScale(), height * 0.12);
   return {
-    left: 54 * devicePixelRatio,
-    right: width - 14 * devicePixelRatio,
-    top: 18 * devicePixelRatio,
+    left: 54 * canvasScale(),
+    right: width - 14 * canvasScale(),
+    top: 18 * canvasScale(),
     bottom: height - bottomInset
   };
 }
 
 function spectrumArea(width, height) {
-  const bottomInset = Math.max(52 * devicePixelRatio, height * 0.16);
+  const bottomInset = Math.max(52 * canvasScale(), height * 0.16);
   return {
-    left: 74 * devicePixelRatio,
-    right: width - 16 * devicePixelRatio,
-    top: 18 * devicePixelRatio,
+    left: 74 * canvasScale(),
+    right: width - 16 * canvasScale(),
+    top: 18 * canvasScale(),
     bottom: height - bottomInset
   };
 }
 
 function spectrogramLayout(width, height) {
-  const rightPadding = 8 * devicePixelRatio;
-  const colorbarWidth = 28 * devicePixelRatio;
-  const colorbarGap = 6 * devicePixelRatio;
-  const labelWidth = 36 * devicePixelRatio;
-  const topInset = Math.max(14 * devicePixelRatio, height * 0.03);
-  const bottomInset = Math.max(34 * devicePixelRatio, height * 0.11);
+  const rightPadding = 8 * canvasScale();
+  const colorbarWidth = 28 * canvasScale();
+  const colorbarGap = 6 * canvasScale();
+  const labelWidth = 36 * canvasScale();
+  const topInset = Math.max(14 * canvasScale(), height * 0.03);
+  const bottomInset = Math.max(34 * canvasScale(), height * 0.11);
   return {
-    axisLeft: 58 * devicePixelRatio,
+    axisLeft: 58 * canvasScale(),
     colorbarWidth,
     colorbarGap,
     labelWidth,
@@ -2690,7 +2763,7 @@ function drawGrid(ctx, area, xDivs = SCOPE_DIVS_X, yDivs = SCOPE_DIVS_Y, emphasi
   const width = area.right - area.left;
   const height = area.bottom - area.top;
   ctx.strokeStyle = c.border;
-  ctx.lineWidth = 1 * devicePixelRatio;
+  ctx.lineWidth = 1 * canvasScale();
 
   for (let i = 0; i <= xDivs; i++) {
     const x = area.left + width * i / xDivs;
@@ -2711,7 +2784,7 @@ function drawGrid(ctx, area, xDivs = SCOPE_DIVS_X, yDivs = SCOPE_DIVS_Y, emphasi
   }
 
   ctx.globalAlpha = 1;
-  ctx.lineWidth = 1.3 * devicePixelRatio;
+  ctx.lineWidth = 1.3 * canvasScale();
   ctx.beginPath();
   ctx.rect(area.left, area.top, width, height);
   ctx.stroke();
@@ -3085,8 +3158,8 @@ function drawTimeFrame() {
   fillPlotArea(ctx, area);
   drawGrid(ctx, area);
   ctx.fillStyle = c.muted;
-  ctx.font = `${11 * devicePixelRatio}px system-ui`;
-  ctx.fillText('0', 18 * devicePixelRatio, area.top + (area.bottom - area.top) / 2 + 4 * devicePixelRatio);
+  ctx.font = `${11 * canvasScale()}px system-ui`;
+  ctx.fillText('0', 18 * canvasScale(), area.top + (area.bottom - area.top) / 2 + 4 * canvasScale());
 }
 
 function drawSpectrumFrame() {
@@ -3108,7 +3181,7 @@ function drawSpectrumFrame() {
   drawGrid(ctx, area, 10, 8, false);
 
   ctx.fillStyle = c.muted;
-  ctx.font = `${11 * devicePixelRatio}px system-ui`;
+  ctx.font = `${11 * canvasScale()}px system-ui`;
   xTicks.forEach(freq => {
     const x = xForFrequency(freq, els.spectrumCanvas.width, frequencyRange);
     ctx.globalAlpha = 0.45;
@@ -3120,7 +3193,7 @@ function drawSpectrumFrame() {
     ctx.globalAlpha = 1;
     ctx.textAlign = freq === frequencyRange.min ? 'left' : 'center';
     ctx.textBaseline = 'top';
-    ctx.fillText(formatFrequencyLabel(freq), x, area.bottom + 8 * devicePixelRatio);
+    ctx.fillText(formatFrequencyLabel(freq), x, area.bottom + 8 * canvasScale());
   });
   ctx.textBaseline = 'alphabetic';
 
@@ -3128,7 +3201,7 @@ function drawSpectrumFrame() {
   for (let step = 0; step <= 4; step++) {
     const db = dbFloor + (-dbFloor) * (1 - step / 4);
     const y = area.top + (area.bottom - area.top) * step / 4;
-    ctx.fillText(`${Math.round(db)} dB`, area.left - 8 * devicePixelRatio, y + 4 * devicePixelRatio);
+    ctx.fillText(`${Math.round(db)} dB`, area.left - 8 * canvasScale(), y + 4 * canvasScale());
   }
 
   ctx.textAlign = 'left';
@@ -3155,12 +3228,12 @@ function drawSpectrogramChrome(ctx, layout, frequencyRange, dbFloor, width) {
   ctx.globalAlpha = 1;
 
   ctx.fillStyle = c.muted;
-  ctx.font = `${11 * devicePixelRatio}px system-ui`;
+  ctx.font = `${11 * canvasScale()}px system-ui`;
   ctx.textAlign = 'left';
   ticks.forEach((freq, index) => {
     const y = spectrogramYForFrequency(freq, layout, frequencyRange);
     ctx.textBaseline = index === 0 ? 'top' : (index === ticks.length - 1 ? 'bottom' : 'middle');
-    ctx.fillText(formatFrequencyLabel(freq), 8 * devicePixelRatio, y);
+    ctx.fillText(formatFrequencyLabel(freq), 8 * canvasScale(), y);
   });
   ctx.textBaseline = 'alphabetic';
 
@@ -3176,7 +3249,7 @@ function drawSpectrogramChrome(ctx, layout, frequencyRange, dbFloor, width) {
   ctx.fillStyle = c.muted;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
-  const dbLabelLeft = colorbarLeft + layout.colorbarWidth + 4 * devicePixelRatio;
+  const dbLabelLeft = colorbarLeft + layout.colorbarWidth + 4 * canvasScale();
   [1, 0.66, 0.33, 0].forEach(ratio => {
     const db = dbFloor + (SPECTROGRAM_COLOR_CEILING - dbFloor) * ratio;
     const y = spectrogramYForRatio(layout, ratio);
@@ -3187,8 +3260,8 @@ function drawSpectrogramChrome(ctx, layout, frequencyRange, dbFloor, width) {
   ctx.strokeStyle = c.border;
   ctx.globalAlpha = 0.45;
   ctx.beginPath();
-  ctx.moveTo(axisWidth - 1 * devicePixelRatio, layout.top);
-  ctx.lineTo(axisWidth - 1 * devicePixelRatio, layout.bottom);
+  ctx.moveTo(axisWidth - 1 * canvasScale(), layout.top);
+  ctx.lineTo(axisWidth - 1 * canvasScale(), layout.bottom);
   ctx.stroke();
   ctx.globalAlpha = 1;
 }
@@ -3222,11 +3295,46 @@ function drawStaticCanvases() {
   drawSpectrogramFrame();
 }
 
+const IS_IOS = /iP(hone|ad|od)/.test(navigator.userAgent)
+  || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+let iosUnlockAudio = null;
+
+// iOS silencia Web Audio con el interruptor de silencio salvo que haya un
+// elemento <audio> reproduciendo. Un bucle de silencio, iniciado desde el
+// gesto del usuario, pasa la sesión de audio a modo reproducción.
+function unlockIosAudioSession() {
+  if (!IS_IOS) return;
+  if (!iosUnlockAudio) {
+    const blob = encodeWav(new Float32Array(800), 8000);
+    iosUnlockAudio = new Audio(URL.createObjectURL(blob));
+    iosUnlockAudio.loop = true;
+    iosUnlockAudio.setAttribute('playsinline', '');
+  }
+  iosUnlockAudio.play().catch(() => {});
+}
+
+// En iOS la frecuencia de muestreo del hardware puede cambiar al abrir el
+// micrófono; un AudioContext creado antes a otra frecuencia produce audio
+// distorsionado. Si no coinciden, se recrea el contexto.
+async function matchAudioContextToStream(stream) {
+  if (!IS_IOS || !audioContext) return;
+  const rate = stream.getAudioTracks()[0]?.getSettings?.().sampleRate;
+  if (!rate || audioContext.sampleRate === rate) return;
+  try { await audioContext.close(); } catch (error) {}
+  audioContext = null;
+  analyser = null;
+  inputAnalyser = null;
+  recorderWorkletReady = null;
+  decodedAudioBuffers.clear();
+  await ensureAudioContext();
+}
+
 async function ensureAudioContext() {
   if (!audioContext) {
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
   }
-  if (audioContext.state === 'suspended') {
+  unlockIosAudioSession();
+  if (audioContext.state !== 'running') {
     await audioContext.resume();
   }
   configureAnalyser();
@@ -4786,6 +4894,7 @@ async function start() {
           autoGainControl: false
         }
       });
+      await matchAudioContextToStream(mediaStream);
       connectSource(audioContext.createMediaStreamSource(mediaStream), els.micMonitor.checked, MIC_MONITOR_LEVEL);
     } else if (source === 'file') {
       if (!els.fileInput.files.length) {
@@ -5006,6 +5115,7 @@ async function togglePlayback() {
 function stop() {
   const wasRecording = Boolean(recorder);
   stopCurrentSource();
+  if (iosUnlockAudio) iosUnlockAudio.pause();
   setStatus(wasRecording && recordedClip
     ? `${t().recordSaved} (${formatProgressTime(recordedClip.duration)})`
     : t().stopped);
@@ -5057,7 +5167,7 @@ function musicalNotesForOverlay(range, layout) {
     [4, 7],         // tier 3: E (Mi), G (Sol)
     [2, 5, 11]      // tier 4: D (Re), F (Fa), B (Si)
   ];
-  const minSpacing = 18 * devicePixelRatio;
+  const minSpacing = 18 * canvasScale();
   const drawnY = [];
   const result = [];
   for (const tier of tiers) {
@@ -5089,11 +5199,11 @@ function drawSpectrogramNoteOverlay(layout, range, axisWidth, plotRight) {
   const lineColor = 'rgba(124, 224, 255, 0.85)';
   const labelColor = 'rgb(170, 235, 255)';
   ctx.save();
-  ctx.font = `${11 * devicePixelRatio}px system-ui`;
+  ctx.font = `${11 * canvasScale()}px system-ui`;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
-  const labelPad = 6 * devicePixelRatio;
-  const lineGap = 6 * devicePixelRatio;
+  const labelPad = 6 * canvasScale();
+  const lineGap = 6 * canvasScale();
   ctx.lineWidth = 1;
 
   notes.forEach(note => {
@@ -5124,7 +5234,7 @@ function spectrogramTicks(range, layout) {
   if (els.frequencyScale.value === 'log') {
     const allTicks = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000]
       .filter(freq => freq >= range.min && freq <= range.max);
-    const minSpacing = 64 * devicePixelRatio;
+    const minSpacing = 64 * canvasScale();
     const ticks = [];
     let lastY = Infinity;
     allTicks.forEach(freq => {
@@ -5137,10 +5247,10 @@ function spectrogramTicks(range, layout) {
     return ticks.length ? ticks : [range.max, range.min];
   }
 
-  if (plotHeight < 240 * devicePixelRatio) {
+  if (plotHeight < 240 * canvasScale()) {
     return [range.max, (range.min + range.max) / 2, range.min];
   }
-  if (plotHeight < 360 * devicePixelRatio) {
+  if (plotHeight < 360 * canvasScale()) {
     return [range.max, (range.min + range.max) / 2, range.min];
   }
   return [
@@ -5153,7 +5263,7 @@ function spectrogramTicks(range, layout) {
 }
 
 function xForFrequency(freq, width, range = selectedFrequencyRange()) {
-  const area = spectrumArea(width, Math.max(200 * devicePixelRatio, width));
+  const area = spectrumArea(width, Math.max(200 * canvasScale(), width));
   const left = area.left;
   const right = area.right;
   const scale = els.frequencyScale.value;
@@ -5367,8 +5477,8 @@ function drawTime({ capture = true } = {}) {
     }
     ctx.stroke();
   };
-  if (inSamples) drawTrace(inSamples, c.traceIn, 1.6 * devicePixelRatio);
-  drawTrace(outSamples, c.accent, 2 * devicePixelRatio);
+  if (inSamples) drawTrace(inSamples, c.traceIn, 1.6 * canvasScale());
+  drawTrace(outSamples, c.accent, 2 * canvasScale());
   ctx.restore();
 
   setMetaSegments(els.timeMeta, [
@@ -5423,8 +5533,8 @@ function drawSpectrum() {
     ctx.stroke();
   };
 
-  if (dual) plotCurve(inputFloatFreqData, c.traceIn, 1.6 * devicePixelRatio, false);
-  plotCurve(floatFreqData, c.accent, 2 * devicePixelRatio, true);
+  if (dual) plotCurve(inputFloatFreqData, c.traceIn, 1.6 * canvasScale(), false);
+  plotCurve(floatFreqData, c.accent, 2 * canvasScale(), true);
 
   setMetaSegments(els.spectrumMeta, [
     { text: `${formatFrequencyLabel(frequencyRange.min)} - ${formatFrequencyLabel(frequencyRange.max)} ${t().frequencySpan}`, className: 'meta-spectrum-span' },
@@ -5447,7 +5557,7 @@ function drawSpectrogram() {
   const plotTop = Math.round(layout.top);
   const plotBottom = Math.round(layout.bottom);
   const plotWidth = Math.max(1, plotRight - axisWidth);
-  const speed = Math.min(plotWidth, Math.max(1, Math.round(parseInt(els.scrollSpeed.value, 10) * devicePixelRatio)));
+  const speed = Math.min(plotWidth, Math.max(1, Math.round(parseInt(els.scrollSpeed.value, 10) * canvasScale())));
   const c = colors();
 
   const spectrogramData = spectrogramFreqData();
@@ -5456,8 +5566,7 @@ function drawSpectrogram() {
   const plotHeight = Math.max(1, plotBottom - plotTop);
   const copyWidth = Math.max(0, plotWidth - speed);
   if (copyWidth > 0) {
-    const image = ctx.getImageData(axisWidth + speed, plotTop, copyWidth, plotHeight);
-    ctx.putImageData(image, axisWidth, plotTop);
+    ctx.drawImage(ctx.canvas, axisWidth + speed, plotTop, copyWidth, plotHeight, axisWidth, plotTop, copyWidth, plotHeight);
   }
   ctx.fillStyle = c.bg;
   ctx.fillRect(0, 0, axisWidth, height);
@@ -5602,30 +5711,43 @@ els.fileInput.addEventListener('change', () => {
   }
 });
 
-els.spectrumCanvas.addEventListener('mousemove', event => {
-  const point = hoverPointForEvent(els.spectrumCanvas, event);
-  const area = spectrumArea(els.spectrumCanvas.width, els.spectrumCanvas.height);
-  spectrumHoverState = isInsideArea(point, area) ? point : null;
-  updateSpectrumHover();
-});
+// Cursor de lectura con eventos pointer: funciona con mouse y con el dedo
+// (arrastre sobre el gráfico). Al levantar el dedo o salir, se oculta.
+function bindHoverPointer(canvas, getArea, setState, update) {
+  const move = event => {
+    const point = hoverPointForEvent(canvas, event);
+    setState(isInsideArea(point, getArea()) ? point : null);
+    update();
+  };
+  const clear = () => {
+    setState(null);
+    update();
+  };
+  canvas.addEventListener('pointermove', move);
+  canvas.addEventListener('pointerdown', move);
+  canvas.addEventListener('pointerleave', clear);
+  canvas.addEventListener('pointercancel', clear);
+  canvas.addEventListener('pointerup', event => {
+    if (event.pointerType !== 'mouse') clear();
+  });
+}
 
-els.spectrumCanvas.addEventListener('mouseleave', () => {
-  spectrumHoverState = null;
-  updateSpectrumHover();
-});
+bindHoverPointer(
+  els.spectrumCanvas,
+  () => spectrumArea(els.spectrumCanvas.width, els.spectrumCanvas.height),
+  point => { spectrumHoverState = point; },
+  updateSpectrumHover
+);
 
-els.spectrogramCanvas.addEventListener('mousemove', event => {
-  const point = hoverPointForEvent(els.spectrogramCanvas, event);
-  const layout = spectrogramLayout(els.spectrogramCanvas.width, els.spectrogramCanvas.height);
-  const area = { left: layout.axisLeft, right: layout.plotRight, top: layout.top, bottom: layout.bottom };
-  spectrogramHoverState = isInsideArea(point, area) ? point : null;
-  updateSpectrogramHover();
-});
-
-els.spectrogramCanvas.addEventListener('mouseleave', () => {
-  spectrogramHoverState = null;
-  updateSpectrogramHover();
-});
+bindHoverPointer(
+  els.spectrogramCanvas,
+  () => {
+    const layout = spectrogramLayout(els.spectrogramCanvas.width, els.spectrogramCanvas.height);
+    return { left: layout.axisLeft, right: layout.plotRight, top: layout.top, bottom: layout.bottom };
+  },
+  point => { spectrogramHoverState = point; },
+  updateSpectrogramHover
+);
 
 [els.fftSize, els.smoothing, els.dbFloor].forEach(element => {
   const refreshAnalysis = () => {
