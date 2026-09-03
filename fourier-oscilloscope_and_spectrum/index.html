@@ -191,6 +191,16 @@
     border-radius:999px;
   }
 
+  /* Firefox no soporta ::-webkit-scrollbar; usa las propiedades estándar
+     (heredadas) con el mismo color de pulgar y pista transparente. Chrome y
+     Safari no entran aquí para no perder el pulgar personalizado. */
+  @supports not selector(::-webkit-scrollbar) {
+    body {
+      scrollbar-width:thin;
+      scrollbar-color:var(--border) transparent;
+    }
+  }
+
   .control-group {
     border:1px solid color-mix(in srgb, var(--border) 72%, transparent);
     border-radius:16px;
@@ -305,16 +315,7 @@
   #theme-icon {
     display:block;
     line-height:1;
-  }
-
-  #theme-icon.theme-sun {
-    color:#ffd34d;
-    text-shadow:0 0 10px rgba(255,211,77,0.55);
-  }
-
-  #theme-icon.theme-moon {
-    color:#b9c9ff;
-    text-shadow:0 0 10px rgba(139,180,255,0.42);
+    font-size:18px;
   }
 
   .icon-stop {
@@ -1257,7 +1258,7 @@
             <button type="button" class="lang-btn" data-lang="en">EN</button>
             <button type="button" class="lang-btn" data-lang="fr">FR</button>
           </div>
-          <button type="button" id="theme-toggle" class="compact-btn" aria-label="Light" title="Light"><span id="theme-icon" class="theme-sun" aria-hidden="true">☀</span></button>
+          <button type="button" id="theme-toggle" class="compact-btn" aria-label="Light" title="Light"><span id="theme-icon" aria-hidden="true">☀️</span></button>
         </div>
       </section>
 
@@ -1502,8 +1503,6 @@
     </form>
   </dialog>
 
-<script src="assets/audio/police-siren-3-soundbible-data.js"></script>
-<script src="assets/audio/Windowlicker_spectrogram-data.js"></script>
 <script>
 const I18N = {
   es: {
@@ -1592,6 +1591,7 @@ const I18N = {
     file:'Importar audio',
     system:'Audio del sistema',
     chooseFile:'Elige un archivo de audio.',
+    loadingAudio:'Cargando audio...',
     running:'Reproduciendo audio...',
     paused:'Pausado.',
     stopped:'Detenido.',
@@ -1703,6 +1703,7 @@ const I18N = {
     file:'Import audio',
     system:'System audio',
     chooseFile:'Choose an audio file.',
+    loadingAudio:'Loading audio...',
     running:'Playing audio...',
     paused:'Paused.',
     stopped:'Stopped.',
@@ -1814,6 +1815,7 @@ const I18N = {
     file:'Importer audio',
     system:'Audio système',
     chooseFile:'Choisis un fichier audio.',
+    loadingAudio:'Chargement audio...',
     running:'Lecture audio...',
     paused:'En pause.',
     stopped:'Arrêté.',
@@ -2087,6 +2089,7 @@ const AUDIO_PRESETS = {
   'police-us': {
     src:'assets/audio/police-siren-3-soundbible.wav',
     embedded:'POLICE_SIREN_3_SOUNDBIBLE_WAV',
+    embeddedScript:'assets/audio/police-siren-3-soundbible-data.js',
     loop:true
   },
   'whale': {
@@ -2096,6 +2099,7 @@ const AUDIO_PRESETS = {
   'windowlicker': {
     src:'assets/audio/Windowlicker_spectrogram.wav',
     embedded:'WINDOWLICKER_SPECTROGRAM_WAV',
+    embeddedScript:'assets/audio/Windowlicker_spectrogram-data.js',
     loop:true
   },
   'recording': {
@@ -2268,8 +2272,7 @@ function updateThemeButton() {
   const label = theme === 'light' ? t().themeDark : t().themeLight;
   els.themeToggle.setAttribute('aria-label', label);
   els.themeToggle.setAttribute('title', label);
-  els.themeIcon.className = theme === 'light' ? 'theme-moon' : 'theme-sun';
-  els.themeIcon.textContent = theme === 'light' ? '☾' : '☀';
+  els.themeIcon.textContent = theme === 'light' ? '🌙' : '☀️';
 }
 
 function updateSourceSelectionState() {
@@ -3506,6 +3509,7 @@ function updateEffectButtons() {
 function setEffect(kind) {
   currentEffect = EFFECTS.includes(kind) ? kind : 'none';
   updateEffectButtons();
+  updateLegends();
   if (effectInput && effectOutput) {
     wireEffect(currentEffect);
   }
@@ -3637,7 +3641,8 @@ function spectrogramFreqData() {
 }
 
 function updateLegends() {
-  const show = els.showInput.checked;
+  // Sin sistema activo entrada y salida coinciden: la leyenda no aporta nada.
+  const show = els.showInput.checked && currentEffect !== 'none';
   els.timeLegend.hidden = !show;
   els.spectrumLegend.hidden = !show;
 }
@@ -4853,6 +4858,53 @@ function base64ToArrayBuffer(base64) {
   return bytes.buffer;
 }
 
+// Los presets de audio grandes ya no se cargan al abrir la página: el WAV se
+// pide con fetch() la primera vez que se usa. Abierto desde file://, donde
+// fetch() de un archivo local falla, se inyecta el script con el audio en
+// base64 (los archivos *-data.js de assets/audio).
+const loadedScripts = new Map();
+
+function loadScriptOnce(srcUrl) {
+  if (!loadedScripts.has(srcUrl)) {
+    loadedScripts.set(srcUrl, new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = srcUrl;
+      script.onload = () => resolve();
+      script.onerror = () => {
+        loadedScripts.delete(srcUrl);
+        reject(new Error(`Could not load script: ${srcUrl}`));
+      };
+      document.head.appendChild(script);
+    }));
+  }
+  return loadedScripts.get(srcUrl);
+}
+
+function embeddedPresetBytes(preset) {
+  const embedded = preset.embedded && window.EMBEDDED_AUDIO_PRESETS?.[preset.embedded];
+  return embedded ? base64ToArrayBuffer(embedded) : null;
+}
+
+async function loadPresetBytes(preset) {
+  const ready = embeddedPresetBytes(preset);
+  if (ready) return ready;
+  if (window.location.protocol !== 'file:') {
+    try {
+      const response = await fetch(preset.src);
+      if (!response.ok) throw new Error(`Could not fetch audio preset: ${preset.src}`);
+      return await response.arrayBuffer();
+    } catch (error) {
+      if (!preset.embeddedScript) throw error;
+      console.warn('fetch del preset falló, se intenta con el script embebido', error);
+    }
+  }
+  if (!preset.embeddedScript) throw new Error(`No embedded data for preset: ${preset.src}`);
+  await loadScriptOnce(preset.embeddedScript);
+  const bytes = embeddedPresetBytes(preset);
+  if (!bytes) throw new Error(`Embedded preset missing after load: ${preset.embedded}`);
+  return bytes;
+}
+
 async function loadAudioBufferPreset(kind) {
   if (kind === RECORDING_SOURCE) {
     const buffer = recordedClipBuffer();
@@ -4863,15 +4915,7 @@ async function loadAudioBufferPreset(kind) {
     return decodedAudioBuffers.get(kind);
   }
   const preset = AUDIO_PRESETS[kind];
-  let arrayBuffer;
-  const embedded = preset.embedded && window.EMBEDDED_AUDIO_PRESETS?.[preset.embedded];
-  if (embedded) {
-    arrayBuffer = base64ToArrayBuffer(embedded);
-  } else {
-    const response = await fetch(preset.src);
-    if (!response.ok) throw new Error(`Could not fetch audio preset: ${preset.src}`);
-    arrayBuffer = await response.arrayBuffer();
-  }
+  const arrayBuffer = await loadPresetBytes(preset);
   const decoded = await audioContext.decodeAudioData(arrayBuffer);
   decodedAudioBuffers.set(kind, decoded);
   return decoded;
@@ -4961,6 +5005,7 @@ async function startFile(file) {
 async function startAudioPreset(kind) {
   const preset = AUDIO_PRESETS[kind];
   if (isBufferAudioPreset(kind)) {
+    if (!decodedAudioBuffers.has(kind)) setStatus(t().loadingAudio);
     const buffer = await loadAudioBufferPreset(kind);
     const source = audioContext.createBufferSource();
     source.buffer = buffer;
