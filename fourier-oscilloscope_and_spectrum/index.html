@@ -1546,7 +1546,10 @@
 
       <section class="plot-card plot-spectrogram" id="spectrogram-panel">
         <div class="plot-title">
-          <span id="spectrogram-title">Espectrograma</span>
+          <div class="plot-title-left">
+            <span id="spectrogram-title">Espectrograma</span>
+            <span id="spectrogram-frozen" class="plot-frozen" hidden>pausado</span>
+          </div>
           <span id="spectrogram-meta" class="plot-meta">frecuencia vs tiempo</span>
         </div>
         <canvas id="spectrogram-canvas"></canvas>
@@ -1618,9 +1621,10 @@ const I18N = {
     channelInput:'Entrada del sistema',
     legendInput:'entrada',
     legendOutput:'salida',
-    frozen:'congelado',
-    timeCanvasHint:'Mantén presionado para congelar la imagen. Rueda: cambia ms/div.',
-    spectrumCanvasHint:'Mantén presionado para congelar. Arrastra para hacer zoom en una ventana. Doble clic: vuelve a la vista anterior.',
+    frozen:'pausado',
+    timeCanvasHint:'Mantén presionado para pausar todo, audio incluido. Rueda: cambia ms/div.',
+    spectrogramCanvasHint:'Mantén presionado para pausar todo, audio incluido.',
+    spectrumCanvasHint:'Mantén presionado para pausar todo. Arrastra para hacer zoom en una ventana. Doble clic: vuelve a la vista anterior.',
     stickyNote:'Activa una o varias notas; Detener apaga todas.',
     fileNote:'Selecciona un archivo de audio local para analizarlo.',
     systemNote:'Audio del sistema es experimental: si el navegador no muestra una opci\u00f3n para compartir audio, la web no puede redirigirlo. Suele funcionar solo al compartir una pesta\u00f1a con audio desde localhost/HTTPS.',
@@ -1733,9 +1737,10 @@ const I18N = {
     channelInput:'System input',
     legendInput:'input',
     legendOutput:'output',
-    frozen:'frozen',
-    timeCanvasHint:'Press and hold to freeze the picture. Wheel: change ms/div.',
-    spectrumCanvasHint:'Press and hold to freeze. Drag to zoom into a window. Double-click: back to the previous view.',
+    frozen:'paused',
+    timeCanvasHint:'Press and hold to pause everything, audio included. Wheel: change ms/div.',
+    spectrogramCanvasHint:'Press and hold to pause everything, audio included.',
+    spectrumCanvasHint:'Press and hold to pause everything. Drag to zoom into a window. Double-click: back to the previous view.',
     stickyNote:'Toggle one or more notes; Stop turns them all off.',
     fileNote:'Choose a local audio file to analyze.',
     systemNote:'System audio is experimental: if the browser does not show a share-audio option, the web page cannot redirect it. It usually only works when sharing a tab with audio from localhost/HTTPS.',
@@ -1848,9 +1853,10 @@ const I18N = {
     channelInput:'Entrée du système',
     legendInput:'entrée',
     legendOutput:'sortie',
-    frozen:'figé',
-    timeCanvasHint:'Maintiens appuyé pour figer l\'image. Molette : change les ms/div.',
-    spectrumCanvasHint:'Maintiens appuyé pour figer. Glisse pour zoomer sur une fenêtre. Double-clic : retour à la vue précédente.',
+    frozen:'en pause',
+    timeCanvasHint:'Maintiens appuyé pour tout mettre en pause, audio compris. Molette : change les ms/div.',
+    spectrogramCanvasHint:'Maintiens appuyé pour tout mettre en pause, audio compris.',
+    spectrumCanvasHint:'Maintiens appuyé pour tout mettre en pause. Glisse pour zoomer sur une fenêtre. Double-clic : retour à la vue précédente.',
     stickyNote:'Active une ou plusieurs notes ; Arrêter les coupe toutes.',
     fileNote:'Choisis un fichier audio local à analyser.',
     systemNote:'L\'audio système est expérimental : si le navigateur ne propose pas de partager l\'audio, la page web ne peut pas le rediriger. Cela fonctionne surtout en partageant un onglet avec audio depuis localhost/HTTPS.',
@@ -1982,6 +1988,7 @@ const els = {
   spectrumLegendOut: $('spectrum-legend-out'),
   timeFrozen: $('time-frozen'),
   spectrumFrozen: $('spectrum-frozen'),
+  spectrogramFrozen: $('spectrogram-frozen'),
   spectrumZoomBox: $('spectrum-zoom-box'),
   analysisTitle: $('analysis-title'),
   fftLabel: $('fft-label'),
@@ -2066,6 +2073,7 @@ let effectOscillators = [];
 let inputAnalyser = null;
 let inputTimeData = null;
 let inputFloatFreqData = null;
+let alignCheckData = null;
 // Grabación: una sola, de la señal del micrófono sin efecto.
 const RECORDING_SOURCE = 'recording';
 const RECORDING_MAX_SECONDS = 60;
@@ -2332,8 +2340,10 @@ function updateLanguage() {
   els.spectrumLegendOut.textContent = tr.legendOutput;
   els.timeFrozen.textContent = tr.frozen;
   els.spectrumFrozen.textContent = tr.frozen;
+  els.spectrogramFrozen.textContent = tr.frozen;
   els.timeCanvas.title = tr.timeCanvasHint;
   els.spectrumCanvas.title = tr.spectrumCanvasHint;
+  els.spectrogramCanvas.title = tr.spectrogramCanvasHint;
   renderEffectButtons();
   updateRecordingUI();
   updateLegends();
@@ -2745,7 +2755,7 @@ function refreshPlotsAfterLayout() {
     drawStaticCanvases();
     if (running && analyser) {
       drawTime({ capture: !plotsFrozen });
-      drawSpectrum({ capture: !plotsFrozen });
+      drawSpectrum();
       drawSpectrogram();
     }
     updateSpectrumHover();
@@ -3020,10 +3030,10 @@ let plotsFrozen = false;
 function setPlotsFrozen(state) {
   if (plotsFrozen === state) return;
   plotsFrozen = state;
-  els.timePanel.classList.toggle('is-frozen', state);
-  els.spectrumPanel.classList.toggle('is-frozen', state);
+  [els.timePanel, els.spectrumPanel, els.spectrogramPanel].forEach(panel => panel.classList.toggle('is-frozen', state));
   els.timeFrozen.hidden = !state;
   els.spectrumFrozen.hidden = !state;
+  els.spectrogramFrozen.hidden = !state;
 }
 
 function currentDbForFrequency(freq, data = floatFreqData) {
@@ -3514,6 +3524,7 @@ function configureAnalyser() {
   floatFreqData = new Float32Array(analyser.frequencyBinCount);
   inputTimeData = new Float32Array(inputAnalyser.fftSize);
   inputFloatFreqData = new Float32Array(inputAnalyser.frequencyBinCount);
+  alignCheckData = new Float32Array(inputAnalyser.fftSize);
 }
 
 function clearPauseState() {
@@ -3753,7 +3764,20 @@ function updateMicMonitorRouting() {
 }
 
 function dualChannelEnabled() {
-  return Boolean(els.showInput.checked && inputAnalyser && inputTimeData);
+  // Sin sistema activo la entrada es idéntica a la salida: una sola traza.
+  return Boolean(els.showInput.checked && currentEffect !== 'none' && inputAnalyser && inputTimeData);
+}
+
+// Una sola lectura por cuadro y por analizador. getFloatFrequencyData aplica
+// el suavizado temporal en cada llamada: leer la salida dos veces (espectro y
+// espectrograma) la suavizaba el doble que la entrada y las curvas no
+// coincidían aun sin efecto.
+function captureFrequencyData() {
+  if (!analyser || !floatFreqData) return;
+  analyser.getFloatFrequencyData(floatFreqData);
+  if (inputAnalyser && inputFloatFreqData && (dualChannelEnabled() || spectrogramShowsInput())) {
+    inputAnalyser.getFloatFrequencyData(inputFloatFreqData);
+  }
 }
 
 function spectrogramShowsInput() {
@@ -5473,6 +5497,14 @@ function xForFrequency(freq, width, range = selectedFrequencyRange()) {
   return left + ((clampedFreq - range.min) / Math.max(1, range.max - range.min)) * (right - left);
 }
 
+function sameSamples(a, b) {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+
 function sampleAt(samples, index) {
   const clamped = Math.max(0, Math.min(samples.length - 1, index));
   const left = Math.floor(clamped);
@@ -5610,12 +5642,23 @@ function drawTime({ capture = true } = {}) {
   const dual = dualChannelEnabled();
   if (capture) {
     const audioTime = audioContext.currentTime;
-    analyser.getFloatTimeDomainData(timeData);
-    appendToLongHistory(outputHistory, timeData, sampleRate, audioTime);
     if (dual) {
+      // Los dos analizadores se leen por separado y el hilo de audio puede
+      // escribir un bloque de 128 muestras entre ambas lecturas; entonces una
+      // traza queda corrida 128 muestras durante un cuadro. Se lee la entrada
+      // antes y después de la salida: si cambió, se relee la salida.
       inputAnalyser.getFloatTimeDomainData(inputTimeData);
+      analyser.getFloatTimeDomainData(timeData);
+      inputAnalyser.getFloatTimeDomainData(alignCheckData);
+      if (!sameSamples(inputTimeData, alignCheckData)) {
+        analyser.getFloatTimeDomainData(timeData);
+        inputTimeData.set(alignCheckData);
+      }
       appendToLongHistory(inputHistory, inputTimeData, sampleRate, audioTime);
+    } else {
+      analyser.getFloatTimeDomainData(timeData);
     }
+    appendToLongHistory(outputHistory, timeData, sampleRate, audioTime);
   } else if (!outputHistory.filled) {
     drawTimeFrame();
     return;
@@ -5686,7 +5729,7 @@ function drawTime({ capture = true } = {}) {
   ]);
 }
 
-function drawSpectrum({ capture = true } = {}) {
+function drawSpectrum() {
   ensureCanvasSize(els.spectrumCanvas);
   const ctx = els.spectrumCanvas.getContext('2d');
   const width = els.spectrumCanvas.width;
@@ -5695,10 +5738,6 @@ function drawSpectrum({ capture = true } = {}) {
   const area = spectrumArea(width, height);
   drawSpectrumFrame();
   const dual = dualChannelEnabled();
-  if (capture) {
-    analyser.getFloatFrequencyData(floatFreqData);
-    if (dual) inputAnalyser.getFloatFrequencyData(inputFloatFreqData);
-  }
   const frequencyRange = selectedFrequencyRange();
   const dbRange = spectrumDbRange();
   const dbFloor = dbRange.min;
@@ -5763,7 +5802,6 @@ function drawSpectrogram() {
   const c = colors();
 
   const spectrogramData = spectrogramFreqData();
-  (spectrogramShowsInput() ? inputAnalyser : analyser).getFloatFrequencyData(spectrogramData);
 
   const plotHeight = Math.max(1, plotBottom - plotTop);
   const copyWidth = Math.max(0, plotWidth - speed);
@@ -5825,6 +5863,7 @@ function animate(time = performance.now()) {
   const elapsed = time - lastFrameTime;
   lastFrameTime = time;
   updateRecordedProgress();
+  captureFrequencyData();
   if (!plotsFrozen) {
     drawTime();
     drawSpectrum();
@@ -5943,14 +5982,40 @@ const ZOOM_BAND_PX = 12;
 const ZOOM_MIN_DRAG_PX = 8;
 let spectrumDrag = null;
 
-function bindFreezeOnPress(canvas) {
+// Mantener presionado pausa todo, igual que el botón de pausa (audio
+// incluido); al soltar se reanuda. Las operaciones se encadenan para que una
+// pulsación corta no cruce un suspend() con un resume().
+let holdChain = Promise.resolve();
+let pausedByHold = false;
+
+function beginHoldPause() {
+  if (running || pausedSourceKind) setPlotsFrozen(true);
+  holdChain = holdChain.then(async () => {
+    if (running && !pausedSourceKind) {
+      pausedByHold = true;
+      await pause();
+    }
+  }).catch(error => console.error(error));
+}
+
+function endHoldPause() {
+  setPlotsFrozen(false);
+  holdChain = holdChain.then(async () => {
+    if (pausedByHold) {
+      pausedByHold = false;
+      if (pausedSourceKind) await resumePausedSource();
+    }
+  }).catch(error => console.error(error));
+}
+
+function bindHoldToPause(canvas) {
   canvas.addEventListener('pointerdown', event => {
     if (event.pointerType === 'mouse' && event.button !== 0) return;
     try { canvas.setPointerCapture(event.pointerId); } catch (error) {}
-    setPlotsFrozen(true);
+    beginHoldPause();
   });
   ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(type => {
-    canvas.addEventListener(type, () => setPlotsFrozen(false));
+    canvas.addEventListener(type, () => endHoldPause());
   });
 }
 
@@ -6054,8 +6119,9 @@ function finishSpectrumZoom(drag) {
   }
 }
 
-bindFreezeOnPress(els.timeCanvas);
-bindFreezeOnPress(els.spectrumCanvas);
+bindHoldToPause(els.timeCanvas);
+bindHoldToPause(els.spectrumCanvas);
+bindHoldToPause(els.spectrogramCanvas);
 
 els.spectrumCanvas.addEventListener('pointerdown', event => {
   if (event.pointerType === 'touch') return;
@@ -6079,7 +6145,7 @@ els.spectrumCanvas.addEventListener('pointermove', event => {
     if (!spectrumDrag || event.pointerId !== spectrumDrag.pointerId) return;
     const drag = spectrumDrag;
     spectrumDrag = null;
-    if (type === 'pointerup') finishSpectrumZoom(drag);
+    if (type === 'pointerup') holdChain = holdChain.then(() => finishSpectrumZoom(drag));
     else els.spectrumZoomBox.classList.remove('is-visible');
   });
 });
