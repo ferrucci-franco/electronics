@@ -1467,7 +1467,7 @@
         </div>
         <label>
           <span id="db-floor-label">Piso dB <span class="value" id="db-floor-value">-115 dB</span></span>
-          <input id="db-floor" type="range" min="-120" max="-40" step="5" value="-115">
+          <input id="db-floor" type="range" min="-120" max="-40" step="1" value="-115">
         </label>
         <label>
           <span id="speed-label">Velocidad <span class="value" id="speed-value">2 px/frame</span></span>
@@ -1554,6 +1554,7 @@
         </div>
         <canvas id="spectrogram-canvas"></canvas>
         <canvas id="spectrogram-notes-canvas" class="plot-overlay-canvas"></canvas>
+        <div id="spectrogram-zoom-box" class="plot-zoom-box" aria-hidden="true"></div>
         <div id="spectrogram-hover" class="plot-hover">
           <div class="plot-hover-line vertical"></div>
           <div class="plot-hover-line horizontal"></div>
@@ -1624,7 +1625,7 @@ const I18N = {
     frozen:'pausado',
     timeCanvasHint:'Mantén presionado para pausar todo, audio incluido. Rueda: cambia ms/div.',
     spectrumCanvasHint:'Arrastra para hacer zoom en una ventana. Botón derecho o rueda: desplazar. Sobre los ejes: el centro desplaza y los extremos hacen zoom. Doble clic: vista anterior.',
-    spectrogramCanvasHint:'Rueda: cambia el piso de dB. Eje de frecuencia: el centro desplaza y los extremos hacen zoom. Doble clic sobre el eje: vista anterior.',
+    spectrogramCanvasHint:'Arrastra verticalmente para hacer zoom en frecuencia. Rueda: cambia el piso de dB. Eje de frecuencia: el centro desplaza y los extremos hacen zoom. Doble clic: vista anterior.',
     stickyNote:'Activa una o varias notas; Detener apaga todas.',
     fileNote:'Selecciona un archivo de audio local para analizarlo.',
     systemNote:'Audio del sistema es experimental: si el navegador no muestra una opci\u00f3n para compartir audio, la web no puede redirigirlo. Suele funcionar solo al compartir una pesta\u00f1a con audio desde localhost/HTTPS.',
@@ -1740,7 +1741,7 @@ const I18N = {
     frozen:'paused',
     timeCanvasHint:'Press and hold to pause everything, audio included. Wheel: change ms/div.',
     spectrumCanvasHint:'Drag to zoom into a window. Right or middle button: pan. On the axes: the middle pans, the ends zoom. Double-click: previous view.',
-    spectrogramCanvasHint:'Wheel: change the dB floor. Frequency axis: the middle pans, the ends zoom. Double-click on the axis: previous view.',
+    spectrogramCanvasHint:'Drag vertically to zoom in frequency. Wheel: change the dB floor. Frequency axis: the middle pans, the ends zoom. Double-click: previous view.',
     stickyNote:'Toggle one or more notes; Stop turns them all off.',
     fileNote:'Choose a local audio file to analyze.',
     systemNote:'System audio is experimental: if the browser does not show a share-audio option, the web page cannot redirect it. It usually only works when sharing a tab with audio from localhost/HTTPS.',
@@ -1856,7 +1857,7 @@ const I18N = {
     frozen:'en pause',
     timeCanvasHint:'Maintiens appuyé pour tout mettre en pause, audio compris. Molette : change les ms/div.',
     spectrumCanvasHint:'Glisse pour zoomer sur une fenêtre. Bouton droit ou molette : déplacer. Sur les axes : le centre déplace, les extrémités zooment. Double-clic : vue précédente.',
-    spectrogramCanvasHint:'Molette : change le plancher en dB. Axe des fréquences : le centre déplace, les extrémités zooment. Double-clic sur l\'axe : vue précédente.',
+    spectrogramCanvasHint:'Glisse verticalement pour zoomer en fréquence. Molette : change le plancher en dB. Axe des fréquences : le centre déplace, les extrémités zooment. Double-clic : vue précédente.',
     stickyNote:'Active une ou plusieurs notes ; Arrêter les coupe toutes.',
     fileNote:'Choisis un fichier audio local à analyser.',
     systemNote:'L\'audio système est expérimental : si le navigateur ne propose pas de partager l\'audio, la page web ne peut pas le rediriger. Cela fonctionne surtout en partageant un onglet avec audio depuis localhost/HTTPS.',
@@ -1990,6 +1991,7 @@ const els = {
   spectrumFrozen: $('spectrum-frozen'),
   spectrogramFrozen: $('spectrogram-frozen'),
   spectrumZoomBox: $('spectrum-zoom-box'),
+  spectrogramZoomBox: $('spectrogram-zoom-box'),
   analysisTitle: $('analysis-title'),
   fftLabel: $('fft-label'),
   fftSize: $('fft-size'),
@@ -2752,11 +2754,14 @@ function updateSliderLabels() {
 
 function refreshPlotsAfterLayout() {
   requestAnimationFrame(() => {
-    drawStaticCanvases();
+    drawTimeFrame();
+    drawSpectrumFrame();
+    // el espectrograma se repinta desde su historial: cambiar el piso, el
+    // rango o el tamaño no reinicia el dibujo
+    renderSpectrogramFromHistory();
     if (running && analyser) {
       drawTime({ capture: !plotsFrozen });
       drawSpectrum();
-      drawSpectrogram();
     }
     updateSpectrumHover();
     updateSpectrogramHover();
@@ -5811,6 +5816,119 @@ function drawSpectrum() {
   updateSpectrumHover();
 }
 
+// Historial del espectrograma: el espectro crudo de cada columna, cuantizado a
+// 0,5 dB en un byte. Permite recolorear toda la imagen al cambiar el piso de
+// dB o remapearla al cambiar el rango de frecuencia o el tamaño del panel,
+// en vez de reiniciar el dibujo.
+const SPECTROGRAM_DB_OFFSET = 130;
+let spectrogramHistory = null;
+
+function spectrogramSpeed(plotWidth) {
+  return Math.min(plotWidth, Math.max(1, Math.round(parseInt(els.scrollSpeed.value, 10) * canvasScale())));
+}
+
+function ensureSpectrogramHistory(bins, capacity) {
+  const h = spectrogramHistory;
+  if (!h || h.bins !== bins) {
+    spectrogramHistory = { data: new Uint8Array(capacity * bins), bins, capacity, write: 0, count: 0 };
+    return;
+  }
+  if (h.capacity < capacity) {
+    const next = new Uint8Array(capacity * bins);
+    const keep = Math.min(h.count, capacity);
+    for (let i = 0; i < keep; i++) {
+      const from = (((h.write - keep + i) % h.capacity) + h.capacity) % h.capacity * bins;
+      next.set(h.data.subarray(from, from + bins), i * bins);
+    }
+    spectrogramHistory = { data: next, bins, capacity, write: keep % capacity, count: keep };
+  }
+}
+
+function pushSpectrogramColumn(data) {
+  const h = spectrogramHistory;
+  const base = h.write * h.bins;
+  for (let i = 0; i < h.bins; i++) {
+    const q = Math.round((data[i] + SPECTROGRAM_DB_OFFSET) * 2);
+    h.data[base + i] = q < 0 ? 0 : q > 255 ? 255 : q;
+  }
+  h.write = (h.write + 1) % h.capacity;
+  h.count = Math.min(h.count + 1, h.capacity);
+}
+
+function resetSpectrogramHistory() {
+  if (spectrogramHistory) {
+    spectrogramHistory.write = 0;
+    spectrogramHistory.count = 0;
+  }
+}
+
+// Vuelve a pintar el espectrograma entero desde el historial con el piso, el
+// rango de frecuencia y la geometría actuales.
+function renderSpectrogramFromHistory() {
+  const canvas = els.spectrogramCanvas;
+  ensureCanvasSize(canvas);
+  drawSpectrogramFrame();
+  const h = spectrogramHistory;
+  if (!h || !h.count || !audioContext) return;
+  const ctx = canvas.getContext('2d');
+  const layout = spectrogramLayout(canvas.width, canvas.height);
+  const range = selectedFrequencyRange();
+  const dbFloor = parseFloat(els.dbFloor.value);
+  const axisWidth = Math.round(layout.axisLeft);
+  const plotRight = Math.round(layout.colorbarLeft - layout.colorbarGap);
+  const plotTop = Math.round(layout.top);
+  const plotBottom = Math.round(layout.bottom);
+  const plotWidth = Math.max(1, plotRight - axisWidth);
+  const plotHeight = Math.max(1, plotBottom - plotTop);
+  const speed = spectrogramSpeed(plotWidth);
+  const columns = Math.min(h.count, Math.floor(plotWidth / speed));
+  if (columns <= 0) return;
+
+  const imageWidth = columns * speed;
+  const image = ctx.createImageData(imageWidth, plotHeight);
+  const pixels = new Uint32Array(image.data.buffer);
+  const lut = spectrogramLut();
+  const fftSize = h.bins * 2;
+  const leftIdx = new Int32Array(plotHeight);
+  const ratioArr = new Float32Array(plotHeight);
+  for (let y = 0; y < plotHeight; y++) {
+    const freq = frequencyForY(plotTop + y, layout.top, layout.bottom, range);
+    const pos = freq / audioContext.sampleRate * fftSize;
+    const left = Math.max(0, Math.min(h.bins - 1, Math.floor(pos)));
+    leftIdx[y] = left;
+    ratioArr[y] = Math.max(0, Math.min(1, pos - left));
+  }
+  // color final por valor cuantizado (256 entradas) para el piso actual;
+  // píxel empaquetado ABGR para escribirlo de una vez (little-endian)
+  const dbSpan = Math.max(1, SPECTROGRAM_COLOR_CEILING - dbFloor);
+  const lutMax = SPECTROGRAM_LUT_SIZE - 1;
+  const colorByQ = new Uint32Array(256);
+  for (let q = 0; q < 256; q++) {
+    const db = q / 2 - SPECTROGRAM_DB_OFFSET;
+    let n = (db - dbFloor) / dbSpan;
+    n = n < 0 ? 0 : n > 1 ? 1 : n;
+    const o = ((n * lutMax + 0.5) | 0) * 3;
+    colorByQ[q] = (255 << 24) | (lut[o + 2] << 16) | (lut[o + 1] << 8) | lut[o];
+  }
+  const data = h.data;
+  const bins = h.bins;
+  for (let ci = 0; ci < columns; ci++) {
+    const col = (((h.write - columns + ci) % h.capacity) + h.capacity) % h.capacity;
+    const base = col * bins;
+    let p = ci * speed;
+    for (let y = 0; y < plotHeight; y++, p += imageWidth) {
+      const left = leftIdx[y];
+      const a = data[base + left];
+      const b = data[base + (left + 1 < bins ? left + 1 : left)];
+      const value = colorByQ[(a + (b - a) * ratioArr[y] + 0.5) | 0];
+      for (let k = 0; k < speed; k++) pixels[p + k] = value;
+    }
+  }
+  ctx.putImageData(image, plotRight - imageWidth, plotTop);
+  drawSpectrogramChrome(ctx, layout, range, dbFloor, canvas.width);
+  drawSpectrogramNoteOverlay(layout, range, axisWidth, plotRight);
+}
+
 function drawSpectrogram() {
   ensureCanvasSize(els.spectrogramCanvas);
   const ctx = els.spectrogramCanvas.getContext('2d');
@@ -5825,10 +5943,12 @@ function drawSpectrogram() {
   const plotTop = Math.round(layout.top);
   const plotBottom = Math.round(layout.bottom);
   const plotWidth = Math.max(1, plotRight - axisWidth);
-  const speed = Math.min(plotWidth, Math.max(1, Math.round(parseInt(els.scrollSpeed.value, 10) * canvasScale())));
+  const speed = spectrogramSpeed(plotWidth);
   const c = colors();
 
   const spectrogramData = spectrogramFreqData();
+  ensureSpectrogramHistory(spectrogramData.length, Math.ceil(plotWidth / speed) + 8);
+  pushSpectrogramColumn(spectrogramData);
 
   const plotHeight = Math.max(1, plotBottom - plotTop);
   const copyWidth = Math.max(0, plotWidth - speed);
@@ -5856,18 +5976,20 @@ function drawSpectrogram() {
   updateSpectrogramHover();
 }
 
-function spectrogramColor(value) {
+const SPECTROGRAM_COLOR_STOPS = [
+  [0.00, 0, 0, 0],
+  [0.12, 0, 0, 0],
+  [0.26, 38, 0, 92],
+  [0.46, 116, 24, 255],
+  [0.64, 215, 0, 165],
+  [0.79, 238, 63, 0],
+  [0.92, 255, 142, 0],
+  [1.00, 255, 232, 78]
+];
+
+function spectrogramColorRgb(value) {
   const v = Math.max(0, Math.min(1, value));
-  const stops = [
-    [0.00, 0, 0, 0],
-    [0.12, 0, 0, 0],
-    [0.26, 38, 0, 92],
-    [0.46, 116, 24, 255],
-    [0.64, 215, 0, 165],
-    [0.79, 238, 63, 0],
-    [0.92, 255, 142, 0],
-    [1.00, 255, 232, 78]
-  ];
+  const stops = SPECTROGRAM_COLOR_STOPS;
   let upper = stops[stops.length - 1];
   let lower = stops[0];
   for (let i = 1; i < stops.length; i++) {
@@ -5879,10 +6001,34 @@ function spectrogramColor(value) {
   }
   const span = Math.max(1e-6, upper[0] - lower[0]);
   const mix = (v - lower[0]) / span;
-  const r = Math.round(lower[1] + (upper[1] - lower[1]) * mix);
-  const g = Math.round(lower[2] + (upper[2] - lower[2]) * mix);
-  const b = Math.round(lower[3] + (upper[3] - lower[3]) * mix);
+  return [
+    Math.round(lower[1] + (upper[1] - lower[1]) * mix),
+    Math.round(lower[2] + (upper[2] - lower[2]) * mix),
+    Math.round(lower[3] + (upper[3] - lower[3]) * mix)
+  ];
+}
+
+function spectrogramColor(value) {
+  const [r, g, b] = spectrogramColorRgb(value);
   return `rgb(${r} ${g} ${b})`;
+}
+
+// Tabla nivel normalizado -> RGB (con la curva 0,74 ya aplicada) para
+// recolorear la imagen completa sin llamar a spectrogramColor por píxel.
+const SPECTROGRAM_LUT_SIZE = 1024;
+let spectrogramLutCache = null;
+
+function spectrogramLut() {
+  if (!spectrogramLutCache) {
+    spectrogramLutCache = new Uint8Array(SPECTROGRAM_LUT_SIZE * 3);
+    for (let i = 0; i < SPECTROGRAM_LUT_SIZE; i++) {
+      const [r, g, b] = spectrogramColorRgb(Math.pow(i / (SPECTROGRAM_LUT_SIZE - 1), 0.74));
+      spectrogramLutCache[i * 3] = r;
+      spectrogramLutCache[i * 3 + 1] = g;
+      spectrogramLutCache[i * 3 + 2] = b;
+    }
+  }
+  return spectrogramLutCache;
 }
 
 function animate(time = performance.now()) {
@@ -5906,6 +6052,7 @@ function animate(time = performance.now()) {
 }
 
 function clearSpectrogram() {
+  resetSpectrogramHistory();
   drawStaticCanvases();
   els.timeMeta.textContent = '--';
   els.spectrumMeta.textContent = '--';
@@ -5958,6 +6105,7 @@ els.showInput.addEventListener('change', () => {
 });
 els.spectrogramChannel.addEventListener('change', () => {
   updateSpectrogramTitle();
+  resetSpectrogramHistory();
   drawSpectrogramFrame();
   refreshPlotsAfterLayout();
 });
@@ -6075,24 +6223,6 @@ function scaleDbEnd(startWindow, end, factor) {
   else setDbWindow(startWindow.max - span, startWindow.max);
 }
 
-// Redibuja solo el marco del espectrograma (eje, barra de color, notas) sin
-// tocar la imagen ya dibujada.
-function refreshSpectrogramChrome() {
-  const canvas = els.spectrogramCanvas;
-  if (!canvas.width || !canvas.height) return;
-  const ctx = canvas.getContext('2d');
-  const layout = spectrogramLayout(canvas.width, canvas.height);
-  const range = selectedFrequencyRange();
-  const axisWidth = Math.round(layout.axisLeft);
-  const plotRight = Math.round(layout.plotRight);
-  const c = colors();
-  ctx.fillStyle = c.bg;
-  ctx.fillRect(0, 0, axisWidth, canvas.height);
-  ctx.fillRect(plotRight, 0, canvas.width - plotRight, canvas.height);
-  drawSpectrogramChrome(ctx, layout, range, parseFloat(els.dbFloor.value), canvas.width);
-  drawSpectrogramNoteOverlay(layout, range, axisWidth, plotRight);
-}
-
 // Tras cambiar la vista: con audio en marcha el bucle redibuja solo; parado o
 // en pausa se redibuja desde los datos en memoria para no perder la foto.
 function afterViewChange() {
@@ -6101,7 +6231,7 @@ function afterViewChange() {
   if (analyser && audioContext && timeData && floatFreqData) {
     drawTime({ capture: false });
     drawSpectrum();
-    refreshSpectrogramChrome();
+    renderSpectrogramFromHistory();
   } else {
     refreshPlotsAfterLayout();
   }
@@ -6364,12 +6494,53 @@ els.spectrumCanvas.addEventListener('dblclick', event => {
   resetSpectrumZoom();
 });
 
-// Espectrograma: solo el eje de frecuencia (izquierda). Centro desplaza,
-// cuartos extremos escalan ese extremo; doble clic sobre el eje: vista anterior.
+// Espectrograma, con el mouse:
+//  - botón izquierdo dentro del gráfico: banda vertical de zoom en frecuencia;
+//  - eje de frecuencia (izquierda): centro desplaza, cuartos extremos escalan;
+//  - doble clic: vista anterior al primer zoom.
 let spectrogramAxisDrag = null;
+let spectrogramBandDrag = null;
 
 function spectrogramAxisHit(point, layout) {
   return point.x < layout.axisLeft && point.y >= layout.top && point.y <= layout.bottom;
+}
+
+function spectrogramPlotHit(point, layout) {
+  return point.x >= layout.axisLeft && point.x <= layout.plotRight && point.y >= layout.top && point.y <= layout.bottom;
+}
+
+function updateSpectrogramZoomBox(drag) {
+  const box = els.spectrogramZoomBox;
+  const canvas = els.spectrogramCanvas;
+  if (Math.abs(drag.y1 - drag.y0) < ZOOM_MIN_DRAG_PX) {
+    box.classList.remove('is-visible');
+    return;
+  }
+  const panelRect = canvas.parentElement.getBoundingClientRect();
+  const canvasRect = canvas.getBoundingClientRect();
+  const scaleX = canvasRect.width / Math.max(1, canvas.width);
+  const scaleY = canvasRect.height / Math.max(1, canvas.height);
+  const layout = spectrogramLayout(canvas.width, canvas.height);
+  const clampY = y => Math.max(layout.top, Math.min(layout.bottom, y));
+  const top = Math.min(clampY(drag.y0), clampY(drag.y1));
+  const bottom = Math.max(clampY(drag.y0), clampY(drag.y1));
+  box.style.left = `${canvasRect.left - panelRect.left + layout.axisLeft * scaleX}px`;
+  box.style.top = `${canvasRect.top - panelRect.top + top * scaleY}px`;
+  box.style.width = `${Math.max(1, (layout.plotRight - layout.axisLeft) * scaleX)}px`;
+  box.style.height = `${Math.max(1, (bottom - top) * scaleY)}px`;
+  box.classList.add('is-visible');
+}
+
+function finishSpectrogramBandZoom(drag) {
+  els.spectrogramZoomBox.classList.remove('is-visible');
+  if (Math.abs(drag.y1 - drag.y0) < ZOOM_MIN_DRAG_PX) return;
+  const canvas = els.spectrogramCanvas;
+  const layout = spectrogramLayout(canvas.width, canvas.height);
+  const range = selectedFrequencyRange();
+  const fLow = frequencyForY(Math.max(drag.y0, drag.y1), layout.top, layout.bottom, range);
+  const fHigh = frequencyForY(Math.min(drag.y0, drag.y1), layout.top, layout.bottom, range);
+  applySpectrumFrequencyZoom(fLow, fHigh);
+  afterViewChange();
 }
 
 els.spectrogramCanvas.addEventListener('pointerdown', event => {
@@ -6377,22 +6548,32 @@ els.spectrogramCanvas.addEventListener('pointerdown', event => {
   const canvas = els.spectrogramCanvas;
   const point = hoverPointForEvent(canvas, event);
   const layout = spectrogramLayout(canvas.width, canvas.height);
-  if (!spectrogramAxisHit(point, layout)) return;
   const rect = canvas.getBoundingClientRect();
-  const fraction = 1 - (point.y - layout.top) / Math.max(1, layout.bottom - layout.top);
-  spectrogramAxisDrag = {
-    pointerId: event.pointerId,
-    end: axisEndAt(fraction),
-    startY: event.clientY,
-    range: selectedFrequencyRange(),
-    plotHeightCss: (layout.bottom - layout.top) * rect.height / Math.max(1, canvas.height)
-  };
+  if (spectrogramAxisHit(point, layout)) {
+    const fraction = 1 - (point.y - layout.top) / Math.max(1, layout.bottom - layout.top);
+    spectrogramAxisDrag = {
+      pointerId: event.pointerId,
+      end: axisEndAt(fraction),
+      startY: event.clientY,
+      range: selectedFrequencyRange(),
+      plotHeightCss: (layout.bottom - layout.top) * rect.height / Math.max(1, canvas.height)
+    };
+  } else if (spectrogramPlotHit(point, layout)) {
+    spectrogramBandDrag = { pointerId: event.pointerId, y0: point.y, y1: point.y };
+  } else {
+    return;
+  }
   event.preventDefault();
   try { canvas.setPointerCapture(event.pointerId); } catch (error) {}
 });
 
 els.spectrogramCanvas.addEventListener('pointermove', event => {
   const canvas = els.spectrogramCanvas;
+  if (spectrogramBandDrag && event.pointerId === spectrogramBandDrag.pointerId) {
+    spectrogramBandDrag.y1 = hoverPointForEvent(canvas, event).y;
+    updateSpectrogramZoomBox(spectrogramBandDrag);
+    return;
+  }
   if (!spectrogramAxisDrag) {
     if (event.pointerType === 'touch') return;
     const point = hoverPointForEvent(canvas, event);
@@ -6410,13 +6591,16 @@ els.spectrogramCanvas.addEventListener('pointermove', event => {
 ['pointerup', 'pointercancel'].forEach(type => {
   els.spectrogramCanvas.addEventListener(type, event => {
     if (spectrogramAxisDrag && event.pointerId === spectrogramAxisDrag.pointerId) spectrogramAxisDrag = null;
+    if (spectrogramBandDrag && event.pointerId === spectrogramBandDrag.pointerId) {
+      const drag = spectrogramBandDrag;
+      spectrogramBandDrag = null;
+      if (type === 'pointerup') finishSpectrogramBandZoom(drag);
+      else els.spectrogramZoomBox.classList.remove('is-visible');
+    }
   });
 });
 
 els.spectrogramCanvas.addEventListener('dblclick', event => {
-  const canvas = els.spectrogramCanvas;
-  const point = hoverPointForEvent(canvas, event);
-  if (!spectrogramAxisHit(point, spectrogramLayout(canvas.width, canvas.height))) return;
   event.preventDefault();
   resetSpectrumZoom();
 });
@@ -6523,12 +6707,12 @@ function sliderWheelStep(input) {
   return Math.max(step, Math.round(onePercent / step) * step);
 }
 
-function nudgeSlider(input, direction) {
+function nudgeSlider(input, direction, stepOverride = null) {
   const min = parseFloat(input.min);
   const max = parseFloat(input.max);
   const step = parseFloat(input.step) || 1;
   const current = parseFloat(input.value);
-  let next = Math.min(max, Math.max(min, current + sliderWheelStep(input) * direction));
+  let next = Math.min(max, Math.max(min, current + (stepOverride || sliderWheelStep(input)) * direction));
   next = min + Math.round((next - min) / step) * step;
   const decimals = (String(step).split('.')[1] || '').length;
   next = Number(next.toFixed(decimals));
@@ -6563,14 +6747,14 @@ function bindSliderWheel(target, pickInput = null) {
 [els.sourceVolume, els.fftSize, els.smoothing, els.dbFloor, els.scrollSpeed].forEach(input => bindSliderWheel(input));
 
 // Rueda sobre el espectrograma: mueve el piso de dB (el mismo deslizador),
-// 5 dB por muesca, sin espera previa como en la señal temporal.
+// 2 dB por muesca, sin espera previa como en la señal temporal.
 let lastSpectrogramWheel = 0;
 els.spectrogramCanvas.addEventListener('wheel', event => {
   event.preventDefault();
   const now = performance.now();
   if (now - lastSpectrogramWheel < SLIDER_WHEEL_MIN_INTERVAL_MS) return;
   lastSpectrogramWheel = now;
-  nudgeSlider(els.dbFloor, event.deltaY < 0 ? 1 : -1);
+  nudgeSlider(els.dbFloor, event.deltaY < 0 ? 1 : -1, 2);
 }, { passive: false });
 
 // Rango de frecuencia: dos pulgares en la misma pista; la rueda mueve el más
