@@ -1623,8 +1623,7 @@ const I18N = {
     legendOutput:'salida',
     frozen:'pausado',
     timeCanvasHint:'Mantén presionado para pausar todo, audio incluido. Rueda: cambia ms/div.',
-    spectrogramCanvasHint:'Mantén presionado para pausar todo, audio incluido.',
-    spectrumCanvasHint:'Mantén presionado para pausar todo. Arrastra para hacer zoom en una ventana. Doble clic: vuelve a la vista anterior.',
+    spectrumCanvasHint:'Arrastra para hacer zoom en una ventana. Doble clic: vuelve a la vista anterior.',
     stickyNote:'Activa una o varias notas; Detener apaga todas.',
     fileNote:'Selecciona un archivo de audio local para analizarlo.',
     systemNote:'Audio del sistema es experimental: si el navegador no muestra una opci\u00f3n para compartir audio, la web no puede redirigirlo. Suele funcionar solo al compartir una pesta\u00f1a con audio desde localhost/HTTPS.',
@@ -1739,8 +1738,7 @@ const I18N = {
     legendOutput:'output',
     frozen:'paused',
     timeCanvasHint:'Press and hold to pause everything, audio included. Wheel: change ms/div.',
-    spectrogramCanvasHint:'Press and hold to pause everything, audio included.',
-    spectrumCanvasHint:'Press and hold to pause everything. Drag to zoom into a window. Double-click: back to the previous view.',
+    spectrumCanvasHint:'Drag to zoom into a window. Double-click: back to the previous view.',
     stickyNote:'Toggle one or more notes; Stop turns them all off.',
     fileNote:'Choose a local audio file to analyze.',
     systemNote:'System audio is experimental: if the browser does not show a share-audio option, the web page cannot redirect it. It usually only works when sharing a tab with audio from localhost/HTTPS.',
@@ -1855,8 +1853,7 @@ const I18N = {
     legendOutput:'sortie',
     frozen:'en pause',
     timeCanvasHint:'Maintiens appuyé pour tout mettre en pause, audio compris. Molette : change les ms/div.',
-    spectrogramCanvasHint:'Maintiens appuyé pour tout mettre en pause, audio compris.',
-    spectrumCanvasHint:'Maintiens appuyé pour tout mettre en pause. Glisse pour zoomer sur une fenêtre. Double-clic : retour à la vue précédente.',
+    spectrumCanvasHint:'Glisse pour zoomer sur une fenêtre. Double-clic : retour à la vue précédente.',
     stickyNote:'Active une ou plusieurs notes ; Arrêter les coupe toutes.',
     fileNote:'Choisis un fichier audio local à analyser.',
     systemNote:'L\'audio système est expérimental : si le navigateur ne propose pas de partager l\'audio, la page web ne peut pas le rediriger. Cela fonctionne surtout en partageant un onglet avec audio depuis localhost/HTTPS.',
@@ -2056,7 +2053,7 @@ let mediaStream = null;
 // effectOutput antes del analizador de salida (CH2). La señal seca se deriva
 // además a un segundo analizador, la entrada del sistema (CH1).
 const EFFECTS = ['none', 'robot', 'echo', 'vibrato'];
-const MIC_MONITOR_LEVEL = 1;
+const MIC_MONITOR_LEVEL = 1.5;
 const ROBOT_CARRIER_HZ = 50;
 const ECHO_DELAY_S = 0.28;
 const ECHO_FEEDBACK = 0.45;
@@ -2343,7 +2340,6 @@ function updateLanguage() {
   els.spectrogramFrozen.textContent = tr.frozen;
   els.timeCanvas.title = tr.timeCanvasHint;
   els.spectrumCanvas.title = tr.spectrumCanvasHint;
-  els.spectrogramCanvas.title = tr.spectrogramCanvasHint;
   renderEffectButtons();
   updateRecordingUI();
   updateLegends();
@@ -3553,6 +3549,24 @@ function outputVolume() {
   return parseFloat(els.sourceVolume.value) / 100;
 }
 
+// Salida a los parlantes: un limitador antes del destino permite subir bastante
+// las fuentes generadas (que salen muy bajas para no saturar entre varias
+// voces) sin que recorten. El camino de análisis no pasa por aquí.
+let outputLimiter = null;
+
+function outputDestination() {
+  if (!outputLimiter || outputLimiter.context !== audioContext) {
+    outputLimiter = audioContext.createDynamicsCompressor();
+    outputLimiter.threshold.value = -6;
+    outputLimiter.knee.value = 4;
+    outputLimiter.ratio.value = 20;
+    outputLimiter.attack.value = 0.002;
+    outputLimiter.release.value = 0.12;
+    outputLimiter.connect(audioContext.destination);
+  }
+  return outputLimiter;
+}
+
 function setOutputGain(node, value, immediate = false) {
   if (!node) return;
   if (audioContext) {
@@ -3597,7 +3611,7 @@ function connectSource(node, monitor = false, monitorLevel = 0.15) {
   wet.connect(analysisNode);
   analysisNode.connect(analyser);
   wet.connect(gainNode);
-  gainNode.connect(audioContext.destination);
+  gainNode.connect(outputDestination());
 }
 
 function effectLabel(kind) {
@@ -4311,7 +4325,10 @@ function startVisualLoop(message = t().running, options = {}) {
   animate();
 }
 
-function createMasterBus(level = 0.18, monitor = true) {
+// `level` fija el nivel que ve el análisis; `outputBoost` solo el que va a los
+// parlantes (cada preset generado sale a un nivel distinto y se iguala aquí a
+// unos -10 dBFS de pico, con el limitador como red).
+function createMasterBus(level = 0.18, monitor = true, outputBoost = 1) {
   const master = audioContext.createGain();
   master.sourceBaseGain = level;
   master.gain.value = level;
@@ -4322,10 +4339,10 @@ function createMasterBus(level = 0.18, monitor = true) {
   analysisNode.connect(analyser);
   if (monitor) {
     gainNode = audioContext.createGain();
-    gainNode.outputBaseGain = 1;
-    gainNode.gain.value = outputVolume();
+    gainNode.outputBaseGain = outputBoost;
+    gainNode.gain.value = outputBoost * outputVolume();
     wet.connect(gainNode);
-    gainNode.connect(audioContext.destination);
+    gainNode.connect(outputDestination());
   } else {
     gainNode = null;
   }
@@ -4491,7 +4508,7 @@ async function startPureTone(item, button) {
   if (!toneMasterNode) {
     stopCurrentSource(true);
     configureAnalyser();
-    toneMasterNode = createMasterBus(0.5, true);
+    toneMasterNode = createMasterBus(0.5, true, 4);
     startVisualLoop();
   }
 
@@ -4566,7 +4583,7 @@ async function startChromaticNote(item, button) {
   if (!chromaticMasterNode) {
     stopCurrentSource(true);
     configureAnalyser();
-    chromaticMasterNode = createMasterBus(0.42, true);
+    chromaticMasterNode = createMasterBus(0.42, true, 4.5);
     startVisualLoop();
   }
 
@@ -4606,14 +4623,14 @@ async function toggleChromaticNote(item, button) {
 }
 
 function startPianoChord(root) {
-  const master = createMasterBus(0.48, true);
+  const master = createMasterBus(0.48, true, 3);
   majorChordFrequencies(root).forEach((freq, index) => {
     schedulePianoVoice(master, freq, index * 0.004, index === 3 ? 0.065 : 0.12, index === 1 ? 2 : 0);
   });
 }
 
 function startGuitarChord(root) {
-  const master = createMasterBus(0.55, true);
+  const master = createMasterBus(0.55, true, 2.5);
   const voicing = GUITAR_CHORDS[root] || GUITAR_CHORDS.C;
 
   const strum = () => {
@@ -4632,7 +4649,7 @@ function startGuitarChord(root) {
 }
 
 function startPoliceSiren(phase = 0) {
-  const master = createMasterBus(0.16, true);
+  const master = createMasterBus(0.16, true, 22);
   const osc = audioContext.createOscillator();
   const gain = audioContext.createGain();
   const filter = audioContext.createBiquadFilter();
@@ -4687,7 +4704,7 @@ function startPoliceSiren(phase = 0) {
 }
 
 function startFireSiren(phase = 0) {
-  const master = createMasterBus(0.18, true);
+  const master = createMasterBus(0.18, true, 26);
   const osc = audioContext.createOscillator();
   const gain = audioContext.createGain();
   const filter = audioContext.createBiquadFilter();
@@ -4751,7 +4768,7 @@ function startFireSiren(phase = 0) {
 }
 
 function startFrequencySweep(phase = 0) {
-  const master = createMasterBus(0.17, true);
+  const master = createMasterBus(0.17, true, 3);
   const source = audioContext.createBufferSource();
   const startFreq = Math.max(20, sweepStartFreq);
   const endFreq = Math.max(20, sweepEndFreq);
@@ -4790,7 +4807,7 @@ function startFrequencySweep(phase = 0) {
 }
 
 function startWhale() {
-  const master = createMasterBus(0.2, true);
+  const master = createMasterBus(0.2, true, 36);
   const osc = audioContext.createOscillator();
   const sub = audioContext.createOscillator();
   const lfo = audioContext.createOscillator();
@@ -4959,8 +4976,14 @@ async function seekAudioBufferSource(kind, seconds) {
   source.loop = preset.loop;
   audioBufferSource = source;
   audioBufferStartedAt = audioContext.currentTime - offset;
-  connectSource(source, true, 0.85);
+  connectSource(source, true, bufferMonitorLevel(kind));
   source.start(0, offset);
+}
+
+// Grabaciones del micrófono: la voz suele quedar en torno a -20 dBFS, se
+// duplica en la salida. Los demás archivos ya vienen normalizados.
+function bufferMonitorLevel(kind) {
+  return kind === RECORDING_SOURCE ? 2 : 1;
 }
 
 async function seekRecordedAudio(ratio) {
@@ -5146,7 +5169,7 @@ async function startFile(file) {
   activeFileRef = file;
   await waitForAudioReady(audioElement);
   audioElement.currentTime = 0;
-  connectSource(audioContext.createMediaElementSource(audioElement), true, 0.85);
+  connectSource(audioContext.createMediaElementSource(audioElement), true, 1);
   await audioElement.play();
 }
 
@@ -5162,7 +5185,7 @@ async function startAudioPreset(kind) {
     audioBufferSource = source;
     activeAudioBufferKind = kind;
     audioBufferStartedAt = audioContext.currentTime - offset;
-    connectSource(source, true, 0.85);
+    connectSource(source, true, bufferMonitorLevel(kind));
     source.start(0, offset);
     return;
   }
@@ -5178,7 +5201,7 @@ async function startAudioPreset(kind) {
   activeFileRef = null;
   await waitForAudioReady(audioElement);
   audioElement.currentTime = 0;
-  connectSource(audioContext.createMediaElementSource(audioElement), true, 0.85);
+  connectSource(audioContext.createMediaElementSource(audioElement), true, 1);
   await audioElement.play();
 }
 
@@ -6120,8 +6143,6 @@ function finishSpectrumZoom(drag) {
 }
 
 bindHoldToPause(els.timeCanvas);
-bindHoldToPause(els.spectrumCanvas);
-bindHoldToPause(els.spectrogramCanvas);
 
 els.spectrumCanvas.addEventListener('pointerdown', event => {
   if (event.pointerType === 'touch') return;
@@ -6129,6 +6150,7 @@ els.spectrumCanvas.addEventListener('pointerdown', event => {
   const point = hoverPointForEvent(els.spectrumCanvas, event);
   const area = spectrumArea(els.spectrumCanvas.width, els.spectrumCanvas.height);
   if (!isInsideArea(point, area)) return;
+  try { els.spectrumCanvas.setPointerCapture(event.pointerId); } catch (error) {}
   spectrumDrag = { pointerId: event.pointerId, x0: point.x, y0: point.y, x1: point.x, y1: point.y };
 });
 
@@ -6145,7 +6167,7 @@ els.spectrumCanvas.addEventListener('pointermove', event => {
     if (!spectrumDrag || event.pointerId !== spectrumDrag.pointerId) return;
     const drag = spectrumDrag;
     spectrumDrag = null;
-    if (type === 'pointerup') holdChain = holdChain.then(() => finishSpectrumZoom(drag));
+    if (type === 'pointerup') finishSpectrumZoom(drag);
     else els.spectrumZoomBox.classList.remove('is-visible');
   });
 });
