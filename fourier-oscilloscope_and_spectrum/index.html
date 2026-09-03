@@ -6262,7 +6262,16 @@ bindHoldToPause(els.timeCanvas);
 //  - botón derecho o rueda dentro del gráfico: desplazar en frecuencia y dB;
 //  - eje X o eje Y: centro desplaza, cuartos extremos escalan ese extremo;
 //  - doble clic: vista anterior al primer zoom.
-els.spectrumCanvas.addEventListener('contextmenu', event => event.preventDefault());
+// El menú contextual se bloquea solo para el desplazamiento con botón derecho
+// sobre el espectro: sobre el canvas siempre, y en todo el documento mientras
+// dura ese arrastre y medio segundo después de soltar (en Windows el menú se
+// dispara al soltar, y el puntero puede haber salido del canvas).
+let suppressContextMenuUntil = 0;
+document.addEventListener('contextmenu', event => {
+  if (event.target === els.spectrumCanvas || performance.now() < suppressContextMenuUntil) {
+    event.preventDefault();
+  }
+});
 
 els.spectrumCanvas.addEventListener('pointerdown', event => {
   if (event.pointerType === 'touch') return;
@@ -6295,7 +6304,10 @@ els.spectrumCanvas.addEventListener('pointerdown', event => {
   event.preventDefault();
   try { canvas.setPointerCapture(event.pointerId); } catch (error) {}
   spectrumDrag = drag;
-  if (drag.mode === 'pan') canvas.style.cursor = 'grabbing';
+  if (drag.mode === 'pan') {
+    canvas.style.cursor = 'grabbing';
+    suppressContextMenuUntil = Infinity;
+  }
 });
 
 els.spectrumCanvas.addEventListener('pointermove', event => {
@@ -6340,6 +6352,7 @@ els.spectrumCanvas.addEventListener('pointermove', event => {
     const drag = spectrumDrag;
     spectrumDrag = null;
     els.spectrumCanvas.style.cursor = '';
+    if (drag.mode === 'pan') suppressContextMenuUntil = performance.now() + 500;
     if (drag.mode !== 'box') return;
     if (type === 'pointerup') finishSpectrumZoom(drag);
     else els.spectrumZoomBox.classList.remove('is-visible');
