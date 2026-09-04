@@ -48,6 +48,33 @@
               </div>
             </div>
 
+            <div class="bridge-mode-panel bridge-application-panel" id="rectifier-panel" hidden>
+              <div class="bridge-mode-group">
+                <div id="rectifier-montage-options" role="group" aria-label="Choisir le montage du redresseur">
+                  <button type="button" data-rectifier-montage="single" aria-pressed="true">Simple diode</button>
+                  <button type="button" data-rectifier-montage="bridge" aria-pressed="false">Pont de diodes</button>
+                </div>
+              </div>
+              <div class="bridge-mode-group">
+                <div id="rectifier-frequency-options" role="group" aria-label="Choisir la fréquence de la source">
+                  <button type="button" data-rectifier-frequency="50" aria-pressed="true">50 Hz</button>
+                  <button type="button" data-rectifier-frequency="60" aria-pressed="false">60 Hz</button>
+                </div>
+              </div>
+              <div class="bridge-mode-group" id="rectifier-diodes-group" hidden>
+                <div id="rectifier-diodes-options" role="group" aria-label="Choisir le modèle de diode">
+                  <button type="button" data-rectifier-diodes="ideal" aria-pressed="true">Idéales</button>
+                  <button type="button" data-rectifier-diodes="real" aria-pressed="false">Chute 0,6 V</button>
+                </div>
+              </div>
+              <div class="bridge-mode-group" id="rectifier-view-group" hidden>
+                <div id="rectifier-view-options" role="group" aria-label="Choisir la fenêtre temporelle du redresseur">
+                  <button type="button" data-rectifier-view="steady" aria-pressed="true">Permanent</button>
+                  <button type="button" data-rectifier-view="transient" aria-pressed="false">Démarrage</button>
+                </div>
+              </div>
+            </div>
+
             <div class="controls-row controls-top" aria-label="Réglages supérieurs" data-i18n-aria="upperSettings">
               <label class="control">
                 <span class="control-copy"><b>f<span class="symbol-index">s</span></b><small data-i18n="frequency">Fréquence</small></span>
@@ -233,6 +260,7 @@
     <script src="topologies/buck.js"></script>
     <script src="topologies/boost.js"></script>
     <script src="topologies/pont-h.js"></script>
+    <script src="topologies/redresseur.js"></script>
     <script src="topologies/pv-grid.js"></script>
     <script src="app.js"></script>
   </body>

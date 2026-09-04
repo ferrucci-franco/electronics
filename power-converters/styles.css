@@ -120,6 +120,8 @@ input[type="range"]::-moz-range-thumb { width: 15px; height: 15px; border: 3px s
 
 .circuit-diagram { position: relative; display: grid; flex: 1 1 auto; min-height: 190px; overflow: hidden; border: 1px solid #e1ddd4; border-radius: 14px; background: linear-gradient(#17243808 1px, transparent 1px), linear-gradient(90deg, #17243808 1px, transparent 1px), #faf8f3; background-size: 20px 20px; place-items: center; }
 .circuit-diagram.has-mode-title { grid-template-rows: clamp(34px, 5vh, 44px) minmax(0, 1fr); }
+/* Redresseur : deux rangées de sélecteurs en mode avancé ; le schéma absorbe la hauteur manquante. */
+.circuit-content:has(.rect-schematic) .circuit-diagram { min-height: 120px; }
 .diagram-mode-title { z-index: 1; align-self: end; color: var(--teal); font-family: "Cambria Math", Cambria, serif; font-size: clamp(1.1rem, 1.35vw, 1.45rem); font-weight: 400; line-height: 1; text-align: center; }
 .circuit-diagram.has-mode-title .bridge-schematic { grid-row: 2; }
 .bridge-schematic { display: block; max-width: 100%; max-height: 100%; }
@@ -177,7 +179,7 @@ input[type="range"]::-moz-range-thumb { width: 15px; height: 15px; border: 3px s
 .measurements .reverse-current { background: #bd61000d; }
 .measurements .reverse-current strong { color: #9a5200; }
 
-.theory-dialog { width: min(780px, calc(100% - 28px)); max-height: min(86dvh, 760px); margin: auto; overflow: auto; border: 1px solid #c9d9d5; border-radius: 20px; padding: 0; background: #fffdf8; color: #172438; box-shadow: 0 28px 90px #08111e4d; font-family: Inter, "Segoe UI", Arial, sans-serif; }
+.theory-dialog { width: min(880px, calc(100% - 28px)); max-height: min(90dvh, 860px); margin: auto; overflow: auto; border: 1px solid #c9d9d5; border-radius: 20px; padding: 0; background: #fffdf8; color: #172438; box-shadow: 0 28px 90px #08111e4d; font-family: Inter, "Segoe UI", Arial, sans-serif; }
 .theory-dialog::backdrop { background: #08111e99; backdrop-filter: blur(5px); }
 .theory-dialog-header { position: sticky; z-index: 2; top: 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 22px 14px; border-bottom: 1px solid #dce3e1; background: #fffdf8f5; backdrop-filter: blur(10px); }
 .theory-dialog-header span { color: var(--teal); font-size: .76rem; font-weight: 850; letter-spacing: .09em; text-transform: uppercase; }
@@ -189,16 +191,17 @@ input[type="range"]::-moz-range-thumb { width: 15px; height: 15px; border: 3px s
 .dialog-close::after { transform: translate(-50%, -50%) rotate(-45deg); }
 .dialog-close:hover { border-color: var(--teal); color: var(--teal); }
 .dialog-close:focus-visible { outline: 3px solid #0b93883b; outline-offset: 2px; }
-.theory-grid { display: grid; grid-template-columns: .82fr 1.18fr; gap: 16px; padding: 18px 22px 22px; }
-.theory-grid section { min-width: 0; border: 1px solid #d9e2df; border-radius: 15px; padding: 16px; background: #f7faf8; }
-.theory-grid h3 { margin: 0 0 13px; color: #315f5a; font-size: .88rem; letter-spacing: .05em; text-transform: uppercase; }
+.theory-grid { display: grid; grid-template-columns: .82fr 1.18fr; gap: 17px; padding: 20px 24px 24px; }
+.theory-grid section { min-width: 0; border: 1px solid #d9e2df; border-radius: 15px; padding: 17px; background: #f7faf8; }
+.theory-grid h3 { margin: 0 0 13px; color: #315f5a; font-size: .98rem; letter-spacing: .05em; text-transform: uppercase; }
+.theory-grid p { font-size: .96rem; }
 .balance-equation { border-radius: 12px; padding: 14px; background: #edf7f4; text-align: center; }
 .balance-equation + .balance-equation { margin-top: 10px; }
-.balance-equation > strong { display: block; color: #075f59; font-size: 1.12rem; }
-.balance-equation > div { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 11px; padding-top: 9px; border-top: 1px solid #c9d9d5; color: #61746f; font-size: .78rem; }
-.balance-equation b { color: #172438; font-size: .9rem; white-space: nowrap; }
-.approximation-formula { display: flex; min-height: 42px; align-items: center; justify-content: center; margin: 2px 0 9px; color: #075f59; font-size: 1.02rem; overflow-x: auto; overflow-y: hidden; }
-.comparison-grid { display: grid; grid-template-columns: 1fr auto; gap: 5px 12px; border-radius: 11px; padding: 10px 12px; background: #edf7f4; font-size: .82rem; }
+.balance-equation > strong { display: block; color: #075f59; font-size: 1.22rem; }
+.balance-equation > div { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 11px; padding-top: 9px; border-top: 1px solid #c9d9d5; color: #61746f; font-size: .86rem; }
+.balance-equation b { color: #172438; font-size: .98rem; white-space: nowrap; }
+.approximation-formula { display: flex; min-height: 46px; align-items: center; justify-content: center; margin: 2px 0 10px; color: #075f59; font-size: 1.14rem; overflow-x: auto; overflow-y: hidden; }
+.comparison-grid { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; border-radius: 11px; padding: 11px 13px; background: #edf7f4; font-size: .92rem; }
 .comparison-grid span { color: #61746f; }
 .comparison-grid strong { color: #172438; text-align: right; white-space: nowrap; }
 .comparison-grid + .approximation-formula { margin-top: 14px; }
@@ -399,6 +402,18 @@ body.dark-theme .topology-card[aria-disabled="true"] .topology-status { backgrou
   body.dark-theme .lc-info.four-columns > div:nth-child(3),
   body.dark-theme .lc-info.four-columns > div:nth-child(4) { border-top-color: #27605b; }
 }
+
+/* Redresseur : pastilles compactes sur une seule ligne ; les quatre cartes tiennent
+   sur une rangée pleine largeur au-dessus du schéma, et ψ (démarrage) occupe seul
+   la rangée du bas. */
+#rectifier-panel { gap: 6px 8px; }
+.workspace:has(.rect-schematic) .measurements { display: none; }
+.workspace:has(.rect-schematic) .scope-screen { margin-bottom: clamp(10px, 1.3vh, 17px); }
+.circuit-panel:has(.rect-schematic) .lc-info { height: auto; min-height: clamp(108px, 12.5vh, 126px); padding-block: 5px; }
+#rectifier-panel .bridge-mode-group button { min-height: 27px; padding: 3px 9px; font-size: clamp(.7rem, .76vw, .84rem); }
+.circuit-content:has(.rect-schematic) .controls-top,
+.circuit-content:has(.rect-schematic) .controls-bottom { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); padding-inline: 0; }
+.circuit-content:has(.rect-schematic) .control small { font-size: clamp(.78rem, .84vw, .94rem); hyphens: manual; text-wrap: wrap; }
 
 @media (max-width: 400px) {
   .controls-top, .controls-bottom,

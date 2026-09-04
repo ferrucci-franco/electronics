@@ -3,6 +3,20 @@
 
   window.converterTopologies = Object.freeze([
     Object.freeze({
+      id: "redresseur",
+      status: "available",
+      name: Object.freeze({
+        en: "Diode rectifier",
+        fr: "Redresseur à diodes",
+        es: "Rectificador de diodos",
+      }),
+      description: Object.freeze({
+        en: "Single-diode or full-bridge AC-DC rectifier with L-C filter and R–L load.",
+        fr: "Redresseur AC-DC à simple diode ou pont de diodes, filtre L-C et charge R–L.",
+        es: "Rectificador AC-DC de diodo simple o puente de diodos, filtro L-C y carga R–L.",
+      }),
+    }),
+    Object.freeze({
       id: "buck",
       status: "available",
       name: Object.freeze({

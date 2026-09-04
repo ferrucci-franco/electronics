@@ -12,6 +12,7 @@
       outputVoltage: "Output voltage", conductionMode: "Conduction mode", minimumCurrent: "Minimum current", fundamentalFrequency: "Fundamental frequency", formula: "Formula", ratio: "Ratio", resonanceFrequency: "LC circuit resonant frequency", conversionLaw: "Conversion law", conversionLawCcm: "Conversion law · CCM", voltages: "Voltages", lcFilter: "LC filter", ripples: "Ripples",
       theoryButtonAria: "Open more information", theoryOpen: "More info", theoryKicker: "Electrical analysis", theoryTitle: "Steady state", closeTheory: "Close", balanceTitle: "Balances", numericalResidual: "Numerical residual", rippleTheoryTitle: "Ripple approximation", fundamentalTitle: "Fundamental component", loadTitle: "Series R–L load", simulation: "Simulation", approximation: "Approximation", relativeError: "Relative error", loadType: "Load", seriesRl: "Series resistance and inductance", criticalInductanceRatio: "Critical inductance ratio",
       approximationNote: "These approximations assume low ripple and a switching frequency well above the natural dynamics.", synchronousNote: "The synchronous switch always provides a current path; negative inductor current is therefore possible.", diodeNote: "The diode blocks reverse current, so the model can enter CCM or DCM. V<sub>D</sub> is measured from anode to cathode; ripple formulas are CCM estimates.", hBridgeNote: "The bridge is modeled with ideal complementary switches.", schematicPending: "Circuit SVG placeholder", schematicTomorrow: "The simulation is active. The final circuit drawing can be inserted here without changing the model.", time: "Time", voltage: "voltage", currentAxis: "current",
+      singleDiode: "Single diode", diodeBridge: "Diode bridge", rectifierMontageAria: "Choose the rectifier circuit", rectifierViewAria: "Choose the rectifier time window", rectifierFrequencyAria: "Choose the source frequency", rectifierSteady: "Steady", diodesIdeal: "Ideal", diodesReal: "0.6 V drop", rectifierDiodesAria: "Choose the diode model",
       bridgeApplication: "Application", inverter: "Inverter", dcMotor: "DC motor", grid: "Grid", modulationType: "PWM pattern", bipolar: "Bipolar", unipolar: "Unipolar", motorBipolar: "50% = stop", motorUnipolar: "Direction + coast", direction: "Direction", forward: "Forward", reverse: "Reverse", motorView: "Display", motorTransient: "Start-up", motorSteady: "Steady state", motorViewAria: "Choose the motor time window", bridgeApplicationAria: "Choose the H-bridge application", bridgeSwitchingAria: "Choose the PWM pattern", motorDirectionAria: "Choose motor direction", gridCurrentControlMode: "Current control", gridCurrentControlAria: "Choose the grid current-control algorithm", pwmControl: "PWM", hysteresisControl: "Hysteresis",
       strategy: "Strategy", filteredOutput: "Filtered output", filterQuality: "Output filter", voltageThd: "Voltage THD", motorCommand: "Manual command", motorResult: "Motor response", speed: "Speed", torque: "Torque", armatureCurrent: "Armature current", averageArmatureVoltage: "Average armature voltage", power: "Power", activePower: "Active power", reactivePower: "Reactive power", powerFactor: "Power factor", currentThd: "Current THD", trackingError: "Tracking error", setpoint: "Setpoint", electricalModel: "Electrical model", mechanicalModel: "Mechanical model", currentControl: "Current tracking", filterAndLoad: "Filter and load", measured: "Measured", expected: "Expected", dcBus: "DC bus", motorNote: "No speed controller is used: duty cycle and direction are set manually.", gridNote: "A stiff 50 Hz grid and a proportional current tracker with voltage feedforward are used. No PLL is required in this introductory model.", gridHysteresisNote: "The bridge changes state when the current reaches either limit. The switching frequency is therefore variable and is not imposed by a carrier.", standaloneNote: "The output LC filter includes a small damping resistance and supplies a fixed series R–L load.", percent: "Percent",
     },
@@ -23,6 +24,7 @@
       outputVoltage: "Tension de sortie", conductionMode: "Mode de conduction", minimumCurrent: "Courant minimal", fundamentalFrequency: "Fréquence fondamentale", formula: "Formule", ratio: "Rapport", resonanceFrequency: "Fréquence de résonance du circuit LC", conversionLaw: "Loi de conversion", conversionLawCcm: "Loi de conversion · CCM", voltages: "Tensions", lcFilter: "Filtre LC", ripples: "Ondulations",
       theoryButtonAria: "Ouvrir les informations complémentaires", theoryOpen: "Plus d’infos", theoryKicker: "Analyse électrique", theoryTitle: "Régime permanent", closeTheory: "Fermer", balanceTitle: "Équilibres", numericalResidual: "Résidu numérique", rippleTheoryTitle: "Approximation des ondulations", fundamentalTitle: "Composante fondamentale", loadTitle: "Charge R–L série", simulation: "Simulation", approximation: "Approximation", relativeError: "Écart relatif", loadType: "Charge", seriesRl: "Résistance et inductance en série", criticalInductanceRatio: "Rapport d’inductance critique",
       approximationNote: "Ces approximations supposent une faible ondulation et une fréquence de découpage nettement supérieure à la dynamique naturelle.", synchronousNote: "L’interrupteur synchrone offre toujours un chemin au courant ; le courant de l’inductance peut donc devenir négatif.", diodeNote: "La diode bloque le courant inverse : le modèle peut être en CCM ou DCM. V<sub>D</sub> est mesurée de l’anode vers la cathode ; les formules d’ondulation sont des estimations CCM.", hBridgeNote: "Le pont est modélisé avec des interrupteurs complémentaires idéaux.", schematicPending: "Emplacement du SVG du circuit", schematicTomorrow: "La simulation est active. Le dessin définitif pourra être inséré ici sans modifier le modèle.", time: "Temps", voltage: "tension", currentAxis: "courant",
+      singleDiode: "Simple diode", diodeBridge: "Pont de diodes", rectifierMontageAria: "Choisir le montage du redresseur", rectifierViewAria: "Choisir la fenêtre temporelle du redresseur", rectifierFrequencyAria: "Choisir la fréquence de la source", rectifierSteady: "Permanent", diodesIdeal: "Idéales", diodesReal: "Chute 0,6 V", rectifierDiodesAria: "Choisir le modèle de diode",
       bridgeApplication: "Application", inverter: "Onduleur", dcMotor: "Moteur CC", grid: "Réseau", modulationType: "Modulation PWM", bipolar: "Bipolaire", unipolar: "Unipolaire", motorBipolar: "50 % = arrêt", motorUnipolar: "Sens + roue libre", direction: "Sens", forward: "Avant", reverse: "Arrière", motorView: "Affichage", motorTransient: "Démarrage", motorSteady: "Régime permanent", motorViewAria: "Choisir la fenêtre temporelle du moteur", bridgeApplicationAria: "Choisir l’application du pont en H", bridgeSwitchingAria: "Choisir la modulation PWM", motorDirectionAria: "Choisir le sens de rotation", gridCurrentControlMode: "Commande du courant", gridCurrentControlAria: "Choisir l’algorithme de commande du courant réseau", pwmControl: "PWM", hysteresisControl: "Hystérésis",
       strategy: "Stratégie", filteredOutput: "Sortie filtrée", filterQuality: "Filtre de sortie", voltageThd: "THD de la tension", motorCommand: "Commande manuelle", motorResult: "Réponse du moteur", speed: "Vitesse", torque: "Couple", armatureCurrent: "Courant d’induit", averageArmatureVoltage: "Tension moyenne d’induit", power: "Puissances", activePower: "Puissance active", reactivePower: "Puissance réactive", powerFactor: "Facteur de puissance", currentThd: "THD du courant", trackingError: "Erreur de suivi", setpoint: "Consigne", electricalModel: "Modèle électrique", mechanicalModel: "Modèle mécanique", currentControl: "Suivi du courant", filterAndLoad: "Filtre et charge", measured: "Mesuré", expected: "Attendu", dcBus: "Bus continu", motorNote: "Aucun régulateur de vitesse n’est utilisé : le rapport cyclique et le sens sont imposés manuellement.", gridNote: "Le réseau est supposé rigide à 50 Hz. Le suivi du courant utilise une action proportionnelle et une anticipation de tension, sans PLL dans ce modèle introductif.", gridHysteresisNote: "Le pont change d’état lorsque le courant atteint l’une des deux limites. La fréquence de commutation est donc variable et n’est pas imposée par une porteuse.", standaloneNote: "Le filtre LC de sortie inclut une faible résistance d’amortissement et alimente une charge R–L série fixe.", percent: "Pourcentage",
     },
@@ -34,6 +36,7 @@
       outputVoltage: "Tensión de salida", conductionMode: "Modo de conducción", minimumCurrent: "Corriente mínima", fundamentalFrequency: "Frecuencia fundamental", formula: "Fórmula", ratio: "Relación", resonanceFrequency: "Frecuencia de resonancia del circuito LC", conversionLaw: "Ley de conversión", conversionLawCcm: "Ley de conversión · CCM", voltages: "Tensiones", lcFilter: "Filtro LC", ripples: "Ondulaciones",
       theoryButtonAria: "Abrir más información", theoryOpen: "Más info", theoryKicker: "Análisis eléctrico", theoryTitle: "Régimen permanente", closeTheory: "Cerrar", balanceTitle: "Equilibrios", numericalResidual: "Residuo numérico", rippleTheoryTitle: "Aproximación de las ondulaciones", fundamentalTitle: "Componente fundamental", loadTitle: "Carga R–L serie", simulation: "Simulación", approximation: "Aproximación", relativeError: "Error relativo", loadType: "Carga", seriesRl: "Resistencia e inductancia en serie", criticalInductanceRatio: "Relación de inductancia crítica",
       approximationNote: "Estas aproximaciones suponen una ondulación pequeña y una frecuencia de conmutación muy superior a la dinámica natural.", synchronousNote: "El interruptor síncrono siempre ofrece un camino para la corriente; por eso la corriente de la inductancia puede hacerse negativa.", diodeNote: "El diodo bloquea la corriente inversa: el modelo puede estar en CCM o DCM. V<sub>D</sub> se mide del ánodo al cátodo; las fórmulas de ondulación son estimaciones CCM.", hBridgeNote: "El puente se modela con interruptores complementarios ideales.", schematicPending: "Espacio para el SVG del circuito", schematicTomorrow: "La simulación está activa. El dibujo definitivo podrá insertarse aquí sin modificar el modelo.", time: "Tiempo", voltage: "tensión", currentAxis: "corriente",
+      singleDiode: "Diodo simple", diodeBridge: "Puente de diodos", rectifierMontageAria: "Elegir el montaje del rectificador", rectifierViewAria: "Elegir la ventana temporal del rectificador", rectifierFrequencyAria: "Elegir la frecuencia de la fuente", rectifierSteady: "Permanente", diodesIdeal: "Ideales", diodesReal: "Caída 0,6 V", rectifierDiodesAria: "Elegir el modelo de diodo",
       bridgeApplication: "Aplicación", inverter: "Inversor", dcMotor: "Motor CC", grid: "Red", modulationType: "Modulación PWM", bipolar: "Bipolar", unipolar: "Unipolar", motorBipolar: "50 % = paro", motorUnipolar: "Sentido + rueda libre", direction: "Sentido", forward: "Adelante", reverse: "Atrás", motorView: "Visualización", motorTransient: "Arranque", motorSteady: "Régimen permanente", motorViewAria: "Elegir la ventana temporal del motor", bridgeApplicationAria: "Elegir la aplicación del puente H", bridgeSwitchingAria: "Elegir la modulación PWM", motorDirectionAria: "Elegir el sentido de giro", gridCurrentControlMode: "Control de corriente", gridCurrentControlAria: "Elegir el algoritmo de control de la corriente de red", pwmControl: "PWM", hysteresisControl: "Histéresis",
       strategy: "Estrategia", filteredOutput: "Salida filtrada", filterQuality: "Filtro de salida", voltageThd: "THD de tensión", motorCommand: "Mando manual", motorResult: "Respuesta del motor", speed: "Velocidad", torque: "Par", armatureCurrent: "Corriente de armadura", averageArmatureVoltage: "Tensión media de armadura", power: "Potencias", activePower: "Potencia activa", reactivePower: "Potencia reactiva", powerFactor: "Factor de potencia", currentThd: "THD de corriente", trackingError: "Error de seguimiento", setpoint: "Consigna", electricalModel: "Modelo eléctrico", mechanicalModel: "Modelo mecánico", currentControl: "Seguimiento de corriente", filterAndLoad: "Filtro y carga", measured: "Medido", expected: "Esperado", dcBus: "Bus continuo", motorNote: "No se utiliza un regulador de velocidad: el ciclo de trabajo y el sentido se imponen manualmente.", gridNote: "La red se supone rígida a 50 Hz. El seguimiento de corriente usa una acción proporcional y anticipación de tensión, sin PLL en este modelo introductorio.", gridHysteresisNote: "El puente cambia de estado cuando la corriente alcanza uno de los dos límites. Por eso, la frecuencia de conmutación es variable y no la impone una portadora.", standaloneNote: "El filtro LC de salida incluye una pequeña resistencia de amortiguamiento y alimenta una carga R–L serie fija.", percent: "Porcentaje",
     },
@@ -74,16 +77,25 @@
   const motorDirectionGroup = document.querySelector("#motor-direction-group");
   const motorViewButtons = [...document.querySelectorAll("[data-motor-view]")];
   const motorViewGroup = document.querySelector("#motor-view-group");
+  const rectifierPanel = document.querySelector("#rectifier-panel");
+  const rectifierMontageButtons = [...document.querySelectorAll("[data-rectifier-montage]")];
+  const rectifierFrequencyButtons = [...document.querySelectorAll("[data-rectifier-frequency]")];
+  const rectifierViewGroup = document.querySelector("#rectifier-view-group");
+  const rectifierViewButtons = [...document.querySelectorAll("[data-rectifier-view]")];
+  const rectifierDiodesGroup = document.querySelector("#rectifier-diodes-group");
+  const rectifierDiodesButtons = [...document.querySelectorAll("[data-rectifier-diodes]")];
   const wheelTimers = new WeakMap();
   const states = {};
   const commutationModes = { buck: "synchronous", boost: "synchronous" };
   const bridgeMode = { application: "standalone", switching: "bipolar", direction: "forward", motorView: "transient", currentControl: "pwm" };
-  const hiddenTraces = { buck: new Set(), boost: new Set(), "pont-h": new Set(), "pv-grid": new Set(models["pv-grid"]?.defaultHiddenTraces || []) };
+  const rectifierMode = { montage: "single", view: "steady", diodes: "ideal", frequency: 50 };
+  const hiddenTraces = { buck: new Set(), boost: new Set(), "pont-h": new Set(), "pv-grid": new Set(models["pv-grid"]?.defaultHiddenTraces || []), redresseur: new Set(models.redresseur?.defaultHiddenTraces || []) };
   const zoomStates = {
     buck: { x: null, y: [null, null, null] },
     boost: { x: null, y: [null, null, null] },
     "pont-h": { x: null, y: [null, null, null] },
     "pv-grid": { x: null, y: [null, null, null] },
+    redresseur: { x: null, y: [null, null, null] },
   };
   const ZOOM_BAND = 12;
   const ZOOM_MIN_DRAG = 8;
@@ -102,19 +114,23 @@
   const tr = () => translations[language];
   const activeModel = () => models[currentTopology];
   const commutationMode = () => commutationModes[currentTopology] || "synchronous";
-  const modelOptions = () => currentTopology === "pont-h" ? { ...bridgeMode } : {};
+  const modelOptions = () => currentTopology === "pont-h" ? { ...bridgeMode } : currentTopology === "redresseur" ? { ...rectifierMode } : {};
   const activeControls = () => {
     const model = activeModel();
-    return typeof model.controlsFor === "function" ? model.controlsFor(bridgeMode.application, { ...bridgeMode, advanced }) : model.controls;
+    if (typeof model.controlsFor !== "function") return model.controls;
+    if (currentTopology === "redresseur") return model.controlsFor(rectifierMode.montage, { ...rectifierMode, advanced });
+    return model.controlsFor(bridgeMode.application, { ...bridgeMode, advanced });
   };
   const activePlots = () => {
     const model = activeModel();
-    return typeof model.plotsFor === "function" ? model.plotsFor(currentTopology === "pont-h" ? bridgeMode.application : commutationMode(), bridgeMode.switching, bridgeMode.motorView, bridgeMode.currentControl) : model.plots;
+    if (typeof model.plotsFor !== "function") return model.plots;
+    if (currentTopology === "redresseur") return model.plotsFor(rectifierMode.montage, rectifierMode.view);
+    return model.plotsFor(currentTopology === "pont-h" ? bridgeMode.application : commutationMode(), bridgeMode.switching, bridgeMode.motorView, bridgeMode.currentControl);
   };
   const activePlotGroups = () => {
     const model = activeModel();
     if (!advanced && typeof model.basicPlotsFor === "function") {
-      const basic = model.basicPlotsFor(bridgeMode.application, bridgeMode.motorView);
+      const basic = currentTopology === "redresseur" ? model.basicPlotsFor(rectifierMode.montage, rectifierMode.view) : model.basicPlotsFor(bridgeMode.application, bridgeMode.motorView);
       if (basic) return basic;
     }
     const plots = activePlots();
@@ -122,7 +138,7 @@
   };
   const activeAxes = () => {
     const model = activeModel();
-    if (typeof model.axesFor === "function") return model.axesFor(bridgeMode.application, advanced).map((axis) => ({ ...axis, label: localize(axis.label), rightLabel: localize(axis.rightLabel) }));
+    if (typeof model.axesFor === "function") return model.axesFor(currentTopology === "redresseur" ? rectifierMode.montage : bridgeMode.application, advanced).map((axis) => ({ ...axis, label: localize(axis.label), rightLabel: localize(axis.rightLabel) }));
     return [{ label: tr().voltage, unit: "V" }, { label: tr().voltage, unit: "V" }, { label: tr().currentAxis, unit: "A" }];
   };
   const traceIsVisible = (trace) => !hiddenTraces[currentTopology]?.has(trace.legendKey || trace.key);
@@ -265,6 +281,23 @@
     bridgeModePanel.hidden = bridgeMode.application === "grid" && !advanced;
   }
 
+  function renderRectifierPanel() {
+    const visible = currentTopology === "redresseur";
+    rectifierPanel.hidden = !visible;
+    if (!visible) return;
+    if (!advanced && rectifierMode.view === "transient") rectifierMode.view = "steady";
+    document.querySelector("#rectifier-montage-options").setAttribute("aria-label", tr().rectifierMontageAria);
+    document.querySelector("#rectifier-frequency-options").setAttribute("aria-label", tr().rectifierFrequencyAria);
+    document.querySelector("#rectifier-view-options").setAttribute("aria-label", tr().rectifierViewAria);
+    document.querySelector("#rectifier-diodes-options").setAttribute("aria-label", tr().rectifierDiodesAria);
+    rectifierMontageButtons.forEach((button) => { button.textContent = tr()[button.dataset.rectifierMontage === "bridge" ? "diodeBridge" : "singleDiode"]; button.setAttribute("aria-pressed", String(button.dataset.rectifierMontage === rectifierMode.montage)); });
+    rectifierFrequencyButtons.forEach((button) => button.setAttribute("aria-pressed", String(Number(button.dataset.rectifierFrequency) === rectifierMode.frequency)));
+    rectifierViewGroup.hidden = !advanced;
+    rectifierViewButtons.forEach((button) => { button.textContent = tr()[button.dataset.rectifierView === "transient" ? "motorTransient" : "rectifierSteady"]; button.setAttribute("aria-pressed", String(button.dataset.rectifierView === rectifierMode.view)); });
+    rectifierDiodesGroup.hidden = !advanced;
+    rectifierDiodesButtons.forEach((button) => { button.textContent = tr()[button.dataset.rectifierDiodes === "real" ? "diodesReal" : "diodesIdeal"]; button.setAttribute("aria-pressed", String(button.dataset.rectifierDiodes === rectifierMode.diodes)); });
+  }
+
   function renderDiagram() {
     const currentModel = activeModel();
     diagram.setAttribute("aria-label", localize(currentModel.diagram.aria));
@@ -272,7 +305,8 @@
     if (typeof currentModel.diagramFor === "function") {
       const modeTitle = typeof currentModel.diagramTitleFor === "function" ? currentModel.diagramTitleFor(bridgeMode.application, bridgeMode.switching, language, bridgeMode.currentControl) : "";
       diagram.classList.toggle("has-mode-title", Boolean(modeTitle));
-      diagram.innerHTML = `${modeTitle ? `<div class="diagram-mode-title">${modeTitle}</div>` : ""}${currentModel.diagramFor(bridgeMode.application, bridgeMode.switching, language, bridgeMode.currentControl)}`;
+      const diagramMarkup = currentTopology === "redresseur" ? currentModel.diagramFor(rectifierMode.montage, language, rectifierMode.frequency) : currentModel.diagramFor(bridgeMode.application, bridgeMode.switching, language, bridgeMode.currentControl);
+      diagram.innerHTML = `${modeTitle ? `<div class="diagram-mode-title">${modeTitle}</div>` : ""}${diagramMarkup}`;
     } else if (currentModel.diagram.type === "svg") {
       const source = currentModel.diagrams?.[commutationMode()] || currentModel.diagram.src;
       diagram.innerHTML = `<div class="schematic-frame"><img class="converter-schematic" src="${source}" alt="" draggable="false" /><b class="schematic-vin-value" aria-hidden="true"><span id="vin-label-value">24</span> V</b></div>`;
@@ -534,7 +568,8 @@
     canvas.width = Math.round(width * dpr); canvas.height = Math.round(height * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, width, height); ctx.font = '500 15px Inter, "Segoe UI", Arial, sans-serif';
     const groups = activePlotGroups(); const axes = activeAxes(); const hasRightAxis = groups.some((group) => group.some((trace) => trace.axis === "right")); const hasSpeedAxis = axes.some((axis) => axis.unit === "tr/min"); const axisInteger = new Intl.NumberFormat(locales[language], { maximumFractionDigits: 0 }); const axisOneDecimal = new Intl.NumberFormat(locales[language], { maximumFractionDigits: 1 }); const axisValue = (value, unit) => unit === "tr/min" || Math.abs(value) >= 100 ? axisInteger.format(value) : Math.abs(value) >= 10 ? axisOneDecimal.format(value) : number.format(value);
     const hasRightAxisLabel = axes.some((axis) => axis.rightLabel && !axis.hideRightAxis);
-    const left = width < 520 ? (hasSpeedAxis ? 72 : 64) : (hasSpeedAxis ? 84 : 78); const right = hasRightAxis ? (width < 520 ? 64 : hasRightAxisLabel ? 96 : 74) : 17; const top = 46; const bottom = 36; const gap = groups.length > 1 ? 54 : 0; const plotHeight = groups.length > 1 ? Math.max(72, (height - top - bottom - gap * (groups.length - 1)) / groups.length) : height - top - bottom; const plotWidth = width - left - right; const duration = points.at(-1).t;
+    const hasAxisMarks = typeof activeModel().axisMarksFor === "function";
+    const left = width < 520 ? (hasSpeedAxis ? 72 : 64) : (hasSpeedAxis ? 84 : 78); const right = hasRightAxis ? (width < 520 ? 64 : hasRightAxisLabel ? 96 : 74) : hasAxisMarks ? (width < 520 ? 58 : 68) : 17; const top = 46; const bottom = currentTopology === "redresseur" ? 50 : 36; const gap = groups.length > 1 ? 54 : 0; const plotHeight = groups.length > 1 ? Math.max(72, (height - top - bottom - gap * (groups.length - 1)) / groups.length) : height - top - bottom; const plotWidth = width - left - right; const duration = points.at(-1).t;
     const zoom = activeZoom(); const xMinFraction = zoom.x?.min ?? 0; const xMaxFraction = zoom.x?.max ?? 1; const xMinTime = duration * xMinFraction; const xMaxTime = duration * xMaxFraction;
     const xAt = (time) => left + (time - xMinTime) / (xMaxTime - xMinTime) * plotWidth;
     const tops = groups.map((_, index) => top + index * (plotHeight + gap));
@@ -646,8 +681,8 @@
   }
   function renderTopology() {
     const topology = catalog.find((item) => item.id === currentTopology); document.title = `${tr().documentTitle} — ${localize(topology?.name)}`; document.querySelector('meta[name="description"]').setAttribute("content", tr().metaDescription); canvas.setAttribute("aria-label", `${tr().scopeAria}: ${localize(topology?.name)}. ${tr().zoomAria}`);
-    const curvesHost = document.querySelector("#pv-curves"); if (curvesHost) curvesHost.hidden = typeof activeModel().onResult !== "function";
-    renderControls(); renderCommutationSelector(); renderBridgeModePanel(); renderDiagram(); renderInfoBand(); renderLegends(); renderTheoryShell(); update();
+    const curvesHost = document.querySelector("#pv-curves"); if (curvesHost) curvesHost.hidden = currentTopology !== "pv-grid";
+    renderRectifierPanel(); renderControls(); renderCommutationSelector(); renderBridgeModePanel(); renderDiagram(); renderInfoBand(); renderLegends(); renderTheoryShell(); update();
   }
 
   function canvasPoint(event) {
@@ -771,6 +806,22 @@
     if (currentTopology !== "pont-h" || bridgeMode.application !== "motor" || bridgeMode.motorView === button.dataset.motorView) return;
     bridgeMode.motorView = button.dataset.motorView; resetZoom(); renderTopology();
   }));
+  rectifierMontageButtons.forEach((button) => button.addEventListener("click", () => {
+    if (currentTopology !== "redresseur" || rectifierMode.montage === button.dataset.rectifierMontage) return;
+    saveState(); rectifierMode.montage = button.dataset.rectifierMontage; resetZoom(); renderTopology();
+  }));
+  rectifierFrequencyButtons.forEach((button) => button.addEventListener("click", () => {
+    if (currentTopology !== "redresseur" || rectifierMode.frequency === Number(button.dataset.rectifierFrequency)) return;
+    saveState(); rectifierMode.frequency = Number(button.dataset.rectifierFrequency); resetZoom(); renderTopology();
+  }));
+  rectifierViewButtons.forEach((button) => button.addEventListener("click", () => {
+    if (currentTopology !== "redresseur" || rectifierMode.view === button.dataset.rectifierView) return;
+    saveState(); rectifierMode.view = button.dataset.rectifierView; resetZoom(); renderTopology();
+  }));
+  rectifierDiodesButtons.forEach((button) => button.addEventListener("click", () => {
+    if (currentTopology !== "redresseur" || rectifierMode.diodes === button.dataset.rectifierDiodes) return;
+    saveState(); rectifierMode.diodes = button.dataset.rectifierDiodes; resetZoom(); renderTopology();
+  }));
   themeButton.addEventListener("click", () => setTheme(!dark));
   theoryButton.addEventListener("click", () => theoryDialog.showModal());
   document.querySelector("#theory-close").addEventListener("click", () => theoryDialog.close());
@@ -778,8 +829,8 @@
   document.querySelector("#topology-trigger").addEventListener("click", () => topologyDialog.showModal());
   document.querySelector("#topology-close").addEventListener("click", () => topologyDialog.close());
   topologyDialog.addEventListener("click", (event) => { if (event.target === topologyDialog) topologyDialog.close(); });
-  advancedButton.addEventListener("click", () => { advanced = !advanced; advancedButton.setAttribute("aria-pressed", String(advanced)); document.body.classList.toggle("advanced-mode", advanced); renderControls(); renderCommutationSelector(); renderBridgeModePanel(); renderLegends(); update(); });
-  document.querySelector("#reset").addEventListener("click", () => { states[currentTopology] = { ...activeModel().defaults }; hiddenTraces[currentTopology] = new Set(activeModel().defaultHiddenTraces || []); resetZoom(); if (currentTopology in commutationModes) commutationModes[currentTopology] = "synchronous"; if (currentTopology === "pont-h") { bridgeMode.switching = "bipolar"; bridgeMode.direction = "forward"; bridgeMode.motorView = "transient"; bridgeMode.currentControl = "pwm"; } if (typeof activeModel().resetInteractive === "function") activeModel().resetInteractive(); renderTopology(); });
+  advancedButton.addEventListener("click", () => { advanced = !advanced; advancedButton.setAttribute("aria-pressed", String(advanced)); document.body.classList.toggle("advanced-mode", advanced); renderRectifierPanel(); renderControls(); renderCommutationSelector(); renderBridgeModePanel(); renderLegends(); update(); });
+  document.querySelector("#reset").addEventListener("click", () => { states[currentTopology] = { ...activeModel().defaults }; hiddenTraces[currentTopology] = new Set(activeModel().defaultHiddenTraces || []); resetZoom(); if (currentTopology in commutationModes) commutationModes[currentTopology] = "synchronous"; if (currentTopology === "pont-h") { bridgeMode.switching = "bipolar"; bridgeMode.direction = "forward"; bridgeMode.motorView = "transient"; bridgeMode.currentControl = "pwm"; } if (currentTopology === "redresseur") { rectifierMode.montage = "single"; rectifierMode.view = "steady"; rectifierMode.diodes = "ideal"; rectifierMode.frequency = 50; } if (typeof activeModel().resetInteractive === "function") activeModel().resetInteractive(); renderTopology(); });
   document.addEventListener("contextmenu", (event) => event.preventDefault());
   window.addEventListener("hashchange", () => { const requested = decodeURIComponent(window.location.hash.slice(1)); if (models[requested]) selectTopology(requested, false); else syncRoute(); });
   if ("ResizeObserver" in window) new ResizeObserver(() => currentPoints.length && draw(currentPoints)).observe(canvas); else window.addEventListener("resize", () => currentPoints.length && draw(currentPoints));

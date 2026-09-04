@@ -29,6 +29,12 @@ Dans l’oscilloscope, faites glisser avec le bouton gauche horizontalement, ver
 
 Dans l’application réseau du pont en H, la commande du courant peut utiliser une PWM à fréquence fixe ou un comparateur à hystérésis. Dans ce second cas, la demi-bande est réglable et la fréquence de commutation devient variable.
 
+## Topologie « Redresseur à diodes »
+
+Redresseur AC-DC classique alimenté par une source sinusoïdale réglable (50 ou 60 Hz) : simple diode (monoalternance) ou pont de Graetz (double alternance, paires D1–D2 et D3–D4), filtre L–C (inductance de lissage L_f en série puis condensateur en parallèle) et charge R–L série. Chaque curseur de filtre descend à zéro pour retirer l’élément — la branche s’estompe alors dans le schéma — et l’inductance de charge descend à zéro pour retrouver la charge R pure. Le filtre à entrée inductive illustre le compromis classique : sans L_f le condensateur se recharge par pointes (tension proche de V̂ mais facteur de puissance dégradé) ; avec L_f suffisante la conduction devient continue, la tension moyenne rejoint 2V̂/π et le facteur de puissance remonte vers 0,9.
+
+Les valeurs moyennes de v_ch et i_ch sont rappelées sur le bord droit de l’oscilloscope et le bandeau compare la tension moyenne simulée à la formule idéale V̂/π ou 2V̂/π. Le mode avancé ajoute la tension de la diode D1 (lecture de la tension inverse de crête), les courants côté alternatif (i_in et les courants des paires de diodes, avec les pointes de recharge du condensateur), le choix entre diodes idéales et diodes à chute de 0,6 V, ainsi qu’une vue « Démarrage » avec angle d’enclenchement réglable pour observer le régime transitoire, dont l’appel de courant du condensateur. Une petite résistance série de 0,5 Ω côté source limite les pointes de courant, comme dans un redresseur réel.
+
 ## Topologie « PV solaire → réseau »
 
 Chaîne photovoltaïque complète : champ PV, boost MPPT, bus continu et pont en H qui injecte un courant sinusoïdal dans le réseau 230 V / 50 Hz.
