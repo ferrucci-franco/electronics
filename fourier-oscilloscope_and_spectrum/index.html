@@ -79,6 +79,9 @@
     background-color:var(--bg-deep);
     background-repeat:no-repeat;
     color:var(--fg);
+    -webkit-user-select:none;
+    user-select:none;
+    -webkit-touch-callout:none;
   }
 
   button,
@@ -508,9 +511,21 @@
   .plot-title-left {
     display:flex;
     align-items:center;
-    flex-wrap:wrap;
+    flex-wrap:nowrap;
     gap:4px 12px;
     min-width:0;
+    overflow:hidden;
+    white-space:nowrap;
+  }
+
+  .plot-title-left > span:first-child {
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  .plot-legend {
+    flex:0 0 auto;
   }
 
   .plot-legend {
@@ -541,15 +556,23 @@
     background:var(--accent);
   }
 
+  /* Etiqueta "pausado" superpuesta al gráfico: no ocupa lugar en el título,
+     así el gráfico no se mueve al aparecer. */
   .plot-frozen {
+    position:absolute;
+    top:calc(100% + 8px);
+    right:14px;
+    z-index:5;
     font-size:11px;
     font-weight:650;
     letter-spacing:0.04em;
     text-transform:uppercase;
     color:var(--accent);
+    background:color-mix(in srgb, var(--plot-bg) 82%, transparent);
     border:1px solid color-mix(in srgb, var(--accent) 55%, var(--border));
     border-radius:999px;
-    padding:1px 8px;
+    padding:2px 9px;
+    pointer-events:none;
   }
 
   .plot-frozen[hidden] {
@@ -571,6 +594,69 @@
 
   .plot-zoom-box.is-visible {
     display:block;
+  }
+
+  .plot-fullscreen-btn {
+    width:28px;
+    height:28px;
+    padding:0;
+    display:grid;
+    place-items:center;
+    border-radius:8px;
+    flex:0 0 auto;
+    color:var(--muted);
+  }
+
+  .plot-fullscreen-btn:hover {
+    color:var(--fg);
+  }
+
+  .plot-fullscreen-btn svg {
+    width:16px;
+    height:16px;
+    fill:none;
+    stroke:currentColor;
+    stroke-width:2;
+    stroke-linecap:round;
+    stroke-linejoin:round;
+  }
+
+  .plot-fullscreen-btn .icon-compress {
+    display:none;
+  }
+
+  .plot-card.is-fullscreen .plot-fullscreen-btn .icon-expand {
+    display:none;
+  }
+
+  .plot-card.is-fullscreen .plot-fullscreen-btn .icon-compress {
+    display:block;
+  }
+
+  /* Pantalla completa "propia": una capa fija sobre toda la ventana (la API
+     Fullscreen no admite elementos cualesquiera en iPhone). Usa los insets del
+     área segura y sigue al cambio de orientación con el evento resize. */
+  .plot-card.is-fullscreen {
+    position:fixed;
+    inset:0;
+    z-index:60;
+    border-radius:0;
+    height:auto;
+    min-height:0;
+    max-height:none;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+
+  .plot-card.is-fullscreen canvas {
+    touch-action:none;
+  }
+
+  body.plot-fullscreen {
+    overflow:hidden;
+  }
+
+  body.plot-fullscreen .sidebar-scrollbar {
+    display:none !important;
   }
 
   .recorded-progress {
@@ -906,8 +992,9 @@
   }
 
   .plot-title {
+    position:relative;
     display:grid;
-    grid-template-columns:minmax(0, 1fr) auto;
+    grid-template-columns:minmax(0, 1fr) auto auto;
     align-items:center;
     gap:10px;
     padding:10px 14px;
@@ -1526,6 +1613,7 @@
             <span id="time-frozen" class="plot-frozen" hidden>congelado</span>
           </div>
           <span id="time-meta" class="plot-meta">--</span>
+          <button type="button" class="plot-fullscreen-btn" data-panel="time-panel" aria-label="Pantalla completa" title="Pantalla completa"><svg class="icon-expand" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><svg class="icon-compress" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg></button>
         </div>
         <canvas id="time-canvas"></canvas>
       </section>
@@ -1538,6 +1626,7 @@
             <span id="spectrum-frozen" class="plot-frozen" hidden>congelado</span>
           </div>
           <span id="spectrum-meta" class="plot-meta">--</span>
+          <button type="button" class="plot-fullscreen-btn" data-panel="spectrum-panel" aria-label="Pantalla completa" title="Pantalla completa"><svg class="icon-expand" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><svg class="icon-compress" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg></button>
         </div>
         <canvas id="spectrum-canvas"></canvas>
         <div id="spectrum-zoom-box" class="plot-zoom-box" aria-hidden="true"></div>
@@ -1555,6 +1644,7 @@
             <span id="spectrogram-frozen" class="plot-frozen" hidden>pausado</span>
           </div>
           <span id="spectrogram-meta" class="plot-meta">frecuencia vs tiempo</span>
+          <button type="button" class="plot-fullscreen-btn" data-panel="spectrogram-panel" aria-label="Pantalla completa" title="Pantalla completa"><svg class="icon-expand" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><svg class="icon-compress" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg></button>
         </div>
         <canvas id="spectrogram-canvas"></canvas>
         <canvas id="spectrogram-notes-canvas" class="plot-overlay-canvas"></canvas>
@@ -1627,6 +1717,8 @@ const I18N = {
     legendInput:'entrada',
     legendOutput:'salida',
     frozen:'pausado',
+    fullscreen:'Pantalla completa',
+    exitFullscreen:'Salir de pantalla completa',
     timeCanvasHint:'Mantén presionado para pausar todo, audio incluido. Rueda: cambia ms/div.',
     spectrumCanvasHint:'Arrastra para hacer zoom en una ventana. Botón derecho o rueda: desplazar. Sobre los ejes: el centro desplaza y los extremos hacen zoom. Doble clic: vista anterior.',
     spectrogramCanvasHint:'Arrastra verticalmente para hacer zoom en frecuencia. Botón derecho o rueda: desplazar en frecuencia. Rueda: cambia el piso de dB. Eje de frecuencia: el centro desplaza y los extremos hacen zoom. Doble clic: vista anterior.',
@@ -1744,6 +1836,8 @@ const I18N = {
     legendInput:'input',
     legendOutput:'output',
     frozen:'paused',
+    fullscreen:'Full screen',
+    exitFullscreen:'Exit full screen',
     timeCanvasHint:'Press and hold to pause everything, audio included. Wheel: change ms/div.',
     spectrumCanvasHint:'Drag to zoom into a window. Right or middle button: pan. On the axes: the middle pans, the ends zoom. Double-click: previous view.',
     spectrogramCanvasHint:'Drag vertically to zoom in frequency. Right or middle button: pan in frequency. Wheel: change the dB floor. Frequency axis: the middle pans, the ends zoom. Double-click: previous view.',
@@ -1861,6 +1955,8 @@ const I18N = {
     legendInput:'entrée',
     legendOutput:'sortie',
     frozen:'en pause',
+    fullscreen:'Plein écran',
+    exitFullscreen:'Quitter le plein écran',
     timeCanvasHint:'Maintiens appuyé pour tout mettre en pause, audio compris. Molette : change les ms/div.',
     spectrumCanvasHint:'Glisse pour zoomer sur une fenêtre. Bouton droit ou molette : déplacer. Sur les axes : le centre déplace, les extrémités zooment. Double-clic : vue précédente.',
     spectrogramCanvasHint:'Glisse verticalement pour zoomer en fréquence. Bouton droit ou molette : déplacer en fréquence. Molette : change le plancher en dB. Axe des fréquences : le centre déplace, les extrémités zooment. Double-clic : vue précédente.',
@@ -2360,6 +2456,7 @@ function updateLanguage() {
   updateRecordingUI();
   updateLegends();
   updateSpectrogramTitle();
+  updateFullscreenButtons();
   renderSourceOptions();
   updateSourceModeUI();
   updateTransportControls();
@@ -6183,6 +6280,7 @@ els.fileInput.addEventListener('change', () => {
 // (arrastre sobre el gráfico). Al levantar el dedo o salir, se oculta.
 function bindHoverPointer(canvas, getArea, setState, update) {
   const move = event => {
+    if (event.pointerType === 'touch') return;
     if (event.buttons & 6) {
       // botón derecho o rueda: desplazamiento de la vista, sin cursor de lectura
       setState(null);
@@ -6202,7 +6300,7 @@ function bindHoverPointer(canvas, getArea, setState, update) {
   canvas.addEventListener('pointerleave', clear);
   canvas.addEventListener('pointercancel', clear);
   canvas.addEventListener('pointerup', event => {
-    if (event.pointerType !== 'mouse') clear();
+    if (event.pointerType === 'pen') clear();
   });
 }
 
@@ -6450,19 +6548,35 @@ bindHoldToPause(els.timeCanvas);
 // dura ese arrastre y medio segundo después de soltar (en Windows el menú se
 // dispara al soltar, y el puntero puede haber salido del canvas).
 let suppressContextMenuUntil = 0;
-document.addEventListener('contextmenu', event => {
-  if (event.target === els.spectrumCanvas || event.target === els.spectrogramCanvas || performance.now() < suppressContextMenuUntil) {
-    event.preventDefault();
-  }
+const PAN_CANVASES = [els.spectrumCanvas, els.spectrogramCanvas];
+
+function shouldSuppressContextMenu(event) {
+  return PAN_CANVASES.includes(event.target) || performance.now() < suppressContextMenuUntil;
+}
+
+// En fase de captura sobre window, más el atributo del elemento y los eventos
+// de ratón del botón derecho: Firefox dispara el menú en momentos distintos
+// según la plataforma y una sola de estas vías no alcanzaba.
+window.addEventListener('contextmenu', event => {
+  if (shouldSuppressContextMenu(event)) event.preventDefault();
+}, true);
+PAN_CANVASES.forEach(canvas => {
+  canvas.oncontextmenu = () => false;
+  ['mousedown', 'mouseup', 'auxclick'].forEach(type => {
+    canvas.addEventListener(type, event => {
+      if (event.button === 2) event.preventDefault();
+    });
+  });
 });
 
 els.spectrumCanvas.addEventListener('pointerdown', event => {
-  if (event.pointerType === 'touch') return;
   const canvas = els.spectrumCanvas;
   const point = hoverPointForEvent(canvas, event);
   const area = spectrumArea(canvas.width, canvas.height);
   const zone = spectrumZoneAt(point, area);
   if (!zone) return;
+  // táctil: dentro del gráfico mandan los gestos (más abajo); los ejes sí aceptan el dedo
+  if (event.pointerType === 'touch' && zone === 'plot') return;
   const rect = canvas.getBoundingClientRect();
   const base = {
     pointerId: event.pointerId,
@@ -6598,10 +6712,10 @@ function finishSpectrogramBandZoom(drag) {
 }
 
 els.spectrogramCanvas.addEventListener('pointerdown', event => {
-  if (event.pointerType === 'touch') return;
   const canvas = els.spectrogramCanvas;
   const point = hoverPointForEvent(canvas, event);
   const layout = spectrogramLayout(canvas.width, canvas.height);
+  if (event.pointerType === 'touch' && !spectrogramAxisHit(point, layout)) return;
   const rect = canvas.getBoundingClientRect();
   const plotHeightCss = (layout.bottom - layout.top) * rect.height / Math.max(1, canvas.height);
   const inPlot = spectrogramPlotHit(point, layout);
@@ -6676,6 +6790,240 @@ els.spectrogramCanvas.addEventListener('dblclick', event => {
   event.preventDefault();
   resetSpectrumZoom();
 });
+
+// ---- Pantalla completa por gráfico ----------------------------------------
+let fullscreenPanel = null;
+
+function updateFullscreenButtons() {
+  const tr = t();
+  document.querySelectorAll('.plot-fullscreen-btn').forEach(button => {
+    const panel = document.getElementById(button.dataset.panel);
+    const active = panel && panel.classList.contains('is-fullscreen');
+    const label = active ? tr.exitFullscreen : tr.fullscreen;
+    button.setAttribute('aria-label', label);
+    button.setAttribute('title', label);
+  });
+}
+
+function setPlotFullscreen(panel) {
+  const next = panel === fullscreenPanel ? null : panel;
+  if (fullscreenPanel) fullscreenPanel.classList.remove('is-fullscreen');
+  fullscreenPanel = next;
+  if (next) next.classList.add('is-fullscreen');
+  document.body.classList.toggle('plot-fullscreen', Boolean(next));
+  updateFullscreenButtons();
+  refreshPlotsAfterLayout();
+}
+
+document.querySelectorAll('.plot-fullscreen-btn').forEach(button => {
+  button.addEventListener('click', () => setPlotFullscreen(document.getElementById(button.dataset.panel)));
+});
+
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && fullscreenPanel) setPlotFullscreen(null);
+});
+
+// iOS informa el tamaño nuevo un poco después del cambio de orientación.
+window.addEventListener('orientationchange', () => {
+  setTimeout(refreshPlotsAfterLayout, 350);
+});
+
+// ---- Gestos táctiles en espectro y espectrograma --------------------------
+// Un dedo: arrastre horizontal en el espectro = desplazar en frecuencia (la
+// página sigue desplazándose con arrastre vertical). En pantalla completa un
+// dedo desplaza en los dos ejes, también en el espectrograma. Dos dedos: pinza
+// = zoom y desplazamiento a la vez, manteniendo lo que hay bajo cada dedo.
+// Toque corto: lectura del cursor en ese punto. Doble toque: vista anterior.
+const TOUCH_TAP_MS = 300;
+const TOUCH_TAP_PX = 12;
+const TOUCH_DOUBLE_MS = 350;
+const TOUCH_MIN_SPREAD = 0.08;
+
+// Ajusta una ventana [uMin, uMax] (coordenada lineal del eje) para que los
+// valores que estaban bajo los dedos (posiciones normalizadas n1, n2) queden
+// bajo sus posiciones nuevas (m1, m2). Con un dedo, o dedos muy juntos, solo
+// desplaza.
+function fitAxisWindow(start, n1, n2, m1, m2) {
+  const span0 = start.uMax - start.uMin;
+  if (Math.abs(n2 - n1) < TOUCH_MIN_SPREAD || Math.abs(m2 - m1) < TOUCH_MIN_SPREAD / 2) {
+    const dn = (m1 + m2) / 2 - (n1 + n2) / 2;
+    return { uMin: start.uMin - dn * span0, uMax: start.uMax - dn * span0 };
+  }
+  const u1 = start.uMin + n1 * span0;
+  const u2 = start.uMin + n2 * span0;
+  const span = (u2 - u1) / (m2 - m1);
+  const uMin = u1 - m1 * span;
+  return { uMin, uMax: uMin + span };
+}
+
+function frequencyWindowU(range) {
+  const log = els.frequencyScale.value === 'log';
+  return log
+    ? { uMin: Math.log(range.min), uMax: Math.log(range.max), log }
+    : { uMin: range.min, uMax: range.max, log };
+}
+
+function frequencyFromU(u, log) {
+  return log ? Math.exp(u) : u;
+}
+
+function bindTouchGestures(canvas, spec) {
+  const touches = new Map();
+  let gesture = null;
+  let lastTap = null;
+  const pointOf = event => hoverPointForEvent(canvas, event);
+
+  const beginGesture = () => {
+    const ids = [...touches.keys()];
+    gesture = {
+      ids,
+      starts: ids.map(id => spec.normalized(touches.get(id))),
+      state: spec.captureState(),
+      moved: false,
+      startedAt: performance.now(),
+      origin: ids.length === 1 ? { ...touches.get(ids[0]) } : null
+    };
+  };
+
+  canvas.addEventListener('pointerdown', event => {
+    if (event.pointerType !== 'touch') return;
+    const p = pointOf(event);
+    if (!spec.inPlot(p) || touches.size >= 2) return;
+    touches.set(event.pointerId, p);
+    try { canvas.setPointerCapture(event.pointerId); } catch (error) {}
+    event.preventDefault();
+    beginGesture();
+    if (touches.size === 2) spec.hideReadout();
+  });
+
+  canvas.addEventListener('pointermove', event => {
+    if (event.pointerType !== 'touch' || !touches.has(event.pointerId) || !gesture) return;
+    touches.set(event.pointerId, pointOf(event));
+    if (!gesture.ids.every(id => touches.has(id))) return;
+    if (!gesture.moved) {
+      if (gesture.origin) {
+        const cur = touches.get(gesture.ids[0]);
+        if (Math.hypot(cur.x - gesture.origin.x, cur.y - gesture.origin.y) / canvasScale() < TOUCH_TAP_PX) return;
+      }
+      gesture.moved = true;
+      spec.hideReadout();
+    }
+    const now = gesture.ids.map(id => spec.normalized(touches.get(id)));
+    spec.apply(gesture.state, gesture.starts, now, gesture.ids.length);
+  });
+
+  const end = event => {
+    if (event.pointerType !== 'touch' || !touches.has(event.pointerId)) return;
+    const p = touches.get(event.pointerId);
+    touches.delete(event.pointerId);
+    const g = gesture;
+    gesture = null;
+    if (g && g.ids.length === 1 && !g.moved && event.type === 'pointerup' && performance.now() - g.startedAt < TOUCH_TAP_MS) {
+      const time = performance.now();
+      if (lastTap && time - lastTap.time < TOUCH_DOUBLE_MS && Math.hypot(p.x - lastTap.x, p.y - lastTap.y) / canvasScale() < 30) {
+        lastTap = null;
+        spec.hideReadout();
+        spec.reset();
+      } else {
+        lastTap = { time, x: p.x, y: p.y };
+        spec.tap(p);
+      }
+    }
+    if (touches.size) beginGesture();
+  };
+  canvas.addEventListener('pointerup', end);
+  canvas.addEventListener('pointercancel', end);
+}
+
+bindTouchGestures(els.spectrumCanvas, {
+  inPlot: p => isInsideArea(p, spectrumArea(els.spectrumCanvas.width, els.spectrumCanvas.height)),
+  normalized: p => {
+    const a = spectrumArea(els.spectrumCanvas.width, els.spectrumCanvas.height);
+    return { x: (p.x - a.left) / Math.max(1, a.right - a.left), y: (a.bottom - p.y) / Math.max(1, a.bottom - a.top) };
+  },
+  captureState: () => ({ freq: frequencyWindowU(selectedFrequencyRange()), db: spectrumDbRange() }),
+  apply: (state, starts, now, fingers) => {
+    const last = starts.length - 1;
+    const fx = fitAxisWindow(state.freq, starts[0].x, starts[last].x, now[0].x, now[last].x);
+    applySpectrumFrequencyZoom(frequencyFromU(fx.uMin, state.freq.log), frequencyFromU(fx.uMax, state.freq.log));
+    if (fingers === 2 || fullscreenPanel === els.spectrumPanel) {
+      const fy = fitAxisWindow({ uMin: state.db.min, uMax: state.db.max }, starts[0].y, starts[last].y, now[0].y, now[last].y);
+      setDbWindow(fy.uMin, fy.uMax);
+    }
+    afterViewChange(true);
+  },
+  tap: p => {
+    spectrumHoverState = p;
+    updateSpectrumHover();
+  },
+  hideReadout: () => {
+    spectrumHoverState = null;
+    updateSpectrumHover();
+  },
+  reset: resetSpectrumZoom
+});
+
+bindTouchGestures(els.spectrogramCanvas, {
+  inPlot: p => spectrogramPlotHit(p, spectrogramLayout(els.spectrogramCanvas.width, els.spectrogramCanvas.height)),
+  normalized: p => {
+    const L = spectrogramLayout(els.spectrogramCanvas.width, els.spectrogramCanvas.height);
+    return { x: 0, y: (L.bottom - p.y) / Math.max(1, L.bottom - L.top) };
+  },
+  captureState: () => ({ freq: frequencyWindowU(selectedFrequencyRange()) }),
+  apply: (state, starts, now, fingers) => {
+    // en la página, un dedo vertical desplaza la página (touch-action pan-y);
+    // solo a pantalla completa desplaza el espectrograma
+    if (fingers === 1 && fullscreenPanel !== els.spectrogramPanel) return;
+    const last = starts.length - 1;
+    const fy = fitAxisWindow(state.freq, starts[0].y, starts[last].y, now[0].y, now[last].y);
+    applySpectrumFrequencyZoom(frequencyFromU(fy.uMin, state.freq.log), frequencyFromU(fy.uMax, state.freq.log));
+    afterViewChange(true);
+  },
+  tap: p => {
+    spectrogramHoverState = p;
+    updateSpectrogramHover();
+  },
+  hideReadout: () => {
+    spectrogramHoverState = null;
+    updateSpectrogramHover();
+  },
+  reset: resetSpectrumZoom
+});
+
+// Señal temporal: pinza horizontal con dos dedos cambia los ms/div.
+(function bindTimePinch() {
+  const canvas = els.timeCanvas;
+  const touches = new Map();
+  let base = null;
+  const spread = () => {
+    const [a, b] = [...touches.values()];
+    return Math.abs(a.x - b.x);
+  };
+  canvas.addEventListener('pointerdown', event => {
+    if (event.pointerType !== 'touch' || touches.size >= 2) return;
+    touches.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (touches.size === 2) base = spread();
+  });
+  canvas.addEventListener('pointermove', event => {
+    if (event.pointerType !== 'touch' || !touches.has(event.pointerId)) return;
+    touches.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (touches.size !== 2 || !base) return;
+    const ratio = spread() / Math.max(1, base);
+    if (ratio > 1.3) {
+      stepSelect(els.timeMsDiv, -1);
+      base = spread();
+    } else if (ratio < 0.77) {
+      stepSelect(els.timeMsDiv, 1);
+      base = spread();
+    }
+  });
+  ['pointerup', 'pointercancel'].forEach(type => {
+    canvas.addEventListener(type, event => {
+      touches.delete(event.pointerId);
+      base = null;
+    });
+  });
+})();
 
 bindHoverPointer(
   els.spectrumCanvas,
