@@ -1466,8 +1466,12 @@
           </label>
         </div>
         <label>
-          <span id="db-floor-label">Piso dB <span class="value" id="db-floor-value">-115 dB</span></span>
+          <span id="db-floor-label">Piso dB espectro <span class="value" id="db-floor-value">-115 dB</span></span>
           <input id="db-floor" type="range" min="-120" max="-40" step="1" value="-115">
+        </label>
+        <label>
+          <span id="spectrogram-floor-label">Piso dB espectrograma <span class="value" id="spectrogram-floor-value">-115 dB</span></span>
+          <input id="spectrogram-floor" type="range" min="-120" max="-40" step="1" value="-115">
         </label>
         <label>
           <span id="speed-label">Velocidad <span class="value" id="speed-value">2 px/frame</span></span>
@@ -1641,7 +1645,8 @@ const I18N = {
     displayTitle:'Visualizaci\u00f3n',
     panelsTitle:'Paneles',
     timeWindow:'Ventana temporal',
-    dbFloor:'Piso dB',
+    dbFloor:'Piso dB espectro',
+    spectrogramFloor:'Piso dB espectrograma',
     speed:'Velocidad',
     timeTitle:'Se\u00f1al temporal',
     spectrumTitle:'Espectro instant\u00e1neo',
@@ -1757,7 +1762,8 @@ const I18N = {
     displayTitle:'Display',
     panelsTitle:'Panels',
     timeWindow:'Time window',
-    dbFloor:'dB floor',
+    dbFloor:'Spectrum dB floor',
+    spectrogramFloor:'Spectrogram dB floor',
     speed:'Speed',
     timeTitle:'Time signal',
     spectrumTitle:'Instant spectrum',
@@ -1873,7 +1879,8 @@ const I18N = {
     displayTitle:'Affichage',
     panelsTitle:'Panneaux',
     timeWindow:'Fenêtre temporelle',
-    dbFloor:'Plancher dB',
+    dbFloor:'Plancher dB spectre',
+    spectrogramFloor:'Plancher dB spectrogramme',
     speed:'Vitesse',
     timeTitle:'Signal temporel',
     spectrumTitle:'Spectre instantané',
@@ -2018,6 +2025,9 @@ const els = {
   dbFloorLabel: $('db-floor-label'),
   dbFloor: $('db-floor'),
   dbFloorValue: $('db-floor-value'),
+  spectrogramFloorLabel: $('spectrogram-floor-label'),
+  spectrogramFloor: $('spectrogram-floor'),
+  spectrogramFloorValue: $('spectrogram-floor-value'),
   speedLabel: $('speed-label'),
   scrollSpeed: $('scroll-speed'),
   speedValue: $('speed-value'),
@@ -2743,11 +2753,13 @@ function updateSliderLabels() {
   els.maxfreqEndValue.textContent = formatFrequencyLabel(frequencyRange.max);
   updateFrequencyRangeFill();
   els.dbFloorValue.textContent = `${els.dbFloor.value} dB`;
+  els.spectrogramFloorValue.textContent = `${els.spectrogramFloor.value} dB`;
   els.speedValue.textContent = `${els.scrollSpeed.value} px/${tr.frameUnit}`;
   els.fftWindowLabel.innerHTML = sampleRate
     ? `${tr.sampleRateLabel}: ${Math.round(sampleRate)} Hz<br>${tr.fftWindow}: N/Fs = ${fftSize}/${Math.round(sampleRate)} Hz = ${fftWindowMs.toFixed(fftWindowMs < 10 ? 2 : 1)} ms`
     : `${tr.fftWindow}: -- (${tr.waitingForAudio})`;
   els.dbFloorLabel.firstChild.textContent = `${tr.dbFloor} `;
+  els.spectrogramFloorLabel.firstChild.textContent = `${tr.spectrogramFloor} `;
   els.speedLabel.firstChild.textContent = `${tr.speed} `;
   updateRecordedProgress();
 }
@@ -3437,13 +3449,18 @@ function drawSpectrogramChrome(ctx, layout, frequencyRange, dbFloor, width) {
   ctx.globalAlpha = 1;
 }
 
+// Piso de color del espectrograma: independiente del eje Y del espectro.
+function spectrogramFloor() {
+  return parseFloat(els.spectrogramFloor.value);
+}
+
 function drawSpectrogramFrame() {
   clearCanvas(els.spectrogramCanvas);
   const canvas = els.spectrogramCanvas;
   const ctx = canvas.getContext('2d');
   const layout = spectrogramLayout(canvas.width, canvas.height);
   const frequencyRange = selectedFrequencyRange();
-  const dbFloor = parseFloat(els.dbFloor.value);
+  const dbFloor = spectrogramFloor();
   fillPlotArea(ctx, {
     left: layout.axisLeft,
     right: layout.plotRight,
@@ -5884,7 +5901,7 @@ function refreshSpectrogramChrome() {
   ctx.fillStyle = c.bg;
   ctx.fillRect(0, 0, axisWidth, canvas.height);
   ctx.fillRect(plotRight, 0, canvas.width - plotRight, canvas.height);
-  drawSpectrogramChrome(ctx, layout, range, parseFloat(els.dbFloor.value), canvas.width);
+  drawSpectrogramChrome(ctx, layout, range, spectrogramFloor(), canvas.width);
   drawSpectrogramNoteOverlay(layout, range, axisWidth, plotRight);
 }
 
@@ -5906,7 +5923,7 @@ function renderSpectrogramFromHistory() {
   const ctx = canvas.getContext('2d');
   const layout = spectrogramLayout(canvas.width, canvas.height);
   const range = selectedFrequencyRange();
-  const dbFloor = parseFloat(els.dbFloor.value);
+  const dbFloor = spectrogramFloor();
   const axisWidth = Math.round(layout.axisLeft);
   const plotRight = Math.round(layout.colorbarLeft - layout.colorbarGap);
   const plotTop = Math.round(layout.top);
@@ -5968,7 +5985,7 @@ function drawSpectrogram() {
   const width = els.spectrogramCanvas.width;
   const height = els.spectrogramCanvas.height;
   const frequencyRange = selectedFrequencyRange();
-  const dbFloor = parseFloat(els.dbFloor.value);
+  const dbFloor = spectrogramFloor();
   const layout = spectrogramLayout(width, height);
   const axisWidth = Math.round(layout.axisLeft);
   const colorbarLeft = layout.colorbarLeft;
@@ -6679,6 +6696,13 @@ bindHoverPointer(
 
 els.dbFloor.addEventListener('input', () => { spectrumDbWindow = null; });
 
+['input', 'change'].forEach(type => {
+  els.spectrogramFloor.addEventListener(type, () => {
+    updateSliderLabels();
+    refreshPlotsAfterLayout();
+  });
+});
+
 [els.fftSize, els.smoothing, els.dbFloor].forEach(element => {
   const refreshAnalysis = () => {
     if (audioContext) configureAnalyser();
@@ -6800,17 +6824,17 @@ function bindSliderWheel(target, pickInput = null) {
   }, { passive: false });
 }
 
-[els.sourceVolume, els.fftSize, els.smoothing, els.dbFloor, els.scrollSpeed].forEach(input => bindSliderWheel(input));
+[els.sourceVolume, els.fftSize, els.smoothing, els.dbFloor, els.spectrogramFloor, els.scrollSpeed].forEach(input => bindSliderWheel(input));
 
-// Rueda sobre el espectrograma: mueve el piso de dB (el mismo deslizador),
-// 2 dB por muesca, sin espera previa como en la señal temporal.
+// Rueda sobre el espectrograma: mueve su propio piso de dB (el deslizador
+// "Piso dB espectrograma"), 2 dB por muesca, sin espera previa.
 let lastSpectrogramWheel = 0;
 els.spectrogramCanvas.addEventListener('wheel', event => {
   event.preventDefault();
   const now = performance.now();
   if (now - lastSpectrogramWheel < SLIDER_WHEEL_MIN_INTERVAL_MS) return;
   lastSpectrogramWheel = now;
-  nudgeSlider(els.dbFloor, event.deltaY < 0 ? 1 : -1, 2);
+  nudgeSlider(els.spectrogramFloor, event.deltaY < 0 ? 1 : -1, 2);
 }, { passive: false });
 
 // Rango de frecuencia: dos pulgares en la misma pista; la rueda mueve el más
