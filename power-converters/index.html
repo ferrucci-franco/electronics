@@ -55,10 +55,14 @@
                   <button type="button" data-rectifier-montage="bridge" aria-pressed="false">Pont de diodes</button>
                 </div>
               </div>
-              <div class="bridge-mode-group">
+              <div class="bridge-mode-group rectifier-source-settings">
                 <div id="rectifier-frequency-options" role="group" aria-label="Choisir la fréquence de la source">
                   <button type="button" data-rectifier-frequency="50" aria-pressed="true">50 Hz</button>
                   <button type="button" data-rectifier-frequency="60" aria-pressed="false">60 Hz</button>
+                </div>
+                <div id="thyristor-voltage-group" role="group" aria-label="Choisir la tension efficace du réseau" hidden>
+                  <button type="button" data-thyristor-voltage="110" aria-pressed="false">110 V</button>
+                  <button type="button" data-thyristor-voltage="230" aria-pressed="true">230 V</button>
                 </div>
               </div>
               <div class="bridge-mode-group" id="rectifier-diodes-group" hidden>
@@ -261,6 +265,7 @@
     <script src="topologies/boost.js"></script>
     <script src="topologies/pont-h.js"></script>
     <script src="topologies/redresseur.js"></script>
+    <script src="topologies/thyristor.js"></script>
     <script src="topologies/pv-grid.js"></script>
     <script src="app.js"></script>
   </body>

@@ -12,7 +12,7 @@
       outputVoltage: "Output voltage", conductionMode: "Conduction mode", minimumCurrent: "Minimum current", fundamentalFrequency: "Fundamental frequency", formula: "Formula", ratio: "Ratio", resonanceFrequency: "LC circuit resonant frequency", conversionLaw: "Conversion law", conversionLawCcm: "Conversion law · CCM", voltages: "Voltages", lcFilter: "LC filter", ripples: "Ripples",
       theoryButtonAria: "Open more information", theoryOpen: "More info", theoryKicker: "Electrical analysis", theoryTitle: "Steady state", closeTheory: "Close", balanceTitle: "Balances", numericalResidual: "Numerical residual", rippleTheoryTitle: "Ripple approximation", fundamentalTitle: "Fundamental component", loadTitle: "Series R–L load", simulation: "Simulation", approximation: "Approximation", relativeError: "Relative error", loadType: "Load", seriesRl: "Series resistance and inductance", criticalInductanceRatio: "Critical inductance ratio",
       approximationNote: "These approximations assume low ripple and a switching frequency well above the natural dynamics.", synchronousNote: "The synchronous switch always provides a current path; negative inductor current is therefore possible.", diodeNote: "The diode blocks reverse current, so the model can enter CCM or DCM. V<sub>D</sub> is measured from anode to cathode; ripple formulas are CCM estimates.", hBridgeNote: "The bridge is modeled with ideal complementary switches.", schematicPending: "Circuit SVG placeholder", schematicTomorrow: "The simulation is active. The final circuit drawing can be inserted here without changing the model.", time: "Time", voltage: "voltage", currentAxis: "current",
-      singleDiode: "Single diode", diodeBridge: "Diode bridge", rectifierMontageAria: "Choose the rectifier circuit", rectifierViewAria: "Choose the rectifier time window", rectifierFrequencyAria: "Choose the source frequency", rectifierSteady: "Steady", diodesIdeal: "Ideal", diodesReal: "0.6 V drop", rectifierDiodesAria: "Choose the diode model",
+      singleDiode: "Single diode", diodeBridge: "Diode bridge", singleThyristor: "SCR", triac: "TRIAC", rectifierMontageAria: "Choose the rectifier circuit", thyristorMontageAria: "Choose SCR or TRIAC power control", rectifierViewAria: "Choose the rectifier time window", rectifierFrequencyAria: "Choose the source frequency", thyristorVoltageAria: "Choose the RMS mains voltage", rectifierSteady: "Steady", diodesIdeal: "Ideal", diodesReal: "0.6 V drop", rectifierDiodesAria: "Choose the diode model",
       bridgeApplication: "Application", inverter: "Inverter", dcMotor: "DC motor", grid: "Grid", modulationType: "PWM pattern", bipolar: "Bipolar", unipolar: "Unipolar", motorBipolar: "50% = stop", motorUnipolar: "Direction + coast", direction: "Direction", forward: "Forward", reverse: "Reverse", motorView: "Display", motorTransient: "Start-up", motorSteady: "Steady state", motorViewAria: "Choose the motor time window", bridgeApplicationAria: "Choose the H-bridge application", bridgeSwitchingAria: "Choose the PWM pattern", motorDirectionAria: "Choose motor direction", gridCurrentControlMode: "Current control", gridCurrentControlAria: "Choose the grid current-control algorithm", pwmControl: "PWM", hysteresisControl: "Hysteresis",
       strategy: "Strategy", filteredOutput: "Filtered output", filterQuality: "Output filter", voltageThd: "Voltage THD", motorCommand: "Manual command", motorResult: "Motor response", speed: "Speed", torque: "Torque", armatureCurrent: "Armature current", averageArmatureVoltage: "Average armature voltage", power: "Power", activePower: "Active power", reactivePower: "Reactive power", powerFactor: "Power factor", currentThd: "Current THD", trackingError: "Tracking error", setpoint: "Setpoint", electricalModel: "Electrical model", mechanicalModel: "Mechanical model", currentControl: "Current tracking", filterAndLoad: "Filter and load", measured: "Measured", expected: "Expected", dcBus: "DC bus", motorNote: "No speed controller is used: duty cycle and direction are set manually.", gridNote: "A stiff 50 Hz grid and a proportional current tracker with voltage feedforward are used. No PLL is required in this introductory model.", gridHysteresisNote: "The bridge changes state when the current reaches either limit. The switching frequency is therefore variable and is not imposed by a carrier.", standaloneNote: "The output LC filter includes a small damping resistance and supplies a fixed series R–L load.", percent: "Percent",
     },
@@ -24,7 +24,7 @@
       outputVoltage: "Tension de sortie", conductionMode: "Mode de conduction", minimumCurrent: "Courant minimal", fundamentalFrequency: "Fréquence fondamentale", formula: "Formule", ratio: "Rapport", resonanceFrequency: "Fréquence de résonance du circuit LC", conversionLaw: "Loi de conversion", conversionLawCcm: "Loi de conversion · CCM", voltages: "Tensions", lcFilter: "Filtre LC", ripples: "Ondulations",
       theoryButtonAria: "Ouvrir les informations complémentaires", theoryOpen: "Plus d’infos", theoryKicker: "Analyse électrique", theoryTitle: "Régime permanent", closeTheory: "Fermer", balanceTitle: "Équilibres", numericalResidual: "Résidu numérique", rippleTheoryTitle: "Approximation des ondulations", fundamentalTitle: "Composante fondamentale", loadTitle: "Charge R–L série", simulation: "Simulation", approximation: "Approximation", relativeError: "Écart relatif", loadType: "Charge", seriesRl: "Résistance et inductance en série", criticalInductanceRatio: "Rapport d’inductance critique",
       approximationNote: "Ces approximations supposent une faible ondulation et une fréquence de découpage nettement supérieure à la dynamique naturelle.", synchronousNote: "L’interrupteur synchrone offre toujours un chemin au courant ; le courant de l’inductance peut donc devenir négatif.", diodeNote: "La diode bloque le courant inverse : le modèle peut être en CCM ou DCM. V<sub>D</sub> est mesurée de l’anode vers la cathode ; les formules d’ondulation sont des estimations CCM.", hBridgeNote: "Le pont est modélisé avec des interrupteurs complémentaires idéaux.", schematicPending: "Emplacement du SVG du circuit", schematicTomorrow: "La simulation est active. Le dessin définitif pourra être inséré ici sans modifier le modèle.", time: "Temps", voltage: "tension", currentAxis: "courant",
-      singleDiode: "Simple diode", diodeBridge: "Pont de diodes", rectifierMontageAria: "Choisir le montage du redresseur", rectifierViewAria: "Choisir la fenêtre temporelle du redresseur", rectifierFrequencyAria: "Choisir la fréquence de la source", rectifierSteady: "Permanent", diodesIdeal: "Idéales", diodesReal: "Chute 0,6 V", rectifierDiodesAria: "Choisir le modèle de diode",
+      singleDiode: "Simple diode", diodeBridge: "Pont de diodes", singleThyristor: "SCR", triac: "TRIAC", rectifierMontageAria: "Choisir le montage du redresseur", thyristorMontageAria: "Choisir la commande de puissance SCR ou TRIAC", rectifierViewAria: "Choisir la fenêtre temporelle du redresseur", rectifierFrequencyAria: "Choisir la fréquence de la source", thyristorVoltageAria: "Choisir la tension efficace du réseau", rectifierSteady: "Permanent", diodesIdeal: "Idéales", diodesReal: "Chute 0,6 V", rectifierDiodesAria: "Choisir le modèle de diode",
       bridgeApplication: "Application", inverter: "Onduleur", dcMotor: "Moteur CC", grid: "Réseau", modulationType: "Modulation PWM", bipolar: "Bipolaire", unipolar: "Unipolaire", motorBipolar: "50 % = arrêt", motorUnipolar: "Sens + roue libre", direction: "Sens", forward: "Avant", reverse: "Arrière", motorView: "Affichage", motorTransient: "Démarrage", motorSteady: "Régime permanent", motorViewAria: "Choisir la fenêtre temporelle du moteur", bridgeApplicationAria: "Choisir l’application du pont en H", bridgeSwitchingAria: "Choisir la modulation PWM", motorDirectionAria: "Choisir le sens de rotation", gridCurrentControlMode: "Commande du courant", gridCurrentControlAria: "Choisir l’algorithme de commande du courant réseau", pwmControl: "PWM", hysteresisControl: "Hystérésis",
       strategy: "Stratégie", filteredOutput: "Sortie filtrée", filterQuality: "Filtre de sortie", voltageThd: "THD de la tension", motorCommand: "Commande manuelle", motorResult: "Réponse du moteur", speed: "Vitesse", torque: "Couple", armatureCurrent: "Courant d’induit", averageArmatureVoltage: "Tension moyenne d’induit", power: "Puissances", activePower: "Puissance active", reactivePower: "Puissance réactive", powerFactor: "Facteur de puissance", currentThd: "THD du courant", trackingError: "Erreur de suivi", setpoint: "Consigne", electricalModel: "Modèle électrique", mechanicalModel: "Modèle mécanique", currentControl: "Suivi du courant", filterAndLoad: "Filtre et charge", measured: "Mesuré", expected: "Attendu", dcBus: "Bus continu", motorNote: "Aucun régulateur de vitesse n’est utilisé : le rapport cyclique et le sens sont imposés manuellement.", gridNote: "Le réseau est supposé rigide à 50 Hz. Le suivi du courant utilise une action proportionnelle et une anticipation de tension, sans PLL dans ce modèle introductif.", gridHysteresisNote: "Le pont change d’état lorsque le courant atteint l’une des deux limites. La fréquence de commutation est donc variable et n’est pas imposée par une porteuse.", standaloneNote: "Le filtre LC de sortie inclut une faible résistance d’amortissement et alimente une charge R–L série fixe.", percent: "Pourcentage",
     },
@@ -36,7 +36,7 @@
       outputVoltage: "Tensión de salida", conductionMode: "Modo de conducción", minimumCurrent: "Corriente mínima", fundamentalFrequency: "Frecuencia fundamental", formula: "Fórmula", ratio: "Relación", resonanceFrequency: "Frecuencia de resonancia del circuito LC", conversionLaw: "Ley de conversión", conversionLawCcm: "Ley de conversión · CCM", voltages: "Tensiones", lcFilter: "Filtro LC", ripples: "Ondulaciones",
       theoryButtonAria: "Abrir más información", theoryOpen: "Más info", theoryKicker: "Análisis eléctrico", theoryTitle: "Régimen permanente", closeTheory: "Cerrar", balanceTitle: "Equilibrios", numericalResidual: "Residuo numérico", rippleTheoryTitle: "Aproximación de las ondulaciones", fundamentalTitle: "Componente fundamental", loadTitle: "Carga R–L serie", simulation: "Simulación", approximation: "Aproximación", relativeError: "Error relativo", loadType: "Carga", seriesRl: "Resistencia e inductancia en serie", criticalInductanceRatio: "Relación de inductancia crítica",
       approximationNote: "Estas aproximaciones suponen una ondulación pequeña y una frecuencia de conmutación muy superior a la dinámica natural.", synchronousNote: "El interruptor síncrono siempre ofrece un camino para la corriente; por eso la corriente de la inductancia puede hacerse negativa.", diodeNote: "El diodo bloquea la corriente inversa: el modelo puede estar en CCM o DCM. V<sub>D</sub> se mide del ánodo al cátodo; las fórmulas de ondulación son estimaciones CCM.", hBridgeNote: "El puente se modela con interruptores complementarios ideales.", schematicPending: "Espacio para el SVG del circuito", schematicTomorrow: "La simulación está activa. El dibujo definitivo podrá insertarse aquí sin modificar el modelo.", time: "Tiempo", voltage: "tensión", currentAxis: "corriente",
-      singleDiode: "Diodo simple", diodeBridge: "Puente de diodos", rectifierMontageAria: "Elegir el montaje del rectificador", rectifierViewAria: "Elegir la ventana temporal del rectificador", rectifierFrequencyAria: "Elegir la frecuencia de la fuente", rectifierSteady: "Permanente", diodesIdeal: "Ideales", diodesReal: "Caída 0,6 V", rectifierDiodesAria: "Elegir el modelo de diodo",
+      singleDiode: "Diodo simple", diodeBridge: "Puente de diodos", singleThyristor: "SCR", triac: "TRIAC", rectifierMontageAria: "Elegir el montaje del rectificador", thyristorMontageAria: "Elegir el control de potencia SCR o TRIAC", rectifierViewAria: "Elegir la ventana temporal del rectificador", rectifierFrequencyAria: "Elegir la frecuencia de la fuente", thyristorVoltageAria: "Elegir la tensión eficaz de la red", rectifierSteady: "Permanente", diodesIdeal: "Ideales", diodesReal: "Caída 0,6 V", rectifierDiodesAria: "Elegir el modelo de diodo",
       bridgeApplication: "Aplicación", inverter: "Inversor", dcMotor: "Motor CC", grid: "Red", modulationType: "Modulación PWM", bipolar: "Bipolar", unipolar: "Unipolar", motorBipolar: "50 % = paro", motorUnipolar: "Sentido + rueda libre", direction: "Sentido", forward: "Adelante", reverse: "Atrás", motorView: "Visualización", motorTransient: "Arranque", motorSteady: "Régimen permanente", motorViewAria: "Elegir la ventana temporal del motor", bridgeApplicationAria: "Elegir la aplicación del puente H", bridgeSwitchingAria: "Elegir la modulación PWM", motorDirectionAria: "Elegir el sentido de giro", gridCurrentControlMode: "Control de corriente", gridCurrentControlAria: "Elegir el algoritmo de control de la corriente de red", pwmControl: "PWM", hysteresisControl: "Histéresis",
       strategy: "Estrategia", filteredOutput: "Salida filtrada", filterQuality: "Filtro de salida", voltageThd: "THD de tensión", motorCommand: "Mando manual", motorResult: "Respuesta del motor", speed: "Velocidad", torque: "Par", armatureCurrent: "Corriente de armadura", averageArmatureVoltage: "Tensión media de armadura", power: "Potencias", activePower: "Potencia activa", reactivePower: "Potencia reactiva", powerFactor: "Factor de potencia", currentThd: "THD de corriente", trackingError: "Error de seguimiento", setpoint: "Consigna", electricalModel: "Modelo eléctrico", mechanicalModel: "Modelo mecánico", currentControl: "Seguimiento de corriente", filterAndLoad: "Filtro y carga", measured: "Medido", expected: "Esperado", dcBus: "Bus continuo", motorNote: "No se utiliza un regulador de velocidad: el ciclo de trabajo y el sentido se imponen manualmente.", gridNote: "La red se supone rígida a 50 Hz. El seguimiento de corriente usa una acción proporcional y anticipación de tensión, sin PLL en este modelo introductorio.", gridHysteresisNote: "El puente cambia de estado cuando la corriente alcanza uno de los dos límites. Por eso, la frecuencia de conmutación es variable y no la impone una portadora.", standaloneNote: "El filtro LC de salida incluye una pequeña resistencia de amortiguamiento y alimenta una carga R–L serie fija.", percent: "Porcentaje",
     },
@@ -80,6 +80,8 @@
   const rectifierPanel = document.querySelector("#rectifier-panel");
   const rectifierMontageButtons = [...document.querySelectorAll("[data-rectifier-montage]")];
   const rectifierFrequencyButtons = [...document.querySelectorAll("[data-rectifier-frequency]")];
+  const thyristorVoltageGroup = document.querySelector("#thyristor-voltage-group");
+  const thyristorVoltageButtons = [...document.querySelectorAll("[data-thyristor-voltage]")];
   const rectifierViewGroup = document.querySelector("#rectifier-view-group");
   const rectifierViewButtons = [...document.querySelectorAll("[data-rectifier-view]")];
   const rectifierDiodesGroup = document.querySelector("#rectifier-diodes-group");
@@ -89,13 +91,15 @@
   const commutationModes = { buck: "synchronous", boost: "synchronous" };
   const bridgeMode = { application: "standalone", switching: "bipolar", direction: "forward", motorView: "transient", currentControl: "pwm" };
   const rectifierMode = { montage: "single", view: "steady", diodes: "ideal", frequency: 50 };
-  const hiddenTraces = { buck: new Set(), boost: new Set(), "pont-h": new Set(), "pv-grid": new Set(models["pv-grid"]?.defaultHiddenTraces || []), redresseur: new Set(models.redresseur?.defaultHiddenTraces || []) };
+  const thyristorMode = { montage: "single", frequency: 50 };
+  const hiddenTraces = { buck: new Set(), boost: new Set(), "pont-h": new Set(), "pv-grid": new Set(models["pv-grid"]?.defaultHiddenTraces || []), redresseur: new Set(models.redresseur?.defaultHiddenTraces || []), thyristor: new Set(models.thyristor?.defaultHiddenTraces || []) };
   const zoomStates = {
     buck: { x: null, y: [null, null, null] },
     boost: { x: null, y: [null, null, null] },
     "pont-h": { x: null, y: [null, null, null] },
     "pv-grid": { x: null, y: [null, null, null] },
     redresseur: { x: null, y: [null, null, null] },
+    thyristor: { x: null, y: [null, null, null] },
   };
   const ZOOM_BAND = 12;
   const ZOOM_MIN_DRAG = 8;
@@ -114,23 +118,26 @@
   const tr = () => translations[language];
   const activeModel = () => models[currentTopology];
   const commutationMode = () => commutationModes[currentTopology] || "synchronous";
-  const modelOptions = () => currentTopology === "pont-h" ? { ...bridgeMode } : currentTopology === "redresseur" ? { ...rectifierMode } : {};
+  const isRectifierTopology = () => currentTopology === "redresseur" || currentTopology === "thyristor";
+  const activeRectifierMode = () => currentTopology === "thyristor" ? thyristorMode : rectifierMode;
+  const modelOptions = () => currentTopology === "pont-h" ? { ...bridgeMode } : isRectifierTopology() ? { ...activeRectifierMode() } : {};
   const activeControls = () => {
     const model = activeModel();
     if (typeof model.controlsFor !== "function") return model.controls;
-    if (currentTopology === "redresseur") return model.controlsFor(rectifierMode.montage, { ...rectifierMode, advanced });
+    if (isRectifierTopology()) { const mode = activeRectifierMode(); return model.controlsFor(mode.montage, { ...mode, advanced }); }
     return model.controlsFor(bridgeMode.application, { ...bridgeMode, advanced });
   };
   const activePlots = () => {
     const model = activeModel();
     if (typeof model.plotsFor !== "function") return model.plots;
-    if (currentTopology === "redresseur") return model.plotsFor(rectifierMode.montage, rectifierMode.view);
+    if (isRectifierTopology()) { const mode = activeRectifierMode(); return model.plotsFor(mode.montage, mode.view); }
     return model.plotsFor(currentTopology === "pont-h" ? bridgeMode.application : commutationMode(), bridgeMode.switching, bridgeMode.motorView, bridgeMode.currentControl);
   };
   const activePlotGroups = () => {
     const model = activeModel();
     if (!advanced && typeof model.basicPlotsFor === "function") {
-      const basic = currentTopology === "redresseur" ? model.basicPlotsFor(rectifierMode.montage, rectifierMode.view) : model.basicPlotsFor(bridgeMode.application, bridgeMode.motorView);
+      const mode = activeRectifierMode();
+      const basic = isRectifierTopology() ? model.basicPlotsFor(mode.montage, mode.view) : model.basicPlotsFor(bridgeMode.application, bridgeMode.motorView);
       if (basic) return basic;
     }
     const plots = activePlots();
@@ -138,7 +145,7 @@
   };
   const activeAxes = () => {
     const model = activeModel();
-    if (typeof model.axesFor === "function") return model.axesFor(currentTopology === "redresseur" ? rectifierMode.montage : bridgeMode.application, advanced).map((axis) => ({ ...axis, label: localize(axis.label), rightLabel: localize(axis.rightLabel) }));
+    if (typeof model.axesFor === "function") return model.axesFor(isRectifierTopology() ? activeRectifierMode().montage : bridgeMode.application, advanced).map((axis) => ({ ...axis, label: localize(axis.label), rightLabel: localize(axis.rightLabel) }));
     return [{ label: tr().voltage, unit: "V" }, { label: tr().voltage, unit: "V" }, { label: tr().currentAxis, unit: "A" }];
   };
   const traceIsVisible = (trace) => !hiddenTraces[currentTopology]?.has(trace.legendKey || trace.key);
@@ -220,7 +227,9 @@
         card.classList.toggle("advanced-control", Boolean(def.advanced));
         card.hidden = Boolean(def.advanced && !advanced);
         card.innerHTML = `<span class="control-copy"><b>${def.symbol}</b><small>${localize(def.label)}</small></span><output>${displayControl(def, value)}</output><input data-key="${def.key}" type="range" min="${def.min}" max="${def.max}" step="${def.step}" value="${value}" aria-label="${localize(def.aria)}" />`;
-        const input = card.querySelector("input"); input._definition = def; updateRange(input); bindControl(card, input); reserveOutputWidth(card, def);
+        const input = card.querySelector("input"); input._definition = def;
+        if (currentTopology === "thyristor") { input.style.width = "100%"; input.style.justifySelf = "stretch"; }
+        updateRange(input); bindControl(card, input); reserveOutputWidth(card, def);
       });
       slots[0].parentElement.hidden = !rowDefinitions.some((def) => !def.advanced || advanced);
     };
@@ -282,20 +291,35 @@
   }
 
   function renderRectifierPanel() {
-    const visible = currentTopology === "redresseur";
+    const visible = isRectifierTopology();
     rectifierPanel.hidden = !visible;
     if (!visible) return;
-    if (!advanced && rectifierMode.view === "transient") rectifierMode.view = "steady";
-    document.querySelector("#rectifier-montage-options").setAttribute("aria-label", tr().rectifierMontageAria);
+    const mode = activeRectifierMode();
+    const controlled = currentTopology === "thyristor";
+    if (!advanced && mode.view === "transient") mode.view = "steady";
+    document.querySelector("#rectifier-montage-options").setAttribute("aria-label", tr()[controlled ? "thyristorMontageAria" : "rectifierMontageAria"]);
     document.querySelector("#rectifier-frequency-options").setAttribute("aria-label", tr().rectifierFrequencyAria);
+    thyristorVoltageGroup.setAttribute("aria-label", tr().thyristorVoltageAria);
     document.querySelector("#rectifier-view-options").setAttribute("aria-label", tr().rectifierViewAria);
     document.querySelector("#rectifier-diodes-options").setAttribute("aria-label", tr().rectifierDiodesAria);
-    rectifierMontageButtons.forEach((button) => { button.textContent = tr()[button.dataset.rectifierMontage === "bridge" ? "diodeBridge" : "singleDiode"]; button.setAttribute("aria-pressed", String(button.dataset.rectifierMontage === rectifierMode.montage)); });
-    rectifierFrequencyButtons.forEach((button) => button.setAttribute("aria-pressed", String(Number(button.dataset.rectifierFrequency) === rectifierMode.frequency)));
-    rectifierViewGroup.hidden = !advanced;
-    rectifierViewButtons.forEach((button) => { button.textContent = tr()[button.dataset.rectifierView === "transient" ? "motorTransient" : "rectifierSteady"]; button.setAttribute("aria-pressed", String(button.dataset.rectifierView === rectifierMode.view)); });
-    rectifierDiodesGroup.hidden = !advanced;
-    rectifierDiodesButtons.forEach((button) => { button.textContent = tr()[button.dataset.rectifierDiodes === "real" ? "diodesReal" : "diodesIdeal"]; button.setAttribute("aria-pressed", String(button.dataset.rectifierDiodes === rectifierMode.diodes)); });
+    rectifierMontageButtons.forEach((button) => {
+      const bridge = button.dataset.rectifierMontage === "bridge";
+      const montage = controlled && bridge ? "triac" : button.dataset.rectifierMontage;
+      button.textContent = tr()[controlled ? (bridge ? "triac" : "singleThyristor") : (bridge ? "diodeBridge" : "singleDiode")];
+      button.setAttribute("aria-pressed", String(montage === mode.montage));
+    });
+    rectifierFrequencyButtons.forEach((button) => button.setAttribute("aria-pressed", String(Number(button.dataset.rectifierFrequency) === mode.frequency)));
+    thyristorVoltageGroup.hidden = !controlled;
+    const thyristorVoltage = { ...models.thyristor.defaults, ...(states.thyristor || {}) }.vinRms;
+    thyristorVoltageButtons.forEach((button) => button.setAttribute("aria-pressed", String(Number(button.dataset.thyristorVoltage) === thyristorVoltage)));
+    rectifierViewGroup.hidden = controlled || !advanced;
+    rectifierViewButtons.forEach((button) => { button.textContent = tr()[button.dataset.rectifierView === "transient" ? "motorTransient" : "rectifierSteady"]; button.setAttribute("aria-pressed", String(button.dataset.rectifierView === mode.view)); });
+    rectifierDiodesGroup.hidden = controlled || !advanced;
+    rectifierDiodesButtons.forEach((button) => {
+      const real = button.dataset.rectifierDiodes === "real";
+      button.textContent = tr()[real ? "diodesReal" : "diodesIdeal"];
+      button.setAttribute("aria-pressed", String(button.dataset.rectifierDiodes === mode.diodes));
+    });
   }
 
   function renderDiagram() {
@@ -305,7 +329,8 @@
     if (typeof currentModel.diagramFor === "function") {
       const modeTitle = typeof currentModel.diagramTitleFor === "function" ? currentModel.diagramTitleFor(bridgeMode.application, bridgeMode.switching, language, bridgeMode.currentControl) : "";
       diagram.classList.toggle("has-mode-title", Boolean(modeTitle));
-      const diagramMarkup = currentTopology === "redresseur" ? currentModel.diagramFor(rectifierMode.montage, language, rectifierMode.frequency) : currentModel.diagramFor(bridgeMode.application, bridgeMode.switching, language, bridgeMode.currentControl);
+      const mode = activeRectifierMode();
+      const diagramMarkup = isRectifierTopology() ? currentModel.diagramFor(mode.montage, language, mode.frequency, mode) : currentModel.diagramFor(bridgeMode.application, bridgeMode.switching, language, bridgeMode.currentControl);
       diagram.innerHTML = `${modeTitle ? `<div class="diagram-mode-title">${modeTitle}</div>` : ""}${diagramMarkup}`;
     } else if (currentModel.diagram.type === "svg") {
       const source = currentModel.diagrams?.[commutationMode()] || currentModel.diagram.src;
@@ -569,17 +594,10 @@
     const groups = activePlotGroups(); const axes = activeAxes(); const hasRightAxis = groups.some((group) => group.some((trace) => trace.axis === "right")); const hasSpeedAxis = axes.some((axis) => axis.unit === "tr/min"); const axisInteger = new Intl.NumberFormat(locales[language], { maximumFractionDigits: 0 }); const axisOneDecimal = new Intl.NumberFormat(locales[language], { maximumFractionDigits: 1 }); const axisValue = (value, unit) => unit === "tr/min" || Math.abs(value) >= 100 ? axisInteger.format(value) : Math.abs(value) >= 10 ? axisOneDecimal.format(value) : number.format(value);
     const hasRightAxisLabel = axes.some((axis) => axis.rightLabel && !axis.hideRightAxis);
     const hasAxisMarks = typeof activeModel().axisMarksFor === "function";
-    const left = width < 520 ? (hasSpeedAxis ? 72 : 64) : (hasSpeedAxis ? 84 : 78); const right = hasRightAxis ? (width < 520 ? 64 : hasRightAxisLabel ? 96 : 74) : hasAxisMarks ? (width < 520 ? 58 : 68) : 17; const top = 46; const bottom = currentTopology === "redresseur" ? 50 : 36; const gap = groups.length > 1 ? 54 : 0; const plotHeight = groups.length > 1 ? Math.max(72, (height - top - bottom - gap * (groups.length - 1)) / groups.length) : height - top - bottom; const plotWidth = width - left - right; const duration = points.at(-1).t;
+    const left = width < 520 ? (hasSpeedAxis ? 72 : 64) : (hasSpeedAxis ? 84 : 78); const right = hasRightAxis ? (width < 520 ? 64 : hasRightAxisLabel ? 96 : 74) : hasAxisMarks ? (width < 520 ? 58 : 68) : 17; const top = 46; const bottom = currentTopology === "redresseur" ? 50 : currentTopology === "thyristor" ? 48 : 36; const gap = groups.length > 1 ? 54 : 0; const plotHeight = groups.length > 1 ? Math.max(72, (height - top - bottom - gap * (groups.length - 1)) / groups.length) : height - top - bottom; const plotWidth = width - left - right; const duration = points.at(-1).t;
     const zoom = activeZoom(); const xMinFraction = zoom.x?.min ?? 0; const xMaxFraction = zoom.x?.max ?? 1; const xMinTime = duration * xMinFraction; const xMaxTime = duration * xMaxFraction;
     const xAt = (time) => left + (time - xMinTime) / (xMaxTime - xMinTime) * plotWidth;
     const tops = groups.map((_, index) => top + index * (plotHeight + gap));
-    const grid = (plotTop, tickList, yAt) => {
-      ctx.lineWidth = 1; ctx.strokeStyle = color("--scope-grid");
-      if (xTicks.length > 1) xTicks.forEach((tickTime) => { const x = xAt(tickTime); ctx.beginPath(); ctx.moveTo(x, plotTop); ctx.lineTo(x, plotTop + plotHeight); ctx.stroke(); });
-      else for (let column = 0; column <= 8; column += 1) { const x = left + column / 8 * plotWidth; ctx.beginPath(); ctx.moveTo(x, plotTop); ctx.lineTo(x, plotTop + plotHeight); ctx.stroke(); }
-      if (tickList && tickList.length) tickList.forEach((value) => { const y = yAt(value); ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(left + plotWidth, y); ctx.stroke(); });
-      else for (let row = 0; row <= 5; row += 1) { const y = plotTop + row / 5 * plotHeight; ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(left + plotWidth, y); ctx.stroke(); }
-    };
     // Round tick values (1/2/2.5/5 × 10^n steps) covering the axis range.
     const axisTicks = (minValue, maxValue) => {
       const span = maxValue - minValue;
@@ -599,15 +617,61 @@
     let visibleStart = 0; while (visibleStart < points.length - 1 && points[visibleStart].t < xMinTime) visibleStart += 1;
     let visibleEnd = visibleStart; while (visibleEnd < points.length - 1 && points[visibleEnd].t <= xMaxTime) visibleEnd += 1;
     const visiblePoints = points.slice(Math.max(0, visibleStart - 1), Math.min(points.length, visibleEnd + 1));
-    const trace = (definition, yAt) => { ctx.beginPath(); ctx.setLineDash(definition.dash || []); let previousY; visiblePoints.forEach((point, index) => { const x = xAt(point.t); const y = yAt(point[definition.key]); if (index === 0) ctx.moveTo(x, y); else if (definition.step) { ctx.lineTo(x, previousY); ctx.lineTo(x, y); } else ctx.lineTo(x, y); previousY = y; }); ctx.strokeStyle = color(definition.color); ctx.lineWidth = definition.width || 2.7; ctx.lineJoin = definition.step ? "miter" : "round"; ctx.stroke(); ctx.setLineDash([]); };
+    const grid = (plotTop, tickList, yAt, horizontalTicks, horizontalAt) => {
+      ctx.lineWidth = 1; ctx.strokeStyle = color("--scope-grid");
+      if (horizontalTicks.length > 1) horizontalTicks.forEach((tick) => { const x = horizontalAt(tick); ctx.beginPath(); ctx.moveTo(x, plotTop); ctx.lineTo(x, plotTop + plotHeight); ctx.stroke(); });
+      else for (let column = 0; column <= 8; column += 1) { const x = left + column / 8 * plotWidth; ctx.beginPath(); ctx.moveTo(x, plotTop); ctx.lineTo(x, plotTop + plotHeight); ctx.stroke(); }
+      if (tickList && tickList.length) tickList.forEach((value) => { const y = yAt(value); ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(left + plotWidth, y); ctx.stroke(); });
+      else for (let row = 0; row <= 5; row += 1) { const y = plotTop + row / 5 * plotHeight; ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(left + plotWidth, y); ctx.stroke(); }
+    };
+    const trace = (definition, yAt, series, horizontalAt, horizontalKey) => {
+      const drawable = series.filter((point) => Number.isFinite(point[horizontalKey]) && Number.isFinite(point[definition.key]));
+      if (definition.marker) {
+        drawable.forEach((point) => {
+          ctx.beginPath(); ctx.arc(horizontalAt(point[horizontalKey]), yAt(point[definition.key]), definition.radius || 5, 0, 2 * Math.PI);
+          ctx.fillStyle = color("--scope-screen"); ctx.fill(); ctx.strokeStyle = color(definition.color); ctx.lineWidth = definition.width || 3; ctx.stroke();
+        });
+        return;
+      }
+      ctx.beginPath(); ctx.setLineDash(definition.dash || []); let previousY; let started = false;
+      series.forEach((point) => {
+        const horizontal = point[horizontalKey]; const value = point[definition.key];
+        if (!Number.isFinite(horizontal) || !Number.isFinite(value)) { started = false; previousY = undefined; return; }
+        const x = horizontalAt(horizontal); const y = yAt(value);
+        if (!started) { ctx.moveTo(x, y); started = true; }
+        else if (definition.step) { ctx.lineTo(x, previousY); ctx.lineTo(x, y); }
+        else ctx.lineTo(x, y);
+        previousY = y;
+      });
+      ctx.strokeStyle = color(definition.color); ctx.lineWidth = definition.width || 2.7; ctx.lineJoin = definition.step ? "miter" : "round"; ctx.stroke(); ctx.setLineDash([]);
+    };
+    const drawXAxis = (plotTop, ticks, horizontalAt, axis) => {
+      if (ticks.length <= 1) return;
+      const scale = axis.xScale || 1; const values = ticks.map((tick) => tick * scale); const step = Math.abs(values[1] - values[0]);
+      const decimals = Math.min(3, Math.max(0, Math.ceil(-Math.log10(step || 1) - 1e-9)));
+      const tickFormat = new Intl.NumberFormat(locales[language], { maximumFractionDigits: decimals });
+      ctx.save(); ctx.font = '500 12.5px Inter, "Segoe UI", Arial, sans-serif'; ctx.textAlign = "center"; ctx.fillStyle = color("--scope-text");
+      ticks.forEach((tick, index) => ctx.fillText(tickFormat.format(values[index]), horizontalAt(tick), plotTop + plotHeight + 17));
+      ctx.restore(); ctx.textAlign = "center"; ctx.fillStyle = color("--scope-text");
+      ctx.fillText(`${localize(axis.xLabel)}${axis.xUnit ? ` (${axis.xUnit})` : ""}`, left + plotWidth / 2, plotTop + plotHeight + 33);
+    };
+    const mixedHorizontalAxes = axes.some((axis) => axis.xKey);
     const plotLayouts = [];
     groups.forEach((traces, groupIndex) => {
-      const plotTop = tops[groupIndex]; const visibleTraces = traces.filter(traceIsVisible); const hasVisibleTrace = visibleTraces.some((item) => !item.ghost);
+      const axis = axes[groupIndex] || {}; const plotTop = tops[groupIndex]; const visibleTraces = traces.filter(traceIsVisible); const hasVisibleTrace = visibleTraces.some((item) => !item.ghost);
+      const independentX = Boolean(axis.xKey); const horizontalKey = axis.xKey || "t";
+      const sourcePoints = typeof activeModel().plotPointsFor === "function" ? activeModel().plotPointsFor(groupIndex, points) : points;
+      const horizontalMin = independentX ? axis.xMin ?? Math.min(...sourcePoints.map((point) => point[horizontalKey])) : xMinTime;
+      const horizontalMax = independentX ? axis.xMax ?? Math.max(...sourcePoints.map((point) => point[horizontalKey])) : xMaxTime;
+      const horizontalAt = independentX ? (value) => left + (value - horizontalMin) / (horizontalMax - horizontalMin) * plotWidth : xAt;
+      const horizontalTicks = independentX ? axisTicks(horizontalMin, horizontalMax) : xTicks;
+      const series = independentX ? sourcePoints.filter((point) => point[horizontalKey] >= horizontalMin && point[horizontalKey] <= horizontalMax) : visiblePoints;
+      const scaleSeries = independentX ? series : points;
       // Ghost traces widen the scale but never appear as drawn curves or tick values.
       const scaledRange = (items, labelItems) => {
         if (!labelItems.length) return null;
-        const scale = paddedRange(points.flatMap((point) => items.map((item) => point[item.key])));
-        const labels = paddedRange(points.flatMap((point) => labelItems.map((item) => point[item.key])));
+        const scale = paddedRange(scaleSeries.flatMap((point) => items.map((item) => point[item.key])));
+        const labels = paddedRange(scaleSeries.flatMap((point) => labelItems.map((item) => point[item.key])));
         return { min: scale.min, max: scale.max, rawMin: labels.rawMin, rawMax: labels.rawMax };
       };
       const leftScaleTraces = visibleTraces.filter((item) => item.axis !== "right"); const leftTraces = leftScaleTraces.filter((item) => !item.ghost);
@@ -616,11 +680,11 @@
       const automaticRightRange = scaledRange(rightScaleTraces, rightTraces);
       const yZoom = zoom.y[groupIndex]; const range = yZoom ? { rawMin: yZoom.min, rawMax: yZoom.max, min: yZoom.min, max: yZoom.max } : automaticRange;
       const rightRange = automaticRightRange && Number.isFinite(yZoom?.rightMin) && Number.isFinite(yZoom?.rightMax) ? { rawMin: yZoom.rightMin, rawMax: yZoom.rightMax, min: yZoom.rightMin, max: yZoom.rightMax } : automaticRightRange;
-      const yAt = (value) => plotTop + (range.max - value) / (range.max - range.min) * plotHeight; const yAtRight = (value) => plotTop + (rightRange.max - value) / (rightRange.max - rightRange.min) * plotHeight; const ticks = hasVisibleTrace && Math.abs(range.rawMax - range.rawMin) >= 1e-12 ? axisTicks(range.min, range.max) : []; grid(plotTop, ticks, yAt); const zero = yAt(0);
-      plotLayouts.push({ groupIndex, top: plotTop, height: plotHeight, min: range.min, max: range.max, rightMin: rightRange?.min, rightMax: rightRange?.max });
+      const yAt = (value) => plotTop + (range.max - value) / (range.max - range.min) * plotHeight; const yAtRight = (value) => plotTop + (rightRange.max - value) / (rightRange.max - rightRange.min) * plotHeight; const ticks = hasVisibleTrace && Math.abs(range.rawMax - range.rawMin) >= 1e-12 ? axisTicks(range.min, range.max) : []; grid(plotTop, ticks, yAt, horizontalTicks, horizontalAt); const zero = yAt(0);
+      plotLayouts.push({ groupIndex, top: plotTop, height: plotHeight, min: range.min, max: range.max, rightMin: rightRange?.min, rightMax: rightRange?.max, independentX });
       ctx.save(); ctx.beginPath(); ctx.rect(left, plotTop, plotWidth, plotHeight); ctx.clip();
       if (zero >= plotTop && zero <= plotTop + plotHeight) { ctx.beginPath(); ctx.moveTo(left, zero); ctx.lineTo(left + plotWidth, zero); ctx.strokeStyle = color("--scope-zero"); ctx.stroke(); }
-      [...visibleTraces].sort((a, b) => (a.layer || 0) - (b.layer || 0)).forEach((item) => { if (item.ghost) return; trace(item, item.axis === "right" && rightRange ? yAtRight : yAt); }); ctx.restore(); const leftTickColor = axes[groupIndex].tint ? color(axes[groupIndex].tint) : groupIndex === 1 ? color("--trace-vl") : groupIndex === 2 ? color("--trace-il") : color("--scope-text"); ctx.fillStyle = leftTickColor; ctx.textAlign = "right";
+      [...visibleTraces].sort((a, b) => (a.layer || 0) - (b.layer || 0)).forEach((item) => { if (item.ghost) return; trace(item, item.axis === "right" && rightRange ? yAtRight : yAt, series, horizontalAt, horizontalKey); }); ctx.restore(); const leftTickColor = axis.tint ? color(axis.tint) : groupIndex === 1 ? color("--trace-vl") : groupIndex === 2 ? color("--trace-il") : color("--scope-text"); ctx.fillStyle = leftTickColor; ctx.textAlign = "right";
       if (!hasVisibleTrace) ctx.fillText("—", left - 8, zero + 5);
       else {
         if (!ticks.length) ctx.fillText(`0 ${axes[groupIndex].unit}`, left - 8, zero + 5);
@@ -647,13 +711,14 @@
           ctx.fillText(`${axisValue(mark.value, axes[groupIndex].unit)} ${axes[groupIndex].unit}`, left + plotWidth + 9, markY + 4);
         });
       }
+      if (mixedHorizontalAxes && axis.showXLabels) drawXAxis(plotTop, horizontalTicks, horizontalAt, axis);
     });
     plotView = { left, right: left + plotWidth, plotWidth, duration, xMinFraction, xMaxFraction, xMinTime, xMaxTime, plots: plotLayouts };
     if (groups.length > 1) scopeScreen.style.setProperty("--voltage-legend-top", `${tops[1] - 38}px`);
     if (groups.length > 2) scopeScreen.style.setProperty("--current-legend-top", `${tops[2] - 38}px`);
     const plotBottom = tops.at(-1) + plotHeight; ctx.fillStyle = color("--scope-text");
     const timeUnit = xMaxTime >= 1 ? { label: "s", scale: 1 } : xMaxTime >= .001 ? { label: "ms", scale: 1e3 } : { label: "µs", scale: 1e6 };
-    if (xTicks.length > 1) {
+    if (!mixedHorizontalAxes && xTicks.length > 1) {
       const stepInUnit = (xTicks[1] - xTicks[0]) * timeUnit.scale;
       const decimals = Math.min(3, Math.max(0, Math.ceil(-Math.log10(stepInUnit) - 1e-9)));
       const tickFormat = new Intl.NumberFormat(locales[language], { maximumFractionDigits: decimals });
@@ -661,7 +726,7 @@
       xTicks.forEach((tickTime) => ctx.fillText(tickFormat.format(tickTime * timeUnit.scale), xAt(tickTime), plotBottom + 17));
       ctx.restore();
       ctx.textAlign = "center"; ctx.fillText(`${tr().time} (${timeUnit.label})`, left + plotWidth / 2, plotBottom + 33);
-    } else { ctx.textAlign = "center"; ctx.fillText(tr().time, left + plotWidth / 2, plotBottom + 25); }
+    } else if (!mixedHorizontalAxes) { ctx.textAlign = "center"; ctx.fillText(tr().time, left + plotWidth / 2, plotBottom + 25); }
     const labelInset = width < 520 ? 12 : 24;
     const axisLabel = (value) => value ? value.charAt(0).toUpperCase() + value.slice(1) : value;
     groups.forEach((_, index) => { ctx.save(); ctx.translate(labelInset, tops[index] + plotHeight / 2); ctx.rotate(-Math.PI / 2); ctx.fillStyle = axes[index].tint ? color(axes[index].tint) : index === 1 ? color("--trace-vl") : index === 2 ? color("--trace-il") : color("--scope-text"); ctx.fillText(`${axisLabel(axes[index].label)} (${axes[index].unit})`, 0, 0); ctx.restore(); if (axes[index].rightLabel && !axes[index].hideRightAxis) { ctx.save(); ctx.translate(width - labelInset, tops[index] + plotHeight / 2); ctx.rotate(Math.PI / 2); ctx.fillStyle = color(groups[index].filter((item) => item.axis === "right").at(-1)?.color || "--trace-vr"); ctx.fillText(`${axisLabel(axes[index].rightLabel)} (${axes[index].rightUnit})`, 0, 0); ctx.restore(); } });
@@ -680,6 +745,7 @@
     if (typeof activeModel().onResult === "function") activeModel().onResult(result, state, { language, advanced, dark, requestUpdate: scheduleModelUpdate });
   }
   function renderTopology() {
+    document.body.dataset.topology = currentTopology;
     const topology = catalog.find((item) => item.id === currentTopology); document.title = `${tr().documentTitle} — ${localize(topology?.name)}`; document.querySelector('meta[name="description"]').setAttribute("content", tr().metaDescription); canvas.setAttribute("aria-label", `${tr().scopeAria}: ${localize(topology?.name)}. ${tr().zoomAria}`);
     const curvesHost = document.querySelector("#pv-curves"); if (curvesHost) curvesHost.hidden = currentTopology !== "pv-grid";
     renderRectifierPanel(); renderControls(); renderCommutationSelector(); renderBridgeModePanel(); renderDiagram(); renderInfoBand(); renderLegends(); renderTheoryShell(); update();
@@ -695,7 +761,7 @@
     const selection = cancelled ? null : selectionGeometry();
     if (selection && (selection.width >= ZOOM_MIN_DRAG || selection.height >= ZOOM_MIN_DRAG)) {
       const zoom = activeZoom();
-      if ((selection.mode === "x" || selection.mode === "xy") && selection.width >= ZOOM_MIN_DRAG) {
+      if (!selection.plot.independentX && (selection.mode === "x" || selection.mode === "xy") && selection.width >= ZOOM_MIN_DRAG) {
         const fractionAt = (x) => plotView.xMinFraction + (x - plotView.left) / plotView.plotWidth * (plotView.xMaxFraction - plotView.xMinFraction);
         zoom.x = { min: Math.max(0, Math.min(fractionAt(selection.x0), fractionAt(selection.x1))), max: Math.min(1, Math.max(fractionAt(selection.x0), fractionAt(selection.x1))) };
       }
@@ -718,10 +784,11 @@
     if (!plotView) return;
     const point = canvasPoint(event); const plot = plotAtPosition(point.x, point.y);
     if (!plot) return;
-    if (event.button === 2) {
-      const zoom = activeZoom();
-      panDrag = {
-        pointerId: event.pointerId, groupIndex: plot.groupIndex, x0: point.x, y0: point.y,
+      if (event.button === 2) {
+        const zoom = activeZoom();
+        panDrag = {
+          pointerId: event.pointerId, groupIndex: plot.groupIndex, x0: point.x, y0: point.y,
+          independentX: plot.independentX,
         x: zoom.x ? { ...zoom.x } : { min: 0, max: 1 },
         y: zoom.y[plot.groupIndex] ? { ...zoom.y[plot.groupIndex] } : { min: plot.min, max: plot.max },
         yRight: Number.isFinite(plot.rightMin) && Number.isFinite(plot.rightMax) ? { min: plot.rightMin, max: plot.rightMax } : null,
@@ -739,10 +806,12 @@
   canvas.addEventListener("pointermove", (event) => {
     if (panDrag && panDrag.pointerId === event.pointerId) {
       const point = canvasPoint(event); const zoom = activeZoom();
-      const xSpan = panDrag.x.max - panDrag.x.min;
-      const xShift = -(point.x - panDrag.x0) / plotView.plotWidth * xSpan;
-      const xMin = Math.max(0, Math.min(1 - xSpan, panDrag.x.min + xShift));
-      zoom.x = xSpan < 1 - 1e-9 ? { min: xMin, max: xMin + xSpan } : null;
+      if (!panDrag.independentX) {
+        const xSpan = panDrag.x.max - panDrag.x.min;
+        const xShift = -(point.x - panDrag.x0) / plotView.plotWidth * xSpan;
+        const xMin = Math.max(0, Math.min(1 - xSpan, panDrag.x.min + xShift));
+        zoom.x = xSpan < 1 - 1e-9 ? { min: xMin, max: xMin + xSpan } : null;
+      }
       const plot = plotView.plots[panDrag.groupIndex]; const ySpan = panDrag.y.max - panDrag.y.min;
       const yShift = (point.y - panDrag.y0) / plot.height * ySpan;
       const nextRange = { min: panDrag.y.min + yShift, max: panDrag.y.max + yShift };
@@ -807,20 +876,30 @@
     bridgeMode.motorView = button.dataset.motorView; resetZoom(); renderTopology();
   }));
   rectifierMontageButtons.forEach((button) => button.addEventListener("click", () => {
-    if (currentTopology !== "redresseur" || rectifierMode.montage === button.dataset.rectifierMontage) return;
-    saveState(); rectifierMode.montage = button.dataset.rectifierMontage; resetZoom(); renderTopology();
+    const mode = activeRectifierMode();
+    const montage = currentTopology === "thyristor" && button.dataset.rectifierMontage === "bridge" ? "triac" : button.dataset.rectifierMontage;
+    if (!isRectifierTopology() || mode.montage === montage) return;
+    saveState(); mode.montage = montage; resetZoom(); renderTopology();
   }));
   rectifierFrequencyButtons.forEach((button) => button.addEventListener("click", () => {
-    if (currentTopology !== "redresseur" || rectifierMode.frequency === Number(button.dataset.rectifierFrequency)) return;
-    saveState(); rectifierMode.frequency = Number(button.dataset.rectifierFrequency); resetZoom(); renderTopology();
+    const mode = activeRectifierMode();
+    if (!isRectifierTopology() || mode.frequency === Number(button.dataset.rectifierFrequency)) return;
+    saveState(); mode.frequency = Number(button.dataset.rectifierFrequency); resetZoom(); renderTopology();
+  }));
+  thyristorVoltageButtons.forEach((button) => button.addEventListener("click", () => {
+    const voltage = Number(button.dataset.thyristorVoltage);
+    if (currentTopology !== "thyristor" || getState().vinRms === voltage) return;
+    saveState(); states.thyristor = { ...models.thyristor.defaults, ...(states.thyristor || {}), vinRms: voltage }; resetZoom(); renderTopology();
   }));
   rectifierViewButtons.forEach((button) => button.addEventListener("click", () => {
-    if (currentTopology !== "redresseur" || rectifierMode.view === button.dataset.rectifierView) return;
-    saveState(); rectifierMode.view = button.dataset.rectifierView; resetZoom(); renderTopology();
+    const mode = activeRectifierMode();
+    if (!isRectifierTopology() || mode.view === button.dataset.rectifierView) return;
+    saveState(); mode.view = button.dataset.rectifierView; resetZoom(); renderTopology();
   }));
   rectifierDiodesButtons.forEach((button) => button.addEventListener("click", () => {
-    if (currentTopology !== "redresseur" || rectifierMode.diodes === button.dataset.rectifierDiodes) return;
-    saveState(); rectifierMode.diodes = button.dataset.rectifierDiodes; resetZoom(); renderTopology();
+    const mode = activeRectifierMode();
+    if (!isRectifierTopology() || mode.diodes === button.dataset.rectifierDiodes) return;
+    saveState(); mode.diodes = button.dataset.rectifierDiodes; resetZoom(); renderTopology();
   }));
   themeButton.addEventListener("click", () => setTheme(!dark));
   theoryButton.addEventListener("click", () => theoryDialog.showModal());
@@ -830,7 +909,7 @@
   document.querySelector("#topology-close").addEventListener("click", () => topologyDialog.close());
   topologyDialog.addEventListener("click", (event) => { if (event.target === topologyDialog) topologyDialog.close(); });
   advancedButton.addEventListener("click", () => { advanced = !advanced; advancedButton.setAttribute("aria-pressed", String(advanced)); document.body.classList.toggle("advanced-mode", advanced); renderRectifierPanel(); renderControls(); renderCommutationSelector(); renderBridgeModePanel(); renderLegends(); update(); });
-  document.querySelector("#reset").addEventListener("click", () => { states[currentTopology] = { ...activeModel().defaults }; hiddenTraces[currentTopology] = new Set(activeModel().defaultHiddenTraces || []); resetZoom(); if (currentTopology in commutationModes) commutationModes[currentTopology] = "synchronous"; if (currentTopology === "pont-h") { bridgeMode.switching = "bipolar"; bridgeMode.direction = "forward"; bridgeMode.motorView = "transient"; bridgeMode.currentControl = "pwm"; } if (currentTopology === "redresseur") { rectifierMode.montage = "single"; rectifierMode.view = "steady"; rectifierMode.diodes = "ideal"; rectifierMode.frequency = 50; } if (typeof activeModel().resetInteractive === "function") activeModel().resetInteractive(); renderTopology(); });
+  document.querySelector("#reset").addEventListener("click", () => { states[currentTopology] = { ...activeModel().defaults }; hiddenTraces[currentTopology] = new Set(activeModel().defaultHiddenTraces || []); resetZoom(); if (currentTopology in commutationModes) commutationModes[currentTopology] = "synchronous"; if (currentTopology === "pont-h") { bridgeMode.switching = "bipolar"; bridgeMode.direction = "forward"; bridgeMode.motorView = "transient"; bridgeMode.currentControl = "pwm"; } if (currentTopology === "redresseur") { rectifierMode.montage = "single"; rectifierMode.view = "steady"; rectifierMode.diodes = "ideal"; rectifierMode.frequency = 50; } if (currentTopology === "thyristor") { thyristorMode.montage = "single"; thyristorMode.frequency = 50; } if (typeof activeModel().resetInteractive === "function") activeModel().resetInteractive(); renderTopology(); });
   document.addEventListener("contextmenu", (event) => event.preventDefault());
   window.addEventListener("hashchange", () => { const requested = decodeURIComponent(window.location.hash.slice(1)); if (models[requested]) selectTopology(requested, false); else syncRoute(); });
   if ("ResizeObserver" in window) new ResizeObserver(() => currentPoints.length && draw(currentPoints)).observe(canvas); else window.addEventListener("resize", () => currentPoints.length && draw(currentPoints));

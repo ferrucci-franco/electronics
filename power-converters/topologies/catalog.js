@@ -17,6 +17,20 @@
       }),
     }),
     Object.freeze({
+      id: "thyristor",
+      status: "available",
+      name: Object.freeze({
+        en: "Power control",
+        fr: "Commande de puissance",
+        es: "Control de potencia",
+      }),
+      description: Object.freeze({
+        en: "Phase-angle power control using an SCR for one half-cycle or a TRIAC for both half-cycles, with an R–L load.",
+        fr: "Commande de puissance par angle de phase : SCR sur une alternance ou TRIAC sur les deux, avec charge R–L.",
+        es: "Control de potencia por ángulo de fase: SCR en un semiciclo o TRIAC en ambos, con carga R–L.",
+      }),
+    }),
+    Object.freeze({
       id: "buck",
       status: "available",
       name: Object.freeze({

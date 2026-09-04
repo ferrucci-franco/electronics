@@ -56,6 +56,10 @@ h1, h2 { margin: 0; font-size: clamp(1.08rem, 1.35vw, 1.72rem); line-height: 1.0
 .topology-trigger > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .topology-trigger > i { flex: 0 0 auto; width: 9px; height: 9px; margin: -4px 3px 0 1px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); }
 .header-actions { display: flex; min-width: 0; flex: 1 1 auto; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 5px; }
+@media (min-width: 1101px) {
+  body[data-topology="thyristor"] .topology-heading { min-width: 120px; max-width: 140px; flex: 0 1 140px; overflow: hidden; }
+  body[data-topology="thyristor"] .header-actions { flex: 0 0 auto; flex-wrap: nowrap; }
+}
 .time-pill { font-size: clamp(.75rem, .82vw, .9rem); font-weight: 850; letter-spacing: .05em; text-transform: uppercase; }
 .language-switch { display: flex; align-items: center; padding: 3px; border: 1px solid #dce1e7; border-radius: 14px; background: #fffdf8; box-shadow: 0 5px 14px #1724380a; }
 .language-switch button { width: 30px; height: 30px; padding: 0; border: 0; border-radius: 10px; background: transparent; color: #59657a; cursor: pointer; font-size: .82rem; font-weight: 850; }
@@ -357,9 +361,11 @@ body.dark-theme .topology-card[aria-disabled="true"] .topology-status { backgrou
   .panel { border-radius: 14px; }
   .panel-heading { flex-direction: column; align-items: stretch; gap: 10px; padding: 14px 12px 10px; }
   h1 { text-align: center; font-size: clamp(1.3rem, 6vw, 1.65rem); }
-  .header-actions { flex-wrap: wrap; justify-content: center; }
-  #theme-toggle, #advanced-toggle, #theory-trigger, #reset { height: 44px; }
-  #advanced-toggle, #theory-trigger, #reset { padding-inline: 12px; }
+  .header-actions { flex-wrap: nowrap; justify-content: center; gap: 4px; }
+  .language-switch button { width: 28px; height: 36px; }
+  #theme-toggle, #advanced-toggle, #theory-trigger, #reset { min-height: 40px; height: 40px; }
+  #theme-toggle { width: 38px; }
+  #advanced-toggle, #theory-trigger, #reset { padding-inline: 8px; font-size: .75rem; }
   .circuit-content { padding-inline: 8px; }
   .controls-top, .controls-bottom,
   .advanced-mode .controls-top, .advanced-mode .controls-bottom,
@@ -403,17 +409,30 @@ body.dark-theme .topology-card[aria-disabled="true"] .topology-status { backgrou
   body.dark-theme .lc-info.four-columns > div:nth-child(4) { border-top-color: #27605b; }
 }
 
-/* Redresseur : pastilles compactes sur une seule ligne ; les quatre cartes tiennent
-   sur une rangée pleine largeur au-dessus du schéma, et ψ (démarrage) occupe seul
-   la rangée du bas. */
+/* Redresseurs et commande de puissance : pastilles compactes sur une seule ligne
+   et cartes de réglage sur une rangée pleine largeur au-dessus du schéma. */
 #rectifier-panel { gap: 6px 8px; }
-.workspace:has(.rect-schematic) .measurements { display: none; }
-.workspace:has(.rect-schematic) .scope-screen { margin-bottom: clamp(10px, 1.3vh, 17px); }
-.circuit-panel:has(.rect-schematic) .lc-info { height: auto; min-height: clamp(108px, 12.5vh, 126px); padding-block: 5px; }
+.rectifier-source-settings { flex: 0 0 auto; flex-flow: row nowrap !important; width: max-content; align-items: center; justify-content: center; gap: 8px; }
+.rectifier-source-settings > div { flex: 0 0 auto; }
+.workspace:has(.rect-schematic) .measurements,
+.workspace:has(.thy-schematic) .measurements { display: none; }
+.workspace:has(.rect-schematic) .scope-screen,
+.workspace:has(.thy-schematic) .scope-screen { margin-bottom: clamp(10px, 1.3vh, 17px); }
+.circuit-panel:has(.rect-schematic) .lc-info,
+.circuit-panel:has(.thy-schematic) .lc-info { height: auto; min-height: clamp(108px, 12.5vh, 126px); padding-block: 5px; }
 #rectifier-panel .bridge-mode-group button { min-height: 27px; padding: 3px 9px; font-size: clamp(.7rem, .76vw, .84rem); }
 .circuit-content:has(.rect-schematic) .controls-top,
-.circuit-content:has(.rect-schematic) .controls-bottom { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); padding-inline: 0; }
-.circuit-content:has(.rect-schematic) .control small { font-size: clamp(.78rem, .84vw, .94rem); hyphens: manual; text-wrap: wrap; }
+.circuit-content:has(.rect-schematic) .controls-bottom,
+.circuit-content:has(.thy-schematic) .controls-top,
+.circuit-content:has(.thy-schematic) .controls-bottom { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); padding-inline: 0; }
+.circuit-content:has(.rect-schematic) .control small,
+.circuit-content:has(.thy-schematic) .control small { font-size: clamp(.78rem, .84vw, .94rem); hyphens: manual; text-wrap: wrap; }
+.advanced-mode[data-topology="thyristor"] .control { column-gap: clamp(8px, .8vw, 13px); padding-inline: clamp(13px, 1vw, 17px); }
+.advanced-mode[data-topology="thyristor"] .control input[type="range"] { width: 100%; justify-self: stretch; }
+
+@media (max-width: 600px) {
+  .advanced-mode[data-topology="thyristor"] .control { padding-inline: 11px; }
+}
 
 @media (max-width: 400px) {
   .controls-top, .controls-bottom,
