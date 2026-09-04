@@ -1185,6 +1185,23 @@
     background:transparent;
   }
 
+  /* El canvas va en absoluto dentro de .plot-body, que ocupa la fila del
+     gráfico. Así su tamaño no depende de resolver un alto en porcentaje (en
+     Safari no se resolvía y el canvas quedaba más alto que la tarjeta) ni
+     realimenta la altura de la fila. */
+  .plot-body {
+    position:relative;
+    min-height:0;
+    min-width:0;
+  }
+
+  .plot-body > canvas {
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+  }
+
   /* Táctil: arrastre horizontal sobre el gráfico mueve el cursor de lectura,
      el vertical sigue desplazando la página. Sin menú de selección al mantener. */
   .plot-card canvas {
@@ -1208,12 +1225,6 @@
   #spectrum-canvas,
   #spectrogram-canvas {
     cursor:crosshair;
-  }
-
-  .plot-spectrogram > #spectrogram-canvas,
-  .plot-spectrogram > #spectrogram-notes-canvas {
-    grid-row:2;
-    grid-column:1;
   }
 
   .plot-overlay-canvas {
@@ -1360,6 +1371,30 @@
 
     .compact-btn {
       width:100%;
+    }
+
+    /* En pantallas angostas los chips de la cabecera dejaban el título sin
+       ancho: título y botón en la primera fila, chips en la segunda. */
+    .plot-title {
+      grid-template-columns:minmax(0, 1fr) auto;
+      row-gap:6px;
+    }
+
+    .plot-title-left {
+      grid-column:1;
+      grid-row:1;
+    }
+
+    .plot-fullscreen-btn {
+      grid-column:2;
+      grid-row:1;
+    }
+
+    .plot-meta {
+      grid-column:1 / -1;
+      grid-row:2;
+      justify-content:start;
+      white-space:normal;
     }
   }
 
@@ -1615,7 +1650,9 @@
           <span id="time-meta" class="plot-meta">--</span>
           <button type="button" class="plot-fullscreen-btn" data-panel="time-panel" aria-label="Pantalla completa" title="Pantalla completa"><svg class="icon-expand" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><svg class="icon-compress" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg></button>
         </div>
-        <canvas id="time-canvas"></canvas>
+        <div class="plot-body">
+          <canvas id="time-canvas"></canvas>
+        </div>
       </section>
 
       <section class="plot-card plot-spectrum" id="spectrum-panel">
@@ -1628,7 +1665,9 @@
           <span id="spectrum-meta" class="plot-meta">--</span>
           <button type="button" class="plot-fullscreen-btn" data-panel="spectrum-panel" aria-label="Pantalla completa" title="Pantalla completa"><svg class="icon-expand" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><svg class="icon-compress" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg></button>
         </div>
-        <canvas id="spectrum-canvas"></canvas>
+        <div class="plot-body">
+          <canvas id="spectrum-canvas"></canvas>
+        </div>
         <div id="spectrum-zoom-box" class="plot-zoom-box" aria-hidden="true"></div>
         <div id="spectrum-hover" class="plot-hover">
           <div class="plot-hover-line vertical"></div>
@@ -1646,8 +1685,10 @@
           <span id="spectrogram-meta" class="plot-meta">frecuencia vs tiempo</span>
           <button type="button" class="plot-fullscreen-btn" data-panel="spectrogram-panel" aria-label="Pantalla completa" title="Pantalla completa"><svg class="icon-expand" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><svg class="icon-compress" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg></button>
         </div>
-        <canvas id="spectrogram-canvas"></canvas>
-        <canvas id="spectrogram-notes-canvas" class="plot-overlay-canvas"></canvas>
+        <div class="plot-body">
+          <canvas id="spectrogram-canvas"></canvas>
+          <canvas id="spectrogram-notes-canvas" class="plot-overlay-canvas"></canvas>
+        </div>
         <div id="spectrogram-zoom-box" class="plot-zoom-box" aria-hidden="true"></div>
         <div id="spectrogram-hover" class="plot-hover">
           <div class="plot-hover-line vertical"></div>
