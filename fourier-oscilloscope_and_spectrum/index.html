@@ -1476,6 +1476,22 @@
           <span id="source-action-title" class="source-action-title">Acciones</span>
           <div id="source-action-grid" class="source-action-grid"></div>
         </div>
+        <div id="recorded-progress" class="recorded-progress" hidden role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <div id="recorded-progress-track" class="recorded-progress-track">
+            <div id="recorded-progress-fill" class="recorded-progress-fill"></div>
+          </div>
+          <div class="recorded-progress-times">
+            <span id="recorded-progress-elapsed" class="value">0:00</span>
+            <span id="recorded-progress-duration" class="value">--:--</span>
+          </div>
+        </div>
+        <div class="inline">
+          <button type="button" id="start-btn" class="primary" aria-label="Iniciar" title="Iniciar"><span aria-hidden="true">&#9654;</span></button>
+          <button type="button" id="stop-btn" class="danger" aria-label="Detener" title="Detener"><span class="icon-stop" aria-hidden="true"></span></button>
+          <button type="button" id="clear-btn">Limpiar</button>
+        </div>
+        <div id="status" class="status-line">Listo.</div>
+        <p id="mic-note" class="hint">Pulsa ▶ para ver tu voz en vivo. El navegador te pedirá permiso para usar el micrófono.</p>
         <div id="system-panel" class="source-action-panel system-panel">
           <span id="system-title" class="source-action-title">Sistema / efecto</span>
           <div id="effect-grid" class="source-action-grid"></div>
@@ -1500,22 +1516,6 @@
           </div>
           <div id="record-hint" class="hint"></div>
         </div>
-        <div id="recorded-progress" class="recorded-progress" hidden role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-          <div id="recorded-progress-track" class="recorded-progress-track">
-            <div id="recorded-progress-fill" class="recorded-progress-fill"></div>
-          </div>
-          <div class="recorded-progress-times">
-            <span id="recorded-progress-elapsed" class="value">0:00</span>
-            <span id="recorded-progress-duration" class="value">--:--</span>
-          </div>
-        </div>
-        <div class="inline">
-          <button type="button" id="start-btn" class="primary" aria-label="Iniciar" title="Iniciar"><span aria-hidden="true">&#9654;</span></button>
-          <button type="button" id="stop-btn" class="danger" aria-label="Detener" title="Detener"><span class="icon-stop" aria-hidden="true"></span></button>
-          <button type="button" id="clear-btn">Limpiar</button>
-        </div>
-        <div id="status" class="status-line">Listo.</div>
-        <p id="mic-note" class="hint">Al iniciar, el navegador te pedirá permiso para usar el micrófono. Acéptalo para ver tu voz en pantalla.</p>
       </section>
 
       <section class="control-group analysis-panel">
@@ -1726,7 +1726,7 @@ const I18N = {
     stop:'Detener',
     clear:'Limpiar',
     ready:'Listo.',
-    micNote:'Al iniciar, el navegador te pedirá permiso para usar el micrófono. Acéptalo para ver tu voz en pantalla.',
+    micNote:'Pulsa ▶ para ver tu voz en vivo. El navegador te pedirá permiso para usar el micrófono.',
     systemTitle:'Sistema / efecto',
     micMonitor:'Escuchar en auriculares',
     micMonitorNote:'Activa la escucha solo con auriculares: con parlantes se produce acople (realimentación).',
@@ -1737,12 +1737,12 @@ const I18N = {
     effectRobotHint:'Modulación en anillo con portadora de 50 Hz: cada armónico se desdobla en dos bandas laterales.',
     effectEchoHint:'Retardo de 280 ms con realimentación y filtro pasabajos: repeticiones que se van apagando.',
     effectVibratoHint:'Retardo modulado por un LFO de 6 Hz: la frecuencia oscila alrededor de la original.',
-    recordTitle:'Grabación',
+    recordTitle:'Grabación (opcional)',
     record:'Grabar',
     recordStop:'Detener grabación',
     recordAgain:'Grabar de nuevo',
     recordRec:'REC',
-    recordHintMic:'Graba la señal del micrófono sin efecto, hasta 1 minuto. Al detener, la grabación se reproduce en bucle y se le puede aplicar cualquier efecto.',
+    recordHintMic:'Opcional: graba tu voz sin efecto, hasta 1 minuto. Al detener, la grabación se reproduce en bucle y puedes aplicarle cualquier efecto para comparar.',
     recordHintClip:'Esta grabación se guardó sin efecto. Mientras se reproduce en bucle, elige un efecto arriba para ver y escuchar esa misma voz procesada. Vuelve a «Sin efecto» para comparar.',
     recordSaved:'Grabación guardada sin efecto',
     recordError:'No se pudo grabar.',
@@ -1845,7 +1845,7 @@ const I18N = {
     stop:'Stop',
     clear:'Clear',
     ready:'Ready.',
-    micNote:'When you press play, the browser will ask for permission to use the microphone. Allow it to see your voice on screen.',
+    micNote:'Press ▶ to see your voice live. The browser will ask for permission to use the microphone.',
     systemTitle:'System / effect',
     micMonitor:'Listen on headphones',
     micMonitorNote:'Enable listening only with headphones: with speakers you will get feedback.',
@@ -1856,12 +1856,12 @@ const I18N = {
     effectRobotHint:'Ring modulation with a 50 Hz carrier: every harmonic splits into two sidebands.',
     effectEchoHint:'280 ms delay with feedback and a low-pass filter: repetitions that fade away.',
     effectVibratoHint:'Delay modulated by a 6 Hz LFO: the frequency wobbles around the original.',
-    recordTitle:'Recording',
+    recordTitle:'Recording (optional)',
     record:'Record',
     recordStop:'Stop recording',
     recordAgain:'Record again',
     recordRec:'REC',
-    recordHintMic:'Records the dry microphone signal, up to 1 minute. When you stop, the clip loops and any effect can be applied to it.',
+    recordHintMic:'Optional: records your voice without effect, up to 1 minute. When you stop, the clip loops and you can apply any effect to compare.',
     recordHintClip:'This recording is stored without any effect. While it loops, pick an effect above to see and hear that same voice processed. Go back to "No effect" to compare.',
     recordSaved:'Recording saved without effect',
     recordError:'Could not record.',
@@ -1964,7 +1964,7 @@ const I18N = {
     stop:'Arrêter',
     clear:'Effacer',
     ready:'Prêt.',
-    micNote:'Au démarrage, le navigateur te demandera l\'autorisation d\'utiliser le microphone. Accepte pour voir ta voix à l\'écran.',
+    micNote:'Appuie sur ▶ pour voir ta voix en direct. Le navigateur te demandera l\'autorisation d\'utiliser le microphone.',
     systemTitle:'Système / effet',
     micMonitor:'Écouter au casque',
     micMonitorNote:'Active l\'écoute uniquement avec un casque : avec des haut-parleurs, il y aura du larsen.',
@@ -1975,12 +1975,12 @@ const I18N = {
     effectRobotHint:'Modulation en anneau avec une porteuse de 50 Hz : chaque harmonique se dédouble en deux bandes latérales.',
     effectEchoHint:'Retard de 280 ms avec réinjection et filtre passe-bas : des répétitions qui s\'estompent.',
     effectVibratoHint:'Retard modulé par un LFO de 6 Hz : la fréquence oscille autour de l\'originale.',
-    recordTitle:'Enregistrement',
+    recordTitle:'Enregistrement (facultatif)',
     record:'Enregistrer',
     recordStop:'Arrêter l\'enregistrement',
     recordAgain:'Enregistrer à nouveau',
     recordRec:'REC',
-    recordHintMic:'Enregistre le signal du microphone sans effet, jusqu\'à 1 minute. À l\'arrêt, l\'extrait est lu en boucle et n\'importe quel effet peut lui être appliqué.',
+    recordHintMic:'Facultatif : enregistre ta voix sans effet, jusqu\'à 1 minute. À l\'arrêt, l\'extrait est lu en boucle et tu peux lui appliquer n\'importe quel effet pour comparer.',
     recordHintClip:'Cet enregistrement est conservé sans effet. Pendant qu\'il tourne en boucle, choisis un effet ci-dessus pour voir et entendre cette même voix traitée. Reviens à « Sans effet » pour comparer.',
     recordSaved:'Enregistrement sauvegardé sans effet',
     recordError:'Impossible d\'enregistrer.',
