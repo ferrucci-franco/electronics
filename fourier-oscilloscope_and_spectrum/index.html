@@ -1669,12 +1669,12 @@
         </div>
         <div class="plot-body">
           <canvas id="spectrum-canvas"></canvas>
-        </div>
-        <div id="spectrum-zoom-box" class="plot-zoom-box" aria-hidden="true"></div>
-        <div id="spectrum-hover" class="plot-hover">
-          <div class="plot-hover-line vertical"></div>
-          <div class="plot-hover-line horizontal"></div>
-          <div class="plot-hover-readout"></div>
+          <div id="spectrum-zoom-box" class="plot-zoom-box" aria-hidden="true"></div>
+          <div id="spectrum-hover" class="plot-hover">
+            <div class="plot-hover-line vertical"></div>
+            <div class="plot-hover-line horizontal"></div>
+            <div class="plot-hover-readout"></div>
+          </div>
         </div>
       </section>
 
@@ -1690,12 +1690,12 @@
         <div class="plot-body">
           <canvas id="spectrogram-canvas"></canvas>
           <canvas id="spectrogram-notes-canvas" class="plot-overlay-canvas"></canvas>
-        </div>
-        <div id="spectrogram-zoom-box" class="plot-zoom-box" aria-hidden="true"></div>
-        <div id="spectrogram-hover" class="plot-hover">
-          <div class="plot-hover-line vertical"></div>
-          <div class="plot-hover-line horizontal"></div>
-          <div class="plot-hover-readout"></div>
+          <div id="spectrogram-zoom-box" class="plot-zoom-box" aria-hidden="true"></div>
+          <div id="spectrogram-hover" class="plot-hover">
+            <div class="plot-hover-line vertical"></div>
+            <div class="plot-hover-line horizontal"></div>
+            <div class="plot-hover-readout"></div>
+          </div>
         </div>
       </section>
     </main>
@@ -1763,8 +1763,8 @@ const I18N = {
     fullscreen:'Pantalla completa',
     exitFullscreen:'Salir de pantalla completa',
     timeCanvasHint:'Mantén presionado para pausar todo, audio incluido. Rueda: cambia ms/div.',
-    spectrumCanvasHint:'Arrastra para hacer zoom en una ventana. Botón derecho o rueda: desplazar. Sobre los ejes: el centro desplaza y los extremos hacen zoom. Doble clic: vista anterior.',
-    spectrogramCanvasHint:'Arrastra verticalmente para hacer zoom en frecuencia. Botón derecho o rueda: desplazar en frecuencia. Rueda: cambia el piso de dB. Eje de frecuencia: el centro desplaza y los extremos hacen zoom. Doble clic: vista anterior.',
+    spectrumCanvasHint:'Arrastra para hacer zoom en una ventana. Botón derecho o rueda: desplazar. Sobre los ejes: el centro desplaza, los extremos hacen zoom y la rueda hace zoom en el cursor. Doble clic: vista anterior.',
+    spectrogramCanvasHint:'Arrastra verticalmente para hacer zoom en frecuencia. Botón derecho o rueda: desplazar en frecuencia. Rueda: cambia el piso de dB; sobre el eje, zoom en frecuencia. Eje de frecuencia: el centro desplaza y los extremos hacen zoom. Doble clic: vista anterior.',
     stickyNote:'Activa una o varias notas; Detener apaga todas.',
     fileNote:'Selecciona un archivo de audio local para analizarlo.',
     systemNote:'Audio del sistema es experimental: si el navegador no muestra una opci\u00f3n para compartir audio, la web no puede redirigirlo. Suele funcionar solo al compartir una pesta\u00f1a con audio desde localhost/HTTPS.',
@@ -1882,8 +1882,8 @@ const I18N = {
     fullscreen:'Full screen',
     exitFullscreen:'Exit full screen',
     timeCanvasHint:'Press and hold to pause everything, audio included. Wheel: change ms/div.',
-    spectrumCanvasHint:'Drag to zoom into a window. Right or middle button: pan. On the axes: the middle pans, the ends zoom. Double-click: previous view.',
-    spectrogramCanvasHint:'Drag vertically to zoom in frequency. Right or middle button: pan in frequency. Wheel: change the dB floor. Frequency axis: the middle pans, the ends zoom. Double-click: previous view.',
+    spectrumCanvasHint:'Drag to zoom into a window. Right or middle button: pan. On the axes: the middle pans, the ends zoom, the wheel zooms at the cursor. Double-click: previous view.',
+    spectrogramCanvasHint:'Drag vertically to zoom in frequency. Right or middle button: pan in frequency. Wheel: change the dB floor; over the axis, zoom in frequency. Frequency axis: the middle pans, the ends zoom. Double-click: previous view.',
     stickyNote:'Toggle one or more notes; Stop turns them all off.',
     fileNote:'Choose a local audio file to analyze.',
     systemNote:'System audio is experimental: if the browser does not show a share-audio option, the web page cannot redirect it. It usually only works when sharing a tab with audio from localhost/HTTPS.',
@@ -2001,8 +2001,8 @@ const I18N = {
     fullscreen:'Plein écran',
     exitFullscreen:'Quitter le plein écran',
     timeCanvasHint:'Maintiens appuyé pour tout mettre en pause, audio compris. Molette : change les ms/div.',
-    spectrumCanvasHint:'Glisse pour zoomer sur une fenêtre. Bouton droit ou molette : déplacer. Sur les axes : le centre déplace, les extrémités zooment. Double-clic : vue précédente.',
-    spectrogramCanvasHint:'Glisse verticalement pour zoomer en fréquence. Bouton droit ou molette : déplacer en fréquence. Molette : change le plancher en dB. Axe des fréquences : le centre déplace, les extrémités zooment. Double-clic : vue précédente.',
+    spectrumCanvasHint:'Glisse pour zoomer sur une fenêtre. Bouton droit ou molette : déplacer. Sur les axes : le centre déplace, les extrémités zooment, la molette zoome au curseur. Double-clic : vue précédente.',
+    spectrogramCanvasHint:'Glisse verticalement pour zoomer en fréquence. Bouton droit ou molette : déplacer en fréquence. Molette : change le plancher en dB ; sur l\'axe, zoom en fréquence. Axe des fréquences : le centre déplace, les extrémités zooment. Double-clic : vue précédente.',
     stickyNote:'Active une ou plusieurs notes ; Arrêter les coupe toutes.',
     fileNote:'Choisis un fichier audio local à analyser.',
     systemNote:'L\'audio système est expérimental : si le navigateur ne propose pas de partager l\'audio, la page web ne peut pas le rediriger. Cela fonctionne surtout en partageant un onglet avec audio depuis localhost/HTTPS.',
@@ -3002,8 +3002,10 @@ function fillPlotArea(ctx, area) {
   ctx.fillRect(area.left, area.top, area.right - area.left, area.bottom - area.top);
 }
 
+// Márgenes de los ejes: proporcionales en paneles chicos, pero con tope
+// absoluto para que a pantalla completa no quede una banda vacía abajo.
 function plotArea(width, height) {
-  const bottomInset = Math.max(32 * canvasScale(), height * 0.12);
+  const bottomInset = Math.min(44 * canvasScale(), Math.max(32 * canvasScale(), height * 0.12));
   return {
     left: 54 * canvasScale(),
     right: width - 14 * canvasScale(),
@@ -3013,7 +3015,7 @@ function plotArea(width, height) {
 }
 
 function spectrumArea(width, height) {
-  const bottomInset = Math.max(52 * canvasScale(), height * 0.16);
+  const bottomInset = Math.min(60 * canvasScale(), Math.max(52 * canvasScale(), height * 0.16));
   return {
     left: 74 * canvasScale(),
     right: width - 16 * canvasScale(),
@@ -3027,8 +3029,8 @@ function spectrogramLayout(width, height) {
   const colorbarWidth = 28 * canvasScale();
   const colorbarGap = 6 * canvasScale();
   const labelWidth = 36 * canvasScale();
-  const topInset = Math.max(14 * canvasScale(), height * 0.03);
-  const bottomInset = Math.max(34 * canvasScale(), height * 0.11);
+  const topInset = Math.min(18 * canvasScale(), Math.max(14 * canvasScale(), height * 0.03));
+  const bottomInset = Math.min(44 * canvasScale(), Math.max(34 * canvasScale(), height * 0.11));
   return {
     axisLeft: 58 * canvasScale(),
     colorbarWidth,
@@ -7217,15 +7219,64 @@ function bindSliderWheel(target, pickInput = null) {
 
 [els.sourceVolume, els.fftSize, els.smoothing, els.dbFloor, els.spectrogramFloor, els.scrollSpeed].forEach(input => bindSliderWheel(input));
 
-// Rueda sobre el espectrograma: mueve su propio piso de dB (el deslizador
-// "Piso dB espectrograma"), 2 dB por muesca, sin espera previa.
+// Zoom con la rueda sobre las franjas de los ejes, anclado en el valor que
+// hay bajo el cursor (rueda arriba acerca). Frecuencia: rango compartido de
+// espectro y espectrograma; dB: ventana propia del espectro.
+const WHEEL_ZOOM_RATE = 0.0015;
+
+function wheelZoomFactor(event) {
+  return Math.exp(Math.max(-300, Math.min(300, event.deltaY)) * WHEEL_ZOOM_RATE);
+}
+
+function zoomFrequencyAt(freqAnchor, factor) {
+  const w = frequencyWindowU(selectedFrequencyRange());
+  const uc = w.log ? Math.log(freqAnchor) : freqAnchor;
+  const uMin = uc - (uc - w.uMin) * factor;
+  const uMax = uc + (w.uMax - uc) * factor;
+  applySpectrumFrequencyZoom(frequencyFromU(uMin, w.log), frequencyFromU(uMax, w.log));
+  afterViewChange(true);
+}
+
+function zoomDbAt(dbAnchor, factor) {
+  const range = spectrumDbRange();
+  setDbWindow(dbAnchor - (dbAnchor - range.min) * factor, dbAnchor + (range.max - dbAnchor) * factor);
+  afterViewChange(false);
+}
+
+// Rueda sobre el espectrograma: sobre la franja del eje de frecuencia hace
+// zoom en frecuencia; sobre el gráfico mueve su propio piso de dB (el
+// deslizador "Piso dB espectrograma"), 2 dB por muesca, sin espera previa.
 let lastSpectrogramWheel = 0;
 els.spectrogramCanvas.addEventListener('wheel', event => {
   event.preventDefault();
+  const canvas = els.spectrogramCanvas;
+  const point = hoverPointForEvent(canvas, event);
+  const layout = spectrogramLayout(canvas.width, canvas.height);
+  if (spectrogramAxisHit(point, layout)) {
+    zoomFrequencyAt(frequencyForY(point.y, layout.top, layout.bottom, selectedFrequencyRange()), wheelZoomFactor(event));
+    return;
+  }
   const now = performance.now();
   if (now - lastSpectrogramWheel < SLIDER_WHEEL_MIN_INTERVAL_MS) return;
   lastSpectrogramWheel = now;
   nudgeSlider(els.spectrogramFloor, event.deltaY < 0 ? 1 : -1, 2);
+}, { passive: false });
+
+// Rueda sobre el espectro instantáneo: solo en las franjas de los ejes
+// (X: frecuencia, Y: dB); sobre el gráfico la página se desplaza normalmente.
+els.spectrumCanvas.addEventListener('wheel', event => {
+  const canvas = els.spectrumCanvas;
+  const point = hoverPointForEvent(canvas, event);
+  const area = spectrumArea(canvas.width, canvas.height);
+  const zone = spectrumZoneAt(point, area);
+  if (zone === 'x-axis') {
+    event.preventDefault();
+    zoomFrequencyAt(frequencyForSpectrumX(point.x, area, selectedFrequencyRange()), wheelZoomFactor(event));
+  } else if (zone === 'y-axis') {
+    event.preventDefault();
+    const range = spectrumDbRange();
+    zoomDbAt(dbForSpectrumY(point.y, area, range.min, range.max), wheelZoomFactor(event));
+  }
 }, { passive: false });
 
 // Rango de frecuencia: dos pulgares en la misma pista; la rueda mueve el más
