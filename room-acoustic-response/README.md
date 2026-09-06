@@ -1,0 +1,451 @@
+# Mesure de réponse acoustique — application web statique
+
+Aplicación web **100 % estática** (sin servidor, sin build, sin `node_modules`) para un curso
+de tratamiento de señales. Reproduce un **barrido sinusoidal logarítmico** por la salida de
+audio activa mientras **graba simultáneamente** con el micrófono, y entrega un
+**WAV sin compresión** más un **JSON de metadatos**.
+
+**El Bluetooth no es obligatorio.** Sirve cualquier altavoz: el del propio teléfono, uno con
+cable o uno Bluetooth. Ahora bien, un **altavoz separado es claramente preferible**, y esa es
+la razón por la que la interfaz lo recomienda: aleja la fuente del micrófono. Con el altavoz
+integrado, el micrófono está a pocos centímetros del transductor, así que el sonido directo
+domina por completo y aplasta la contribución de la sala; además el acoplamiento mecánico por
+el chasis del teléfono introduce vibración que no tiene nada que ver con la acústica que se
+quiere medir. Con un altavoz separado, el micrófono mide la sala y no el altavoz pegado a él.
+
+Interfaz en **francés** por defecto, con inglés y español incluidos e infraestructura de
+i18n lista para añadir más idiomas.
+
+---
+
+## 1. Despliegue en GitHub Pages
+
+```bash
+git init && git add -A && git commit -m "Application de mesure acoustique"
+git branch -M main && git remote add origin git@github.com:USUARIO/REPO.git && git push -u origin main
+```
+
+Después, en el repositorio: **Settings → Pages → Source: Deploy from a branch → `main` / `/ (root)`**.
+
+No hace falta nada más: no hay build, no hay `node_modules`, no hay rutas absolutas.
+El archivo `.nojekyll` evita que Jekyll procese el sitio.
+
+> **HTTPS es obligatorio.** `getUserMedia()` solo funciona en contexto seguro. GitHub Pages
+> sirve por HTTPS, así que está cubierto. Abrir `index.html` con `file://` muestra la página
+> pero el micrófono queda deshabilitado (la app lo detecta y lo dice).
+
+### Prueba local
+
+```bash
+python -m http.server 8123
+```
+
+Luego abrir `http://localhost:8123` (localhost cuenta como contexto seguro).
+También hay un `.claude/launch.json` con esa misma configuración para el panel de vista previa.
+
+---
+
+## 2. Estructura
+
+```
+index.html          Estructura de la interfaz (todos los textos vienen de i18n)
+css/style.css       Estilos: mobile-first, botones grandes, temas claro y oscuro
+js/i18n.js          Diccionarios fr/en/es + traducción del DOM
+js/wav.js           Escritor RIFF/WAVE en JS (PCM 16 bits e IEEE float 32 bits)
+js/chirp.js         Generador de barrido exponencial + validación de parámetros
+js/modes.js         Modos propios de una sala rectangular (modelo de Rayleigh)
+js/audio.js         Motor de audio: permisos, vúmetro, reproducción+grabación
+js/app.js           Controlador de interfaz, máquina de estados, descargas
+.nojekyll           Para GitHub Pages
+```
+
+**Única dependencia externa: KaTeX**, cargada desde CDN con versión fijada (`0.16.11`) y
+`integrity` SRI, y usada solo para tipografiar la fórmula de la tarjeta de modos. Se carga con
+`defer`, así que está lista antes de que arranque `app.js`. Si el CDN no responde —sin conexión,
+o abriendo la página con `file://`— `app.js` deja en su sitio la fórmula de reserva en HTML/CSS
+que ya está en el marcado: **nada más en la aplicación depende de KaTeX**, y la medición sigue
+funcionando igual. No hay `npm install` ni paso de compilación.
+
+Los scripts son **clásicos, no módulos ES**. Es una decisión deliberada de robustez: los
+módulos ES fallan con `file://` por CORS, mientras que así la aplicación se puede abrir
+también desde disco (con el micrófono deshabilitado, pero sin errores de carga).
+
+---
+
+## 3. Arquitectura
+
+### Cadena de audio
+
+```
+   REPRODUCCIÓN                              GRABACIÓN
+   ────────────                              ─────────
+   Float32Array (chirp)                      MediaStream (micrófono)
+        │                                         │
+   AudioBuffer                            MediaStreamAudioSourceNode
+        │                                         │
+   AudioBufferSourceNode                  AudioWorkletNode "rira-recorder"
+        │                                  (o ScriptProcessorNode)
+   GainNode (1.0)                                 │
+        │                              ┌──────────┴──────────┐
+        │                        chunks Float32        GainNode (0.0)
+        └────────► destination ◄──────────────────────────┘
+                 (altavoz activo)                 (ruta muda, solo para
+                                                    que el grafo se procese)
+```
+
+Un único `AudioContext` y un único `MediaStream` para toda la página. El stream se abre en
+la prueba de micrófono y **se reutiliza** en la medición: reabrirlo forzaría una nueva
+negociación de ruta de audio (y en iOS, un cambio de sesión de audio a mitad de proceso).
+
+### Por qué no `MediaRecorder`
+
+`MediaRecorder` produce **Opus/WebM en Android** y **AAC/MP4 en iOS**: ambos con pérdidas y
+ambos inservibles para análisis espectral. En su lugar capturamos muestras **Float32 crudas**
+del grafo Web Audio y construimos el WAV nosotros (`js/wav.js`), byte a byte:
+
+- `16` → `WAVE_FORMAT_PCM` (código 1), enteros con signo 16 bits little-endian — por defecto.
+- `32` → `WAVE_FORMAT_IEEE_FLOAT` (código 3), float32 little-endian — sin recorte, útil
+  cuando el margen de nivel es incierto.
+
+Ambos los leen directamente MATLAB (`audioread`), Python (`scipy.io.wavfile`, `soundfile`),
+Octave, Audacity y REW.
+
+### Captura: AudioWorklet con reserva
+
+`AudioWorkletNode` es lo primero que se intenta; el procesador se carga desde una **Blob URL**
+para no necesitar un archivo `.js` adicional accesible por HTTP. Si falla (Safari antiguo,
+CSP restrictiva), se cae automáticamente a `ScriptProcessorNode`. **Ambas rutas están
+probadas** y el backend efectivamente usado se anota en el JSON (`recording.captureBackend`).
+
+### Constraints del micrófono
+
+Todo el procesamiento del navegador se desactiva, porque es no lineal y variante en el tiempo:
+
+```js
+{ echoCancellation: false, noiseSuppression: false, autoGainControl: false,
+  voiceIsolation: false, channelCount: 1 }
+```
+
+Si el navegador rechaza las constraints, hay una cadena de reintentos degradantes
+(`exact` → `ideal` → sin `deviceId` → `{audio:true}`) para que el usuario nunca se quede sin
+micrófono. Los valores realmente concedidos se leen con `track.getSettings()` y se escriben
+en el JSON, así que siempre se sabe si el sistema ignoró la petición.
+
+### Sin corrección de latencia ni de fase
+
+**No se intenta ninguna compensación.** El retardo de la cadena Bluetooth (codificación SBC/AAC/aptX,
+búferes del altavoz, latencia de entrada del micrófono) es desconocido, variable entre dispositivos
+e incluso a lo largo de una misma sesión. Lo que sí se hace:
+
+- Se graba un **preludio de 0,3 s** antes de lanzar la reproducción y una **cola de 0,25 s** después
+  de que termine la señal, para que el barrido quede con seguridad dentro del archivo.
+- Se anota en el JSON el desfase **nominal** (`timing.nominal*`) junto con un aviso explícito de
+  que no está compensado.
+- Se ofrece la **señal de referencia** como WAV con exactamente la misma línea temporal y la misma
+  frecuencia de muestreo, de modo que el alineamiento real se pueda obtener después por
+  correlación cruzada.
+
+### Temas claro y oscuro
+
+La paleta activa la elige una clase en `<html>` (`theme-light` / `theme-dark`), y cada tema
+redefine el mismo juego de variables CSS. La clase la fija un **script en línea en el `<head>`,
+antes de que la hoja de estilos pinte**: primero la elección guardada en `localStorage`, si no
+la preferencia del sistema (`prefers-color-scheme`). Por eso la página nunca parpadea con el
+tema equivocado al cargar. Cada tema declara además `color-scheme`, lo que alinea los controles
+nativos (barras de desplazamiento, anillos de foco) con la paleta.
+
+El botón de la cabecera muestra el **icono de la acción**, no del estado: luna cuando se puede
+pasar a oscuro, sol cuando se puede volver a claro. Las píldoras de idioma y el botón de icono
+reproducen el patrón visual de
+[timeseries-explorer](https://ferrucci-franco.github.io/timeseries-explorer/).
+
+### Máquina de estados y mensajes
+
+`idle → (prueba de micrófono) → preparación → grabación+reproducción → finalización → terminado`
+
+La barra de estado inferior es permanente, con `role="status"` y `aria-live="polite"`, y punto
+de color: gris (reposo), ámbar parpadeante (preparando), rojo parpadeante (grabando), verde
+(terminado), rojo fijo (error). Durante la medición se pide `navigator.wakeLock` para que la
+pantalla no se apague y se instala un `beforeunload` para evitar cerrar la página por accidente.
+
+---
+
+## 4. La señal
+
+Barrido exponencial (Farina), la excitación estándar en medida de salas: reparte la misma
+energía por octava y, tras la deconvolución, empuja la distorsión armónica **antes** de la
+respuesta lineal, donde se puede recortar.
+
+```
+L      = T / ln(f2/f1)
+K      = 2·π·f1·L
+φ(t)   = K · (e^(t/L) − 1)
+x(t)   = A · w(t) · sin(φ(t))
+```
+
+- Frecuencia instantánea: `f(t) = f1 · (f2/f1)^(t/T)`, exactamente `f2` en `t = T`.
+- `w(t)`: ventana coseno alzado de 20 ms a la entrada y a la salida, para eliminar el clic.
+  20 ms es menos de un periodo a 20 Hz, así que no altera el extremo grave de forma apreciable.
+- `A`: **amplitud digital** ajustable (0–1), por defecto **0,5 (−6 dBFS)** para dejar margen.
+  La app **nunca toca el volumen físico**; solo indica al usuario que lo ajuste a mano.
+
+Se genera **a la frecuencia de muestreo real del `AudioContext`**, así que no hay remuestreo
+en la reproducción.
+
+### Parámetros (sliders)
+
+Todo se ajusta con **sliders**, no con campos numéricos: en móvil se manejan con el pulgar y
+no abren teclado, y el valor no puede quedar en un estado inválido a medio teclear. Cada uno
+muestra su valor en vivo a la derecha de la etiqueta.
+
+| Parámetro | Escala | Rango | Por defecto |
+|---|---|---|---|
+| Frecuencia inicial | **logarítmica** | 10 Hz – 2 kHz | 20 Hz |
+| Frecuencia final | **logarítmica** | 100 Hz – 20 kHz | 2 kHz |
+| Duración del barrido | lineal, paso 1 s | 1 – 120 s | 30 s |
+| Amplitud digital | lineal, paso 0,05 | 0,05 – 1,00 | 0,50 (−6,0 dBFS) |
+| Silencio inicial | lineal, paso 0,5 s | 0 – 5 s | **0 s** |
+| Silencio final | lineal, paso 0,5 s | 0 – 5 s | **0 s** |
+
+Detalles de implementación:
+
+- Las **frecuencias usan escala logarítmica**: la posición del slider es un índice abstracto
+  0–1000 que `app.js` mapea sobre el rango (tabla `SPEC`). Un slider lineal en Hz gastaría el
+  90 % de su recorrido por encima de 2 kHz, inútil para medida de salas. El valor resultante
+  se redondea a 1 / 5 / 10 Hz según la década para que sea legible.
+- Los dos sliders de frecuencia están **acoplados**: si `f1` alcanza a `f2`, se empuja el otro.
+  Así la interfaz nunca puede producir `f2 ≤ f1`. La validación de `chirp.js` sigue ahí como
+  red de seguridad, y sí puede saltar el límite de Nyquist si el dispositivo impone una
+  frecuencia de muestreo baja.
+- La amplitud muestra también su equivalente en **dBFS**, que es lo que interesa en el curso.
+- Se persisten en `localStorage` al soltar el slider (evento `change`), no durante el arrastre.
+- Los **silencios valen 0 por defecto**: el motor ya graba un preludio de 0,3 s y una cola de
+  0,25 s por su cuenta, así que el relleno adicional solo alargaba el archivo. Sigue disponible
+  hasta 5 s por lado para quien quiera más margen. Cuando ambos valen cero, el texto de ayuda
+  omite el desglose de silencios y dice simplemente « Balayage 20 → 2000 Hz, durée 30 s ».
+
+### Rueda del ratón y trackpad
+
+Todos los sliders —los del barrido y los de la sala— aceptan la **rueda del ratón o el
+trackpad**, pero solo **después de que el puntero lleve 300 ms quieto encima**. Ese retardo es
+lo que evita que desplazar la página mueva de paso todos los sliders por los que pasa el cursor.
+Mientras está armado, el slider muestra un anillo de color y **consume** el evento
+(`preventDefault`), así que la página no se desplaza; al salir el puntero, se desarma solo.
+
+- Una muesca de rueda = un paso del slider. En trackpad los deltas de pocos píxeles se
+  **acumulan** hasta completar un paso (`WHEEL_PX_PER_STEP = 100`), así que el gesto es suave y
+  no salta.
+- Se distingue `deltaMode`: píxeles se acumulan; líneas o páginas dan un paso por evento.
+- El valor se **re-encaja en la rejilla del step** tras cada cambio, porque los pasos de 0,1 y
+  0,05 acumulan deriva binaria si se suman en coma flotante.
+- `pointerdown` desarma: si el usuario empieza a arrastrar, manda el arrastre.
+- En táctil no se arma nunca (se filtra `pointerType === 'touch'`), porque ahí no hay hover.
+- `change` —y por tanto la escritura en `localStorage`— va con un retardo de 250 ms, para no
+  escribir en cada muesca.
+
+La validación rechaza `f2 ≤ f1`, `f2 > 0,95 · Nyquist` y valores fuera de rango, con mensaje
+traducido.
+
+---
+
+## 5. Modos propios de la sala
+
+La tarjeta « Modes propres de la pièce » predice **dónde van a caer las resonancias** antes
+incluso de medir, para que el estudiante sepa qué buscar en el espectro. Tres sliders (largo,
+ancho, alto) y el cálculo se rehace en cada movimiento.
+
+### El modelo
+
+Modelo de Rayleigh para un paralelepípedo de **paredes perfectamente rígidas**:
+
+```
+             c        ⎡ (nx/L)² + (ny/W)² + (nz/H)² ⎤
+f(nx,ny,nz) = ─── · √ ⎣                             ⎦
+             2
+
+c  = 343 m/s (velocidad del sonido a 20 °C)
+nx, ny, nz  enteros ≥ 0, no todos nulos
+```
+
+Tres familias, de energía decreciente, porque cada una rebota en un número distinto de superficies:
+
+| Familia | Índices no nulos | Superficies | Energía |
+|---|---|---|---|
+| **Axial** | 1 | 2 | la más alta |
+| **Tangencial** | 2 | 4 | ~3 dB por debajo |
+| **Oblicuo** | 3 | 6 | la más baja |
+
+Las **fundamentales axiales** son el caso particular más útil, y se muestran en tres tarjetas:
+`f = c/(2L)`, `c/(2W)`, `c/(2H)`. Para una sala de 5 × 4 × 2,7 m son 34,3 / 42,9 / 63,5 Hz.
+
+### Implementación
+
+`js/modes.js` es un **módulo puro** (sin DOM, sin dependencias, testeable en Node) que enumera
+los modos hasta un orden máximo, los clasifica por número de índices no nulos, los ordena por
+frecuencia y devuelve los más bajos. `app.js` solo lo presenta.
+
+- La **banda de reparto** usa escala logarítmica fija de 8 a 500 Hz. Es deliberadamente **no
+  adaptativa**: al no moverse el eje, se ve de un vistazo que agrandar la sala desplaza todo
+  hacia la izquierda. Los límites cubren todos los ajustes posibles de los sliders (8,6 Hz para
+  una sala de 20 m por un lado; ~350 Hz para el modo 12 de la sala más pequeña por el otro).
+- Se dibujan y se tabulan **los mismos 12 modos más bajos**, para que la banda y la tabla nunca
+  se contradigan. Por encima de esos 12, la densidad modal crece como `f³` y la representación
+  individual deja de tener sentido.
+- La sugerencia final enlaza con la medición: indica la frecuencia propia más baja y recomienda
+  empezar el barrido por debajo, que es justo el ajuste « Fréquence initiale » del panel siguiente.
+- La fórmula se tipografía con **KaTeX**. Los tres sliders de dimensión se reparten en una sola
+  línea cuando caben, con `repeat(auto-fit, minmax(12rem, 1fr))`: pasan a dos columnas y luego a
+  una según se estrecha la pantalla, y el mínimo de 12 rem está calculado sobre la etiqueta más
+  ancha (« Longueur (profondeur) », 137 px) para que **ninguna etiqueta llegue nunca a partirse**.
+
+### Limitación del modelo
+
+Es un modelo **idealizado**: paredes perfectamente rígidas y sala rectangular vacía. Una sala
+real (muebles, absorbentes, tabiques ligeros) desplaza las resonancias y sobre todo **las
+ensancha**, porque las paredes reales absorben y el factor de calidad cae. Sirve como guía de
+lectura del espectro medido, no como verdad. La tarjeta lo dice explícitamente en los tres idiomas.
+
+---
+
+## 6. Archivos entregados
+
+Los tres comparten un identificador de medición (`AAAAMMDD-HHMMSS` local):
+
+| Archivo | Contenido |
+|---|---|
+| `mesure_<id>.wav` | La grabación del micrófono, mono, sin comprimir |
+| `mesure_<id>.json` | Metadatos completos |
+| `reference_<id>.wav` | La señal de excitación exacta, misma línea temporal y misma `fs` |
+
+El JSON incluye: frecuencias, duraciones, silencios, amplitud, fórmula del barrido, ventanas de
+fade, frecuencia de muestreo, canales, número de muestras, profundidad de bits, codificación,
+tamaño, **pico y RMS en dBFS**, recuento de muestras saturadas, backend de captura, etiqueta e
+identificador del micrófono, estado real de AEC/NS/AGC, `baseLatency`/`outputLatency`,
+`userAgent`, plataforma, idioma y marcas de tiempo local y UTC.
+
+Tras la medición la interfaz muestra un resumen y **avisa si hay saturación** o si el nivel
+grabado es demasiado bajo (< −45 dBFS).
+
+---
+
+## 7. Limitaciones
+
+### iOS / Safari (iPhone, iPad)
+
+- **Gesto de usuario obligatorio.** El `AudioContext` se crea y se reanuda dentro del
+  manejador del clic, de forma síncrona antes de cualquier `await`. Es la razón de que exista
+  `Engine.unlock()`.
+- **Ruta de salida al abrir el micrófono.** Históricamente iOS conmuta la salida al auricular
+  con volumen reducido en cuanto se abre el micrófono. Se mitiga con
+  `navigator.audioSession.type = 'play-and-record'` (Safari 17+); en versiones anteriores **no
+  hay solución desde la web**. Si el sonido no sale por el altavoz Bluetooth: desconectar y
+  reconectar el altavoz, o subir el volumen con los botones físicos con la página ya abierta.
+- **Frecuencia de muestreo impuesta.** No se puede elegir; iOS suele dar 48 000 Hz. Se lee y se
+  anota, nunca se fuerza.
+- **Sin nombres de dispositivo útiles.** Safari devuelve etiquetas genéricas o vacías; el JSON
+  refleja lo que haya (`microphoneLabel: null` si no hay nada).
+- **Sin selección real de entrada.** iOS decide el micrófono; el selector puede no tener efecto.
+- **La pantalla y el bloqueo.** `navigator.wakeLock` existe desde iOS 16.4; en versiones previas
+  hay que evitar que la pantalla se apague manualmente. Si Safari pasa a segundo plano, el audio
+  se suspende y la medición se corrompe: **no cambiar de aplicación durante la medida**.
+- **AGC no siempre desactivable.** iOS puede ignorar `autoGainControl: false`. El JSON registra
+  el valor efectivo; si aparece `true`, los niveles absolutos no son fiables.
+
+### Android / Chrome
+
+- **Perfil Bluetooth** (solo si se usa Bluetooth). Es el problema más serio. Si Android conmuta el altavoz a **HFP/SCO**
+  (modo manos libres) al abrir el micrófono, todo el enlace cae a banda estrecha (8–16 kHz) y
+  la medida no vale. Con **A2DP** la reproducción es de banda ancha. Mitigación práctica:
+  seleccionar explícitamente el **micrófono integrado del teléfono** en el selector de
+  dispositivo y comprobar en el JSON que `trackSampleRateHz` sigue siendo 44 100 o 48 000.
+- **Latencia de salida alta y variable**, típicamente 100–300 ms por Bluetooth (con altavoz
+  integrado o por cable baja a unos pocos ms, pero sigue sin estar medida). Irrelevante para
+  análisis espectral de magnitud; **crítico** para cualquier medida temporal o de fase, que exige
+  alineamiento previo por correlación cruzada.
+- **Selección de dispositivo.** Las etiquetas solo aparecen tras conceder el permiso, por eso la
+  lista se rellena después de la prueba de micrófono.
+- **Ahorro de energía.** Con la pantalla apagada o la pestaña en segundo plano, Chrome limita los
+  temporizadores y puede suspender el audio. Por eso se usa `wakeLock` y se avisa de no salir.
+
+### Comunes a todas las plataformas
+
+- **El micrófono del teléfono no está calibrado.** Respuesta desconocida, típicamente con corte
+  bajo agresivo por debajo de 100–200 Hz. El defecto de 20 Hz es didáctico; en la práctica un
+  móvil no capta nada útil por debajo de ~50 Hz. Es una medida **relativa**, no absoluta ni en
+  dB SPL.
+- **AGC del sistema operativo.** Fuera del navegador, puede haber compresión que la web no ve.
+- **Saturación.** Si el nivel es demasiado alto, satura el micrófono, no el altavoz. Se detecta y
+  se avisa; entonces hay que bajar el volumen y repetir.
+- **Grabación mono.** Se guarda el canal 0. Suficiente para el objetivo del curso.
+- **Memoria.** Todo se mantiene en RAM: 30 s a 48 kHz en 16 bits ≈ 2,9 MB, sin problema. Con
+  duraciones muy largas y float32 conviene vigilarlo en móviles antiguos.
+- **Nada se envía a ningún servidor.** Todo el procesamiento es local.
+
+---
+
+## 8. Qué hacer después con los archivos (fuera de esta versión)
+
+Esta primera versión **no incluye análisis FFT**, por decisión de alcance. Para el
+post-procesado, con `mesure_*.wav` y `reference_*.wav` a la misma `fs`:
+
+1. Alinear por **correlación cruzada** (obligatorio: la latencia Bluetooth no está compensada).
+2. Deconvolucionar con el filtro inverso del barrido exponencial para obtener la respuesta al
+   impulso, o simplemente comparar espectros si solo interesa la magnitud.
+3. Recortar la distorsión armónica, que aparece **antes** del pico lineal.
+
+---
+
+## 9. Añadir un idioma
+
+En `js/i18n.js`, copiar el bloque `en`, traducir los valores, registrarlo bajo su código ISO
+639-1 y añadir una píldora `<button class="lang-btn" data-lang="XX">XX</button>` en `index.html`. Las claves que falten caen automáticamente al
+francés. El idioma se detecta del navegador y se recuerda en `localStorage`; el cambio es
+instantáneo, incluidos los textos dinámicos (estado, resumen, cuenta atrás).
+
+---
+
+## 10. Verificación realizada
+
+Los dos hashes SRI de KaTeX del `index.html` se calcularon descargando los archivos reales del
+CDN (`openssl dgst -sha384`), no de memoria.
+
+**Pruebas numéricas** (79/79 correctas, `chirp.js` + `wav.js` + `modes.js` en Node):
+frecuencia instantánea medida por cruces por cero frente a la teórica en varios instantes
+(error < 0,3 %), amplitud de pico exacta, silencios exactamente nulos, ausencia de saltos que
+produzcan clics, validación de parámetros, cabecera RIFF completa campo a campo en 16 y 32 bits,
+ida y vuelta de muestras, intercalado estéreo, concatenación de bloques y medidas de nivel.
+Para `modes.js` (30 pruebas): fundamentales axiales iguales a `c/(2·dim)`, volumen, modo más bajo
+fijado por la dimensión mayor, sala cúbica con su triplete degenerado y su primer tangencial en
+`(c/2)·√2/3`, clasificación axial/tangencial/oblicuo por número de índices no nulos, orden
+ascendente de la lista, coincidencia con un cálculo a mano de `f(2,1,3)`, escalado lineal con `c`,
+`speedOfSound(0) = 331,3 m/s`, y excepción ante dimensiones nulas, negativas, `NaN` o infinitas.
+
+**Pruebas en navegador** (Chrome, viewport de 375 px, con micrófono sintético inyectado):
+sliders en sus valores por defecto y en ambos extremos, mapeo logarítmico de frecuencias
+(10 → 38 → 140 → 530 → 2000 Hz a lo largo del recorrido), acoplamiento `f1`/`f2` en el caso
+límite (`f1` al máximo con `f2` al mínimo → `f2` empujado a 2,4 kHz, parámetros válidos),
+equivalencia amplitud/dBFS, botón de restablecer, persistencia en `localStorage` al soltar el
+slider, y ausencia de desbordamiento horizontal con una columna en móvil;
+tarjeta de modos propios contrastada contra `modes.js` en los tres casos extremos de los sliders
+(sala de 20 × 20 × 8 m, de 1 × 1 × 1,8 m y la de por defecto), con los 12 modos siempre dibujados
+dentro de la banda (posiciones entre 1,7 % y 88,3 %) y etiquetas de eje sin recorte en los bordes;
+bascula de tema en ambos sentidos con `localStorage`, `color-scheme` y icono coherentes, y sin
+parpadeo al recargar; píldoras de idioma con estado `active`/`aria-pressed` correcto;
+fórmula tipografiada por KaTeX y con el color del tema en claro y en oscuro, cabiendo sin
+desplazamiento lateral a 375 px; los tres sliders de dimensión en una sola línea a partir de
+704 px de ancho de contenedor, en dos y luego en una por debajo, sin que ninguna etiqueta se
+parta en ningún ancho probado (320 a 900 px); rueda del ratón ignorada antes de los 300 ms y
+activa después, una muesca por paso, acumulación de deltas pequeños de trackpad (10 × 12 px =
+un paso), `preventDefault` confirmado, recorte correcto en ambos extremos, desarme al salir el
+puntero y ausencia de armado en `pointerType: 'touch'`;
+medición completa de extremo a extremo, secuencia de estados
+`Préparation → Enregistrement → Finalisation → Terminé`, WAV resultante con cabecera válida y
+tono de 440 Hz recuperado con pico de −12,04 dBFS (exactamente la amplitud inyectada), JSON de
+metadatos completo, duración = preludio + señal + cola, cancelación a mitad de medida con
+restauración correcta de la interfaz, ruta de reserva `ScriptProcessorNode` forzada, salida
+float32 con código de formato 3, y conmutación de idioma fr/en/es incluyendo textos dinámicos.
+
+No se ha podido probar en hardware real de iPhone/Android ni con un altavoz Bluetooth físico;
+las limitaciones de la sección 7 están documentadas a partir del comportamiento conocido de esas
+plataformas, no de una medida propia. La comprobación visual en móvil se hizo con el viewport
+emulado a 375 × 812 px en Chrome, en tema claro y oscuro, no en un iPhone físico.

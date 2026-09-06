@@ -1,0 +1,523 @@
+/* ============================================================
+   style.css - Interface volontairement sobre et tres lisible.
+   Mobile-first, gros boutons, contraste eleve, mode sombre.
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   Palettes.
+
+   The active palette is chosen by a class on <html>: `theme-light` or
+   `theme-dark`. The class is set by the inline bootstrap in index.html
+   (stored choice, otherwise the OS preference) before the first paint,
+   so there is no flash of the wrong theme, and the toggle button then
+   swaps it at runtime. `color-scheme` keeps native widgets (scrollbars,
+   focus rings, form controls) in step with the palette.
+   ------------------------------------------------------------ */
+:root, .theme-light {
+  color-scheme: light;
+  --bg:        #f4f5f7;
+  --card:      #ffffff;
+  --bg-third:  #e6e9ee;      /* language-pill trough */
+  --hover-bg:  #e2e6ec;
+  --fg:        #14171c;
+  --fg-soft:   #555d68;
+  --line:      #d7dbe0;
+  --primary:   #1451c4;
+  --primary-d: #0e3d96;
+  --danger:    #b3261e;
+  --warn-bg:   #fff6e0;
+  --warn-line: #e8b53a;
+  --ok:        #1a7f37;
+  --meter-bg:  #e3e6ea;
+  --m-axial:   #1451c4;      /* mode families, strongest to weakest */
+  --m-tang:    #a8690a;
+  --m-obl:     #6b7280;
+}
+
+.theme-dark {
+  color-scheme: dark;
+  --bg:        #14171c;
+  --card:      #1e232b;
+  --bg-third:  #2a303a;
+  --hover-bg:  #2f3641;
+  --fg:        #eef1f5;
+  --fg-soft:   #a4adba;
+  --line:      #333b46;
+  --primary:   #4c8dff;
+  --primary-d: #2f6fdb;
+  --danger:    #ff6b60;
+  --warn-bg:   #3a2f14;
+  --warn-line: #b58a2a;
+  --ok:        #55d07a;
+  --meter-bg:  #2a303a;
+  --m-axial:   #4c8dff;
+  --m-tang:    #e0a800;
+  --m-obl:     #8b93a1;
+}
+
+:root { --radius: 12px; }
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  padding: 0 0 5.5rem;            /* place pour la barre d'etat fixe */
+  background: var(--bg);
+  color: var(--fg);
+  font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+main { max-width: 44rem; margin: 0 auto; padding: 0 1rem; }
+
+/* ---------- En-tete ---------- */
+.app-header {
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 1.25rem 1rem 0.5rem;
+}
+/* The row wraps on narrow screens: title on one line, controls below it. */
+.header-row {
+  display: flex; flex-wrap: wrap;
+  align-items: center; gap: 0.5rem 1rem;
+}
+.app-header h1 { font-size: 1.35rem; margin: 0; flex: 1 1 14rem; line-height: 1.25; }
+.subtitle { color: var(--fg-soft); margin: 0.35rem 0 0; font-size: 0.95rem; }
+
+.top-bar-right {
+  display: flex; align-items: center; gap: 0.5rem;
+  flex: 0 0 auto; margin-left: auto;
+}
+
+/* ---------- Pastilles de langue ---------- */
+.language-selector {
+  display: flex; gap: 0.25rem;
+  background-color: var(--bg-third);
+  padding: 0.25rem;
+  border-radius: 8px;
+}
+.lang-btn {
+  padding: 0.4rem 0.8rem;
+  border: none;
+  background-color: transparent;
+  color: var(--fg);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+  border-radius: 6px;
+  transition: 0.2s;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.lang-btn:hover { background-color: var(--hover-bg); }
+.lang-btn.active {
+  background-color: var(--primary);
+  color: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* ---------- Bouton icone (bascule clair/sombre) ---------- */
+.icon-btn {
+  height: 42px; min-height: 42px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--line);
+  background-color: var(--card);
+  color: var(--fg);
+  cursor: pointer;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  line-height: 1;
+  transition: 0.2s;
+  display: flex; align-items: center; justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.icon-btn:hover:not(:disabled) {
+  background-color: var(--hover-bg);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+.icon-btn:active:not(:disabled) { transform: translateY(0); }
+
+/* ---------- Cartes ---------- */
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1rem;
+  margin: 1rem 0;
+}
+.card h2 { font-size: 1.05rem; margin: 0 0 0.5rem; }
+.card-warn { background: var(--warn-bg); border-color: var(--warn-line); }
+.tight { margin: 0; padding-left: 1.25rem; }
+.tight li { margin: 0.35rem 0; }
+.help  { color: var(--fg-soft); margin: 0 0 0.75rem; font-size: 0.95rem; }
+.hint  { color: var(--fg-soft); margin: 0.6rem 0 0; font-size: 0.85rem; }
+.footnote { color: var(--fg-soft); font-size: 0.8rem; text-align: center; margin: 1.5rem 0; }
+
+/* ---------- Boutons ---------- */
+.btn {
+  display: inline-block;
+  font: inherit;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  padding: 0.85rem 1.1rem;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.btn:disabled, .btn[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
+.btn-block { display: block; width: 100%; margin: 0.5rem 0; }
+.btn-xl { font-size: 1.25rem; padding: 1.35rem 1rem; }
+.btn-primary   { background: var(--primary); color: #fff; }
+.btn-primary:active { background: var(--primary-d); }
+.btn-secondary { background: transparent; color: var(--fg); border-color: var(--line); }
+.btn-danger    { background: var(--danger); color: #fff; }
+.btn-ghost     { background: transparent; color: var(--primary); border-color: var(--line); padding: 0.5rem 0.8rem; font-size: 0.9rem; }
+.btn.is-active { background: var(--danger); color: #fff; border-color: transparent; }
+
+/* ---------- Champs ---------- */
+.field { display: block; margin: 0.6rem 0; }
+.field > span { display: block; font-size: 0.85rem; color: var(--fg-soft); margin-bottom: 0.25rem; }
+.field input, .field select, .field output {
+  display: block; width: 100%;
+  font: inherit; padding: 0.6rem 0.65rem;
+  border: 1px solid var(--line); border-radius: 8px;
+  background: var(--bg); color: var(--fg);
+}
+.field output { background: transparent; border-style: dashed; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1rem; }
+@media (max-width: 30rem) { .grid2 { grid-template-columns: 1fr; } }
+
+/* Three across when there is room for them, one per line on a phone.
+   12rem (192 px) is what the widest head needs — the French "Longueur
+   (profondeur)" label at 137 px, the gap, and a "20 m" value — so the
+   columns collapse to two, then one, before a label ever wraps. */
+.grid3 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 0 1rem;
+}
+
+/* Label and value on one line, for the read-only volume readout. */
+.field-inline {
+  display: flex; align-items: baseline;
+  gap: 0.5rem; margin: 0.2rem 0 0;
+}
+.field-inline > span { margin: 0; }
+.field-inline output {
+  display: inline; width: auto;
+  padding: 0; border: 0; background: none;
+  font-weight: 700; font-size: 1rem; color: var(--fg);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Curseurs (sliders) ---------- */
+.field-range { margin: 0.9rem 0 1.2rem; }
+
+/* Label on the left, live value on the right. */
+.field .range-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--fg-soft);
+  margin-bottom: 0.1rem;
+}
+.field-range .range-head output {
+  display: inline;
+  width: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.field input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 2.25rem;            /* generous touch target on phones */
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+  touch-action: pan-y;        /* let the page scroll, drag the thumb */
+}
+.field input[type="range"]:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+/* Set once the pointer has rested long enough for the wheel to take over:
+   a visible confirmation that scrolling will now move THIS slider. */
+.field input[type="range"].wheel-armed::-webkit-slider-runnable-track {
+  background: var(--hover-bg);
+  box-shadow: 0 0 0 1px var(--primary);
+}
+.field input[type="range"].wheel-armed::-moz-range-track {
+  background: var(--hover-bg);
+  box-shadow: 0 0 0 1px var(--primary);
+}
+
+/* WebKit / Blink (Chrome, Safari, iOS) */
+.field input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--meter-bg);
+}
+.field input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 28px;
+  height: 28px;
+  margin-top: -11px;          /* centre the thumb on the 6 px track */
+  border-radius: 50%;
+  background: var(--primary);
+  border: 2px solid var(--card);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+/* Gecko (Firefox) */
+.field input[type="range"]::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--meter-bg);
+}
+.field input[type="range"]::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--primary);
+  border: 2px solid var(--card);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+/* ============================================================
+   Modes propres de la piece
+   ============================================================ */
+.card h3 {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fg-soft);
+  margin: 1.15rem 0 0.35rem;
+}
+
+/* ---------- Formule (fraction + radical en HTML/CSS) ---------- */
+.formula {
+  display: flex; flex-wrap: wrap;
+  align-items: center; gap: 0.3rem;
+  padding: 0.75rem 0.8rem;
+  margin: 0 0 0.4rem;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 1.05rem;
+  line-height: 1.25;
+  overflow-x: auto;
+}
+/* KaTeX writes its own markup in here. It inherits the card colour so it
+   follows the theme, and shrinks on narrow screens so the whole formula is
+   readable without sideways scrolling on a phone. `overflow-x: auto` on
+   .formula stays as the safety net for anything narrower still. */
+.formula .katex { font-size: 1.15em; color: var(--fg); }
+.formula .katex-display { margin: 0; }
+.formula.is-katex { display: block; text-align: center; }
+@media (max-width: 30rem) { .formula .katex { font-size: 0.95em; } }
+@media (max-width: 22rem) { .formula .katex { font-size: 0.8em; } }
+
+.formula sub { font-size: 0.62em; }
+.f-lhs { font-style: italic; }
+.frac {
+  display: inline-flex; flex-direction: column; align-items: center;
+  font-size: 0.92em;
+}
+.frac .num { padding: 0 0.35em; }
+.frac .den { padding: 0 0.35em; border-top: 1.5px solid currentColor; }
+.radical { display: inline-flex; align-items: baseline; }
+.radic { font-size: 1.35em; line-height: 1; margin-right: 0.04em; }
+.radicand {
+  border-top: 1.5px solid currentColor;
+  padding-top: 0.18em;
+  white-space: nowrap;
+}
+.formula-legend {
+  color: var(--fg-soft); font-size: 0.82rem; margin: 0 0 0.5rem;
+}
+
+/* ---------- Tuiles des fondamentales axiales ---------- */
+.tiles {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem; margin: 0;
+}
+.tile {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.5rem 0.35rem;
+  text-align: center;
+}
+.tile-label {
+  display: block; font-size: 0.7rem; color: var(--fg-soft);
+  line-height: 1.2; margin-bottom: 0.15rem;
+}
+.tile strong {
+  display: block; font-size: 1.05rem;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+
+/* ---------- Bande de repartition (echelle log) ---------- */
+.strip {
+  position: relative; height: 46px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.strip .m { position: absolute; width: 2px; margin-left: -1px; border-radius: 1px; }
+.strip .m.t-axial      { top: 4px;  bottom: 4px;  width: 3px; margin-left: -1.5px;
+                         background: var(--m-axial); }
+.strip .m.t-tangential { top: 11px; bottom: 11px; background: var(--m-tang); }
+.strip .m.t-oblique    { top: 17px; bottom: 17px; background: var(--m-obl); opacity: 0.8; }
+.strip-axis {
+  position: relative; height: 1.15rem; margin-top: 0.15rem;
+  font-size: 0.7rem; color: var(--fg-soft);
+  font-variant-numeric: tabular-nums;
+}
+.strip-axis span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+
+.mode-legend {
+  display: flex; flex-wrap: wrap; align-items: center;
+  gap: 0.25rem 0.9rem;
+  font-size: 0.78rem; color: var(--fg-soft);
+  margin: 0.4rem 0 0;
+}
+.mode-legend .lg { display: inline-flex; align-items: center; gap: 0.3rem; }
+.swatch {
+  display: inline-block; width: 0.85rem; height: 0.5rem;
+  border-radius: 2px; flex: 0 0 auto;
+}
+.swatch.t-axial      { background: var(--m-axial); }
+.swatch.t-tangential { background: var(--m-tang); }
+.swatch.t-oblique    { background: var(--m-obl); }
+
+/* ---------- Tableau des modes ---------- */
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.modes-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+.modes-table th, .modes-table td {
+  text-align: left; padding: 0.35rem 0.4rem;
+  border-bottom: 1px solid var(--line);
+}
+.modes-table th {
+  font-size: 0.7rem; font-weight: 700; color: var(--fg-soft);
+  text-transform: uppercase; letter-spacing: 0.03em;
+}
+.modes-table td.c-f {
+  font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap;
+}
+.modes-table td.c-n {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85em; white-space: nowrap; color: var(--fg-soft);
+}
+.modes-table td.c-t { white-space: nowrap; font-size: 0.82rem; }
+.modes-table td.c-t.t-axial      { color: var(--m-axial); font-weight: 600; }
+.modes-table td.c-t.t-tangential { color: var(--m-tang); }
+.modes-table td.c-t.t-oblique    { color: var(--m-obl); }
+
+details > summary {
+  cursor: pointer; font-weight: 600; font-size: 1.05rem;
+  list-style: revert;
+}
+.device-line { margin: 0.75rem 0 0; font-size: 0.95rem; }
+.device-line strong { word-break: break-word; }
+
+/* ---------- Vu-metre ---------- */
+.meter {
+  position: relative;
+  height: 26px;
+  background: var(--meter-bg);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-top: 0.9rem;
+}
+.meter-fill {
+  position: absolute; inset: 0 auto 0 0;
+  width: 0%;
+  background: linear-gradient(90deg, var(--ok) 0%, var(--ok) 70%, #e0a800 88%, var(--danger) 100%);
+  background-size: 100vw 100%;      /* couleur fonction du niveau absolu */
+  transition: width 60ms linear;
+}
+.meter-hold {
+  position: absolute; top: 0; bottom: 0; left: 0;
+  width: 2px; background: var(--fg);
+  opacity: 0.75;
+}
+.meter-scale {
+  position: absolute; inset: 0;
+  display: flex; justify-content: space-between;
+  font-size: 0.65rem; color: var(--fg-soft);
+  padding: 0 2px; pointer-events: none; align-items: flex-end;
+  mix-blend-mode: difference; opacity: 0.5;
+}
+.meter-values { margin: 0.5rem 0 0; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+.meter-values strong { font-variant-numeric: tabular-nums; }
+
+/* ---------- Progression ---------- */
+.progress {
+  height: 14px; background: var(--meter-bg);
+  border-radius: 7px; overflow: hidden; margin-top: 0.9rem;
+}
+.progress-fill {
+  height: 100%; width: 0%;
+  background: var(--primary);
+  transition: width 120ms linear;
+}
+.countdown {
+  text-align: center; font-size: 1.5rem; font-weight: 700;
+  font-variant-numeric: tabular-nums; margin: 0.6rem 0 0;
+}
+
+/* ---------- Barre d'etat ---------- */
+.statusbar {
+  position: fixed; left: 0; right: 0; bottom: 0;
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.85rem 1rem calc(0.85rem + env(safe-area-inset-bottom));
+  background: var(--card);
+  border-top: 1px solid var(--line);
+  font-size: 0.95rem;
+  z-index: 10;
+}
+.dot {
+  flex: 0 0 auto;
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--fg-soft);
+}
+.statusbar.is-busy   .dot { background: #e0a800; animation: pulse 1s infinite; }
+.statusbar.is-rec    .dot { background: var(--danger); animation: pulse 0.8s infinite; }
+.statusbar.is-ok     .dot { background: var(--ok); }
+.statusbar.is-error  .dot { background: var(--danger); }
+.statusbar.is-error  #status-text { color: var(--danger); font-weight: 600; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.25; } }
+
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}

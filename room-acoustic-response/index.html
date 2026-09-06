@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="fr" class="theme-light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="description" content="Mesure acoustique par balayage sinuso&iuml;dal logarithmique. Application statique, 100% locale." />
+  <title>Mesure de r&eacute;ponse acoustique</title>
+
+  <!-- Theme bootstrap: runs BEFORE the stylesheet paints, so the page never
+       flashes the wrong palette. Stored choice wins, otherwise the OS setting. -->
+  <script>
+    (function () {
+      var dark = false;
+      try {
+        var stored = localStorage.getItem('rira.theme');
+        dark = stored ? (stored === 'dark')
+             : !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      } catch (e) { /* private mode: stay light */ }
+      document.documentElement.className = dark ? 'theme-dark' : 'theme-light';
+    })();
+  </script>
+
+  <!-- KaTeX: the only external dependency, pinned, used solely to typeset the
+       formula in the room-modes card. `defer` runs it before DOMContentLoaded,
+       so it is ready when app.js boots. If the CDN is unreachable (offline, or
+       opened over file://), app.js keeps the plain HTML/CSS formula instead:
+       nothing else in the application depends on it. -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"
+        integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous" />
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"
+          integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script>
+
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<header class="app-header">
+  <div class="header-row">
+    <h1 data-i18n="app.title">Mesure de r&eacute;ponse acoustique</h1>
+
+    <div class="top-bar-right">
+      <!-- Language pills: the button carrying .active is the current language. -->
+      <div class="language-selector" role="group" data-i18n-attr="aria-label:lang.label">
+        <button type="button" class="lang-btn" data-lang="fr">FR</button>
+        <button type="button" class="lang-btn" data-lang="en">EN</button>
+        <button type="button" class="lang-btn" data-lang="es">ES</button>
+      </div>
+
+      <!-- Icon reflects the action: moon = switch to dark, sun = switch to light. -->
+      <!-- title/aria-label are set from app.js: they depend on the current theme. -->
+      <button id="theme-toggle" type="button" class="icon-btn">
+        <span class="icon" id="theme-icon" aria-hidden="true">&#127769;</span>
+      </button>
+    </div>
+  </div>
+  <p class="subtitle" data-i18n="app.subtitle"></p>
+</header>
+
+<main>
+
+  <!-- ============ Avertissements ============ -->
+  <section class="card card-warn">
+    <h2 data-i18n="warn.title"></h2>
+    <ul class="tight">
+      <li data-i18n="warn.speaker"></li>
+      <li data-i18n="warn.bt"></li>
+      <li data-i18n="warn.volume"></li>
+      <li data-i18n="warn.quiet"></li>
+    </ul>
+  </section>
+
+  <!-- ============ Instructions ============ -->
+  <section class="card">
+    <h2 data-i18n="instr.title"></h2>
+    <ol class="tight">
+      <li data-i18n="instr.1"></li>
+      <li data-i18n="instr.2"></li>
+      <li data-i18n="instr.3"></li>
+      <li data-i18n="instr.4"></li>
+      <li data-i18n="instr.5"></li>
+      <li data-i18n="instr.6"></li>
+    </ol>
+  </section>
+
+  <!-- ============ Etape 1 : test du micro ============ -->
+  <section class="card" id="step-mic">
+    <h2 data-i18n="step1.title"></h2>
+    <p class="help" data-i18n="step1.help"></p>
+
+    <button id="btn-mic" type="button" class="btn btn-secondary btn-block" data-i18n="btn.testMic"></button>
+
+    <p class="device-line">
+      <span data-i18n="mic.deviceLabel"></span>
+      <strong id="mic-name">&mdash;</strong>
+    </p>
+
+    <label class="field">
+      <span data-i18n="mic.selectLabel"></span>
+      <select id="mic-select" disabled></select>
+    </label>
+
+    <div class="meter" aria-hidden="true">
+      <div class="meter-fill" id="meter-fill"></div>
+      <div class="meter-hold" id="meter-hold"></div>
+      <div class="meter-scale">
+        <span>-60</span><span>-40</span><span>-20</span><span>-6</span><span>0</span>
+      </div>
+    </div>
+
+    <p class="meter-values">
+      <span data-i18n="meter.peak"></span>&nbsp;<strong id="val-peak">-&#8734;</strong>&nbsp;dBFS
+      &nbsp;&middot;&nbsp;
+      <span data-i18n="meter.rms"></span>&nbsp;<strong id="val-rms">-&#8734;</strong>&nbsp;dBFS
+    </p>
+    <p class="hint" id="meter-msg" data-i18n="meter.hint"></p>
+  </section>
+
+  <!-- ============ Etape 2 : mesure ============ -->
+  <section class="card" id="step-run">
+    <h2 data-i18n="step2.title"></h2>
+    <p class="help" id="run-help"></p>
+
+    <button id="btn-start" type="button" class="btn btn-primary btn-xl btn-block" data-i18n="btn.start"></button>
+    <button id="btn-abort" type="button" class="btn btn-danger btn-block" hidden data-i18n="btn.abort"></button>
+
+    <div class="progress" id="progress" hidden>
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+    <p class="countdown" id="countdown" hidden></p>
+  </section>
+
+  <!-- ============ Etape 3 : telechargements ============ -->
+  <section class="card" id="step-dl">
+    <h2 data-i18n="step3.title"></h2>
+    <p class="help" id="result-summary" data-i18n="step3.empty"></p>
+
+    <a id="dl-wav"  class="btn btn-primary btn-block" download hidden data-i18n="btn.wav"></a>
+    <a id="dl-json" class="btn btn-secondary btn-block" download hidden data-i18n="btn.json"></a>
+    <a id="dl-ref"  class="btn btn-secondary btn-block" download hidden data-i18n="btn.ref"></a>
+    <p class="hint" id="dl-hint" hidden data-i18n="step3.hint"></p>
+  </section>
+
+  <!-- ============ Modes propres de la pi&egrave;ce ============ -->
+  <section class="card" id="modes">
+    <h2 data-i18n="modes.title"></h2>
+    <p class="help" data-i18n="modes.help"></p>
+
+    <!-- KaTeX typesets into this container at startup. The markup below is the
+         fallback shown when KaTeX is unavailable: a plain HTML/CSS fraction
+         and radical, so the formula is always legible. -->
+    <div class="formula" id="modes-formula" aria-hidden="true">
+      <span class="f-lhs">f<sub>n<sub>x</sub>n<sub>y</sub>n<sub>z</sub></sub></span>
+      <span class="f-op">=</span>
+      <span class="frac"><span class="num">c</span><span class="den">2</span></span>
+      <span class="radical"><span class="radic">&radic;</span><span class="radicand">(n<sub>x</sub>/L)&sup2; + (n<sub>y</sub>/W)&sup2; + (n<sub>z</sub>/H)&sup2;</span></span>
+    </div>
+    <p class="formula-legend" data-i18n="modes.legend"></p>
+
+    <!-- auto-fit: the three dimensions share one line whenever the card is
+         wide enough for them, and fall back to a single column on a phone. -->
+    <div class="grid3">
+      <label class="field field-range">
+        <span class="range-head">
+          <span data-i18n="modes.L"></span>
+          <output id="out-L"></output>
+        </span>
+        <input id="p-L" type="range" min="1" max="20" step="0.1" value="5" />
+      </label>
+      <label class="field field-range">
+        <span class="range-head">
+          <span data-i18n="modes.W"></span>
+          <output id="out-W"></output>
+        </span>
+        <input id="p-W" type="range" min="1" max="20" step="0.1" value="4" />
+      </label>
+      <label class="field field-range">
+        <span class="range-head">
+          <span data-i18n="modes.H"></span>
+          <output id="out-H"></output>
+        </span>
+        <input id="p-H" type="range" min="1.8" max="8" step="0.1" value="2.7" />
+      </label>
+    </div>
+
+    <div class="field field-inline">
+      <span data-i18n="modes.volume"></span>
+      <output id="modes-vol">&mdash;</output>
+    </div>
+
+    <h3 data-i18n="modes.axialTitle"></h3>
+    <div class="tiles">
+      <div class="tile">
+        <span class="tile-label" data-i18n="modes.axialL"></span>
+        <strong id="ax-L">&mdash;</strong>
+      </div>
+      <div class="tile">
+        <span class="tile-label" data-i18n="modes.axialW"></span>
+        <strong id="ax-W">&mdash;</strong>
+      </div>
+      <div class="tile">
+        <span class="tile-label" data-i18n="modes.axialH"></span>
+        <strong id="ax-H">&mdash;</strong>
+      </div>
+    </div>
+
+    <h3 data-i18n="modes.stripTitle"></h3>
+    <div class="strip" id="modes-strip" aria-hidden="true"></div>
+    <div class="strip-axis" id="modes-axis" aria-hidden="true"></div>
+    <p class="mode-legend">
+      <span class="lg"><span class="swatch t-axial"></span><span data-i18n="modes.axial"></span></span>
+      <span class="lg"><span class="swatch t-tangential"></span><span data-i18n="modes.tangential"></span></span>
+      <span class="lg"><span class="swatch t-oblique"></span><span data-i18n="modes.oblique"></span></span>
+      <em data-i18n="modes.strength"></em>
+    </p>
+
+    <h3 data-i18n="modes.tableTitle"></h3>
+    <div class="table-wrap">
+      <table class="modes-table">
+        <thead>
+          <tr>
+            <th data-i18n="modes.colF"></th>
+            <th data-i18n="modes.colN"></th>
+            <th data-i18n="modes.colType"></th>
+          </tr>
+        </thead>
+        <tbody id="modes-tbody"></tbody>
+      </table>
+    </div>
+
+    <p class="hint" id="modes-hint"></p>
+    <p class="hint" data-i18n="modes.note"></p>
+  </section>
+
+  <!-- ============ Param&egrave;tres avanc&eacute;s ============ -->
+  <details class="card" id="settings">
+    <summary data-i18n="settings.title"></summary>
+
+    <div class="grid2">
+      <!-- Frequency sliders are logarithmic: position 0..1000 is mapped
+           onto the range in js/app.js (SPEC table). -->
+      <label class="field field-range">
+        <span class="range-head">
+          <span data-i18n="settings.f1"></span>
+          <output id="out-f1"></output>
+        </span>
+        <input id="p-f1" type="range" min="0" max="1000" step="1" value="131" />
+      </label>
+      <label class="field field-range">
+        <span class="range-head">
+          <span data-i18n="settings.f2"></span>
+          <output id="out-f2"></output>
+        </span>
+        <input id="p-f2" type="range" min="0" max="1000" step="1" value="565" />
+      </label>
+      <label class="field field-range">
+        <span class="range-head">
+          <span data-i18n="settings.dur"></span>
+          <output id="out-dur"></output>
+        </span>
+        <input id="p-dur" type="range" min="1" max="120" step="1" value="30" />
+      </label>
+      <label class="field field-range">
+        <span class="range-head">
+          <span data-i18n="settings.amp"></span>
+          <output id="out-amp"></output>
+        </span>
+        <input id="p-amp" type="range" min="0.05" max="1" step="0.05" value="0.5" />
+      </label>
+      <label class="field field-range">
+        <span class="range-head">
+          <span data-i18n="settings.pre"></span>
+          <output id="out-pre"></output>
+        </span>
+        <input id="p-pre" type="range" min="0" max="5" step="0.5" value="0" />
+      </label>
+      <label class="field field-range">
+        <span class="range-head">
+          <span data-i18n="settings.post"></span>
+          <output id="out-post"></output>
+        </span>
+        <input id="p-post" type="range" min="0" max="5" step="0.5" value="0" />
+      </label>
+      <label class="field">
+        <span data-i18n="settings.format"></span>
+        <select id="p-bits">
+          <option value="16" data-i18n="settings.format16"></option>
+          <option value="32" data-i18n="settings.format32"></option>
+        </select>
+      </label>
+      <div class="field">
+        <span data-i18n="settings.sr"></span>
+        <output id="p-sr">&mdash;</output>
+      </div>
+    </div>
+
+    <button id="btn-reset" type="button" class="btn btn-ghost" data-i18n="settings.reset"></button>
+    <p class="hint" data-i18n="settings.note"></p>
+  </details>
+
+  <p class="footnote" data-i18n="foot.note"></p>
+
+</main>
+
+<!-- Barre d'etat permanente -->
+<div class="statusbar" id="statusbar" role="status" aria-live="polite">
+  <span class="dot" id="status-dot"></span>
+  <span id="status-text"></span>
+</div>
+
+<noscript>
+  <p style="padding:1rem;color:#b00">JavaScript est n&eacute;cessaire pour cette application.</p>
+</noscript>
+
+<!-- Scripts classiques (pas de modules ES) : fonctionne aussi en file:// et sur GitHub Pages -->
+<script src="js/i18n.js"></script>
+<script src="js/wav.js"></script>
+<script src="js/chirp.js"></script>
+<script src="js/modes.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
