@@ -476,6 +476,64 @@ details > summary {
 .meter-values { margin: 0.5rem 0 0; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
 .meter-values strong { font-variant-numeric: tabular-nums; }
 
+/* ---------- Selecteur de mode (balayage / claquement) ---------- */
+.mode-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.25rem;
+  background-color: var(--bg-third);
+  padding: 0.25rem;
+  border-radius: 10px;
+  margin: 0 0 0.75rem;
+}
+.mode-btn {
+  border: none;
+  background-color: transparent;
+  color: var(--fg);
+  cursor: pointer;
+  font: inherit;
+  padding: 0.55rem 0.5rem;
+  border-radius: 8px;
+  transition: 0.2s;
+  text-align: center;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.mode-btn:hover { background-color: var(--hover-bg); }
+.mode-btn.active {
+  background-color: var(--primary);
+  color: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+.mode-name { display: block; font-weight: 700; font-size: 0.95rem; }
+.mode-sub {
+  display: block; font-size: 0.72rem; line-height: 1.25;
+  opacity: 0.75; margin-top: 0.1rem;
+}
+
+/* ---------- Tuiles de temps de reverberation ---------- */
+.rt-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(5.5rem, 1fr));
+  gap: 0.4rem;
+  margin: 0 0 0.6rem;
+}
+.rt-tiles .tile { padding: 0.45rem 0.3rem; }
+.rt-tiles .tile-big { grid-column: span 2; }
+.rt-tiles .tile-big strong { font-size: 1.35rem; color: var(--primary); }
+/* A fit the noise floor cut short is shown, but visibly flagged. */
+.rt-tiles .tile.is-short { border-color: var(--warn-line); background: var(--warn-bg); }
+.rt-tiles .tile.is-short strong { opacity: 0.75; }
+.rt-tiles .tile.is-short strong::after { content: ' \002A'; }
+
+/* The straight line fitted to the decay, over the measured curve. */
+.dc-fit {
+  stroke: var(--danger);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 4;
+  vector-effect: non-scaling-stroke;
+}
+
 /* ---------- Apercu de la reponse en amplitude ---------- */
 .spec { margin: 0.9rem 0 0.4rem; padding: 0; }
 .spec-head {

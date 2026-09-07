@@ -119,6 +119,20 @@
   <!-- ============ Etape 2 : mesure ============ -->
   <section class="card" id="step-run">
     <h2 data-i18n="step2.title"></h2>
+
+    <!-- Two ways to excite the room. Sweep plays a signal; clap records the
+         user's own impulse and plays nothing at all. -->
+    <div class="mode-switch" role="group" data-i18n-attr="aria-label:mode.label">
+      <button type="button" class="mode-btn" data-mode="sweep">
+        <span class="mode-name" data-i18n="mode.sweep"></span>
+        <span class="mode-sub" data-i18n="mode.sweepSub"></span>
+      </button>
+      <button type="button" class="mode-btn" data-mode="clap">
+        <span class="mode-name" data-i18n="mode.clap"></span>
+        <span class="mode-sub" data-i18n="mode.clapSub"></span>
+      </button>
+    </div>
+
     <p class="help" id="run-help"></p>
 
     <button id="btn-start" type="button" class="btn btn-primary btn-xl btn-block" data-i18n="btn.start"></button>
@@ -143,6 +157,17 @@
       </figcaption>
       <div class="spec-plot" id="spec-plot"></div>
       <p class="hint" id="spec-note"></p>
+    </figure>
+
+    <!-- Decay preview: clap mode only. -->
+    <figure class="spec" id="decay-box" hidden>
+      <figcaption class="spec-head">
+        <strong data-i18n="decay.title"></strong>
+        <span class="spec-mic" id="decay-mic"></span>
+      </figcaption>
+      <div class="rt-tiles" id="decay-tiles"></div>
+      <div class="spec-plot" id="decay-plot"></div>
+      <p class="hint" id="decay-note"></p>
     </figure>
 
     <a id="dl-wav"  class="btn btn-primary btn-block" download hidden data-i18n="btn.wav"></a>
@@ -246,7 +271,7 @@
   <details class="card" id="settings">
     <summary data-i18n="settings.title"></summary>
 
-    <div class="grid2">
+    <div class="grid2" id="sweep-params">
       <!-- Frequency sliders are logarithmic: position 0..1000 is mapped
            onto the range in js/app.js (SPEC table). -->
       <label class="field field-range">
@@ -291,6 +316,34 @@
         </span>
         <input id="p-post" type="range" min="0" max="5" step="0.5" value="0" />
       </label>
+    </div>
+
+    <!-- Clap mode has its own parameters; only one group is ever shown. -->
+    <div class="grid2" id="clap-params" hidden>
+      <label class="field field-range">
+        <span class="range-head">
+          <span data-i18n="settings.clapDur"></span>
+          <output id="out-clapdur"></output>
+        </span>
+        <input id="p-clapdur" type="range" min="1" max="15" step="0.5" value="5" />
+      </label>
+      <label class="field field-range">
+        <span class="range-head">
+          <span data-i18n="settings.clapThr"></span>
+          <output id="out-clapthr"></output>
+        </span>
+        <input id="p-clapthr" type="range" min="-45" max="-3" step="1" value="-20" />
+      </label>
+      <label class="field field-range">
+        <span class="range-head">
+          <span data-i18n="settings.clapPre"></span>
+          <output id="out-clappre"></output>
+        </span>
+        <input id="p-clappre" type="range" min="0" max="500" step="10" value="50" />
+      </label>
+    </div>
+
+    <div class="grid2">
       <label class="field">
         <span data-i18n="settings.format"></span>
         <select id="p-bits">
@@ -328,6 +381,7 @@
 <script src="js/chirp.js"></script>
 <script src="js/modes.js"></script>
 <script src="js/spectrum.js"></script>
+<script src="js/decay.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/app.js"></script>
 </body>

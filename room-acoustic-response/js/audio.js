@@ -495,6 +495,159 @@
             function (err) { running = false; throw err; });
   }
 
+  /* ============================================================
+   *  Clap capture (impulse response)
+   *
+   *  No playback at all: the user is the source. We record continuously,
+   *  keeping a rolling pre-roll, and start counting only once a sample
+   *  crosses the trigger threshold. The pre-roll matters twice over: it
+   *  keeps the true attack of the clap, which is what carries the high
+   *  frequencies, and it gives decay.js a stretch of background noise to
+   *  measure the noise floor against.
+   * ============================================================ */
+  function runClapCapture(p, hooks) {
+    if (running) { return Promise.reject(makeErr('err.busy')); }
+    running = true;
+    abortRequested = false;
+    hooks = hooks || {};
+    var status = hooks.onStatus || function () {};
+    var armed = hooks.onArmed || function () {};
+    var progress = hooks.onProgress || function () {};
+
+    var c, recorder, micSrc, sink;
+    var preChunks = [], preLen = 0;      // rolling buffer, before the trigger
+    var postChunks = [], postLen = 0;    // everything from the trigger on
+    var triggered = false;
+    var runningPeak = 0;
+    var preN, needN, thr, waitN, seen = 0;
+
+    function cleanup() {
+      try { if (micSrc) { micSrc.disconnect(); } } catch (e) { /* */ }
+      try { if (sink) { sink.disconnect(); } } catch (e) { /* */ }
+      if (recorder) { recorder.dispose(); }
+    }
+
+    status('status.preparing');
+
+    return Promise.resolve()
+      .then(function () { c = getContext(); return openStream(p.deviceId); })
+      .then(function () {
+        preN  = Math.round(p.preRoll * c.sampleRate);
+        needN = Math.round(p.duration * c.sampleRate);
+        waitN = Math.round((p.waitSeconds || 60) * c.sampleRate);
+        thr   = Math.pow(10, p.thresholdDbfs / 20);
+
+        return createRecorderNode(c, function (chunk) {
+          seen += chunk.length;
+
+          if (!triggered) {
+            var hit = -1;
+            for (var i = 0; i < chunk.length; i++) {
+              var a = Math.abs(chunk[i]);
+              if (a > runningPeak) { runningPeak = a; }
+              if (hit < 0 && a >= thr) { hit = i; }
+            }
+            if (hit < 0) {
+              // Keep only the last preN samples while waiting.
+              preChunks.push(chunk);
+              preLen += chunk.length;
+              while (preChunks.length > 1 && preLen - preChunks[0].length >= preN) {
+                preLen -= preChunks.shift().length;
+              }
+              return;
+            }
+            triggered = true;
+          }
+          postChunks.push(chunk);
+          postLen += chunk.length;
+        });
+      })
+      .then(function (rec) {
+        recorder = rec;
+
+        micSrc = c.createMediaStreamSource(stream);
+        sink = c.createGain();
+        sink.gain.value = 0;             // muted path, only to pull the graph
+        micSrc.connect(recorder.node);
+        recorder.node.connect(sink);
+        sink.connect(c.destination);
+
+        status('status.waitClap');
+        armed(true);
+
+        return new Promise(function (resolve, reject) {
+          var timer = setInterval(function () {
+            if (abortRequested) { clearInterval(timer); resolve(); return; }
+            if (!triggered) {
+              if (seen >= waitN) {
+                clearInterval(timer);
+                reject(makeErr('err.noClap'));
+                return;
+              }
+              progress(0, needN / c.sampleRate, runningPeak);
+              return;
+            }
+            progress(Math.min(postLen, needN) / c.sampleRate,
+                     needN / c.sampleRate, runningPeak);
+            if (postLen >= needN) { clearInterval(timer); resolve(); }
+          }, 100);
+        });
+      })
+      .then(function () {
+        status('status.finishing');
+        armed(false);
+        cleanup();
+
+        if (abortRequested) { throw makeErr('aborted'); }
+        if (!triggered || postLen === 0) { throw makeErr('err.empty'); }
+
+        // Assemble: the tail of the pre-roll, then everything after it.
+        var keepPre = Math.min(preN, preLen);
+        var total = keepPre + Math.min(postLen, needN + preN);
+        var data = new Float32Array(total);
+        var w = 0, skip = preLen - keepPre, k, chunk;
+
+        for (k = 0; k < preChunks.length; k++) {
+          chunk = preChunks[k];
+          if (skip >= chunk.length) { skip -= chunk.length; continue; }
+          var from = skip; skip = 0;
+          var n = Math.min(chunk.length - from, total - w);
+          data.set(chunk.subarray(from, from + n), w);
+          w += n;
+        }
+        for (k = 0; k < postChunks.length && w < total; k++) {
+          chunk = postChunks[k];
+          var m = Math.min(chunk.length, total - w);
+          data.set(chunk.subarray(0, m), w);
+          w += m;
+        }
+
+        preChunks = postChunks = null;
+
+        return {
+          mode: 'clap',
+          data: data,
+          sampleRate: c.sampleRate,
+          channels: 1,
+          durationSeconds: data.length / c.sampleRate,
+          levels: WAV.analyseLevels(data),
+          signal: null,                       // there is no reference signal
+          recorderKind: recorder.kind,
+          input: currentInputInfo(),
+          trigger: {
+            thresholdDbfs: p.thresholdDbfs,
+            preRollSeconds: keepPre / c.sampleRate,
+            preRollSamples: keepPre,
+            requestedSeconds: p.duration,
+            waitedSeconds: (seen - postLen) / c.sampleRate
+          }
+        };
+      })
+      .catch(function (err) { armed(false); cleanup(); throw err; })
+      .then(function (res) { running = false; return res; },
+            function (err) { running = false; throw err; });
+  }
+
   /* ============================================================ */
 
   global.Engine = {
@@ -509,6 +662,7 @@
     stopMeter: stopMeter,
     isMetering: isMetering,
     runMeasurement: runMeasurement,
+    runClapCapture: runClapCapture,
     abort: abort,
     isRunning: isRunning,
     setAudioSession: setAudioSession,

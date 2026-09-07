@@ -55,6 +55,7 @@ js/wav.js           Escritor RIFF/WAVE en JS (PCM 16 bits e IEEE float 32 bits)
 js/chirp.js         Generador de barrido exponencial + validación de parámetros
 js/modes.js         Modos propios de una sala rectangular (modelo de Rayleigh)
 js/spectrum.js      FFT + Welch: vista previa de la respuesta en amplitud
+js/decay.js         Schroeder + RT60: decaimiento a partir de una palmada
 js/audio.js         Motor de audio: permisos, vúmetro, reproducción+grabación
 js/app.js           Controlador de interfaz, máquina de estados, descargas
 .nojekyll           Para GitHub Pages
@@ -382,7 +383,101 @@ localizar resonancias, no una medida.
 
 ---
 
-## 7. Archivos entregados
+## 7. Modo palmada (respuesta al impulso)
+
+La aplicación tiene **dos modos**, con un selector encima del botón de medir:
+
+| | **Barrido** | **Palmada** |
+|---|---|---|
+| Excitación | la app reproduce un chirp | usted da una palmada |
+| Reproducción | sí | **ninguna** |
+| Referencia | sí, se descarga | no existe |
+| Resultado | respuesta en amplitud | **decaimiento y RT60** |
+
+Una palmada **es** una impulsión: lo que se graba ya es la respuesta al impulso, sin necesidad
+de deconvolución. Es lo que se oye «vibrar» en la sala después de un aplauso.
+
+### Lo que se puede y lo que no se puede sacar de una palmada
+
+Esta distinción es estructural y la interfaz la dice explícitamente:
+
+- **NO se puede sacar respuesta en frecuencia.** El espectro medido es el de la sala
+  **multiplicado** por el de la palmada, y este último es desconocido y distinto en cada
+  palmada. Sin referencia no hay forma de separarlos. Por eso el modo palmada no muestra la
+  curva de amplitud de la sección 6.
+- **Sí se puede sacar el decaimiento.** La pendiente a la que cae la energía es propiedad de la
+  sala sola, mientras la fuente sea breve frente a esa caída. De ahí salen EDT, T20, T30 y RT60.
+
+### Disparo automático
+
+Nada se reproduce: se arma la grabación y se espera. El motor graba en continuo con un búfer
+circular y **arranca la cuenta al detectar el transitorio**. El pre-registro sirve dos veces:
+conserva el ataque real de la palmada, que es lo que lleva las frecuencias altas, y da a
+`decay.js` un tramo de fondo con el que medir el nivel de ruido.
+
+| Parámetro | Rango | Por defecto |
+|---|---|---|
+| Duración grabada | 1 – 15 s | 5 s |
+| Umbral de disparo | −45 a −3 dBFS | −20 dBFS |
+| Pregrabación | 0 – 500 ms | 50 ms |
+
+Si no llega ninguna palmada en 60 s, se aborta con un mensaje que sugiere aplaudir más fuerte o
+bajar el umbral. El vúmetro de la sección de micrófono sirve para elegir el umbral: se ve
+directamente a cuántos dBFS pica la palmada.
+
+### El cálculo: integración inversa de Schroeder
+
+Leer el decaimiento sobre la señal cruda es inútil, porque es ruido. Schroeder (1965) integra
+hacia atrás:
+
+```
+EDC(t) = 10 log10 ( ∫ desde t hasta T de h²(x) dx )
+```
+
+lo que da una curva lisa por construcción, sobre la que se ajusta una recta por mínimos
+cuadrados:
+
+| Estimador | Tramo ajustado | RT60 |
+|---|---|---|
+| EDT | 0 a −10 dB | 6 × pendiente |
+| T20 | −5 a −25 dB | 3 × pendiente |
+| T30 | −5 a −35 dB | 2 × pendiente |
+
+Se muestran los tres, más el RT60 del mejor disponible y el margen útil, y el gráfico dibuja la
+curva EDC con **la recta ajustada superpuesta** en trazo discontinuo, para que se vea de un
+vistazo si el decaimiento era realmente recto.
+
+### Dos detalles que cambian el resultado
+
+**El truncado.** La integral de Schroeder sobre una cola que ya es puro ruido no decae: se
+aplana, y una cola plana arrastra la pendiente hacia cero e infla el RT60. Se trunca la
+integración donde la envolvente cae al ruido de fondo más un margen de 10 dB (la forma simple
+de lo que el método iterativo de Lundeby refina). No es un detalle menor: medido sobre
+decaimientos sintéticos, **sin truncar, un RT60 real de 0,6 s se lee como 17 s**.
+
+**El margen útil.** Un ajuste solo es fiable si hay recorrido **más allá** del tramo ajustado:
+el decaimiento tiene que mantenerse despegado del ruido durante todo el ajuste, no rozarlo al
+final. Se exigen 10 dB de margen sobre el tramo, o sea 20 / 35 / 45 dB para EDT / T20 / T30. Un
+ajuste que no llega se muestra igualmente pero **marcado en ámbar con un asterisco**, y el
+`best` cae al siguiente estimador honesto. Medido: un T30 leído con 39 dB de margen ya se queda
+un 11 % corto, mientras que el T20 en las mismas condiciones acierta al 4 %.
+
+Hubo que corregir cómo se medía ese margen. Tomarlo del último valor de la curva EDC **no
+funciona**: una integral hacia atrás siempre se desploma hacia −∞ en sus últimas muestras, haya
+ruido o no, así que reportaba decenas de dB de margen inexistente y la advertencia no se
+disparaba nunca. Se mide ahora como la relación entre la potencia en el ataque y la del ruido
+de fondo.
+
+### Metadatos
+
+El JSON cambia de esquema (`acoustic-impulse-measurement/1`), lleva `mode: "clap"`,
+`referenceFile: null`, el umbral y el pre-registro usados, y una nota que explica por qué de ese
+archivo no sale una respuesta en frecuencia. El bloque de latencia se sustituye por otro que
+dice que en modo impulso no hay nada que compensar, porque no se reproduce nada.
+
+---
+
+## 8. Archivos entregados
 
 Los tres comparten un identificador de medición (`AAAAMMDD-HHMMSS` local):
 
@@ -403,7 +498,7 @@ grabado es demasiado bajo (< −45 dBFS).
 
 ---
 
-## 8. Limitaciones
+## 9. Limitaciones
 
 ### iOS / Safari (iPhone, iPad)
 
@@ -458,7 +553,7 @@ grabado es demasiado bajo (< −45 dBFS).
 
 ---
 
-## 9. Qué hacer después con los archivos (fuera de esta versión)
+## 10. Qué hacer después con los archivos (fuera de esta versión)
 
 La vista previa de la sección 6 da una **magnitud suavizada**, suficiente para localizar
 resonancias pero no para un análisis serio: no hay deconvolución, ni respuesta al impulso, ni
@@ -471,7 +566,7 @@ fase. Para el post-procesado de verdad, con `mesure_*.wav` y `reference_*.wav` a
 
 ---
 
-## 10. Añadir un idioma
+## 11. Añadir un idioma
 
 En `js/i18n.js`, copiar el bloque `en`, traducir los valores, registrarlo bajo su código ISO
 639-1 y añadir una píldora `<button class="lang-btn" data-lang="XX">XX</button>` en `index.html`. Las claves que falten caen automáticamente al
@@ -480,12 +575,12 @@ instantáneo, incluidos los textos dinámicos (estado, resumen, cuenta atrás).
 
 ---
 
-## 11. Verificación realizada
+## 12. Verificación realizada
 
 Los dos hashes SRI de KaTeX del `index.html` se calcularon descargando los archivos reales del
 CDN (`openssl dgst -sha384`), no de memoria.
 
-**Pruebas numéricas** (124/124 correctas, `chirp.js` + `wav.js` + `modes.js` + `spectrum.js` en Node):
+**Pruebas numéricas** (182/182 correctas, `chirp.js` + `wav.js` + `modes.js` + `spectrum.js` + `decay.js` en Node):
 frecuencia instantánea medida por cruces por cero frente a la teórica en varios instantes
 (error < 0,3 %), amplitud de pico exacta, silencios exactamente nulos, ausencia de saltos que
 produzcan clics, validación de parámetros, cabecera RIFF completa campo a campo en 16 y 32 bits,
@@ -505,6 +600,16 @@ paso bajo de un polo cae ~20 dB por década, un resonador agudo aparece como pic
 10 % de su frecuencia y más de 15 dB sobre la mediana, dos resonancias separadas se resuelven
 ambas, los bordes se recortan un doceavo de octava, y devuelve `null` ante entradas ausentes,
 frecuencia de muestreo nula, señal demasiado corta o `f2 ≤ f1`.
+Para `decay.js` (58 pruebas): decaimientos sintéticos de RT60 conocido (0,4 / 0,8 / 1,6 s)
+recuperados al 6 % por T20 y T30 y al 12 % por EDT, con r² > 0,99; los tres estimadores
+coincidiendo al 8 % sobre una exponencial pura; detección del ataque tras 250 ms de silencio
+sin sesgar el RT60; **el truncado verificado en tres niveles de ruido, comprobando tanto que
+con él el resultado se mantiene a menos del 15 % como que sin él se dispara más de 5 veces**;
+los umbrales de validez comprobados en el caso de 39 dB de margen (T30 marcado corto, T20
+aceptado y acertando al 10 %, `best` cayendo a T20); la curva EDC monótona decreciente y
+arrancando en 0 dB; la aritmética de `fitRange` contra una recta exacta de −20 dB/s
+(pendiente, RT60, r² y extremos del tramo); y `null` ante entrada vacía, todo ceros, frecuencia
+de muestreo nula o nada que ajustar.
 
 **Pruebas en navegador** (Chrome, viewport de 375 px, con micrófono sintético inyectado):
 sliders en sus valores por defecto y en ambos extremos, mapeo logarítmico de frecuencias
@@ -530,6 +635,17 @@ mediana, los 292 puntos del trazo caen dentro del marco, los rótulos de eje sal
 (20/50/100/200/500/1k/2k) y el análisis tardó 184 ms; redibujado a 375 px dando un SVG de
 308 × 190 px con etiquetas de 11 px reales y sin desbordamiento; colores del trazo, la rejilla
 y los rótulos siguiendo el tema en claro y en oscuro;
+modo palmada con un impulso sintético inyectado como micrófono, de RT60 conocido: armado
+correcto (« Prêt — claquez des mains une fois » con el punto rojo y « En attente du
+claquement… »), disparo automático al transitorio, y **RT60 leído de 0,90 s para un 0,9 s real
+y de 0,70 s para un 0,7 s real**, con EDT/T20/T30 coherentes y r² = 1; descarga de referencia
+correctamente ausente, tarjeta de espectro oculta y tarjeta de decaimiento mostrada; metadatos
+con esquema `acoustic-impulse-measurement/1`, `referenceFile: null` y el bloque de latencia
+sustituido; recta de ajuste dibujada y **cero atributos SVG con `NaN` sobre 23 elementos**;
+redibujado a 375 px dando 308 × 190 px con etiquetas de 11 px reales; conmutación de modo
+intercambiando parámetros, ayuda y rótulo del botón, y persistiendo en `localStorage`;
+regresión del modo barrido tras todos estos cambios (pico −12,04 dBFS, 292 puntos de curva,
+referencia presente, esquema de barrido intacto);
 medición completa de extremo a extremo, secuencia de estados
 `Préparation → Enregistrement → Finalisation → Terminé`, WAV resultante con cabecera válida y
 tono de 440 Hz recuperado con pico de −12,04 dBFS (exactamente la amplitud inyectada), JSON de
