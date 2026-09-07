@@ -135,6 +135,16 @@
     <h2 data-i18n="step3.title"></h2>
     <p class="help" id="result-summary" data-i18n="step3.empty"></p>
 
+    <!-- Amplitude preview: filled in after a measurement, hidden otherwise. -->
+    <figure class="spec" id="spec-box" hidden>
+      <figcaption class="spec-head">
+        <strong data-i18n="spec.title"></strong>
+        <span class="spec-mic" id="spec-mic"></span>
+      </figcaption>
+      <div class="spec-plot" id="spec-plot"></div>
+      <p class="hint" id="spec-note"></p>
+    </figure>
+
     <a id="dl-wav"  class="btn btn-primary btn-block" download hidden data-i18n="btn.wav"></a>
     <a id="dl-json" class="btn btn-secondary btn-block" download hidden data-i18n="btn.json"></a>
     <a id="dl-ref"  class="btn btn-secondary btn-block" download hidden data-i18n="btn.ref"></a>
@@ -317,6 +327,7 @@
 <script src="js/wav.js"></script>
 <script src="js/chirp.js"></script>
 <script src="js/modes.js"></script>
+<script src="js/spectrum.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/app.js"></script>
 </body>

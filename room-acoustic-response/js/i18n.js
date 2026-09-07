@@ -92,6 +92,15 @@
       'btn.abort':   'Annuler la mesure',
       'progress.remaining': 'Temps restant : {s} s',
 
+      'spec.title':     'Aperçu de la réponse en amplitude',
+      'spec.mic':       'Capté par le microphone de cet appareil : {device}',
+      'spec.micUnknown': 'microphone local de cet appareil',
+      'spec.computing': 'Analyse du signal…',
+      'spec.none':      'Signal insuffisant pour tracer une courbe exploitable.',
+      'spec.note':      'Rapport des densités spectrales entre l’enregistrement et le signal de référence. La courbe contient le haut-parleur, la pièce ET le microphone : ce n’est pas une mesure calibrée. Seule sa forme compte, pas son niveau absolu — les bosses sont les résonances. Résolution {bin} Hz, lissage 1/6 d’octave, {seg} fenêtres moyennées.',
+      'spec.axisHz':    'Fréquence (Hz)',
+      'spec.axisDb':    'dB (relatif)',
+
       'step3.title': '3. Téléchargements',
       'step3.empty': 'Aucune mesure disponible pour l’instant.',
       'step3.hint':  'Le WAV et le JSON portent le même identifiant de mesure. Conservez-les ensemble.',
@@ -212,6 +221,15 @@
       'btn.abort':   'Cancel measurement',
       'progress.remaining': 'Time left: {s} s',
 
+      'spec.title':     'Amplitude response preview',
+      'spec.mic':       'Captured by this device’s own microphone: {device}',
+      'spec.micUnknown': 'this device’s local microphone',
+      'spec.computing': 'Analysing the signal…',
+      'spec.none':      'Not enough signal to draw a usable curve.',
+      'spec.note':      'Ratio of the spectral densities of the recording and of the reference signal. The curve contains the loudspeaker, the room AND the microphone: it is not a calibrated measurement. Only its shape means anything, not its absolute level — the bumps are the resonances. Resolution {bin} Hz, 1/6-octave smoothing, {seg} windows averaged.',
+      'spec.axisHz':    'Frequency (Hz)',
+      'spec.axisDb':    'dB (relative)',
+
       'step3.title': '3. Downloads',
       'step3.empty': 'No measurement available yet.',
       'step3.hint':  'The WAV and the JSON share the same measurement id. Keep them together.',
@@ -331,6 +349,15 @@
       'btn.start':   'Iniciar medición',
       'btn.abort':   'Cancelar medición',
       'progress.remaining': 'Tiempo restante: {s} s',
+
+      'spec.title':     'Vista previa de la respuesta en amplitud',
+      'spec.mic':       'Captado por el micrófono propio de este dispositivo: {device}',
+      'spec.micUnknown': 'micrófono local de este dispositivo',
+      'spec.computing': 'Analizando la señal…',
+      'spec.none':      'Señal insuficiente para trazar una curva utilizable.',
+      'spec.note':      'Cociente de las densidades espectrales de la grabación y de la señal de referencia. La curva contiene el altavoz, la sala Y el micrófono: no es una medida calibrada. Solo importa su forma, no su nivel absoluto — los picos son las resonancias. Resolución {bin} Hz, suavizado de 1/6 de octava, {seg} ventanas promediadas.',
+      'spec.axisHz':    'Frecuencia (Hz)',
+      'spec.axisDb':    'dB (relativo)',
 
       'step3.title': '3. Descargas',
       'step3.empty': 'Todavía no hay ninguna medición disponible.',

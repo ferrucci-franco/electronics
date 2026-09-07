@@ -54,6 +54,7 @@ js/i18n.js          Diccionarios fr/en/es + traducción del DOM
 js/wav.js           Escritor RIFF/WAVE en JS (PCM 16 bits e IEEE float 32 bits)
 js/chirp.js         Generador de barrido exponencial + validación de parámetros
 js/modes.js         Modos propios de una sala rectangular (modelo de Rayleigh)
+js/spectrum.js      FFT + Welch: vista previa de la respuesta en amplitud
 js/audio.js         Motor de audio: permisos, vúmetro, reproducción+grabación
 js/app.js           Controlador de interfaz, máquina de estados, descargas
 .nojekyll           Para GitHub Pages
@@ -307,7 +308,81 @@ lectura del espectro medido, no como verdad. La tarjeta lo dice explícitamente 
 
 ---
 
-## 6. Archivos entregados
+## 6. Vista previa de la respuesta en amplitud
+
+Al terminar el barrido, bajo el resumen aparece una **curva de amplitud en función de la
+frecuencia**, para ver de un vistazo si se captaron resonancias. Es lo primero que se ve antes
+de descargar nada.
+
+### Qué se calcula, y por qué así
+
+No hay deconvolución. Se comparan dos **densidades espectrales de potencia** estimadas por el
+método de Welch:
+
+```
+|H(f)|² ≈ Pyy(f) / Pxx(f)
+```
+
+con `y` = grabación del micrófono y `x` = señal de referencia realmente reproducida. De ahí
+salen dos propiedades que son justo las que hacen falta aquí:
+
+1. El **cociente elimina la coloración del propio barrido** (un barrido exponencial deposita
+   energía en 1/f), así que lo que queda es la respuesta del sistema medido.
+2. El módulo es **insensible al retardo**: un desplazamiento temporal solo afecta a la fase.
+   La latencia desconocida —que la aplicación nunca intenta corregir— por tanto **no falsea
+   esta curva**. Es la razón de elegir este método y no una deconvolución.
+
+Después se suaviza a **1/6 de octava** promediando en el dominio de potencia, se muestrea sobre
+una rejilla logarítmica de 300 puntos y se normaliza por la **mediana**: solo la forma tiene
+sentido, no el nivel absoluto, que depende del volumen y del micrófono.
+
+### La ventana: seno, no Hann
+
+Welch pondera cada muestra por el **cuadrado** de la ventana, así que es ese cuadrado el que
+debe sumar constante sobre la rejilla de saltos (COLA). Si no, la energía medida depende de
+dónde caiga la rejilla — y un barrido cruza su octava más alta en una fracción de ventana, de
+modo que arriba esa dependencia es brutal: **con ventana de Hann al 50 % de solapamiento,
+retrasar la grabación 200 ms movía la parte alta de la curva 30 dB**. Se detectó con el test de
+invariancia al retardo, no a ojo.
+
+La ventana **seno** eleva al cuadrado a una Hann, y Hann sí es COLA sobre media ventana, así
+que el 50 % ya es exacto: **la mitad de FFT** que necesitaría una Hann (que exigiría el 75 %)
+para el mismo resultado. Por eso el número de segmentos **no** se limita: limitarlo significa
+estirar el salto, que es precisamente lo que rompe la propiedad.
+
+Además la rejilla de segmentos **empieza antes de la primera muestra y acaba después de la
+última**, tratando el exterior como silencio. COLA solo se cumple donde una muestra la ven
+todas las fases de la ventana; sin esa extensión, las primeras y últimas `fftSize` muestras
+quedan infra-contadas — y un barrido pone sus frecuencias más altas justo al final del array,
+exactamente en ese punto ciego.
+
+### Presentación
+
+SVG en línea, sin librería de gráficos: hereda los colores del tema y se mantiene nítido. Se
+genera **al tamaño en píxeles del contenedor**, no con un `viewBox` escalado, que es lo que
+mantiene las etiquetas a su tamaño real (un `viewBox` estirado deformaría el texto, y uno
+escalado uniformemente lo dejaría en pocos píxeles en un móvil). Se redibuja al cambiar el
+ancho de la ventana o el idioma.
+
+Los bordes de banda se **recortan** medio ancho de suavizado: donde la ventana de 1/6 de octava
+se saldría de la zona excitada quedaría apoyada en uno o dos bins que el barrido apenas excitó,
+lo que producía excursiones de decenas de dB. Esos puntos quedan como `NaN` y sencillamente no
+se dibujan; el trazo se levanta en los huecos en vez de puentearlos.
+
+El análisis corre en una tarea diferida (~0,4 s para 30 s de grabación en escritorio, ~1,5 s
+para el máximo de 120 s), así que las descargas aparecen primero y el hueco muestra
+«Analyse du signal…» en lugar de congelar la página.
+
+### Lo que la curva NO es
+
+Contiene el **altavoz, la sala Y el micrófono**, y el micrófono es el **del propio teléfono**,
+sin calibrar y con su respuesta y su posición. La interfaz lo dice explícitamente en los tres
+idiomas, e indica el nombre del micrófono cuando la plataforma lo facilita. Es un vistazo para
+localizar resonancias, no una medida.
+
+---
+
+## 7. Archivos entregados
 
 Los tres comparten un identificador de medición (`AAAAMMDD-HHMMSS` local):
 
@@ -328,7 +403,7 @@ grabado es demasiado bajo (< −45 dBFS).
 
 ---
 
-## 7. Limitaciones
+## 8. Limitaciones
 
 ### iOS / Safari (iPhone, iPad)
 
@@ -383,10 +458,11 @@ grabado es demasiado bajo (< −45 dBFS).
 
 ---
 
-## 8. Qué hacer después con los archivos (fuera de esta versión)
+## 9. Qué hacer después con los archivos (fuera de esta versión)
 
-Esta primera versión **no incluye análisis FFT**, por decisión de alcance. Para el
-post-procesado, con `mesure_*.wav` y `reference_*.wav` a la misma `fs`:
+La vista previa de la sección 6 da una **magnitud suavizada**, suficiente para localizar
+resonancias pero no para un análisis serio: no hay deconvolución, ni respuesta al impulso, ni
+fase. Para el post-procesado de verdad, con `mesure_*.wav` y `reference_*.wav` a la misma `fs`:
 
 1. Alinear por **correlación cruzada** (obligatorio: la latencia Bluetooth no está compensada).
 2. Deconvolucionar con el filtro inverso del barrido exponencial para obtener la respuesta al
@@ -395,7 +471,7 @@ post-procesado, con `mesure_*.wav` y `reference_*.wav` a la misma `fs`:
 
 ---
 
-## 9. Añadir un idioma
+## 10. Añadir un idioma
 
 En `js/i18n.js`, copiar el bloque `en`, traducir los valores, registrarlo bajo su código ISO
 639-1 y añadir una píldora `<button class="lang-btn" data-lang="XX">XX</button>` en `index.html`. Las claves que falten caen automáticamente al
@@ -404,12 +480,12 @@ instantáneo, incluidos los textos dinámicos (estado, resumen, cuenta atrás).
 
 ---
 
-## 10. Verificación realizada
+## 11. Verificación realizada
 
 Los dos hashes SRI de KaTeX del `index.html` se calcularon descargando los archivos reales del
 CDN (`openssl dgst -sha384`), no de memoria.
 
-**Pruebas numéricas** (79/79 correctas, `chirp.js` + `wav.js` + `modes.js` en Node):
+**Pruebas numéricas** (124/124 correctas, `chirp.js` + `wav.js` + `modes.js` + `spectrum.js` en Node):
 frecuencia instantánea medida por cruces por cero frente a la teórica en varios instantes
 (error < 0,3 %), amplitud de pico exacta, silencios exactamente nulos, ausencia de saltos que
 produzcan clics, validación de parámetros, cabecera RIFF completa campo a campo en 16 y 32 bits,
@@ -419,6 +495,16 @@ fijado por la dimensión mayor, sala cúbica con su triplete degenerado y su pri
 `(c/2)·√2/3`, clasificación axial/tangencial/oblicuo por número de índices no nulos, orden
 ascendente de la lista, coincidencia con un cálculo a mano de `f(2,1,3)`, escalado lineal con `c`,
 `speedOfSound(0) = 331,3 m/s`, y excepción ante dimensiones nulas, negativas, `NaN` o infinitas.
+Para `spectrum.js` (45 pruebas): la FFT contrastada contra una DFT ingenua (error < 1e-9),
+señal continua concentrada en el bin 0, coseno en el bin 7 con la magnitud teórica `N/2`,
+identidad de Parseval, simetría de las ventanas, y `sen² ` plano al 50 % de solapamiento frente
+al rizado de `Hann²` en esa misma rejilla. Sobre `analyse`: entrada igual a la salida da curva
+plana (< 0,5 dB), una ganancia pura no inclina la curva, **un retardo de 200 ms deja la curva
+plana y coincidente punto a punto con la no retardada dentro de 1,5 dB en los 292 puntos**, un
+paso bajo de un polo cae ~20 dB por década, un resonador agudo aparece como pico a menos del
+10 % de su frecuencia y más de 15 dB sobre la mediana, dos resonancias separadas se resuelven
+ambas, los bordes se recortan un doceavo de octava, y devuelve `null` ante entradas ausentes,
+frecuencia de muestreo nula, señal demasiado corta o `f2 ≤ f1`.
 
 **Pruebas en navegador** (Chrome, viewport de 375 px, con micrófono sintético inyectado):
 sliders en sus valores por defecto y en ambos extremos, mapeo logarítmico de frecuencias
@@ -438,6 +524,12 @@ parta en ningún ancho probado (320 a 900 px); rueda del ratón ignorada antes d
 activa después, una muesca por paso, acumulación de deltas pequeños de trackpad (10 × 12 px =
 un paso), `preventDefault` confirmado, recorte correcto en ambos extremos, desarme al salir el
 puntero y ausencia de armado en `pointerType: 'touch'`;
+vista previa espectral con un micrófono sintético pasado por un resonador de 150 Hz conocido:
+el pico realmente dibujado en el SVG cae en **150,4 Hz** (0,3 % de error) a +22,7 dB sobre la
+mediana, los 292 puntos del trazo caen dentro del marco, los rótulos de eje salen correctos
+(20/50/100/200/500/1k/2k) y el análisis tardó 184 ms; redibujado a 375 px dando un SVG de
+308 × 190 px con etiquetas de 11 px reales y sin desbordamiento; colores del trazo, la rejilla
+y los rótulos siguiendo el tema en claro y en oscuro;
 medición completa de extremo a extremo, secuencia de estados
 `Préparation → Enregistrement → Finalisation → Terminé`, WAV resultante con cabecera válida y
 tono de 440 Hz recuperado con pico de −12,04 dBFS (exactamente la amplitud inyectada), JSON de

@@ -437,6 +437,150 @@
   }
 
   /* ============================================================
+   *  Amplitude response preview
+   *
+   *  Drawn as inline SVG so it inherits the theme colours and stays
+   *  crisp at any zoom, with no plotting library. The maths lives in
+   *  js/spectrum.js; everything here is presentation.
+   * ============================================================ */
+  var SPEC_M = { l: 46, r: 12, t: 12, b: 30 };
+  var lastSpectrum = null;             // kept so a language switch can redraw
+  var lastSpecWidth = 0;               // to skip redraws that change nothing
+
+  /** 1-2-5 ticks inside [f1, f2]. */
+  function decadeTicks(f1, f2) {
+    var out = [];
+    for (var e = Math.floor(Math.log(f1) / Math.LN10); Math.pow(10, e) <= f2; e++) {
+      for (var m = 0; m < 3; m++) {
+        var v = [1, 2, 5][m] * Math.pow(10, e);
+        if (v >= f1 && v <= f2) { out.push(v); }
+      }
+    }
+    return out;
+  }
+
+  function fmtTickHz(f) {
+    return f >= 1000 ? (f / 1000) + 'k' : String(f);
+  }
+
+  /**
+   * Build the SVG for one analysed curve, at the exact pixel size of its
+   * container. Drawing 1:1 rather than scaling a fixed viewBox is what keeps
+   * the tick labels at their true size: a stretched viewBox would squash the
+   * text horizontally, and a uniformly scaled one would shrink it to a few
+   * pixels on a phone.
+   */
+  function spectrumSvg(r, w, h) {
+    var x0 = SPEC_M.l, x1 = w - SPEC_M.r;
+    var y0 = SPEC_M.t, y1 = h - SPEC_M.b;
+    var lf1 = Math.log(r.f1), lf2 = Math.log(r.f2);
+    var X = function (f) { return x0 + (x1 - x0) * (Math.log(f) - lf1) / (lf2 - lf1); };
+
+    // Symmetric dB window, rounded outwards, wide enough to be honest and
+    // narrow enough that small ripples stay visible.
+    var span = Math.max(Math.abs(r.minDb), Math.abs(r.maxDb));
+    var lim = Math.min(48, Math.max(12, Math.ceil(span / 6) * 6));
+    var Y = function (db) { return y1 - (y1 - y0) * (clamp(db, -lim, lim) + lim) / (2 * lim); };
+
+    var svg = '';
+
+    // Horizontal grid + dB labels.
+    var dbStep = lim <= 12 ? 6 : (lim <= 24 ? 12 : (lim <= 36 ? 12 : 24));
+    for (var db = -lim; db <= lim; db += dbStep) {
+      var gy = Y(db).toFixed(1);
+      svg += '<line class="sp-grid" x1="' + x0 + '" y1="' + gy + '" x2="' + x1 + '" y2="' + gy + '"/>';
+      svg += '<text class="sp-lbl sp-lbl-y" x="' + (x0 - 6) + '" y="' + gy + '">' +
+             (db > 0 ? '+' : '') + db + '</text>';
+    }
+
+    // Vertical grid + frequency labels.
+    var ticks = decadeTicks(r.f1, r.f2);
+    for (var i = 0; i < ticks.length; i++) {
+      var gx = X(ticks[i]).toFixed(1);
+      svg += '<line class="sp-grid" x1="' + gx + '" y1="' + y0 + '" x2="' + gx + '" y2="' + y1 + '"/>';
+      svg += '<text class="sp-lbl sp-lbl-x" x="' + gx + '" y="' + (y1 + 16) + '">' +
+             fmtTickHz(ticks[i]) + '</text>';
+    }
+
+    // The 0 dB reference (the median of the curve) drawn a little stronger.
+    svg += '<line class="sp-zero" x1="' + x0 + '" y1="' + Y(0).toFixed(1) +
+           '" x2="' + x1 + '" y2="' + Y(0).toFixed(1) + '"/>';
+
+    // The curve itself. NaN points are gaps, so the path is lifted there
+    // rather than bridged across data we do not have.
+    var d = '', pen = false;
+    for (i = 0; i < r.freqs.length; i++) {
+      if (!isFinite(r.db[i])) { pen = false; continue; }
+      d += (pen ? 'L' : 'M') + X(r.freqs[i]).toFixed(1) + ' ' + Y(r.db[i]).toFixed(1) + ' ';
+      pen = true;
+    }
+    svg += '<path class="sp-curve" d="' + d.trim() + '"/>';
+    svg += '<rect class="sp-frame" x="' + x0 + '" y="' + y0 +
+           '" width="' + (x1 - x0) + '" height="' + (y1 - y0) + '"/>';
+
+    return '<svg viewBox="0 0 ' + w + ' ' + h + '" width="' + w + '" height="' + h +
+           '" role="img" aria-label="' + I18N.t('spec.title') + '">' + svg + '</svg>';
+  }
+
+  /** Redraw the plot and its captions from the stored analysis. */
+  function renderSpectrum() {
+    if (!lastSpectrum) { show(el.specBox, false); return; }
+    if (lastSpectrum.pending) {
+      el.specPlot.textContent = I18N.t('spec.computing');
+      el.specNote.textContent = '';
+      el.specMic.textContent = '';
+      show(el.specBox, true);
+      return;
+    }
+    if (!lastSpectrum.result) {
+      el.specPlot.textContent = I18N.t('spec.none');
+      el.specNote.textContent = '';
+    } else {
+      var w = Math.max(280, Math.round(el.specPlot.clientWidth) || 320);
+      var h = w < 420 ? 190 : 240;
+      lastSpecWidth = w;
+      el.specPlot.innerHTML = spectrumSvg(lastSpectrum.result, w, h);
+      el.specNote.textContent = I18N.t('spec.note', {
+        bin: fmt(lastSpectrum.result.binHz),
+        seg: lastSpectrum.result.segments
+      });
+    }
+    el.specMic.textContent = I18N.t('spec.mic', {
+      device: lastSpectrum.device || I18N.t('spec.micUnknown')
+    });
+    show(el.specBox, true);
+  }
+
+  /**
+   * Analyse the measurement and draw it. The FFT work takes a few hundred
+   * milliseconds on a desktop and a few seconds on a phone, so it runs on a
+   * later task: the downloads appear first and the placeholder says what is
+   * happening, instead of the page freezing on a blank card.
+   */
+  function analyseSpectrum(res, p) {
+    var info = Engine.currentInputInfo();
+    lastSpectrum = {
+      pending: true,
+      device: (info && info.label) || null,
+      result: null
+    };
+    renderSpectrum();
+
+    setTimeout(function () {
+      var r = null;
+      try {
+        r = Spectrum.analyse(res.data, res.signal.data, res.sampleRate,
+                             { f1: p.f1, f2: p.f2 });
+      } catch (e) {
+        r = null;                       // a broken preview must never break the app
+      }
+      lastSpectrum.pending = false;
+      lastSpectrum.result = r;
+      renderSpectrum();
+    }, 60);
+  }
+
+  /* ============================================================
    *  Microphone test
    * ============================================================ */
   var metering = false;
@@ -642,6 +786,8 @@
   function hideDownloads() {
     show(el.dlWav, false); show(el.dlJson, false); show(el.dlRef, false);
     show(el.dlHint, false);
+    lastSpectrum = null;
+    show(el.specBox, false);
     el.summary.textContent = I18N.t('step3.empty');
   }
 
@@ -682,6 +828,7 @@
     lastBits = bits;
     lastWavSize = wavSize;
     renderSummary(res, bits, wavSize);
+    analyseSpectrum(res, p);
   }
 
   function renderSummary(res, bits, wavSize) {
@@ -829,6 +976,8 @@
       dlJson: $('dl-json'),
       dlRef: $('dl-ref'),
       dlHint: $('dl-hint'),
+      specBox: $('spec-box'), specPlot: $('spec-plot'),
+      specMic: $('spec-mic'), specNote: $('spec-note'),
       f1: $('p-f1'), f2: $('p-f2'), dur: $('p-dur'), amp: $('p-amp'),
       pre: $('p-pre'), post: $('p-post'), bits: $('p-bits'), sr: $('p-sr'),
       outF1: $('out-f1'), outF2: $('out-f2'), outDur: $('out-dur'),
@@ -849,6 +998,7 @@
       renderLangPills();
       renderTheme();
       renderModes();
+      renderSpectrum();
       renderStatus();
       updateOutputs();
       updateRunHelp();
@@ -906,6 +1056,17 @@
         if (metering) { refreshDeviceList(); }
       });
     }
+
+    /* ---- redraw the plot when the column width really changes ---- */
+    var specResizeTimer = null;
+    global.addEventListener('resize', function () {
+      if (!lastSpectrum || !lastSpectrum.result) { return; }
+      if (specResizeTimer) { clearTimeout(specResizeTimer); }
+      specResizeTimer = setTimeout(function () {
+        var w = Math.max(280, Math.round(el.specPlot.clientWidth) || 320);
+        if (Math.abs(w - lastSpecWidth) > 8) { renderSpectrum(); }
+      }, 200);
+    });
 
     /* ---- measurement ---- */
     el.btnStart.addEventListener('click', startMeasurement);

@@ -476,6 +476,42 @@ details > summary {
 .meter-values { margin: 0.5rem 0 0; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
 .meter-values strong { font-variant-numeric: tabular-nums; }
 
+/* ---------- Apercu de la reponse en amplitude ---------- */
+.spec { margin: 0.9rem 0 0.4rem; padding: 0; }
+.spec-head {
+  display: flex; flex-wrap: wrap; align-items: baseline;
+  gap: 0.15rem 0.6rem; margin-bottom: 0.4rem;
+}
+.spec-head strong { font-size: 0.95rem; }
+.spec-mic { font-size: 0.8rem; color: var(--fg-soft); word-break: break-word; }
+
+.spec-plot {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.4rem 0.3rem 0.2rem;
+  font-size: 0.85rem;
+  color: var(--fg-soft);
+}
+/* The SVG is generated at the container's own pixel size (see app.js), so
+   it is displayed 1:1 and the tick labels keep their real size. */
+.spec-plot svg { display: block; max-width: 100%; height: auto; }
+
+.sp-grid  { stroke: var(--line); stroke-width: 1; }
+.sp-zero  { stroke: var(--fg-soft); stroke-width: 1; stroke-dasharray: 4 3; opacity: 0.8; }
+.sp-frame { fill: none; stroke: var(--line); stroke-width: 1; }
+.sp-curve {
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;   /* stays 2 px despite the x-stretch */
+}
+.sp-lbl { fill: var(--fg-soft); font-size: 11px; font-family: inherit; }
+.sp-lbl-y { text-anchor: end; dominant-baseline: middle; }
+.sp-lbl-x { text-anchor: middle; }
+
 /* ---------- Progression ---------- */
 .progress {
   height: 14px; background: var(--meter-bg);
