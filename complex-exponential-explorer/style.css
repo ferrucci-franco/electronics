@@ -300,21 +300,22 @@ button { font-family: inherit; }
     flex-wrap: wrap;
     align-items: baseline;
     justify-content: center;
-    gap: .15rem 1.2rem;
+    gap: .2rem .8rem;
 }
 .formula-sep {
-    width: 1px;
-    height: 1.1em;
     align-self: center;
-    background-color: var(--border-color);
+    color: var(--text-faint);
+    font-size: .85rem;
+    opacity: .7;
 }
 
-/* The chain reads: function → approximation → recurrence. The last step is
-   the one the app actually iterates, so it carries the strongest colour. */
+/* The chain runs from the question to the step the app iterates. Boxed
+   milestones lift out of the working; the final one carries the most weight. */
 .formula-step { color: var(--text-secondary); }
-.formula-step .katex { font-size: 1.02rem; }
-.formula-result { color: var(--text-primary); }
-.formula-result .katex { font-size: 1.08rem; }
+.formula-step .katex { font-size: .98rem; }
+.formula-boxed { color: var(--text-primary); }
+.formula-result { color: var(--accent); }
+.formula-result .katex { font-size: 1.05rem; }
 
 /* KaTeX paints with currentColor, so it follows the theme by itself; these
    rules only keep its sizing in line with the surrounding interface. */
@@ -594,7 +595,9 @@ input[type="range"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var
     .mode-formula { font-size: 1.02rem; }
     .mode-name { font-size: .6rem; letter-spacing: .04em; }
 
-    .card-formula { padding: .45rem .6rem .5rem; }
+    .card-formula { padding: .45rem .5rem .5rem; }
+    .formula-step .katex { font-size: .93rem; }
+    .formula-result .katex { font-size: 1rem; }
     /* The question the whole chain answers. It leads, so it sits above. */
 .formula-question {
     font-size: .78rem;
@@ -609,7 +612,7 @@ input[type="range"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var
     .formula-question { font-size: .74rem; margin-bottom: .3rem; }
     .stage-hint { font-size: .74rem; margin-top: .25rem; }
 
-    .stage { height: 40vh; min-height: 260px; }
+    .stage { height: 34vh; min-height: 230px; }
 
     .controls { gap: .5rem .8rem; padding-bottom: .8rem; }
 

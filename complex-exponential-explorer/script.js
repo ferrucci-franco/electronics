@@ -825,10 +825,8 @@ const els = {
     playLabel:     document.getElementById('play-label'),
     btnReset:      document.getElementById('btn-reset'),
     readout:       document.getElementById('readout'),
-    exact:         document.getElementById('formula-exact'),
+    line:          document.getElementById('formula-line'),
     question:      document.getElementById('formula-question'),
-    recurrence:    document.getElementById('formula-recurrence'),
-    approx:        document.getElementById('formula-approx'),
     brandMark:     document.getElementById('brand-mark'),
     modeFormulaR:  document.getElementById('mode-formula-real'),
     modeFormulaC:  document.getElementById('mode-formula-complex'),
@@ -949,6 +947,43 @@ function showWarning(text) {
     els.warning.hidden = false;
 }
 
+/* ---------- The derivation shown above the graph ----------
+   Read in order, it is the argument in full: where we are, what one step of
+   the exponential does exactly, what that costs when we approximate it, and
+   the recurrence the application then iterates. `box` marks the two results
+   worth carrying away — the exact multiplicative law, and the discrete step.
+   The two chains differ by one symbol, which is the whole point.           */
+
+const CHAIN_REAL = [
+    { tex: 'y(x)=e^{x}' },
+    { tex: 'y(x+\\Delta x)=e^{x+\\Delta x}=e^{x}\\,e^{\\Delta x}' },
+    { tex: 'y(x+\\Delta x)=y(x)\\,e^{\\Delta x}', box: true },
+    { tex: 'e^{\\Delta x}=1+\\Delta x+\\frac{(\\Delta x)^{2}}{2!}+\\cdots' },
+    { tex: 'e^{\\Delta x}\\approx 1+\\Delta x' },
+    { tex: 'y_{n+1}=y_{n}\\,(1+\\Delta x)', box: true, result: true }
+];
+
+const CHAIN_COMPLEX = [
+    { tex: 'z(x)=e^{ix}' },
+    { tex: 'z(x+\\Delta x)=e^{i(x+\\Delta x)}=e^{ix}\\,e^{i\\Delta x}' },
+    { tex: 'z(x+\\Delta x)=z(x)\\,e^{i\\Delta x}', box: true },
+    { tex: 'e^{i\\Delta x}=1+i\\Delta x+\\frac{(i\\Delta x)^{2}}{2!}+\\cdots' },
+    { tex: 'e^{i\\Delta x}\\approx 1+i\\Delta x' },
+    { tex: 'z_{n+1}=z_{n}\\,(1+i\\Delta x)', box: true, result: true }
+];
+
+function renderChain(steps) {
+    let html = '';
+    steps.forEach((step, i) => {
+        if (i > 0) html += '<span class="formula-sep" aria-hidden="true">→</span>';
+        const cls = 'formula-step' + (step.box ? ' formula-boxed' : '')
+                                   + (step.result ? ' formula-result' : '');
+        const src = step.box ? '\\boxed{\\,' + step.tex + '\\,}' : step.tex;
+        html += '<span class="' + cls + '">' + texHTML(src) + '</span>';
+    });
+    els.line.innerHTML = html;
+}
+
 /* ---------- Mode-dependent chrome ---------- */
 
 function applyMode() {
@@ -959,23 +994,7 @@ function applyMode() {
     els.modeReal.setAttribute('aria-selected', String(real));
     els.modeComplex.setAttribute('aria-selected', String(!real));
 
-    /* The permanent derivation, read left to right and identical in shape
-       between the two modes: the function first, then the approximation we
-       make on it, then the recurrence that approximation licenses. */
-    /* Step one is exact and is the answer to the question above it: the
-       exponential turns "advance by Δx" into "multiply by e^(Δx)". Taylor is
-       not needed yet, and does not appear here -- only in the help, where the
-       question "what is e^(Δx) worth?" is what calls for it. */
-    texInto(els.exact, real
-        ? 'y(x+\\Delta x)=y(x)\\,e^{\\Delta x}'
-        : 'z(x+\\Delta x)=z(x)\\,e^{i\\Delta x}');
-    texInto(els.approx, real
-        ? 'e^{\\Delta x}\\approx 1+\\Delta x'
-        : 'e^{i\\Delta x}\\approx 1+i\\Delta x');
-    texInto(els.recurrence, real
-        ? '\\boxed{\\;y_{n+1}=y_{n}\\,(1+\\Delta x)\\;}'
-        : '\\boxed{\\;z_{n+1}=z_{n}\\,(1+i\\Delta x)\\;}');
-
+    renderChain(real ? CHAIN_REAL : CHAIN_COMPLEX);
     els.question.textContent = i18n.t('question');
 
     els.hint.textContent = i18n.t(real ? 'hintReal' : 'hintComplex');
