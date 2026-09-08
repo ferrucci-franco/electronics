@@ -648,22 +648,23 @@ input[type="range"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var
 @media (min-width: 901px) {
     .layout { padding-top: .7rem; }
 
-    /* On a computer the help gets most of the screen. The reading column does
-       not grow with it past what an eye can track along a line, so it is
-       centred inside that window with the formulas on the same axis — margins,
-       not the one-sided band a left-aligned cap used to leave. */
+    /* On a computer the help gets most of the screen, and the text uses all of
+       it. A line that wide needs the type to grow with it and the leading to
+       open up, or the eye loses the return to the left margin. */
     .help-dialog {
         width: min(80vw, 1400px);
         max-height: min(88vh, 1000px);
     }
-    .help-body { max-height: none; }
-    .help-section { max-width: 54rem; margin-inline: auto; }
+    .help-body { max-height: none; padding: .5rem 2rem 1.8rem; }
+    .help-section { max-width: none; }
 
-    .help-head h2 { font-size: 1.26rem; }
-    .help-section h3 { font-size: 1.34rem; }
-    .help-section p { font-size: 1.24rem; }
-    .help-tex .katex { font-size: 1.44rem; }
-    .help-aside h4 { font-size: 1.14rem; }
+    .help-head h2 { font-size: 1.3rem; }
+    .help-section h3 { font-size: 1.42rem; }
+    .help-section p { font-size: 1.4rem; line-height: 1.72; }
+    .help-section p + p { margin-top: .8rem; }
+    .help-tex .katex { font-size: 1.6rem; }
+    .help-aside { padding: 1.1rem 1.4rem 1.2rem; }
+    .help-aside h4 { font-size: 1.22rem; }
 }
 
 /* ============================================================
