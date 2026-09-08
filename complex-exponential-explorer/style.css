@@ -497,15 +497,18 @@ input[type="range"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var
     width: min(680px, calc(100vw - 1.6rem));
     max-height: min(86vh, 900px);
     padding: 0;
+    flex-direction: column;
     border: 1px solid var(--border-color);
     border-radius: var(--radius);
     background-color: var(--bg-primary);
     color: var(--text-primary);
     overflow: hidden;
 }
+.help-dialog[open] { display: flex; }
 .help-dialog::backdrop { background-color: rgba(15, 22, 32, .55); }
 
 .help-head {
+    flex: none;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -513,19 +516,25 @@ input[type="range"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var
     padding: .7rem .9rem .7rem 1.1rem;
     background-color: var(--bg-secondary);
     border-bottom: 1px solid var(--border-color);
-    position: sticky;
-    top: 0;
 }
 .help-head h2 { font-size: .95rem; font-weight: 600; }
 
 .help-body {
+    flex: 1 1 auto;
+    min-height: 0;
     padding: .3rem 1.1rem 1.3rem;
     overflow-y: auto;
-    max-height: calc(min(86vh, 900px) - 3.4rem);
     -webkit-overflow-scrolling: touch;
 }
 
-.help-section { padding-top: 1.1rem; }
+/* One measured column for everything — prose, headings and formulas share it
+   and are centred together. Capping only the paragraphs left the text short of
+   the centred formulas, which read as a band of dead space on the right. */
+.help-section {
+    max-width: 78ch;
+    margin: 0 auto;
+    padding-top: 1.1rem;
+}
 .help-section + .help-section { border-top: 1px solid var(--border-color); }
 
 /* The sections are a derivation: each one uses the previous one's result,
@@ -553,7 +562,6 @@ input[type="range"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var
     font-size: .84rem;
     line-height: 1.6;
     color: var(--text-secondary);
-    max-width: 62ch;
 }
 .help-section p + p { margin-top: .5rem; }
 
@@ -565,6 +573,26 @@ input[type="range"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var
 }
 .help-tex .katex-display { margin: .35rem 0; }
 .help-tex .katex { font-size: 1rem; }
+
+/* From a tablet up there is room to spare, so the help reads at document
+   size rather than interface size. Phones keep the sizes set further down —
+   this block stops before them. */
+@media (min-width: 561px) {
+    .help-dialog { width: min(780px, calc(100vw - 3rem)); }
+    .help-head { padding: .85rem 1rem .85rem 1.5rem; }
+    .help-head h2 { font-size: 1.18rem; }
+    .help-body { padding: .4rem 1.5rem 1.6rem; }
+    /* the dialog itself is the measure here, so the column fills it and no
+       band of empty space is left beside the centred formulas */
+    .help-section { max-width: none; }
+    .help-section { padding-top: 1.35rem; }
+    .help-section h3 { font-size: 1.24rem; margin-bottom: .7rem; }
+    .help-num { font-size: .88rem; padding: .12rem .48rem; }
+    .help-section p { font-size: 1.14rem; line-height: 1.62; }
+    .help-section p + p { margin-top: .65rem; }
+    .help-tex { margin: .8rem 0; }
+    .help-tex .katex { font-size: 1.32rem; }
+}
 
 /* ============================================================
    Responsive
