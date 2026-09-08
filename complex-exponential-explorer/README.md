@@ -67,6 +67,11 @@ optional **Conclusion** section of the complex mode.
 `Complete one turn` appears in complex mode only: a turn is an angle, and on
 the real axis it was just an obscure way of asking for 2π more of `x`.
 
+On the plot: **wheel** zooms about the pointer, **right-button drag** pans,
+**double click** returns to the automatic fit. The wheel also drives the `Δx`
+slider — after the pointer has rested on it for a moment, so that merely
+crossing it while scrolling the page does nothing — one notch per 1% of range.
+
 Keyboard: `Space` play/pause, `→` one step, `R` reset.
 
 Also available: light/dark theme, three interface languages (EN / FR / ES) and

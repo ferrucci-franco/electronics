@@ -87,7 +87,6 @@ button { font-family: inherit; }
 .top-bar {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 1rem;
     padding: .55rem 1.25rem;
     background-color: var(--bg-secondary);
@@ -95,8 +94,9 @@ button { font-family: inherit; }
     flex-shrink: 0;
 }
 
-.top-bar-left  { display: flex; align-items: baseline; gap: .7rem; min-width: 0; }
-.top-bar-right { display: flex; align-items: center; gap: .75rem; }
+.top-bar-left   { display: flex; align-items: baseline; gap: .7rem; min-width: 0; }
+.top-bar-center { display: flex; justify-content: center; flex: 1 1 auto; min-width: 0; }
+.top-bar-right  { display: flex; align-items: center; gap: .75rem; flex: none; }
 
 .brand-mark { color: var(--accent); line-height: 1; }
 
@@ -190,6 +190,20 @@ button { font-family: inherit; }
     letter-spacing: .07em;
 }
 
+/* In the top bar the two buttons read along a line instead of stacking, so
+   the row they used to occupy goes to the plot. */
+.mode-switch.in-bar { padding: 0; gap: .35rem; }
+.mode-switch.in-bar .mode-btn {
+    flex-direction: row;
+    align-items: baseline;
+    gap: .55rem;
+    min-width: 0;
+    padding: .32rem 1rem;
+}
+.mode-switch.in-bar .mode-formula .katex { font-size: 1.02rem; }
+.mode-switch.in-bar .mode-name { font-size: .66rem; }
+.mode-switch.in-bar .mode-btn.active { box-shadow: inset 0 -2px 0 var(--accent); }
+
 .mode-btn.active {
     background-color: var(--bg-primary);
     border-color: var(--accent);
@@ -230,7 +244,10 @@ button { font-family: inherit; }
     overflow: hidden;
 }
 
-#plot { display: block; width: 100%; height: 100%; }
+/* No touch-action override: panning is a right-button gesture, so the canvas
+   must keep letting a finger scroll the page on a phone. */
+#plot { display: block; width: 100%; height: 100%; cursor: crosshair; }
+#plot.panning { cursor: grabbing; }
 
 .stage-hint {
     max-width: 74ch;

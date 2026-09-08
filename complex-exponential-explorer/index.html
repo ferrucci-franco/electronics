@@ -20,6 +20,10 @@
         <h1 class="brand-title" data-i18n="appTitle">Complex Exponential Explorer</h1>
     </div>
 
+    <!-- On a computer the mode selector is moved in here, freeing the row it
+         had to itself for the plot. Placement is done in script.js. -->
+    <div class="top-bar-center" id="top-bar-center"></div>
+
     <div class="top-bar-right">
         <div class="language-selector" role="group" aria-label="Language">
             <button class="lang-btn active" data-lang="en">EN</button>
@@ -68,7 +72,7 @@
         </div>
 
         <section class="stage">
-            <canvas id="plot"></canvas>
+            <canvas id="plot" data-i18n-title="plotHint"></canvas>
             <p class="stage-warning" id="stage-warning" hidden></p>
         </section>
 

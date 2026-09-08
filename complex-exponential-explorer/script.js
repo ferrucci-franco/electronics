@@ -49,6 +49,7 @@ const I18N = {
         warnMaxSteps: 'Maximum number of steps reached.',
         warnOverflow: 'The value has grown beyond what can be represented.',
         helpBtn: 'Help',
+        plotHint: 'Wheel: zoom · Right-drag: pan · Double click: fit',
         helpTitle: 'The mathematics behind the picture',
         helpClose: 'Close',
         helpSections: [
@@ -129,6 +130,7 @@ const I18N = {
         warnMaxSteps: 'Nombre maximal de pas atteint.',
         warnOverflow: 'La valeur est devenue trop grande pour être représentée.',
         helpBtn: 'Aide',
+        plotHint: 'Molette : zoom · Clic droit glissé : déplacer · Double clic : ajuster',
         helpTitle: 'Les mathématiques derrière l’image',
         helpClose: 'Fermer',
         helpSections: [
@@ -209,6 +211,7 @@ const I18N = {
         warnMaxSteps: 'Se alcanzó el número máximo de pasos.',
         warnOverflow: 'El valor ha crecido más allá de lo representable.',
         helpBtn: 'Ayuda',
+        plotHint: 'Rueda: zoom · Arrastrar con botón derecho: desplazar · Doble clic: ajustar',
         helpTitle: 'La matemática detrás de la imagen',
         helpClose: 'Cerrar',
         helpSections: [
@@ -371,15 +374,29 @@ function sweptAngle(n, dx) {
  * mirrors the pedagogical point: it really is the same construction.
  */
 function makeSim(mode) {
-    const sim = { mode: mode, A: [], B: [], n: 0, overflow: false, limit: false, view: null };
+    const sim = { mode: mode, A: [], B: [], n: 0, overflow: false, limit: false,
+                  view: null, user: null, locked: false };
     resetSim(sim);
     return sim;
+}
+
+/**
+ * The view is automatic until the reader takes hold of it. `user` is an affine
+ * transform in pixels (uniform scale k about the plot centre, then a shift)
+ * layered on top of the automatic fit; `locked` freezes that fit so the frame
+ * stops moving under a reader who has chosen one. Double-clicking clears both,
+ * which is what "zoom to fit" means here.
+ */
+function resetUserView(sim) {
+    sim.user = { k: 1, tx: 0, ty: 0 };
+    sim.locked = false;
 }
 
 function resetSim(sim) {
     sim.n = 0;
     sim.overflow = false;
     sim.limit = false;
+    resetUserView(sim);
     if (sim.mode === 'real') {
         sim.A = [0];   // x0 = 0
         sim.B = [1];   // y0 = 1
@@ -457,7 +474,8 @@ const trail = {
     cv: document.createElement('canvas'),
     ctx: null,
     drawn: 0,        // how many POINTS of the current sim are already painted
-    key: ''          // identifies mode+view+size+theme; a change forces a repaint
+    key: '',         // identifies mode+fit+size+theme; a change forces a repaint
+    at: null         // the reader's zoom and pan when those pixels were painted
 };
 trail.ctx = trail.cv.getContext('2d');
 
@@ -499,6 +517,7 @@ function resizeCanvas() {
    rescaling (which invalidates the cached trail) happens rarely.            */
 
 function updateView(sim) {
+    if (sim.locked) return;
     if (sim.mode === 'real') {
         const x = sim.A[sim.n];
         // exp() overflows above ~709; clamping keeps the mapping finite.
@@ -508,13 +527,34 @@ function updateView(sim) {
     }
 }
 
-/** Build the pixel mapping for the current sim. */
-function makeTransform(sim) {
-    const pad = sim.mode === 'real'
-        ? { l: 60, r: 20, t: 20, b: 34 }
-        : { l: 34, r: 20, t: 20, b: 30 };
+/* The plot box, in one place: the transform and the zoom anchor must agree,
+   and they used to hold their own copies of these numbers. */
+function plotBox(mode) {
+    const pad = mode === 'real' ? { l: 60, r: 20, t: 20, b: 34 }
+                                : { l: 34, r: 20, t: 20, b: 30 };
     const w = Math.max(10, cssW - pad.l - pad.r);
     const h = Math.max(10, cssH - pad.t - pad.b);
+    return { pad: pad, w: w, h: h, ax: pad.l + w / 2, ay: pad.t + h / 2 };
+}
+
+/**
+ * Build the pixel mapping for the current sim.
+ *
+ * Two stages. The automatic fit maps the domain onto the plot box; the
+ * reader's transform (uniform scale about the box centre, then a shift) is
+ * composed on top. The visible domain is then read back by inverting the
+ * composition, so ticks, labels and the reference curve always describe what
+ * is actually on screen rather than what the automatic fit intended.
+ */
+function makeTransform(sim) {
+    const box = plotBox(sim.mode);
+    const pad = box.pad, w = box.w, h = box.h;
+    const U = sim.user;
+    const ax = box.ax, ay = box.ay;    // the zoom is anchored on the box centre
+    const fwd  = (v, a, t) => (v - a) * U.k + a + t;
+    const back = (v, a, t) => (v - a - t) / U.k + a;
+
+    let basePx, basePy, baseInvX, baseInvY, extra;
 
     if (sim.mode === 'real') {
         const xMax = sim.view.xMax;
@@ -524,25 +564,37 @@ function makeTransform(sim) {
         const yMin = -0.06 * yMax;
         const sx = w / (xMax - xMin);
         const sy = h / (yMax - yMin);
-        return {
-            pad: pad, w: w, h: h, xMin: xMin, xMax: xMax, yMin: yMin, yMax: yMax,
-            px: a => pad.l + (a - xMin) * sx,
-            py: b => pad.t + h - (b - yMin) * sy
-        };
+        basePx = a => pad.l + (a - xMin) * sx;
+        basePy = b => pad.t + h - (b - yMin) * sy;
+        baseInvX = p => xMin + (p - pad.l) / sx;
+        baseInvY = q => yMin + (pad.t + h - q) / sy;
+        extra = {};
+    } else {
+        /* Complex plane: identical horizontal and vertical scale, always, so
+           that a circle is drawn as a circle — zooming keeps that true. */
+        const R = sim.view.R;
+        const s = Math.min(w, h) / (2 * R);
+        const cx = pad.l + w / 2;
+        const cy = pad.t + h / 2;
+        basePx = a => cx + a * s;
+        basePy = b => cy - b * s;
+        baseInvX = p => (p - cx) / s;
+        baseInvY = q => (cy - q) / s;
+        extra = { s: s * U.k };
     }
-    /* Complex plane: identical horizontal and vertical scale, always, so that
-       a circle is drawn as a circle. */
-    const R = sim.view.R;
-    const s = Math.min(w, h) / (2 * R);
-    const cx = pad.l + w / 2;
-    const cy = pad.t + h / 2;
-    return {
-        pad: pad, w: w, h: h, R: R, s: s, cx: cx, cy: cy,
-        xMin: (pad.l - cx) / s, xMax: (pad.l + w - cx) / s,
-        yMin: (cy - pad.t - h) / s, yMax: (cy - pad.t) / s,
-        px: a => cx + a * s,
-        py: b => cy - b * s
+
+    const px = a => fwd(basePx(a), ax, U.tx);
+    const py = b => fwd(basePy(b), ay, U.ty);
+    const invX = p => baseInvX(back(p, ax, U.tx));
+    const invY = q => baseInvY(back(q, ay, U.ty));
+
+    const T = {
+        pad: pad, w: w, h: h, px: px, py: py, invX: invX, invY: invY,
+        xMin: invX(pad.l), xMax: invX(pad.l + w),
+        yMin: invY(pad.t + h), yMax: invY(pad.t)
     };
+    if (sim.mode !== 'real') { T.s = extra.s; T.cx = px(0); T.cy = py(0); }
+    return T;
 }
 
 /* ---------- Small numeric helpers ---------- */
@@ -666,9 +718,16 @@ function drawReference(T, sim, col) {
 
 /* ---------- Trail (cached) ---------- */
 
-function trailKey(sim, T) {
+/* Identifies everything the painted trail depends on EXCEPT the reader's zoom
+   and pan, which are an affine transform and can therefore be applied to the
+   painted pixels instead of forcing a repaint. */
+function trailKey(sim) {
     return [sim.mode, cssW, cssH, document.body.className,
             sim.mode === 'real' ? sim.view.xMax : sim.view.R].join('|');
+}
+
+function sameUserView(a, b) {
+    return a && b && a.k === b.k && a.tx === b.tx && a.ty === b.ty;
 }
 
 function paintTrail(sim, T, col, from) {
@@ -716,18 +775,45 @@ function paintTrail(sim, T, col, from) {
 }
 
 function drawTrail(sim, T, col) {
-    const key = trailKey(sim, T);
-    if (key !== trail.key || trail.drawn > sim.n + 1) {
+    const key = trailKey(sim);
+    const U = sim.user;
+    const stale = !sameUserView(trail.at, U);
+    /* Repaint when the trajectory or the frame changed, or when points were
+       added while the view was being dragged and the cached pixels can no
+       longer be extended in place. */
+    const needsRepaint = key !== trail.key || trail.drawn > sim.n + 1
+                      || (stale && sim.n + 1 > trail.drawn);
+
+    if (needsRepaint) {
         trail.ctx.clearRect(0, 0, cssW, cssH);
         trail.key = key;
         trail.drawn = 0;
         paintTrail(sim, T, col, 0);
         trail.drawn = sim.n + 1;
-    } else if (sim.n + 1 > trail.drawn) {
+        trail.at = { k: U.k, tx: U.tx, ty: U.ty };
+    } else if (!stale && sim.n + 1 > trail.drawn) {
         paintTrail(sim, T, col, trail.drawn);
         trail.drawn = sim.n + 1;
     }
+
+    if (sameUserView(trail.at, U)) {
+        ctx.drawImage(trail.cv, 0, 0, trail.cv.width, trail.cv.height, 0, 0, cssW, cssH);
+        return;
+    }
+    /* Mid-gesture: the layer holds the trajectory drawn for an earlier zoom and
+       pan, and the two differ by a scale about a point plus a shift. Applying
+       that to the image is exact geometry and costs one blit, where repainting
+       tens of thousands of vertices per wheel notch would not hold 60fps. The
+       crisp repaint follows when the gesture settles. */
+    const box = plotBox(sim.mode);
+    const at = trail.at;
+    const r = U.k / at.k;
+    ctx.save();
+    ctx.translate(box.ax + U.tx, box.ay + U.ty);
+    ctx.scale(r, r);
+    ctx.translate(-(box.ax + at.tx), -(box.ay + at.ty));
     ctx.drawImage(trail.cv, 0, 0, trail.cv.width, trail.cv.height, 0, 0, cssW, cssH);
+    ctx.restore();
 }
 
 /* ---------- Overlays : the three vectors of the visual hierarchy ---------- */
@@ -801,6 +887,102 @@ function drawCurrentPoint(sim, T, col) {
     ctx.stroke();
     ctx.restore();
 }
+
+/* ---------- Reading the plot: zoom, pan, fit ----------
+   The mathematics is untouched by all of this: these handlers move the window
+   onto the trajectory, never the trajectory itself.                        */
+
+/* Redraws coalesce onto the next frame, so a burst of wheel or move events
+   costs one repaint rather than one each. */
+let drawQueued = false;
+function requestDraw() {
+    if (drawQueued) return;
+    drawQueued = true;
+    requestAnimationFrame(() => { drawQueued = false; draw(); });
+}
+
+const ZOOM_MIN = 0.2, ZOOM_MAX = 200;
+
+/* While the view is moving the trail is a transformed blit, which is fast but
+   resampled; a moment after the gesture stops it is redrawn at full detail. */
+let settleTimer = 0;
+function scheduleSettle() {
+    clearTimeout(settleTimer);
+    settleTimer = setTimeout(() => { trail.key = ''; draw(); }, 180);
+}
+
+function pointerPos(e) {
+    const r = canvas.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+
+/** Zoom about a pixel, keeping whatever sits under it in place. */
+function zoomAt(sim, mx, my, factor) {
+    const U = sim.user;
+    const k = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, U.k * factor));
+    if (k === U.k) return;
+    const box = plotBox(sim.mode);
+    const ax = box.ax, ay = box.ay;
+    /* Solve for the shift that leaves the anchored point where it was. */
+    U.tx = mx - ax - (mx - ax - U.tx) * k / U.k;
+    U.ty = my - ay - (my - ay - U.ty) * k / U.k;
+    U.k = k;
+    sim.locked = true;
+    requestDraw();
+    scheduleSettle();
+}
+
+canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    const p = pointerPos(e);
+    /* deltaMode 1 is lines, 2 is pages; normalise so a notch is a notch. */
+    const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 100 : 1;
+    const d = e.deltaY * unit;
+    zoomAt(currentSim(), p.x, p.y, Math.exp(-d * 0.0015));
+}, { passive: false });
+
+/* Right button drags the view. The context menu is suppressed page-wide, so
+   the button is free for this. */
+let panning = null;
+
+canvas.addEventListener('pointerdown', e => {
+    if (e.button !== 2) return;
+    const p = pointerPos(e);
+    const sim = currentSim();
+    panning = { x: p.x, y: p.y, tx: sim.user.tx, ty: sim.user.ty };
+    sim.locked = true;
+    canvas.setPointerCapture(e.pointerId);
+    canvas.classList.add('panning');
+    e.preventDefault();
+});
+
+canvas.addEventListener('pointermove', e => {
+    if (!panning) return;
+    const p = pointerPos(e);
+    const U = currentSim().user;
+    U.tx = panning.tx + (p.x - panning.x);
+    U.ty = panning.ty + (p.y - panning.y);
+    requestDraw();
+    scheduleSettle();
+});
+
+function endPan(e) {
+    if (!panning) return;
+    panning = null;
+    canvas.classList.remove('panning');
+    if (e && e.pointerId !== undefined && canvas.hasPointerCapture(e.pointerId)) {
+        canvas.releasePointerCapture(e.pointerId);
+    }
+}
+canvas.addEventListener('pointerup', endPan);
+canvas.addEventListener('pointercancel', endPan);
+
+/** Double click returns to the automatic fit. */
+canvas.addEventListener('dblclick', e => {
+    e.preventDefault();
+    resetUserView(currentSim());
+    requestDraw();
+});
 
 /* ---------- Main draw ---------- */
 
@@ -1201,6 +1383,61 @@ document.querySelectorAll('.lang-btn').forEach(btn => {
     btn.addEventListener('click', () => setLanguage(btn.getAttribute('data-lang')));
 });
 
+/* The right button drags the plot, so its menu would be in the way; and this
+   is an instrument, not a document to be right-clicked. */
+document.addEventListener('contextmenu', e => e.preventDefault());
+
+/* ---------- Wheel over a slider ----------
+   Scrolling the page must not be hijacked by a control the pointer merely
+   crossed, so the wheel only takes hold after it has rested on the slider for
+   a moment. From then on a notch is 1% of the range. */
+
+const SLIDER_WHEEL_DELAY = 250;   // ms the pointer must dwell first
+
+function enableWheelOnSlider(input) {
+    let since = 0;
+    input.addEventListener('pointerenter', () => { since = performance.now(); });
+    input.addEventListener('pointerleave', () => { since = 0; });
+    input.addEventListener('wheel', e => {
+        if (!since || performance.now() - since < SLIDER_WHEEL_DELAY) return;
+        e.preventDefault();
+        const min = Number(input.min), max = Number(input.max);
+        const stepSize = Math.max(Number(input.step) || 1, Math.round((max - min) / 100));
+        const dir = (e.deltaY || e.deltaX) > 0 ? -1 : 1;
+        const next = Math.min(max, Math.max(min, Number(input.value) + dir * stepSize));
+        if (next === Number(input.value)) return;
+        input.value = String(next);
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+    }, { passive: false });
+}
+
+enableWheelOnSlider(els.slider);
+
+/* ---------- Where the mode selector lives ----------
+   Wide enough, and it rides in the top bar instead of occupying a row of its
+   own — which is worth about 70px of plot height. */
+
+const modeSwitch = document.querySelector('.mode-switch');
+const barCentre = document.getElementById('top-bar-center');
+const layoutMain = document.querySelector('.layout');
+const wideScreen = window.matchMedia('(min-width: 901px)');
+
+function placeModeSwitch() {
+    if (wideScreen.matches) {
+        if (modeSwitch.parentElement !== barCentre) barCentre.appendChild(modeSwitch);
+        modeSwitch.classList.add('in-bar');
+    } else {
+        if (modeSwitch.parentElement !== document.body) {
+            document.body.insertBefore(modeSwitch, layoutMain);
+        }
+        modeSwitch.classList.remove('in-bar');
+    }
+    resizeCanvas();
+}
+
+if (wideScreen.addEventListener) wideScreen.addEventListener('change', placeModeSwitch);
+else wideScreen.addListener(placeModeSwitch);          // older Safari
+
 /* Keyboard: space = play/pause, right arrow = one step, R = reset. */
 document.addEventListener('keydown', e => {
     if (e.target instanceof HTMLInputElement) return;
@@ -1246,5 +1483,5 @@ if (window.ResizeObserver) {
     els.dxValue.textContent = formatDx(state.dx);
 
     applyMode();
-    resizeCanvas();
+    placeModeSwitch();        // also performs the first resizeCanvas()
 })();
