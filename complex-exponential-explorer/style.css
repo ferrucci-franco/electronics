@@ -614,13 +614,6 @@ input[type="range"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var
 .help-tex .katex-display { margin: .35rem 0; }
 .help-tex .katex { font-size: 1rem; }
 
-/* Wide enough for the mode selector to ride in the top bar: the row it used to
-   occupy was also what separated the bar from the cards, so the gap has to be
-   restored here. The query matches the one that moves it (see placeModeSwitch). */
-@media (min-width: 901px) {
-    .layout { padding-top: .7rem; }
-}
-
 /* From a tablet up there is room to spare, so the help reads at document
    size rather than interface size. Phones keep the sizes set further down —
    this block stops before them. */
@@ -647,6 +640,30 @@ input[type="range"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var
     .help-tex .katex { font-size: 1.32rem; }
     .help-aside { padding: .9rem 1.1rem 1rem; margin: 1.1rem 0 .6rem; }
     .help-aside h4 { font-size: 1.05rem; margin-bottom: .6rem; }
+}
+
+/* Wide enough for the mode selector to ride in the top bar: the row it used to
+   occupy was also what separated the bar from the cards, so the gap has to be
+   restored here. The query matches the one that moves it (see placeModeSwitch). */
+@media (min-width: 901px) {
+    .layout { padding-top: .7rem; }
+
+    /* On a computer the help gets most of the screen. The reading column does
+       not grow with it past what an eye can track along a line, so it is
+       centred inside that window with the formulas on the same axis — margins,
+       not the one-sided band a left-aligned cap used to leave. */
+    .help-dialog {
+        width: min(80vw, 1400px);
+        max-height: min(88vh, 1000px);
+    }
+    .help-body { max-height: none; }
+    .help-section { max-width: 54rem; margin-inline: auto; }
+
+    .help-head h2 { font-size: 1.26rem; }
+    .help-section h3 { font-size: 1.34rem; }
+    .help-section p { font-size: 1.24rem; }
+    .help-tex .katex { font-size: 1.44rem; }
+    .help-aside h4 { font-size: 1.14rem; }
 }
 
 /* ============================================================
