@@ -101,7 +101,7 @@ button { font-family: inherit; }
 .brand-mark { color: var(--accent); line-height: 1; }
 
 .brand-title {
-    font-size: 1rem;
+    font-size: 1.06rem;
     font-weight: 600;
     letter-spacing: .01em;
     white-space: nowrap;
@@ -202,8 +202,8 @@ button { font-family: inherit; }
     min-width: 0;
     padding: .32rem 1rem;
 }
-.mode-switch.in-bar .mode-formula .katex { font-size: 1.02rem; }
-.mode-switch.in-bar .mode-name { font-size: .66rem; }
+.mode-switch.in-bar .mode-formula .katex { font-size: 1.1rem; }
+.mode-switch.in-bar .mode-name { font-size: .71rem; }
 
 .mode-btn.active {
     background-color: var(--accent);
@@ -252,10 +252,12 @@ button { font-family: inherit; }
 #plot.panning { cursor: grabbing; }
 
 .stage-hint {
-    max-width: 74ch;
+    /* No measure cap: it is a single sentence and it should sit on one line
+       wherever the card is wide enough. 74ch fitted the Spanish wording and
+       broke the English and French ones in two. */
     margin: .3rem auto 0;
     text-align: center;
-    font-size: .78rem;
+    font-size: .85rem;
     line-height: 1.45;
     color: var(--text-faint);
 }
@@ -291,7 +293,7 @@ button { font-family: inherit; }
 }
 
 .card-title {
-    font-size: .68rem;
+    font-size: .73rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: .09em;
@@ -307,7 +309,7 @@ button { font-family: inherit; }
 
 /* The question the whole chain answers. It leads, so it sits above. */
 .formula-question {
-    font-size: .78rem;
+    font-size: .85rem;
     font-style: italic;
     color: var(--text-faint);
     margin-bottom: .35rem;
@@ -331,15 +333,15 @@ button { font-family: inherit; }
 /* The chain runs from the question to the step the app iterates. Boxed
    milestones lift out of the working; the final one carries the most weight. */
 .formula-step { color: var(--text-secondary); }
-.formula-step .katex { font-size: .98rem; }
+.formula-step .katex { font-size: 1.06rem; }
 .formula-boxed { color: var(--text-primary); }
 .formula-result { color: var(--accent); }
-.formula-result .katex { font-size: 1.05rem; }
+.formula-result .katex { font-size: 1.14rem; }
 
 /* KaTeX paints with currentColor, so it follows the theme by itself; these
    rules only keep its sizing in line with the surrounding interface. */
 .katex { color: inherit; }
-.readout dt .katex { font-size: .95rem; }
+.readout dt .katex { font-size: 1.02rem; }
 .mode-formula .katex { font-size: 1.12rem; }
 .brand-mark .katex { font-size: 1.15rem; }
 
@@ -349,7 +351,7 @@ button { font-family: inherit; }
     grid-template-columns: auto 1fr;
     gap: .22rem .7rem;
     align-items: baseline;
-    font-size: .82rem;
+    font-size: .88rem;
 }
 .readout dt {
     color: var(--text-secondary);
@@ -358,7 +360,7 @@ button { font-family: inherit; }
 .readout dd {
     font-variant-numeric: tabular-nums;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: .78rem;
+    font-size: .84rem;
     text-align: right;
     color: var(--text-primary);
     overflow-wrap: anywhere;
@@ -383,7 +385,7 @@ button { font-family: inherit; }
     border: none;
     background: transparent;
     color: var(--text-secondary);
-    font-size: .74rem;
+    font-size: .79rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: .09em;
@@ -397,9 +399,9 @@ button { font-family: inherit; }
 .conclusion-body { padding: .35rem .4rem .2rem; }
 
 .euler-formula { color: var(--accent); margin-bottom: .5rem; }
-.euler-formula .katex { font-size: 1.05rem; }
+.euler-formula .katex { font-size: 1.13rem; }
 .conclusion-text {
-    font-size: .78rem;
+    font-size: .84rem;
     line-height: 1.5;
     color: var(--text-secondary);
 }
@@ -428,11 +430,11 @@ button { font-family: inherit; }
     gap: .45rem;
     color: var(--text-secondary);
 }
-.slider-label .katex { font-size: 1rem; }
+.slider-label .katex { font-size: 1.08rem; }
 .dx-value {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-style: normal;
-    font-size: .85rem;
+    font-size: .91rem;
     font-variant-numeric: tabular-nums;
     color: var(--text-primary);
     background-color: var(--bg-tertiary);
@@ -478,7 +480,7 @@ input[type="range"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var
     background-color: var(--bg-primary);
     color: var(--text-primary);
     border-radius: 8px;
-    font-size: .82rem;
+    font-size: .88rem;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
@@ -492,7 +494,7 @@ input[type="range"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var
 .btn[hidden] { display: none; }
 
 .btn-sub { color: var(--text-faint); }
-.btn-sub .katex { font-size: .85rem; }
+.btn-sub .katex { font-size: .9rem; }
 
 .btn-primary {
     background-color: var(--accent);
