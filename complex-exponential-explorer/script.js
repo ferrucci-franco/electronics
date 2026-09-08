@@ -1279,7 +1279,7 @@ function readoutRows() {
         ['im',    texHTML('\\mathrm{Im}(z_{n})')],
         ['mod',   texHTML('\\left|z_{n}\\right|')],
         ['sep2',  null],
-        ['arg',   texHTML('\\arg(z_{n})=n\\arctan\\Delta x')],
+        ['arg',   texHTML('\\arg(z_{n})')],
         ['turns', i18n.t('labelTurns') + ' ' + texHTML('=\\arg/2\\pi')]
     ];
 }

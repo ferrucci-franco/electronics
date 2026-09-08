@@ -650,6 +650,10 @@ input[type="range"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var
 @media (min-width: 901px) {
     .layout { padding-top: .7rem; }
 
+    /* Room for a complex number to stay on one line: the value column was
+       being squeezed by the widest label in the same grid. */
+    .panel { flex: 0 0 320px; }
+
     /* On a computer the help gets most of the screen, and the text uses all of
        it. A line that wide needs the type to grow with it and the leading to
        open up, or the eye loses the return to the left margin. */
