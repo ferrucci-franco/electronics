@@ -103,13 +103,7 @@ const I18N = {
                 { p: 'But hold on: what does raising e to an imaginary power even mean? Multiplying e by itself “i·x times” is not a thing. Somebody had to decide what it means, and the decision was to take the series we have just written and let the exponent be complex:' },
                 { tex: 'e^{z}=1+z+\\frac{z^{2}}{2!}+\\frac{z^{3}}{3!}+\\cdots' },
                 { p: 'That is the definition of the complex exponential — not something proved along the way. And it is not an arbitrary choice: it is the one that leaves everything in place. Make the exponent real again and it hands back the ordinary exponential; and it keeps the rule that turns a sum in the exponent into a product — exactly what the next step is about to use.' },
-                { aside: { h: 'And the app does not even need that series',
-                    items: [
-                        { p: 'Look at what it computes: zₙ = (1 + iΔx)ⁿ, and with x = n·Δx that is (1 + ix/n)ⁿ. The limit from the aside above holds just as well with a complex exponent:' },
-                        { tex: '\\left(1+\\frac{ix}{n}\\right)^{n}\\;\\xrightarrow[\\;n\\to\\infty\\;]{}\\;e^{ix}' },
-                        { p: 'So the path on screen is not an approximation of something defined elsewhere. It is one of the definitions of eⁱˣ, evaluated with a finite n.' }
-                    ] } },
-                { p: 'move forward by Δx, and use the same property of the exponential:' },
+                { p: 'Now move forward by Δx and use that same property:' },
                 { tex: 'z(x+\\Delta x)=e^{i(x+\\Delta x)}=e^{ix}\\,e^{i\\Delta x}=z(x)\\,e^{i\\Delta x}' },
                 { p: 'and only then approximate:' },
                 { tex: 'e^{i\\Delta x}\\approx 1+i\\Delta x' },
@@ -124,7 +118,13 @@ const I18N = {
                 { tex: '\\left|z_{n}\\right|=\\left(1+\\Delta x^{2}\\right)^{n/2}' },
                 { p: 'Write n = x/Δx and use ln(1 + u) ≈ u for small u:' },
                 { tex: '\\left|z_{n}\\right|\\approx e^{\\,x\\Delta x/2}\\;\\xrightarrow[\\;\\Delta x\\to 0\\;]{}\\;1' },
-                { p: 'Check it against the read-out: one turn (x = 2π) at Δx = 0.1 predicts |z| ≈ 1.37. The angle behaves the same way: one step turns the point by arctan(Δx), a shade less than Δx, and n·arctan(Δx) → x only in the limit. That lag is why one turn takes slightly more than 2π/Δx steps — which is what the turn button counts. Modulus going to 1, argument going to x: the point lands on the unit circle at angle x.' }
+                { p: 'Check it against the read-out: one turn (x = 2π) at Δx = 0.1 predicts |z| ≈ 1.37. The angle behaves the same way: one step turns the point by arctan(Δx), a shade less than Δx, and n·arctan(Δx) → x only in the limit. That lag is why one turn takes slightly more than 2π/Δx steps — which is what the turn button counts. Modulus going to 1, argument going to x: the point lands on the unit circle at angle x.' },
+                { aside: { h: 'And the app does not even need that series',
+                    items: [
+                        { p: 'Look at what it computes: zₙ = (1 + iΔx)ⁿ, and with x = n·Δx that is (1 + ix/n)ⁿ. The limit from the aside above holds just as well with a complex exponent:' },
+                        { tex: '\\left(1+\\frac{ix}{n}\\right)^{n}\\;\\xrightarrow[\\;n\\to\\infty\\;]{}\\;e^{ix}' },
+                        { p: 'So the path on screen is not an approximation of something defined elsewhere. It is one of the definitions of eⁱˣ, evaluated with a finite n.' }
+                    ] } }
               ] }
         ]
     },
@@ -206,13 +206,7 @@ const I18N = {
                 { p: 'Mais un instant : que veut dire élever e à une puissance imaginaire ? Multiplier e par lui-même « i·x fois » ne veut rien dire. Quelqu’un a dû décider de ce que cela signifie, et la décision a été de reprendre la série que l’on vient d’écrire en laissant l’exposant devenir complexe :' },
                 { tex: 'e^{z}=1+z+\\frac{z^{2}}{2!}+\\frac{z^{3}}{3!}+\\cdots' },
                 { p: 'C’est la définition de l’exponentielle complexe — pas un résultat démontré en chemin. Et ce n’est pas un choix arbitraire : c’est celui qui laisse tout en place. Que l’exposant redevienne réel et l’on retrouve l’exponentielle habituelle ; et la règle qui transforme une somme en exposant en un produit est conservée — c’est justement celle que le pas suivant va utiliser.' },
-                { aside: { h: 'Et l’app n’a même pas besoin de cette série',
-                    items: [
-                        { p: 'Regardez ce qu’elle calcule : zₙ = (1 + iΔx)ⁿ, et avec x = n·Δx cela s’écrit (1 + ix/n)ⁿ. La limite de l’encadré précédent vaut tout autant avec un exposant complexe :' },
-                        { tex: '\\left(1+\\frac{ix}{n}\\right)^{n}\\;\\xrightarrow[\\;n\\to\\infty\\;]{}\\;e^{ix}' },
-                        { p: 'Le tracé à l’écran n’est donc pas l’approximation de quelque chose défini ailleurs. C’est l’une des définitions de eⁱˣ, évaluée avec un n fini.' }
-                    ] } },
-                { p: 'on avance de Δx, et on utilise la même propriété de l’exponentielle :' },
+                { p: 'Avançons maintenant de Δx et utilisons cette même propriété :' },
                 { tex: 'z(x+\\Delta x)=e^{i(x+\\Delta x)}=e^{ix}\\,e^{i\\Delta x}=z(x)\\,e^{i\\Delta x}' },
                 { p: 'et seulement alors on approche :' },
                 { tex: 'e^{i\\Delta x}\\approx 1+i\\Delta x' },
@@ -227,7 +221,13 @@ const I18N = {
                 { tex: '\\left|z_{n}\\right|=\\left(1+\\Delta x^{2}\\right)^{n/2}' },
                 { p: 'En écrivant n = x/Δx et en utilisant ln(1 + u) ≈ u pour u petit :' },
                 { tex: '\\left|z_{n}\\right|\\approx e^{\\,x\\Delta x/2}\\;\\xrightarrow[\\;\\Delta x\\to 0\\;]{}\\;1' },
-                { p: 'À vérifier sur le panneau : un tour (x = 2π) à Δx = 0,1 prédit |z| ≈ 1,37. L’angle suit la même logique : un pas fait tourner le point de arctan(Δx), un peu moins que Δx, et n·arctan(Δx) → x seulement à la limite. Ce retard explique qu’un tour demande un peu plus que 2π/Δx pas — c’est ce que compte le bouton. Module vers 1, argument vers x : le point se pose sur le cercle unité à l’angle x.' }
+                { p: 'À vérifier sur le panneau : un tour (x = 2π) à Δx = 0,1 prédit |z| ≈ 1,37. L’angle suit la même logique : un pas fait tourner le point de arctan(Δx), un peu moins que Δx, et n·arctan(Δx) → x seulement à la limite. Ce retard explique qu’un tour demande un peu plus que 2π/Δx pas — c’est ce que compte le bouton. Module vers 1, argument vers x : le point se pose sur le cercle unité à l’angle x.' },
+                { aside: { h: 'Et l’app n’a même pas besoin de cette série',
+                    items: [
+                        { p: 'Regardez ce qu’elle calcule : zₙ = (1 + iΔx)ⁿ, et avec x = n·Δx cela s’écrit (1 + ix/n)ⁿ. La limite de l’encadré précédent vaut tout autant avec un exposant complexe :' },
+                        { tex: '\\left(1+\\frac{ix}{n}\\right)^{n}\\;\\xrightarrow[\\;n\\to\\infty\\;]{}\\;e^{ix}' },
+                        { p: 'Le tracé à l’écran n’est donc pas l’approximation de quelque chose défini ailleurs. C’est l’une des définitions de eⁱˣ, évaluée avec un n fini.' }
+                    ] } }
               ] }
         ]
     },
@@ -309,13 +309,7 @@ const I18N = {
                 { p: 'Pero un momento: ¿qué significa elevar e a una potencia imaginaria? Multiplicar e por sí mismo «i·x veces» no quiere decir nada. Alguien tuvo que decidir qué significa, y la decisión fue tomar la serie que acabamos de escribir y dejar que el exponente sea complejo:' },
                 { tex: 'e^{z}=1+z+\\frac{z^{2}}{2!}+\\frac{z^{3}}{3!}+\\cdots' },
                 { p: 'Esto es la definición de la exponencial compleja — no algo que se demuestre por el camino. Y no es un capricho: es la que deja todo en su lugar. Volvé a poner el exponente real y devuelve la exponencial de siempre; y conserva la regla que convierte una suma en el exponente en un producto, que es justamente la que el próximo paso va a usar.' },
-                { aside: { h: 'Y la app ni siquiera necesita esa serie',
-                    items: [
-                        { p: 'Mirá lo que calcula: zₙ = (1 + iΔx)ⁿ, y con x = n·Δx eso es (1 + ix/n)ⁿ. El límite del recuadro anterior vale igual con exponente complejo:' },
-                        { tex: '\\left(1+\\frac{ix}{n}\\right)^{n}\\;\\xrightarrow[\\;n\\to\\infty\\;]{}\\;e^{ix}' },
-                        { p: 'Así que la trayectoria en pantalla no es la aproximación de algo definido en otro lado. Es una de las definiciones de eⁱˣ, evaluada con un n finito.' }
-                    ] } },
-                { p: 'avanzamos Δx y usamos la misma propiedad de la exponencial:' },
+                { p: 'Ahora avanzamos Δx y usamos esa misma propiedad:' },
                 { tex: 'z(x+\\Delta x)=e^{i(x+\\Delta x)}=e^{ix}\\,e^{i\\Delta x}=z(x)\\,e^{i\\Delta x}' },
                 { p: 'y recién ahí aproximamos:' },
                 { tex: 'e^{i\\Delta x}\\approx 1+i\\Delta x' },
@@ -330,7 +324,13 @@ const I18N = {
                 { tex: '\\left|z_{n}\\right|=\\left(1+\\Delta x^{2}\\right)^{n/2}' },
                 { p: 'Escribiendo n = x/Δx y usando ln(1 + u) ≈ u para u pequeño:' },
                 { tex: '\\left|z_{n}\\right|\\approx e^{\\,x\\Delta x/2}\\;\\xrightarrow[\\;\\Delta x\\to 0\\;]{}\\;1' },
-                { p: 'Comprobalo contra el panel: una vuelta (x = 2π) con Δx = 0,1 predice |z| ≈ 1,37. El ángulo se comporta igual: un paso gira el punto arctan(Δx), un poco menos que Δx, y n·arctan(Δx) → x solo en el límite. Ese retraso es la razón de que una vuelta requiera algo más que 2π/Δx pasos — que es lo que cuenta el botón. Módulo tendiendo a 1, argumento tendiendo a x: el punto cae sobre el círculo unidad en el ángulo x.' }
+                { p: 'Comprobalo contra el panel: una vuelta (x = 2π) con Δx = 0,1 predice |z| ≈ 1,37. El ángulo se comporta igual: un paso gira el punto arctan(Δx), un poco menos que Δx, y n·arctan(Δx) → x solo en el límite. Ese retraso es la razón de que una vuelta requiera algo más que 2π/Δx pasos — que es lo que cuenta el botón. Módulo tendiendo a 1, argumento tendiendo a x: el punto cae sobre el círculo unidad en el ángulo x.' },
+                { aside: { h: 'Y la app ni siquiera necesita esa serie',
+                    items: [
+                        { p: 'Mirá lo que calcula: zₙ = (1 + iΔx)ⁿ, y con x = n·Δx eso es (1 + ix/n)ⁿ. El límite del recuadro anterior vale igual con exponente complejo:' },
+                        { tex: '\\left(1+\\frac{ix}{n}\\right)^{n}\\;\\xrightarrow[\\;n\\to\\infty\\;]{}\\;e^{ix}' },
+                        { p: 'Así que la trayectoria en pantalla no es la aproximación de algo definido en otro lado. Es una de las definiciones de eⁱˣ, evaluada con un n finito.' }
+                    ] } }
               ] }
         ]
     }
