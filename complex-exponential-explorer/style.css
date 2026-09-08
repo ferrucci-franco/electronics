@@ -584,48 +584,90 @@ input[type="range"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var
     .control-group-slider { flex: 1 1 100%; }
 }
 
-/* Phones: everything that matters — what we are approximating, the graph and
-   Δx — has to fit on the first screen, so the chrome around them shrinks. */
+/* Phones: everything that matters — the derivation, the graph and Δx — has to
+   fit on the first screen, and it has to stay readable at arm's length. Type
+   is as large as that budget allows; the room comes from the chrome and from
+   the plot, never from the text. */
 @media (max-width: 560px) {
     .brand-title { display: none; }
-    .top-bar { padding: .5rem .8rem; }
+    .top-bar { padding: .45rem .8rem; }
+    .brand-mark .katex { font-size: 1.2rem; }
 
-    .mode-switch { padding: .5rem .8rem .45rem; gap: .4rem; }
-    .mode-btn { padding: .38rem .4rem; }
-    .mode-formula { font-size: 1.02rem; }
-    .mode-name { font-size: .6rem; letter-spacing: .04em; }
+    .mode-switch { padding: .42rem .8rem .4rem; gap: .4rem; }
+    .mode-btn { padding: .3rem .4rem; }
+    .mode-formula .katex { font-size: 1.2rem; }
+    .mode-name { font-size: .64rem; letter-spacing: .03em; }
 
     .card-formula { padding: .45rem .5rem .5rem; }
-    .formula-step .katex { font-size: .93rem; }
-    .formula-result .katex { font-size: 1rem; }
-    /* The question the whole chain answers. It leads, so it sits above. */
-.formula-question {
-    font-size: .78rem;
-    font-style: italic;
-    color: var(--text-faint);
-    margin-bottom: .35rem;
-    text-wrap: balance;
-}
-
-.formula-line { flex-direction: column; align-items: center; gap: .08rem; }
+    .formula-line { flex-direction: column; align-items: center; gap: .1rem; }
     .formula-sep { display: none; }
-    .formula-question { font-size: .74rem; margin-bottom: .3rem; }
-    .stage-hint { font-size: .74rem; margin-top: .25rem; }
+    .formula-step .katex { font-size: 1.02rem; }
+    .formula-result .katex { font-size: 1.1rem; }
+    .formula-question { font-size: .82rem; margin-bottom: .3rem; }
+    .stage-hint { font-size: .81rem; margin-top: .28rem; }
 
-    .stage { height: 34vh; min-height: 230px; }
+    /* The plot takes what is left rather than a fixed share of the viewport:
+       everything above and below it has a roughly constant pixel height, so
+       subtracting that keeps the controls on screen across phone sizes where
+       a percentage would not. svh, not vh: on iOS vh measures the viewport
+       with the browser bars collapsed, so it over-reserves. The vh line is
+       the fallback for engines that do not know svh. */
+    .stage-column { gap: .45rem; }
+    .stage {
+        height: clamp(190px, calc(100vh - 528px), 340px);
+        height: clamp(190px, calc(100svh - 528px), 340px);
+        min-height: 0;
+    }
 
-    .controls { gap: .5rem .8rem; padding-bottom: .8rem; }
+    .controls { gap: .45rem .8rem; padding-bottom: .5rem; }
+    .control-group-slider { gap: .7rem; }
+    /* the +2π label keeps its size so the turn button does not gain a row */
+    .btn { height: 35px; padding: 0 .62rem; font-size: .82rem; }
+    .btn-sub .katex { font-size: .78rem; }
+    .btn-primary { min-width: 80px; }
 
     /* Δx is the one thing that gets dragged, and it is dragged with a thumb:
        a 4px hairline is a desktop affordance, not a touch one. */
     input[type="range"] { height: 12px; border-radius: 6px; }
     input[type="range"]::-webkit-slider-thumb { width: 28px; height: 28px; border-width: 3px; }
     input[type="range"]::-moz-range-thumb { width: 25px; height: 25px; border-width: 3px; }
-    .control-group-slider { gap: .7rem; }
-    .slider-label .katex { font-size: 1.05rem; }
+    .slider-label .katex { font-size: 1.12rem; }
+    .dx-value { font-size: .92rem; }
+
+    .card-title { font-size: .73rem; }
+    .readout { font-size: .88rem; }
+    .readout dt .katex { font-size: 1.02rem; }
+    .readout dd { font-size: .86rem; }
 
     .help-body { padding: .2rem .9rem 1.2rem; }
-    .help-section p { font-size: .82rem; }
-    .btn { height: 34px; padding: 0 .7rem; font-size: .76rem; }
-    .btn-primary { min-width: 80px; }
+    .help-section h3 { font-size: .96rem; }
+    .help-section p { font-size: .9rem; }
+    .help-tex .katex { font-size: 1.05rem; }
+    .conclusion-btn { font-size: .78rem; }
+    .conclusion-text { font-size: .86rem; }
+    .euler-formula .katex { font-size: 1.12rem; }
+}
+
+/* Short phones (an SE, or any handset with a stubby viewport) cannot hold the
+   full derivation, a usable plot and the controls at the size above. Rather
+   than let the controls fall under the fold, this steps the type back down a
+   notch and lets the plot go smaller — the same layout, one size tighter. */
+@media (max-width: 560px) and (max-height: 700px) {
+    .mode-switch { padding: .35rem .8rem .3rem; }
+    .mode-formula .katex { font-size: 1.06rem; }
+    .mode-name { font-size: .6rem; }
+
+    .card-formula { padding: .4rem .5rem .42rem; }
+    .formula-step .katex { font-size: .93rem; }
+    .formula-result .katex { font-size: 1rem; }
+    .formula-question { font-size: .76rem; margin-bottom: .25rem; }
+    .stage-hint { font-size: .76rem; margin-top: .22rem; }
+
+    .stage {
+        height: clamp(150px, calc(100vh - 498px), 340px);
+        height: clamp(150px, calc(100svh - 498px), 340px);
+    }
+
+    .btn { height: 32px; font-size: .78rem; }
+    .controls { gap: .4rem .7rem; padding-bottom: .45rem; }
 }
