@@ -50,21 +50,49 @@
      ============================================================ -->
 <main class="layout">
 
-    <section class="stage">
-        <canvas id="plot"></canvas>
-        <p class="stage-hint" id="stage-hint" data-i18n="hintReal">
-            Each small step forward in x multiplies the previous value by (1 + &Delta;x).
-        </p>
-        <p class="stage-warning" id="stage-warning" hidden></p>
-    </section>
+    <div class="stage-column">
+
+        <!-- What we are approximating, stated above the graph so that it is
+             on screen without scrolling, phones included. -->
+        <div class="card card-formula">
+            <div class="formula-line">
+                <span class="formula-main" id="formula-recurrence"></span>
+                <span class="formula-sep" aria-hidden="true"></span>
+                <span class="formula-sub" id="formula-approx"></span>
+            </div>
+            <p class="stage-hint" id="stage-hint" data-i18n="hintReal">
+                Each small step forward in x multiplies the previous value by (1 + &Delta;x).
+            </p>
+        </div>
+
+        <section class="stage">
+            <canvas id="plot"></canvas>
+            <p class="stage-warning" id="stage-warning" hidden></p>
+        </section>
+
+        <!-- Controls sit directly under the plot: on a phone Δx must be
+             reachable without scrolling past the read-out. -->
+        <div class="controls">
+            <div class="control-group control-group-slider">
+                <label class="slider-label" for="dx-slider">
+                    <span>&Delta;x</span>
+                    <output id="dx-value" class="dx-value">0.100</output>
+                </label>
+                <input type="range" id="dx-slider" min="0" max="1000" value="600" step="1"
+                       aria-label="Delta x">
+            </div>
+
+            <div class="control-group control-group-buttons">
+                <button class="btn" id="btn-step1"><span data-i18n="step1">+1 step</span></button>
+                <button class="btn" id="btn-step5"><span data-i18n="step5">+5 steps</span></button>
+                <button class="btn" id="btn-turn"><span data-i18n="turn">Complete one turn</span> <span class="btn-sub">+2&pi;</span></button>
+                <button class="btn btn-primary" id="btn-play"><span id="play-label" data-i18n="play">Play</span></button>
+                <button class="btn btn-quiet" id="btn-reset"><span data-i18n="reset">Reset</span></button>
+            </div>
+        </div>
+    </div>
 
     <aside class="panel">
-
-        <!-- The two permanent formulas: the heart of the lesson -->
-        <div class="card card-formula">
-            <div class="formula-main" id="formula-recurrence"></div>
-            <div class="formula-sub" id="formula-approx"></div>
-        </div>
 
         <!-- Live numeric read-out -->
         <div class="card">
@@ -86,28 +114,6 @@
 
     </aside>
 </main>
-
-<!-- ============================================================
-     CONTROLS : one mathematical parameter + navigation
-     ============================================================ -->
-<footer class="controls">
-    <div class="control-group control-group-slider">
-        <label class="slider-label" for="dx-slider">
-            <span>&Delta;x</span>
-            <output id="dx-value" class="dx-value">0.100</output>
-        </label>
-        <input type="range" id="dx-slider" min="0" max="1000" value="600" step="1"
-               aria-label="Delta x">
-    </div>
-
-    <div class="control-group control-group-buttons">
-        <button class="btn" id="btn-step1"><span data-i18n="step1">+1 step</span></button>
-        <button class="btn" id="btn-step5"><span data-i18n="step5">+5 steps</span></button>
-        <button class="btn" id="btn-turn"><span data-i18n="turn">Complete one turn</span> <span class="btn-sub">+2&pi;</span></button>
-        <button class="btn btn-primary" id="btn-play"><span id="play-label" data-i18n="play">Play</span></button>
-        <button class="btn btn-quiet" id="btn-reset"><span data-i18n="reset">Reset</span></button>
-    </div>
-</footer>
 
 <script src="script.js"></script>
 </body>
