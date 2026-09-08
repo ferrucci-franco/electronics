@@ -101,7 +101,7 @@ const I18N = {
                 { tex: '\\left|z_{n}\\right|=\\left(1+\\Delta x^{2}\\right)^{n/2}' },
                 { p: 'Write n = x/Δx and use ln(1 + u) ≈ u for small u:' },
                 { tex: '\\left|z_{n}\\right|\\approx e^{\\,x\\Delta x/2}\\;\\xrightarrow[\\;\\Delta x\\to 0\\;]{}\\;1' },
-                { p: 'Check it against the read-out: one turn (x = 2π) at Δx = 0.1 predicts |z| ≈ 1.37. The angle behaves the same way — n·arctan(Δx) → x. Modulus going to 1, argument going to x: the point lands on the unit circle at angle x.' }
+                { p: 'Check it against the read-out: one turn (x = 2π) at Δx = 0.1 predicts |z| ≈ 1.37. The angle behaves the same way: one step turns the point by arctan(Δx), a shade less than Δx, and n·arctan(Δx) → x only in the limit. That lag is why one turn takes slightly more than 2π/Δx steps — which is what the turn button counts. Modulus going to 1, argument going to x: the point lands on the unit circle at angle x.' }
               ] }
         ]
     },
@@ -181,7 +181,7 @@ const I18N = {
                 { tex: '\\left|z_{n}\\right|=\\left(1+\\Delta x^{2}\\right)^{n/2}' },
                 { p: 'En écrivant n = x/Δx et en utilisant ln(1 + u) ≈ u pour u petit :' },
                 { tex: '\\left|z_{n}\\right|\\approx e^{\\,x\\Delta x/2}\\;\\xrightarrow[\\;\\Delta x\\to 0\\;]{}\\;1' },
-                { p: 'À vérifier sur le panneau : un tour (x = 2π) à Δx = 0,1 prédit |z| ≈ 1,37. L’angle suit la même logique — n·arctan(Δx) → x. Module vers 1, argument vers x : le point se pose sur le cercle unité à l’angle x.' }
+                { p: 'À vérifier sur le panneau : un tour (x = 2π) à Δx = 0,1 prédit |z| ≈ 1,37. L’angle suit la même logique : un pas fait tourner le point de arctan(Δx), un peu moins que Δx, et n·arctan(Δx) → x seulement à la limite. Ce retard explique qu’un tour demande un peu plus que 2π/Δx pas — c’est ce que compte le bouton. Module vers 1, argument vers x : le point se pose sur le cercle unité à l’angle x.' }
               ] }
         ]
     },
@@ -261,7 +261,7 @@ const I18N = {
                 { tex: '\\left|z_{n}\\right|=\\left(1+\\Delta x^{2}\\right)^{n/2}' },
                 { p: 'Escribiendo n = x/Δx y usando ln(1 + u) ≈ u para u pequeño:' },
                 { tex: '\\left|z_{n}\\right|\\approx e^{\\,x\\Delta x/2}\\;\\xrightarrow[\\;\\Delta x\\to 0\\;]{}\\;1' },
-                { p: 'Comprobalo contra el panel: una vuelta (x = 2π) con Δx = 0,1 predice |z| ≈ 1,37. El ángulo se comporta igual — n·arctan(Δx) → x. Módulo tendiendo a 1, argumento tendiendo a x: el punto cae sobre el círculo unidad en el ángulo x.' }
+                { p: 'Comprobalo contra el panel: una vuelta (x = 2π) con Δx = 0,1 predice |z| ≈ 1,37. El ángulo se comporta igual: un paso gira el punto arctan(Δx), un poco menos que Δx, y n·arctan(Δx) → x solo en el límite. Ese retraso es la razón de que una vuelta requiera algo más que 2π/Δx pasos — que es lo que cuenta el botón. Módulo tendiendo a 1, argumento tendiendo a x: el punto cae sobre el círculo unidad en el ángulo x.' }
               ] }
         ]
     }
@@ -337,9 +337,23 @@ function complexStep(re, im, dx) {
     return { re: re - im * dx, im: im + re * dx };
 }
 
-/** Number of steps whose accumulated argument is closest to one full turn. */
+/**
+ * Number of steps that bring the point closest to one full turn.
+ *
+ * One step multiplies by (1 + iΔx), and arg(1 + iΔx) = arctan(Δx), which is
+ * always a little SMALLER than Δx. Counting 2π/Δx steps therefore always fell
+ * short of closing the loop, and visibly so for a large Δx: at Δx = 0.5 it
+ * stopped 14.7° early, every single time. Using the rotation the step really
+ * performs makes the residue a rounding one — at most half a step, and as
+ * often over as under.
+ */
 function stepsPerTurn(dx) {
-    return Math.max(1, Math.round(TAU / dx));
+    return Math.max(1, Math.round(TAU / Math.atan(dx)));
+}
+
+/** Angle actually swept after n steps: exact, and free of atan2 wrapping. */
+function sweptAngle(n, dx) {
+    return n * Math.atan(dx);
 }
 
 /* ============================================================================
@@ -892,7 +906,8 @@ function readoutRows() {
         ['im',    texHTML('\\mathrm{Im}(z_{n})')],
         ['mod',   texHTML('\\left|z_{n}\\right|')],
         ['sep2',  null],
-        ['turns', i18n.t('labelTurns') + ' ' + texHTML('= x/2\\pi')]
+        ['arg',   texHTML('\\arg(z_{n})=n\\arctan\\Delta x')],
+        ['turns', i18n.t('labelTurns') + ' ' + texHTML('=\\arg/2\\pi')]
     ];
 }
 
@@ -932,7 +947,12 @@ function updateReadout() {
         setRO('re', fmtNum(re, 6));
         setRO('im', fmtNum(im, 6));
         setRO('mod', fmtNum(Math.hypot(re, im), 6));
-        setRO('turns', (x / TAU).toFixed(3));
+        /* The turns actually completed follow the angle the point has swept,
+           not the parameter x: they differ by exactly the angular lag the
+           approximation introduces, and only agree in the limit Δx → 0. */
+        const arg = sweptAngle(n, state.dx);
+        setRO('arg', fmtNum(arg, 4));
+        setRO('turns', (arg / TAU).toFixed(3));
     }
 
     /* warnings */
