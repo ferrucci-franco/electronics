@@ -27,48 +27,6 @@
 const I18N = {
     en: {
         appTitle: 'Complex Exponential Explorer',
-        helpBtn: 'Help',
-        helpTitle: 'The mathematics behind the picture',
-        helpClose: 'Close',
-        helpSections: [
-            { h: 'The exponential is a series',
-              items: [
-                { p: 'The exponential is defined by a series that converges for every value of x:' },
-                { tex: 'e^{x}=\\sum_{n=0}^{\\infty}\\frac{x^{n}}{n!}=1+x+\\frac{x^{2}}{2!}+\\frac{x^{3}}{3!}+\\frac{x^{4}}{4!}+\\cdots' },
-                { p: 'Every term after the first two carries a factor x² or smaller. When x is small they weigh very little — and that is the whole opening.' }
-              ] },
-            { h: 'One small step: keep two terms',
-              items: [
-                { p: 'Nothing above is specific to a large or small x. Take one small step — substitute x = Δx — and then cut the series after the linear term:' },
-                { tex: 'e^{\\Delta x}=\\underbrace{1+\\Delta x}_{\\text{kept}}+\\underbrace{\\frac{\\Delta x^{2}}{2}+\\frac{\\Delta x^{3}}{6}+\\cdots}_{\\text{dropped}}\\;\\approx\\;1+\\Delta x' },
-                { p: 'What we drop is of order Δx²/2: about 0.005 for Δx = 0.1, and 0.00005 for Δx = 0.01. This is the only approximation in the whole application — everything you see on screen follows from it.' }
-              ] },
-            { h: 'From the approximation to a multiplication',
-              items: [
-                { p: 'The exponential turns a sum in the exponent into a product:' },
-                { tex: 'e^{x+\\Delta x}=e^{x}\\,e^{\\Delta x}\\approx e^{x}\\,(1+\\Delta x)' },
-                { p: 'So moving forward by Δx is the same as multiplying by (1 + Δx). Starting from y₀ = 1:' },
-                { tex: 'y_{n+1}=y_{n}\\,(1+\\Delta x)\\qquad\\Longrightarrow\\qquad y_{n}=(1+\\Delta x)^{n}' },
-                { p: 'With x = n·Δx this is y = (1 + x/n)ⁿ, the classical limit that returns eˣ as n grows. The gap you read on screen is that limit not yet reached.' }
-              ] },
-            { h: 'The same step, now with i',
-              items: [
-                { p: 'The series does not care whether its argument is real or imaginary, so the same truncation applies:' },
-                { tex: 'e^{i\\Delta x}=1+i\\Delta x+\\frac{(i\\Delta x)^{2}}{2!}+\\cdots\\;\\approx\\;1+i\\Delta x' },
-                { tex: 'z_{n+1}=z_{n}\\,(1+i\\Delta x)\\qquad\\Longrightarrow\\qquad z_{n}=(1+i\\Delta x)^{n}' },
-                { p: 'Multiplying by 1 + iΔx rotates by arctan(Δx) ≈ Δx. That is where the rotation comes from: no cosine and no sine were ever used.' }
-              ] },
-            { h: 'Why a spiral, and why it closes',
-              items: [
-                { p: 'The factor does not sit on the unit circle:' },
-                { tex: '\\left|1+i\\Delta x\\right|=\\sqrt{1+\\Delta x^{2}}>1' },
-                { p: 'so the modulus grows a little at every step, which is exactly the spiral you see:' },
-                { tex: '\\left|z_{n}\\right|=\\left(1+\\Delta x^{2}\\right)^{n/2}' },
-                { p: 'Write n = x/Δx and use ln(1 + u) ≈ u for small u:' },
-                { tex: '\\left|z_{n}\\right|\\approx e^{\\,x\\Delta x/2}\\;\\xrightarrow[\\;\\Delta x\\to 0\\;]{}\\;1' },
-                { p: 'Check it against the read-out: one turn (x = 2π) at Δx = 0.1 predicts |z| ≈ e^0.314 ≈ 1.37. The angle behaves the same way — n·arctan(Δx) → x. Modulus going to 1, argument going to x: the point lands on the unit circle at angle x.' }
-              ] }
-        ],
         modeReal: 'Real exponential',
         modeComplex: 'Complex exponential',
         themeToggle: 'Toggle theme',
@@ -80,63 +38,75 @@ const I18N = {
         pause: 'Pause',
         reset: 'Reset',
         conclusion: 'Conclusion',
-        conclusionText: 'When Δx → 0 the spurious radial growth |1 + iΔx| = √(1 + Δx²) tends to 1, ' +
-                        'so the trajectory becomes a pure rotation of constant modulus along the unit circle. ' +
-                        'Each step turns the point by Δx, so after n steps the accumulated angle is exactly x = n·Δx. ' +
-                        'The point therefore sits at (cos x, sin x).',
-        hintReal: 'Each small step forward in x multiplies the previous value by (1 + Δx).',
-        hintComplex: 'Each small step multiplies by (1 + iΔx): the point turns — and its modulus grows a little, because |1 + iΔx| > 1.',
+        conclusionText: 'When Δx → 0 the spurious radial growth |1 + iΔx| = √(1 + Δx²) tends to 1, so the trajectory becomes a pure rotation of constant modulus along the unit circle. Each step turns the point by Δx, so after n steps the accumulated angle is exactly x = n·Δx. The point therefore sits at (cos x, sin x).',
+        question: 'I am at x. What happens when I move forward by one small step Δx?',
+        hintReal: 'Moving forward by Δx is multiplying by (1 + Δx): the exponential turns the step into a factor.',
+        hintComplex: 'What does that i change? The factor (1 + iΔx) turns the point — and its modulus grows a little, because |1 + iΔx| > 1.',
         labelExact: 'exact',
         labelError: 'error',
         labelRelError: 'rel. error',
         labelTurns: 'turns',
         warnMaxSteps: 'Maximum number of steps reached.',
-        warnOverflow: 'The value has grown beyond what can be represented.'
+        warnOverflow: 'The value has grown beyond what can be represented.',
+        helpBtn: 'Help',
+        helpTitle: 'The mathematics behind the picture',
+        helpClose: 'Close',
+        helpSections: [
+            { h: 'The question',
+              items: [
+                { p: 'I am somewhere on the curve, at x. I move forward by one small step Δx. How do I get the next value?' },
+                { tex: 'y(x)=e^{x}' },
+                { tex: 'y(x+\\Delta x)=e^{x+\\Delta x}' }
+              ] },
+            { h: 'What the exponential answers',
+              items: [
+                { p: 'The exponential turns a sum in the exponent into a product:' },
+                { tex: 'e^{x+\\Delta x}=e^{x}\\,e^{\\Delta x}' },
+                { p: 'and since y(x) = eˣ, the step is a multiplication:' },
+                { tex: '\\boxed{\\;y(x+\\Delta x)=y(x)\\,e^{\\Delta x}\\;}' },
+                { p: 'This is exact — no approximation yet, and it holds for any Δx, small or large. Advancing means multiplying by that factor.' }
+              ] },
+            { h: 'So what is that factor worth for a small step?',
+              items: [
+                { p: 'Only now does the problem appear, and only now do we need Taylor. The series gives the exact value:' },
+                { tex: 'e^{\\Delta x}=1+\\Delta x+\\frac{(\\Delta x)^{2}}{2!}+\\frac{(\\Delta x)^{3}}{3!}+\\cdots' },
+                { p: 'Every term after the first two carries a factor (Δx)² or smaller, so for a small step they weigh very little:' },
+                { tex: 'e^{\\Delta x}\\approx 1+\\Delta x' },
+                { p: 'What we drop is of order (Δx)²/2: about 0.005 for Δx = 0.1, and 0.00005 for Δx = 0.01. This is the only approximation in the whole application.' }
+              ] },
+            { h: 'The discrete step',
+              items: [
+                { p: 'Putting the two together:' },
+                { tex: 'y(x+\\Delta x)\\approx y(x)\\,(1+\\Delta x)' },
+                { p: 'Starting from y(0) = 1 and writing yₙ for the value after n steps:' },
+                { tex: '\\boxed{\\;y_{n+1}=y_{n}\\,(1+\\Delta x)\\;}' },
+                { p: 'so yₙ = (1 + Δx)ⁿ. With x = n·Δx that is (1 + x/n)ⁿ, the classical limit that returns eˣ as n grows. The gap you read on screen is that limit not yet reached.' }
+              ] },
+            { h: 'Exactly the same, with an i',
+              items: [
+                { p: 'Now repeat the reasoning without changing a comma. Start from:' },
+                { tex: 'z(x)=e^{ix}' },
+                { p: 'move forward by Δx, and use the same property of the exponential:' },
+                { tex: 'z(x+\\Delta x)=e^{i(x+\\Delta x)}=e^{ix}\\,e^{i\\Delta x}=z(x)\\,e^{i\\Delta x}' },
+                { p: 'and only then approximate:' },
+                { tex: 'e^{i\\Delta x}\\approx 1+i\\Delta x' },
+                { tex: '\\boxed{\\;z_{n+1}=z_{n}\\,(1+i\\Delta x)\\;}' },
+                { p: 'The two screens do the same arithmetic. The only difference is that i. So: what does it change?' }
+              ] },
+            { h: 'What the i changes: a spiral that closes',
+              items: [
+                { p: 'Multiplying by 1 + iΔx turns the point by arctan(Δx) ≈ Δx. That is where the rotation comes from — no cosine and no sine were ever used. But the factor does not sit on the unit circle:' },
+                { tex: '\\left|1+i\\Delta x\\right|=\\sqrt{1+\\Delta x^{2}}>1' },
+                { p: 'so the modulus grows a little at every step, which is exactly the spiral you see:' },
+                { tex: '\\left|z_{n}\\right|=\\left(1+\\Delta x^{2}\\right)^{n/2}' },
+                { p: 'Write n = x/Δx and use ln(1 + u) ≈ u for small u:' },
+                { tex: '\\left|z_{n}\\right|\\approx e^{\\,x\\Delta x/2}\\;\\xrightarrow[\\;\\Delta x\\to 0\\;]{}\\;1' },
+                { p: 'Check it against the read-out: one turn (x = 2π) at Δx = 0.1 predicts |z| ≈ 1.37. The angle behaves the same way — n·arctan(Δx) → x. Modulus going to 1, argument going to x: the point lands on the unit circle at angle x.' }
+              ] }
+        ]
     },
     fr: {
         appTitle: 'Explorateur de l’exponentielle complexe',
-        helpBtn: 'Aide',
-        helpTitle: 'Les mathématiques derrière l’image',
-        helpClose: 'Fermer',
-        helpSections: [
-            { h: 'L’exponentielle est une série',
-              items: [
-                { p: 'L’exponentielle est définie par une série qui converge pour toute valeur de x :' },
-                { tex: 'e^{x}=\\sum_{n=0}^{\\infty}\\frac{x^{n}}{n!}=1+x+\\frac{x^{2}}{2!}+\\frac{x^{3}}{3!}+\\frac{x^{4}}{4!}+\\cdots' },
-                { p: 'Chaque terme après les deux premiers porte un facteur x² ou plus petit. Quand x est petit, ils pèsent très peu — et c’est toute l’ouverture.' }
-              ] },
-            { h: 'Un petit pas : garder deux termes',
-              items: [
-                { p: 'Rien de ce qui précède ne dépend de la taille de x. Prenons un petit pas — on remplace x par Δx — puis on coupe la série après le terme linéaire :' },
-                { tex: 'e^{\\Delta x}=\\underbrace{1+\\Delta x}_{\\text{gardé}}+\\underbrace{\\frac{\\Delta x^{2}}{2}+\\frac{\\Delta x^{3}}{6}+\\cdots}_{\\text{abandonné}}\\;\\approx\\;1+\\Delta x' },
-                { p: 'Ce que l’on abandonne est d’ordre Δx²/2 : environ 0,005 pour Δx = 0,1, et 0,00005 pour Δx = 0,01. C’est la seule approximation de toute l’application — tout ce qui est à l’écran en découle.' }
-              ] },
-            { h: 'De l’approximation à une multiplication',
-              items: [
-                { p: 'L’exponentielle transforme une somme en exposant en un produit :' },
-                { tex: 'e^{x+\\Delta x}=e^{x}\\,e^{\\Delta x}\\approx e^{x}\\,(1+\\Delta x)' },
-                { p: 'Avancer de Δx revient donc à multiplier par (1 + Δx). En partant de y₀ = 1 :' },
-                { tex: 'y_{n+1}=y_{n}\\,(1+\\Delta x)\\qquad\\Longrightarrow\\qquad y_{n}=(1+\\Delta x)^{n}' },
-                { p: 'Avec x = n·Δx, cela s’écrit y = (1 + x/n)ⁿ, la limite classique qui redonne eˣ quand n grandit. L’écart lu à l’écran, c’est cette limite pas encore atteinte.' }
-              ] },
-            { h: 'Le même pas, cette fois avec i',
-              items: [
-                { p: 'La série ne se soucie pas de savoir si son argument est réel ou imaginaire ; la même troncature s’applique :' },
-                { tex: 'e^{i\\Delta x}=1+i\\Delta x+\\frac{(i\\Delta x)^{2}}{2!}+\\cdots\\;\\approx\\;1+i\\Delta x' },
-                { tex: 'z_{n+1}=z_{n}\\,(1+i\\Delta x)\\qquad\\Longrightarrow\\qquad z_{n}=(1+i\\Delta x)^{n}' },
-                { p: 'Multiplier par 1 + iΔx fait tourner de arctan(Δx) ≈ Δx. Voilà d’où vient la rotation : ni cosinus ni sinus n’ont été utilisés.' }
-              ] },
-            { h: 'Pourquoi une spirale, et pourquoi elle se referme',
-              items: [
-                { p: 'Le facteur n’est pas sur le cercle unité :' },
-                { tex: '\\left|1+i\\Delta x\\right|=\\sqrt{1+\\Delta x^{2}}>1' },
-                { p: 'le module croît donc un peu à chaque pas, ce qui est exactement la spirale observée :' },
-                { tex: '\\left|z_{n}\\right|=\\left(1+\\Delta x^{2}\\right)^{n/2}' },
-                { p: 'En écrivant n = x/Δx et en utilisant ln(1 + u) ≈ u pour u petit :' },
-                { tex: '\\left|z_{n}\\right|\\approx e^{\\,x\\Delta x/2}\\;\\xrightarrow[\\;\\Delta x\\to 0\\;]{}\\;1' },
-                { p: 'À vérifier sur le panneau : un tour (x = 2π) à Δx = 0,1 prédit |z| ≈ e^0,314 ≈ 1,37. L’angle suit la même logique — n·arctan(Δx) → x. Module vers 1, argument vers x : le point se pose sur le cercle unité à l’angle x.' }
-              ] }
-        ],
         modeReal: 'Exponentielle réelle',
         modeComplex: 'Exponentielle complexe',
         themeToggle: 'Changer de thème',
@@ -148,63 +118,75 @@ const I18N = {
         pause: 'Pause',
         reset: 'Réinitialiser',
         conclusion: 'Conclusion',
-        conclusionText: 'Lorsque Δx → 0, la croissance radiale parasite |1 + iΔx| = √(1 + Δx²) tend vers 1 : ' +
-                        'la trajectoire devient une rotation pure, de module constant, sur le cercle unité. ' +
-                        'Chaque pas fait tourner le point de Δx ; après n pas l’angle accumulé vaut exactement x = n·Δx. ' +
-                        'Le point se trouve donc en (cos x, sin x).',
-        hintReal: 'Chaque petit pas en x revient à multiplier la valeur précédente par (1 + Δx).',
-        hintComplex: 'Chaque petit pas multiplie par (1 + iΔx) : le point tourne — et son module croît légèrement, car |1 + iΔx| > 1.',
+        conclusionText: 'Lorsque Δx → 0, la croissance radiale parasite |1 + iΔx| = √(1 + Δx²) tend vers 1 : la trajectoire devient une rotation pure, de module constant, sur le cercle unité. Chaque pas fait tourner le point de Δx ; après n pas l’angle accumulé vaut exactement x = n·Δx. Le point se trouve donc en (cos x, sin x).',
+        question: 'Je suis en x. Que se passe-t-il quand j’avance d’un petit pas Δx ?',
+        hintReal: 'Avancer de Δx, c’est multiplier par (1 + Δx) : l’exponentielle transforme le pas en un facteur.',
+        hintComplex: 'Qu’est-ce que ce i change ? Le facteur (1 + iΔx) fait tourner le point — et son module croît un peu, car |1 + iΔx| > 1.',
         labelExact: 'exact',
         labelError: 'erreur',
         labelRelError: 'erreur rel.',
         labelTurns: 'tours',
         warnMaxSteps: 'Nombre maximal de pas atteint.',
-        warnOverflow: 'La valeur est devenue trop grande pour être représentée.'
+        warnOverflow: 'La valeur est devenue trop grande pour être représentée.',
+        helpBtn: 'Aide',
+        helpTitle: 'Les mathématiques derrière l’image',
+        helpClose: 'Fermer',
+        helpSections: [
+            { h: 'La question',
+              items: [
+                { p: 'Je suis quelque part sur la courbe, en x. J’avance d’un petit pas Δx. Comment obtenir la valeur suivante ?' },
+                { tex: 'y(x)=e^{x}' },
+                { tex: 'y(x+\\Delta x)=e^{x+\\Delta x}' }
+              ] },
+            { h: 'Ce que répond l’exponentielle',
+              items: [
+                { p: 'L’exponentielle transforme une somme en exposant en un produit :' },
+                { tex: 'e^{x+\\Delta x}=e^{x}\\,e^{\\Delta x}' },
+                { p: 'et comme y(x) = eˣ, le pas est une multiplication :' },
+                { tex: '\\boxed{\\;y(x+\\Delta x)=y(x)\\,e^{\\Delta x}\\;}' },
+                { p: 'C’est exact — aucune approximation pour l’instant, et cela vaut pour tout Δx, petit ou grand. Avancer, c’est multiplier par ce facteur.' }
+              ] },
+            { h: 'Alors, combien vaut ce facteur pour un petit pas ?',
+              items: [
+                { p: 'Le problème n’apparaît que maintenant, et Taylor ne sert qu’ici. La série donne la valeur exacte :' },
+                { tex: 'e^{\\Delta x}=1+\\Delta x+\\frac{(\\Delta x)^{2}}{2!}+\\frac{(\\Delta x)^{3}}{3!}+\\cdots' },
+                { p: 'Chaque terme après les deux premiers porte un facteur (Δx)² ou plus petit : pour un petit pas, ils pèsent très peu.' },
+                { tex: 'e^{\\Delta x}\\approx 1+\\Delta x' },
+                { p: 'Ce que l’on abandonne est d’ordre (Δx)²/2 : environ 0,005 pour Δx = 0,1, et 0,00005 pour Δx = 0,01. C’est la seule approximation de toute l’application.' }
+              ] },
+            { h: 'Le pas discret',
+              items: [
+                { p: 'En rassemblant les deux :' },
+                { tex: 'y(x+\\Delta x)\\approx y(x)\\,(1+\\Delta x)' },
+                { p: 'En partant de y(0) = 1 et en notant yₙ la valeur après n pas :' },
+                { tex: '\\boxed{\\;y_{n+1}=y_{n}\\,(1+\\Delta x)\\;}' },
+                { p: 'd’où yₙ = (1 + Δx)ⁿ. Avec x = n·Δx, cela s’écrit (1 + x/n)ⁿ, la limite classique qui redonne eˣ quand n grandit. L’écart lu à l’écran, c’est cette limite pas encore atteinte.' }
+              ] },
+            { h: 'Exactement pareil, avec un i',
+              items: [
+                { p: 'On reprend le raisonnement sans changer une virgule. On part de :' },
+                { tex: 'z(x)=e^{ix}' },
+                { p: 'on avance de Δx, et on utilise la même propriété de l’exponentielle :' },
+                { tex: 'z(x+\\Delta x)=e^{i(x+\\Delta x)}=e^{ix}\\,e^{i\\Delta x}=z(x)\\,e^{i\\Delta x}' },
+                { p: 'et seulement alors on approche :' },
+                { tex: 'e^{i\\Delta x}\\approx 1+i\\Delta x' },
+                { tex: '\\boxed{\\;z_{n+1}=z_{n}\\,(1+i\\Delta x)\\;}' },
+                { p: 'Les deux écrans font le même calcul. La seule différence est ce i. Donc : qu’est-ce qu’il change ?' }
+              ] },
+            { h: 'Ce que change le i : une spirale qui se referme',
+              items: [
+                { p: 'Multiplier par 1 + iΔx fait tourner le point de arctan(Δx) ≈ Δx. Voilà d’où vient la rotation — ni cosinus ni sinus n’ont été utilisés. Mais le facteur n’est pas sur le cercle unité :' },
+                { tex: '\\left|1+i\\Delta x\\right|=\\sqrt{1+\\Delta x^{2}}>1' },
+                { p: 'le module croît donc un peu à chaque pas, ce qui est exactement la spirale observée :' },
+                { tex: '\\left|z_{n}\\right|=\\left(1+\\Delta x^{2}\\right)^{n/2}' },
+                { p: 'En écrivant n = x/Δx et en utilisant ln(1 + u) ≈ u pour u petit :' },
+                { tex: '\\left|z_{n}\\right|\\approx e^{\\,x\\Delta x/2}\\;\\xrightarrow[\\;\\Delta x\\to 0\\;]{}\\;1' },
+                { p: 'À vérifier sur le panneau : un tour (x = 2π) à Δx = 0,1 prédit |z| ≈ 1,37. L’angle suit la même logique — n·arctan(Δx) → x. Module vers 1, argument vers x : le point se pose sur le cercle unité à l’angle x.' }
+              ] }
+        ]
     },
     es: {
         appTitle: 'Explorador de la exponencial compleja',
-        helpBtn: 'Ayuda',
-        helpTitle: 'La matemática detrás de la imagen',
-        helpClose: 'Cerrar',
-        helpSections: [
-            { h: 'La exponencial es una serie',
-              items: [
-                { p: 'La exponencial está definida por una serie que converge para todo valor de x:' },
-                { tex: 'e^{x}=\\sum_{n=0}^{\\infty}\\frac{x^{n}}{n!}=1+x+\\frac{x^{2}}{2!}+\\frac{x^{3}}{3!}+\\frac{x^{4}}{4!}+\\cdots' },
-                { p: 'Cada término después de los dos primeros lleva un factor x² o menor. Cuando x es pequeño pesan muy poco — y ahí está toda la puerta de entrada.' }
-              ] },
-            { h: 'Un paso pequeño: quedarse con dos términos',
-              items: [
-                { p: 'Nada de lo anterior depende del tamaño de x. Tomemos un paso pequeño — sustituimos x = Δx — y recién ahí cortamos la serie después del término lineal:' },
-                { tex: 'e^{\\Delta x}=\\underbrace{1+\\Delta x}_{\\text{conservado}}+\\underbrace{\\frac{\\Delta x^{2}}{2}+\\frac{\\Delta x^{3}}{6}+\\cdots}_{\\text{descartado}}\\;\\approx\\;1+\\Delta x' },
-                { p: 'Lo que descartamos es del orden de Δx²/2: unos 0,005 para Δx = 0,1, y 0,00005 para Δx = 0,01. Esta es la única aproximación de toda la aplicación — todo lo que ves en pantalla se sigue de ella.' }
-              ] },
-            { h: 'De la aproximación a una multiplicación',
-              items: [
-                { p: 'La exponencial convierte una suma en el exponente en un producto:' },
-                { tex: 'e^{x+\\Delta x}=e^{x}\\,e^{\\Delta x}\\approx e^{x}\\,(1+\\Delta x)' },
-                { p: 'Avanzar Δx equivale entonces a multiplicar por (1 + Δx). Partiendo de y₀ = 1:' },
-                { tex: 'y_{n+1}=y_{n}\\,(1+\\Delta x)\\qquad\\Longrightarrow\\qquad y_{n}=(1+\\Delta x)^{n}' },
-                { p: 'Con x = n·Δx esto se lee y = (1 + x/n)ⁿ, el límite clásico que devuelve eˣ cuando n crece. La diferencia que ves en pantalla es ese límite todavía no alcanzado.' }
-              ] },
-            { h: 'El mismo paso, ahora con i',
-              items: [
-                { p: 'A la serie no le importa si su argumento es real o imaginario; se aplica el mismo truncamiento:' },
-                { tex: 'e^{i\\Delta x}=1+i\\Delta x+\\frac{(i\\Delta x)^{2}}{2!}+\\cdots\\;\\approx\\;1+i\\Delta x' },
-                { tex: 'z_{n+1}=z_{n}\\,(1+i\\Delta x)\\qquad\\Longrightarrow\\qquad z_{n}=(1+i\\Delta x)^{n}' },
-                { p: 'Multiplicar por 1 + iΔx gira un ángulo arctan(Δx) ≈ Δx. De ahí viene la rotación: no se usó ningún coseno ni ningún seno.' }
-              ] },
-            { h: 'Por qué una espiral, y por qué se cierra',
-              items: [
-                { p: 'El factor no está sobre el círculo unidad:' },
-                { tex: '\\left|1+i\\Delta x\\right|=\\sqrt{1+\\Delta x^{2}}>1' },
-                { p: 'así que el módulo crece un poco en cada paso, que es exactamente la espiral que se ve:' },
-                { tex: '\\left|z_{n}\\right|=\\left(1+\\Delta x^{2}\\right)^{n/2}' },
-                { p: 'Escribiendo n = x/Δx y usando ln(1 + u) ≈ u para u pequeño:' },
-                { tex: '\\left|z_{n}\\right|\\approx e^{\\,x\\Delta x/2}\\;\\xrightarrow[\\;\\Delta x\\to 0\\;]{}\\;1' },
-                { p: 'Comprobalo contra el panel: una vuelta (x = 2π) con Δx = 0,1 predice |z| ≈ e^0,314 ≈ 1,37. El ángulo se comporta igual — n·arctan(Δx) → x. Módulo tendiendo a 1, argumento tendiendo a x: el punto cae sobre el círculo unidad en el ángulo x.' }
-              ] }
-        ],
         modeReal: 'Exponencial real',
         modeComplex: 'Exponencial compleja',
         themeToggle: 'Cambiar tema',
@@ -216,18 +198,72 @@ const I18N = {
         pause: 'Pausa',
         reset: 'Reiniciar',
         conclusion: 'Conclusión',
-        conclusionText: 'Cuando Δx → 0, el crecimiento radial espurio |1 + iΔx| = √(1 + Δx²) tiende a 1: ' +
-                        'la trayectoria se convierte en una rotación pura, de módulo constante, sobre el círculo unidad. ' +
-                        'Cada paso gira el punto un ángulo Δx, de modo que tras n pasos el ángulo acumulado es exactamente x = n·Δx. ' +
-                        'El punto está, por tanto, en (cos x, sin x).',
-        hintReal: 'Cada pequeño paso en x equivale a multiplicar el valor anterior por (1 + Δx).',
-        hintComplex: 'Cada pequeño paso multiplica por (1 + iΔx): el punto gira — y su módulo crece un poco, porque |1 + iΔx| > 1.',
+        conclusionText: 'Cuando Δx → 0, el crecimiento radial espurio |1 + iΔx| = √(1 + Δx²) tiende a 1: la trayectoria se convierte en una rotación pura, de módulo constante, sobre el círculo unidad. Cada paso gira el punto un ángulo Δx, de modo que tras n pasos el ángulo acumulado es exactamente x = n·Δx. El punto está, por tanto, en (cos x, sin x).',
+        question: 'Estoy en x. ¿Qué ocurre cuando avanzo un pequeño paso Δx?',
+        hintReal: 'Avanzar Δx es multiplicar por (1 + Δx): la exponencial convierte el paso en un factor.',
+        hintComplex: '¿Qué cambia ese i? El factor (1 + iΔx) hace girar el punto — y su módulo crece un poco, porque |1 + iΔx| > 1.',
         labelExact: 'exacto',
         labelError: 'error',
         labelRelError: 'error rel.',
         labelTurns: 'vueltas',
         warnMaxSteps: 'Se alcanzó el número máximo de pasos.',
-        warnOverflow: 'El valor ha crecido más allá de lo representable.'
+        warnOverflow: 'El valor ha crecido más allá de lo representable.',
+        helpBtn: 'Ayuda',
+        helpTitle: 'La matemática detrás de la imagen',
+        helpClose: 'Cerrar',
+        helpSections: [
+            { h: 'La pregunta',
+              items: [
+                { p: 'Estoy en algún punto de la curva, en x. Avanzo un pequeño paso Δx. ¿Cómo calculo el próximo valor?' },
+                { tex: 'y(x)=e^{x}' },
+                { tex: 'y(x+\\Delta x)=e^{x+\\Delta x}' }
+              ] },
+            { h: 'Lo que responde la exponencial',
+              items: [
+                { p: 'La exponencial convierte una suma en el exponente en un producto:' },
+                { tex: 'e^{x+\\Delta x}=e^{x}\\,e^{\\Delta x}' },
+                { p: 'y como y(x) = eˣ, el paso es una multiplicación:' },
+                { tex: '\\boxed{\\;y(x+\\Delta x)=y(x)\\,e^{\\Delta x}\\;}' },
+                { p: 'Esto es exacto — todavía no hay ninguna aproximación, y vale para cualquier Δx, chico o grande. Avanzar es multiplicar por ese factor.' }
+              ] },
+            { h: 'Entonces, ¿cuánto vale ese factor para un paso pequeño?',
+              items: [
+                { p: 'Recién ahora aparece el problema, y recién ahora hace falta Taylor. La serie da el valor exacto:' },
+                { tex: 'e^{\\Delta x}=1+\\Delta x+\\frac{(\\Delta x)^{2}}{2!}+\\frac{(\\Delta x)^{3}}{3!}+\\cdots' },
+                { p: 'Cada término después de los dos primeros lleva un factor (Δx)² o menor: para un paso pequeño pesan muy poco.' },
+                { tex: 'e^{\\Delta x}\\approx 1+\\Delta x' },
+                { p: 'Lo que descartamos es del orden de (Δx)²/2: unos 0,005 para Δx = 0,1, y 0,00005 para Δx = 0,01. Esta es la única aproximación de toda la aplicación.' }
+              ] },
+            { h: 'El paso discreto',
+              items: [
+                { p: 'Juntando las dos cosas:' },
+                { tex: 'y(x+\\Delta x)\\approx y(x)\\,(1+\\Delta x)' },
+                { p: 'Partiendo de y(0) = 1 y llamando yₙ al valor tras n pasos:' },
+                { tex: '\\boxed{\\;y_{n+1}=y_{n}\\,(1+\\Delta x)\\;}' },
+                { p: 'de donde yₙ = (1 + Δx)ⁿ. Con x = n·Δx esto es (1 + x/n)ⁿ, el límite clásico que devuelve eˣ cuando n crece. La diferencia que ves en pantalla es ese límite todavía no alcanzado.' }
+              ] },
+            { h: 'Exactamente lo mismo, con una i',
+              items: [
+                { p: 'Ahora repetimos el razonamiento sin cambiar una coma. Partimos de:' },
+                { tex: 'z(x)=e^{ix}' },
+                { p: 'avanzamos Δx y usamos la misma propiedad de la exponencial:' },
+                { tex: 'z(x+\\Delta x)=e^{i(x+\\Delta x)}=e^{ix}\\,e^{i\\Delta x}=z(x)\\,e^{i\\Delta x}' },
+                { p: 'y recién ahí aproximamos:' },
+                { tex: 'e^{i\\Delta x}\\approx 1+i\\Delta x' },
+                { tex: '\\boxed{\\;z_{n+1}=z_{n}\\,(1+i\\Delta x)\\;}' },
+                { p: 'Las dos pantallas hacen la misma cuenta. La única diferencia es esa i. Entonces: ¿qué cambia?' }
+              ] },
+            { h: 'Qué cambia la i: una espiral que se cierra',
+              items: [
+                { p: 'Multiplicar por 1 + iΔx gira el punto un ángulo arctan(Δx) ≈ Δx. De ahí viene la rotación — no se usó ningún seno ni ningún coseno. Pero el factor no está sobre el círculo unidad:' },
+                { tex: '\\left|1+i\\Delta x\\right|=\\sqrt{1+\\Delta x^{2}}>1' },
+                { p: 'así que el módulo crece un poco en cada paso, que es exactamente la espiral que se ve:' },
+                { tex: '\\left|z_{n}\\right|=\\left(1+\\Delta x^{2}\\right)^{n/2}' },
+                { p: 'Escribiendo n = x/Δx y usando ln(1 + u) ≈ u para u pequeño:' },
+                { tex: '\\left|z_{n}\\right|\\approx e^{\\,x\\Delta x/2}\\;\\xrightarrow[\\;\\Delta x\\to 0\\;]{}\\;1' },
+                { p: 'Comprobalo contra el panel: una vuelta (x = 2π) con Δx = 0,1 predice |z| ≈ 1,37. El ángulo se comporta igual — n·arctan(Δx) → x. Módulo tendiendo a 1, argumento tendiendo a x: el punto cae sobre el círculo unidad en el ángulo x.' }
+              ] }
+        ]
     }
 };
 
@@ -789,8 +825,8 @@ const els = {
     playLabel:     document.getElementById('play-label'),
     btnReset:      document.getElementById('btn-reset'),
     readout:       document.getElementById('readout'),
-    series:        document.getElementById('formula-series'),
-    seriesDx:      document.getElementById('formula-series-dx'),
+    exact:         document.getElementById('formula-exact'),
+    question:      document.getElementById('formula-question'),
     recurrence:    document.getElementById('formula-recurrence'),
     approx:        document.getElementById('formula-approx'),
     brandMark:     document.getElementById('brand-mark'),
@@ -926,21 +962,21 @@ function applyMode() {
     /* The permanent derivation, read left to right and identical in shape
        between the two modes: the function first, then the approximation we
        make on it, then the recurrence that approximation licenses. */
-    texInto(els.series, real
-        ? 'e^{x}=1+x+\\frac{x^{2}}{2!}+\\cdots'
-        : 'e^{ix}=1+ix+\\frac{(ix)^{2}}{2!}+\\cdots');
-    /* The series is written for a general argument; the step we actually take
-       is one small Δx, so substitute before truncating. Skipping this made the
-       jump from e^x to e^(Δx) look like a change of subject. */
-    texInto(els.seriesDx, real
-        ? 'e^{\\Delta x}=1+\\Delta x+\\frac{\\Delta x^{2}}{2!}+\\cdots'
-        : 'e^{i\\Delta x}=1+i\\Delta x+\\frac{(i\\Delta x)^{2}}{2!}+\\cdots');
+    /* Step one is exact and is the answer to the question above it: the
+       exponential turns "advance by Δx" into "multiply by e^(Δx)". Taylor is
+       not needed yet, and does not appear here -- only in the help, where the
+       question "what is e^(Δx) worth?" is what calls for it. */
+    texInto(els.exact, real
+        ? 'y(x+\\Delta x)=y(x)\\,e^{\\Delta x}'
+        : 'z(x+\\Delta x)=z(x)\\,e^{i\\Delta x}');
     texInto(els.approx, real
         ? 'e^{\\Delta x}\\approx 1+\\Delta x'
         : 'e^{i\\Delta x}\\approx 1+i\\Delta x');
     texInto(els.recurrence, real
-        ? 'y_{n+1}=y_{n}\\,(1+\\Delta x)'
-        : 'z_{n+1}=z_{n}\\,(1+i\\Delta x)');
+        ? '\\boxed{\\;y_{n+1}=y_{n}\\,(1+\\Delta x)\\;}'
+        : '\\boxed{\\;z_{n+1}=z_{n}\\,(1+i\\Delta x)\\;}');
+
+    els.question.textContent = i18n.t('question');
 
     els.hint.textContent = i18n.t(real ? 'hintReal' : 'hintComplex');
 
@@ -1081,6 +1117,7 @@ function setLanguage(lang) {
     i18n.apply();
     els.playLabel.textContent = i18n.t(state.playing ? 'pause' : 'play');
     els.hint.textContent = i18n.t(state.mode === 'real' ? 'hintReal' : 'hintComplex');
+    els.question.textContent = i18n.t('question');
     buildReadout();
     updateReadout();
     if (els.helpModal.open) buildHelp();

@@ -8,23 +8,41 @@ visually for Euler's formula.
 
 ## The idea
 
-Everything in the application follows from a single approximation, applied twice.
+The application does not open on Taylor. It opens on a question a student can
+picture: **I am at x. What happens when I move forward by one small step Δx?**
 
-**Real mode** — `exp(Δx) ≈ 1 + Δx`, hence
+The exponential answers it exactly, with no approximation at all:
 
 ```
-x(n+1) = x(n) + Δx
+y(x + Δx) = e^(x+Δx) = e^x · e^Δx = y(x) · e^Δx
+```
+
+Advancing is *multiplying*. Only now does a real problem appear — what is that
+factor worth for a small step? — and only now is Taylor needed:
+
+```
+e^Δx = 1 + Δx + (Δx)²/2! + (Δx)³/3! + …   ≈   1 + Δx
+```
+
+which discretises to
+
+```
 y(n+1) = y(n) · (1 + Δx)          starting from  (x₀, y₀) = (0, 1)
 ```
 
-Moving forward by a small `Δx` along the x-axis is the same as multiplying the
-previous value by `(1 + Δx)`: `1, 1.1, 1.21, 1.331, …` for `Δx = 0.1`.
+giving `1, 1.1, 1.21, 1.331, …` for `Δx = 0.1`.
 
-**Complex mode** — the *same* procedure, with `exp(iΔx) ≈ 1 + iΔx`:
+**Complex mode repeats the reasoning without changing a comma:**
 
 ```
+z(x + Δx) = e^i(x+Δx) = e^ix · e^iΔx = z(x) · e^iΔx
+e^iΔx ≈ 1 + iΔx
 z(n+1) = z(n) · (1 + i·Δx)        starting from  z₀ = 1 + 0i
 ```
+
+The two screens end on the same formula up to one symbol —
+`y(n+1) = y(n)(1 + Δx)` against `z(n+1) = z(n)(1 + iΔx)` — so the student's own
+question becomes *what does that i change?*, which is the door to Euler.
 
 The approximation is used exactly as written. The modulus is never normalised
 and the path is never corrected towards a circle, so the multiplication by
@@ -52,10 +70,11 @@ the real axis it was just an obscure way of asking for 2π more of `x`.
 Keyboard: `Space` play/pause, `→` one step, `R` reset.
 
 Also available: light/dark theme, three interface languages (EN / FR / ES) and
-a **Help** panel (`?`) that derives the whole thing from the Taylor series —
-truncation, the resulting recurrence, and why the discrete complex step traces
-a spiral of modulus `|z(n)| ≈ exp(x·Δx/2)` that closes onto the circle as
-`Δx → 0`.
+a **Help** panel (`?`) that walks the whole derivation in six steps, in every
+language: the question, the exact multiplicative answer, the truncation and the
+size of what it drops, the discrete step, the same reasoning with an `i`, and
+why the result is a spiral of modulus `|z(n)| ≈ exp(x·Δx/2)` that closes onto
+the circle as `Δx → 0` — a prediction the read-out lets you check.
 
 ## Running it
 

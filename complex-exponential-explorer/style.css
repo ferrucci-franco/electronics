@@ -286,6 +286,15 @@ button { font-family: inherit; }
     padding: .55rem .85rem .6rem;
 }
 
+/* The question the whole chain answers. It leads, so it sits above. */
+.formula-question {
+    font-size: .78rem;
+    font-style: italic;
+    color: var(--text-faint);
+    margin-bottom: .35rem;
+    text-wrap: balance;
+}
+
 .formula-line {
     display: flex;
     flex-wrap: wrap;
@@ -305,8 +314,7 @@ button { font-family: inherit; }
 .formula-step { color: var(--text-secondary); }
 .formula-step .katex { font-size: 1.02rem; }
 .formula-result { color: var(--text-primary); }
-.formula-result .katex { font-size: 1.12rem; }
-.formula-main sub, .formula-sub sub { font-size: .62em; font-style: normal; }
+.formula-result .katex { font-size: 1.08rem; }
 
 /* KaTeX paints with currentColor, so it follows the theme by itself; these
    rules only keep its sizing in line with the surrounding interface. */
@@ -587,10 +595,18 @@ input[type="range"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var
     .mode-name { font-size: .6rem; letter-spacing: .04em; }
 
     .card-formula { padding: .45rem .6rem .5rem; }
-    .formula-line { flex-direction: column; align-items: center; gap: .08rem; }
+    /* The question the whole chain answers. It leads, so it sits above. */
+.formula-question {
+    font-size: .78rem;
+    font-style: italic;
+    color: var(--text-faint);
+    margin-bottom: .35rem;
+    text-wrap: balance;
+}
+
+.formula-line { flex-direction: column; align-items: center; gap: .08rem; }
     .formula-sep { display: none; }
-    .formula-main { font-size: 1.08rem; line-height: 1.35; }
-    .formula-sub { font-size: .92rem; }
+    .formula-question { font-size: .74rem; margin-bottom: .3rem; }
     .stage-hint { font-size: .74rem; margin-top: .25rem; }
 
     .stage { height: 40vh; min-height: 260px; }
