@@ -100,6 +100,15 @@ const I18N = {
               items: [
                 { p: 'Now repeat the reasoning without changing a comma. Start from:' },
                 { tex: 'z(x)=e^{ix}' },
+                { p: 'But hold on: what does raising e to an imaginary power even mean? Multiplying e by itself “i·x times” is not a thing. Somebody had to decide what it means, and the decision was to take the series we have just written and let the exponent be complex:' },
+                { tex: 'e^{z}=1+z+\\frac{z^{2}}{2!}+\\frac{z^{3}}{3!}+\\cdots' },
+                { p: 'That is the definition of the complex exponential — not something proved along the way. And it is not an arbitrary choice: it is the one that leaves everything in place. Make the exponent real again and it hands back the ordinary exponential; and it keeps the rule that turns a sum in the exponent into a product — exactly what the next step is about to use.' },
+                { aside: { h: 'And the app does not even need that series',
+                    items: [
+                        { p: 'Look at what it computes: zₙ = (1 + iΔx)ⁿ, and with x = n·Δx that is (1 + ix/n)ⁿ. The limit from the aside above holds just as well with a complex exponent:' },
+                        { tex: '\\left(1+\\frac{ix}{n}\\right)^{n}\\;\\xrightarrow[\\;n\\to\\infty\\;]{}\\;e^{ix}' },
+                        { p: 'So the path on screen is not an approximation of something defined elsewhere. It is one of the definitions of eⁱˣ, evaluated with a finite n.' }
+                    ] } },
                 { p: 'move forward by Δx, and use the same property of the exponential:' },
                 { tex: 'z(x+\\Delta x)=e^{i(x+\\Delta x)}=e^{ix}\\,e^{i\\Delta x}=z(x)\\,e^{i\\Delta x}' },
                 { p: 'and only then approximate:' },
@@ -194,6 +203,15 @@ const I18N = {
               items: [
                 { p: 'On reprend le raisonnement sans changer une virgule. On part de :' },
                 { tex: 'z(x)=e^{ix}' },
+                { p: 'Mais un instant : que veut dire élever e à une puissance imaginaire ? Multiplier e par lui-même « i·x fois » ne veut rien dire. Quelqu’un a dû décider de ce que cela signifie, et la décision a été de reprendre la série que l’on vient d’écrire en laissant l’exposant devenir complexe :' },
+                { tex: 'e^{z}=1+z+\\frac{z^{2}}{2!}+\\frac{z^{3}}{3!}+\\cdots' },
+                { p: 'C’est la définition de l’exponentielle complexe — pas un résultat démontré en chemin. Et ce n’est pas un choix arbitraire : c’est celui qui laisse tout en place. Que l’exposant redevienne réel et l’on retrouve l’exponentielle habituelle ; et la règle qui transforme une somme en exposant en un produit est conservée — c’est justement celle que le pas suivant va utiliser.' },
+                { aside: { h: 'Et l’app n’a même pas besoin de cette série',
+                    items: [
+                        { p: 'Regardez ce qu’elle calcule : zₙ = (1 + iΔx)ⁿ, et avec x = n·Δx cela s’écrit (1 + ix/n)ⁿ. La limite de l’encadré précédent vaut tout autant avec un exposant complexe :' },
+                        { tex: '\\left(1+\\frac{ix}{n}\\right)^{n}\\;\\xrightarrow[\\;n\\to\\infty\\;]{}\\;e^{ix}' },
+                        { p: 'Le tracé à l’écran n’est donc pas l’approximation de quelque chose défini ailleurs. C’est l’une des définitions de eⁱˣ, évaluée avec un n fini.' }
+                    ] } },
                 { p: 'on avance de Δx, et on utilise la même propriété de l’exponentielle :' },
                 { tex: 'z(x+\\Delta x)=e^{i(x+\\Delta x)}=e^{ix}\\,e^{i\\Delta x}=z(x)\\,e^{i\\Delta x}' },
                 { p: 'et seulement alors on approche :' },
@@ -288,6 +306,15 @@ const I18N = {
               items: [
                 { p: 'Ahora repetimos el razonamiento sin cambiar una coma. Partimos de:' },
                 { tex: 'z(x)=e^{ix}' },
+                { p: 'Pero un momento: ¿qué significa elevar e a una potencia imaginaria? Multiplicar e por sí mismo «i·x veces» no quiere decir nada. Alguien tuvo que decidir qué significa, y la decisión fue tomar la serie que acabamos de escribir y dejar que el exponente sea complejo:' },
+                { tex: 'e^{z}=1+z+\\frac{z^{2}}{2!}+\\frac{z^{3}}{3!}+\\cdots' },
+                { p: 'Esto es la definición de la exponencial compleja — no algo que se demuestre por el camino. Y no es un capricho: es la que deja todo en su lugar. Volvé a poner el exponente real y devuelve la exponencial de siempre; y conserva la regla que convierte una suma en el exponente en un producto, que es justamente la que el próximo paso va a usar.' },
+                { aside: { h: 'Y la app ni siquiera necesita esa serie',
+                    items: [
+                        { p: 'Mirá lo que calcula: zₙ = (1 + iΔx)ⁿ, y con x = n·Δx eso es (1 + ix/n)ⁿ. El límite del recuadro anterior vale igual con exponente complejo:' },
+                        { tex: '\\left(1+\\frac{ix}{n}\\right)^{n}\\;\\xrightarrow[\\;n\\to\\infty\\;]{}\\;e^{ix}' },
+                        { p: 'Así que la trayectoria en pantalla no es la aproximación de algo definido en otro lado. Es una de las definiciones de eⁱˣ, evaluada con un n finito.' }
+                    ] } },
                 { p: 'avanzamos Δx y usamos la misma propiedad de la exponencial:' },
                 { tex: 'z(x+\\Delta x)=e^{i(x+\\Delta x)}=e^{ix}\\,e^{i\\Delta x}=z(x)\\,e^{i\\Delta x}' },
                 { p: 'y recién ahí aproximamos:' },
