@@ -64,6 +64,19 @@ body {
     flex-direction: column;
     overflow: hidden;
     -webkit-font-smoothing: antialiased;
+    /* On a touch screen a drag that starts near the slider otherwise begins a
+       text selection instead of moving the thumb. The interface is operated,
+       not read, so nothing in it needs to be selectable. */
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+}
+
+/* The help panel is the one surface meant for reading, so its text stays
+   selectable and copyable. */
+.help-body {
+    -webkit-user-select: text;
+    user-select: text;
 }
 
 button { font-family: inherit; }
@@ -586,9 +599,10 @@ input[type="range"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var
 
     /* Δx is the one thing that gets dragged, and it is dragged with a thumb:
        a 4px hairline is a desktop affordance, not a touch one. */
-    input[type="range"] { height: 8px; border-radius: 4px; }
-    input[type="range"]::-webkit-slider-thumb { width: 24px; height: 24px; border-width: 3px; }
-    input[type="range"]::-moz-range-thumb { width: 21px; height: 21px; border-width: 3px; }
+    input[type="range"] { height: 12px; border-radius: 6px; }
+    input[type="range"]::-webkit-slider-thumb { width: 28px; height: 28px; border-width: 3px; }
+    input[type="range"]::-moz-range-thumb { width: 25px; height: 25px; border-width: 3px; }
+    .control-group-slider { gap: .7rem; }
     .slider-label .katex { font-size: 1.05rem; }
 
     .help-body { padding: .2rem .9rem 1.2rem; }

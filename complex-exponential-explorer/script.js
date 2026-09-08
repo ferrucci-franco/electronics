@@ -39,7 +39,7 @@ const I18N = {
               ] },
             { h: 'One small step: keep two terms',
               items: [
-                { p: 'For a step Δx small enough, cut the series after the linear term:' },
+                { p: 'Nothing above is specific to a large or small x. Take one small step — substitute x = Δx — and then cut the series after the linear term:' },
                 { tex: 'e^{\\Delta x}=\\underbrace{1+\\Delta x}_{\\text{kept}}+\\underbrace{\\frac{\\Delta x^{2}}{2}+\\frac{\\Delta x^{3}}{6}+\\cdots}_{\\text{dropped}}\\;\\approx\\;1+\\Delta x' },
                 { p: 'What we drop is of order Δx²/2: about 0.005 for Δx = 0.1, and 0.00005 for Δx = 0.01. This is the only approximation in the whole application — everything you see on screen follows from it.' }
               ] },
@@ -107,7 +107,7 @@ const I18N = {
               ] },
             { h: 'Un petit pas : garder deux termes',
               items: [
-                { p: 'Pour un pas Δx assez petit, on coupe la série après le terme linéaire :' },
+                { p: 'Rien de ce qui précède ne dépend de la taille de x. Prenons un petit pas — on remplace x par Δx — puis on coupe la série après le terme linéaire :' },
                 { tex: 'e^{\\Delta x}=\\underbrace{1+\\Delta x}_{\\text{gardé}}+\\underbrace{\\frac{\\Delta x^{2}}{2}+\\frac{\\Delta x^{3}}{6}+\\cdots}_{\\text{abandonné}}\\;\\approx\\;1+\\Delta x' },
                 { p: 'Ce que l’on abandonne est d’ordre Δx²/2 : environ 0,005 pour Δx = 0,1, et 0,00005 pour Δx = 0,01. C’est la seule approximation de toute l’application — tout ce qui est à l’écran en découle.' }
               ] },
@@ -175,7 +175,7 @@ const I18N = {
               ] },
             { h: 'Un paso pequeño: quedarse con dos términos',
               items: [
-                { p: 'Para un paso Δx suficientemente pequeño, cortamos la serie después del término lineal:' },
+                { p: 'Nada de lo anterior depende del tamaño de x. Tomemos un paso pequeño — sustituimos x = Δx — y recién ahí cortamos la serie después del término lineal:' },
                 { tex: 'e^{\\Delta x}=\\underbrace{1+\\Delta x}_{\\text{conservado}}+\\underbrace{\\frac{\\Delta x^{2}}{2}+\\frac{\\Delta x^{3}}{6}+\\cdots}_{\\text{descartado}}\\;\\approx\\;1+\\Delta x' },
                 { p: 'Lo que descartamos es del orden de Δx²/2: unos 0,005 para Δx = 0,1, y 0,00005 para Δx = 0,01. Esta es la única aproximación de toda la aplicación — todo lo que ves en pantalla se sigue de ella.' }
               ] },
@@ -790,6 +790,7 @@ const els = {
     btnReset:      document.getElementById('btn-reset'),
     readout:       document.getElementById('readout'),
     series:        document.getElementById('formula-series'),
+    seriesDx:      document.getElementById('formula-series-dx'),
     recurrence:    document.getElementById('formula-recurrence'),
     approx:        document.getElementById('formula-approx'),
     brandMark:     document.getElementById('brand-mark'),
@@ -928,6 +929,12 @@ function applyMode() {
     texInto(els.series, real
         ? 'e^{x}=1+x+\\frac{x^{2}}{2!}+\\cdots'
         : 'e^{ix}=1+ix+\\frac{(ix)^{2}}{2!}+\\cdots');
+    /* The series is written for a general argument; the step we actually take
+       is one small Δx, so substitute before truncating. Skipping this made the
+       jump from e^x to e^(Δx) look like a change of subject. */
+    texInto(els.seriesDx, real
+        ? 'e^{\\Delta x}=1+\\Delta x+\\frac{\\Delta x^{2}}{2!}+\\cdots'
+        : 'e^{i\\Delta x}=1+i\\Delta x+\\frac{(i\\Delta x)^{2}}{2!}+\\cdots');
     texInto(els.approx, real
         ? 'e^{\\Delta x}\\approx 1+\\Delta x'
         : 'e^{i\\Delta x}\\approx 1+i\\Delta x');
