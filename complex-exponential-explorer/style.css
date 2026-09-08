@@ -658,13 +658,13 @@ input[type="range"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var
     .help-body { max-height: none; padding: .5rem 2rem 1.8rem; }
     .help-section { max-width: none; }
 
-    .help-head h2 { font-size: 1.3rem; }
-    .help-section h3 { font-size: 1.42rem; }
-    .help-section p { font-size: 1.4rem; line-height: 1.72; }
+    .help-head h2 { font-size: 1.24rem; }
+    .help-section h3 { font-size: 1.32rem; }
+    .help-section p { font-size: 1.28rem; line-height: 1.7; }
     .help-section p + p { margin-top: .8rem; }
-    .help-tex .katex { font-size: 1.6rem; }
+    .help-tex .katex { font-size: 1.48rem; }
     .help-aside { padding: 1.1rem 1.4rem 1.2rem; }
-    .help-aside h4 { font-size: 1.22rem; }
+    .help-aside h4 { font-size: 1.16rem; }
 }
 
 /* ============================================================
