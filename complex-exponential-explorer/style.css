@@ -471,6 +471,7 @@ input[type="range"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var
    Help dialog
    ============================================================ */
 .help-dialog {
+    margin: auto;                 /* not inherited from the UA rule once padding is reset */
     width: min(680px, calc(100vw - 1.6rem));
     max-height: min(86vh, 900px);
     padding: 0;
