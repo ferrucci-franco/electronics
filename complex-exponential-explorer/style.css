@@ -591,6 +591,13 @@ input[type="range"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var
 .help-tex .katex-display { margin: .35rem 0; }
 .help-tex .katex { font-size: 1rem; }
 
+/* Wide enough for the mode selector to ride in the top bar: the row it used to
+   occupy was also what separated the bar from the cards, so the gap has to be
+   restored here. The query matches the one that moves it (see placeModeSwitch). */
+@media (min-width: 901px) {
+    .layout { padding-top: .7rem; }
+}
+
 /* From a tablet up there is room to spare, so the help reads at document
    size rather than interface size. Phones keep the sizes set further down —
    this block stops before them. */
