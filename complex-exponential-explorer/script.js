@@ -81,7 +81,20 @@ const I18N = {
                 { tex: 'y(x+\\Delta x)\\approx y(x)\\,(1+\\Delta x)' },
                 { p: 'Starting from y(0) = 1 and writing yₙ for the value after n steps:' },
                 { tex: '\\boxed{\\;y_{n+1}=y_{n}\\,(1+\\Delta x)\\;}' },
-                { p: 'so yₙ = (1 + Δx)ⁿ. With x = n·Δx that is (1 + x/n)ⁿ, the classical limit that returns eˣ as n grows. The gap you read on screen is that limit not yet reached.' }
+                { aside: { h: 'An aside: this is the classical limit',
+                    items: [
+                        { p: 'The recurrence is one factor per step, so iterating it from y₀ = 1 leaves a closed form:' },
+                        { tex: 'y_{n}=\\underbrace{(1+\\Delta x)(1+\\Delta x)\\cdots(1+\\Delta x)}_{n\\ \\text{factors}}=(1+\\Delta x)^{n}' },
+                        { p: 'Now aim at a fixed point x. The number of steps and their size are not independent — they are tied by the abscissa we want to reach:' },
+                        { tex: 'x=n\\,\\Delta x\\qquad\\Longleftrightarrow\\qquad \\Delta x=\\frac{x}{n}' },
+                        { p: 'Substituting that into the closed form removes Δx entirely and leaves n as the only knob:' },
+                        { tex: 'y_{n}=\\left(1+\\frac{x}{n}\\right)^{n}' },
+                        { p: 'Reaching the same x with more and finer steps is exactly letting n grow. And that limit is one of the classical definitions of the exponential:' },
+                        { tex: '\\lim_{n\\to\\infty}\\left(1+\\frac{x}{n}\\right)^{n}=e^{x}' },
+                        { p: 'So the error in the panel is not a flaw in the drawing. It is the distance between a finite n and that limit, and to first order the relative gap is' },
+                        { tex: '\\frac{e^{x}-y_{n}}{e^{x}}\\;\\approx\\;\\frac{x\\,\\Delta x}{2}' },
+                        { p: 'which at x = 1 with Δx = 0.1 predicts 5%. Set the slider there, take ten steps, and the panel reads 4.58%.' }
+                    ] } }
               ] },
             { h: 'Exactly the same, with an i',
               items: [
@@ -162,7 +175,20 @@ const I18N = {
                 { tex: 'y(x+\\Delta x)\\approx y(x)\\,(1+\\Delta x)' },
                 { p: 'En partant de y(0) = 1 et en notant yₙ la valeur après n pas :' },
                 { tex: '\\boxed{\\;y_{n+1}=y_{n}\\,(1+\\Delta x)\\;}' },
-                { p: 'd’où yₙ = (1 + Δx)ⁿ. Avec x = n·Δx, cela s’écrit (1 + x/n)ⁿ, la limite classique qui redonne eˣ quand n grandit. L’écart lu à l’écran, c’est cette limite pas encore atteinte.' }
+                { aside: { h: 'En marge : c’est la limite classique',
+                    items: [
+                        { p: 'La récurrence ajoute un facteur par pas ; en l’itérant depuis y₀ = 1 il reste une forme close :' },
+                        { tex: 'y_{n}=\\underbrace{(1+\\Delta x)(1+\\Delta x)\\cdots(1+\\Delta x)}_{n\\ \\text{facteurs}}=(1+\\Delta x)^{n}' },
+                        { p: 'Visons maintenant un point x fixé. Le nombre de pas et leur taille ne sont pas indépendants : l’abscisse à atteindre les lie.' },
+                        { tex: 'x=n\\,\\Delta x\\qquad\\Longleftrightarrow\\qquad \\Delta x=\\frac{x}{n}' },
+                        { p: 'En reportant cela dans la forme close, Δx disparaît et il ne reste que n comme réglage :' },
+                        { tex: 'y_{n}=\\left(1+\\frac{x}{n}\\right)^{n}' },
+                        { p: 'Atteindre le même x avec des pas plus nombreux et plus fins, c’est exactement faire croître n. Et cette limite est l’une des définitions classiques de l’exponentielle :' },
+                        { tex: '\\lim_{n\\to\\infty}\\left(1+\\frac{x}{n}\\right)^{n}=e^{x}' },
+                        { p: 'L’erreur affichée n’est donc pas un défaut du tracé : c’est la distance entre un n fini et cette limite. Au premier ordre, l’écart relatif vaut' },
+                        { tex: '\\frac{e^{x}-y_{n}}{e^{x}}\\;\\approx\\;\\frac{x\\,\\Delta x}{2}' },
+                        { p: 'ce qui, pour x = 1 et Δx = 0,1, prédit 5 %. Placez la glissière là, faites dix pas : le panneau affiche 4,58 %.' }
+                    ] } }
               ] },
             { h: 'Exactement pareil, avec un i',
               items: [
@@ -243,7 +269,20 @@ const I18N = {
                 { tex: 'y(x+\\Delta x)\\approx y(x)\\,(1+\\Delta x)' },
                 { p: 'Partiendo de y(0) = 1 y llamando yₙ al valor tras n pasos:' },
                 { tex: '\\boxed{\\;y_{n+1}=y_{n}\\,(1+\\Delta x)\\;}' },
-                { p: 'de donde yₙ = (1 + Δx)ⁿ. Con x = n·Δx esto es (1 + x/n)ⁿ, el límite clásico que devuelve eˣ cuando n crece. La diferencia que ves en pantalla es ese límite todavía no alcanzado.' }
+                { aside: { h: 'Al margen: esto es el límite clásico',
+                    items: [
+                        { p: 'La recurrencia agrega un factor por paso, así que iterarla desde y₀ = 1 deja una forma cerrada:' },
+                        { tex: 'y_{n}=\\underbrace{(1+\\Delta x)(1+\\Delta x)\\cdots(1+\\Delta x)}_{n\\ \\text{factores}}=(1+\\Delta x)^{n}' },
+                        { p: 'Apuntemos ahora a un punto x fijo. La cantidad de pasos y su tamaño no son independientes: los ata la abscisa que queremos alcanzar.' },
+                        { tex: 'x=n\\,\\Delta x\\qquad\\Longleftrightarrow\\qquad \\Delta x=\\frac{x}{n}' },
+                        { p: 'Al sustituir eso en la forma cerrada, Δx desaparece y queda n como única perilla:' },
+                        { tex: 'y_{n}=\\left(1+\\frac{x}{n}\\right)^{n}' },
+                        { p: 'Alcanzar el mismo x con pasos más numerosos y más finos es exactamente hacer crecer n. Y ese límite es una de las definiciones clásicas de la exponencial:' },
+                        { tex: '\\lim_{n\\to\\infty}\\left(1+\\frac{x}{n}\\right)^{n}=e^{x}' },
+                        { p: 'Así que el error del panel no es un defecto del dibujo: es la distancia entre un n finito y ese límite. A primer orden, la diferencia relativa vale' },
+                        { tex: '\\frac{e^{x}-y_{n}}{e^{x}}\\;\\approx\\;\\frac{x\\,\\Delta x}{2}' },
+                        { p: 'que para x = 1 con Δx = 0,1 predice 5 %. Poné el slider ahí, dá diez pasos, y el panel marca 4,58 %.' }
+                    ] } }
               ] },
             { h: 'Exactamente lo mismo, con una i',
               items: [
@@ -1408,6 +1447,18 @@ function applyDx(newDx) {
 
 /* ---------- Help : the mathematics, on demand ---------- */
 
+/* A section is prose, displayed formulas, and the occasional aside — a step
+   that is worth taking slowly but is not on the main line of the argument. */
+function helpItem(item) {
+    if (item.p) return '<p>' + item.p + '</p>';
+    if (item.tex) return '<div class="help-tex">' + texHTML(item.tex, true) + '</div>';
+    if (item.aside) {
+        return '<aside class="help-aside"><h4>' + item.aside.h + '</h4>'
+             + item.aside.items.map(helpItem).join('') + '</aside>';
+    }
+    return '';
+}
+
 function buildHelp() {
     const sections = i18n.t('helpSections');
     if (!Array.isArray(sections)) return;
@@ -1415,10 +1466,7 @@ function buildHelp() {
     sections.forEach((sec, i) => {
         html += '<section class="help-section">';
         html += '<h3><span class="help-num">' + (i + 1) + '</span>' + sec.h + '</h3>';
-        sec.items.forEach(item => {
-            if (item.p) html += '<p>' + item.p + '</p>';
-            else if (item.tex) html += '<div class="help-tex">' + texHTML(item.tex, true) + '</div>';
-        });
+        sec.items.forEach(item => { html += helpItem(item); });
         html += '</section>';
     });
     els.helpBody.innerHTML = html;
@@ -1520,10 +1568,14 @@ document.addEventListener('contextmenu', e => e.preventDefault());
 const SLIDER_WHEEL_DELAY = 250;   // ms the pointer must dwell first
 
 function enableWheelOnSlider(input) {
+    /* The track itself is a few pixels tall, which is a cruel target for a
+       wheel. The gesture is taken on the surrounding group instead — label,
+       value and track together. */
+    const zone = input.closest('.control-group') || input;
     let since = 0;
-    input.addEventListener('pointerenter', () => { since = performance.now(); });
-    input.addEventListener('pointerleave', () => { since = 0; });
-    input.addEventListener('wheel', e => {
+    zone.addEventListener('pointerenter', () => { since = performance.now(); });
+    zone.addEventListener('pointerleave', () => { since = 0; });
+    zone.addEventListener('wheel', e => {
         if (!since || performance.now() - since < SLIDER_WHEEL_DELAY) return;
         e.preventDefault();
         const min = Number(input.min), max = Number(input.max);

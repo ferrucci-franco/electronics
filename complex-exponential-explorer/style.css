@@ -167,6 +167,8 @@ button { font-family: inherit; }
     flex-shrink: 0;
 }
 
+/* Same idiom as the language pills: the chosen one is filled, the other is
+   merely outlined in the accent so it still reads as something to press. */
 .mode-btn {
     display: flex;
     flex-direction: column;
@@ -174,9 +176,9 @@ button { font-family: inherit; }
     gap: .12rem;
     min-width: 220px;
     padding: .5rem 1.4rem;
-    border: 1px solid var(--border-color);
-    background-color: var(--bg-secondary);
-    color: var(--text-secondary);
+    border: 1px solid var(--accent);
+    background-color: transparent;
+    color: var(--accent);
     border-radius: var(--radius);
     cursor: pointer;
     transition: background-color .18s, border-color .18s, color .18s;
@@ -202,14 +204,14 @@ button { font-family: inherit; }
 }
 .mode-switch.in-bar .mode-formula .katex { font-size: 1.02rem; }
 .mode-switch.in-bar .mode-name { font-size: .66rem; }
-.mode-switch.in-bar .mode-btn.active { box-shadow: inset 0 -2px 0 var(--accent); }
 
 .mode-btn.active {
-    background-color: var(--bg-primary);
+    background-color: var(--accent);
     border-color: var(--accent);
-    color: var(--accent);
-    box-shadow: inset 0 -3px 0 var(--accent);
+    color: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,.18);
 }
+.mode-btn.active:hover { background-color: var(--accent); }
 
 /* ============================================================
    Layout : stage + panel
@@ -417,6 +419,7 @@ button { font-family: inherit; }
 
 .control-group { display: flex; align-items: center; gap: .6rem; }
 
+
 .control-group-slider { flex: 0 1 330px; min-width: 230px; }
 
 .slider-label {
@@ -582,6 +585,26 @@ input[type="range"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var
 }
 .help-section p + p { margin-top: .5rem; }
 
+/* An aside: a step worth taking slowly, set apart from the main argument. */
+.help-aside {
+    margin: .9rem 0 .5rem;
+    padding: .7rem .9rem .8rem;
+    border: 1px solid var(--border-color);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    background-color: var(--bg-secondary);
+}
+.help-aside h4 {
+    font-size: .82rem;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: .5rem;
+    text-wrap: balance;
+}
+.help-aside p { font-size: .96em; }
+.help-aside .help-tex { margin: .5rem 0; }
+.help-aside .help-tex .katex { font-size: .95em; }
+
 .help-tex {
     margin: .55rem 0;
     padding: .1rem 0;
@@ -602,6 +625,12 @@ input[type="range"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var
    size rather than interface size. Phones keep the sizes set further down —
    this block stops before them. */
 @media (min-width: 561px) {
+    /* The wheel acts on the whole group rather than the 4px track, and this
+       padding gives that target some height. Phones are left out: there is no
+       wheel there, the track is already 12px, and the room is needed to keep
+       the controls above the fold. */
+    .control-group-slider { padding: .5rem 0; }
+
     .help-dialog { width: min(780px, calc(100vw - 3rem)); }
     .help-head { padding: .85rem 1rem .85rem 1.5rem; }
     .help-head h2 { font-size: 1.18rem; }
@@ -616,6 +645,8 @@ input[type="range"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var
     .help-section p + p { margin-top: .65rem; }
     .help-tex { margin: .8rem 0; }
     .help-tex .katex { font-size: 1.32rem; }
+    .help-aside { padding: .9rem 1.1rem 1rem; margin: 1.1rem 0 .6rem; }
+    .help-aside h4 { font-size: 1.05rem; margin-bottom: .6rem; }
 }
 
 /* ============================================================
@@ -695,6 +726,8 @@ input[type="range"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var
     .help-section h3 { font-size: .96rem; }
     .help-section p { font-size: .9rem; }
     .help-tex .katex { font-size: 1.05rem; }
+    .help-aside { padding: .6rem .7rem .7rem; }
+    .help-aside h4 { font-size: .88rem; }
     .conclusion-btn { font-size: .78rem; }
     .conclusion-text { font-size: .86rem; }
     .euler-formula .katex { font-size: 1.12rem; }
