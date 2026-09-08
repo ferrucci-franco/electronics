@@ -49,7 +49,7 @@ const I18N = {
         warnMaxSteps: 'Maximum number of steps reached.',
         warnOverflow: 'The value has grown beyond what can be represented.',
         helpBtn: 'Help',
-        plotHint: 'Wheel: zoom · Right-drag: pan · Double click: fit',
+        plotHint: 'Drag: zoom to box · Wheel: zoom · Middle or right drag: pan · Double click: fit',
         helpTitle: 'The mathematics behind the picture',
         helpClose: 'Close',
         helpSections: [
@@ -130,7 +130,7 @@ const I18N = {
         warnMaxSteps: 'Nombre maximal de pas atteint.',
         warnOverflow: 'La valeur est devenue trop grande pour être représentée.',
         helpBtn: 'Aide',
-        plotHint: 'Molette : zoom · Clic droit glissé : déplacer · Double clic : ajuster',
+        plotHint: 'Glisser : zoom sur une zone · Molette : zoom · Clic milieu ou droit glissé : déplacer · Double clic : ajuster',
         helpTitle: 'Les mathématiques derrière l’image',
         helpClose: 'Fermer',
         helpSections: [
@@ -211,7 +211,7 @@ const I18N = {
         warnMaxSteps: 'Se alcanzó el número máximo de pasos.',
         warnOverflow: 'El valor ha crecido más allá de lo representable.',
         helpBtn: 'Ayuda',
-        plotHint: 'Rueda: zoom · Arrastrar con botón derecho: desplazar · Doble clic: ajustar',
+        plotHint: 'Arrastrar: zoom a una zona · Rueda: zoom · Arrastrar con botón central o derecho: desplazar · Doble clic: ajustar',
         helpTitle: 'La matemática detrás de la imagen',
         helpClose: 'Cerrar',
         helpSections: [
@@ -382,13 +382,17 @@ function makeSim(mode) {
 
 /**
  * The view is automatic until the reader takes hold of it. `user` is an affine
- * transform in pixels (uniform scale k about the plot centre, then a shift)
- * layered on top of the automatic fit; `locked` freezes that fit so the frame
- * stops moving under a reader who has chosen one. Double-clicking clears both,
- * which is what "zoom to fit" means here.
+ * transform in pixels — a scale about the plot centre, then a shift — layered
+ * on top of the automatic fit; `locked` freezes that fit so the frame stops
+ * moving under a reader who has chosen one. Double-clicking clears both, which
+ * is what "zoom to fit" means here.
+ *
+ * The scale is per-axis because a box zoom in real mode may legitimately
+ * stretch one axis. In the complex plane it never does: there kx and ky are
+ * kept equal, so the unit circle stays a circle.
  */
 function resetUserView(sim) {
-    sim.user = { k: 1, tx: 0, ty: 0 };
+    sim.user = { kx: 1, ky: 1, tx: 0, ty: 0 };
     sim.locked = false;
 }
 
@@ -551,8 +555,8 @@ function makeTransform(sim) {
     const pad = box.pad, w = box.w, h = box.h;
     const U = sim.user;
     const ax = box.ax, ay = box.ay;    // the zoom is anchored on the box centre
-    const fwd  = (v, a, t) => (v - a) * U.k + a + t;
-    const back = (v, a, t) => (v - a - t) / U.k + a;
+    const fwd  = (v, a, t, k) => (v - a) * k + a + t;
+    const back = (v, a, t, k) => (v - a - t) / k + a;
 
     let basePx, basePy, baseInvX, baseInvY, extra;
 
@@ -580,13 +584,13 @@ function makeTransform(sim) {
         basePy = b => cy - b * s;
         baseInvX = p => (p - cx) / s;
         baseInvY = q => (cy - q) / s;
-        extra = { s: s * U.k };
+        extra = { s: s * U.kx };       // kx === ky in this mode, by construction
     }
 
-    const px = a => fwd(basePx(a), ax, U.tx);
-    const py = b => fwd(basePy(b), ay, U.ty);
-    const invX = p => baseInvX(back(p, ax, U.tx));
-    const invY = q => baseInvY(back(q, ay, U.ty));
+    const px = a => fwd(basePx(a), ax, U.tx, U.kx);
+    const py = b => fwd(basePy(b), ay, U.ty, U.ky);
+    const invX = p => baseInvX(back(p, ax, U.tx, U.kx));
+    const invY = q => baseInvY(back(q, ay, U.ty, U.ky));
 
     const T = {
         pad: pad, w: w, h: h, px: px, py: py, invX: invX, invY: invY,
@@ -727,7 +731,7 @@ function trailKey(sim) {
 }
 
 function sameUserView(a, b) {
-    return a && b && a.k === b.k && a.tx === b.tx && a.ty === b.ty;
+    return a && b && a.kx === b.kx && a.ky === b.ky && a.tx === b.tx && a.ty === b.ty;
 }
 
 function paintTrail(sim, T, col, from) {
@@ -774,15 +778,22 @@ function paintTrail(sim, T, col, from) {
     c.restore();
 }
 
+/* Above this many points a repaint costs more than a frame, so a gesture blits
+   the cached pixels instead. Below it, every frame is repainted: the blit can
+   only show what the layer holds, and the layer holds only what fitted in the
+   frame it was painted for. */
+const BLIT_THRESHOLD = 8000;
+
 function drawTrail(sim, T, col) {
     const key = trailKey(sim);
     const U = sim.user;
     const stale = !sameUserView(trail.at, U);
-    /* Repaint when the trajectory or the frame changed, or when points were
-       added while the view was being dragged and the cached pixels can no
-       longer be extended in place. */
+    const heavy = sim.n + 1 > BLIT_THRESHOLD;
+    /* Repaint when the trajectory or the frame changed, when points were added
+       that the cached pixels cannot be extended with, or whenever the view
+       moved and the trajectory is small enough to redraw outright. */
     const needsRepaint = key !== trail.key || trail.drawn > sim.n + 1
-                      || (stale && sim.n + 1 > trail.drawn);
+                      || (stale && (!heavy || sim.n + 1 > trail.drawn));
 
     if (needsRepaint) {
         trail.ctx.clearRect(0, 0, cssW, cssH);
@@ -790,7 +801,7 @@ function drawTrail(sim, T, col) {
         trail.drawn = 0;
         paintTrail(sim, T, col, 0);
         trail.drawn = sim.n + 1;
-        trail.at = { k: U.k, tx: U.tx, ty: U.ty };
+        trail.at = { kx: U.kx, ky: U.ky, tx: U.tx, ty: U.ty };
     } else if (!stale && sim.n + 1 > trail.drawn) {
         paintTrail(sim, T, col, trail.drawn);
         trail.drawn = sim.n + 1;
@@ -800,17 +811,17 @@ function drawTrail(sim, T, col) {
         ctx.drawImage(trail.cv, 0, 0, trail.cv.width, trail.cv.height, 0, 0, cssW, cssH);
         return;
     }
-    /* Mid-gesture: the layer holds the trajectory drawn for an earlier zoom and
-       pan, and the two differ by a scale about a point plus a shift. Applying
-       that to the image is exact geometry and costs one blit, where repainting
-       tens of thousands of vertices per wheel notch would not hold 60fps. The
-       crisp repaint follows when the gesture settles. */
+    /* Mid-gesture on a heavy trajectory: the layer holds it drawn for an earlier
+       view, and the two differ by a scale about a point plus a shift, so
+       applying that to the image is exact geometry for whatever the layer
+       actually contains. Anything that was outside the old frame was clipped
+       away and cannot come back this way — which is why the settle repaint
+       always follows, and why light trajectories never take this path. */
     const box = plotBox(sim.mode);
     const at = trail.at;
-    const r = U.k / at.k;
     ctx.save();
     ctx.translate(box.ax + U.tx, box.ay + U.ty);
-    ctx.scale(r, r);
+    ctx.scale(U.kx / at.kx, U.ky / at.ky);
     ctx.translate(-(box.ax + at.tx), -(box.ay + at.ty));
     ctx.drawImage(trail.cv, 0, 0, trail.cv.width, trail.cv.height, 0, 0, cssW, cssH);
     ctx.restore();
@@ -916,20 +927,51 @@ function pointerPos(e) {
     return { x: e.clientX - r.left, y: e.clientY - r.top };
 }
 
+const clampZoom = k => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, k));
+
 /** Zoom about a pixel, keeping whatever sits under it in place. */
 function zoomAt(sim, mx, my, factor) {
     const U = sim.user;
-    const k = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, U.k * factor));
-    if (k === U.k) return;
+    const kx = clampZoom(U.kx * factor), ky = clampZoom(U.ky * factor);
+    if (kx === U.kx && ky === U.ky) return;
     const box = plotBox(sim.mode);
-    const ax = box.ax, ay = box.ay;
     /* Solve for the shift that leaves the anchored point where it was. */
-    U.tx = mx - ax - (mx - ax - U.tx) * k / U.k;
-    U.ty = my - ay - (my - ay - U.ty) * k / U.k;
-    U.k = k;
+    U.tx = mx - box.ax - (mx - box.ax - U.tx) * kx / U.kx;
+    U.ty = my - box.ay - (my - box.ay - U.ty) * ky / U.ky;
+    U.kx = kx; U.ky = ky;
     sim.locked = true;
     requestDraw();
     scheduleSettle();
+}
+
+/**
+ * Zoom to a dragged box.
+ *
+ * In the complex plane the box is already constrained to the plot's aspect
+ * ratio while it is drawn, and the two scales are then forced equal, so the
+ * unit circle cannot be squashed into an ellipse. In real mode the axes carry
+ * unrelated quantities and are free to stretch independently.
+ */
+function zoomToRect(sim, x0, y0, x1, y1) {
+    const box = plotBox(sim.mode);
+    const U = sim.user;
+    const bx = p => (p - box.ax - U.tx) / U.kx + box.ax;
+    const by = q => (q - box.ay - U.ty) / U.ky + box.ay;
+    const l = bx(Math.min(x0, x1)), r = bx(Math.max(x0, x1));
+    const t = by(Math.min(y0, y1)), b = by(Math.max(y0, y1));
+    if (r - l < 1e-9 || b - t < 1e-9) return;
+
+    let kx = clampZoom(box.w / (r - l));
+    let ky = clampZoom(box.h / (b - t));
+    if (sim.mode !== 'real') kx = ky = Math.min(kx, ky);
+
+    /* Put the middle of the selection in the middle of the plot box. */
+    U.kx = kx; U.ky = ky;
+    U.tx = box.ax - ((l + r) / 2 - box.ax) * kx;
+    U.ty = box.ay - ((t + b) / 2 - box.ay) * ky;
+    sim.locked = true;
+    trail.key = '';                 // the frame jumped: repaint, never blit
+    requestDraw();
 }
 
 canvas.addEventListener('wheel', e => {
@@ -941,48 +983,126 @@ canvas.addEventListener('wheel', e => {
     zoomAt(currentSim(), p.x, p.y, Math.exp(-d * 0.0015));
 }, { passive: false });
 
-/* Right button drags the view. The context menu is suppressed page-wide, so
-   the button is free for this. */
+/* Middle and right button drag the view; the left button draws the box to
+   zoom into. The context menu is suppressed page-wide, which is what frees the
+   right button. */
 let panning = null;
+let selection = null;
+
+/** Below this the drag was a click, not a box. */
+const DRAG_SLOP = 6;
+
+/* A middle-button press starts autoscroll in some browsers unless the mousedown
+   default is cancelled — pointerdown is too late for that. */
+canvas.addEventListener('mousedown', e => { if (e.button === 1) e.preventDefault(); });
+canvas.addEventListener('auxclick', e => e.preventDefault());
 
 canvas.addEventListener('pointerdown', e => {
-    if (e.button !== 2) return;
+    /* Mouse only. A finger drag on a phone must keep scrolling the page, not
+       start drawing a zoom box, and there is no middle or right button there
+       to pan with either. */
+    if (e.pointerType !== 'mouse') return;
     const p = pointerPos(e);
     const sim = currentSim();
-    panning = { x: p.x, y: p.y, tx: sim.user.tx, ty: sim.user.ty };
-    sim.locked = true;
+    if (e.button === 1 || e.button === 2) {
+        panning = { x: p.x, y: p.y, tx: sim.user.tx, ty: sim.user.ty };
+        sim.locked = true;
+        canvas.classList.add('panning');
+    } else if (e.button === 0) {
+        selection = { x0: p.x, y0: p.y, x1: p.x, y1: p.y, live: false };
+    } else {
+        return;
+    }
     canvas.setPointerCapture(e.pointerId);
-    canvas.classList.add('panning');
     e.preventDefault();
 });
 
+/**
+ * The box the reader is dragging. In the complex plane it is held to the plot's
+ * aspect ratio as it is drawn, so what is framed is exactly what will be shown
+ * and no circle is turned into an ellipse.
+ */
+function selectionRect(sim) {
+    const dx = selection.x1 - selection.x0;
+    const dy = selection.y1 - selection.y0;
+    if (sim.mode === 'real') {
+        return { x0: selection.x0, y0: selection.y0, x1: selection.x1, y1: selection.y1 };
+    }
+    const box = plotBox(sim.mode);
+    const aspect = box.w / box.h;
+    const side = Math.max(Math.abs(dx), Math.abs(dy) * aspect);
+    return {
+        x0: selection.x0, y0: selection.y0,
+        x1: selection.x0 + Math.sign(dx || 1) * side,
+        y1: selection.y0 + Math.sign(dy || 1) * side / aspect
+    };
+}
+
 canvas.addEventListener('pointermove', e => {
-    if (!panning) return;
     const p = pointerPos(e);
-    const U = currentSim().user;
-    U.tx = panning.tx + (p.x - panning.x);
-    U.ty = panning.ty + (p.y - panning.y);
-    requestDraw();
-    scheduleSettle();
+    if (panning) {
+        const U = currentSim().user;
+        U.tx = panning.tx + (p.x - panning.x);
+        U.ty = panning.ty + (p.y - panning.y);
+        requestDraw();
+        scheduleSettle();
+    } else if (selection) {
+        selection.x1 = p.x;
+        selection.y1 = p.y;
+        if (Math.hypot(p.x - selection.x0, p.y - selection.y0) > DRAG_SLOP) selection.live = true;
+        requestDraw();
+    }
 });
 
-function endPan(e) {
-    if (!panning) return;
-    panning = null;
-    canvas.classList.remove('panning');
+function endGesture(e) {
     if (e && e.pointerId !== undefined && canvas.hasPointerCapture(e.pointerId)) {
         canvas.releasePointerCapture(e.pointerId);
     }
+    if (panning) {
+        panning = null;
+        canvas.classList.remove('panning');
+        return;
+    }
+    if (!selection) return;
+    const sim = currentSim();
+    const live = selection.live;
+    const r = selectionRect(sim);
+    selection = null;
+    if (live) zoomToRect(sim, r.x0, r.y0, r.x1, r.y1);
+    else requestDraw();
 }
-canvas.addEventListener('pointerup', endPan);
-canvas.addEventListener('pointercancel', endPan);
+canvas.addEventListener('pointerup', endGesture);
+canvas.addEventListener('pointercancel', endGesture);
 
 /** Double click returns to the automatic fit. */
 canvas.addEventListener('dblclick', e => {
     e.preventDefault();
+    selection = null;
     resetUserView(currentSim());
-    requestDraw();
+    /* The cached layer only ever held what fitted in the frame it was painted
+       for, so it cannot be stretched back into a wider one: repaint it. */
+    trail.key = '';
+    clearTimeout(settleTimer);
+    draw();
 });
+
+/** The box being dragged, drawn over everything else. */
+function drawSelection(sim, col) {
+    if (!selection || !selection.live) return;
+    const r = selectionRect(sim);
+    const x = Math.min(r.x0, r.x1), y = Math.min(r.y0, r.y1);
+    const w = Math.abs(r.x1 - r.x0), h = Math.abs(r.y1 - r.y0);
+    ctx.save();
+    ctx.fillStyle = col.accent;
+    ctx.globalAlpha = 0.10;
+    ctx.fillRect(x, y, w, h);
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = col.accent;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 3]);
+    ctx.strokeRect(Math.round(x) + 0.5, Math.round(y) + 0.5, Math.round(w), Math.round(h));
+    ctx.restore();
+}
 
 /* ---------- Main draw ---------- */
 
@@ -1003,6 +1123,7 @@ function draw() {
     drawValueVector(sim, T, col);
     drawLastIncrement(sim, T, col);
     drawCurrentPoint(sim, T, col);
+    drawSelection(sim, col);
 }
 
 /* ============================================================================
