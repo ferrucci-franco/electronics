@@ -965,10 +965,14 @@ function zoomToRect(sim, x0, y0, x1, y1) {
     let ky = clampZoom(box.h / (b - t));
     if (sim.mode !== 'real') kx = ky = Math.min(kx, ky);
 
-    /* Put the middle of the selection in the middle of the plot box. */
+    /* Put the middle of the selection in the middle of the plot box. The map is
+       p = (v - a)·k + a + t, and box.ax / box.ay ARE the middle of the box, so
+       sending the midpoint there means (mid - a)·k + a + t = a, hence
+       t = -(mid - a)·k. Adding `a` on top of that shifted the result by half
+       the plot, which is why the frame did not match the box drawn. */
     U.kx = kx; U.ky = ky;
-    U.tx = box.ax - ((l + r) / 2 - box.ax) * kx;
-    U.ty = box.ay - ((t + b) / 2 - box.ay) * ky;
+    U.tx = -((l + r) / 2 - box.ax) * kx;
+    U.ty = -((t + b) / 2 - box.ay) * ky;
     sim.locked = true;
     trail.key = '';                 // the frame jumped: repaint, never blit
     requestDraw();
