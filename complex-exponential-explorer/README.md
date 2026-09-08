@@ -46,21 +46,33 @@ optional **Conclusion** section of the complex mode.
 | `Play / Pause` | Performs exactly the same discrete steps, one at a time, slowly enough to watch the construction. |
 | `Reset` | Back to `n = 0`. |
 
+`Complete one turn` appears in complex mode only: a turn is an angle, and on
+the real axis it was just an obscure way of asking for 2π more of `x`.
+
 Keyboard: `Space` play/pause, `→` one step, `R` reset.
 
-Also available: light/dark theme and three interface languages (EN / FR / ES).
+Also available: light/dark theme, three interface languages (EN / FR / ES) and
+a **Help** panel (`?`) that derives the whole thing from the Taylor series —
+truncation, the resulting recurrence, and why the discrete complex step traces
+a spiral of modulus `|z(n)| ≈ exp(x·Δx/2)` that closes onto the circle as
+`Δx → 0`.
 
 ## Running it
 
-No build step, no backend, no dependencies. Open `index.html` in a browser, or
-serve the folder statically (GitHub Pages works as-is).
+No build step and no backend. Open `index.html` in a browser, or serve the
+folder statically (GitHub Pages works as-is).
+
+The only third-party component is KaTeX, which typesets the mathematics. It is
+vendored under `vendor/katex/`, not loaded from a CDN, so the page also works
+with no network at all. See `THIRD_PARTY_LICENSES.md`.
 
 ## Files
 
 ```
-index.html   structure
-style.css    theming and layout
-script.js    i18n · mathematical core · simulation state · canvas rendering · UI
+index.html     structure
+style.css      theming and layout
+script.js      i18n · mathematical core · simulation state · canvas rendering · UI
+vendor/katex/  KaTeX 0.18.1 (MIT), script + stylesheet + WOFF2 fonts
 ```
 
 `script.js` is organised in those five sections; the mathematical parts are

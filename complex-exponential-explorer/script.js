@@ -27,6 +27,48 @@
 const I18N = {
     en: {
         appTitle: 'Complex Exponential Explorer',
+        helpBtn: 'Help',
+        helpTitle: 'The mathematics behind the picture',
+        helpClose: 'Close',
+        helpSections: [
+            { h: 'The exponential is a series',
+              items: [
+                { p: 'The exponential is defined by a series that converges for every value of x:' },
+                { tex: 'e^{x}=\\sum_{n=0}^{\\infty}\\frac{x^{n}}{n!}=1+x+\\frac{x^{2}}{2!}+\\frac{x^{3}}{3!}+\\frac{x^{4}}{4!}+\\cdots' },
+                { p: 'Every term after the first two carries a factor x² or smaller. When x is small they weigh very little — and that is the whole opening.' }
+              ] },
+            { h: 'One small step: keep two terms',
+              items: [
+                { p: 'For a step Δx small enough, cut the series after the linear term:' },
+                { tex: 'e^{\\Delta x}=\\underbrace{1+\\Delta x}_{\\text{kept}}+\\underbrace{\\frac{\\Delta x^{2}}{2}+\\frac{\\Delta x^{3}}{6}+\\cdots}_{\\text{dropped}}\\;\\approx\\;1+\\Delta x' },
+                { p: 'What we drop is of order Δx²/2: about 0.005 for Δx = 0.1, and 0.00005 for Δx = 0.01. This is the only approximation in the whole application — everything you see on screen follows from it.' }
+              ] },
+            { h: 'From the approximation to a multiplication',
+              items: [
+                { p: 'The exponential turns a sum in the exponent into a product:' },
+                { tex: 'e^{x+\\Delta x}=e^{x}\\,e^{\\Delta x}\\approx e^{x}\\,(1+\\Delta x)' },
+                { p: 'So moving forward by Δx is the same as multiplying by (1 + Δx). Starting from y₀ = 1:' },
+                { tex: 'y_{n+1}=y_{n}\\,(1+\\Delta x)\\qquad\\Longrightarrow\\qquad y_{n}=(1+\\Delta x)^{n}' },
+                { p: 'With x = n·Δx this is y = (1 + x/n)ⁿ, the classical limit that returns eˣ as n grows. The gap you read on screen is that limit not yet reached.' }
+              ] },
+            { h: 'The same step, now with i',
+              items: [
+                { p: 'The series does not care whether its argument is real or imaginary, so the same truncation applies:' },
+                { tex: 'e^{i\\Delta x}=1+i\\Delta x+\\frac{(i\\Delta x)^{2}}{2!}+\\cdots\\;\\approx\\;1+i\\Delta x' },
+                { tex: 'z_{n+1}=z_{n}\\,(1+i\\Delta x)\\qquad\\Longrightarrow\\qquad z_{n}=(1+i\\Delta x)^{n}' },
+                { p: 'Multiplying by 1 + iΔx rotates by arctan(Δx) ≈ Δx. That is where the rotation comes from: no cosine and no sine were ever used.' }
+              ] },
+            { h: 'Why a spiral, and why it closes',
+              items: [
+                { p: 'The factor does not sit on the unit circle:' },
+                { tex: '\\left|1+i\\Delta x\\right|=\\sqrt{1+\\Delta x^{2}}>1' },
+                { p: 'so the modulus grows a little at every step, which is exactly the spiral you see:' },
+                { tex: '\\left|z_{n}\\right|=\\left(1+\\Delta x^{2}\\right)^{n/2}' },
+                { p: 'Write n = x/Δx and use ln(1 + u) ≈ u for small u:' },
+                { tex: '\\left|z_{n}\\right|\\approx e^{\\,x\\Delta x/2}\\;\\xrightarrow[\\;\\Delta x\\to 0\\;]{}\\;1' },
+                { p: 'Check it against the read-out: one turn (x = 2π) at Δx = 0.1 predicts |z| ≈ e^0.314 ≈ 1.37. The angle behaves the same way — n·arctan(Δx) → x. Modulus going to 1, argument going to x: the point lands on the unit circle at angle x.' }
+              ] }
+        ],
         modeReal: 'Real exponential',
         modeComplex: 'Complex exponential',
         themeToggle: 'Toggle theme',
@@ -53,6 +95,48 @@ const I18N = {
     },
     fr: {
         appTitle: 'Explorateur de l’exponentielle complexe',
+        helpBtn: 'Aide',
+        helpTitle: 'Les mathématiques derrière l’image',
+        helpClose: 'Fermer',
+        helpSections: [
+            { h: 'L’exponentielle est une série',
+              items: [
+                { p: 'L’exponentielle est définie par une série qui converge pour toute valeur de x :' },
+                { tex: 'e^{x}=\\sum_{n=0}^{\\infty}\\frac{x^{n}}{n!}=1+x+\\frac{x^{2}}{2!}+\\frac{x^{3}}{3!}+\\frac{x^{4}}{4!}+\\cdots' },
+                { p: 'Chaque terme après les deux premiers porte un facteur x² ou plus petit. Quand x est petit, ils pèsent très peu — et c’est toute l’ouverture.' }
+              ] },
+            { h: 'Un petit pas : garder deux termes',
+              items: [
+                { p: 'Pour un pas Δx assez petit, on coupe la série après le terme linéaire :' },
+                { tex: 'e^{\\Delta x}=\\underbrace{1+\\Delta x}_{\\text{gardé}}+\\underbrace{\\frac{\\Delta x^{2}}{2}+\\frac{\\Delta x^{3}}{6}+\\cdots}_{\\text{abandonné}}\\;\\approx\\;1+\\Delta x' },
+                { p: 'Ce que l’on abandonne est d’ordre Δx²/2 : environ 0,005 pour Δx = 0,1, et 0,00005 pour Δx = 0,01. C’est la seule approximation de toute l’application — tout ce qui est à l’écran en découle.' }
+              ] },
+            { h: 'De l’approximation à une multiplication',
+              items: [
+                { p: 'L’exponentielle transforme une somme en exposant en un produit :' },
+                { tex: 'e^{x+\\Delta x}=e^{x}\\,e^{\\Delta x}\\approx e^{x}\\,(1+\\Delta x)' },
+                { p: 'Avancer de Δx revient donc à multiplier par (1 + Δx). En partant de y₀ = 1 :' },
+                { tex: 'y_{n+1}=y_{n}\\,(1+\\Delta x)\\qquad\\Longrightarrow\\qquad y_{n}=(1+\\Delta x)^{n}' },
+                { p: 'Avec x = n·Δx, cela s’écrit y = (1 + x/n)ⁿ, la limite classique qui redonne eˣ quand n grandit. L’écart lu à l’écran, c’est cette limite pas encore atteinte.' }
+              ] },
+            { h: 'Le même pas, cette fois avec i',
+              items: [
+                { p: 'La série ne se soucie pas de savoir si son argument est réel ou imaginaire ; la même troncature s’applique :' },
+                { tex: 'e^{i\\Delta x}=1+i\\Delta x+\\frac{(i\\Delta x)^{2}}{2!}+\\cdots\\;\\approx\\;1+i\\Delta x' },
+                { tex: 'z_{n+1}=z_{n}\\,(1+i\\Delta x)\\qquad\\Longrightarrow\\qquad z_{n}=(1+i\\Delta x)^{n}' },
+                { p: 'Multiplier par 1 + iΔx fait tourner de arctan(Δx) ≈ Δx. Voilà d’où vient la rotation : ni cosinus ni sinus n’ont été utilisés.' }
+              ] },
+            { h: 'Pourquoi une spirale, et pourquoi elle se referme',
+              items: [
+                { p: 'Le facteur n’est pas sur le cercle unité :' },
+                { tex: '\\left|1+i\\Delta x\\right|=\\sqrt{1+\\Delta x^{2}}>1' },
+                { p: 'le module croît donc un peu à chaque pas, ce qui est exactement la spirale observée :' },
+                { tex: '\\left|z_{n}\\right|=\\left(1+\\Delta x^{2}\\right)^{n/2}' },
+                { p: 'En écrivant n = x/Δx et en utilisant ln(1 + u) ≈ u pour u petit :' },
+                { tex: '\\left|z_{n}\\right|\\approx e^{\\,x\\Delta x/2}\\;\\xrightarrow[\\;\\Delta x\\to 0\\;]{}\\;1' },
+                { p: 'À vérifier sur le panneau : un tour (x = 2π) à Δx = 0,1 prédit |z| ≈ e^0,314 ≈ 1,37. L’angle suit la même logique — n·arctan(Δx) → x. Module vers 1, argument vers x : le point se pose sur le cercle unité à l’angle x.' }
+              ] }
+        ],
         modeReal: 'Exponentielle réelle',
         modeComplex: 'Exponentielle complexe',
         themeToggle: 'Changer de thème',
@@ -79,6 +163,48 @@ const I18N = {
     },
     es: {
         appTitle: 'Explorador de la exponencial compleja',
+        helpBtn: 'Ayuda',
+        helpTitle: 'La matemática detrás de la imagen',
+        helpClose: 'Cerrar',
+        helpSections: [
+            { h: 'La exponencial es una serie',
+              items: [
+                { p: 'La exponencial está definida por una serie que converge para todo valor de x:' },
+                { tex: 'e^{x}=\\sum_{n=0}^{\\infty}\\frac{x^{n}}{n!}=1+x+\\frac{x^{2}}{2!}+\\frac{x^{3}}{3!}+\\frac{x^{4}}{4!}+\\cdots' },
+                { p: 'Cada término después de los dos primeros lleva un factor x² o menor. Cuando x es pequeño pesan muy poco — y ahí está toda la puerta de entrada.' }
+              ] },
+            { h: 'Un paso pequeño: quedarse con dos términos',
+              items: [
+                { p: 'Para un paso Δx suficientemente pequeño, cortamos la serie después del término lineal:' },
+                { tex: 'e^{\\Delta x}=\\underbrace{1+\\Delta x}_{\\text{conservado}}+\\underbrace{\\frac{\\Delta x^{2}}{2}+\\frac{\\Delta x^{3}}{6}+\\cdots}_{\\text{descartado}}\\;\\approx\\;1+\\Delta x' },
+                { p: 'Lo que descartamos es del orden de Δx²/2: unos 0,005 para Δx = 0,1, y 0,00005 para Δx = 0,01. Esta es la única aproximación de toda la aplicación — todo lo que ves en pantalla se sigue de ella.' }
+              ] },
+            { h: 'De la aproximación a una multiplicación',
+              items: [
+                { p: 'La exponencial convierte una suma en el exponente en un producto:' },
+                { tex: 'e^{x+\\Delta x}=e^{x}\\,e^{\\Delta x}\\approx e^{x}\\,(1+\\Delta x)' },
+                { p: 'Avanzar Δx equivale entonces a multiplicar por (1 + Δx). Partiendo de y₀ = 1:' },
+                { tex: 'y_{n+1}=y_{n}\\,(1+\\Delta x)\\qquad\\Longrightarrow\\qquad y_{n}=(1+\\Delta x)^{n}' },
+                { p: 'Con x = n·Δx esto se lee y = (1 + x/n)ⁿ, el límite clásico que devuelve eˣ cuando n crece. La diferencia que ves en pantalla es ese límite todavía no alcanzado.' }
+              ] },
+            { h: 'El mismo paso, ahora con i',
+              items: [
+                { p: 'A la serie no le importa si su argumento es real o imaginario; se aplica el mismo truncamiento:' },
+                { tex: 'e^{i\\Delta x}=1+i\\Delta x+\\frac{(i\\Delta x)^{2}}{2!}+\\cdots\\;\\approx\\;1+i\\Delta x' },
+                { tex: 'z_{n+1}=z_{n}\\,(1+i\\Delta x)\\qquad\\Longrightarrow\\qquad z_{n}=(1+i\\Delta x)^{n}' },
+                { p: 'Multiplicar por 1 + iΔx gira un ángulo arctan(Δx) ≈ Δx. De ahí viene la rotación: no se usó ningún coseno ni ningún seno.' }
+              ] },
+            { h: 'Por qué una espiral, y por qué se cierra',
+              items: [
+                { p: 'El factor no está sobre el círculo unidad:' },
+                { tex: '\\left|1+i\\Delta x\\right|=\\sqrt{1+\\Delta x^{2}}>1' },
+                { p: 'así que el módulo crece un poco en cada paso, que es exactamente la espiral que se ve:' },
+                { tex: '\\left|z_{n}\\right|=\\left(1+\\Delta x^{2}\\right)^{n/2}' },
+                { p: 'Escribiendo n = x/Δx y usando ln(1 + u) ≈ u para u pequeño:' },
+                { tex: '\\left|z_{n}\\right|\\approx e^{\\,x\\Delta x/2}\\;\\xrightarrow[\\;\\Delta x\\to 0\\;]{}\\;1' },
+                { p: 'Comprobalo contra el panel: una vuelta (x = 2π) con Δx = 0,1 predice |z| ≈ e^0,314 ≈ 1,37. El ángulo se comporta igual — n·arctan(Δx) → x. Módulo tendiendo a 1, argumento tendiendo a x: el punto cae sobre el círculo unidad en el ángulo x.' }
+              ] }
+        ],
         modeReal: 'Exponencial real',
         modeComplex: 'Exponencial compleja',
         themeToggle: 'Cambiar tema',
@@ -122,6 +248,23 @@ const i18n = {
         document.title = this.t('appTitle');
     }
 };
+
+/* ---------------------------------------------------------------------------
+   TeX rendering. KaTeX is vendored under vendor/katex (same version and same
+   arrangement as the other apps), so the page stays offline-capable and has no
+   external dependency. Both helpers degrade to the raw source if it is absent.
+   --------------------------------------------------------------------------- */
+
+function texInto(el, src, display) {
+    if (!el) return;
+    if (window.katex) katex.render(src, el, { throwOnError: false, displayMode: !!display });
+    else el.textContent = src;
+}
+
+function texHTML(src, display) {
+    if (window.katex) return katex.renderToString(src, { throwOnError: false, displayMode: !!display });
+    return src;
+}
 
 /* ============================================================================
    2. MATHEMATICAL CORE
@@ -646,8 +789,17 @@ const els = {
     playLabel:     document.getElementById('play-label'),
     btnReset:      document.getElementById('btn-reset'),
     readout:       document.getElementById('readout'),
+    series:        document.getElementById('formula-series'),
     recurrence:    document.getElementById('formula-recurrence'),
     approx:        document.getElementById('formula-approx'),
+    brandMark:     document.getElementById('brand-mark'),
+    modeFormulaR:  document.getElementById('mode-formula-real'),
+    modeFormulaC:  document.getElementById('mode-formula-complex'),
+    euler:         document.getElementById('euler-formula'),
+    helpBtn:       document.getElementById('help-btn'),
+    helpModal:     document.getElementById('help-modal'),
+    helpBody:      document.getElementById('help-body'),
+    helpClose:     document.getElementById('help-close'),
     hint:          document.getElementById('stage-hint'),
     warning:       document.getElementById('stage-warning'),
     conclusionCard:document.getElementById('conclusion-card'),
@@ -684,28 +836,28 @@ function formatDx(dx) {
 function readoutRows() {
     if (state.mode === 'real') {
         return [
-            ['dx',    'Δx'],
-            ['n',     'n'],
-            ['x',     'x'],
+            ['dx',    texHTML('\\Delta x')],
+            ['n',     texHTML('n')],
+            ['x',     texHTML('x')],
             ['sep1',  null],
-            ['y',     'y<sub>n</sub>'],
-            ['exact', 'exp(x)'],
+            ['y',     texHTML('y_{n}')],
+            ['exact', texHTML('e^{x}')],
             ['sep2',  null],
             ['err',   i18n.t('labelError')],
             ['rel',   i18n.t('labelRelError')]
         ];
     }
     return [
-        ['dx',    'Δx'],
-        ['n',     'n'],
-        ['x',     'x = nΔx'],
+        ['dx',    texHTML('\\Delta x')],
+        ['n',     texHTML('n')],
+        ['x',     texHTML('x = n\\,\\Delta x')],
         ['sep1',  null],
-        ['z',     'z<sub>n</sub>'],
-        ['re',    'Re(z<sub>n</sub>)'],
-        ['im',    'Im(z<sub>n</sub>)'],
-        ['mod',   '|z<sub>n</sub>|'],
+        ['z',     texHTML('z_{n}')],
+        ['re',    texHTML('\\mathrm{Re}(z_{n})')],
+        ['im',    texHTML('\\mathrm{Im}(z_{n})')],
+        ['mod',   texHTML('\\left|z_{n}\\right|')],
         ['sep2',  null],
-        ['turns', i18n.t('labelTurns') + ' = x/2π']
+        ['turns', i18n.t('labelTurns') + ' ' + texHTML('= x/2\\pi')]
     ];
 }
 
@@ -770,15 +922,24 @@ function applyMode() {
     els.modeReal.setAttribute('aria-selected', String(real));
     els.modeComplex.setAttribute('aria-selected', String(!real));
 
-    /* The two permanent formulas — deliberately parallel between the modes. */
-    els.recurrence.innerHTML = real
-        ? 'y<sub>n+1</sub> = y<sub>n</sub> (1 + Δx)'
-        : 'z<sub>n+1</sub> = z<sub>n</sub> (1 + iΔx)';
-    els.approx.innerHTML = real
-        ? 'exp(Δx) ≈ 1 + Δx'
-        : 'exp(iΔx) ≈ 1 + iΔx';
+    /* The permanent derivation, read left to right and identical in shape
+       between the two modes: the function first, then the approximation we
+       make on it, then the recurrence that approximation licenses. */
+    texInto(els.series, real
+        ? 'e^{x}=1+x+\\frac{x^{2}}{2!}+\\cdots'
+        : 'e^{ix}=1+ix+\\frac{(ix)^{2}}{2!}+\\cdots');
+    texInto(els.approx, real
+        ? 'e^{\\Delta x}\\approx 1+\\Delta x'
+        : 'e^{i\\Delta x}\\approx 1+i\\Delta x');
+    texInto(els.recurrence, real
+        ? 'y_{n+1}=y_{n}\\,(1+\\Delta x)'
+        : 'z_{n+1}=z_{n}\\,(1+i\\Delta x)');
 
     els.hint.textContent = i18n.t(real ? 'hintReal' : 'hintComplex');
+
+    /* "One turn" is an angle: it means nothing on the real axis, where it only
+       looked like an obscure way of asking for 2π more of x. */
+    els.btnTurn.hidden = real;
 
     /* Euler is only offered once the complex construction has been explored. */
     els.conclusionCard.hidden = real;
@@ -856,6 +1017,36 @@ function applyDx(newDx) {
     draw();
 }
 
+/* ---------- Help : the mathematics, on demand ---------- */
+
+function buildHelp() {
+    const sections = i18n.t('helpSections');
+    if (!Array.isArray(sections)) return;
+    let html = '';
+    sections.forEach((sec, i) => {
+        html += '<section class="help-section">';
+        html += '<h3><span class="help-num">' + (i + 1) + '</span>' + sec.h + '</h3>';
+        sec.items.forEach(item => {
+            if (item.p) html += '<p>' + item.p + '</p>';
+            else if (item.tex) html += '<div class="help-tex">' + texHTML(item.tex, true) + '</div>';
+        });
+        html += '</section>';
+    });
+    els.helpBody.innerHTML = html;
+}
+
+function openHelp() {
+    setPlaying(false);
+    buildHelp();
+    if (typeof els.helpModal.showModal === 'function') els.helpModal.showModal();
+    else els.helpModal.setAttribute('open', '');
+}
+
+function closeHelp() {
+    if (typeof els.helpModal.close === 'function') els.helpModal.close();
+    else els.helpModal.removeAttribute('open');
+}
+
 /* ---------- Theme ---------- */
 
 function applyTheme(theme) {
@@ -885,6 +1076,7 @@ function setLanguage(lang) {
     els.hint.textContent = i18n.t(state.mode === 'real' ? 'hintReal' : 'hintComplex');
     buildReadout();
     updateReadout();
+    if (els.helpModal.open) buildHelp();
 }
 
 /* ---------- Wiring ---------- */
@@ -913,6 +1105,11 @@ els.conclusionBtn.addEventListener('click', () => {
     els.conclusionBody.hidden = open;
 });
 
+els.helpBtn.addEventListener('click', openHelp);
+els.helpClose.addEventListener('click', closeHelp);
+/* click on the backdrop (the dialog's own box is inset) closes it */
+els.helpModal.addEventListener('click', e => { if (e.target === els.helpModal) closeHelp(); });
+
 els.themeToggle.addEventListener('click', () => {
     applyTheme(currentTheme() === 'light' ? 'dark' : 'light');
 });
@@ -924,6 +1121,7 @@ document.querySelectorAll('.lang-btn').forEach(btn => {
 /* Keyboard: space = play/pause, right arrow = one step, R = reset. */
 document.addEventListener('keydown', e => {
     if (e.target instanceof HTMLInputElement) return;
+    if (els.helpModal.open) return;               // Esc is handled by <dialog>
     if (e.code === 'Space')      { e.preventDefault(); setPlaying(!state.playing); }
     else if (e.code === 'ArrowRight') { e.preventDefault(); doSteps(1); }
     else if (e.key === 'r' || e.key === 'R') { doReset(); }
@@ -951,6 +1149,14 @@ if (window.ResizeObserver) {
 
     const nav = (navigator.language || 'en').slice(0, 2).toLowerCase();
     setLanguage(savedLang || (I18N[nav] ? nav : 'en'));
+
+    /* Fixed pieces, typeset once: they never change with mode or language. */
+    texInto(els.brandMark, 'e^{ix}');
+    texInto(els.modeFormulaR, 'y=e^{x}');
+    texInto(els.modeFormulaC, 'z=e^{ix}');
+    texInto(els.euler, 'e^{ix}=\\cos x+i\\sin x', true);
+    texInto(document.getElementById('dx-label'), '\\Delta x');
+    texInto(document.getElementById('turn-sub'), '+2\\pi');
 
     state.dx = 0.1;
     els.slider.value = String(dxToSlider(state.dx));

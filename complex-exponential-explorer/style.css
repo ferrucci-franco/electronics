@@ -85,14 +85,7 @@ button { font-family: inherit; }
 .top-bar-left  { display: flex; align-items: baseline; gap: .7rem; min-width: 0; }
 .top-bar-right { display: flex; align-items: center; gap: .75rem; }
 
-.brand-mark {
-    font-family: var(--font-math);
-    font-size: 1.35rem;
-    font-style: italic;
-    color: var(--accent);
-    line-height: 1;
-}
-.brand-mark sup { font-size: .62em; font-style: italic; }
+.brand-mark { color: var(--accent); line-height: 1; }
 
 .brand-title {
     font-size: 1rem;
@@ -177,12 +170,7 @@ button { font-family: inherit; }
 }
 .mode-btn:hover { background-color: var(--hover-bg); }
 
-.mode-formula {
-    font-family: var(--font-math);
-    font-size: 1.15rem;
-    font-style: italic;
-    line-height: 1.2;
-}
+.mode-formula { line-height: 1.25; }
 .mode-name {
     font-size: .74rem;
     text-transform: uppercase;
@@ -290,7 +278,7 @@ button { font-family: inherit; }
     flex-wrap: wrap;
     align-items: baseline;
     justify-content: center;
-    gap: .15rem 1.5rem;
+    gap: .15rem 1.2rem;
 }
 .formula-sep {
     width: 1px;
@@ -299,20 +287,20 @@ button { font-family: inherit; }
     background-color: var(--border-color);
 }
 
-.formula-main {
-    font-family: var(--font-math);
-    font-size: 1.22rem;
-    font-style: italic;
-    color: var(--text-primary);
-    line-height: 1.45;
-}
-.formula-sub {
-    font-family: var(--font-math);
-    font-size: 1rem;
-    font-style: italic;
-    color: var(--text-secondary);
-}
+/* The chain reads: function → approximation → recurrence. The last step is
+   the one the app actually iterates, so it carries the strongest colour. */
+.formula-step { color: var(--text-secondary); }
+.formula-step .katex { font-size: 1.02rem; }
+.formula-result { color: var(--text-primary); }
+.formula-result .katex { font-size: 1.12rem; }
 .formula-main sub, .formula-sub sub { font-size: .62em; font-style: normal; }
+
+/* KaTeX paints with currentColor, so it follows the theme by itself; these
+   rules only keep its sizing in line with the surrounding interface. */
+.katex { color: inherit; }
+.readout dt .katex { font-size: .95rem; }
+.mode-formula .katex { font-size: 1.12rem; }
+.brand-mark .katex { font-size: 1.15rem; }
 
 /* ---------- Numeric read-out ---------- */
 .readout {
@@ -324,11 +312,8 @@ button { font-family: inherit; }
 }
 .readout dt {
     color: var(--text-secondary);
-    font-family: var(--font-math);
-    font-style: italic;
     white-space: nowrap;
 }
-.readout dt sub { font-size: .68em; font-style: normal; }
 .readout dd {
     font-variant-numeric: tabular-nums;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -370,14 +355,8 @@ button { font-family: inherit; }
 
 .conclusion-body { padding: .35rem .4rem .2rem; }
 
-.euler-formula {
-    font-family: var(--font-math);
-    font-style: italic;
-    font-size: 1.15rem;
-    text-align: center;
-    color: var(--accent);
-    margin-bottom: .45rem;
-}
+.euler-formula { color: var(--accent); margin-bottom: .5rem; }
+.euler-formula .katex { font-size: 1.05rem; }
 .conclusion-text {
     font-size: .78rem;
     line-height: 1.5;
@@ -403,13 +382,11 @@ button { font-family: inherit; }
 
 .slider-label {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: .45rem;
-    font-family: var(--font-math);
-    font-style: italic;
-    font-size: 1rem;
     color: var(--text-secondary);
 }
+.slider-label .katex { font-size: 1rem; }
 .dx-value {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-style: normal;
@@ -469,8 +446,11 @@ input[type="range"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var
 .btn:hover { background-color: var(--hover-bg); transform: translateY(-1px); }
 .btn:active { transform: translateY(0); }
 .btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+/* an author `display` beats the UA rule behind the hidden attribute */
+.btn[hidden] { display: none; }
 
-.btn-sub { color: var(--text-faint); font-family: var(--font-math); font-style: italic; }
+.btn-sub { color: var(--text-faint); }
+.btn-sub .katex { font-size: .85rem; }
 
 .btn-primary {
     background-color: var(--accent);
@@ -486,6 +466,82 @@ input[type="range"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var
 .btn-quiet { color: var(--text-secondary); }
 
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ============================================================
+   Help dialog
+   ============================================================ */
+.help-dialog {
+    width: min(680px, calc(100vw - 1.6rem));
+    max-height: min(86vh, 900px);
+    padding: 0;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    overflow: hidden;
+}
+.help-dialog::backdrop { background-color: rgba(15, 22, 32, .55); }
+
+.help-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: .7rem .9rem .7rem 1.1rem;
+    background-color: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+}
+.help-head h2 { font-size: .95rem; font-weight: 600; }
+
+.help-body {
+    padding: .3rem 1.1rem 1.3rem;
+    overflow-y: auto;
+    max-height: calc(min(86vh, 900px) - 3.4rem);
+    -webkit-overflow-scrolling: touch;
+}
+
+.help-section { padding-top: 1.1rem; }
+.help-section + .help-section { border-top: 1px solid var(--border-color); }
+
+/* The sections are a derivation: each one uses the previous one's result,
+   so they are numbered because the order genuinely carries information. */
+.help-section h3 {
+    display: flex;
+    align-items: baseline;
+    gap: .5rem;
+    font-size: .88rem;
+    font-weight: 600;
+    margin-bottom: .5rem;
+    text-wrap: balance;
+}
+.help-num {
+    flex: none;
+    font-size: .72rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--accent);
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    padding: .05rem .35rem;
+}
+
+.help-section p {
+    font-size: .84rem;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    max-width: 62ch;
+}
+.help-section p + p { margin-top: .5rem; }
+
+.help-tex {
+    margin: .55rem 0;
+    padding: .1rem 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+.help-tex .katex-display { margin: .35rem 0; }
+.help-tex .katex { font-size: 1rem; }
 
 /* ============================================================
    Responsive
@@ -526,6 +582,16 @@ input[type="range"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var
     .stage { height: 40vh; min-height: 260px; }
 
     .controls { gap: .5rem .8rem; padding-bottom: .8rem; }
+
+    /* Δx is the one thing that gets dragged, and it is dragged with a thumb:
+       a 4px hairline is a desktop affordance, not a touch one. */
+    input[type="range"] { height: 8px; border-radius: 4px; }
+    input[type="range"]::-webkit-slider-thumb { width: 24px; height: 24px; border-width: 3px; }
+    input[type="range"]::-moz-range-thumb { width: 21px; height: 21px; border-width: 3px; }
+    .slider-label .katex { font-size: 1.05rem; }
+
+    .help-body { padding: .2rem .9rem 1.2rem; }
+    .help-section p { font-size: .82rem; }
     .btn { height: 34px; padding: 0 .7rem; font-size: .76rem; }
     .btn-primary { min-width: 80px; }
 }

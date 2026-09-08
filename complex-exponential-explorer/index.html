@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Complex Exponential Explorer</title>
 <meta name="description" content="An interactive, pedagogical exploration of the real and complex exponential built from small multiplicative steps.">
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
 <link rel="stylesheet" href="style.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌀</text></svg>">
 </head>
@@ -15,7 +16,7 @@
      ============================================================ -->
 <header class="top-bar">
     <div class="top-bar-left">
-        <span class="brand-mark" aria-hidden="true">e<sup>i&thinsp;x</sup></span>
+        <span class="brand-mark" id="brand-mark" aria-hidden="true"></span>
         <h1 class="brand-title" data-i18n="appTitle">Complex Exponential Explorer</h1>
     </div>
 
@@ -25,6 +26,9 @@
             <button class="lang-btn" data-lang="fr">FR</button>
             <button class="lang-btn" data-lang="es">ES</button>
         </div>
+        <button id="help-btn" class="icon-btn" title="Help" data-i18n-title="helpBtn">
+            <span class="icon">?</span>
+        </button>
         <button id="theme-toggle" class="icon-btn" title="Toggle theme" data-i18n-title="themeToggle">
             <span class="icon">🌙</span>
         </button>
@@ -36,11 +40,11 @@
      ============================================================ -->
 <nav class="mode-switch" role="tablist" aria-label="Mode">
     <button class="mode-btn active" id="mode-real" role="tab" aria-selected="true" data-mode="real">
-        <span class="mode-formula">y = exp(x)</span>
+        <span class="mode-formula" id="mode-formula-real"></span>
         <span class="mode-name" data-i18n="modeReal">Real exponential</span>
     </button>
     <button class="mode-btn" id="mode-complex" role="tab" aria-selected="false" data-mode="complex">
-        <span class="mode-formula">z = exp(i&thinsp;x)</span>
+        <span class="mode-formula" id="mode-formula-complex"></span>
         <span class="mode-name" data-i18n="modeComplex">Complex exponential</span>
     </button>
 </nav>
@@ -56,9 +60,11 @@
              on screen without scrolling, phones included. -->
         <div class="card card-formula">
             <div class="formula-line">
-                <span class="formula-main" id="formula-recurrence"></span>
+                <span class="formula-step" id="formula-series"></span>
                 <span class="formula-sep" aria-hidden="true"></span>
-                <span class="formula-sub" id="formula-approx"></span>
+                <span class="formula-step" id="formula-approx"></span>
+                <span class="formula-sep" aria-hidden="true"></span>
+                <span class="formula-step formula-result" id="formula-recurrence"></span>
             </div>
             <p class="stage-hint" id="stage-hint" data-i18n="hintReal">
                 Each small step forward in x multiplies the previous value by (1 + &Delta;x).
@@ -75,7 +81,7 @@
         <div class="controls">
             <div class="control-group control-group-slider">
                 <label class="slider-label" for="dx-slider">
-                    <span>&Delta;x</span>
+                    <span id="dx-label"></span>
                     <output id="dx-value" class="dx-value">0.100</output>
                 </label>
                 <input type="range" id="dx-slider" min="0" max="1000" value="600" step="1"
@@ -85,7 +91,7 @@
             <div class="control-group control-group-buttons">
                 <button class="btn" id="btn-step1"><span data-i18n="step1">+1 step</span></button>
                 <button class="btn" id="btn-step5"><span data-i18n="step5">+5 steps</span></button>
-                <button class="btn" id="btn-turn"><span data-i18n="turn">Complete one turn</span> <span class="btn-sub">+2&pi;</span></button>
+                <button class="btn" id="btn-turn"><span data-i18n="turn">Complete one turn</span> <span class="btn-sub" id="turn-sub"></span></button>
                 <button class="btn btn-primary" id="btn-play"><span id="play-label" data-i18n="play">Play</span></button>
                 <button class="btn btn-quiet" id="btn-reset"><span data-i18n="reset">Reset</span></button>
             </div>
@@ -107,7 +113,7 @@
                 <span class="chev" aria-hidden="true">▾</span>
             </button>
             <div class="conclusion-body" id="conclusion-body" hidden>
-                <p class="euler-formula">exp(i&thinsp;x) = cos&thinsp;x + i&thinsp;sin&thinsp;x</p>
+                <p class="euler-formula" id="euler-formula"></p>
                 <p class="conclusion-text" data-i18n="conclusionText"></p>
             </div>
         </div>
@@ -115,6 +121,20 @@
     </aside>
 </main>
 
+<!-- ============================================================
+     HELP : the mathematics, on demand
+     ============================================================ -->
+<dialog id="help-modal" class="help-dialog" aria-labelledby="help-title">
+    <header class="help-head">
+        <h2 id="help-title" data-i18n="helpTitle">The mathematics</h2>
+        <button id="help-close" class="icon-btn" title="Close" data-i18n-title="helpClose">
+            <span class="icon">&times;</span>
+        </button>
+    </header>
+    <div class="help-body" id="help-body"></div>
+</dialog>
+
+<script src="vendor/katex/katex.min.js"></script>
 <script src="script.js"></script>
 </body>
 </html>
