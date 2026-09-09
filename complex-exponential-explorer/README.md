@@ -90,6 +90,34 @@ its value to wherever the click landed, which is no way to nudge anything.
 
 Keyboard, away from the slider: `Space` play/pause, `→` one step, `R` reset.
 
+## Making an animation
+
+`index.html?gif` opens an animation generator: pick the mode, `Δx`, the final
+`x`, how long it should last and how big it should be, and it writes a looping
+GIF for a slide. Two files under `tools/` that the app never loads otherwise,
+so a normal visit carries none of it.
+
+Every frame is produced by the application's own `draw()`, pointed for the
+length of one frame at an off-screen canvas of the requested size. There is no
+second renderer, so the GIF cannot drift away from what the plot looks like:
+same fit, same hierarchy of trail, increment and vector, same theme.
+
+Two things are worth knowing. **Framing** is either fixed — the trajectory is
+run to its end first, the view computed from there, and the animation drawn
+inside a frame that then holds still — or free to follow the simulation as the
+app does live. **Frame count** is capped at one step per frame: asking for 20 a
+second of a fifty-step trajectory would only repeat frames, so it drops to one
+step each and holds them longer, lasting exactly as long as asked.
+
+`tools/gif-encoder.js` writes the GIF: the palette holds the drawing's real
+colours rather than an approximation of them, and every frame after the first
+is stored as its difference with the one before, clipped to the rectangle that
+changed. A seven-second complex spiral at 660×620 comes to about 55 KB.
+
+Downloading is a browser save, so use the generator from the files on disk or
+from the published site — not from a sandboxed preview, where a page cannot
+hand the viewer a file.
+
 Also available: light/dark theme, three interface languages (EN / FR / ES) and
 a **Help** panel (`?`) that walks the whole derivation in six steps, in every
 language: the question, the exact multiplicative answer, the truncation and the
