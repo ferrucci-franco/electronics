@@ -49,7 +49,7 @@ const I18N = {
         warnMaxSteps: 'Maximum number of steps reached.',
         warnOverflow: 'The value has grown beyond what can be represented.',
         helpBtn: 'Help',
-        plotHint: 'Drag: zoom to box (thin band = one axis) · Wheel: zoom · Two fingers: pan · Middle or right drag: pan · Double click: fit',
+        plotHint: 'Drag: box zoom (thin band = one axis) · Wheel or two fingers up-down: zoom · Two fingers sideways: pan · Middle or right drag: pan · Double click: fit',
         helpTitle: 'The mathematics behind the picture',
         helpClose: 'Close',
         helpSections: [
@@ -152,7 +152,7 @@ const I18N = {
         warnMaxSteps: 'Nombre maximal de pas atteint.',
         warnOverflow: 'La valeur est devenue trop grande pour être représentée.',
         helpBtn: 'Aide',
-        plotHint: 'Glisser : zoom sur une zone (bande fine = un seul axe) · Molette : zoom · Deux doigts : déplacer · Clic milieu ou droit glissé : déplacer · Double clic : ajuster',
+        plotHint: 'Glisser : zoom sur une zone (bande fine = un seul axe) · Molette ou deux doigts verticalement : zoom · Deux doigts latéralement : déplacer · Clic milieu ou droit glissé : déplacer · Double clic : ajuster',
         helpTitle: 'Les mathématiques derrière l’image',
         helpClose: 'Fermer',
         helpSections: [
@@ -255,7 +255,7 @@ const I18N = {
         warnMaxSteps: 'Se alcanzó el número máximo de pasos.',
         warnOverflow: 'El valor ha crecido más allá de lo representable.',
         helpBtn: 'Ayuda',
-        plotHint: 'Arrastrar: zoom a una zona (banda fina = un solo eje) · Rueda: zoom · Dos dedos: desplazar · Botón central o derecho: desplazar · Doble clic: ajustar',
+        plotHint: 'Arrastrar: zoom a una zona (banda fina = un solo eje) · Rueda o dos dedos vertical: zoom · Dos dedos lateral: desplazar · Botón central o derecho: desplazar · Doble clic: ajustar',
         helpTitle: 'La matemática detrás de la imagen',
         helpClose: 'Cerrar',
         helpSections: [
@@ -1045,35 +1045,29 @@ function zoomToRect(sim, x0, y0, x1, y1) {
 }
 
 /**
- * A trackpad reports a two-finger scroll as a wheel event, the same event a
- * mouse notch produces, so the two have to be told apart by how they look:
+ * How a wheel event is read: by direction, not by guessing the device.
  *
- *   - a pinch arrives with ctrlKey set (the browser synthesises that), and a
- *     mouse reporting in lines or pages is a mouse — both zoom;
- *   - any horizontal component means fingers, since a wheel has none;
- *   - otherwise a mouse notch is one big quantised jump, where a trackpad
- *     sends a stream of small ones.
+ * Two fingers straight up or down zoom; two fingers sideways or diagonal pan.
+ * A mouse wheel carries no horizontal component, so it zooms by the same rule,
+ * and a pinch — which the browser reports with ctrlKey — zooms whichever way
+ * it goes.
  *
- * The verdict is taken once at the start of a gesture and held until the
- * events stop for a moment, so a flick that accelerates past the threshold
- * does not turn into a zoom halfway through.
+ * Once sideways movement has shown up, the verdict is held for the rest of the
+ * gesture: a diagonal swipe would otherwise flip to zoom during the moments
+ * its horizontal component passes through zero.
  */
 const WHEEL_GESTURE_GAP = 220;   // ms of quiet that ends a gesture
-const MOUSE_NOTCH = 50;          // px below which a vertical delta is fingers
+const SIDEWAYS = 1;              // px of horizontal delta that is not vertical
 
-let wheelGesture = { mode: null, at: 0 };
+let wheelGesture = { pan: false, at: 0 };
 
 function wheelIsZoom(e) {
     if (e.ctrlKey || e.metaKey) return true;
-    if (e.deltaMode !== 0) return true;
     const now = performance.now();
-    if (wheelGesture.mode && now - wheelGesture.at < WHEEL_GESTURE_GAP) {
-        wheelGesture.at = now;
-        return wheelGesture.mode === 'zoom';
-    }
-    const zoom = e.deltaX === 0 && Math.abs(e.deltaY) >= MOUSE_NOTCH;
-    wheelGesture = { mode: zoom ? 'zoom' : 'pan', at: now };
-    return zoom;
+    if (now - wheelGesture.at > WHEEL_GESTURE_GAP) wheelGesture.pan = false;
+    wheelGesture.at = now;
+    if (Math.abs(e.deltaX) >= SIDEWAYS) wheelGesture.pan = true;
+    return !wheelGesture.pan;
 }
 
 canvas.addEventListener('wheel', e => {
@@ -1081,8 +1075,9 @@ canvas.addEventListener('wheel', e => {
     const sim = currentSim();
 
     if (!wheelIsZoom(e)) {
-        /* Two fingers move the view, in both directions at once. The sign of
-           the delta already carries the reader's natural-scroll setting. */
+        /* Sideways fingers move the view along both axes at once — the
+           vertical part of a diagonal swipe still pans. The sign of the delta
+           already carries the reader's natural-scroll setting. */
         const U = sim.user;
         U.tx -= e.deltaX;
         U.ty -= e.deltaY;
