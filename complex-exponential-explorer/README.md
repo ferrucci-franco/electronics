@@ -68,10 +68,11 @@ optional **Conclusion** section of the complex mode.
 the real axis it was just an obscure way of asking for 2π more of `x`.
 
 On the plot: **drag** a box to zoom into it (held to the plot's aspect ratio in
-complex mode, so the unit circle stays a circle; free in real mode, where the
-axes carry unrelated quantities), **wheel** zooms about the pointer,
-**middle- or right-button drag** pans, **double click** returns to the
-automatic fit. Mouse only — a finger keeps scrolling the page. The wheel also drives the `Δx`
+complex mode, so the unit circle stays a circle; free in real mode, where a
+long thin band zooms that axis alone), **wheel** zooms about the pointer,
+**two fingers** on a trackpad pan in any direction, **middle- or right-button
+drag** pans too, **double click** returns to the automatic fit. Mouse and
+trackpad only — a finger keeps scrolling the page. The wheel also drives the `Δx`
 slider — after the pointer has rested on it for a moment, so that merely
 crossing it while scrolling the page does nothing — one notch per 1% of range.
 
