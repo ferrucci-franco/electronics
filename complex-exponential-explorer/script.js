@@ -881,13 +881,19 @@ function paintTrail(sim, T, col, from) {
 
     /* vertices — every single one is kept, whatever Δx is.
        With a small Δx they simply end up on top of each other and merge
-       visually into the line, which is exactly what we want to show. */
+       visually into the line, which is exactly what we want to show.
+
+       They start at `start`, not at `from`: the segment stroked just above
+       begins on the previous point, and it goes over that dot at 95% alpha.
+       Painting it again is what keeps a trail that grew step by step looking
+       like the same trail repainted in one go — the dots stay the shade they
+       are meant to be instead of washing out one stroke behind the tip. */
     c.fillStyle = col.point;
     c.globalAlpha = 1;
     const r = 1.35;
-    const count = N - from;
+    const count = N - start;
     if (count <= 5000) {
-        for (let i = from; i < N; i++) {
+        for (let i = start; i < N; i++) {
             c.beginPath();
             c.arc(T.px(sim.A[i]), T.py(sim.B[i]), r, 0, TAU);
             c.fill();
@@ -896,7 +902,7 @@ function paintTrail(sim, T, col, from) {
         // fast path for very dense trajectories: a 2.7 px square is
         // indistinguishable from a 2.7 px disc at this size
         const d = 2 * r;
-        for (let i = from; i < N; i++) {
+        for (let i = start; i < N; i++) {
             c.fillRect(T.px(sim.A[i]) - r, T.py(sim.B[i]) - r, d, d);
         }
     }

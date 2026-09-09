@@ -28,7 +28,8 @@ const T = {
         theme: 'Theme', light: 'Light', dark: 'Dark', hold: 'Pause at the end',
         turnsC: 'one turn', turnsR: 'units of x',
         summary: (f, s, p) => `${f} frames · ${s} steps · ${p} per frame`,
-        preview: 'Preview the last frame', make: 'Generate the GIF',
+        preview: 'Preview the last frame', png: 'Save the last frame (PNG)',
+        make: 'Generate the GIF',
         working: 'Frame', palette: 'Reading the colours', writing: 'Writing the GIF',
         done: 'Ready', download: 'Download', close: 'Close', back: 'Back to the app',
         heavy: 'Over 6 MB — shorten it, drop the frame rate, or make it smaller.',
@@ -43,7 +44,8 @@ const T = {
         theme: 'Thème', light: 'Clair', dark: 'Sombre', hold: 'Pause à la fin',
         turnsC: 'un tour', turnsR: 'unités de x',
         summary: (f, s, p) => `${f} images · ${s} pas · ${p} par image`,
-        preview: 'Aperçu de la dernière image', make: 'Générer le GIF',
+        preview: 'Aperçu de la dernière image', png: 'Enregistrer la dernière image (PNG)',
+        make: 'Générer le GIF',
         working: 'Image', palette: 'Lecture des couleurs', writing: 'Écriture du GIF',
         done: 'Prêt', download: 'Télécharger', close: 'Fermer', back: 'Retour à l’application',
         heavy: 'Plus de 6 Mo — raccourcir, baisser la cadence, ou réduire la taille.',
@@ -58,7 +60,8 @@ const T = {
         theme: 'Tema', light: 'Claro', dark: 'Oscuro', hold: 'Pausa al final',
         turnsC: 'una vuelta', turnsR: 'unidades de x',
         summary: (f, s, p) => `${f} cuadros · ${s} pasos · ${p} por cuadro`,
-        preview: 'Ver el último cuadro', make: 'Generar el GIF',
+        preview: 'Ver el último cuadro', png: 'Guardar el último cuadro (PNG)',
+        make: 'Generar el GIF',
         working: 'Cuadro', palette: 'Leyendo los colores', writing: 'Escribiendo el GIF',
         done: 'Listo', download: 'Descargar', close: 'Cerrar', back: 'Volver a la app',
         heavy: 'Más de 6 MB — acortá, bajá los cuadros por segundo, o hacelo más chico.',
@@ -435,8 +438,10 @@ function open() {
 
     const go = el('div', 'gifx-go');
     const btnPreview = el('button', 'btn', w.preview);
+    const btnPng = el('button', 'btn', w.png);
     const btnMake = el('button', 'btn btn-primary', w.make);
     go.appendChild(btnPreview);
+    go.appendChild(btnPng);
     go.appendChild(btnMake);
     form.appendChild(go);
 
@@ -486,26 +491,54 @@ function open() {
 
     const report = (text, frac) => { status.textContent = text; fill.style.width = (frac * 100) + '%'; };
 
-    btnPreview.addEventListener('click', () => {
+    const baseName = () => 'exp-' + cfg.mode + '-dx' + cfg.dx + '-x' + cfg.xEnd.toFixed(2);
+
+    /**
+     * The last frame of the animation — reached the way the animation reaches
+     * it, one scheduled frame at a time, rather than by jumping to the end.
+     *
+     * The two are not quite the same picture: the trail is stroked at 95%
+     * alpha, so a polyline drawn in pieces composites a little darker where
+     * the pieces meet than the same polyline drawn in one go. Walking the real
+     * schedule makes the still exactly the frame the GIF ends on, and makes
+     * the preview a true preview rather than a lookalike. It runs in one
+     * blocking pass so that saving still counts as something the reader asked
+     * for; a few hundred frames take about a second.
+     */
+    function renderLast() {
         read();
-        withTheme(cfg.theme, () => {
+        const shown = withTheme(cfg.theme, () => {
             const plan = schedule(cfg);
             const stage = stage_(cfg);
             prepare(stage, plan.steps);
-            frameAt(stage, plan.steps);
-            stageBox.innerHTML = '';
-            const shown = el('canvas');
-            shown.width = cfg.w; shown.height = cfg.h;
-            shown.getContext('2d').drawImage(stage.g.canvas, 0, 0);
-            stageBox.appendChild(shown);
+            for (let i = 0; i < plan.frames; i++) frameAt(stage, plan.at[i]);
+            const cv = el('canvas');
+            cv.width = cfg.w; cv.height = cfg.h;
+            cv.getContext('2d').drawImage(stage.cv, 0, 0);
+            return cv;
         });
-        draw();
-        report('', 0);
+        stageBox.innerHTML = '';
+        stageBox.appendChild(shown);
+        draw();                     // the on-screen plot, back as it was
+        return shown;
+    }
+
+    btnPreview.addEventListener('click', () => { renderLast(); report('', 0); });
+
+    btnPng.addEventListener('click', () => {
+        const shown = renderLast();
+        /* Encoded inside the click rather than through the asynchronous
+           toBlob, so the save still counts as something the reader asked for. */
+        const a = el('a');
+        a.href = shown.toDataURL('image/png');
+        a.download = baseName() + '.png';
+        a.click();
+        report(w.done + ' · PNG · ' + cfg.w + '×' + cfg.h, 1);
     });
 
     btnMake.addEventListener('click', async () => {
         read();
-        btnMake.disabled = btnPreview.disabled = true;
+        btnMake.disabled = btnPreview.disabled = btnPng.disabled = true;
         stageBox.innerHTML = '';
         try {
             const out = await withTheme(cfg.theme, () => generate(cfg, report));
@@ -515,10 +548,9 @@ function open() {
             img.src = url;
             stageBox.appendChild(img);
 
-            const name = 'exp-' + cfg.mode + '-dx' + cfg.dx + '-x' + cfg.xEnd.toFixed(2) + '.gif';
             const a = el('a', 'btn btn-primary', w.download + ' · ' + mb.toFixed(2) + ' MB');
             a.href = url;
-            a.download = name;
+            a.download = baseName() + '.gif';
             a.style.display = 'inline-block';
             a.style.marginTop = '10px';
             a.style.textDecoration = 'none';
@@ -532,7 +564,7 @@ function open() {
             status.textContent = String(e && e.message || e);
             status.className = 'gifx-status gifx-warn';
         } finally {
-            btnMake.disabled = btnPreview.disabled = false;
+            btnMake.disabled = btnPreview.disabled = btnPng.disabled = false;
             draw();
         }
     });

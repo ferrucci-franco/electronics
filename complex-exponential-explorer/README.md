@@ -102,6 +102,13 @@ length of one frame at an off-screen canvas of the requested size. There is no
 second renderer, so the GIF cannot drift away from what the plot looks like:
 same fit, same hierarchy of trail, increment and vector, same theme.
 
+Beside the GIF there is a **Save the last frame (PNG)** button, for a slide
+that wants a still rather than an animation. It walks the same schedule the
+animation walks instead of jumping to the end, so the still really is the frame
+the GIF stops on: the trail is stroked at 95% alpha, and a polyline drawn in
+pieces composites a little darker where the pieces meet than the same polyline
+drawn in one go.
+
 Two things are worth knowing. **Framing** is either fixed — the trajectory is
 run to its end first, the view computed from there, and the animation drawn
 inside a frame that then holds still — or free to follow the simulation as the
