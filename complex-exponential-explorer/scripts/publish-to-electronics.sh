@@ -72,6 +72,15 @@ grep -qF "$URL_HERE" "$readme" || {
 # `|` as the delimiter: the URLs contain slashes.
 sed -i.bak "s|$URL_HERE|$URL_THERE|" "$readme" && rm -f "$readme.bak"
 
+# The Publishing section explains how to run this script, from a repository the
+# published copy is not in. Drop it there; it only confuses a visitor.
+python3 - "$readme" <<'PYEOF'
+import re, sys, pathlib
+p = pathlib.Path(sys.argv[1]); s = p.read_text()
+out = re.sub(r"\n## Publishing\n.*?(?=\n## )", "", s, flags=re.S)
+p.write_text(out)
+PYEOF
+
 # --- report ----------------------------------------------------------------
 echo
 if git -C "$dest" diff --quiet -- "$APP" && \
