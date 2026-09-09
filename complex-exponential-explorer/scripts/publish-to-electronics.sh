@@ -19,7 +19,7 @@ APP=complex-exponential-explorer
 
 # The files that make up the published copy. Anything else here (the git
 # history, the LICENSE, this script) stays behind.
-FILES=(index.html style.css script.js README.md THIRD_PARTY_LICENSES.md vendor)
+FILES=(index.html style.css script.js README.md THIRD_PARTY_LICENSES.md vendor tools)
 
 # The one line that legitimately differs between the two copies: served from a
 # subdirectory of the site, the app has a different address.
