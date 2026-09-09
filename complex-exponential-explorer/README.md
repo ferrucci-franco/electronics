@@ -73,11 +73,22 @@ long thin band zooms that axis alone), **wheel** zooms about the pointer,
 **two fingers** on a trackpad zoom when they go straight up or down and pan
 when they go sideways or diagonally, **middle- or right-button drag** pans
 too, **double click** returns to the automatic fit. Mouse and
-trackpad only — a finger keeps scrolling the page. The wheel also drives the `Δx`
-slider — after the pointer has rested on it for a moment, so that merely
-crossing it while scrolling the page does nothing — one notch per 1% of range.
+trackpad only — a finger keeps scrolling the page.
 
-Keyboard: `Space` play/pause, `→` one step, `R` reset.
+A frame chosen by hand is kept: moving the `Δx` slider changes the trajectory
+without reframing the plot. The one thing that gives the plot back to the
+automatic fit is the last point starting to leave the screen — and only if it
+was on screen to begin with, so a frame deliberately placed away from the tip is
+never disturbed.
+
+The wheel and the arrow keys both drive the `Δx` slider — after the pointer has
+rested on it for a moment, so that merely crossing it while scrolling the page
+does nothing. One notch per 1% of the range; `Page Up` / `Page Down` are five
+notches, `Home` and `End` the two extremes. The arrows work with the slider
+focused too, but hovering is the useful way round: clicking a range input jumps
+its value to wherever the click landed, which is no way to nudge anything.
+
+Keyboard, away from the slider: `Space` play/pause, `→` one step, `R` reset.
 
 Also available: light/dark theme, three interface languages (EN / FR / ES) and
 a **Help** panel (`?`) that walks the whole derivation in six steps, in every

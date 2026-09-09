@@ -469,7 +469,12 @@ input[type="range"]::-moz-range-thumb {
     background-color: var(--accent);
     border: 2px solid var(--bg-primary);
 }
-input[type="range"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent); }
+/* The ring is on :focus, not only :focus-visible: after a click the slider
+   answers the arrow keys, and that has to be visible. */
+input[type="range"]:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent);
+}
 
 .control-group-buttons { flex-wrap: wrap; justify-content: center; gap: .45rem; }
 
