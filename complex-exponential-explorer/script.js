@@ -49,7 +49,7 @@ const I18N = {
         warnMaxSteps: 'Maximum number of steps reached.',
         warnOverflow: 'The value has grown beyond what can be represented.',
         helpBtn: 'Help',
-        plotHint: 'Drag: zoom to box · Wheel: zoom · Middle or right drag: pan · Double click: fit',
+        plotHint: 'Drag: zoom to box (thin band = one axis) · Wheel: zoom · Two fingers: pan · Middle or right drag: pan · Double click: fit',
         helpTitle: 'The mathematics behind the picture',
         helpClose: 'Close',
         helpSections: [
@@ -152,7 +152,7 @@ const I18N = {
         warnMaxSteps: 'Nombre maximal de pas atteint.',
         warnOverflow: 'La valeur est devenue trop grande pour être représentée.',
         helpBtn: 'Aide',
-        plotHint: 'Glisser : zoom sur une zone · Molette : zoom · Clic milieu ou droit glissé : déplacer · Double clic : ajuster',
+        plotHint: 'Glisser : zoom sur une zone (bande fine = un seul axe) · Molette : zoom · Deux doigts : déplacer · Clic milieu ou droit glissé : déplacer · Double clic : ajuster',
         helpTitle: 'Les mathématiques derrière l’image',
         helpClose: 'Fermer',
         helpSections: [
@@ -255,7 +255,7 @@ const I18N = {
         warnMaxSteps: 'Se alcanzó el número máximo de pasos.',
         warnOverflow: 'El valor ha crecido más allá de lo representable.',
         helpBtn: 'Ayuda',
-        plotHint: 'Arrastrar: zoom a una zona · Rueda: zoom · Arrastrar con botón central o derecho: desplazar · Doble clic: ajustar',
+        plotHint: 'Arrastrar: zoom a una zona (banda fina = un solo eje) · Rueda: zoom · Dos dedos: desplazar · Botón central o derecho: desplazar · Doble clic: ajustar',
         helpTitle: 'La matemática detrás de la imagen',
         helpClose: 'Cerrar',
         helpSections: [
@@ -1044,13 +1044,59 @@ function zoomToRect(sim, x0, y0, x1, y1) {
     requestDraw();
 }
 
+/**
+ * A trackpad reports a two-finger scroll as a wheel event, the same event a
+ * mouse notch produces, so the two have to be told apart by how they look:
+ *
+ *   - a pinch arrives with ctrlKey set (the browser synthesises that), and a
+ *     mouse reporting in lines or pages is a mouse — both zoom;
+ *   - any horizontal component means fingers, since a wheel has none;
+ *   - otherwise a mouse notch is one big quantised jump, where a trackpad
+ *     sends a stream of small ones.
+ *
+ * The verdict is taken once at the start of a gesture and held until the
+ * events stop for a moment, so a flick that accelerates past the threshold
+ * does not turn into a zoom halfway through.
+ */
+const WHEEL_GESTURE_GAP = 220;   // ms of quiet that ends a gesture
+const MOUSE_NOTCH = 50;          // px below which a vertical delta is fingers
+
+let wheelGesture = { mode: null, at: 0 };
+
+function wheelIsZoom(e) {
+    if (e.ctrlKey || e.metaKey) return true;
+    if (e.deltaMode !== 0) return true;
+    const now = performance.now();
+    if (wheelGesture.mode && now - wheelGesture.at < WHEEL_GESTURE_GAP) {
+        wheelGesture.at = now;
+        return wheelGesture.mode === 'zoom';
+    }
+    const zoom = e.deltaX === 0 && Math.abs(e.deltaY) >= MOUSE_NOTCH;
+    wheelGesture = { mode: zoom ? 'zoom' : 'pan', at: now };
+    return zoom;
+}
+
 canvas.addEventListener('wheel', e => {
     e.preventDefault();
+    const sim = currentSim();
+
+    if (!wheelIsZoom(e)) {
+        /* Two fingers move the view, in both directions at once. The sign of
+           the delta already carries the reader's natural-scroll setting. */
+        const U = sim.user;
+        U.tx -= e.deltaX;
+        U.ty -= e.deltaY;
+        sim.locked = true;
+        requestDraw();
+        scheduleSettle();
+        return;
+    }
+
     const p = pointerPos(e);
     /* deltaMode 1 is lines, 2 is pages; normalise so a notch is a notch. */
     const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 100 : 1;
     const d = e.deltaY * unit;
-    zoomAt(currentSim(), p.x, p.y, Math.exp(-d * 0.0015));
+    zoomAt(sim, p.x, p.y, Math.exp(-d * 0.0015));
 }, { passive: false });
 
 /* Middle and right button drag the view; the left button draws the box to
@@ -1092,10 +1138,29 @@ canvas.addEventListener('pointerdown', e => {
  * aspect ratio as it is drawn, so what is framed is exactly what will be shown
  * and no circle is turned into an ellipse.
  */
+/** A band this thin is read as "only the other axis". */
+const BAND_THICKNESS = 26;
+
 function selectionRect(sim) {
     const dx = selection.x1 - selection.x0;
     const dy = selection.y1 - selection.y0;
     if (sim.mode === 'real') {
+        /* A long thin band means one axis: it snaps to the full extent of the
+           other, which the reader sees before releasing. Selecting everything
+           that is already visible on that axis leaves its scale exactly as it
+           was, so the zoom lands on one axis alone. The complex plane never
+           gets here — its box is held to the plot's aspect as it is drawn, so
+           no band can be traced and no circle can be squashed. */
+        const box = plotBox(sim.mode);
+        const w = Math.abs(dx), h = Math.abs(dy);
+        if (h < BAND_THICKNESS && w >= 2 * h) {
+            return { x0: selection.x0, y0: box.pad.t,
+                     x1: selection.x1, y1: box.pad.t + box.h };
+        }
+        if (w < BAND_THICKNESS && h >= 2 * w) {
+            return { x0: box.pad.l, y0: selection.y0,
+                     x1: box.pad.l + box.w, y1: selection.y1 };
+        }
         return { x0: selection.x0, y0: selection.y0, x1: selection.x1, y1: selection.y1 };
     }
     const box = plotBox(sim.mode);
@@ -1324,7 +1389,7 @@ function updateReadout() {
            not the parameter x: they differ by exactly the angular lag the
            approximation introduces, and only agree in the limit Δx → 0. */
         const arg = sweptAngle(n, state.dx);
-        setRO('arg', fmtNum(arg, 4));
+        setRO('arg', fmtNum(arg, 4) + ' rad');
         setRO('turns', (arg / TAU).toFixed(3));
     }
 
