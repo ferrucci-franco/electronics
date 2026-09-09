@@ -554,7 +554,9 @@ function totalX(sim, dx) { return sim.n * dx; }
    ========================================================================== */
 
 const canvas = document.getElementById('plot');
-const ctx = canvas.getContext('2d');
+/* Not const: the GIF generator points the whole renderer at an off-screen
+   canvas of its own for the length of one frame, then puts this one back. */
+let ctx = canvas.getContext('2d');
 
 /* Cached trail layer: the historical polyline plus its vertices are expensive
    to redraw when there are tens of thousands of points, so they are painted
@@ -1874,4 +1876,15 @@ if (window.ResizeObserver) {
 
     applyMode();
     placeModeSwitch();        // also performs the first resizeCanvas()
+
+    /* index.html?gif opens the animation generator: two files that the app
+       never loads otherwise, so nothing of it is carried by a normal visit. */
+    if (/[?#&]gif\b/.test(location.search + location.hash)) {
+        ['tools/gif-encoder.js', 'tools/gif-export.js'].forEach(src => {
+            const tag = document.createElement('script');
+            tag.src = src;
+            tag.async = false;              // encoder first, it is the dependency
+            document.head.appendChild(tag);
+        });
+    }
 })();
