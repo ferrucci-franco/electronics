@@ -92,10 +92,13 @@ Keyboard, away from the slider: `Space` play/pause, `→` one step, `R` reset.
 
 ## Making an animation
 
-`index.html?gif` opens an animation generator: pick the mode, `Δx`, the final
-`x`, how long it should last and how big it should be, and it writes a looping
-GIF for a slide. Two files under `tools/` that the app never loads otherwise,
-so a normal visit carries none of it.
+Open **`gif.html`** — or `index.html?gif`, which is where it sends you: pick
+the mode, `Δx`, the final `x`, how long it should last and how big it should
+be, and it writes a looping GIF for a slide. Two files under `tools/` that the
+app never loads otherwise, so a normal visit carries none of it.
+
+`gif.html` holds nothing of its own; it exists because a query string is
+awkward to type into the address bar of a file opened from disk.
 
 Every frame is produced by the application's own `draw()`, pointed for the
 length of one frame at an off-screen canvas of the requested size. There is no
