@@ -50,6 +50,7 @@ const I18N = {
         warnOverflow: 'The value has grown beyond what can be represented.',
         helpBtn: 'Help',
         plotHint: 'Drag: box zoom (thin band = one axis) · Wheel or two fingers up-down: zoom · Two fingers sideways: pan · Middle or right drag: pan · Double click: fit',
+        sliderHint: 'Drag · wheel · arrow keys, with the pointer resting here or the slider selected · Page Up / Page Down: bigger jumps · Home / End: the extremes',
         helpTitle: 'The mathematics behind the picture',
         helpClose: 'Close',
         helpSections: [
@@ -153,6 +154,7 @@ const I18N = {
         warnOverflow: 'La valeur est devenue trop grande pour être représentée.',
         helpBtn: 'Aide',
         plotHint: 'Glisser : zoom sur une zone (bande fine = un seul axe) · Molette ou deux doigts verticalement : zoom · Deux doigts latéralement : déplacer · Clic milieu ou droit glissé : déplacer · Double clic : ajuster',
+        sliderHint: 'Glisser · molette · flèches du clavier, pointeur posé ici ou curseur sélectionné · Page préc. / Page suiv. : sauts plus grands · Début / Fin : les extrêmes',
         helpTitle: 'Les mathématiques derrière l’image',
         helpClose: 'Fermer',
         helpSections: [
@@ -256,6 +258,7 @@ const I18N = {
         warnOverflow: 'El valor ha crecido más allá de lo representable.',
         helpBtn: 'Ayuda',
         plotHint: 'Arrastrar: zoom a una zona (banda fina = un solo eje) · Rueda o dos dedos vertical: zoom · Dos dedos lateral: desplazar · Botón central o derecho: desplazar · Doble clic: ajustar',
+        sliderHint: 'Arrastrar · rueda · flechas del teclado, con el puntero encima o el slider seleccionado · Re Pág / Av Pág: saltos mayores · Inicio / Fin: los extremos',
         helpTitle: 'La matemática detrás de la imagen',
         helpClose: 'Cerrar',
         helpSections: [
@@ -441,7 +444,7 @@ function sweptAngle(n, dx) {
  */
 function makeSim(mode) {
     const sim = { mode: mode, A: [], B: [], n: 0, overflow: false, limit: false,
-                  view: null, user: null, locked: false };
+                  view: null, user: null, locked: false, tipIn: true };
     resetSim(sim);
     return sim;
 }
@@ -453,6 +456,10 @@ function makeSim(mode) {
  * moving under a reader who has chosen one. Double-clicking clears both, which
  * is what "zoom to fit" means here.
  *
+ * `tipIn` records whether the last point was on screen the last time the reader
+ * or the trajectory touched the frame. It is what lets a chosen frame survive
+ * everything except the one event that must override it — see `updateView`.
+ *
  * The scale is per-axis because a box zoom in real mode may legitimately
  * stretch one axis. In the complex plane it never does: there kx and ky are
  * kept equal, so the unit circle stays a circle.
@@ -460,6 +467,7 @@ function makeSim(mode) {
 function resetUserView(sim) {
     sim.user = { kx: 1, ky: 1, tx: 0, ty: 0 };
     sim.locked = false;
+    sim.tipIn = true;
 }
 
 function resetSim(sim) {
@@ -511,7 +519,18 @@ function advance(sim, count, dx) {
  * closer to the unit circle.
  */
 function rebuildAtSameX(sim, totalX, dx) {
+    /* A reader who has framed the plot by hand keeps that frame: moving the
+       slider is a change of Δx, not a request to reframe. Only the automatic
+       fit is rebuilt from scratch, and only when it is the one in charge —
+       which is what brings the spiral back to fill the plot as Δx shrinks. */
+    const kept = sim.locked ? { user: sim.user, view: sim.view, tipIn: sim.tipIn } : null;
     resetSim(sim);
+    if (kept) {
+        sim.user = kept.user;
+        sim.view = kept.view;
+        sim.tipIn = kept.tipIn;
+        sim.locked = true;
+    }
     const target = Math.min(MAX_STEPS, Math.round(totalX / dx));
     advance(sim, target, dx);
 }
@@ -586,8 +605,45 @@ function resizeCanvas() {
    The view only ever GROWS while stepping, and by a generous factor, so that
    rescaling (which invalidates the cached trail) happens rarely.            */
 
+/* How far inside the plot box the last point must stay. Inside this margin it
+   is "starting to leave the screen", which is the single event allowed to take
+   a hand-chosen frame back. */
+const TIP_MARGIN = 0.04;               // of the box, on each side
+
+/** Is the last point still comfortably inside the frame now on screen? */
+function tipInFrame(sim) {
+    const T = makeTransform(sim);
+    const box = plotBox(sim.mode);
+    const mx = box.w * TIP_MARGIN, my = box.h * TIP_MARGIN;
+    const px = T.px(sim.A[sim.n]), py = T.py(sim.B[sim.n]);
+    if (!isFinite(px) || !isFinite(py)) return false;
+    return px >= box.pad.l + mx && px <= box.pad.l + box.w - mx
+        && py >= box.pad.t + my && py <= box.pad.t + box.h - my;
+}
+
+/* Called right after the reader moves the frame, so that where the tip stands
+   is recorded as a choice rather than read later as an escape: panning the
+   last point out of sight on purpose must not be undone by the next step. */
+function noteTip(sim) { sim.tipIn = tipInFrame(sim); }
+
+/** Taking hold of the view: the automatic fit stops, and the tip is noted. */
+function lockView(sim) {
+    sim.locked = true;
+    noteTip(sim);
+}
+
 function updateView(sim) {
-    if (sim.locked) return;
+    if (sim.locked) {
+        const inside = tipInFrame(sim);
+        /* Still visible, or already out of the frame the reader chose: leave
+           the frame exactly as it is. */
+        if (inside || !sim.tipIn) { sim.tipIn = inside; return; }
+        /* It was on screen and the trajectory has just walked it off the edge.
+           That — and only that — hands the plot back to the automatic fit,
+           which then grows below to take the whole trajectory in again. */
+        resetUserView(sim);
+        trail.key = '';   // the cached pixels were painted for the old frame
+    }
     if (sim.mode === 'real') {
         const x = sim.A[sim.n];
         // exp() overflows above ~709; clamping keeps the mapping finite.
@@ -595,6 +651,7 @@ function updateView(sim) {
     } else {
         if (sim.maxMod > sim.view.R * 0.88) sim.view.R = Math.max(1.25, sim.maxMod * 1.32);
     }
+    sim.tipIn = true;
 }
 
 /* The plot box, in one place: the transform and the zoom anchor must agree,
@@ -1005,7 +1062,7 @@ function zoomAt(sim, mx, my, factor) {
     U.tx = mx - box.ax - (mx - box.ax - U.tx) * kx / U.kx;
     U.ty = my - box.ay - (my - box.ay - U.ty) * ky / U.ky;
     U.kx = kx; U.ky = ky;
-    sim.locked = true;
+    lockView(sim);
     requestDraw();
     scheduleSettle();
 }
@@ -1039,7 +1096,7 @@ function zoomToRect(sim, x0, y0, x1, y1) {
     U.kx = kx; U.ky = ky;
     U.tx = -((l + r) / 2 - box.ax) * kx;
     U.ty = -((t + b) / 2 - box.ay) * ky;
-    sim.locked = true;
+    lockView(sim);
     trail.key = '';                 // the frame jumped: repaint, never blit
     requestDraw();
 }
@@ -1081,7 +1138,7 @@ canvas.addEventListener('wheel', e => {
         const U = sim.user;
         U.tx -= e.deltaX;
         U.ty -= e.deltaY;
-        sim.locked = true;
+        lockView(sim);
         requestDraw();
         scheduleSettle();
         return;
@@ -1117,7 +1174,7 @@ canvas.addEventListener('pointerdown', e => {
     const sim = currentSim();
     if (e.button === 1 || e.button === 2) {
         panning = { x: p.x, y: p.y, tx: sim.user.tx, ty: sim.user.ty };
-        sim.locked = true;
+        lockView(sim);
         canvas.classList.add('panning');
     } else if (e.button === 0) {
         selection = { x0: p.x, y0: p.y, x1: p.x, y1: p.y, live: false };
@@ -1171,9 +1228,11 @@ function selectionRect(sim) {
 canvas.addEventListener('pointermove', e => {
     const p = pointerPos(e);
     if (panning) {
-        const U = currentSim().user;
+        const sim = currentSim();
+        const U = sim.user;
         U.tx = panning.tx + (p.x - panning.x);
         U.ty = panning.ty + (p.y - panning.y);
+        noteTip(sim);
         requestDraw();
         scheduleSettle();
     } else if (selection) {
@@ -1647,35 +1706,99 @@ document.querySelectorAll('.lang-btn').forEach(btn => {
    is an instrument, not a document to be right-clicked. */
 document.addEventListener('contextmenu', e => e.preventDefault());
 
-/* ---------- Wheel over a slider ----------
-   Scrolling the page must not be hijacked by a control the pointer merely
-   crossed, so the wheel only takes hold after it has rested on the slider for
-   a moment. From then on a notch is 1% of the range. */
+/* ---------- Wheel and keyboard over a slider ---------- */
 
-const SLIDER_WHEEL_DELAY = 250;   // ms the pointer must dwell first
+const SLIDER_WHEEL_DELAY = 250;   // ms the pointer must dwell before either
+const SLIDER_NOTCH = 100;         // divisions of the range in one notch or key
 
-function enableWheelOnSlider(input) {
-    /* The track itself is a few pixels tall, which is a cruel target for a
-       wheel. The gesture is taken on the surrounding group instead — label,
-       value and track together. */
-    const zone = input.closest('.control-group') || input;
-    let since = 0;
-    zone.addEventListener('pointerenter', () => { since = performance.now(); });
-    zone.addEventListener('pointerleave', () => { since = 0; });
-    zone.addEventListener('wheel', e => {
-        if (!since || performance.now() - since < SLIDER_WHEEL_DELAY) return;
-        e.preventDefault();
-        const min = Number(input.min), max = Number(input.max);
-        const stepSize = Math.max(Number(input.step) || 1, Math.round((max - min) / 100));
-        const dir = (e.deltaY || e.deltaX) > 0 ? -1 : 1;
-        const next = Math.min(max, Math.max(min, Number(input.value) + dir * stepSize));
-        if (next === Number(input.value)) return;
-        input.value = String(next);
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-    }, { passive: false });
+/** Move a slider and let everything wired to `input` hear about it. */
+function nudgeSlider(input, value) {
+    const min = Number(input.min), max = Number(input.max);
+    const next = Math.min(max, Math.max(min, Math.round(value)));
+    if (next === Number(input.value)) return;
+    input.value = String(next);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
-enableWheelOnSlider(els.slider);
+function sliderNotch(input) {
+    const min = Number(input.min), max = Number(input.max);
+    return Math.max(Number(input.step) || 1, Math.round((max - min) / SLIDER_NOTCH));
+}
+
+/**
+ * The wheel and the arrow keys over the Δx slider.
+ *
+ * The track itself is a few pixels tall, which is a cruel target: both
+ * gestures are taken on the surrounding group instead — label, value and
+ * track together — and only once the pointer has rested there, so that a
+ * control the reader merely crossed cannot hijack the page.
+ *
+ * The arrows answer in two situations: with the slider focused, as any range
+ * input does, and while the pointer is dwelling over it. The second matters
+ * because clicking a range jumps its value to wherever the click landed, so
+ * "click, then nudge" is no way to nudge anything; hovering and tapping an
+ * arrow leaves Δx exactly where it was and moves it one notch.
+ */
+let sliderDwell = 0;   // when the pointer arrived over the slider, 0 if away
+
+/** True while the arrow keys belong to the slider rather than to the plot. */
+function sliderOwnsKeys() {
+    return sliderDwell !== 0 && performance.now() - sliderDwell >= SLIDER_WHEEL_DELAY;
+}
+
+function enableSliderGestures(input) {
+    const zone = input.closest('.control-group') || input;
+    const dwelling = sliderOwnsKeys;
+
+    zone.addEventListener('pointerenter', () => { sliderDwell = performance.now(); });
+    zone.addEventListener('pointerleave', () => { sliderDwell = 0; });
+
+    zone.addEventListener('wheel', e => {
+        if (!dwelling()) return;
+        e.preventDefault();
+        const dir = (e.deltaY || e.deltaX) > 0 ? -1 : 1;
+        nudgeSlider(input, Number(input.value) + dir * sliderNotch(input));
+    }, { passive: false });
+
+    /* A range input already answers the arrows, but one native step here is a
+       thousandth of the logarithmic range: far too fine to see, and usually
+       too fine to change Δx at all once it is rounded to two significant
+       digits. They get the same notch as the wheel, and the keys that go with
+       it: a page is five notches, Home and End are the two extremes. */
+    function onKey(e) {
+        if (e.altKey || e.ctrlKey || e.metaKey) return;
+        const v = Number(input.value), n = sliderNotch(input);
+        let next;
+        switch (e.key) {
+            case 'ArrowRight': case 'ArrowUp':   next = v + n; break;
+            case 'ArrowLeft':  case 'ArrowDown': next = v - n; break;
+            case 'PageUp':     next = v + 5 * n; break;
+            case 'PageDown':   next = v - 5 * n; break;
+            case 'Home':       next = Number(input.min); break;
+            case 'End':        next = Number(input.max); break;
+            default: return;
+        }
+        /* Ours now: the native step must not fire on top of it, and the page
+           must not scroll behind it. */
+        e.preventDefault();
+        nudgeSlider(input, next);
+    }
+
+    input.addEventListener('keydown', onKey);
+    /* Not every browser gives a range the keyboard when it is clicked. */
+    input.addEventListener('pointerdown', () => input.focus());
+    document.addEventListener('keydown', e => {
+        /* Hovering only, and never over the shoulder of something else that
+           is listening for the same keys. */
+        if (e.target === input || !dwelling()) return;
+        if (els.helpModal.open) return;
+        const el = document.activeElement;
+        if (el && el !== document.body && el.matches('input, textarea, select, [contenteditable]')) return;
+        onKey(e);
+    });
+}
+
+enableSliderGestures(els.slider);
 
 /* ---------- Where the mode selector lives ----------
    Wide enough, and it rides in the top bar instead of occupying a row of its
@@ -1706,6 +1829,9 @@ else wideScreen.addListener(placeModeSwitch);          // older Safari
 document.addEventListener('keydown', e => {
     if (e.target instanceof HTMLInputElement) return;
     if (els.helpModal.open) return;               // Esc is handled by <dialog>
+    /* The pointer resting on the Δx slider gives it the arrows; ArrowRight
+       must not step the trajectory at the same time. */
+    if (sliderOwnsKeys()) return;
     if (e.code === 'Space')      { e.preventDefault(); setPlaying(!state.playing); }
     else if (e.code === 'ArrowRight') { e.preventDefault(); doSteps(1); }
     else if (e.key === 'r' || e.key === 'R') { doReset(); }
