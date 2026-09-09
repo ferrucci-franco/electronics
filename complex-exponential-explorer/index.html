@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Complex Exponential Explorer</title>
+<meta name="description" content="An interactive, pedagogical exploration of the real and complex exponential built from small multiplicative steps.">
+<link rel="stylesheet" href="vendor/katex/katex.min.css">
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌀</text></svg>">
+</head>
+<body class="theme-light">
+
+<!-- ============================================================
+     TOP BAR : title, language pills, theme toggle
+     ============================================================ -->
+<header class="top-bar">
+    <div class="top-bar-left">
+        <span class="brand-mark" id="brand-mark" aria-hidden="true"></span>
+        <h1 class="brand-title" data-i18n="appTitle">Complex Exponential Explorer</h1>
+    </div>
+
+    <!-- On a computer the mode selector is moved in here, freeing the row it
+         had to itself for the plot. Placement is done in script.js. -->
+    <div class="top-bar-center" id="top-bar-center"></div>
+
+    <div class="top-bar-right">
+        <div class="language-selector" role="group" aria-label="Language">
+            <button class="lang-btn active" data-lang="en">EN</button>
+            <button class="lang-btn" data-lang="fr">FR</button>
+            <button class="lang-btn" data-lang="es">ES</button>
+        </div>
+        <button id="help-btn" class="icon-btn" title="Help" data-i18n-title="helpBtn">
+            <span class="icon">?</span>
+        </button>
+        <button id="theme-toggle" class="icon-btn" title="Toggle theme" data-i18n-title="themeToggle">
+            <span class="icon">🌙</span>
+        </button>
+    </div>
+</header>
+
+<!-- ============================================================
+     MODE SELECTOR : the two exponentials
+     ============================================================ -->
+<nav class="mode-switch" role="tablist" aria-label="Mode">
+    <button class="mode-btn active" id="mode-real" role="tab" aria-selected="true" data-mode="real">
+        <span class="mode-formula" id="mode-formula-real"></span>
+        <span class="mode-name" data-i18n="modeReal">Real exponential</span>
+    </button>
+    <button class="mode-btn" id="mode-complex" role="tab" aria-selected="false" data-mode="complex">
+        <span class="mode-formula" id="mode-formula-complex"></span>
+        <span class="mode-name" data-i18n="modeComplex">Complex exponential</span>
+    </button>
+</nav>
+
+<!-- ============================================================
+     MAIN : plot stage + side panel
+     ============================================================ -->
+<main class="layout">
+
+    <div class="stage-column">
+
+        <!-- The whole derivation, above the graph so that it is on screen
+             without scrolling, phones included: the question, the exact answer
+             the exponential gives, the one approximation, the step iterated. -->
+        <div class="card card-formula">
+            <p class="formula-question" id="formula-question"></p>
+            <div class="formula-line" id="formula-line"></div>
+            <p class="stage-hint" id="stage-hint" data-i18n="hintReal">
+                Each small step forward in x multiplies the previous value by (1 + &Delta;x).
+            </p>
+        </div>
+
+        <section class="stage">
+            <canvas id="plot" data-i18n-title="plotHint"></canvas>
+            <p class="stage-warning" id="stage-warning" hidden></p>
+        </section>
+
+        <!-- Controls sit directly under the plot: on a phone Δx must be
+             reachable without scrolling past the read-out. -->
+        <div class="controls">
+            <div class="control-group control-group-slider">
+                <label class="slider-label" for="dx-slider">
+                    <span id="dx-label"></span>
+                    <output id="dx-value" class="dx-value">0.100</output>
+                </label>
+                <input type="range" id="dx-slider" min="0" max="1000" value="600" step="1"
+                       aria-label="Delta x">
+            </div>
+
+            <div class="control-group control-group-buttons">
+                <button class="btn" id="btn-step1"><span data-i18n="step1">+1 step</span></button>
+                <button class="btn" id="btn-step5"><span data-i18n="step5">+5 steps</span></button>
+                <button class="btn" id="btn-turn"><span data-i18n="turn">Complete one turn</span> <span class="btn-sub" id="turn-sub"></span></button>
+                <button class="btn btn-primary" id="btn-play"><span id="play-label" data-i18n="play">Play</span></button>
+                <button class="btn btn-quiet" id="btn-reset"><span data-i18n="reset">Reset</span></button>
+            </div>
+        </div>
+    </div>
+
+    <aside class="panel">
+
+        <!-- Live numeric read-out -->
+        <div class="card">
+            <h2 class="card-title" data-i18n="values">Values</h2>
+            <dl class="readout" id="readout"></dl>
+        </div>
+
+        <!-- Conclusion (complex mode only) : Euler is revealed here, not before -->
+        <div class="card card-conclusion" id="conclusion-card" hidden>
+            <button class="conclusion-btn" id="conclusion-btn" aria-expanded="false" aria-controls="conclusion-body">
+                <span data-i18n="conclusion">Conclusion</span>
+                <span class="chev" aria-hidden="true">▾</span>
+            </button>
+            <div class="conclusion-body" id="conclusion-body" hidden>
+                <p class="euler-formula" id="euler-formula"></p>
+                <p class="conclusion-text" data-i18n="conclusionText"></p>
+            </div>
+        </div>
+
+    </aside>
+</main>
+
+<!-- ============================================================
+     HELP : the mathematics, on demand
+     ============================================================ -->
+<dialog id="help-modal" class="help-dialog" aria-labelledby="help-title">
+    <header class="help-head">
+        <h2 id="help-title" data-i18n="helpTitle">The mathematics</h2>
+        <button id="help-close" class="icon-btn" title="Close" data-i18n-title="helpClose">
+            <span class="icon">&times;</span>
+        </button>
+    </header>
+    <div class="help-body" id="help-body"></div>
+</dialog>
+
+<script src="vendor/katex/katex.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

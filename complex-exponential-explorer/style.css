@@ -1,0 +1,782 @@
+/* ============================================================
+   Complex Exponential Explorer — stylesheet
+   Clean, academic, projector-friendly. Two themes, few colours.
+   ============================================================ */
+
+/* ---------- Theme tokens ---------- */
+:root {
+    --accent:          #3a6ea5;   /* approximation / segments        */
+    --accent-strong:   #204a78;   /* discrete points                 */
+    --accent-last:     #0f766e;   /* last increment (teal)           */
+    --accent-radius:   #e0a458;   /* vector from the origin (orange) */
+    --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --font-math: 'Latin Modern Math', 'Cambria Math', Cambria, Georgia, 'Times New Roman', serif;
+    --radius: 10px;
+    --control-h: 38px;
+}
+
+.theme-light {
+    --bg-primary:   #ffffff;
+    --bg-secondary: #f4f6f8;
+    --bg-tertiary:  #e6eaee;
+    --text-primary: #1d2733;
+    --text-secondary:#5f6b7a;
+    --text-faint:   #8a94a1;
+    --border-color: #d7dde3;
+    --hover-bg:     #e9edf1;
+    --grid-color:   #eceff2;
+    --axis-color:   #b9c2cb;
+    --reference:    #9aa7b4;
+    --canvas-bg:    #ffffff;
+    --shadow:       0 1px 2px rgba(20,32,48,.06);
+}
+
+.theme-dark {
+    --accent:          #7fb0e0;
+    --accent-strong:   #b9d6f2;
+    --accent-last:     #4ec9b8;
+    --accent-radius:   #e8b878;
+    --bg-primary:   #171b21;
+    --bg-secondary: #1e242c;
+    --bg-tertiary:  #2a323c;
+    --text-primary: #e4e9ef;
+    --text-secondary:#a4b0bd;
+    --text-faint:   #79848f;
+    --border-color: #333d49;
+    --hover-bg:     #2f3945;
+    --grid-color:   #232a33;
+    --axis-color:   #4a5663;
+    --reference:    #66727f;
+    --canvas-bg:    #171b21;
+    --shadow:       0 1px 2px rgba(0,0,0,.3);
+}
+
+/* ---------- Reset & base ---------- */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+    font-family: var(--font-ui);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    /* On a touch screen a drag that starts near the slider otherwise begins a
+       text selection instead of moving the thumb. The interface is operated,
+       not read, so nothing in it needs to be selectable. */
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+}
+
+/* The help panel is the one surface meant for reading, so its text stays
+   selectable and copyable. */
+.help-body {
+    -webkit-user-select: text;
+    user-select: text;
+}
+
+button { font-family: inherit; }
+
+/* ============================================================
+   Top bar
+   ============================================================ */
+.top-bar {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: .55rem 1.25rem;
+    background-color: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.top-bar-left   { display: flex; align-items: baseline; gap: .7rem; min-width: 0; }
+.top-bar-center { display: flex; justify-content: center; flex: 1 1 auto; min-width: 0; }
+.top-bar-right  { display: flex; align-items: center; gap: .75rem; flex: none; }
+
+.brand-mark { color: var(--accent); line-height: 1; }
+
+.brand-title {
+    font-size: 1.06rem;
+    font-weight: 600;
+    letter-spacing: .01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Language pills */
+.language-selector {
+    display: flex;
+    gap: .25rem;
+    background-color: var(--bg-tertiary);
+    padding: .25rem;
+    border-radius: 8px;
+}
+
+.lang-btn {
+    padding: .3rem .65rem;
+    border: none;
+    background-color: transparent;
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: .8rem;
+    font-weight: 600;
+    letter-spacing: .03em;
+    border-radius: 6px;
+    transition: background-color .18s, color .18s;
+}
+.lang-btn:hover { background-color: var(--hover-bg); }
+.lang-btn.active {
+    background-color: var(--accent);
+    color: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,.18);
+}
+
+/* Icon button (theme toggle) */
+.icon-btn {
+    height: var(--control-h);
+    min-width: var(--control-h);
+    padding: 0 .6rem;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    cursor: pointer;
+    border-radius: 8px;
+    font-size: 1.05rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color .18s, transform .18s;
+}
+.icon-btn:hover { background-color: var(--hover-bg); transform: translateY(-1px); }
+.icon-btn:active { transform: translateY(0); }
+
+/* ============================================================
+   Mode selector
+   ============================================================ */
+.mode-switch {
+    display: flex;
+    justify-content: center;
+    gap: .5rem;
+    padding: .7rem 1rem .55rem;
+    flex-shrink: 0;
+}
+
+/* Same idiom as the language pills: the chosen one is filled, the other is
+   merely outlined in the accent so it still reads as something to press. */
+.mode-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .12rem;
+    min-width: 220px;
+    padding: .5rem 1.4rem;
+    border: 1px solid var(--accent);
+    background-color: transparent;
+    color: var(--accent);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: background-color .18s, border-color .18s, color .18s;
+}
+.mode-btn:hover { background-color: var(--hover-bg); }
+
+.mode-formula { line-height: 1.25; }
+.mode-name {
+    font-size: .74rem;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+}
+
+/* In the top bar the two buttons read along a line instead of stacking, so
+   the row they used to occupy goes to the plot. */
+.mode-switch.in-bar { padding: 0; gap: .35rem; }
+.mode-switch.in-bar .mode-btn {
+    flex-direction: row;
+    align-items: baseline;
+    gap: .55rem;
+    min-width: 0;
+    padding: .32rem 1rem;
+}
+.mode-switch.in-bar .mode-formula .katex { font-size: 1.1rem; }
+.mode-switch.in-bar .mode-name { font-size: .71rem; }
+
+.mode-btn.active {
+    background-color: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,.18);
+}
+.mode-btn.active:hover { background-color: var(--accent); }
+
+/* ============================================================
+   Layout : stage + panel
+   ============================================================ */
+.layout {
+    flex: 1 1 auto;
+    display: flex;
+    gap: 1rem;
+    padding: 0 1.25rem;
+    min-height: 0;
+}
+
+/* Formula strip, plot and controls travel together: on a narrow screen they
+   stay adjacent, so Δx is always within reach of the graph it changes. */
+.stage-column {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: .7rem;
+}
+
+.stage {
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    background-color: var(--canvas-bg);
+    overflow: hidden;
+}
+
+/* No touch-action override: panning is a right-button gesture, so the canvas
+   must keep letting a finger scroll the page on a phone. */
+#plot { display: block; width: 100%; height: 100%; cursor: crosshair; }
+#plot.panning { cursor: grabbing; }
+
+.stage-hint {
+    /* No measure cap: it is a single sentence and it should sit on one line
+       wherever the card is wide enough. 74ch fitted the Spanish wording and
+       broke the English and French ones in two. */
+    margin: .3rem auto 0;
+    text-align: center;
+    font-size: .85rem;
+    line-height: 1.45;
+    color: var(--text-faint);
+}
+
+.stage-warning {
+    position: absolute;
+    top: .6rem; left: 50%;
+    transform: translateX(-50%);
+    font-size: .75rem;
+    color: var(--text-secondary);
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: .25rem .6rem;
+}
+
+/* ---------- Side panel ---------- */
+.panel {
+    flex: 0 0 268px;
+    display: flex;
+    flex-direction: column;
+    gap: .7rem;
+    overflow-y: auto;
+    padding-bottom: .2rem;
+}
+
+.card {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: .7rem .85rem;
+    box-shadow: var(--shadow);
+}
+
+.card-title {
+    font-size: .73rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .09em;
+    color: var(--text-faint);
+    margin-bottom: .45rem;
+}
+
+.card-formula {
+    flex: 0 0 auto;
+    text-align: center;
+    padding: .55rem .85rem .6rem;
+}
+
+/* The question the whole chain answers. It leads, so it sits above. */
+.formula-question {
+    font-size: .85rem;
+    font-style: italic;
+    color: var(--text-faint);
+    margin-bottom: .35rem;
+    text-wrap: balance;
+}
+
+.formula-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: center;
+    gap: .2rem .8rem;
+}
+.formula-sep {
+    align-self: center;
+    color: var(--text-faint);
+    font-size: .85rem;
+    opacity: .7;
+}
+
+/* The chain runs from the question to the step the app iterates. Boxed
+   milestones lift out of the working; the final one carries the most weight. */
+.formula-step { color: var(--text-secondary); }
+.formula-step .katex { font-size: 1.06rem; }
+.formula-boxed { color: var(--text-primary); }
+.formula-result { color: var(--accent); }
+.formula-result .katex { font-size: 1.14rem; }
+
+/* KaTeX paints with currentColor, so it follows the theme by itself; these
+   rules only keep its sizing in line with the surrounding interface. */
+.katex { color: inherit; }
+.readout dt .katex { font-size: 1.02rem; }
+.mode-formula .katex { font-size: 1.12rem; }
+.brand-mark .katex { font-size: 1.15rem; }
+
+/* ---------- Numeric read-out ---------- */
+.readout {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: .22rem .7rem;
+    align-items: baseline;
+    font-size: .88rem;
+}
+.readout dt {
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+.readout dd {
+    font-variant-numeric: tabular-nums;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: .84rem;
+    text-align: right;
+    color: var(--text-primary);
+    overflow-wrap: anywhere;
+}
+.readout .row-sep {
+    grid-column: 1 / -1;
+    height: 1px;
+    background-color: var(--border-color);
+    margin: .25rem 0;
+}
+
+/* ---------- Conclusion ---------- */
+.card-conclusion { padding: .45rem .5rem; }
+
+.conclusion-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .4rem;
+    padding: .35rem .35rem;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: .79rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .09em;
+    cursor: pointer;
+    border-radius: 6px;
+}
+.conclusion-btn:hover { background-color: var(--hover-bg); color: var(--text-primary); }
+.conclusion-btn .chev { transition: transform .2s; font-size: .9rem; }
+.conclusion-btn[aria-expanded="true"] .chev { transform: rotate(180deg); }
+
+.conclusion-body { padding: .35rem .4rem .2rem; }
+
+.euler-formula { color: var(--accent); margin-bottom: .5rem; }
+.euler-formula .katex { font-size: 1.13rem; }
+.conclusion-text {
+    font-size: .84rem;
+    line-height: 1.5;
+    color: var(--text-secondary);
+}
+
+/* ============================================================
+   Controls
+   ============================================================ */
+.controls {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: .7rem 1.5rem;
+    padding: 0 0 .9rem;
+}
+
+.control-group { display: flex; align-items: center; gap: .6rem; }
+
+
+.control-group-slider { flex: 0 1 330px; min-width: 230px; }
+
+.slider-label {
+    display: flex;
+    align-items: center;
+    gap: .45rem;
+    color: var(--text-secondary);
+}
+.slider-label .katex { font-size: 1.08rem; }
+.dx-value {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-style: normal;
+    font-size: .91rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+    background-color: var(--bg-tertiary);
+    border-radius: 5px;
+    padding: .1rem .4rem;
+    min-width: 5.2ch;
+    text-align: center;
+}
+
+input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    flex: 1 1 auto;
+    height: 4px;
+    border-radius: 2px;
+    background-color: var(--bg-tertiary);
+    outline: none;
+    cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background-color: var(--accent);
+    border: 2px solid var(--bg-primary);
+    box-shadow: 0 1px 3px rgba(0,0,0,.25);
+}
+input[type="range"]::-moz-range-thumb {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background-color: var(--accent);
+    border: 2px solid var(--bg-primary);
+}
+input[type="range"]:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent); }
+
+.control-group-buttons { flex-wrap: wrap; justify-content: center; gap: .45rem; }
+
+.btn {
+    height: var(--control-h);
+    padding: 0 .9rem;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    border-radius: 8px;
+    font-size: .88rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    transition: background-color .18s, transform .18s, border-color .18s;
+}
+.btn:hover { background-color: var(--hover-bg); transform: translateY(-1px); }
+.btn:active { transform: translateY(0); }
+.btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+/* an author `display` beats the UA rule behind the hidden attribute */
+.btn[hidden] { display: none; }
+
+.btn-sub { color: var(--text-faint); }
+.btn-sub .katex { font-size: .9rem; }
+
+.btn-primary {
+    background-color: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    min-width: 92px;
+    justify-content: center;
+    font-weight: 600;
+}
+.btn-primary:hover { background-color: var(--accent-strong); border-color: var(--accent-strong); }
+.btn-primary .btn-sub { color: rgba(255,255,255,.7); }
+
+.btn-quiet { color: var(--text-secondary); }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ============================================================
+   Help dialog
+   ============================================================ */
+.help-dialog {
+    margin: auto;                 /* not inherited from the UA rule once padding is reset */
+    width: min(680px, calc(100vw - 1.6rem));
+    max-height: min(86vh, 900px);
+    padding: 0;
+    flex-direction: column;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    overflow: hidden;
+}
+.help-dialog[open] { display: flex; }
+.help-dialog::backdrop { background-color: rgba(15, 22, 32, .55); }
+
+.help-head {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: .7rem .9rem .7rem 1.1rem;
+    background-color: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+}
+.help-head h2 { font-size: .95rem; font-weight: 600; }
+
+.help-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: .3rem 1.1rem 1.3rem;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* One measured column for everything — prose, headings and formulas share it
+   and are centred together. Capping only the paragraphs left the text short of
+   the centred formulas, which read as a band of dead space on the right. */
+.help-section {
+    max-width: 78ch;
+    margin: 0 auto;
+    padding-top: 1.1rem;
+}
+.help-section + .help-section { border-top: 1px solid var(--border-color); }
+
+/* The sections are a derivation: each one uses the previous one's result,
+   so they are numbered because the order genuinely carries information. */
+.help-section h3 {
+    display: flex;
+    align-items: baseline;
+    gap: .5rem;
+    font-size: .88rem;
+    font-weight: 600;
+    margin-bottom: .5rem;
+    text-wrap: balance;
+}
+.help-num {
+    flex: none;
+    font-size: .72rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--accent);
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    padding: .05rem .35rem;
+}
+
+.help-section p {
+    font-size: .84rem;
+    line-height: 1.6;
+    color: var(--text-secondary);
+}
+.help-section p + p { margin-top: .5rem; }
+
+/* An aside: a step worth taking slowly, set apart from the main argument. */
+.help-aside {
+    margin: .9rem 0 .5rem;
+    padding: .7rem .9rem .8rem;
+    border: 1px solid var(--border-color);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    background-color: var(--bg-secondary);
+}
+.help-aside h4 {
+    font-size: .82rem;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: .5rem;
+    text-wrap: balance;
+}
+.help-aside p { font-size: .96em; }
+.help-aside .help-tex { margin: .5rem 0; }
+.help-aside .help-tex .katex { font-size: .95em; }
+
+.help-tex {
+    margin: .55rem 0;
+    padding: .1rem 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+.help-tex .katex-display { margin: .35rem 0; }
+.help-tex .katex { font-size: 1rem; }
+
+/* From a tablet up there is room to spare, so the help reads at document
+   size rather than interface size. Phones keep the sizes set further down —
+   this block stops before them. */
+@media (min-width: 561px) {
+    /* The wheel acts on the whole group rather than the 4px track, and this
+       padding gives that target some height. Phones are left out: there is no
+       wheel there, the track is already 12px, and the room is needed to keep
+       the controls above the fold. */
+    .control-group-slider { padding: .5rem 0; }
+
+    .help-dialog { width: min(780px, calc(100vw - 3rem)); }
+    .help-head { padding: .85rem 1rem .85rem 1.5rem; }
+    .help-head h2 { font-size: 1.18rem; }
+    .help-body { padding: .4rem 1.5rem 1.6rem; }
+    /* the dialog itself is the measure here, so the column fills it and no
+       band of empty space is left beside the centred formulas */
+    .help-section { max-width: none; }
+    .help-section { padding-top: 1.35rem; }
+    .help-section h3 { font-size: 1.24rem; margin-bottom: .7rem; }
+    .help-num { font-size: .88rem; padding: .12rem .48rem; }
+    .help-section p { font-size: 1.14rem; line-height: 1.62; }
+    .help-section p + p { margin-top: .65rem; }
+    .help-tex { margin: .8rem 0; }
+    .help-tex .katex { font-size: 1.32rem; }
+    .help-aside { padding: .9rem 1.1rem 1rem; margin: 1.1rem 0 .6rem; }
+    .help-aside h4 { font-size: 1.05rem; margin-bottom: .6rem; }
+}
+
+/* Wide enough for the mode selector to ride in the top bar: the row it used to
+   occupy was also what separated the bar from the cards, so the gap has to be
+   restored here. The query matches the one that moves it (see placeModeSwitch). */
+@media (min-width: 901px) {
+    .layout { padding-top: .7rem; }
+
+    /* Room for a complex number to stay on one line: the value column was
+       being squeezed by the widest label in the same grid. */
+    .panel { flex: 0 0 320px; }
+
+    /* On a computer the help gets most of the screen, and the text uses all of
+       it. A line that wide needs the type to grow with it and the leading to
+       open up, or the eye loses the return to the left margin. */
+    .help-dialog {
+        width: min(80vw, 1400px);
+        max-height: min(88vh, 1000px);
+    }
+    .help-body { max-height: none; padding: .5rem 2rem 1.8rem; }
+    .help-section { max-width: none; }
+
+    .help-head h2 { font-size: 1.14rem; }
+    .help-section h3 { font-size: 1.21rem; }
+    .help-section p { font-size: 1.17rem; line-height: 1.68; }
+    .help-section p + p { margin-top: .8rem; }
+    .help-tex .katex { font-size: 1.36rem; }
+    .help-aside { padding: 1.1rem 1.4rem 1.2rem; }
+    .help-aside h4 { font-size: 1.07rem; }
+}
+
+/* ============================================================
+   Responsive
+   ============================================================ */
+@media (max-width: 900px) {
+    /* The page becomes a normal scrolling document instead of a fixed
+       full-height flex column, so nothing can overlap anything else.
+       Reading order stays: formulas → plot → controls → read-out. */
+    html, body { height: auto; }
+    body { overflow: auto; min-height: 100%; }
+    .layout { flex: 0 0 auto; flex-direction: column; padding: 0 .8rem; min-height: 0; }
+    .stage-column { gap: .6rem; }
+    .stage { flex: 0 0 auto; height: 48vh; min-height: 300px; }
+    .panel { flex: 0 0 auto; flex-direction: row; flex-wrap: wrap; overflow: visible; padding-bottom: 1rem; }
+    .panel .card { flex: 1 1 240px; }
+    .mode-btn { min-width: 0; flex: 1 1 0; padding: .5rem .6rem; }
+    .control-group-slider { flex: 1 1 100%; }
+}
+
+/* Phones: everything that matters — the derivation, the graph and Δx — has to
+   fit on the first screen, and it has to stay readable at arm's length. Type
+   is as large as that budget allows; the room comes from the chrome and from
+   the plot, never from the text. */
+@media (max-width: 560px) {
+    .brand-title { display: none; }
+    .top-bar { padding: .45rem .8rem; }
+    .brand-mark .katex { font-size: 1.2rem; }
+
+    .mode-switch { padding: .42rem .8rem .4rem; gap: .4rem; }
+    .mode-btn { padding: .3rem .4rem; }
+    .mode-formula .katex { font-size: 1.2rem; }
+    .mode-name { font-size: .64rem; letter-spacing: .03em; }
+
+    .card-formula { padding: .45rem .5rem .5rem; }
+    .formula-line { flex-direction: column; align-items: center; gap: .1rem; }
+    .formula-sep { display: none; }
+    .formula-step .katex { font-size: 1.02rem; }
+    .formula-result .katex { font-size: 1.1rem; }
+    .formula-question { font-size: .82rem; margin-bottom: .3rem; }
+    .stage-hint { font-size: .81rem; margin-top: .28rem; }
+
+    /* The plot takes what is left rather than a fixed share of the viewport:
+       everything above and below it has a roughly constant pixel height, so
+       subtracting that keeps the controls on screen across phone sizes where
+       a percentage would not. svh, not vh: on iOS vh measures the viewport
+       with the browser bars collapsed, so it over-reserves. The vh line is
+       the fallback for engines that do not know svh. */
+    .stage-column { gap: .45rem; }
+    .stage {
+        height: clamp(190px, calc(100vh - 528px), 340px);
+        height: clamp(190px, calc(100svh - 528px), 340px);
+        min-height: 0;
+    }
+
+    .controls { gap: .45rem .8rem; padding-bottom: .5rem; }
+    .control-group-slider { gap: .7rem; }
+    /* the +2π label keeps its size so the turn button does not gain a row */
+    .btn { height: 35px; padding: 0 .62rem; font-size: .82rem; }
+    .btn-sub .katex { font-size: .78rem; }
+    .btn-primary { min-width: 80px; }
+
+    /* Δx is the one thing that gets dragged, and it is dragged with a thumb:
+       a 4px hairline is a desktop affordance, not a touch one. */
+    input[type="range"] { height: 12px; border-radius: 6px; }
+    input[type="range"]::-webkit-slider-thumb { width: 28px; height: 28px; border-width: 3px; }
+    input[type="range"]::-moz-range-thumb { width: 25px; height: 25px; border-width: 3px; }
+    .slider-label .katex { font-size: 1.12rem; }
+    .dx-value { font-size: .92rem; }
+
+    .card-title { font-size: .73rem; }
+    .readout { font-size: .88rem; }
+    .readout dt .katex { font-size: 1.02rem; }
+    .readout dd { font-size: .86rem; }
+
+    .help-body { padding: .2rem .9rem 1.2rem; }
+    .help-section h3 { font-size: .96rem; }
+    .help-section p { font-size: .9rem; }
+    .help-tex .katex { font-size: 1.05rem; }
+    .help-aside { padding: .6rem .7rem .7rem; }
+    .help-aside h4 { font-size: .88rem; }
+    .conclusion-btn { font-size: .78rem; }
+    .conclusion-text { font-size: .86rem; }
+    .euler-formula .katex { font-size: 1.12rem; }
+}
+
+/* Short phones (an SE, or any handset with a stubby viewport) cannot hold the
+   full derivation, a usable plot and the controls at the size above. Rather
+   than let the controls fall under the fold, this steps the type back down a
+   notch and lets the plot go smaller — the same layout, one size tighter. */
+@media (max-width: 560px) and (max-height: 700px) {
+    .mode-switch { padding: .35rem .8rem .3rem; }
+    .mode-formula .katex { font-size: 1.06rem; }
+    .mode-name { font-size: .6rem; }
+
+    .card-formula { padding: .4rem .5rem .42rem; }
+    .formula-step .katex { font-size: .93rem; }
+    .formula-result .katex { font-size: 1rem; }
+    .formula-question { font-size: .76rem; margin-bottom: .25rem; }
+    .stage-hint { font-size: .76rem; margin-top: .22rem; }
+
+    .stage {
+        height: clamp(150px, calc(100vh - 498px), 340px);
+        height: clamp(150px, calc(100svh - 498px), 340px);
+    }
+
+    .btn { height: 32px; font-size: .78rem; }
+    .controls { gap: .4rem .7rem; padding-bottom: .45rem; }
+}
