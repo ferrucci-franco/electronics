@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Douche — TD1</title>
+<style>
+  html, body { height: 100%; margin: 0; }
+  body {
+    font: 15px/1.35 system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: #eef0f3; color: #16191d;
+    -webkit-user-select: none; user-select: none;
+  }
+  #app { height: 100%; box-sizing: border-box; padding: 10px;
+         display: flex; flex-direction: column; gap: 8px; }
+
+  /* --- barre des niveaux --- */
+  #niveaux { display: flex; flex-wrap: wrap; gap: 8px; }   /* fenêtre étroite : le titre du cours passe à la ligne */
+  #niveaux button {
+    width: 54px; height: 42px; font-size: 20px; font-weight: 600;
+    background: #fff; color: #16191d;
+    border: 1px solid #c3c9d1; border-radius: 8px; cursor: pointer;
+  }
+  #niveaux button:hover { background: #f3f6fa; }
+  #niveaux button.actif { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+  #titre-niveau { align-self: center; margin-left: 10px; font-size: 20px; font-weight: 600;
+                  white-space: nowrap; }
+  #titre-cours { align-self: center; margin-left: auto; padding-left: 16px;
+                 font-size: 16px; color: #6b737c; white-space: nowrap; }
+
+  /* --- corps : panneau + graphe --- */
+  #corps { flex: 1 1 auto; min-height: 0; display: flex; gap: 10px; }
+  #panneau {
+    flex: 0 0 310px; box-sizing: border-box; padding: 12px;
+    background: #fff; border: 1px solid #d5dae0; border-radius: 8px;
+    overflow: auto; display: flex; flex-direction: column;
+  }
+  #panneau > * { flex: none; }
+  #panneau.demarrer-haut > #ligne-demarrer { order: -1; }  /* N3–N6 : en tête */
+  #ligne-demarrer { display: flex; gap: 8px; }
+  #ligne-demarrer button.b { flex: 1 1 0; min-width: 0; }
+  #btn-pause { flex: 0 0 38%; }
+  #zone {
+    flex: 1 1 auto; min-width: 0;
+    background: #fff; border: 1px solid #d5dae0; border-radius: 8px;
+  }
+  #g { display: block; width: 100%; height: 100%; }
+
+  /* --- contrôles --- */
+  .bloc { margin: 0 0 14px 0; }
+  .bloc .tete { display: flex; justify-content: space-between; align-items: baseline;
+                font-size: 14px; margin-bottom: 4px; }
+  .bloc .val { font-variant-numeric: tabular-nums; font-weight: 600; }
+  #bloc-perso label { display: flex; align-items: center; gap: 7px; font-size: 14px; cursor: pointer; }
+  #bloc-perso input { margin: 0; width: 16px; height: 16px; cursor: pointer; }
+  input[type=range] { width: 100%; margin: 0; }
+  button.b {
+    display: block; width: 100%; box-sizing: border-box;
+    padding: 10px 8px; margin: 0 0 8px 0; font-size: 15px;
+    background: #fff; border: 1px solid #c3c9d1; border-radius: 7px; cursor: pointer;
+  }
+  button.b:hover:not(:disabled) { background: #f3f6fa; }
+  button.b:disabled { opacity: .45; cursor: default; }
+  button.b.primaire { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+  button.b.on { background: #d9534f; border-color: #d9534f; color: #fff; }
+  button.b.primaire:hover:not(:disabled) { background: #1a5fcc; border-color: #1a5fcc; }
+  button.b.on:hover:not(:disabled) { background: #c13f3b; border-color: #c13f3b; }
+  /* N2 : une couleur par rôle */
+  button.b.danger { background: #fdf0ef; border-color: #e7b3ae; color: #a8322b; }
+  button.b.danger:hover:not(:disabled) { background: #f9dedb; }
+  button.b.valider { background: #d4eedb; border-color: #6fb782; color: #1b5a2b; font-weight: 600; }
+  button.b.valider:hover:not(:disabled) { background: #c1e5cb; border-color: #5aa76f; }
+  button.b.neutre { background: #eaf0f7; border-color: #b9c7d8; color: #243447; }
+  button.b.neutre:hover:not(:disabled) { background: #dbe5f1; }
+  /* Perturbations : la couleur de leur effet — voisin refroidit (bleu),
+     saison chaude réchauffe (orange). Clair au repos, franc quand active. */
+  #btn-voisin { background: #e6f0fb; border-color: #9bbde6; color: #1f4f86; }
+  #btn-voisin:hover:not(:disabled) { background: #d5e5f7; }
+  #btn-voisin.on { background: #2f6fbf; border-color: #2f6fbf; color: #fff; }
+  #btn-voisin.on:hover:not(:disabled) { background: #275fa6; border-color: #275fa6; }
+  #btn-saison { background: #fdf0e1; border-color: #efbd84; color: #8a4a0c; }
+  #btn-saison:hover:not(:disabled) { background: #fbe3c8; }
+  #btn-saison.on { background: #dd7a1f; border-color: #dd7a1f; color: #fff; }
+  #btn-saison.on:hover:not(:disabled) { background: #c56b17; border-color: #c56b17; }
+  .legende { margin: 0 0 6px 0; padding: 5px 8px; font-size: 14px; line-height: 1.25;
+             color: #3d444c; background: #f7f9fb;
+             border: 1px solid #d5dae0; border-radius: 7px; }
+  .legende b { color: #16191d; }
+  .legende.alerte { color: #6b4a00; background: #fff6dd; border-color: #e8c35a; }
+  .legende.ok { color: #1d5b2c; background: #e9f6ec; border-color: #8fcb9c; }
+  .legende.ok b { color: #1d5b2c; }
+  .legende.alerte b { color: #6b4a00; }
+  .cache { display: none !important; }
+
+  /* --- table de calibration (niveaux 2 et 3) --- */
+  /* La courbe reste en haut ; seule la table défile, dans l'espace
+     restant du panneau (au moins 90 px). */
+  #panneau > #bloc-table { flex: 1 1 auto; min-height: 90px; margin-top: 2px;
+                           display: flex; flex-direction: column; }
+  #table-defil { flex: 1 1 auto; min-height: 0; overflow: auto; margin-top: 8px; }
+  #table-cal thead th { position: sticky; top: 0; background: #fff; }
+  #table-cal { width: 100%; border-collapse: collapse;
+               font-size: 13px; font-variant-numeric: tabular-nums; }
+  #table-cal th { font-weight: 600; color: #6b737c; text-align: right;
+                  border-bottom: 1px solid #d5dae0; padding: 2px 6px; }
+  #table-cal td { text-align: right; padding: 1px 6px; }
+  #mini { display: block; flex: none; width: 100%; height: 120px;
+          border: 1px solid #e0e4e9; border-radius: 6px; }
+
+  /* --- bas de page --- */
+  #bas { display: flex; align-items: center; justify-content: space-between; }
+  #ecart { font-size: 17px; font-variant-numeric: tabular-nums; }
+  #btn-nouvelle {
+    font-size: 11px; color: #6b737c; background: none;
+    border: 1px solid #d5dae0; border-radius: 6px; padding: 4px 8px; cursor: pointer;
+  }
+  #btn-nouvelle:hover { color: #16191d; background: #fff; }
+
+  /* --- confirmation « Nouvelle douche » (fond flouté) --- */
+  #modale { position: fixed; inset: 0; z-index: 10;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(22, 25, 29, .28);
+            -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+  #modale .carte { width: 380px; max-width: calc(100% - 32px); box-sizing: border-box;
+                   padding: 18px 18px 10px; background: #fff; border-radius: 10px;
+                   border: 1px solid #e8c35a; box-shadow: 0 10px 30px rgba(0,0,0,.18); }
+  #modale h2 { margin: 0 0 8px; font-size: 17px; color: #6b4a00; }
+  #modale p { margin: 0 0 14px; font-size: 14px; line-height: 1.4; color: #3d444c; }
+  #modale .actions { display: flex; gap: 8px; }
+  #modale .actions button.b { margin-bottom: 8px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div id="niveaux">
+    <button type="button" data-niveau="1">1</button>
+    <button type="button" data-niveau="2">2</button>
+    <button type="button" data-niveau="3">3</button>
+    <button type="button" data-niveau="4">4</button>
+    <button type="button" data-niveau="5">5</button>
+    <button type="button" data-niveau="6">6</button>
+    <span id="titre-niveau"></span>
+    <span id="titre-cours">DS 5.6 – Contrôle des systèmes - TD 1</span>
+  </div>
+
+  <div id="corps">
+    <div id="panneau">
+
+      <div class="bloc" id="bloc-angle">
+        <div class="tete"><span>Angle &theta;</span><span class="val" id="v-angle">0,0 °</span></div>
+        <input type="range" id="sl-angle" min="0" max="180" step="0.5" value="0">
+      </div>
+      <div class="legende cache" id="legende-melange"><b>Pourquoi T ne change-t-elle pas
+        instantanément&nbsp;?</b> Dans le robinet, l'eau chaude et l'eau froide mettent un
+        peu de temps à se mélanger&nbsp;: T rejoint sa nouvelle valeur en douceur. Ce
+        n'est pas le temps que met l'eau à parcourir le tuyau jusqu'au pommeau&nbsp;:
+        celui-là viendra au niveau&nbsp;6.</div>
+      <div class="legende cache" id="legende-courbes"><b>T</b>&nbsp;: température réelle<br>
+        <b>T<sub>c</sub></b>&nbsp;: température de consigne</div>
+
+      <div class="bloc cache" id="bloc-perso">
+        <label><input type="checkbox" id="ck-perso"> Je veux faire ma propre consigne</label>
+      </div>
+
+      <div class="bloc cache" id="bloc-tc">
+        <div class="tete"><span>Consigne T<sub>c</sub></span><span class="val" id="v-tc">37,0 °C</span></div>
+        <input type="range" id="sl-tc" min="25" max="50" step="0.5" value="37">
+      </div>
+
+      <div class="bloc cache" id="bloc-kp">
+        <div class="tete"><span>Gain K<sub>p</sub></span><span class="val" id="v-kp">10</span></div>
+        <input type="range" id="sl-kp" min="1" max="100" step="1" value="10">
+      </div>
+
+      <div class="bloc cache" id="bloc-kf">
+        <div class="tete"><span>Gain K<sub>i</sub></span><span class="val" id="v-kf">4,0</span></div>
+        <input type="range" id="sl-kf" min="0.5" max="30" step="0.1" value="4">
+      </div>
+      <div class="legende cache" id="legende-loi"><b>Correcteur proportionnel</b>&nbsp;:
+        l'angle d'ouverture du robinet est proportionnel à l'écart&nbsp;:
+        θ&nbsp;=&nbsp;K<sub>p</sub>&nbsp;·&nbsp;(T<sub>c</sub>&nbsp;−&nbsp;T).</div>
+      <div class="legende cache" id="legende-loi-i"><b>Correcteur intégral</b>&nbsp;:
+        le robinet tourne d'autant plus vite que l'écart est grand&nbsp;:
+        dθ/dt&nbsp;=&nbsp;K<sub>i</sub>&nbsp;·&nbsp;(T<sub>c</sub>&nbsp;−&nbsp;T).</div>
+
+      <div class="bloc cache" id="bloc-td">
+        <div class="tete"><span>Retard t<sub>d</sub></span><span class="val" id="v-td">0,8 s</span></div>
+        <input type="range" id="sl-td" min="0" max="3" step="0.1" value="0.8">
+      </div>
+      <div class="legende cache" id="legende-retard"><b>D'où vient le retard&nbsp;?</b>
+        Le thermomètre est au bout du tuyau, au pommeau de douche&nbsp;: l'eau
+        mélangée au robinet met t<sub>d</sub> secondes à y arriver. Le correcteur
+        réagit donc à la température d'il y a t<sub>d</sub> secondes.</div>
+
+      <button type="button" class="b primaire cache" id="btn-mesurer">Mesurer ce point</button>
+      <button type="button" class="b danger cache" id="btn-effacer">Effacer la table</button>
+      <button type="button" class="b cache" id="btn-autocal">Auto-calibration</button>
+      <button type="button" class="b valider cache" id="btn-terminer"></button>
+      <div class="legende ok cache" id="info-terminee"><b>✔ Mesures terminées</b>&nbsp;:
+        vous pouvez passer au niveau&nbsp;3.</div>
+      <div id="bloc-perturb" class="cache">
+        <button type="button" class="b" id="btn-voisin">Le voisin ouvre son robinet</button>
+        <button type="button" class="b" id="btn-saison">Saison chaude</button>
+        <div id="legendes-perturb">
+          <div class="legende"><b>Le voisin ouvre son robinet</b>&nbsp;: il puise
+            lui aussi de l'eau chaude, la pression d'eau chaude baisse. À angle
+            égal, la douche sort plus froide. Recliquer&nbsp;: il referme.</div>
+          <div class="legende"><b>Saison chaude</b>&nbsp;: l'eau froide arrive
+            tiède, l'eau chaude ne change pas. À angle égal, la douche sort plus
+            chaude. Recliquer&nbsp;: retour à la normale.</div>
+        </div>
+      </div>
+
+      <div id="ligne-demarrer">
+        <button type="button" class="b primaire" id="btn-demarrer">Démarrer</button>
+        <button type="button" class="b neutre cache" id="btn-pause">Pause</button>
+      </div>
+
+      <div id="bloc-table" class="cache">
+        <div class="legende alerte cache" id="alerte-table"><b>⚠ Table insuffisante</b>&nbsp;:
+          il faut au moins 3&nbsp;points mesurés au niveau&nbsp;2 pour démarrer.</div>
+        <canvas id="mini"></canvas>
+        <div id="table-defil">
+          <table id="table-cal">
+            <thead><tr><th>&theta; (°)</th><th>T (°C)</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+    <div id="zone"><canvas id="g"></canvas></div>
+  </div>
+
+  <div id="bas">
+    <span id="ecart">Écart moyen de la manche : —</span>
+    <button type="button" id="btn-nouvelle">Nouvelle douche</button>
+  </div>
+
+</div>
+
+<div id="modale" class="cache" role="dialog" aria-modal="true" aria-labelledby="modale-titre">
+  <div class="carte">
+    <h2 id="modale-titre">⚠ Nouvelle douche</h2>
+    <p>Un nouveau robinet sera tiré au sort&nbsp;: la courbe de calibration
+      mesurée au niveau&nbsp;2 (table et courbe) sera effacée.</p>
+    <div class="actions">
+      <button type="button" class="b" id="modale-annuler">Annuler</button>
+      <button type="button" class="b primaire" id="modale-ok">Nouvelle douche</button>
+    </div>
+  </div>
+</div>
+
+<script src="douche-sim.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var S = window.DoucheSim;
+
+  /* ==========================================================
+     CONFIG — reprise de apps/douche/config.js (mêmes valeurs
+     physiques et même profil de consigne, pour que la manche du
+     TD1 soit celle de l'appli v1). Trois écarts assumés :
+       · COMMANDE.pot_T_max = 50 au lieu de 45 (le curseur de
+         consigne du TD1 va de 25 à 50 °C) ;
+       · calibration_points_min = 3 au lieu de 5 (seuil du TD1) ;
+       · perturbation « saison » : SAISON CHAUDE (eau froide 24 → 30 °C,
+         eau chaude inchangée) au lieu de la saison fraîche de l'appli v1
+         (18 / 50 °C), qui refroidissait la douche comme « voisin » :
+         les deux perturbations poussent maintenant en sens opposés.
+     Ajout TD1 : autocalibration_duree et _tolerance (auto-calibration
+     du N2, bouton caché pour l'instant).
+     ========================================================== */
+  var C = {
+    PHYSIQUE: {
+      dt: 0.05,
+      T_froid: 24, T_chaud: 55, p_nominal: 1,
+      theta_min: 0, theta_max: 180,
+      robinet: { theta_zm: 35, theta_sat: 130, poids: 0.35,
+                 k1: 10, c1: 0.20, k2: 26, c2: 0.62 },
+      variabilite: 0.15,
+      variabilite_position: 0.08,
+      tau_mix: 0.6,
+      td_min: 0, td_max: 3,
+      vitesse_moteur_max: 60,
+      perturbations: { voisin_p: 0.72, voisin_duree_rampe: 1.0,
+                       saison_T_froid: 30, saison_T_chaud: 55 }
+    },
+    COMMANDE: {
+      pot_T_min: 25, pot_T_max: 50,
+      Kf_min: 0.5, Kf_max: 30, Kf_defaut: 4,
+      // N4 : correcteur P pur, via le mode 'pid' du simulateur
+      // (k_p = K_p, k_i = k_d = 0). pid_tau_derivee est lu par ce mode
+      // même quand k_d = 0 (sinon NaN) : valeur de apps/douche/config.js.
+      Kp_defaut: 10,
+      pid_tau_derivee: 0.15,
+      calibration_duree: 1.8,
+      calibration_points_min: 3,
+      autocalibration_duree: 3.0,       // ≈ 5·tau_mix : T établie à 99 %
+      autocalibration_tolerance: 0.3    // °C, écart max table ↔ courbe
+    },
+    PEDAGO: {
+      profil: {
+        paliers_possibles: [29, 31, 34, 37, 40],
+        amplitude_min: 5,
+        premier_palier: 37,
+        duree_totale: 60,
+        duree_min: 5, duree_max: 9
+      },
+      score: { seuil_brulure: 43, seuil_gel: 27, hysteresis: 0.3,
+               penalite_brulure: 30, penalite_gel: 15 },
+      auto_perturbations: { nb: 2, debut_fraction: 0.2, fin_fraction: 0.85,
+                            duree_min: 8, duree_max: 14 }
+    }
+  };
+
+  /* Affichage : bande de confort et bornes des axes.
+     bande_visible : la bande verte 36–40 °C des deux graphes (T(t) et
+     courbe T(θ)) ; cachée pour l'instant, true pour la réafficher. */
+  var VUE = { bande_visible: false, bande_min: 36, bande_max: 40, T_min: 15, T_max: 56 };
+
+  var DT = C.PHYSIQUE.dt;
+  var DUREE = C.PEDAGO.profil.duree_totale;      // largeur de la fenêtre du graphe (s) = période du profil
+  var MARGE_DROITE = 10;     // s laissées à droite de l'instant courant (axe glissant)
+  var TD_DEFAUT = 0.8;                            // retard par défaut du N6
+  /* Le profil de consigne et les instants de perturbation dépendent de
+     la « graine de séance » : la même sur tous les postes ⇒ tout le
+     monde voit la même consigne. Le numéro de douche, lui, est tiré
+     au sort sur chaque poste (courbe du robinet différente). */
+  var GRAINE_SEANCE = 1;
+
+  /* Bouton « Auto-calibration » du N2 : prêt mais caché pour l'instant. */
+  var AUTOCAL_VISIBLE = false;
+
+  /* ========================================================== */
+  var etat = {
+    niveau: 1,
+    regime: 'arret',          // 'arret' | 'manche' | 'calibration' (N2)
+    douche: tirerDouche(),
+    angle: 0,
+    Tc: 37,
+    consignePerso: false,     // N3–N6 : T_c au curseur plutôt que le profil
+    Kp: C.COMMANDE.Kp_defaut,   // N4 (P)
+    Kf: C.COMMANDE.Kf_defaut,   // N5–N6 (intégral ; affiché « K_i »)
+    td: TD_DEFAUT,
+    voisin: false,
+    saison: false,
+    table: [],
+    ech: [],
+    mesureRestante: 0,
+    mesureAngle: 0,
+    tableTerminee: false,     // N2 : « je suis satisfait de ma table »
+    auto: { actif: false, angles: [], i: 0, reste: 0 },   // auto-calibration (N2)
+    manuel: false             // horloge pilotée de l'extérieur (tests)
+  };
+  var sim = null;
+
+  function tirerDouche() { return 1 + Math.floor(Math.random() * 99999); }
+
+  function nombre(x, n) {
+    return x.toFixed(n === undefined ? 1 : n).replace('.', ',');
+  }
+
+  /* ==========================================================
+     Simulation
+     ========================================================== */
+  /* N3–N6 : consigne du profil en escaliers (par défaut) ou du curseur
+     (« Je veux faire ma propre consigne »). */
+  /* Profil en escaliers du N1 (60 s), répété en boucle : les manches
+     ne s'arrêtent plus d'elles-mêmes. */
+  function consigneProfil(t) {
+    // + 1e-9 : t cumule des pas de 0,05 s (59,999… doit valoir 60)
+    return S.consigneA(sim.profil, (t + 1e-9) % sim.profil.duree);
+  }
+
+  function consigneN3a5(t) {
+    return etat.consignePerso ? etat.Tc : consigneProfil(t);
+  }
+
+  function angleInitial() {
+    if (etat.niveau === 1) return etat.angle;
+    if (etat.regime === 'calibration') return etat.auto.actif ? etat.auto.angles[0] : etat.angle;
+    if (etat.niveau === 3) {  // consigne de départ, via la table
+      var T0 = etat.consignePerso ? etat.Tc : C.PEDAGO.profil.premier_palier;
+      var th = S.inverserTable(etat.table, T0);
+      return (th === null) ? 0 : th;
+    }
+    return 0;                 // N4–N6 : le correcteur trouve l'angle seul
+  }
+
+  var numSim = 0;             // repère les points de table relevés pendant CETTE simulation
+  function neufSim() {
+    sim = S.creerSimulateur(C, etat.douche, GRAINE_SEANCE, angleInitial());
+    numSim++;
+    etat.ech = [];
+  }
+
+  function unPas() {
+    var e = {
+      mode: 'angle', u: 0, td: 0, Kf: etat.Kf, table: etat.table,
+      voisin: etat.voisin, saison: etat.saison, auto: false,
+      suivreProfil: false, Tc: NaN
+    };
+    if (etat.regime === 'calibration') {
+      var a = etat.auto.actif ? etat.auto.angles[etat.auto.i]
+            : (etat.mesureRestante > 0) ? etat.mesureAngle : etat.angle;
+      e.u = a / 180 * 100;
+    } else if (etat.niveau === 1) {
+      e.u = etat.angle / 180 * 100;
+      e.Tc = consigneProfil(sim.t);
+    } else if (etat.niveau === 3) {
+      // N3 : la table inverse traduit seule la consigne en angle
+      // (boucle ouverte).
+      var Tp = consigneN3a5(sim.t);
+      e.mode = 'ff';
+      e.u = (Tp - C.COMMANDE.pot_T_min)
+          / (C.COMMANDE.pot_T_max - C.COMMANDE.pot_T_min) * 100;
+      e.Tc = Tp;
+    } else if (etat.niveau === 4) {
+      // N4 : correcteur proportionnel pur, θ* = K_p·(T_c − T)
+      e.mode = 'pid';
+      e.pid = { kp: etat.Kp, ki: 0, kd: 0 };
+      e.Tc = consigneN3a5(sim.t);
+    } else {
+      // N5 : loi intégrale dθ*/dt = K_i·(T_c − T) (K_i = etat.Kf) ;
+      // N6 : la même, avec le retard t_d
+      e.mode = 'fb';
+      e.Tc = consigneN3a5(sim.t);
+      e.td = (etat.niveau === 6) ? etat.td : 0;
+    }
+
+    var ech = sim.pas(e);
+    etat.ech.push({ t: ech.t, T: ech.T, Tc: ech.Tc, theta: ech.theta });
+    if (etat.ech.length > Math.round(DUREE / DT) + 40) etat.ech.shift();
+
+    if (etat.mesureRestante > 0) {
+      etat.mesureRestante -= DT;
+      if (etat.mesureRestante <= 0) finMesure(ech);
+    }
+    if (etat.auto.actif) {
+      etat.auto.reste -= DT;
+      if (etat.auto.reste <= 1e-9) pointAuto(ech);
+    }
+  }
+
+  /* Niveau 2 — un point de calibration : on fige l'angle, on laisse la
+     température s'établir (calibration_duree ≈ 3·tau_mix), puis on
+     enregistre le couple (θ, T). Un point déjà mesuré au même angle est
+     remplacé. */
+  function demarrerMesure() {
+    if (etat.regime !== 'calibration' || etat.mesureRestante > 0) return;
+    etat.mesureAngle = etat.angle;
+    etat.mesureRestante = C.COMMANDE.calibration_duree;
+    majUI();
+  }
+
+  function finMesure(ech) {
+    etat.mesureRestante = 0;
+    var a = etat.mesureAngle;
+    etat.table = etat.table.filter(function (p) { return Math.abs(p.theta - a) > 0.25; });
+    etat.table.push({ theta: a, T: ech.T, t: ech.t, sim: numSim });
+    majTable();
+    majUI();
+  }
+
+  /* Niveau 2 — auto-calibration (bouton caché : AUTOCAL_VISIBLE). Les
+     angles sont choisis sur la courbe d'équilibre T(θ) de CE robinet
+     (connue du simulateur) : Douglas–Peucker sur une grille de 0,5°
+     entre la fin de la zone morte et la saturation, jusqu'à ce que la
+     table interpolée ne s'écarte nulle part de la courbe de plus de
+     autocalibration_tolerance (~13 points, serrés sur la méséta et la
+     falaise). On les balaie dans l'ordre croissant, autocalibration_duree
+     par point (~40 s au total), en relevant (θ, T) à chaque fois. */
+  function anglesAutoCalibration() {
+    var a = sim.par.theta_zm, b = sim.par.theta_sat;
+    var tol = C.COMMANDE.autocalibration_tolerance;
+    var f = function (t) { return sim.temperatureEquilibre(t); };
+    var grille = [];
+    for (var t = Math.ceil(a * 2) / 2; t < b; t += 0.5) if (t > a) grille.push(t);
+    var gardes = [a, b];
+    (function coupe(t0, t1) {
+      var T0 = f(t0), T1 = f(t1), pire = 0, tPire = null;
+      for (var i = 0; i < grille.length; i++) {
+        var t = grille[i];
+        if (t <= t0 || t >= t1) continue;
+        var ec = Math.abs(f(t) - (T0 + (T1 - T0) * (t - t0) / (t1 - t0)));
+        if (ec > pire) { pire = ec; tPire = t; }
+      }
+      if (pire > tol) { gardes.push(tPire); coupe(t0, tPire); coupe(tPire, t1); }
+    })(a, b);
+    return gardes.sort(function (x, y) { return x - y; });
+  }
+
+  function demarrerAutoCalibration() {
+    if (!enCalibration()) return;
+    etat.mesureRestante = 0;
+    etat.table = [];
+    etat.auto = { actif: true, angles: anglesAutoCalibration(), i: 0,
+                  reste: C.COMMANDE.autocalibration_duree };
+    neufSim();
+    majTable();
+    majUI();
+  }
+
+  function pointAuto(ech) {
+    etat.table.push({ theta: etat.auto.angles[etat.auto.i], T: ech.T, t: ech.t, sim: numSim });
+    majTable();
+    etat.auto.i++;
+    if (etat.auto.i >= etat.auto.angles.length) finAutoCalibration();
+    else etat.auto.reste = C.COMMANDE.autocalibration_duree;
+  }
+
+  function finAutoCalibration() {
+    etat.auto.actif = false;
+    majUI();
+  }
+
+  function demarrerManche() {
+    etat.regime = 'manche';
+    neufSim();
+    afficherEcart(null);
+    majUI();
+  }
+
+  /* N3–N6 : pause / reprise de la manche (la boucle temps réel
+     n'avance qu'en régime 'manche'). */
+  function basculerPause() {
+    if (etat.regime === 'manche') etat.regime = 'pause';
+    else if (etat.regime === 'pause') etat.regime = 'manche';
+    majUI();
+  }
+
+  function finManche() {
+    etat.regime = 'arret';
+    afficherEcart(sim.t > 0 ? sim.score.integrale / sim.t : null);
+    majUI();
+  }
+
+  /* Au repos : le niveau 2 (calibration seule) tourne en continu
+     (le robinet répond au curseur), tous les autres écrans attendent
+     « Démarrer ». */
+  function arreterTout() {
+    etat.mesureRestante = 0;
+    etat.auto.actif = false;
+    etat.voisin = false;
+    etat.saison = false;
+    etat.regime = enCalibration() ? 'calibration' : 'arret';
+    neufSim();
+    afficherEcart(null);
+  }
+
+  function enCalibration() {
+    return etat.niveau === 2;
+  }
+
+  /* ==========================================================
+     Boucle temps réel
+     ========================================================== */
+  var dernier = null, reste = 0;
+  function boucle(ts) {
+    requestAnimationFrame(boucle);
+    if (dernier === null) dernier = ts;
+    var ecoule = Math.min(0.25, (ts - dernier) / 1000);
+    dernier = ts;
+    if (!etat.manuel && !modaleOuverte() &&
+        (etat.regime === 'manche' || etat.regime === 'calibration')) {
+      reste += ecoule;
+      var n = 0;
+      while (reste >= DT && n < 200) { unPas(); reste -= DT; n++; }
+    } else {
+      reste = 0;
+    }
+    dessiner();
+  }
+
+  /* ==========================================================
+     Graphe : T(t) + consigne en haut, θ(t) en bas, même axe de temps
+     ========================================================== */
+  var cv = document.getElementById('g');
+
+  function contexte(canvas) {
+    var r = canvas.getBoundingClientRect();
+    var dpr = window.devicePixelRatio || 1;
+    var w = Math.max(20, Math.round(r.width * dpr));
+    var h = Math.max(20, Math.round(r.height * dpr));
+    if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+    var ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx: ctx, W: r.width, H: r.height };
+  }
+
+  function dessiner() {
+    var A = contexte(cv), ctx = A.ctx, W = A.W, H = A.H;
+    ctx.clearRect(0, 0, W, H);
+    if (W < 40 || H < 40) return;
+
+    var gauche = 54, droite = W - 14, haut = 10, bas = H - 26;
+    var hauteur = bas - haut;
+    var hT = Math.round(hauteur * 0.62), ecartPanneaux = 16;
+    var yT0 = haut, yT1 = haut + hT;
+    var yA0 = yT1 + ecartPanneaux, yA1 = bas;
+
+    var t = sim ? sim.t : 0;
+    /* Fenêtre de 60 s ; au-delà de 50 s l'axe glisse, l'instant courant
+       restant à MARGE_DROITE s du bord droit (manches et calibration
+       sont continues : on arrête avec « Arrêter »). */
+    var marge = MARGE_DROITE;
+    var tmin = Math.max(0, t - (DUREE - marge)), tmax = tmin + DUREE;
+
+    function X(v) { return gauche + (v - tmin) / (tmax - tmin) * (droite - gauche); }
+    function YT(v) { return yT1 - (v - VUE.T_min) / (VUE.T_max - VUE.T_min) * (yT1 - yT0); }
+    function YA(v) { return yA1 - (v - 0) / 180 * (yA1 - yA0); }
+
+    /* bande de confort */
+    ctx.fillStyle = '#e3f3e6';
+    if (VUE.bande_visible) {
+      ctx.fillRect(gauche, YT(VUE.bande_max), droite - gauche, YT(VUE.bande_min) - YT(VUE.bande_max));
+    }
+
+    /* grilles et graduations */
+    ctx.strokeStyle = '#e7eaee'; ctx.lineWidth = 1;
+    ctx.fillStyle = '#6b737c'; ctx.font = '11px system-ui, sans-serif';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    for (var T = 20; T <= 55; T += 5) {
+      var y = Math.round(YT(T)) + 0.5;
+      ctx.beginPath(); ctx.moveTo(gauche, y); ctx.lineTo(droite, y); ctx.stroke();
+      ctx.fillText(String(T), gauche - 6, y);
+    }
+    for (var a = 0; a <= 180; a += 45) {
+      var ya = Math.round(YA(a)) + 0.5;
+      ctx.beginPath(); ctx.moveTo(gauche, ya); ctx.lineTo(droite, ya); ctx.stroke();
+      ctx.fillText(String(a), gauche - 6, ya);
+    }
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    var pas = 10, t0 = Math.ceil(tmin / pas) * pas;
+    for (var tt = t0; tt <= tmax + 1e-9; tt += pas) {
+      var x = Math.round(X(tt)) + 0.5;
+      ctx.strokeStyle = '#e7eaee';
+      ctx.beginPath(); ctx.moveTo(x, yT0); ctx.lineTo(x, yT1); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x, yA0); ctx.lineTo(x, yA1); ctx.stroke();
+      ctx.fillText(String(Math.round(tt)), x, bas + 6);
+    }
+
+    /* cadres */
+    ctx.strokeStyle = '#b9c0c8';
+    ctx.strokeRect(gauche + 0.5, yT0 + 0.5, droite - gauche - 1, yT1 - yT0 - 1);
+    ctx.strokeRect(gauche + 0.5, yA0 + 0.5, droite - gauche - 1, yA1 - yA0 - 1);
+
+    /* libellés d'axes */
+    ctx.save();
+    ctx.fillStyle = '#41484f'; ctx.font = '12px system-ui, sans-serif';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('T (°C)', gauche + 6, yT0 + 5);
+    ctx.fillText('θ (°)', gauche + 6, yA0 + 5);
+    ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+    ctx.fillText('t (s)', droite, H);
+    ctx.restore();
+
+    var E = etat.ech;
+    if (E.length > 1) {
+      ctx.save();
+      ctx.beginPath(); ctx.rect(gauche, yT0, droite - gauche, yT1 - yT0); ctx.clip();
+      /* consigne — pointillés */
+      ctx.strokeStyle = '#8a4bd1'; ctx.lineWidth = 2; ctx.setLineDash([6, 5]);
+      traceT(ctx, E, X, YT, 'Tc');
+      ctx.setLineDash([]);
+      /* température réelle — trait continu */
+      ctx.strokeStyle = '#c0392b'; ctx.lineWidth = 2.2;
+      traceT(ctx, E, X, YT, 'T');
+      ctx.restore();
+
+      ctx.save();
+      ctx.beginPath(); ctx.rect(gauche, yA0, droite - gauche, yA1 - yA0); ctx.clip();
+      ctx.strokeStyle = '#1f6feb'; ctx.lineWidth = 2.2;
+      traceT(ctx, E, X, YA, 'theta');
+      ctx.restore();
+    }
+
+    /* N2 : un point à chaque valeur retenue dans la table, sur T(t) et
+       sur θ(t) (seulement les points relevés pendant la simulation en
+       cours et encore présents dans la table). */
+    etat.table.forEach(function (p) {
+      if (p.sim !== numSim || p.t < tmin || p.t > tmax) return;
+      point(ctx, X(p.t), YT(p.T), '#c0392b');
+      point(ctx, X(p.t), YA(p.theta), '#1f6feb');
+    });
+
+    /* légende */
+    ctx.save();
+    ctx.font = '12px system-ui, sans-serif'; ctx.textBaseline = 'middle';
+    var lx = droite - 116, ly = yT0 + 14;
+    ctx.fillStyle = 'rgba(255,255,255,.82)';
+    ctx.fillRect(lx - 8, ly - 11, 122, 34);
+    ctx.strokeStyle = '#c0392b'; ctx.lineWidth = 2.2;
+    ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx + 24, ly); ctx.stroke();
+    ctx.fillStyle = '#41484f'; ctx.textAlign = 'left';
+    ctx.fillText('T', lx + 30, ly);
+    ctx.strokeStyle = '#8a4bd1'; ctx.lineWidth = 2; ctx.setLineDash([6, 5]);
+    ctx.beginPath(); ctx.moveTo(lx, ly + 16); ctx.lineTo(lx + 24, ly + 16); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillText('T', lx + 30, ly + 16);
+    var wT = ctx.measureText('T').width;
+    ctx.font = '9px system-ui, sans-serif';          // indice « c »
+    ctx.fillText('c', lx + 30 + wT + 0.5, ly + 20);
+    ctx.restore();
+
+    if (!el.blocTable.classList.contains('cache')) dessinerMini();
+  }
+
+  /* Mini-graphe θ → T : les points de la table, reliés par la droite
+     d'interpolation effectivement utilisée par la conduite. */
+  function dessinerMini() {
+    var A = contexte(el.mini), ctx = A.ctx, W = A.W, H = A.H;
+    if (W < 30 || H < 30) return;
+    ctx.clearRect(0, 0, W, H);
+    var gauche = 26, droite = W - 13, haut = 5, bas = H - 14;
+
+    function X(v) { return gauche + v / 180 * (droite - gauche); }
+    function Y(v) { return bas - (v - VUE.T_min) / (VUE.T_max - VUE.T_min) * (bas - haut); }
+
+    ctx.fillStyle = '#e3f3e6';
+    if (VUE.bande_visible) {
+      ctx.fillRect(gauche, Y(VUE.bande_max), droite - gauche, Y(VUE.bande_min) - Y(VUE.bande_max));
+    }
+    ctx.strokeStyle = '#e7eaee'; ctx.lineWidth = 1;
+    ctx.fillStyle = '#8f969e'; ctx.font = '9px system-ui, sans-serif';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    for (var T = 20; T <= 50; T += 10) {
+      var y = Math.round(Y(T)) + 0.5;
+      ctx.beginPath(); ctx.moveTo(gauche, y); ctx.lineTo(droite, y); ctx.stroke();
+      ctx.fillText(String(T), gauche - 3, y);
+    }
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    for (var a = 0; a <= 180; a += 60) {
+      var x = Math.round(X(a)) + 0.5;
+      ctx.beginPath(); ctx.moveTo(x, haut); ctx.lineTo(x, bas); ctx.stroke();
+      ctx.fillText(String(a), x, bas + 2);
+    }
+    ctx.strokeStyle = '#b9c0c8';
+    ctx.strokeRect(gauche + 0.5, haut + 0.5, droite - gauche - 1, bas - haut - 1);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillStyle = '#41484f'; ctx.font = '10px system-ui, sans-serif';
+    ctx.fillText('T / \u03B8', gauche + 4, haut + 3);
+
+    var p = etat.table.slice().sort(function (u, v) { return u.theta - v.theta; });
+    if (p.length > 1) {
+      ctx.strokeStyle = '#1f6feb'; ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      for (var i = 0; i < p.length; i++) {
+        if (i === 0) ctx.moveTo(X(p[i].theta), Y(p[i].T));
+        else ctx.lineTo(X(p[i].theta), Y(p[i].T));
+      }
+      ctx.stroke();
+    }
+    ctx.fillStyle = '#c0392b';
+    for (var j = 0; j < p.length; j++) {
+      ctx.beginPath(); ctx.arc(X(p[j].theta), Y(p[j].T), 3, 0, 6.2832); ctx.fill();
+    }
+  }
+
+  function point(ctx, x, y, couleur) {
+    ctx.save();
+    ctx.beginPath(); ctx.arc(x, y, 4.5, 0, 2 * Math.PI);
+    ctx.fillStyle = couleur; ctx.fill();
+    ctx.lineWidth = 1.5; ctx.strokeStyle = '#fff'; ctx.stroke();
+    ctx.restore();
+  }
+
+  function traceT(ctx, E, X, Y, cle) {
+    var debut = true;
+    ctx.beginPath();
+    for (var i = 0; i < E.length; i++) {
+      var v = E[i][cle];
+      if (!isFinite(v)) { debut = true; continue; }
+      var x = X(E[i].t), y = Y(v);
+      if (debut) { ctx.moveTo(x, y); debut = false; } else { ctx.lineTo(x, y); }
+    }
+    ctx.stroke();
+  }
+
+  /* ==========================================================
+     Interface
+     ========================================================== */
+  var el = {
+    niveaux: document.getElementById('niveaux'),
+    panneau: document.getElementById('panneau'),
+    titreNiveau: document.getElementById('titre-niveau'),
+    blocAngle: document.getElementById('bloc-angle'),
+    slAngle: document.getElementById('sl-angle'),
+    vAngle: document.getElementById('v-angle'),
+    blocTc: document.getElementById('bloc-tc'),
+    blocPerso: document.getElementById('bloc-perso'),
+    ckPerso: document.getElementById('ck-perso'),
+    slTc: document.getElementById('sl-tc'),
+    vTc: document.getElementById('v-tc'),
+    blocKp: document.getElementById('bloc-kp'),
+    slKp: document.getElementById('sl-kp'),
+    vKp: document.getElementById('v-kp'),
+    blocKf: document.getElementById('bloc-kf'),
+    slKf: document.getElementById('sl-kf'),
+    vKf: document.getElementById('v-kf'),
+    blocTd: document.getElementById('bloc-td'),
+    slTd: document.getElementById('sl-td'),
+    vTd: document.getElementById('v-td'),
+    blocPerturb: document.getElementById('bloc-perturb'),
+    legendesPerturb: document.getElementById('legendes-perturb'),
+    btnVoisin: document.getElementById('btn-voisin'),
+    btnSaison: document.getElementById('btn-saison'),
+    btnMesurer: document.getElementById('btn-mesurer'),
+    btnEffacer: document.getElementById('btn-effacer'),
+    btnAutocal: document.getElementById('btn-autocal'),
+    btnTerminer: document.getElementById('btn-terminer'),
+    infoTerminee: document.getElementById('info-terminee'),
+    alerteTable: document.getElementById('alerte-table'),
+    legendeLoi: document.getElementById('legende-loi'),
+    legendeLoiI: document.getElementById('legende-loi-i'),
+    legendeRetard: document.getElementById('legende-retard'),
+    legendeMelange: document.getElementById('legende-melange'),
+    legendeCourbes: document.getElementById('legende-courbes'),
+    btnDemarrer: document.getElementById('btn-demarrer'),
+    btnPause: document.getElementById('btn-pause'),
+    ligneDemarrer: document.getElementById('ligne-demarrer'),
+    blocTable: document.getElementById('bloc-table'),
+    tableCorps: document.querySelector('#table-cal tbody'),
+    mini: document.getElementById('mini'),
+    tableDefil: document.getElementById('table-defil'),
+    ecart: document.getElementById('ecart'),
+    nouvelle: document.getElementById('btn-nouvelle'),
+    modale: document.getElementById('modale'),
+    modaleOk: document.getElementById('modale-ok'),
+    modaleAnnuler: document.getElementById('modale-annuler')
+  };
+
+  function afficherEcart(v) {
+    el.ecart.textContent = 'Écart moyen de la manche : '
+      + (v === null || !isFinite(v) ? '—' : nombre(v) + ' °C');
+  }
+
+  function montrer(noeud, oui) { noeud.classList.toggle('cache', !oui); }
+
+  function majTable() {
+    var p = etat.table.slice().sort(function (u, v) { return u.theta - v.theta; });
+    var html = '';
+    for (var i = 0; i < p.length; i++) {
+      html += '<tr><td>' + nombre(p[i].theta) + '</td><td>' + nombre(p[i].T) + '</td></tr>';
+    }
+    el.tableCorps.innerHTML = html;
+  }
+
+  var TITRES = [
+    '',
+    'Niveau 1 — Régler à la main',
+    'Niveau 2 — Mesurer la courbe du robinet',
+    'Niveau 3 — Commander en boucle ouverte, avec la table',
+    'Niveau 4 — Fermer la boucle : correcteur proportionnel',
+    'Niveau 5 — Correcteur intégral',
+    'Niveau 6 — Correcteur intégral avec un retard'
+  ];
+
+  function majUI() {
+    el.titreNiveau.textContent = TITRES[etat.niveau];
+    var b = el.niveaux.querySelectorAll('button');
+    for (var i = 0; i < b.length; i++) {
+      b[i].classList.toggle('actif', +b[i].getAttribute('data-niveau') === etat.niveau);
+    }
+    var n = etat.niveau, cal = enCalibration();
+    var assez = etat.table.length >= C.COMMANDE.calibration_points_min;
+
+    montrer(el.blocAngle, n === 1 || cal);
+    el.panneau.classList.toggle('demarrer-haut', n >= 3);
+    montrer(el.blocPerso, n >= 3);
+    montrer(el.blocTc, n >= 3 && etat.consignePerso);
+    el.ckPerso.checked = etat.consignePerso;
+    montrer(el.blocKp, n === 4);
+    montrer(el.blocKf, n >= 5);
+    montrer(el.blocTd, n === 6);
+    montrer(el.legendeLoi, n === 4);
+    montrer(el.legendeLoiI, n >= 5);
+    montrer(el.legendeRetard, n === 6);
+    montrer(el.legendeMelange, n === 1);
+    montrer(el.legendeCourbes, n === 1);
+    montrer(el.btnMesurer, cal);
+    montrer(el.btnEffacer, cal);
+    montrer(el.btnAutocal, cal && AUTOCAL_VISIBLE);
+    montrer(el.btnTerminer, cal);
+    montrer(el.infoTerminee, cal && etat.tableTerminee);
+    montrer(el.blocPerturb, n >= 3);
+    montrer(el.legendesPerturb, n >= 3 && n <= 5);
+    montrer(el.ligneDemarrer, !cal);
+    montrer(el.btnPause, n >= 3);
+    montrer(el.blocTable, n === 2 || n === 3);   // N3 : la courbe seule
+    montrer(el.tableDefil, n === 2);
+    montrer(el.alerteTable, n === 3 && !assez);
+
+    var occupe = (etat.mesureRestante > 0) || etat.auto.actif || etat.tableTerminee;
+    el.slAngle.disabled = occupe;
+    el.vAngle.textContent = nombre(etat.angle) + ' °';
+    el.vTc.textContent = nombre(etat.Tc) + ' °C';
+    el.vKp.textContent = nombre(etat.Kp, 0);
+    el.vKf.textContent = nombre(etat.Kf);
+    el.vTd.textContent = nombre(etat.td) + ' s';
+    el.btnVoisin.classList.toggle('on', etat.voisin);
+    el.btnSaison.classList.toggle('on', etat.saison);
+    el.btnMesurer.disabled = occupe;
+    el.btnEffacer.disabled = occupe || etat.table.length === 0;
+    el.btnAutocal.disabled = (etat.mesureRestante > 0) || etat.tableTerminee;
+    el.btnTerminer.classList.toggle('valider', !etat.tableTerminee);
+    el.btnTerminer.classList.toggle('neutre', etat.tableTerminee);
+    el.btnTerminer.textContent = etat.tableTerminee ? 'Continuer à mesurer'
+      : 'Je suis satisfait de ma table : terminer les mesures et passer au niveau 3';
+    el.btnTerminer.disabled = !etat.tableTerminee &&
+      ((etat.mesureRestante > 0) || etat.auto.actif || !assez);
+    el.btnAutocal.textContent = etat.auto.actif ? 'Arrêter l’auto-calibration' : 'Auto-calibration';
+    el.btnDemarrer.disabled = (n === 3) && !assez;
+    var enCours = (etat.regime === 'manche' || etat.regime === 'pause');
+    el.btnDemarrer.textContent = enCours ? 'Arrêter' : 'Démarrer';
+    el.btnPause.disabled = !enCours;
+    el.btnPause.textContent = (etat.regime === 'pause') ? 'Reprendre' : 'Pause';
+  }
+
+  /* Dernier état de chaque niveau (simulateur, courbes, écart moyen,
+     régime, perturbations), pour pouvoir revenir comparer (ex. N5 ↔ N6)
+     ou reprendre. Aux N3–N6, quitter un niveau en pleine manche la met
+     en pause ; au retour, « Reprendre » la continue. Au N1 (sans
+     pause), la manche est terminée. Pas pour le N2 (calibration en
+     direct). « Démarrer » remplace l'état ; « Nouvelle douche » efface
+     tout. */
+  var resultats = {};
+
+  function allerNiveau(n) {
+    if (etat.regime === 'manche') {
+      if (etat.niveau >= 3) etat.regime = 'pause'; else finManche();
+    }
+    if (etat.niveau !== 2 && etat.ech.length > 1) {
+      resultats[etat.niveau] = { sim: sim, ech: etat.ech, ecart: el.ecart.textContent,
+                                 regime: etat.regime, voisin: etat.voisin, saison: etat.saison };
+    }
+    etat.niveau = n;
+    arreterTout();
+    var r = resultats[n];
+    if (r) {
+      sim = r.sim;
+      etat.ech = r.ech;
+      etat.regime = r.regime;
+      etat.voisin = r.voisin;
+      etat.saison = r.saison;
+      el.ecart.textContent = r.ecart;
+    }
+    majUI();
+  }
+
+  el.niveaux.addEventListener('click', function (ev) {
+    var n = ev.target.getAttribute && ev.target.getAttribute('data-niveau');
+    if (n) allerNiveau(+n);
+  });
+
+  el.slAngle.addEventListener('input', function () {
+    etat.angle = parseFloat(el.slAngle.value);
+    el.vAngle.textContent = nombre(etat.angle) + ' °';
+  });
+
+  /* Les flèches du clavier pilotent toujours le curseur principal de
+     l'écran, où que soit le focus : l'angle quand il est affiché
+     (±2°, ±10° avec Maj), sinon la consigne T_c si elle a son curseur
+     (±0,5 °C, ±2 °C avec Maj), sinon le gain K_p (N4 : ±1, ±5 avec Maj)
+     ou K_i (N5–N6 : ±0,1, ±1 avec Maj). La souris garde la résolution
+     fine des curseurs. Seuls K_p, K_i et t_d,
+     s'ils ont le focus, gardent leurs flèches natives. */
+  document.addEventListener('keydown', function (ev) {
+    if (modaleOuverte()) {                 // Échap annule, Entrée confirme
+      if (ev.key === 'Escape') { ev.preventDefault(); fermerModale(); }
+      else if (ev.key === 'Enter') { ev.preventDefault(); nouvelleDouche(); }
+      else if (ev.key === 'Tab') {         // le focus reste dans la carte
+        ev.preventDefault();
+        (document.activeElement === el.modaleOk ? el.modaleAnnuler : el.modaleOk).focus();
+      } else if (/^Arrow/.test(ev.key)) ev.preventDefault();
+      return;
+    }
+    if (ev.key === 'Tab' && etat.niveau >= 3) { tabCurseurs(ev); return; }
+    var sens ={ ArrowRight: 1, ArrowUp: 1, ArrowLeft: -1, ArrowDown: -1 }[ev.key];
+    if (!sens || ev.ctrlKey || ev.altKey || ev.metaKey) return;
+    if (ev.target === el.slKp || ev.target === el.slKf || ev.target === el.slTd) return;
+    var sl, pas;
+    if (!el.blocAngle.classList.contains('cache')) {
+      sl = el.slAngle; pas = ev.shiftKey ? 10 : 2;
+    } else if (!el.blocTc.classList.contains('cache')) {
+      sl = el.slTc; pas = ev.shiftKey ? 2 : 0.5;
+    } else if (!el.blocKp.classList.contains('cache')) {
+      sl = el.slKp; pas = ev.shiftKey ? 5 : 1;
+    } else if (!el.blocKf.classList.contains('cache')) {
+      sl = el.slKf; pas = ev.shiftKey ? 1 : 0.1;
+    } else return;
+    ev.preventDefault();
+    if (sl.disabled) return;
+    var v0 = parseFloat(sl.value);
+    var v = Math.min(parseFloat(sl.max), Math.max(parseFloat(sl.min),
+                     Math.round((v0 + sens * pas) * 10) / 10));
+    if (v === v0) return;
+    sl.value = v;
+    sl.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+
+  /* N3–N6 : Tab (Maj+Tab à rebours) ne circule qu'entre les curseurs
+     affichés — T_c, puis K_p ou K_i, puis t_d. */
+  function tabCurseurs(ev) {
+    var liste = [[el.blocTc, el.slTc], [el.blocKp, el.slKp], [el.blocKf, el.slKf], [el.blocTd, el.slTd]]
+      .filter(function (p) { return !p[0].classList.contains('cache'); })
+      .map(function (p) { return p[1]; });
+    ev.preventDefault();
+    if (!liste.length) return;
+    var i = liste.indexOf(document.activeElement);
+    var n = liste.length;
+    i = (i < 0) ? (ev.shiftKey ? n - 1 : 0) : (i + (ev.shiftKey ? n - 1 : 1)) % n;
+    liste[i].focus();
+  }
+
+  el.ckPerso.addEventListener('change', function () {
+    etat.consignePerso = el.ckPerso.checked;
+    majUI();
+  });
+
+  el.slTc.addEventListener('input', function () {
+    etat.Tc = parseFloat(el.slTc.value);
+    el.vTc.textContent = nombre(etat.Tc) + ' °C';
+  });
+
+  el.slKp.addEventListener('input', function () {
+    etat.Kp = parseFloat(el.slKp.value);
+    el.vKp.textContent = nombre(etat.Kp, 0);
+  });
+
+  el.slKf.addEventListener('input', function () {
+    etat.Kf = parseFloat(el.slKf.value);
+    el.vKf.textContent = nombre(etat.Kf);
+  });
+
+  el.slTd.addEventListener('input', function () {
+    etat.td = parseFloat(el.slTd.value);
+    el.vTd.textContent = nombre(etat.td) + ' s';
+  });
+
+  el.btnVoisin.addEventListener('click', function () {
+    etat.voisin = !etat.voisin;
+    el.btnVoisin.classList.toggle('on', etat.voisin);
+  });
+
+  el.btnSaison.addEventListener('click', function () {
+    etat.saison = !etat.saison;
+    el.btnSaison.classList.toggle('on', etat.saison);
+  });
+
+  el.btnMesurer.addEventListener('click', demarrerMesure);
+
+  el.btnAutocal.addEventListener('click', function () {
+    if (etat.auto.actif) finAutoCalibration(); else demarrerAutoCalibration();
+  });
+
+  /* N2 : l'étudiant déclare sa table finie (au moins 3 points) : les
+     commandes de mesure se figent et un cadre l'invite à passer au N3.
+     « Continuer à mesurer » les rend. Vider la table annule l'état. */
+  el.btnTerminer.addEventListener('click', function () {
+    etat.tableTerminee = !etat.tableTerminee;
+    majUI();
+  });
+
+  el.btnEffacer.addEventListener('click', function () {
+    etat.table = [];
+    etat.tableTerminee = false;
+    majTable();
+    majUI();
+  });
+
+  el.btnDemarrer.addEventListener('click', function () {
+    if (etat.regime === 'manche' || etat.regime === 'pause') finManche();
+    else demarrerManche();
+  });
+
+  el.btnPause.addEventListener('click', basculerPause);
+
+  /* Nouveau robinet : l'ancienne table ne le décrit plus, on la vide —
+     après confirmation (fenêtre sur fond flouté ; la simulation est en
+     pause tant qu'elle est ouverte). */
+  function modaleOuverte() { return !el.modale.classList.contains('cache'); }
+
+  function ouvrirModale() {
+    el.modale.classList.remove('cache');
+    el.modaleOk.focus();
+  }
+
+  function fermerModale() {
+    el.modale.classList.add('cache');
+    el.nouvelle.focus();
+  }
+
+  function nouvelleDouche() {
+    el.modale.classList.add('cache');
+    resultats = {};                 // obtenus avec l'ancien robinet
+    etat.douche = tirerDouche();
+    etat.table = [];
+    etat.tableTerminee = false;
+    majTable();
+    arreterTout();
+    majUI();
+  }
+
+  el.nouvelle.addEventListener('click', ouvrirModale);
+  el.modaleAnnuler.addEventListener('click', fermerModale);
+  el.modaleOk.addEventListener('click', nouvelleDouche);
+  el.modale.addEventListener('click', function (ev) {   // clic hors de la carte
+    if (ev.target === el.modale) fermerModale();
+  });
+
+  /* Chrome restaure la valeur des curseurs au rechargement : on relit
+     le DOM plutôt que d'imposer la valeur initiale du script. */
+  etat.angle = parseFloat(el.slAngle.value);
+  etat.Tc = parseFloat(el.slTc.value);
+  etat.consignePerso = el.ckPerso.checked;
+  etat.Kp = parseFloat(el.slKp.value);
+  etat.Kf = parseFloat(el.slKf.value);
+  etat.td = parseFloat(el.slTd.value);
+
+  /* Point d'entrée pour le test headless (aucun effet sur l'interface). */
+  window.__td1 = {
+    etat: etat, config: C,
+    simulateur: function () { return sim; },
+    unPas: unPas, allerNiveau: allerNiveau,
+    demarrerManche: demarrerManche, finManche: finManche,
+    demarrerMesure: demarrerMesure, demarrerAutoCalibration: demarrerAutoCalibration,
+    majTable: majTable, majUI: majUI
+  };
+
+  arreterTout();
+  majTable();
+  majUI();
+  requestAnimationFrame(boucle);
+
+})();
+</script>
+</body>
+</html>
