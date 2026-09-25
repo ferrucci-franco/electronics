@@ -27,21 +27,21 @@
     plots: {
       main: [
         { key: "vin", label: "V<sub>in</sub>", color: "--trace-vin", dash: [8, 5] },
-        { key: "vSwitch", label: "V<sub>sw</sub>", color: "--trace-vx", step: true },
-        { key: "vo", label: "V<sub>o</sub>", color: "--trace-vr", width: 3 },
+        { key: "vSwitch", label: "v<sub>sw</sub>", color: "--trace-vx", step: true },
+        { key: "vo", label: "v<sub>o</sub>", color: "--trace-vr", width: 3 },
       ],
-      second: [{ key: "vL", label: "V<sub>L</sub>", color: "--trace-vl" }],
+      second: [{ key: "vL", label: "v<sub>L</sub>", color: "--trace-vl" }],
       third: [
         { key: "iL", label: "i<sub>L</sub>", color: "--trace-il" },
         { key: "iC", label: "i<sub>C</sub>", color: "--trace-ic", dash: [7, 4] },
-        { key: "iOut", label: "i<sub>out</sub>", color: "--trace-iout" },
+        { key: "iOut", label: "i<sub>o</sub>", color: "--trace-iout" },
       ],
     },
     plotsFor(commutation = "synchronous") {
       if (commutation !== "diode") return this.plots;
       return {
         main: this.plots.main,
-        second: [...this.plots.second, { key: "vD", label: "V<sub>D</sub>", color: "--trace-vd", dash: [7, 4] }],
+        second: [...this.plots.second, { key: "vD", label: "v<sub>D</sub>", color: "--trace-vd", dash: [7, 4] }],
         third: [...this.plots.third, { key: "iD", label: "i<sub>D</sub>", color: "--trace-id", dash: [4, 4] }],
       };
     },
