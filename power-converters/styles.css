@@ -450,6 +450,15 @@ body.dark-theme .topology-card[aria-disabled="true"] .topology-status { backgrou
 .circuit-panel:has(.rect-schematic) .lc-info,
 .circuit-panel:has(.thy-schematic) .lc-info { height: auto; min-height: clamp(108px, 12.5vh, 126px); padding-block: 5px; }
 #rectifier-panel .bridge-mode-group button { min-height: 27px; padding: 3px 9px; font-size: clamp(.7rem, .76vw, .84rem); }
+/* Fréquence de la source : un seul bouton qui affiche la valeur active et bascule 50 ↔ 60 Hz. */
+#rectifier-panel .bridge-mode-group .frequency-toggle { display: inline-flex; align-items: center; gap: 5px; color: #075f59; }
+.frequency-toggle svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; opacity: .75; }
+.frequency-toggle:hover svg { opacity: 1; }
+body.dark-theme #rectifier-panel .bridge-mode-group .frequency-toggle { color: #74ddd0; }
+/* Mode avancé du redresseur : quatre groupes de pastilles sur une seule ligne. */
+.advanced-mode[data-topology="redresseur"] #rectifier-panel { gap: 6px; }
+.advanced-mode[data-topology="redresseur"] #rectifier-panel .bridge-mode-group button { padding-inline: 6px; font-size: clamp(.68rem, .76vw, .84rem); }
+.advanced-mode[data-topology="redresseur"] #rectifier-panel .bridge-mode-group > div { padding: 2px; }
 .circuit-content:has(.rect-schematic) .controls-top,
 .circuit-content:has(.rect-schematic) .controls-bottom,
 .circuit-content:has(.thy-schematic) .controls-top,
