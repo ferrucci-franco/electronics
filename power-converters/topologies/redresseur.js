@@ -62,8 +62,8 @@
     montage === "bridge" && advanced
       ? { key: "iLf", label: "i<sub>Lf</sub>", color: "--trace-vx", width: 2.2 }
       : { key: "iIn", label: "i<sub>in</sub>", color: "--trace-vx", width: 2.2 },
-    ...(advanced ? [{ key: "iC", label: "i<sub>C</sub>", color: "--trace-ic", width: 2, dash: [6, 4] }] : []),
     { key: "iCh", label: "i<sub>ch</sub>", color: "--trace-il", width: 3 },
+    ...(advanced ? [{ key: "iC", label: "i<sub>C</sub>", color: "--trace-ic", width: 2, dash: [6, 4] }] : []),
   ];
   // Côté AC, pont seulement (en diode simple, i_in = i_D figure déjà dans les courants).
   const tracesAcBridge = [
@@ -82,7 +82,7 @@
     const vrms = state.vinRms; const amplitude = Math.SQRT2 * vrms;
     const r = Math.max(state.resistance, .5);
     const l = options.advanced ? Math.max(0, state.inductance) / 1000 : 0; // L de charge : mode avancé seulement
-    const lf = Math.max(0, state.filterInductance) / 1000;
+    const lf = options.advanced ? Math.max(0, state.filterInductance) / 1000 : 0; // Lf : mode avancé seulement
     const c = Math.max(0, state.capacitance) / 1e6;
     const rs = .5; // source + diode series resistance: limits capacitor recharge spikes
     const psi = transient ? (state.psi || 0) * Math.PI / 180 : 0;
@@ -266,11 +266,11 @@ ${arrowVertical(790, 252, 90, "v<tspan class='sub'>ch</tspan>")}
     id: "redresseur",
     defaults: { vinRms: 12, resistance: 20, inductance: 0, filterInductance: 0, capacitance: 0, psi: 0 },
     controlsFor(_montage, options = {}) {
+      // Basique : V, R et C sur une seule rangée ; L et Lf n'apparaissent qu'en mode avancé.
+      if (!options.advanced) return { top: [controlDefinitions.vinRms, controlDefinitions.resistance, controlDefinitions.capacitance], bottom: [] };
       const bottom = [controlDefinitions.filterInductance, controlDefinitions.capacitance];
       if (options.view === "transient") bottom.push(controlDefinitions.psi);
-      const top = [controlDefinitions.vinRms, controlDefinitions.resistance];
-      if (options.advanced) top.push(controlDefinitions.inductance);
-      return { top, bottom };
+      return { top: [controlDefinitions.vinRms, controlDefinitions.resistance, controlDefinitions.inductance], bottom };
     },
     diagram: { type: "inline", aria: text("Diode rectifier with R-L load and filter capacitor", "Redresseur à diodes avec charge R–L et condensateur de filtrage", "Rectificador de diodos con carga R–L y capacitor de filtrado") },
     diagramFor(montage, language, frequency) { return montage === "bridge" ? schematicBridge(language, frequency) : schematicSingle(language, frequency); },
@@ -306,8 +306,8 @@ ${arrowVertical(790, 252, 90, "v<tspan class='sub'>ch</tspan>")}
       if (capacitorBranch) capacitorBranch.style.opacity = state.capacitance > 0 ? "1" : ".14";
       const chokeBranch = document.querySelector("#branche-lf");
       const chokeBypass = document.querySelector("#bypass-lf");
-      const hasChoke = state.filterInductance > 0;
-      if (chokeBranch) chokeBranch.style.opacity = hasChoke ? "1" : ".14";
+      const hasChoke = Boolean(context.advanced) && state.filterInductance > 0;
+      if (chokeBranch) { chokeBranch.style.display = context.advanced ? "" : "none"; chokeBranch.style.opacity = hasChoke ? "1" : ".14"; }
       if (chokeBypass) chokeBypass.style.display = hasChoke ? "none" : "";
     },
     metricsFor(result, _state, advanced, language) {
