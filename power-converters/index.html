@@ -165,13 +165,13 @@
           <div class="lc-info four-columns">
             <div>
               <span data-i18n="conversionLaw">Loi de conversion</span>
-              <strong class="math conversion-formula" data-tex="\displaystyle \langle V_o\rangle=\delta V_{in}">⟨Vₒ⟩ = δVᵢₙ</strong>
+              <strong class="math conversion-formula" data-tex="\displaystyle V_o=\delta V_{in}">Vₒ = δVᵢₙ</strong>
             </div>
             <div>
               <span data-i18n="voltages">Tensions</span>
               <div class="info-lines">
                 <span class="math info-equation" id="info-vin" data-tex="\displaystyle V_{in}=24\,\mathrm{V}">Vᵢₙ = 24 V</span>
-                <span class="math info-equation" id="info-output" data-tex="\displaystyle \langle V_o\rangle=12\,\mathrm{V}">⟨Vₒ⟩ = 12 V</span>
+                <span class="math info-equation" id="info-output" data-tex="\displaystyle V_o=12\,\mathrm{V}">Vₒ = 12 V</span>
               </div>
             </div>
             <div>
@@ -184,8 +184,8 @@
             <div>
               <span data-i18n="ripples">Ondulations</span>
               <div class="info-lines">
-                <span class="math info-equation" id="info-current-ripple" data-tex="\displaystyle \Delta i_L/\langle i_L\rangle=0\,\%">Δiₗ/⟨iₗ⟩ = 0 %</span>
-                <span class="math info-equation" id="info-voltage-ripple" data-tex="\displaystyle \Delta V_o/\langle V_o\rangle=0\,\%">ΔVₒ/⟨Vₒ⟩ = 0 %</span>
+                <span class="math info-equation" id="info-current-ripple" data-tex="\displaystyle \Delta i_L/I_L=0\,\%">Δiₗ/Iₗ = 0 %</span>
+                <span class="math info-equation" id="info-voltage-ripple" data-tex="\displaystyle \Delta v_o/V_o=0\,\%">Δvₒ/Vₒ = 0 %</span>
               </div>
             </div>
           </div>
@@ -200,7 +200,7 @@
           </div>
 
           <div class="measurements">
-            <div id="metric-1"><span id="metric-label-1">Moyenne V<span class="symbol-index">R</span></span><strong id="metric-value-1">12 V</strong></div>
+            <div id="metric-1"><span id="metric-label-1">Moyenne V<span class="symbol-index">o</span></span><strong id="metric-value-1">12 V</strong></div>
             <div id="metric-2"><span id="metric-label-2">Ondulation crête à crête</span><strong id="metric-value-2">0 V</strong></div>
             <div id="metric-3"><span id="metric-label-3">Période</span><strong id="metric-value-3">20 µs</strong></div>
           </div>
@@ -221,7 +221,7 @@
         <section class="balance-section">
           <h3 data-i18n="balanceTitle">Équilibres</h3>
           <div class="balance-equation">
-            <strong class="math" data-tex="\left\langle V_L\right\rangle=0">⟨Vₗ⟩ = 0</strong>
+            <strong class="math" data-tex="\left\langle v_L\right\rangle=0">⟨vₗ⟩ = 0</strong>
             <div><span data-i18n="numericalResidual">Résidu numérique</span><b id="balance-vl">0 mV</b></div>
           </div>
           <div class="balance-equation">
@@ -232,13 +232,13 @@
 
         <section class="approximation-section">
           <h3 data-i18n="rippleTheoryTitle">Approximation des ondulations</h3>
-          <div class="approximation-formula math" data-tex="\displaystyle \Delta I_L\simeq\frac{(V_{in}-V_o)\delta}{Lf_s}">ΔIₗ ≃ (Vin − Vo)δ/(Lfs)</div>
+          <div class="approximation-formula math" data-tex="\displaystyle \Delta i_L\simeq\frac{(V_{in}-V_o)\delta}{Lf_s}">Δiₗ ≃ (Vin − Vo)δ/(Lfs)</div>
           <div class="comparison-grid">
             <span data-i18n="simulation">Simulation</span><strong id="theory-il-sim">0 A</strong>
             <span data-i18n="approximation">Approximation</span><strong id="theory-il-approx">0 A</strong>
             <span data-i18n="relativeError">Écart relatif</span><strong id="theory-il-error">0 %</strong>
           </div>
-          <div class="approximation-formula math" data-tex="\displaystyle \Delta V_o\simeq\frac{\Delta I_L}{8Cf_s}">ΔVo ≃ ΔIₗ/(8Cfs)</div>
+          <div class="approximation-formula math" data-tex="\displaystyle \Delta v_o\simeq\frac{\Delta i_L}{8Cf_s}">Δvo ≃ Δiₗ/(8Cfs)</div>
           <div class="comparison-grid">
             <span data-i18n="simulation">Simulation</span><strong id="theory-vo-sim">0 V</strong>
             <span data-i18n="approximation">Approximation</span><strong id="theory-vo-approx">0 V</strong>
