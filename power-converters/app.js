@@ -141,7 +141,7 @@
       if (basic) return basic;
     }
     const plots = activePlots();
-    return advanced ? [plots.main, plots.second, plots.third] : [plots.main];
+    return advanced ? [plots.main, plots.second, plots.third].filter(Boolean) : [plots.main];
   };
   const activeAxes = () => {
     const model = activeModel();

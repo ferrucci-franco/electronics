@@ -16,7 +16,7 @@
     acCurrents: text("AC-side currents", "courants côté AC", "corrientes lado AC"),
     dcCurrents: text("DC-side currents", "courants côté DC", "corrientes lado DC"),
     tensions: text("voltages", "tensions", "tensiones"),
-    currentAxis: text("load current", "courant de charge", "corriente de carga"),
+    currentAxis: text("currents", "courants", "corrientes"),
     meanVoltage: text("Average voltage", "Tension moyenne", "Tensión media"),
     rippleVoltage: text("Peak-to-peak ripple", "Ondulation crête à crête", "Ondulación pico a pico"),
     meanCurrent: text("Average current", "Courant moyen", "Corriente media"),
@@ -55,21 +55,21 @@
     ...tracesMain,
     { key: "vD1", label: montage === "bridge" ? "v<sub>D1</sub>" : "v<sub>D</sub>", color: "--trace-vl", dash: [7, 4], width: 2 },
   ];
-  const tracesLoad = [{ key: "iCh", label: "i<sub>ch</sub>", color: "--trace-il", width: 3 }];
-  const tracesLoadAdvanced = [
-    { key: "iLf", label: "i<sub>Lf</sub>", color: "--trace-vx", width: 2 },
-    ...tracesLoad,
+  // Courants : loi des nœuds au condensateur, i_in (ou i_Lf côté DC du pont) = i_C + i_ch.
+  // En diode simple, i_in = i_D = i_Lf : une seule trace suffit, nommée i_in.
+  const tracesCurrentsFor = (montage, advanced) => [
+    montage === "bridge" && advanced
+      ? { key: "iLf", label: "i<sub>Lf</sub>", color: "--trace-vx", width: 2.2 }
+      : { key: "iIn", label: "i<sub>in</sub>", color: "--trace-vx", width: 2.2 },
+    { key: "iC", label: "i<sub>C</sub>", color: "--trace-ic", width: 2, dash: [6, 4] },
+    { key: "iCh", label: "i<sub>ch</sub>", color: "--trace-il", width: 3 },
   ];
-  const tracesAcFor = (montage) => montage === "bridge"
-    ? [
-      { key: "iIn", label: "i<sub>in</sub>", color: "--trace-vx", width: 2.2 },
-      { key: "iD1", label: 'i<sub>D1</sub> <span style="padding:0 .22em">&amp;</span> i<sub>D2</sub>', color: "--trace-ic", width: 2.6, dash: [6, 4] },
-      { key: "iD34", label: 'i<sub>D3</sub> <span style="padding:0 .22em">&amp;</span> i<sub>D4</sub>', color: "--trace-vl", width: 2.6, dash: [6, 4] },
-    ]
-    : [
-      { key: "iIn", label: "i<sub>in</sub>", color: "--trace-vx", width: 2.2 },
-      { key: "iD1", label: "i<sub>D</sub>", color: "--trace-ic", width: 2.6, dash: [6, 4] },
-    ];
+  // Côté AC, pont seulement (en diode simple, i_in = i_D figure déjà dans les courants).
+  const tracesAcBridge = [
+    { key: "iIn", label: "i<sub>in</sub>", color: "--trace-vx", width: 2.2 },
+    { key: "iD1", label: 'i<sub>D1</sub> <span style="padding:0 .22em">&amp;</span> i<sub>D2</sub>', color: "--trace-ic", width: 2.6, dash: [6, 4] },
+    { key: "iD34", label: 'i<sub>D3</sub> <span style="padding:0 .22em">&amp;</span> i<sub>D4</sub>', color: "--trace-vl", width: 2.6, dash: [6, 4] },
+  ];
 
   // --- Switched-diode simulation (semi-implicit Euler, ideal or 0.7 V diodes) ---
   function simulate(state, options) {
@@ -160,7 +160,7 @@
       const sample = advance(absolute);
       if (index % keepEvery === 0 || index === totalSteps) {
         const extra = derived(sample);
-        points.push({ t: index * dt, vIn: sample.vin, vCh: sample.vCh, iCh: sample.iCh, iLf: sample.iRect, iD1: extra.iD1, iD34: extra.iD34, iIn: extra.iIn, vD1: extra.vD1 });
+        points.push({ t: index * dt, vIn: sample.vin, vCh: sample.vCh, iCh: sample.iCh, iLf: sample.iRect, iC: c > 0 ? sample.iRect - sample.iCh : 0, iD1: extra.iD1, iD34: extra.iD34, iIn: extra.iIn, vD1: extra.vD1 });
       }
     }
 
@@ -273,14 +273,14 @@ ${arrowVertical(790, 252, 90, "v<tspan class='sub'>ch</tspan>")}
     },
     diagram: { type: "inline", aria: text("Diode rectifier with R-L load and filter capacitor", "Redresseur à diodes avec charge R–L et condensateur de filtrage", "Rectificador de diodos con carga R–L y capacitor de filtrado") },
     diagramFor(montage, language, frequency) { return montage === "bridge" ? schematicBridge(language, frequency) : schematicSingle(language, frequency); },
-    plotsFor(montage) { return { main: tracesMainAdvancedFor(montage), second: tracesLoadAdvanced, third: tracesAcFor(montage) }; },
-    basicPlotsFor() { return [tracesMain, tracesLoad]; },
-    axesFor(_montage, isAdvanced = false) {
+    plotsFor(montage) { return { main: tracesMainAdvancedFor(montage), second: tracesCurrentsFor(montage, true), third: montage === "bridge" ? tracesAcBridge : null }; },
+    basicPlotsFor(montage) { return [tracesMain, tracesCurrentsFor(montage, false)]; },
+    axesFor(montage, isAdvanced = false) {
       const axes = [
         { label: i18n.tensions, unit: "V", tint: "--scope-text" },
-        { label: isAdvanced ? i18n.dcCurrents : i18n.currentAxis, unit: "A", tint: isAdvanced ? "--scope-text" : "--trace-il" },
+        { label: isAdvanced && montage === "bridge" ? i18n.dcCurrents : i18n.currentAxis, unit: "A", tint: "--scope-text" },
       ];
-      if (isAdvanced) axes.push({ label: i18n.acCurrents, unit: "A", tint: "--scope-text" });
+      if (isAdvanced && montage === "bridge") axes.push({ label: i18n.acCurrents, unit: "A", tint: "--scope-text" });
       return axes;
     },
     axisMarksFor(groupIndex, advanced) {
@@ -288,7 +288,6 @@ ${arrowVertical(790, 252, 90, "v<tspan class='sub'>ch</tspan>")}
       if (!result) return [];
       if (groupIndex === 0) return [{ value: result.vChMean, color: "--trace-vr" }];
       if (groupIndex === 1) return [{ value: result.iChMean, color: "--trace-il" }];
-      if (groupIndex === 2 && advanced && result.montage === "single") return [{ value: result.iInMean, color: "--trace-vx" }];
       return [];
     },
     calculate(state, _commutation, options = {}) {
