@@ -214,27 +214,15 @@
   const capacitorBranch = (x, yTop, yBottom) => `<g id="branche-c"><line x1="${x}" y1="${yTop}" x2="${x}" y2="${(yTop + yBottom) / 2 - 9}"/><line x1="${x - 25}" y1="${(yTop + yBottom) / 2 - 9}" x2="${x + 25}" y2="${(yTop + yBottom) / 2 - 9}" class="component"/><line x1="${x - 25}" y1="${(yTop + yBottom) / 2 + 7}" x2="${x + 25}" y2="${(yTop + yBottom) / 2 + 7}" class="component"/><line x1="${x}" y1="${(yTop + yBottom) / 2 + 7}" x2="${x}" y2="${yBottom}"/><text x="${x + 42}" y="${(yTop + yBottom) / 2 + 6}">C</text><circle cx="${x}" cy="${yTop}" r="5" class="node"/><circle cx="${x}" cy="${yBottom}" r="5" class="node"/></g>`;
   const loadBranch = (x, yTop, yBottom) => `<line x1="${x}" y1="${yTop}" x2="${x}" y2="${yTop + 22}"/><rect x="${x - 20}" y="${yTop + 22}" width="40" height="50" class="component"/><text x="${x + 40}" y="${yTop + 54}">R</text><line x1="${x}" y1="${yTop + 72}" x2="${x}" y2="${yTop + 84}"/><g id="branche-l"><path d="M${x} ${yTop + 84} q-22 11 0 22 q-22 11 0 22 q-22 11 0 22" class="component"/><text x="${x + 40}" y="${yTop + 122}">L</text></g><line id="bypass-l" x1="${x}" y1="${yTop + 84}" x2="${x}" y2="${yTop + 150}"/><line x1="${x}" y1="${yTop + 150}" x2="${x}" y2="${yBottom}"/>`;
 
+  // Schéma dessiné dans Inkscape (assets/sources/ac-dc_diodes.svg), empilé par
+  // tools/empiler-calques-svg.py : chaque calque est une <img> du même fichier
+  // (#nom-du-calque), toutes dans le même cadre, allumées ou éteintes par onResult.
+  const layeredSource = "assets/ac-dc_diodes.svg";
+  const singleLayers = ["base", "rin", "c", "lf-cable", "lf", "load-r", "load-rl"];
   function schematicSingle(language, frequency = 50) {
     const aria = localizeText(i18n.schematic, language);
-    return `<svg class="rect-schematic" viewBox="0 0 900 320" role="img" aria-label="${aria}">
-<style>${svgStyle}</style>
-${sourceGlyph(120, 165)}
-<text x="120" y="248" style="font-size:16px">${frequency} Hz</text>
-<line x1="120" y1="123" x2="120" y2="80"/><line x1="120" y1="207" x2="120" y2="250"/>
-<line x1="120" y1="80" x2="278" y2="80"/>
-${diodeGlyph(300, 80, 0, "D", 0, -28)}
-<line x1="322" y1="80" x2="420" y2="80"/>
-<g id="branche-lf"><path d="M420 80 q12 -25 24 0 q12 -25 24 0 q12 -25 24 0" class="component"/><text x="456" y="46">L<tspan class="sub">f</tspan></text></g>
-<line id="bypass-lf" x1="420" y1="80" x2="492" y2="80"/>
-<line x1="492" y1="80" x2="700" y2="80"/>
-<line x1="120" y1="250" x2="700" y2="250"/>
-${arrowVertical(70, 212, 120, "v<tspan class='sub'>in</tspan>")}
-${arrowRight(205, 62, "i<tspan class='sub'>in</tspan>")}
-${arrowRight(628, 62, "i<tspan class='sub'>o</tspan>")}
-${capacitorBranch(540, 80, 250)}
-${loadBranch(700, 80, 250)}
-${arrowVertical(790, 232, 100, "v<tspan class='sub'>o</tspan>")}
-</svg>`;
+    const layers = [...singleLayers, frequency === 60 ? "60hz" : "50hz"];
+    return `<div class="rect-schematic rect-layered" role="img" aria-label="${aria}">${layers.map((layer) => `<img class="converter-schematic" data-layer="${layer}" src="${layeredSource}#${layer}" alt="" draggable="false" />`).join("")}</div>`;
   }
 
   function schematicBridge(language, frequency = 50) {
@@ -304,6 +292,20 @@ ${arrowVertical(790, 252, 90, "v<tspan class='sub'>o</tspan>")}
       return result;
     },
     onResult(result, state, context = {}) {
+      const layered = document.querySelector(".rect-layered");
+      if (layered) {
+        const advanced = Boolean(context.advanced);
+        const hasChoke = advanced && state.filterInductance > 0;
+        const hasLoadInductor = advanced && state.inductance > 0;
+        const show = (layer, visible, opacity = 1) => { const image = layered.querySelector(`[data-layer="${layer}"]`); if (image) { image.style.display = visible ? "" : "none"; image.style.opacity = String(opacity); } };
+        show("rin", result.view === "transient");
+        show("c", true, state.capacitance > 0 ? 1 : .14);
+        show("lf", advanced, hasChoke ? 1 : .14);
+        show("lf-cable", !hasChoke);
+        show("load-r", !hasLoadInductor);
+        show("load-rl", hasLoadInductor);
+        return;
+      }
       const loadInductor = document.querySelector("#branche-l");
       const loadBypass = document.querySelector("#bypass-l");
       const hasLoadInductor = Boolean(context.advanced) && state.inductance > 0;
