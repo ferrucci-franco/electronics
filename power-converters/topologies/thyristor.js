@@ -291,7 +291,7 @@ ${loadBranch(700, 80, 250)}${arrowVertical(790, 232, 100, "v<tspan class='sub'>o
         { label: t(i18n.rmsVoltageAxis), value: volts(result.vChRms) },
       ];
       return [
-        { label: `${t(i18n.rmsCurrent)} I<span class="symbol-index">eff</span>`, value: amps(result.iChRms) },
+        { label: `${t(i18n.rmsCurrent)} I<span class="symbol-index">o,eff</span>`, value: amps(result.iChRms) },
         { label: t(i18n.activePowerAxis), value: `${format.format(result.pCh)} W` },
         { label: t(i18n.powerFactor), value: format.format(result.powerFactor) },
       ];
@@ -311,7 +311,7 @@ ${loadBranch(700, 80, 250)}${arrowVertical(790, 232, 100, "v<tspan class='sub'>o
       setInfoMath("info-thy-vmean", `\\langle v_{o}\\rangle=${texVoltage(result.vChMean)}`);
       setInfoMath("info-thy-vrms", `V_{o,eff}=${texVoltage(result.vChRms)}`);
       setInfoMath("info-thy-imean", `\\langle i_{o}\\rangle=${texNumber(result.iChMean)}\\,\\mathrm{A}`);
-      setInfoMath("info-thy-irms", `I_{eff}=${texNumber(result.iChRms)}\\,\\mathrm{A}`);
+      setInfoMath("info-thy-irms", `I_{o,eff}=${texNumber(result.iChRms)}\\,\\mathrm{A}`);
       setInfoMath("info-thy-power", `P_{o}=${texNumber(result.pCh)}\\,\\mathrm{W}`);
       setInfoMath("info-thy-pf", `\\mathrm{FP}_{in}=${texNumber(result.powerFactor)}`);
       setInfoMath("info-thy-thd", `\\mathrm{THD}_{i}=${texNumber(result.thdI)}\\,\\%`);

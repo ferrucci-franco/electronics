@@ -336,7 +336,7 @@ ${arrowVertical(790, 252, 90, "v<tspan class='sub'>o</tspan>")}
       }
       const pairLabel = result.montage === "bridge" ? 'D<span class="symbol-index">1</span>, D<span class="symbol-index">2</span>' : "D";
       return [
-        { label: `${t(i18n.rmsCurrent)} I<span class="symbol-index">eff</span>`, value: amps(result.iChRms) },
+        { label: `${t(i18n.rmsCurrent)} I<span class="symbol-index">o,eff</span>`, value: amps(result.iChRms) },
         { label: `${t(i18n.conductionAngle)} (${pairLabel})`, value: `${format.format(result.conductionDegrees)}°` },
         { label: t(i18n.piv), value: volts(Math.abs(result.piv)) },
       ];
@@ -357,7 +357,7 @@ ${arrowVertical(790, 252, 90, "v<tspan class='sub'>o</tspan>")}
       setInfoMath("info-rect-vripple", `\\Delta v_{o}=${texVoltage(result.vChRipple)}`);
       setInfoMath("info-rect-piv", `\\hat V_{inv}=${texVoltage(Math.abs(result.piv))}`);
       setInfoMath("info-rect-imean", `\\langle i_{o}\\rangle=${texNumber(result.iChMean)}\\,\\mathrm{A}`);
-      setInfoMath("info-rect-irms", `I_{eff}=${texNumber(result.iChRms)}\\,\\mathrm{A}`);
+      setInfoMath("info-rect-irms", `I_{o,eff}=${texNumber(result.iChRms)}\\,\\mathrm{A}`);
       setInfoMath("info-rect-angle", `\\theta_{cond}=${texNumber(result.conductionDegrees)}^\\circ`);
       setInfoMath("info-rect-power", `P_{o}=${texNumber(result.pCh)}\\,\\mathrm{W}`);
       setInfoMath("info-rect-pf", `\\mathrm{FP}_{in}=${texNumber(result.powerFactor)}`);
@@ -369,7 +369,7 @@ ${arrowVertical(790, 252, 90, "v<tspan class='sub'>o</tspan>")}
       return `<section><h3>${t(i18n.characteristic)} · <span id="theory-rect-montage"></span></h3>
 <div class="approximation-formula math" id="theory-rect-law"></div>
 ${comparison([[t(i18n.simulation), "theory-rect-vmean"], [t(i18n.idealFormula), "theory-rect-videal"], [t(i18n.relativeGap), "theory-rect-verror"]])}
-<div class="approximation-formula math" data-tex="\\displaystyle F=\\frac{I_{eff}}{\\langle i_{o}\\rangle}"></div>
+<div class="approximation-formula math" data-tex="\\displaystyle F=\\frac{I_{o,eff}}{\\langle i_{o}\\rangle}"></div>
 ${comparison([[t(i18n.formFactor), "theory-rect-form"], [t(i18n.conductionAngle), "theory-rect-angle"], [t(i18n.piv), "theory-rect-piv"]])}</section>
 <section class="approximation-section"><h3>${t(i18n.capacitiveFiltering)}</h3>
 <div class="approximation-formula math" id="theory-rect-ripple-formula"></div>

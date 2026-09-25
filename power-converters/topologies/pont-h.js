@@ -63,13 +63,13 @@
 
   const plots = {
     standalone: {
-      main: [{ key: "vref", label: "V<sub>ref</sub>", color: "--trace-vin", dash: [8, 5] }, { key: "vab", label: "V<sub>ab</sub>", color: "--trace-vab", step: true, layer: -1 }, { key: "vo", label: "V<sub>o</sub>", color: "--trace-vr", width: 3 }],
-      second: [{ key: "vLf", label: "V<sub>Lf</sub>", color: "--trace-vl" }, { key: "vC", label: "V<sub>Cf</sub>", color: "--trace-ic", dash: [7, 4] }],
+      main: [{ key: "vref", label: "v<sub>ref</sub>", color: "--trace-vin", dash: [8, 5] }, { key: "vab", label: "v<sub>ab</sub>", color: "--trace-vab", step: true, layer: -1 }, { key: "vo", label: "v<sub>o</sub>", color: "--trace-vr", width: 3 }],
+      second: [{ key: "vLf", label: "v<sub>Lf</sub>", color: "--trace-vl" }, { key: "vC", label: "v<sub>Cf</sub>", color: "--trace-ic", dash: [7, 4] }],
       third: [{ key: "iFilter", label: "i<sub>Lf</sub>", color: "--trace-il", width: 3 }, { key: "iLoad", label: "i<sub>o</sub>", color: "--trace-vx" }, { key: "iCap", label: "i<sub>Cf</sub>", color: "--trace-vr", dash: [6, 4] }],
     },
     motor: {
       main: [{ key: "speedRpm", label: "n", color: "--trace-vr", width: 3 }],
-      second: [{ key: "vArmature", label: "V<sub>a</sub>", color: "--trace-vx", step: true }, { key: "vAverage", label: "⟨V<sub>a</sub>⟩", color: "--trace-vin", dash: [8, 5] }, { key: "backEmf", label: "E = K<sub>e</sub>ω", color: "--trace-vr", width: 3 }],
+      second: [{ key: "vArmature", label: "v<sub>a</sub>", color: "--trace-vx", step: true }, { key: "vAverage", label: "⟨v<sub>a</sub>⟩", color: "--trace-vin", dash: [8, 5] }, { key: "backEmf", label: "e = K<sub>e</sub>ω", color: "--trace-vr", width: 3 }],
       third: [{ key: "iArmature", label: "i<sub>a</sub>", color: "--trace-il", width: 3 }],
     },
     grid: {
@@ -91,18 +91,18 @@
   const motorBasicSteadyPlots = [
     [{ key: "speedRpm", label: "n", color: "--trace-vr", width: 3 }],
     [
-      { key: "vArmature", label: "V<sub>a</sub>", color: "--trace-vx", width: 2.6, step: true },
-      { key: "vAverage", label: "⟨V<sub>a</sub>⟩", color: "--trace-vin", dash: [8, 5] },
+      { key: "vArmature", label: "v<sub>a</sub>", color: "--trace-vx", width: 2.6, step: true },
+      { key: "vAverage", label: "⟨v<sub>a</sub>⟩", color: "--trace-vin", dash: [8, 5] },
       { key: "iArmature", label: "i<sub>a</sub>", color: "--trace-il", axis: "right", width: 3 },
     ],
   ];
   const motorBasicTransientPlots = [
     [{ key: "speedRpm", label: "n", color: "--trace-vr", width: 3 }],
-    [{ key: "vAverage", label: "⟨V<sub>a</sub>⟩", color: "--trace-vin", dash: [8, 5] }, { key: "iArmature", label: "i<sub>a</sub>", color: "--trace-il", axis: "right", width: 3 }],
+    [{ key: "vAverage", label: "⟨v<sub>a</sub>⟩", color: "--trace-vin", dash: [8, 5] }, { key: "iArmature", label: "i<sub>a</sub>", color: "--trace-il", axis: "right", width: 3 }],
   ];
   const motorTransientPlots = {
     main: plots.motor.main,
-    second: [{ key: "vAverage", label: "⟨V<sub>a</sub>⟩", color: "--trace-vin", dash: [8, 5] }, { key: "backEmf", label: "E = K<sub>e</sub>ω", color: "--trace-vr", width: 3 }],
+    second: [{ key: "vAverage", label: "⟨v<sub>a</sub>⟩", color: "--trace-vin", dash: [8, 5] }, { key: "backEmf", label: "e = K<sub>e</sub>ω", color: "--trace-vr", width: 3 }],
     third: plots.motor.third,
   };
 
