@@ -452,6 +452,7 @@
     document.documentElement.lang = language;
     document.querySelectorAll("[data-i18n]").forEach((element) => { const value = tr()[element.dataset.i18n]; if (value) element.textContent = value; });
     document.querySelectorAll("[data-i18n-aria]").forEach((element) => { const value = tr()[element.dataset.i18nAria]; if (value) element.setAttribute("aria-label", value); });
+    document.querySelectorAll("[data-i18n-title]").forEach((element) => { const value = tr()[element.dataset.i18nTitle]; if (value) element.setAttribute("title", value); });
     languageButtons.forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.lang === language)));
     themeButton.setAttribute("aria-label", tr()[dark ? "themeLight" : "themeDark"]); renderCatalog();
   }
