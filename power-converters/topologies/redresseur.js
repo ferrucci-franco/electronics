@@ -31,9 +31,9 @@
     formFactor: text("Form factor", "Facteur de forme", "Factor de forma"),
     approximation: text("Approximation", "Approximation", "Aproximación"),
     theoryNote: text(
-      "In the steady-state view, the source and diodes are ideal: while a diode conducts, v<sub>ch</sub> equals the rectified v<sub>in</sub> (minus 0.6 V per conducting diode with the 0.6 V drop model), and the current is i<sub>D</sub> = C·dv<sub>in</sub>/dt + i<sub>ch</sub>. The start-up view adds a 0.5 Ω series resistance, which limits the inrush current into the discharged capacitor at switch-on, as the transformer and wiring do in a real rectifier. The ideal average-voltage formulas assume an R load, no capacitor and ideal diodes.",
-      "En régime permanent, la source et les diodes sont idéales : tant qu’une diode conduit, v<sub>ch</sub> est égale à v<sub>in</sub> redressée (moins 0,6 V par diode passante avec le modèle à chute de 0,6 V), et le courant vaut i<sub>D</sub> = C·dv<sub>in</sub>/dt + i<sub>ch</sub>. La vue Démarrage ajoute une résistance série de 0,5 Ω, qui limite l’appel de courant dans le condensateur déchargé à la mise sous tension, comme le font le transformateur et le câblage dans un redresseur réel. Les formules idéales de tension moyenne supposent une charge R, sans condensateur et avec des diodes idéales.",
-      "En régimen permanente, la fuente y los diodos son ideales: mientras un diodo conduce, v<sub>ch</sub> es igual a v<sub>in</sub> rectificada (menos 0,6 V por diodo en conducción con el modelo de caída de 0,6 V), y la corriente vale i<sub>D</sub> = C·dv<sub>in</sub>/dt + i<sub>ch</sub>. La vista Arranque agrega una resistencia serie de 0,5 Ω, que limita la corriente de conexión en el capacitor descargado, como lo hacen el transformador y el cableado en un rectificador real. Las fórmulas ideales de tensión media suponen carga R, sin capacitor y con diodos ideales.",
+      "In the steady-state view, the source and diodes are ideal: while a diode conducts, v<sub>o</sub> equals the rectified v<sub>in</sub> (minus 0.6 V per conducting diode with the 0.6 V drop model), and the current is i<sub>D</sub> = C·dv<sub>in</sub>/dt + i<sub>o</sub>. The start-up view adds a 0.5 Ω series resistance, which limits the inrush current into the discharged capacitor at switch-on, as the transformer and wiring do in a real rectifier. The ideal average-voltage formulas assume an R load, no capacitor and ideal diodes.",
+      "En régime permanent, la source et les diodes sont idéales : tant qu’une diode conduit, v<sub>o</sub> est égale à v<sub>in</sub> redressée (moins 0,6 V par diode passante avec le modèle à chute de 0,6 V), et le courant vaut i<sub>D</sub> = C·dv<sub>in</sub>/dt + i<sub>o</sub>. La vue Démarrage ajoute une résistance série de 0,5 Ω, qui limite l’appel de courant dans le condensateur déchargé à la mise sous tension, comme le font le transformateur et le câblage dans un redresseur réel. Les formules idéales de tension moyenne supposent une charge R, sans condensateur et avec des diodes idéales.",
+      "En régimen permanente, la fuente y los diodos son ideales: mientras un diodo conduce, v<sub>o</sub> es igual a v<sub>in</sub> rectificada (menos 0,6 V por diodo en conducción con el modelo de caída de 0,6 V), y la corriente vale i<sub>D</sub> = C·dv<sub>in</sub>/dt + i<sub>o</sub>. La vista Arranque agrega una resistencia serie de 0,5 Ω, que limita la corriente de conexión en el capacitor descargado, como lo hacen el transformador y el cableado en un rectificador real. Las fórmulas ideales de tensión media suponen carga R, sin capacitor y con diodos ideales.",
     ),
     schematic: text("Diode rectifier", "Redresseur à diodes", "Rectificador de diodos"),
   };
@@ -49,20 +49,20 @@
 
   const tracesMain = [
     { key: "vIn", label: "v<sub>in</sub>", color: "--trace-vin", width: 1.8 },
-    { key: "vCh", label: "v<sub>ch</sub>", color: "--trace-vr", width: 3 },
+    { key: "vCh", label: "v<sub>o</sub>", color: "--trace-vr", width: 3 },
   ];
   const tracesMainAdvancedFor = (montage) => [
     ...tracesMain,
     { key: "vD1", label: montage === "bridge" ? "v<sub>D1</sub>" : "v<sub>D</sub>", color: "--trace-vl", dash: [7, 4], width: 2 },
   ];
-  // Courants : loi des nœuds au condensateur, i_in (ou i_Lf côté DC du pont) = i_C + i_ch ;
+  // Courants : loi des nœuds au condensateur, i_in (ou i_Lf côté DC du pont) = i_C + i_o ;
   // i_C n'apparaît qu'en mode avancé.
   // En diode simple, i_in = i_D = i_Lf : une seule trace suffit, nommée i_in.
   const tracesCurrentsFor = (montage, advanced) => [
     montage === "bridge" && advanced
       ? { key: "iLf", label: "i<sub>Lf</sub>", color: "--trace-vx", width: 2.2 }
       : { key: "iIn", label: "i<sub>in</sub>", color: "--trace-vx", width: 2.2 },
-    { key: "iCh", label: "i<sub>ch</sub>", color: "--trace-il", width: 3 },
+    { key: "iCh", label: "i<sub>o</sub>", color: "--trace-il", width: 3 },
     ...(advanced ? [{ key: "iC", label: "i<sub>C</sub>", color: "--trace-ic", width: 2, dash: [6, 4] }] : []),
   ];
   // Côté AC, pont seulement (en diode simple, i_in = i_D figure déjà dans les courants).
@@ -84,7 +84,7 @@
     const l = options.advanced ? Math.max(0, state.inductance) / 1000 : 0; // L de charge : mode avancé seulement
     const lf = options.advanced ? Math.max(0, state.filterInductance) / 1000 : 0; // Lf : mode avancé seulement
     const c = Math.max(0, state.capacitance) / 1e6;
-    // Régime permanent : source et diodes idéales (v_ch = v_in pendant la conduction).
+    // Régime permanent : source et diodes idéales (v_o = v_in pendant la conduction).
     // Démarrage : 0,5 Ω en série pour borner l'appel de courant à la mise sous tension.
     const rs = transient ? .5 : 0;
     const psi = transient ? (state.psi || 0) * Math.PI / 180 : 0;
@@ -108,7 +108,7 @@
         } else {
           let vNext;
           if (rs === 0) {
-            // diode idéale : le condensateur suit v_redressée tant que i_D = C·dv/dt + i_ch > 0
+            // diode idéale : le condensateur suit v_redressée tant que i_D = C·dv/dt + i_o > 0
             const vOff = vC - dt * iL / c;
             if (vRect > vOff) { vNext = vRect; iRect = c * (vRect - vC) / dt + iL; conducting = true; }
             else vNext = vOff;
@@ -230,10 +230,10 @@ ${diodeGlyph(300, 80, 0, "D", 0, -28)}
 <line x1="120" y1="250" x2="700" y2="250"/>
 ${arrowVertical(70, 212, 120, "v<tspan class='sub'>in</tspan>")}
 ${arrowRight(205, 62, "i<tspan class='sub'>in</tspan>")}
-${arrowRight(628, 62, "i<tspan class='sub'>ch</tspan>")}
+${arrowRight(628, 62, "i<tspan class='sub'>o</tspan>")}
 ${capacitorBranch(540, 80, 250)}
 ${loadBranch(700, 80, 250)}
-${arrowVertical(790, 232, 100, "v<tspan class='sub'>ch</tspan>")}
+${arrowVertical(790, 232, 100, "v<tspan class='sub'>o</tspan>")}
 </svg>`;
   }
 
@@ -260,14 +260,14 @@ ${diodeGlyph(435, 200, -45, "D<tspan class='sub'>2</tspan>", 44, 24)}
 <line x1="518" y1="70" x2="700" y2="70"/>
 <line x1="400" y1="235" x2="400" y2="270"/><line x1="400" y1="270" x2="700" y2="270"/>
 <text x="415" y="60" style="font-size:17px">+</text><text x="415" y="296" style="font-size:17px">−</text>
-${arrowRight(628, 52, "i<tspan class='sub'>ch</tspan>")}
+${arrowRight(628, 52, "i<tspan class='sub'>o</tspan>")}
 ${capacitorBranch(560, 70, 270)}
 ${loadBranch(700, 70, 270)}
-${arrowVertical(790, 252, 90, "v<tspan class='sub'>ch</tspan>")}
+${arrowVertical(790, 252, 90, "v<tspan class='sub'>o</tspan>")}
 </svg>`;
   }
 
-  const idealLawTex = (montage) => montage === "bridge" ? "\\langle v_{ch}\\rangle=2\\hat V/\\pi" : "\\langle v_{ch}\\rangle=\\hat V/\\pi";
+  const idealLawTex = (montage) => montage === "bridge" ? "\\langle v_{o}\\rangle=2\\hat V/\\pi" : "\\langle v_{o}\\rangle=\\hat V/\\pi";
 
   const model = {
     id: "redresseur",
@@ -324,9 +324,9 @@ ${arrowVertical(790, 252, 90, "v<tspan class='sub'>ch</tspan>")}
       const amps = (value) => Math.abs(value) < 1 ? `${format.format(value * 1000)} mA` : `${format.format(value)} A`;
       if (!advanced) {
         return [
-          { label: `${t(i18n.meanVoltage)} ⟨v<span class="symbol-index">ch</span>⟩`, value: volts(result.vChMean) },
-          { label: `${t(i18n.rippleVoltage)} Δv<span class="symbol-index">ch</span>`, value: volts(result.vChRipple) },
-          { label: `${t(i18n.meanCurrent)} ⟨i<span class="symbol-index">ch</span>⟩`, value: amps(result.iChMean) },
+          { label: `${t(i18n.meanVoltage)} ⟨v<span class="symbol-index">o</span>⟩`, value: volts(result.vChMean) },
+          { label: `${t(i18n.rippleVoltage)} Δv<span class="symbol-index">o</span>`, value: volts(result.vChRipple) },
+          { label: `${t(i18n.meanCurrent)} ⟨i<span class="symbol-index">o</span>⟩`, value: amps(result.iChMean) },
         ];
       }
       const pairLabel = result.montage === "bridge" ? 'D<span class="symbol-index">1</span>, D<span class="symbol-index">2</span>' : "D";
@@ -348,13 +348,13 @@ ${arrowVertical(790, 252, 90, "v<tspan class='sub'>ch</tspan>")}
       const { setInfoMath, texNumber, texVoltage } = helpers;
       setInfoMath("info-rect-law", `${idealLawTex(result.montage)}=${texVoltage(result.idealMean)}`);
       setInfoMath("info-rect-peak", `\\hat V=\\sqrt{2}\\,V_{in}=${texVoltage(result.amplitude)}`);
-      setInfoMath("info-rect-vmean", `\\langle v_{ch}\\rangle=${texVoltage(result.vChMean)}`);
-      setInfoMath("info-rect-vripple", `\\Delta v_{ch}=${texVoltage(result.vChRipple)}`);
+      setInfoMath("info-rect-vmean", `\\langle v_{o}\\rangle=${texVoltage(result.vChMean)}`);
+      setInfoMath("info-rect-vripple", `\\Delta v_{o}=${texVoltage(result.vChRipple)}`);
       setInfoMath("info-rect-piv", `\\hat V_{inv}=${texVoltage(Math.abs(result.piv))}`);
-      setInfoMath("info-rect-imean", `\\langle i_{ch}\\rangle=${texNumber(result.iChMean)}\\,\\mathrm{A}`);
+      setInfoMath("info-rect-imean", `\\langle i_{o}\\rangle=${texNumber(result.iChMean)}\\,\\mathrm{A}`);
       setInfoMath("info-rect-irms", `I_{eff}=${texNumber(result.iChRms)}\\,\\mathrm{A}`);
       setInfoMath("info-rect-angle", `\\theta_{cond}=${texNumber(result.conductionDegrees)}^\\circ`);
-      setInfoMath("info-rect-power", `P_{ch}=${texNumber(result.pCh)}\\,\\mathrm{W}`);
+      setInfoMath("info-rect-power", `P_{o}=${texNumber(result.pCh)}\\,\\mathrm{W}`);
       setInfoMath("info-rect-pf", `\\mathrm{FP}_{in}=${texNumber(result.powerFactor)}`);
       setInfoMath("info-rect-thd", `\\mathrm{THD}_{i}=${texNumber(result.thdI)}\\,\\%`);
     },
@@ -364,7 +364,7 @@ ${arrowVertical(790, 252, 90, "v<tspan class='sub'>ch</tspan>")}
       return `<section><h3>${t(i18n.characteristic)} · <span id="theory-rect-montage"></span></h3>
 <div class="approximation-formula math" id="theory-rect-law"></div>
 ${comparison([[t(i18n.simulation), "theory-rect-vmean"], [t(i18n.idealFormula), "theory-rect-videal"], [t(i18n.relativeGap), "theory-rect-verror"]])}
-<div class="approximation-formula math" data-tex="\\displaystyle F=\\frac{I_{eff}}{\\langle i_{ch}\\rangle}"></div>
+<div class="approximation-formula math" data-tex="\\displaystyle F=\\frac{I_{eff}}{\\langle i_{o}\\rangle}"></div>
 ${comparison([[t(i18n.formFactor), "theory-rect-form"], [t(i18n.conductionAngle), "theory-rect-angle"], [t(i18n.piv), "theory-rect-piv"]])}</section>
 <section class="approximation-section"><h3>${t(i18n.capacitiveFiltering)}</h3>
 <div class="approximation-formula math" id="theory-rect-ripple-formula"></div>
@@ -378,7 +378,7 @@ ${comparison([[t(i18n.simulation), "theory-rect-ripple-sim"], [t(i18n.approximat
       if (lawElement && window.katex) window.katex.render(`\\displaystyle ${idealLawTex(result.montage)}\\qquad \\hat V=\\sqrt{2}\\,V_{in}`, lawElement, { throwOnError: false });
       const rippleFormula = document.querySelector("#theory-rect-ripple-formula");
       const k = result.montage === "bridge" ? "2" : "";
-      if (rippleFormula && window.katex) window.katex.render(`\\displaystyle \\Delta v_{ch}\\simeq\\frac{\\langle i_{ch}\\rangle}{${k}fC}`, rippleFormula, { throwOnError: false });
+      if (rippleFormula && window.katex) window.katex.render(`\\displaystyle \\Delta v_{o}\\simeq\\frac{\\langle i_{o}\\rangle}{${k}fC}`, rippleFormula, { throwOnError: false });
       setText("theory-rect-vmean", displayVoltage(result.vChMean));
       setText("theory-rect-videal", displayVoltage(result.idealMean));
       setText("theory-rect-verror", `${number.format(relativeError(result.idealMean, result.vChMean))} %`);

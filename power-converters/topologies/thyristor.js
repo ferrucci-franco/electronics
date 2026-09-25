@@ -49,21 +49,21 @@
 
   const tracesMain = [
     { key: "vIn", label: "v<sub>in</sub>", color: "--trace-vin", width: 1.8 },
-    { key: "vCh", label: "v<sub>ch</sub>", color: "--trace-vr", width: 3 },
+    { key: "vCh", label: "v<sub>o</sub>", color: "--trace-vr", width: 3 },
   ];
   const tracesMainAdvancedFor = (montage) => [
     ...tracesMain,
     { key: "vT1", label: montage === "triac" ? "v<sub>TRIAC</sub>" : "v<sub>SCR</sub>", color: "--trace-vl", dash: [7, 4], width: 2 },
   ];
-  const tracesLoad = [{ key: "iCh", label: "i<sub>ch</sub>", color: "--trace-il", width: 3 }];
+  const tracesLoad = [{ key: "iCh", label: "i<sub>o</sub>", color: "--trace-il", width: 3 }];
   const tracesCurrentsFor = (montage) => {
     const traces = [...tracesLoad];
     traces.push({ key: "g1", label: montage === "triac" ? "g<sub>TRIAC</sub>" : "g<sub>SCR</sub>", color: "--trace-vr", width: 1.8, axis: "right", layer: -1 });
     return traces;
   };
   const tracesCharacteristic = [
-    { key: "pActive", label: "P<sub>ch</sub>(α)", color: "--trace-vr", width: 2.8 },
-    { key: "vRms", label: "V<sub>ch,eff</sub>(α)", color: "--trace-vin", width: 2.8, axis: "right" },
+    { key: "pActive", label: "P<sub>o</sub>(α)", color: "--trace-vr", width: 2.8 },
+    { key: "vRms", label: "V<sub>o,eff</sub>(α)", color: "--trace-vin", width: 2.8, axis: "right" },
     { key: "pOperating", legendKey: "pActive", label: "", color: "--trace-vr", width: 3, radius: 5.5, marker: true, legendHidden: true },
     { key: "vOperating", legendKey: "vRms", label: "", color: "--trace-vin", width: 3, radius: 5.5, marker: true, legendHidden: true, axis: "right" },
   ];
@@ -232,8 +232,8 @@ ${sourceGlyph(120, 165)}<text x="120" y="248" style="font-size:16px">${frequency
 <line x1="120" y1="123" x2="120" y2="80"/><line x1="120" y1="207" x2="120" y2="250"/><line x1="120" y1="80" x2="278" y2="80"/>
 ${thyristorGlyph(300, 80, 0, "SCR", 0, -28)}<path d="M282 105 q18 16 36 0" class="gate"/><text x="300" y="139" class="gate-label">α</text>
 <line x1="322" y1="80" x2="700" y2="80"/><line x1="120" y1="250" x2="700" y2="250"/>
-${arrowVertical(70, 212, 120, "v<tspan class='sub'>in</tspan>")}${arrowRight(205, 62, "i<tspan class='sub'>in</tspan>")}${arrowRight(625, 62, "i<tspan class='sub'>ch</tspan>")}
-${loadBranch(700, 80, 250)}${arrowVertical(790, 232, 100, "v<tspan class='sub'>ch</tspan>")}</svg>`;
+${arrowVertical(70, 212, 120, "v<tspan class='sub'>in</tspan>")}${arrowRight(205, 62, "i<tspan class='sub'>in</tspan>")}${arrowRight(625, 62, "i<tspan class='sub'>o</tspan>")}
+${loadBranch(700, 80, 250)}${arrowVertical(790, 232, 100, "v<tspan class='sub'>o</tspan>")}</svg>`;
   }
 
   function schematicTriac(language, frequency) {
@@ -245,11 +245,11 @@ ${sourceGlyph(120, 165)}<text x="120" y="248" style="font-size:16px">${frequency
 <line x1="270" y1="80" x2="270" y2="100"/><line x1="270" y1="100" x2="278" y2="100"/>${thyristorGlyph(300, 100, 180, "", 0, 0)}<line x1="322" y1="100" x2="340" y2="100"/>
 <line x1="340" y1="64" x2="340" y2="100"/><line x1="340" y1="80" x2="700" y2="80"/><text x="305" y="35">TRIAC</text><path d="M286 126 q18 16 36 0" class="gate"/><text x="304" y="158" class="gate-label">α / π+α</text>
 <line x1="120" y1="250" x2="700" y2="250"/>
-${arrowVertical(70, 212, 120, "v<tspan class='sub'>in</tspan>")}${arrowRight(205, 62, "i<tspan class='sub'>in</tspan>")}${arrowRight(625, 62, "i<tspan class='sub'>ch</tspan>")}
-${loadBranch(700, 80, 250)}${arrowVertical(790, 232, 100, "v<tspan class='sub'>ch</tspan>")}</svg>`;
+${arrowVertical(70, 212, 120, "v<tspan class='sub'>in</tspan>")}${arrowRight(205, 62, "i<tspan class='sub'>in</tspan>")}${arrowRight(625, 62, "i<tspan class='sub'>o</tspan>")}
+${loadBranch(700, 80, 250)}${arrowVertical(790, 232, 100, "v<tspan class='sub'>o</tspan>")}</svg>`;
   }
 
-  const analyticalRmsTex = (montage) => `V_{ch,\\mathrm{eff}}=V_{in,\\mathrm{eff}}\\sqrt{\\dfrac{\\pi-\\alpha+\\tfrac12\\sin(2\\alpha)}{${montage === "triac" ? "\\pi" : "2\\pi"}}}`;
+  const analyticalRmsTex = (montage) => `V_{o,\\mathrm{eff}}=V_{in,\\mathrm{eff}}\\sqrt{\\dfrac{\\pi-\\alpha+\\tfrac12\\sin(2\\alpha)}{${montage === "triac" ? "\\pi" : "2\\pi"}}}`;
 
   const model = {
     id: "thyristor",
@@ -286,8 +286,8 @@ ${loadBranch(700, 80, 250)}${arrowVertical(790, 232, 100, "v<tspan class='sub'>c
       const volts = (value) => `${format.format(value)} V`;
       const amps = (value) => Math.abs(value) < 1 ? `${format.format(value * 1000)} mA` : `${format.format(value)} A`;
       if (!advanced) return [
-        { label: `${t(i18n.meanVoltage)} ⟨v<span class="symbol-index">ch</span>⟩`, value: volts(result.vChMean) },
-        { label: `${t(i18n.meanCurrent)} ⟨i<span class="symbol-index">ch</span>⟩`, value: amps(result.iChMean) },
+        { label: `${t(i18n.meanVoltage)} ⟨v<span class="symbol-index">o</span>⟩`, value: volts(result.vChMean) },
+        { label: `${t(i18n.meanCurrent)} ⟨i<span class="symbol-index">o</span>⟩`, value: amps(result.iChMean) },
         { label: t(i18n.rmsVoltageAxis), value: volts(result.vChRms) },
       ];
       return [
@@ -308,11 +308,11 @@ ${loadBranch(700, 80, 250)}${arrowVertical(790, 232, 100, "v<tspan class='sub'>c
       const { setInfoMath, texNumber, texVoltage } = helpers;
       setInfoMath("info-thy-alpha", `\\alpha=${texNumber(result.alphaDegrees)}^\\circ`);
       setInfoMath("info-thy-delay", `t_\\alpha=${texNumber(result.firingDelay * 1000)}\\,\\mathrm{ms}`);
-      setInfoMath("info-thy-vmean", `\\langle v_{ch}\\rangle=${texVoltage(result.vChMean)}`);
-      setInfoMath("info-thy-vrms", `V_{ch,eff}=${texVoltage(result.vChRms)}`);
-      setInfoMath("info-thy-imean", `\\langle i_{ch}\\rangle=${texNumber(result.iChMean)}\\,\\mathrm{A}`);
+      setInfoMath("info-thy-vmean", `\\langle v_{o}\\rangle=${texVoltage(result.vChMean)}`);
+      setInfoMath("info-thy-vrms", `V_{o,eff}=${texVoltage(result.vChRms)}`);
+      setInfoMath("info-thy-imean", `\\langle i_{o}\\rangle=${texNumber(result.iChMean)}\\,\\mathrm{A}`);
       setInfoMath("info-thy-irms", `I_{eff}=${texNumber(result.iChRms)}\\,\\mathrm{A}`);
-      setInfoMath("info-thy-power", `P_{ch}=${texNumber(result.pCh)}\\,\\mathrm{W}`);
+      setInfoMath("info-thy-power", `P_{o}=${texNumber(result.pCh)}\\,\\mathrm{W}`);
       setInfoMath("info-thy-pf", `\\mathrm{FP}_{in}=${texNumber(result.powerFactor)}`);
       setInfoMath("info-thy-thd", `\\mathrm{THD}_{i}=${texNumber(result.thdI)}\\,\\%`);
     },
@@ -333,7 +333,7 @@ ${comparison([[t(i18n.meanVoltage), "theory-thy-vmean"], [t(i18n.rmsVoltageAxis)
       const lawElement = document.querySelector("#theory-thy-law");
       if (lawElement && window.katex) window.katex.render(`\\displaystyle ${analyticalRmsTex(result.montage)}`, lawElement, { throwOnError: false });
       const powerLawElement = document.querySelector("#theory-thy-power-law");
-      if (powerLawElement && window.katex) window.katex.render("\\displaystyle P_{ch}=\\dfrac{V_{ch,\\mathrm{eff}}^2}{R}", powerLawElement, { throwOnError: false });
+      if (powerLawElement && window.katex) window.katex.render("\\displaystyle P_{o}=\\dfrac{V_{o,\\mathrm{eff}}^2}{R}", powerLawElement, { throwOnError: false });
       setText("theory-thy-alpha", `${number.format(result.alphaDegrees)}°`);
       setText("theory-thy-delay", `${number.format(result.firingDelay * 1000)} ms`);
       setText("theory-thy-vmean", displayVoltage(result.vChMean));
