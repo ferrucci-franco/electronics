@@ -214,7 +214,7 @@
   const capacitorBranch = (x, yTop, yBottom) => `<g id="branche-c"><line x1="${x}" y1="${yTop}" x2="${x}" y2="${(yTop + yBottom) / 2 - 9}"/><line x1="${x - 25}" y1="${(yTop + yBottom) / 2 - 9}" x2="${x + 25}" y2="${(yTop + yBottom) / 2 - 9}" class="component"/><line x1="${x - 25}" y1="${(yTop + yBottom) / 2 + 7}" x2="${x + 25}" y2="${(yTop + yBottom) / 2 + 7}" class="component"/><line x1="${x}" y1="${(yTop + yBottom) / 2 + 7}" x2="${x}" y2="${yBottom}"/><text x="${x + 42}" y="${(yTop + yBottom) / 2 + 6}">C</text><circle cx="${x}" cy="${yTop}" r="5" class="node"/><circle cx="${x}" cy="${yBottom}" r="5" class="node"/></g>`;
   const loadBranch = (x, yTop, yBottom) => `<line x1="${x}" y1="${yTop}" x2="${x}" y2="${yTop + 22}"/><rect x="${x - 20}" y="${yTop + 22}" width="40" height="50" class="component"/><text x="${x + 40}" y="${yTop + 54}">R</text><line x1="${x}" y1="${yTop + 72}" x2="${x}" y2="${yTop + 84}"/><g id="branche-l"><path d="M${x} ${yTop + 84} q-22 11 0 22 q-22 11 0 22 q-22 11 0 22" class="component"/><text x="${x + 40}" y="${yTop + 122}">L</text></g><line id="bypass-l" x1="${x}" y1="${yTop + 84}" x2="${x}" y2="${yTop + 150}"/><line x1="${x}" y1="${yTop + 150}" x2="${x}" y2="${yBottom}"/>`;
 
-  // Schéma dessiné dans Inkscape (assets/sources/ac-dc_diodes.svg), empilé par
+  // Schéma dessiné dans Inkscape (app/ac-dc_diodes.svg), empilé par
   // tools/empiler-calques-svg.py : chaque calque est une <img> du même fichier
   // (#nom-du-calque), toutes dans le même cadre, allumées ou éteintes par onResult.
   const layeredSource = "assets/ac-dc_diodes.svg";
