@@ -80,7 +80,7 @@
     const frequency = options.frequency === 60 ? 60 : 50; const omega = 2 * Math.PI * frequency; const period = 1 / frequency;
     const vrms = state.vinRms; const amplitude = Math.SQRT2 * vrms;
     const r = Math.max(state.resistance, .5);
-    const l = Math.max(0, state.inductance) / 1000;
+    const l = options.advanced ? Math.max(0, state.inductance) / 1000 : 0; // L de charge : mode avancé seulement
     const lf = Math.max(0, state.filterInductance) / 1000;
     const c = Math.max(0, state.capacitance) / 1e6;
     const rs = .5; // source + diode series resistance: limits capacitor recharge spikes
@@ -204,7 +204,7 @@
   const sourceGlyph = (cx, cy) => `<circle cx="${cx}" cy="${cy}" r="42" class="component"/><path d="M${cx - 20} ${cy} q10 -20 20 0 t20 0" class="component"/>`;
   const diodeGlyph = (x, y, angle, label, labelDx, labelDy) => `<g transform="translate(${x} ${y}) rotate(${angle})"><polygon points="-14,-12 -14,12 12,0" class="component"/><line x1="12" y1="-12" x2="12" y2="12" class="component"/></g><text x="${x + labelDx}" y="${y + labelDy}">${label}</text>`;
   const capacitorBranch = (x, yTop, yBottom) => `<g id="branche-c"><line x1="${x}" y1="${yTop}" x2="${x}" y2="${(yTop + yBottom) / 2 - 9}"/><line x1="${x - 25}" y1="${(yTop + yBottom) / 2 - 9}" x2="${x + 25}" y2="${(yTop + yBottom) / 2 - 9}" class="component"/><line x1="${x - 25}" y1="${(yTop + yBottom) / 2 + 7}" x2="${x + 25}" y2="${(yTop + yBottom) / 2 + 7}" class="component"/><line x1="${x}" y1="${(yTop + yBottom) / 2 + 7}" x2="${x}" y2="${yBottom}"/><text x="${x + 42}" y="${(yTop + yBottom) / 2 + 6}">C</text><circle cx="${x}" cy="${yTop}" r="5" class="node"/><circle cx="${x}" cy="${yBottom}" r="5" class="node"/></g>`;
-  const loadBranch = (x, yTop, yBottom) => `<line x1="${x}" y1="${yTop}" x2="${x}" y2="${yTop + 22}"/><rect x="${x - 20}" y="${yTop + 22}" width="40" height="50" class="component"/><text x="${x + 40}" y="${yTop + 54}">R</text><line x1="${x}" y1="${yTop + 72}" x2="${x}" y2="${yTop + 84}"/><path d="M${x} ${yTop + 84} q-22 11 0 22 q-22 11 0 22 q-22 11 0 22" class="component"/><text x="${x + 40}" y="${yTop + 122}">L</text><line x1="${x}" y1="${yTop + 150}" x2="${x}" y2="${yBottom}"/>`;
+  const loadBranch = (x, yTop, yBottom) => `<line x1="${x}" y1="${yTop}" x2="${x}" y2="${yTop + 22}"/><rect x="${x - 20}" y="${yTop + 22}" width="40" height="50" class="component"/><text x="${x + 40}" y="${yTop + 54}">R</text><line x1="${x}" y1="${yTop + 72}" x2="${x}" y2="${yTop + 84}"/><g id="branche-l"><path d="M${x} ${yTop + 84} q-22 11 0 22 q-22 11 0 22 q-22 11 0 22" class="component"/><text x="${x + 40}" y="${yTop + 122}">L</text></g><line id="bypass-l" x1="${x}" y1="${yTop + 84}" x2="${x}" y2="${yTop + 150}"/><line x1="${x}" y1="${yTop + 150}" x2="${x}" y2="${yBottom}"/>`;
 
   function schematicSingle(language, frequency = 50) {
     const aria = localizeText(i18n.schematic, language);
@@ -267,7 +267,9 @@ ${arrowVertical(790, 252, 90, "v<tspan class='sub'>ch</tspan>")}
     controlsFor(_montage, options = {}) {
       const bottom = [controlDefinitions.filterInductance, controlDefinitions.capacitance];
       if (options.view === "transient") bottom.push(controlDefinitions.psi);
-      return { top: [controlDefinitions.vinRms, controlDefinitions.resistance, controlDefinitions.inductance], bottom };
+      const top = [controlDefinitions.vinRms, controlDefinitions.resistance];
+      if (options.advanced) top.push(controlDefinitions.inductance);
+      return { top, bottom };
     },
     diagram: { type: "inline", aria: text("Diode rectifier with R-L load and filter capacitor", "Redresseur à diodes avec charge R–L et condensateur de filtrage", "Rectificador de diodos con carga R–L y capacitor de filtrado") },
     diagramFor(montage, language, frequency) { return montage === "bridge" ? schematicBridge(language, frequency) : schematicSingle(language, frequency); },
@@ -294,7 +296,12 @@ ${arrowVertical(790, 252, 90, "v<tspan class='sub'>ch</tspan>")}
       this.lastResult = result;
       return result;
     },
-    onResult(result, state) {
+    onResult(result, state, context = {}) {
+      const loadInductor = document.querySelector("#branche-l");
+      const loadBypass = document.querySelector("#bypass-l");
+      const hasLoadInductor = Boolean(context.advanced) && state.inductance > 0;
+      if (loadInductor) { loadInductor.style.display = context.advanced ? "" : "none"; loadInductor.style.opacity = hasLoadInductor ? "1" : ".14"; }
+      if (loadBypass) loadBypass.style.display = hasLoadInductor ? "none" : "";
       const capacitorBranch = document.querySelector("#branche-c");
       if (capacitorBranch) capacitorBranch.style.opacity = state.capacitance > 0 ? "1" : ".14";
       const chokeBranch = document.querySelector("#branche-lf");

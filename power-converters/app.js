@@ -120,7 +120,7 @@
   const commutationMode = () => commutationModes[currentTopology] || "synchronous";
   const isRectifierTopology = () => currentTopology === "redresseur" || currentTopology === "thyristor";
   const activeRectifierMode = () => currentTopology === "thyristor" ? thyristorMode : rectifierMode;
-  const modelOptions = () => currentTopology === "pont-h" ? { ...bridgeMode } : isRectifierTopology() ? { ...activeRectifierMode() } : {};
+  const modelOptions = () => currentTopology === "pont-h" ? { ...bridgeMode } : isRectifierTopology() ? { ...activeRectifierMode(), advanced } : {};
   const activeControls = () => {
     const model = activeModel();
     if (typeof model.controlsFor !== "function") return model.controls;
