@@ -55,13 +55,14 @@
     ...tracesMain,
     { key: "vD1", label: montage === "bridge" ? "v<sub>D1</sub>" : "v<sub>D</sub>", color: "--trace-vl", dash: [7, 4], width: 2 },
   ];
-  // Courants : loi des nœuds au condensateur, i_in (ou i_Lf côté DC du pont) = i_C + i_ch.
+  // Courants : loi des nœuds au condensateur, i_in (ou i_Lf côté DC du pont) = i_C + i_ch ;
+  // i_C n'apparaît qu'en mode avancé.
   // En diode simple, i_in = i_D = i_Lf : une seule trace suffit, nommée i_in.
   const tracesCurrentsFor = (montage, advanced) => [
     montage === "bridge" && advanced
       ? { key: "iLf", label: "i<sub>Lf</sub>", color: "--trace-vx", width: 2.2 }
       : { key: "iIn", label: "i<sub>in</sub>", color: "--trace-vx", width: 2.2 },
-    { key: "iC", label: "i<sub>C</sub>", color: "--trace-ic", width: 2, dash: [6, 4] },
+    ...(advanced ? [{ key: "iC", label: "i<sub>C</sub>", color: "--trace-ic", width: 2, dash: [6, 4] }] : []),
     { key: "iCh", label: "i<sub>ch</sub>", color: "--trace-il", width: 3 },
   ];
   // Côté AC, pont seulement (en diode simple, i_in = i_D figure déjà dans les courants).
