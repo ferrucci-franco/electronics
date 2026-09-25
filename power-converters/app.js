@@ -328,12 +328,16 @@
     const currentModel = activeModel();
     diagram.setAttribute("aria-label", localize(currentModel.diagram.aria));
     diagram.classList.remove("has-mode-title");
+    const previousMarkup = diagram._markup; diagram._markup = null;
     if (typeof currentModel.diagramFor === "function") {
       const modeTitle = typeof currentModel.diagramTitleFor === "function" ? currentModel.diagramTitleFor(bridgeMode.application, bridgeMode.switching, language, bridgeMode.currentControl) : "";
       diagram.classList.toggle("has-mode-title", Boolean(modeTitle));
       const mode = activeRectifierMode();
       const diagramMarkup = isRectifierTopology() ? currentModel.diagramFor(mode.montage, language, mode.frequency, mode) : currentModel.diagramFor(bridgeMode.application, bridgeMode.switching, language, bridgeMode.currentControl);
-      diagram.innerHTML = `${modeTitle ? `<div class="diagram-mode-title">${modeTitle}</div>` : ""}${diagramMarkup}`;
+      const markup = `${modeTitle ? `<div class="diagram-mode-title">${modeTitle}</div>` : ""}${diagramMarkup}`;
+      // Même schéma qu'avant : on garde les nœuds (pas de clignotement des calques estompés).
+      if (previousMarkup !== markup) diagram.innerHTML = markup;
+      diagram._markup = markup;
     } else if (currentModel.diagram.type === "svg") {
       const source = currentModel.diagrams?.[commutationMode()] || currentModel.diagram.src;
       diagram.innerHTML = `<div class="schematic-frame"><img class="converter-schematic" src="${source}" alt="" draggable="false" /><b class="schematic-vin-value" aria-hidden="true"><span id="vin-label-value">24</span> V</b></div>`;

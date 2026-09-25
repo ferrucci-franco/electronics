@@ -218,11 +218,12 @@
   // tools/empiler-calques-svg.py : chaque calque est une <img> du même fichier
   // (#nom-du-calque), toutes dans le même cadre, allumées ou éteintes par onResult.
   const layeredSource = "assets/ac-dc_diodes.svg";
-  const singleLayers = ["base", "rin", "c", "lf-cable", "lf", "load-r", "load-rl"];
-  function schematicSingle(language, frequency = 50) {
+  // Le balisage ne dépend d'aucun réglage (fréquence comprise) : app.js garde alors les
+  // mêmes nœuds d'un calcul à l'autre, et un calque estompé ne clignote pas.
+  const singleLayers = ["base", "50hz", "60hz", "rin", "c", "lf-cable", "lf", "load-r", "load-rl"];
+  function schematicSingle(language) {
     const aria = localizeText(i18n.schematic, language);
-    const layers = [...singleLayers, frequency === 60 ? "60hz" : "50hz"];
-    return `<div class="rect-schematic rect-layered" role="img" aria-label="${aria}">${layers.map((layer) => `<img class="converter-schematic" data-layer="${layer}" src="${layeredSource}#${layer}" alt="" draggable="false" />`).join("")}</div>`;
+    return `<div class="rect-schematic rect-layered" role="img" aria-label="${aria}">${singleLayers.map((layer) => `<img class="converter-schematic" data-layer="${layer}" src="${layeredSource}#${layer}" alt="" draggable="false"${layer === "base" ? "" : ' style="display:none"'} />`).join("")}</div>`;
   }
 
   function schematicBridge(language, frequency = 50) {
@@ -298,6 +299,8 @@ ${arrowVertical(790, 252, 90, "v<tspan class='sub'>o</tspan>")}
         const hasChoke = advanced && state.filterInductance > 0;
         const hasLoadInductor = advanced && state.inductance > 0;
         const show = (layer, visible, opacity = 1) => { const image = layered.querySelector(`[data-layer="${layer}"]`); if (image) { image.style.display = visible ? "" : "none"; image.style.opacity = String(opacity); } };
+        show("50hz", result.frequency !== 60);
+        show("60hz", result.frequency === 60);
         show("rin", result.view === "transient");
         show("c", true, state.capacitance > 0 ? 1 : .14);
         show("lf", advanced, hasChoke ? 1 : .14);
