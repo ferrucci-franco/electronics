@@ -31,9 +31,9 @@
     formFactor: text("Form factor", "Facteur de forme", "Factor de forma"),
     approximation: text("Approximation", "Approximation", "Aproximación"),
     theoryNote: text(
-      "The source keeps a small series resistance (0.5 Ω) that limits the recharge current spikes of the capacitor, as the transformer and diodes do in a real rectifier. The ideal average-voltage formulas assume an R load, no capacitor and ideal diodes.",
-      "La source conserve une petite résistance série (0,5 Ω) qui limite les pointes de courant de recharge du condensateur, comme le font le transformateur et les diodes dans un redresseur réel. Les formules idéales de tension moyenne supposent une charge R, sans condensateur et avec des diodes idéales.",
-      "La fuente conserva una pequeña resistencia serie (0,5 Ω) que limita los picos de corriente de recarga del capacitor, como lo hacen el transformador y los diodos en un rectificador real. Las fórmulas ideales de tensión media suponen carga R, sin capacitor y con diodos ideales.",
+      "In the steady-state view, the source and diodes are ideal: while a diode conducts, v<sub>ch</sub> equals the rectified v<sub>in</sub> (minus 0.6 V per conducting diode with the 0.6 V drop model), and the current is i<sub>D</sub> = C·dv<sub>in</sub>/dt + i<sub>ch</sub>. The start-up view adds a 0.5 Ω series resistance, which limits the inrush current into the discharged capacitor at switch-on, as the transformer and wiring do in a real rectifier. The ideal average-voltage formulas assume an R load, no capacitor and ideal diodes.",
+      "En régime permanent, la source et les diodes sont idéales : tant qu’une diode conduit, v<sub>ch</sub> est égale à v<sub>in</sub> redressée (moins 0,6 V par diode passante avec le modèle à chute de 0,6 V), et le courant vaut i<sub>D</sub> = C·dv<sub>in</sub>/dt + i<sub>ch</sub>. La vue Démarrage ajoute une résistance série de 0,5 Ω, qui limite l’appel de courant dans le condensateur déchargé à la mise sous tension, comme le font le transformateur et le câblage dans un redresseur réel. Les formules idéales de tension moyenne supposent une charge R, sans condensateur et avec des diodes idéales.",
+      "En régimen permanente, la fuente y los diodos son ideales: mientras un diodo conduce, v<sub>ch</sub> es igual a v<sub>in</sub> rectificada (menos 0,6 V por diodo en conducción con el modelo de caída de 0,6 V), y la corriente vale i<sub>D</sub> = C·dv<sub>in</sub>/dt + i<sub>ch</sub>. La vista Arranque agrega una resistencia serie de 0,5 Ω, que limita la corriente de conexión en el capacitor descargado, como lo hacen el transformador y el cableado en un rectificador real. Las fórmulas ideales de tensión media suponen carga R, sin capacitor y con diodos ideales.",
     ),
     schematic: text("Diode rectifier", "Redresseur à diodes", "Rectificador de diodos"),
   };
@@ -84,7 +84,9 @@
     const l = options.advanced ? Math.max(0, state.inductance) / 1000 : 0; // L de charge : mode avancé seulement
     const lf = options.advanced ? Math.max(0, state.filterInductance) / 1000 : 0; // Lf : mode avancé seulement
     const c = Math.max(0, state.capacitance) / 1e6;
-    const rs = .5; // source + diode series resistance: limits capacitor recharge spikes
+    // Régime permanent : source et diodes idéales (v_ch = v_in pendant la conduction).
+    // Démarrage : 0,5 Ω en série pour borner l'appel de courant à la mise sous tension.
+    const rs = transient ? .5 : 0;
     const psi = transient ? (state.psi || 0) * Math.PI / 180 : 0;
     const dt = period / 4000;
     let iL = 0; let vC = 0; let iF = 0;
@@ -105,7 +107,12 @@
           vC += dt * (iRect - iL) / c;
         } else {
           let vNext;
-          if (vRect > vC) {
+          if (rs === 0) {
+            // diode idéale : le condensateur suit v_redressée tant que i_D = C·dv/dt + i_ch > 0
+            const vOff = vC - dt * iL / c;
+            if (vRect > vOff) { vNext = vRect; iRect = c * (vRect - vC) / dt + iL; conducting = true; }
+            else vNext = vOff;
+          } else if (vRect > vC) {
             vNext = (vC + dt * (vRect / (rs * c) - iL / c)) / (1 + dt / (rs * c));
             iRect = (vRect - vNext) / rs;
             if (iRect > 0) conducting = true;
@@ -145,7 +152,7 @@
 
     const tauLoad = l > 0 ? l / r : 0;
     const tauCap = r * c;
-    const tauChoke = lf > 0 ? Math.max(lf / rs / 3, c > 0 ? 2 * Math.sqrt(lf * c) : 0) : 0;
+    const tauChoke = lf > 0 ? Math.max(lf / Math.max(rs, .5) / 3, c > 0 ? 2 * Math.sqrt(lf * c) : 0) : 0;
     const slowest = Math.max(tauLoad, tauCap / 2, tauChoke);
     const settleCycles = transient ? 0 : clamp(Math.ceil(6 * slowest / period), 6, 80);
     const stepsPerPeriod = Math.round(period / dt);
