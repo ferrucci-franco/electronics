@@ -225,15 +225,13 @@
   const arrowRight = (x, y, label) => `<line x1="${x - 15}" y1="${y}" x2="${x + 9}" y2="${y}" class="arrow"/><polygon points="${x + 9},${y - 5} ${x + 9},${y + 5} ${x + 17},${y}" class="arrow"/><text x="${x}" y="${y - 10}" class="arrow-label">${label}</text>`;
   const loadBranch = (x, yTop, yBottom) => `<line x1="${x}" y1="${yTop}" x2="${x}" y2="${yTop + 22}"/><rect x="${x - 20}" y="${yTop + 22}" width="40" height="50" class="component"/><text x="${x + 40}" y="${yTop + 54}">R</text><line x1="${x}" y1="${yTop + 72}" x2="${x}" y2="${yTop + 84}"/><path d="M${x} ${yTop + 84} q-22 11 0 22 q-22 11 0 22 q-22 11 0 22" class="component"/><text x="${x + 40}" y="${yTop + 122}">L</text><line x1="${x}" y1="${yTop + 150}" x2="${x}" y2="${yBottom}"/>`;
 
-  function schematicSingle(language, frequency) {
+  // SCR : schéma dessiné dans Inkscape (app/scr.svg), empilé par tools/empiler-calques-svg.py ;
+  // un calque = une <img> du même fichier, dans le même cadre, réglé par onResult. Le balisage
+  // ne dépend d'aucun réglage : app.js garde les mêmes nœuds d'un calcul à l'autre.
+  const scrLayers = ["base", "50hz", "60hz", "load-r", "load-rl"];
+  function schematicSingle(language) {
     const aria = localizeText(i18n.schematic, language);
-    return `<svg class="thy-schematic" viewBox="0 0 900 320" role="img" aria-label="${aria}"><style>${svgStyle}</style>
-${sourceGlyph(120, 165)}<text x="120" y="248" style="font-size:16px">${frequency} Hz</text>
-<line x1="120" y1="123" x2="120" y2="80"/><line x1="120" y1="207" x2="120" y2="250"/><line x1="120" y1="80" x2="278" y2="80"/>
-${thyristorGlyph(300, 80, 0, "SCR", 0, -28)}<path d="M282 105 q18 16 36 0" class="gate"/><text x="300" y="139" class="gate-label">α</text>
-<line x1="322" y1="80" x2="700" y2="80"/><line x1="120" y1="250" x2="700" y2="250"/>
-${arrowVertical(70, 212, 120, "v<tspan class='sub'>in</tspan>")}${arrowRight(205, 62, "i<tspan class='sub'>in</tspan>")}${arrowRight(625, 62, "i<tspan class='sub'>o</tspan>")}
-${loadBranch(700, 80, 250)}${arrowVertical(790, 232, 100, "v<tspan class='sub'>o</tspan>")}</svg>`;
+    return `<div class="thy-schematic rect-layered" role="img" aria-label="${aria}">${scrLayers.map((layer) => `<img class="converter-schematic" data-layer="${layer}" src="assets/scr.svg#${layer}" alt="" draggable="false"${layer === "base" ? "" : ' style="display:none"'} />`).join("")}</div>`;
   }
 
   function schematicTriac(language, frequency) {
@@ -259,6 +257,15 @@ ${loadBranch(700, 80, 250)}${arrowVertical(790, 232, 100, "v<tspan class='sub'>o
     },
     diagram: { type: "inline", aria: text("SCR or TRIAC phase-angle power controller with R-L load", "Commande de puissance par angle de phase avec SCR ou TRIAC et charge R–L", "Control de potencia por ángulo de fase con SCR o TRIAC y carga R–L") },
     diagramFor(montage, language, frequency) { return montage === "triac" ? schematicTriac(language, frequency) : schematicSingle(language, frequency); },
+    onResult(result, state) {
+      const layered = document.querySelector(".thy-schematic.rect-layered");
+      if (!layered) return;
+      const show = (layer, visible) => { const image = layered.querySelector(`[data-layer="${layer}"]`); if (image) image.style.display = visible ? "" : "none"; };
+      show("50hz", result.frequency !== 60);
+      show("60hz", result.frequency === 60);
+      show("load-r", !(state.inductance > 0));
+      show("load-rl", state.inductance > 0);
+    },
     plotsFor(montage) { return { main: tracesMainAdvancedFor(montage), second: tracesCurrentsFor(montage), third: tracesCharacteristic }; },
     basicPlotsFor() { return [tracesMain, tracesLoad, tracesCharacteristic]; },
     axesFor(_montage, isAdvanced = false) {
