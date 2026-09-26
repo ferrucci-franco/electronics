@@ -51,8 +51,11 @@
     { key: "vIn", label: "v<sub>in</sub>", color: "--trace-vin", width: 1.8 },
     { key: "vCh", label: "v<sub>o</sub>", color: "--trace-vr", width: 3 },
   ];
+  // Mode avancé : v_x (sortie du redresseur, avant Lf) entre v_in et v_o ; confondue avec v_o sans Lf.
   const tracesMainAdvancedFor = (montage) => [
-    ...tracesMain,
+    tracesMain[0],
+    { key: "vX", label: "v<sub>x</sub>", color: "--trace-vx", width: 2 },
+    tracesMain[1],
     { key: "vD1", label: montage === "bridge" ? "v<sub>D1</sub>" : "v<sub>D</sub>", color: "--trace-vl", dash: [7, 4], width: 2 },
   ];
   // Courants : loi des nœuds au condensateur, i_in (ou i_Lf côté DC du pont) = i_C + i_o ;
@@ -68,8 +71,8 @@
   // Côté AC, pont seulement (en diode simple, i_in = i_D figure déjà dans les courants).
   const tracesAcBridge = [
     { key: "iIn", label: "i<sub>in</sub>", color: "--trace-vx", width: 2.2 },
-    { key: "iD1", label: 'i<sub>D1</sub> <span style="padding:0 .22em">&amp;</span> i<sub>D2</sub>', color: "--trace-ic", width: 2.6, dash: [6, 4] },
-    { key: "iD34", label: 'i<sub>D3</sub> <span style="padding:0 .22em">&amp;</span> i<sub>D4</sub>', color: "--trace-vl", width: 2.6, dash: [6, 4] },
+    { key: "iD1", label: 'i<sub>D1</sub> <span style="padding:0 .22em">&amp;</span> i<sub>D3</sub>', color: "--trace-ic", width: 2.6, dash: [6, 4] },
+    { key: "iD24", label: 'i<sub>D2</sub> <span style="padding:0 .22em">&amp;</span> i<sub>D4</sub>', color: "--trace-vl", width: 2.6, dash: [6, 4] },
   ];
 
   // --- Switched-diode simulation (semi-implicit Euler, ideal or 0.7 V diodes) ---
@@ -141,13 +144,16 @@
     const derived = (sample) => {
       const positivePair = montage === "single" || sample.vin >= 0;
       const iD1 = sample.conducting && positivePair ? sample.iRect : 0;
-      const iD34 = montage === "bridge" && sample.conducting && !positivePair ? sample.iRect : 0;
+      const iD24 = montage === "bridge" && sample.conducting && !positivePair ? sample.iRect : 0;
       const iIn = montage === "single" ? sample.iRect : (sample.conducting ? (positivePair ? sample.iRect : -sample.iRect) : 0);
+      // v_x : sortie du redresseur, avant Lf. En conduction, v_in (redressée) moins Rin et les
+      // diodes ; bloqué, aucun courant dans Lf, donc v_x = v_o.
+      const vX = sample.conducting ? (montage === "bridge" ? Math.abs(sample.vin) : sample.vin) - rs * sample.iRect - drops : sample.vCh;
       let vD1;
-      if (montage === "single") vD1 = sample.conducting ? vf : sample.vin - sample.vCh;
-      else if (sample.conducting) vD1 = positivePair ? vf : -(sample.vCh + vf);
-      else vD1 = (sample.vin - sample.vCh) / 2;
-      return { iD1, iD34, iIn, vD1 };
+      if (montage === "single") vD1 = sample.conducting ? vf : sample.vin - vX;
+      else if (sample.conducting) vD1 = positivePair ? vf : -(vX + vf);
+      else vD1 = (sample.vin - vX) / 2;
+      return { iD1, iD24, iIn, vD1, vX };
     };
 
     const tauLoad = l > 0 ? l / r : 0;
@@ -168,7 +174,7 @@
       const sample = advance(absolute);
       if (index % keepEvery === 0 || index === totalSteps) {
         const extra = derived(sample);
-        points.push({ t: index * dt, vIn: sample.vin, vCh: sample.vCh, iCh: sample.iCh, iLf: sample.iRect, iC: c > 0 ? sample.iRect - sample.iCh : 0, iD1: extra.iD1, iD34: extra.iD34, iIn: extra.iIn, vD1: extra.vD1 });
+        points.push({ t: index * dt, vIn: sample.vin, vCh: sample.vCh, iCh: sample.iCh, iLf: sample.iRect, iC: c > 0 ? sample.iRect - sample.iCh : 0, iD1: extra.iD1, iD24: extra.iD24, iIn: extra.iIn, vD1: extra.vD1, vX: extra.vX });
       }
     }
 
@@ -205,55 +211,20 @@
     };
   }
 
-  // --- Provisional inline schematic (to be replaced by the hand-drawn SVG files) ---
-  const svgStyle = ".rect-schematic{width:96%;height:96%;color:#152238;font-family:Inter,Segoe UI,Arial,sans-serif}.rect-schematic line,.rect-schematic path,.rect-schematic circle,.rect-schematic rect,.rect-schematic polygon{fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.rect-schematic .component{stroke:#07958a;stroke-width:4}.rect-schematic polygon.component{fill:#07958a}.rect-schematic text{fill:#087f76;stroke:none;font-size:21px;font-weight:750;text-anchor:middle}.rect-schematic .sub{font-size:14px;baseline-shift:sub}.rect-schematic .arrow{stroke:#c2452f;stroke-width:2.6}.rect-schematic polygon.arrow{fill:#c2452f;stroke:none}.rect-schematic .arrow-label{fill:#c2452f}.rect-schematic .node{fill:#ff6b72;stroke:none}body.dark-theme .rect-schematic{color:#d7e2ef}body.dark-theme .rect-schematic text{fill:#55d2c6}body.dark-theme .rect-schematic .arrow{stroke:#ff9d84}body.dark-theme .rect-schematic polygon.arrow{fill:#ff9d84;stroke:none}body.dark-theme .rect-schematic .arrow-label{fill:#ff9d84}";
-  const arrowVertical = (x, yBottom, yTop, label) => `<line x1="${x}" y1="${yBottom}" x2="${x}" y2="${yTop + 12}" class="arrow"/><polygon points="${x - 5},${yTop + 12} ${x + 5},${yTop + 12} ${x},${yTop}" class="arrow"/><text x="${x}" y="${(yBottom + yTop) / 2 + 7}" class="arrow-label" text-anchor="middle" dx="-24">${label}</text>`;
-  const arrowRight = (x, y, label) => `<line x1="${x - 15}" y1="${y}" x2="${x + 9}" y2="${y}" class="arrow"/><polygon points="${x + 9},${y - 5} ${x + 9},${y + 5} ${x + 17},${y}" class="arrow"/><text x="${x}" y="${y - 10}" class="arrow-label">${label}</text>`;
-  const sourceGlyph = (cx, cy) => `<circle cx="${cx}" cy="${cy}" r="42" class="component"/><path d="M${cx - 20} ${cy} q10 -20 20 0 t20 0" class="component"/>`;
-  const diodeGlyph = (x, y, angle, label, labelDx, labelDy) => `<g transform="translate(${x} ${y}) rotate(${angle})"><polygon points="-14,-12 -14,12 12,0" class="component"/><line x1="12" y1="-12" x2="12" y2="12" class="component"/></g><text x="${x + labelDx}" y="${y + labelDy}">${label}</text>`;
-  const capacitorBranch = (x, yTop, yBottom) => `<g id="branche-c"><line x1="${x}" y1="${yTop}" x2="${x}" y2="${(yTop + yBottom) / 2 - 9}"/><line x1="${x - 25}" y1="${(yTop + yBottom) / 2 - 9}" x2="${x + 25}" y2="${(yTop + yBottom) / 2 - 9}" class="component"/><line x1="${x - 25}" y1="${(yTop + yBottom) / 2 + 7}" x2="${x + 25}" y2="${(yTop + yBottom) / 2 + 7}" class="component"/><line x1="${x}" y1="${(yTop + yBottom) / 2 + 7}" x2="${x}" y2="${yBottom}"/><text x="${x + 42}" y="${(yTop + yBottom) / 2 + 6}">C</text><circle cx="${x}" cy="${yTop}" r="5" class="node"/><circle cx="${x}" cy="${yBottom}" r="5" class="node"/></g>`;
-  const loadBranch = (x, yTop, yBottom) => `<line x1="${x}" y1="${yTop}" x2="${x}" y2="${yTop + 22}"/><rect x="${x - 20}" y="${yTop + 22}" width="40" height="50" class="component"/><text x="${x + 40}" y="${yTop + 54}">R</text><line x1="${x}" y1="${yTop + 72}" x2="${x}" y2="${yTop + 84}"/><g id="branche-l"><path d="M${x} ${yTop + 84} q-22 11 0 22 q-22 11 0 22 q-22 11 0 22" class="component"/><text x="${x + 40}" y="${yTop + 122}">L</text></g><line id="bypass-l" x1="${x}" y1="${yTop + 84}" x2="${x}" y2="${yTop + 150}"/><line x1="${x}" y1="${yTop + 150}" x2="${x}" y2="${yBottom}"/>`;
-
-  // Schéma dessiné dans Inkscape (app/ac-dc_diodes.svg), empilé par
-  // tools/empiler-calques-svg.py : chaque calque est une <img> du même fichier
+  // Schémas dessinés dans Inkscape (app/ac-dc_diodes.svg, app/ac-dc_4diodes.svg), empilés
+  // par tools/empiler-calques-svg.py : chaque calque est une <img> du même fichier
   // (#nom-du-calque), toutes dans le même cadre, allumées ou éteintes par onResult.
-  const layeredSource = "assets/ac-dc_diodes.svg";
   // Le balisage ne dépend d'aucun réglage (fréquence comprise) : app.js garde alors les
   // mêmes nœuds d'un calcul à l'autre, et un calque estompé ne clignote pas.
-  const singleLayers = ["base", "50hz", "60hz", "rin", "c", "lf-cable", "lf", "load-r", "load-rl"];
-  function schematicSingle(language) {
+  const layeredSchematics = {
+    single: { src: "assets/ac-dc_diodes.svg" },
+    bridge: { src: "assets/ac-dc_4diodes.svg" },
+  };
+  const schematicLayers = ["base", "50hz", "60hz", "rin", "c", "lf-cable", "lf", "load-r", "load-rl"];
+  function schematic(montage, language) {
     const aria = localizeText(i18n.schematic, language);
-    return `<div class="rect-schematic rect-layered" role="img" aria-label="${aria}">${singleLayers.map((layer) => `<img class="converter-schematic" data-layer="${layer}" src="${layeredSource}#${layer}" alt="" draggable="false"${layer === "base" ? "" : ' style="display:none"'} />`).join("")}</div>`;
-  }
-
-  function schematicBridge(language, frequency = 50) {
-    const aria = localizeText(i18n.schematic, language);
-    return `<svg class="rect-schematic" viewBox="0 0 900 340" role="img" aria-label="${aria}">
-<style>${svgStyle}</style>
-${sourceGlyph(110, 165)}
-<text x="110" y="248" style="font-size:16px">${frequency} Hz</text>
-<line x1="110" y1="123" x2="110" y2="80"/><line x1="110" y1="80" x2="330" y2="80"/><line x1="330" y1="80" x2="330" y2="165"/>
-<line x1="110" y1="207" x2="110" y2="315"/><line x1="110" y1="315" x2="470" y2="315"/><line x1="470" y1="315" x2="470" y2="165"/>
-${arrowVertical(58, 212, 120, "v<tspan class='sub'>in</tspan>")}
-${arrowRight(210, 62, "i<tspan class='sub'>in</tspan>")}
-<line x1="330" y1="165" x2="400" y2="95"/><line x1="470" y1="165" x2="400" y2="95"/>
-<line x1="400" y1="235" x2="330" y2="165"/><line x1="400" y1="235" x2="470" y2="165"/>
-${diodeGlyph(365, 130, -45, "D<tspan class='sub'>1</tspan>", -42, -14)}
-${diodeGlyph(435, 130, -135, "D<tspan class='sub'>3</tspan>", 44, -14)}
-${diodeGlyph(365, 200, -135, "D<tspan class='sub'>4</tspan>", -42, 24)}
-${diodeGlyph(435, 200, -45, "D<tspan class='sub'>2</tspan>", 44, 24)}
-<circle cx="330" cy="165" r="5" class="node"/><circle cx="470" cy="165" r="5" class="node"/>
-<line x1="400" y1="95" x2="400" y2="70"/><line x1="400" y1="70" x2="446" y2="70"/>
-<g id="branche-lf"><path d="M446 70 q12 -25 24 0 q12 -25 24 0 q12 -25 24 0" class="component"/><text x="482" y="36">L<tspan class="sub">f</tspan></text></g>
-<line id="bypass-lf" x1="446" y1="70" x2="518" y2="70"/>
-<line x1="518" y1="70" x2="700" y2="70"/>
-<line x1="400" y1="235" x2="400" y2="270"/><line x1="400" y1="270" x2="700" y2="270"/>
-<text x="415" y="60" style="font-size:17px">+</text><text x="415" y="296" style="font-size:17px">−</text>
-${arrowRight(628, 52, "i<tspan class='sub'>o</tspan>")}
-${capacitorBranch(560, 70, 270)}
-${loadBranch(700, 70, 270)}
-${arrowVertical(790, 252, 90, "v<tspan class='sub'>o</tspan>")}
-</svg>`;
+    const { src } = layeredSchematics[montage === "bridge" ? "bridge" : "single"];
+    return `<div class="rect-schematic rect-layered" role="img" aria-label="${aria}">${schematicLayers.map((layer) => `<img class="converter-schematic" data-layer="${layer}" src="${src}#${layer}" alt="" draggable="false"${layer === "base" ? "" : ' style="display:none"'} />`).join("")}</div>`;
   }
 
   const idealLawTex = (montage) => montage === "bridge" ? "\\langle v_{o}\\rangle=2\\hat V/\\pi" : "\\langle v_{o}\\rangle=\\hat V/\\pi";
@@ -269,7 +240,7 @@ ${arrowVertical(790, 252, 90, "v<tspan class='sub'>o</tspan>")}
       return { top: [controlDefinitions.vinRms, controlDefinitions.resistance, controlDefinitions.inductance], bottom };
     },
     diagram: { type: "inline", aria: text("Diode rectifier with R-L load and filter capacitor", "Redresseur à diodes avec charge R–L et condensateur de filtrage", "Rectificador de diodos con carga R–L y capacitor de filtrado") },
-    diagramFor(montage, language, frequency) { return montage === "bridge" ? schematicBridge(language, frequency) : schematicSingle(language, frequency); },
+    diagramFor(montage, language) { return schematic(montage, language); },
     plotsFor(montage) { return { main: tracesMainAdvancedFor(montage), second: tracesCurrentsFor(montage, true), third: montage === "bridge" ? tracesAcBridge : null }; },
     basicPlotsFor(montage) { return [tracesMain, tracesCurrentsFor(montage, false)]; },
     axesFor(montage, isAdvanced = false) {
@@ -307,20 +278,7 @@ ${arrowVertical(790, 252, 90, "v<tspan class='sub'>o</tspan>")}
         show("lf-cable", !hasChoke);
         show("load-r", !hasLoadInductor);
         show("load-rl", hasLoadInductor);
-        return;
       }
-      const loadInductor = document.querySelector("#branche-l");
-      const loadBypass = document.querySelector("#bypass-l");
-      const hasLoadInductor = Boolean(context.advanced) && state.inductance > 0;
-      if (loadInductor) { loadInductor.style.display = context.advanced ? "" : "none"; loadInductor.style.opacity = hasLoadInductor ? "1" : ".14"; }
-      if (loadBypass) loadBypass.style.display = hasLoadInductor ? "none" : "";
-      const capacitorBranch = document.querySelector("#branche-c");
-      if (capacitorBranch) capacitorBranch.style.opacity = state.capacitance > 0 ? "1" : ".14";
-      const chokeBranch = document.querySelector("#branche-lf");
-      const chokeBypass = document.querySelector("#bypass-lf");
-      const hasChoke = Boolean(context.advanced) && state.filterInductance > 0;
-      if (chokeBranch) { chokeBranch.style.display = context.advanced ? "" : "none"; chokeBranch.style.opacity = hasChoke ? "1" : ".14"; }
-      if (chokeBypass) chokeBypass.style.display = hasChoke ? "none" : "";
     },
     metricsFor(result, _state, advanced, language) {
       const t = (value) => localizeText(value, language);
@@ -334,7 +292,7 @@ ${arrowVertical(790, 252, 90, "v<tspan class='sub'>o</tspan>")}
           { label: `${t(i18n.meanCurrent)} ⟨i<span class="symbol-index">o</span>⟩`, value: amps(result.iChMean) },
         ];
       }
-      const pairLabel = result.montage === "bridge" ? 'D<span class="symbol-index">1</span>, D<span class="symbol-index">2</span>' : "D";
+      const pairLabel = result.montage === "bridge" ? 'D<span class="symbol-index">1</span>, D<span class="symbol-index">3</span>' : "D";
       return [
         { label: `${t(i18n.rmsCurrent)} I<span class="symbol-index">o,eff</span>`, value: amps(result.iChRms) },
         { label: `${t(i18n.conductionAngle)} (${pairLabel})`, value: `${format.format(result.conductionDegrees)}°` },
