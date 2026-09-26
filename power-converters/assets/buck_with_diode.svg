@@ -24,9 +24,9 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
      showguides="true"
-     inkscape:zoom="5.0656025"
-     inkscape:cx="119.43298"
-     inkscape:cy="41.55478"
+     inkscape:zoom="2.5328013"
+     inkscape:cx="77.779494"
+     inkscape:cy="84.29402"
      inkscape:window-width="1920"
      inkscape:window-height="1001"
      inkscape:window-x="-9"
@@ -285,9 +285,9 @@
            y="59.241276"
            x="115.46788"
            id="tspan42"
-           sodipodi:role="line">V<tspan
+           sodipodi:role="line">v<tspan
    style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:65%;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';baseline-shift:sub"
-   id="tspan43">ox</tspan></tspan></text></g><text
+   id="tspan43">x</tspan></tspan></text></g><text
        id="text45"
        y="58.078854"
        x="86.332306"
@@ -334,7 +334,7 @@
            y="52.948959"
            x="100.32079"
            id="tspan47"
-           sodipodi:role="line">δ·T</tspan></text><text
+           sodipodi:role="line">α·T</tspan></text><text
          id="text48"
          y="46.94416"
          x="101.00389"
@@ -344,7 +344,7 @@
            y="46.94416"
            x="101.00389"
            id="tspan48"
-           sodipodi:role="line">(1–δ)·T</tspan></text></g><g
+           sodipodi:role="line">(1–α)·T</tspan></text></g><g
        id="g22"
        transform="translate(1.5875)"><circle
          style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.265;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"

@@ -23,15 +23,15 @@
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
-     inkscape:zoom="4.0717487"
-     inkscape:cx="172.1619"
-     inkscape:cy="90.74725"
+     inkscape:zoom="2.0358744"
+     inkscape:cx="145.88327"
+     inkscape:cy="154.47908"
      inkscape:window-width="1920"
      inkscape:window-height="1001"
      inkscape:window-x="-9"
      inkscape:window-y="-9"
      inkscape:window-maximized="1"
-     inkscape:current-layer="layer3" />
+     inkscape:current-layer="layer1" />
   <defs
      id="defs1" />
   <g
@@ -94,7 +94,7 @@
            y="165.08203"
            x="114.00993"
            id="tspan54"
-           sodipodi:role="line">V<tspan
+           sodipodi:role="line">v<tspan
    style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:65%;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';baseline-shift:sub"
    id="tspan53">o</tspan></tspan></text>
     </g>
@@ -371,7 +371,7 @@
          y="150.9574"
          x="40.145695"
          id="tspan58"
-         sodipodi:role="line">V<tspan
+         sodipodi:role="line">v<tspan
    style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:65%;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';baseline-shift:sub"
    id="tspan57">in</tspan></tspan></text>
     <circle
@@ -659,7 +659,7 @@
            y="160.67313"
            x="121.40585"
            id="tspan3"
-           sodipodi:role="line">V<tspan
+           sodipodi:role="line">v<tspan
    style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:65%;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';baseline-shift:sub"
    id="tspan2">x</tspan></tspan></text>
     </g>

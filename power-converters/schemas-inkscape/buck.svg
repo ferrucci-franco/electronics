@@ -24,11 +24,11 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
      showguides="true"
-     inkscape:zoom="4.3389453"
-     inkscape:cx="135.5168"
-     inkscape:cy="56.811041"
+     inkscape:zoom="5.0656025"
+     inkscape:cx="119.43298"
+     inkscape:cy="41.55478"
      inkscape:window-width="1920"
-     inkscape:window-height="1121"
+     inkscape:window-height="1001"
      inkscape:window-x="-9"
      inkscape:window-y="-9"
      inkscape:window-maximized="1"
@@ -321,9 +321,9 @@
          y="59.241276"
          x="115.46788"
          id="tspan42"
-         sodipodi:role="line">V<tspan
+         sodipodi:role="line">v<tspan
    style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:65%;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';baseline-shift:sub"
-   id="tspan43">ox</tspan></tspan></text><text
+   id="tspan43">x</tspan></tspan></text><text
        id="text45"
        y="58.078854"
        x="86.332306"
@@ -345,7 +345,7 @@
          y="48.983799"
          x="105.23661"
          id="tspan47"
-         sodipodi:role="line">δ·T</tspan></text><text
+         sodipodi:role="line">α·T</tspan></text><text
        id="text48"
        y="54.757954"
        x="106.76108"
@@ -355,4 +355,4 @@
          y="54.757954"
          x="106.76108"
          id="tspan48"
-         sodipodi:role="line">(1–δ)·T</tspan></text></g></svg>
+         sodipodi:role="line">(1–α)·T</tspan></text></g></svg>
