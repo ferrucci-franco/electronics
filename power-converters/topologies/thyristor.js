@@ -218,33 +218,14 @@
     return result;
   }
 
-  const svgStyle = ".thy-schematic{width:96%;height:96%;color:#152238;font-family:Inter,Segoe UI,Arial,sans-serif}.thy-schematic line,.thy-schematic path,.thy-schematic circle,.thy-schematic rect,.thy-schematic polygon{fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.thy-schematic .component{stroke:#07958a;stroke-width:4}.thy-schematic polygon.component{fill:#07958a}.thy-schematic text{fill:#087f76;stroke:none;font-size:21px;font-weight:750;text-anchor:middle}.thy-schematic .sub{font-size:14px;baseline-shift:sub}.thy-schematic .gate{stroke:#ca6f1e;stroke-width:3}.thy-schematic .gate-label{fill:#ca6f1e}.thy-schematic .arrow{stroke:#c2452f;stroke-width:2.6}.thy-schematic polygon.arrow{fill:#c2452f;stroke:none}.thy-schematic .arrow-label{fill:#c2452f}.thy-schematic .node{fill:#ff6b72;stroke:none}body.dark-theme .thy-schematic{color:#d7e2ef}body.dark-theme .thy-schematic text{fill:#55d2c6}body.dark-theme .thy-schematic .gate{stroke:#ffbb72}body.dark-theme .thy-schematic .gate-label{fill:#ffbb72}body.dark-theme .thy-schematic .arrow{stroke:#ff9d84}body.dark-theme .thy-schematic polygon.arrow{fill:#ff9d84;stroke:none}body.dark-theme .thy-schematic .arrow-label{fill:#ff9d84}";
-  const sourceGlyph = (cx, cy) => `<circle cx="${cx}" cy="${cy}" r="42" class="component"/><path d="M${cx - 20} ${cy} q10 -20 20 0 t20 0" class="component"/>`;
-  const thyristorGlyph = (x, y, angle, label, labelDx, labelDy) => `<g transform="translate(${x} ${y}) rotate(${angle})"><polygon points="-14,-12 -14,12 12,0" class="component"/><line x1="12" y1="-12" x2="12" y2="12" class="component"/><line x1="-4" y1="18" x2="7" y2="7" class="gate"/></g><text x="${x + labelDx}" y="${y + labelDy}">${label}</text>`;
-  const arrowVertical = (x, yBottom, yTop, label) => `<line x1="${x}" y1="${yBottom}" x2="${x}" y2="${yTop + 12}" class="arrow"/><polygon points="${x - 5},${yTop + 12} ${x + 5},${yTop + 12} ${x},${yTop}" class="arrow"/><text x="${x - 25}" y="${(yBottom + yTop) / 2 + 7}" class="arrow-label">${label}</text>`;
-  const arrowRight = (x, y, label) => `<line x1="${x - 15}" y1="${y}" x2="${x + 9}" y2="${y}" class="arrow"/><polygon points="${x + 9},${y - 5} ${x + 9},${y + 5} ${x + 17},${y}" class="arrow"/><text x="${x}" y="${y - 10}" class="arrow-label">${label}</text>`;
-  const loadBranch = (x, yTop, yBottom) => `<line x1="${x}" y1="${yTop}" x2="${x}" y2="${yTop + 22}"/><rect x="${x - 20}" y="${yTop + 22}" width="40" height="50" class="component"/><text x="${x + 40}" y="${yTop + 54}">R</text><line x1="${x}" y1="${yTop + 72}" x2="${x}" y2="${yTop + 84}"/><path d="M${x} ${yTop + 84} q-22 11 0 22 q-22 11 0 22 q-22 11 0 22" class="component"/><text x="${x + 40}" y="${yTop + 122}">L</text><line x1="${x}" y1="${yTop + 150}" x2="${x}" y2="${yBottom}"/>`;
-
-  // SCR : schéma dessiné dans Inkscape (app/scr.svg), empilé par tools/empiler-calques-svg.py ;
-  // un calque = une <img> du même fichier, dans le même cadre, réglé par onResult. Le balisage
-  // ne dépend d'aucun réglage : app.js garde les mêmes nœuds d'un calcul à l'autre.
-  const scrLayers = ["base", "50hz", "60hz", "load-r", "load-rl"];
-  function schematicSingle(language) {
+  // SCR et TRIAC : un seul schéma dessiné dans Inkscape (app/scr.svg), empilé par
+  // tools/empiler-calques-svg.py ; un calque = une <img> du même fichier, dans le même cadre,
+  // réglé par onResult. Le balisage ne dépend d'aucun réglage (montage compris) : app.js garde
+  // les mêmes nœuds d'un calcul à l'autre, et seul le composant central change.
+  const schematicLayers = ["base", "scr", "triac", "50hz", "60hz", "load-r", "load-rl"];
+  function schematic(language) {
     const aria = localizeText(i18n.schematic, language);
-    return `<div class="thy-schematic rect-layered" role="img" aria-label="${aria}">${scrLayers.map((layer) => `<img class="converter-schematic" data-layer="${layer}" src="assets/scr.svg#${layer}" alt="" draggable="false"${layer === "base" ? "" : ' style="display:none"'} />`).join("")}</div>`;
-  }
-
-  function schematicTriac(language, frequency) {
-    const aria = localizeText(i18n.schematic, language);
-    return `<svg class="thy-schematic" viewBox="0 0 900 320" role="img" aria-label="${aria}"><style>${svgStyle}</style>
-${sourceGlyph(120, 165)}<text x="120" y="248" style="font-size:16px">${frequency} Hz</text>
-<line x1="120" y1="123" x2="120" y2="80"/><line x1="120" y1="207" x2="120" y2="250"/><line x1="120" y1="80" x2="270" y2="80"/>
-<line x1="270" y1="80" x2="270" y2="64"/><line x1="270" y1="64" x2="278" y2="64"/>${thyristorGlyph(300, 64, 0, "", 0, 0)}<line x1="322" y1="64" x2="340" y2="64"/>
-<line x1="270" y1="80" x2="270" y2="100"/><line x1="270" y1="100" x2="278" y2="100"/>${thyristorGlyph(300, 100, 180, "", 0, 0)}<line x1="322" y1="100" x2="340" y2="100"/>
-<line x1="340" y1="64" x2="340" y2="100"/><line x1="340" y1="80" x2="700" y2="80"/><text x="305" y="35">TRIAC</text><path d="M286 126 q18 16 36 0" class="gate"/><text x="304" y="158" class="gate-label">α / π+α</text>
-<line x1="120" y1="250" x2="700" y2="250"/>
-${arrowVertical(70, 212, 120, "v<tspan class='sub'>in</tspan>")}${arrowRight(205, 62, "i<tspan class='sub'>in</tspan>")}${arrowRight(625, 62, "i<tspan class='sub'>o</tspan>")}
-${loadBranch(700, 80, 250)}${arrowVertical(790, 232, 100, "v<tspan class='sub'>o</tspan>")}</svg>`;
+    return `<div class="thy-schematic rect-layered" role="img" aria-label="${aria}">${schematicLayers.map((layer) => `<img class="converter-schematic" data-layer="${layer}" src="assets/scr.svg#${layer}" alt="" draggable="false"${layer === "base" ? "" : ' style="display:none"'} />`).join("")}</div>`;
   }
 
   const analyticalRmsTex = (montage) => `V_{o,\\mathrm{eff}}=V_{in,\\mathrm{eff}}\\sqrt{\\dfrac{\\pi-\\alpha+\\tfrac12\\sin(2\\alpha)}{${montage === "triac" ? "\\pi" : "2\\pi"}}}`;
@@ -256,12 +237,14 @@ ${loadBranch(700, 80, 250)}${arrowVertical(790, 232, 100, "v<tspan class='sub'>o
       return { top: [controls.alpha, controls.resistance, controls.inductance], bottom: [] };
     },
     diagram: { type: "inline", aria: text("SCR or TRIAC phase-angle power controller with R-L load", "Commande de puissance par angle de phase avec SCR ou TRIAC et charge R–L", "Control de potencia por ángulo de fase con SCR o TRIAC y carga R–L") },
-    diagramFor(montage, language, frequency) { return montage === "triac" ? schematicTriac(language, frequency) : schematicSingle(language, frequency); },
+    diagramFor(_montage, language) { return schematic(language); },
     onResult(result, state) {
       const layered = document.querySelector(".thy-schematic.rect-layered");
       if (!layered) return;
       const show = (layer, visible) => { const image = layered.querySelector(`[data-layer="${layer}"]`); if (image) image.style.display = visible ? "" : "none"; };
-      show("50hz", result.frequency !== 60);
+show("scr", result.montage !== "triac");
+      show("triac", result.montage === "triac");
+            show("50hz", result.frequency !== 60);
       show("60hz", result.frequency === 60);
       show("load-r", !(state.inductance > 0));
       show("load-rl", state.inductance > 0);

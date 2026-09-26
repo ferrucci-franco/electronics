@@ -23,9 +23,9 @@
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
-     inkscape:zoom="2.6404882"
-     inkscape:cx="46.582295"
-     inkscape:cy="87.294463"
+     inkscape:zoom="5.2809764"
+     inkscape:cx="145.04893"
+     inkscape:cy="54.630049"
      inkscape:window-width="1920"
      inkscape:window-height="1001"
      inkscape:window-x="-9"
@@ -49,7 +49,7 @@
        y="149.40181" />
     <path
        style="fill:none;stroke:#000000;stroke-width:0.264583px;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1"
-       d="M 100.90546,174.60313 H 60.564576 v -19.09572 h 40.340884"
+       d="M 100.90546,174.60313 H 60.564576 v -19.09572 l 21.954559,0"
        id="path25"
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="cccc" />
@@ -98,44 +98,6 @@
    style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:65%;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';baseline-shift:sub"
    id="tspan53">o</tspan></tspan></text>
     </g>
-    <g
-       id="g55"
-       transform="rotate(90,48.364726,94.236478)">
-      <path
-         style="fill:#000000;stroke:#000000;stroke-width:0.264583px;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1"
-         d="m 108.31273,60.05309 1.32292,-2.645833 v 0 l 1.32292,2.645833 v 0 z"
-         id="path54"
-         inkscape:connector-curvature="0"
-         sodipodi:nodetypes="ccccccc" />
-      <path
-         style="fill:none;stroke:#000000;stroke-width:0.264583px;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1"
-         d="m 108.31273,57.407257 h 2.64584"
-         id="path55"
-         inkscape:connector-curvature="0" />
-    </g>
-    <text
-       id="text55"
-       y="152.38557"
-       x="80.931351"
-       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.88056px;line-height:1.25;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
-       xml:space="preserve"><tspan
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.88056px;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';stroke-width:0.264583"
-         y="152.38557"
-         x="80.931351"
-         id="tspan55"
-         sodipodi:role="line">SCR</tspan></text>
-    <text
-       xml:space="preserve"
-       style="font-style:normal;font-weight:normal;font-size:10.5833px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
-       x="153.0993"
-       y="-79.937355"
-       id="text56"
-       transform="rotate(90)"><tspan
-         sodipodi:role="line"
-         id="tspan56"
-         x="153.0993"
-         y="-79.937355"
-         style="font-size:3.175px;stroke-width:0.264583">+</tspan></text>
     <circle
        style="fill:#ffffff;stroke:#000000;stroke-width:0.264583px;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1"
        id="circle56"
@@ -161,29 +123,156 @@
        id="path3-2"
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="csc" />
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer2"
+     inkscape:label="scr"
+     style="display:none">
+    <path
+       style="display:inline;fill:#000000;stroke:#000000;stroke-width:0.264583px;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 82.548114,154.18448 2.645833,1.32292 v 0 l -2.645833,1.32292 v 0 z"
+       id="path54"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccccccc"
+       transform="translate(-51.303642,-149.40181)" />
+    <path
+       style="display:inline;fill:none;stroke:#000000;stroke-width:0.264583px;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 85.193947,154.18448 v 2.64584"
+       id="path55"
+       inkscape:connector-curvature="0"
+       transform="translate(-51.303642,-149.40181)" />
+    <text
+       id="text55"
+       y="3.6851814"
+       x="35.16666"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.88056px;line-height:1.25;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';letter-spacing:0px;word-spacing:0px;display:inline;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
+       xml:space="preserve"><tspan
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.88056px;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';stroke-width:0.264583"
+         y="3.6851814"
+         x="35.16666"
+         id="tspan55"
+         sodipodi:role="line">SCR</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:10.5833px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;display:inline;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
+       x="153.0993"
+       y="-79.937355"
+       id="text56"
+       transform="rotate(90,49.049084,-100.35273)"><tspan
+         sodipodi:role="line"
+         id="tspan56"
+         x="153.0993"
+         y="-79.937355"
+         style="font-size:3.175px;stroke-width:0.264583">+</tspan></text>
     <text
        id="text47-8"
        y="161.6275"
        x="85.967857"
-       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.88056px;line-height:1.25;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';letter-spacing:0px;word-spacing:0px;fill:#782121;fill-opacity:1;stroke:none;stroke-width:0.264584"
-       xml:space="preserve"><tspan
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.88056px;line-height:1.25;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';letter-spacing:0px;word-spacing:0px;display:inline;fill:#782121;fill-opacity:1;stroke:none;stroke-width:0.264584"
+       xml:space="preserve"
+       transform="translate(-51.303642,-149.40181)"><tspan
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.88056px;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';fill:#782121;fill-opacity:1;stroke-width:0.264584"
          y="161.6275"
          x="85.967857"
          id="tspan47-2"
          sodipodi:role="line">α</tspan></text>
     <path
-       style="fill:none;stroke:#000000;stroke-width:0.264583px;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1"
+       style="display:inline;fill:none;stroke:#000000;stroke-width:0.264583px;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1"
        d="m 85.193947,156.14178 1.660505,0.95869 v 1.64918"
        id="path1"
+       sodipodi:nodetypes="ccc"
+       transform="translate(-51.303642,-149.40181)" />
+    <path
+       style="display:inline;fill:none;stroke:#000000;stroke-width:0.264583px;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 85.193947,154.18448 v 2.64584"
+       id="path12"
+       inkscape:connector-curvature="0"
+       transform="translate(-51.303642,-149.40181)" />
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer3"
+     inkscape:label="triac"
+     transform="translate(-0.77491802)"
+     style="display:inline">
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:10.5833px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;display:inline;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
+       x="3.7402532"
+       y="-29.30691"
+       id="text5"
+       transform="rotate(90)"><tspan
+         sodipodi:role="line"
+         id="tspan5"
+         x="3.7402532"
+         y="-29.30691"
+         style="font-size:3.175px;stroke-width:0.264583">+</tspan></text>
+    <text
+       id="text6"
+       y="13.392431"
+       x="35.403675"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.88056px;line-height:1.25;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';letter-spacing:0px;word-spacing:0px;display:inline;fill:#782121;fill-opacity:1;stroke:none;stroke-width:0.264584"
+       xml:space="preserve"><tspan
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.88056px;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';fill:#782121;fill-opacity:1;stroke-width:0.264584"
+         y="13.392431"
+         x="35.403675"
+         id="tspan6"
+         sodipodi:role="line">α</tspan></text>
+    <path
+       style="display:inline;fill:none;stroke:#000000;stroke-width:0.264583px;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 34.812187,8.295086 1.660505,0.95869 v 1.64918"
+       id="path6"
        sodipodi:nodetypes="ccc" />
+    <g
+       id="g12"
+       transform="translate(0.74593877,-9.1794938)"
+       style="display:inline">
+      <g
+         id="g11"
+         transform="translate(0,-1.4038305)">
+        <path
+           style="display:inline;fill:#000000;stroke:#000000;stroke-width:0.264583px;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1"
+           d="m 31.244472,16.953505 2.645833,1.32292 v 0 l -2.645833,1.32292 v 0 z"
+           id="path2"
+           inkscape:connector-curvature="0"
+           sodipodi:nodetypes="ccccccc" />
+        <path
+           style="display:inline;fill:#000000;stroke:#000000;stroke-width:0.264583px;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1"
+           d="m 34.053826,13.778503 -2.645833,1.32292 v 0 l 2.645833,1.32292 v 0 z"
+           id="path8"
+           inkscape:connector-curvature="0"
+           sodipodi:nodetypes="ccccccc" />
+      </g>
+      <path
+         style="display:inline;fill:none;stroke:#000000;stroke-width:0.264582px;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1"
+         d="m 31.244472,11.923965 v 6.722258"
+         id="path9"
+         inkscape:connector-curvature="0" />
+      <path
+         style="display:inline;fill:none;stroke:#000000;stroke-width:0.264582px;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1"
+         d="m 34.066248,11.923964 v 6.722259"
+         id="path10"
+         inkscape:connector-curvature="0" />
+    </g>
+    <text
+       id="text12"
+       y="3.6851814"
+       x="36.02874"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.88056px;line-height:1.25;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';letter-spacing:0px;word-spacing:0px;display:inline;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
+       xml:space="preserve"><tspan
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.88056px;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';stroke-width:0.264583"
+         y="3.6851814"
+         x="36.02874"
+         id="tspan12"
+         sodipodi:role="line">TRIAC</tspan></text>
   </g>
   <g
      inkscape:groupmode="layer"
      id="layer5"
      inkscape:label="50hz"
      transform="translate(-51.303642,-149.40181)"
-     style="display:inline">
+     style="display:none">
     <text
        id="text75"
        y="168.46725"
@@ -263,7 +352,7 @@
      transform="translate(-51.303642,-149.40181)">
     <path
        style="display:inline;fill:none;stroke:#000000;stroke-width:0.264583px;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1"
-       d="m 110.70439,157.62566 v -2.11825 h -9.79893"
+       d="m 110.70439,157.62566 v -2.11825 l -25.363479,0"
        id="path26"
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="ccc" />
