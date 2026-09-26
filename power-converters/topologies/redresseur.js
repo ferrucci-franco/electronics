@@ -51,10 +51,11 @@
     { key: "vIn", label: "v<sub>in</sub>", color: "--trace-vin", width: 1.8 },
     { key: "vCh", label: "v<sub>o</sub>", color: "--trace-vr", width: 3 },
   ];
-  // Mode avancé : v_x (sortie du redresseur, avant Lf) entre v_in et v_o ; confondue avec v_o sans Lf.
-  const tracesMainAdvancedFor = (montage) => [
+  // Mode avancé : v_x (sortie du redresseur, avant Lf) entre v_in et v_o, seulement si Lf > 0
+  // (sans Lf, v_x est confondue avec v_o).
+  const tracesMainAdvancedFor = (montage, hasChoke = false) => [
     tracesMain[0],
-    { key: "vX", label: "v<sub>x</sub>", color: "--trace-vx", width: 2 },
+    ...(hasChoke ? [{ key: "vX", label: "v<sub>x</sub>", color: "--trace-vx", width: 2 }] : []),
     tracesMain[1],
     { key: "vD1", label: montage === "bridge" ? "v<sub>D1</sub>" : "v<sub>D</sub>", color: "--trace-vl", dash: [7, 4], width: 2 },
   ];
@@ -241,7 +242,7 @@
     },
     diagram: { type: "inline", aria: text("Diode rectifier with R-L load and filter capacitor", "Redresseur à diodes avec charge R–L et condensateur de filtrage", "Rectificador de diodos con carga R–L y capacitor de filtrado") },
     diagramFor(montage, language) { return schematic(montage, language); },
-    plotsFor(montage) { return { main: tracesMainAdvancedFor(montage), second: tracesCurrentsFor(montage, true), third: montage === "bridge" ? tracesAcBridge : null }; },
+    plotsFor(montage, _view, state = {}) { return { main: tracesMainAdvancedFor(montage, state.filterInductance > 0), second: tracesCurrentsFor(montage, true), third: montage === "bridge" ? tracesAcBridge : null }; },
     basicPlotsFor(montage) { return [tracesMain, tracesCurrentsFor(montage, false)]; },
     axesFor(montage, isAdvanced = false) {
       const axes = [

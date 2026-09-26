@@ -130,7 +130,7 @@
   const activePlots = () => {
     const model = activeModel();
     if (typeof model.plotsFor !== "function") return model.plots;
-    if (isRectifierTopology()) { const mode = activeRectifierMode(); return model.plotsFor(mode.montage, mode.view); }
+    if (isRectifierTopology()) { const mode = activeRectifierMode(); return model.plotsFor(mode.montage, mode.view, { ...model.defaults, ...(states[currentTopology] || {}) }); }
     return model.plotsFor(currentTopology === "pont-h" ? bridgeMode.application : commutationMode(), bridgeMode.switching, bridgeMode.motorView, bridgeMode.currentControl);
   };
   const activePlotGroups = () => {
@@ -745,9 +745,13 @@
     modelUpdateQueued = true;
     requestAnimationFrame(() => { modelUpdateQueued = false; update(); });
   }
+  let lastTraceSignature = "";
   function update() {
     const state = getState(); states[currentTopology] = state;
     inputs.forEach((input) => { input.closest(".control").querySelector("output").textContent = displayControl(input._definition, Number(input.value)); updateRange(input); });
+    // Les traces peuvent dépendre des réglages (v_x du redresseur n'existe que si Lf > 0) : légendes à refaire si la liste change.
+    const traceSignature = activePlotGroups().map((group) => group.map((trace) => trace.key).join()).join("|");
+    if (traceSignature !== lastTraceSignature) { lastTraceSignature = traceSignature; renderLegends(); }
     const result = activeModel().calculate(state, commutationMode(), modelOptions()); currentPoints = result.points; renderInfoValues(result, state); renderMeasurements(result, state); renderTheoryValues(result, state); draw(currentPoints);
     if (typeof activeModel().onResult === "function") activeModel().onResult(result, state, { language, advanced, dark, requestUpdate: scheduleModelUpdate });
   }
