@@ -238,7 +238,7 @@ input[type="range"]::-moz-range-thumb { width: 15px; height: 15px; border: 3px s
 .topology-dialog-header span { color: var(--teal); font-size: .76rem; font-weight: 850; letter-spacing: .09em; text-transform: uppercase; }
 .topology-dialog-header h2 { margin-top: 3px; font-size: clamp(1.35rem, 2vw, 1.75rem); }
 .topology-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 13px; padding: 20px 22px 24px; }
-.topology-card { position: relative; display: flex; min-width: 0; min-height: 158px; flex-direction: column; align-items: stretch; border: 1px solid #d6dfdc; border-radius: 16px; padding: 18px 16px 16px; background: #f7faf8; color: #172438; text-align: left; }
+.topology-card { position: relative; display: flex; min-width: 0; flex-direction: column; align-items: stretch; border: 1px solid #d6dfdc; border-radius: 16px; padding: 18px 16px 16px; background: #f7faf8; color: #172438; text-align: left; }
 button.topology-card { cursor: pointer; font: inherit; transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease; }
 button.topology-card:hover { border-color: var(--teal); box-shadow: 0 10px 24px #0b93881a; transform: translateY(-2px); }
 button.topology-card:focus-visible { outline: 3px solid #0b93883b; outline-offset: 2px; }
@@ -431,7 +431,7 @@ body.dark-theme .topology-card[aria-disabled="true"] .topology-status { backgrou
   .topology-dialog { width: calc(100% - 12px); max-height: 90dvh; margin: auto 6px 6px; border-radius: 20px 20px 14px 14px; }
   .topology-dialog-header { padding: 15px 16px 12px; }
   .topology-grid { grid-template-columns: 1fr; gap: 10px; padding: 12px; }
-  .topology-card { min-height: 145px; }
+
 }
 
 @media (min-width: 601px) and (max-width: 800px), (min-width: 1101px) and (max-width: 1400px) {
