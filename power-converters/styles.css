@@ -169,6 +169,9 @@ input[type="range"]::-moz-range-thumb { width: 15px; height: 15px; border: 3px s
 .lc-info > div { display: flex; min-width: 0; flex-direction: column; align-items: center; justify-content: flex-start; padding: 8px 10px; text-align: center; }
 .lc-info > div + div { border-left: 1px solid #c9d9d5; }
 .lc-info > div > span { margin-bottom: 6px; color: #4f746f; font-size: clamp(.7rem, .76vw, .86rem); font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+/* Titre en haut du bloc ; ce qui suit (équations) est centré verticalement dans la place restante. */
+.lc-info > div > :nth-child(2) { margin-top: auto; }
+.lc-info > div > :last-child:not(:first-child) { margin-bottom: auto; }
 .lc-info strong { color: #075f59; font-size: clamp(.95rem, 1.04vw, 1.16rem); }
 .lc-info .formula { display: flex; min-height: 2.2em; align-items: center; justify-content: center; overflow: visible; line-height: 1.2; }
 .lc-info .formula .katex { font-size: 1.22em; line-height: 1.25; }
@@ -393,9 +396,9 @@ body.dark-theme .topology-card[aria-disabled="true"] .topology-status { backgrou
   .circuit-panel:has(.bridge-schematic) .lc-info > div, .circuit-panel:has(.pv-scene) .lc-info > div { border-top: 0 !important; border-left: 1px solid #c9d9d5 !important; }
   .circuit-panel:has(.bridge-schematic) .lc-info > div:first-child, .circuit-panel:has(.pv-scene) .lc-info > div:first-child { border-left: 0 !important; }
   body.dark-theme .circuit-panel:has(.bridge-schematic) .lc-info > div, body.dark-theme .circuit-panel:has(.pv-scene) .lc-info > div { border-left-color: #27605b !important; }
-  /* PV : blocs à la largeur de leur contenu (les quatre tiennent souvent sans défiler) ; sinon on défile, fin toujours atteignable (proximity). */
-  .circuit-panel:has(.pv-scene) .lc-info { grid-auto-columns: minmax(max-content, 1fr); }
-  .circuit-panel:has(.pv-scene) .lc-info > div { padding-inline: 7px; }
+  /* PV et pont en H : blocs à la largeur de leur contenu (les quatre tiennent souvent sans défiler) ; sinon on défile, fin toujours atteignable (proximity). */
+  .circuit-panel:has(.pv-scene) .lc-info, .circuit-panel:has(.bridge-schematic) .lc-info { grid-auto-columns: minmax(max-content, 1fr); }
+  .circuit-panel:has(.pv-scene) .lc-info > div, .circuit-panel:has(.bridge-schematic) .lc-info > div { padding-inline: 7px; }
 }
 
 @media (max-width: 1100px) {
