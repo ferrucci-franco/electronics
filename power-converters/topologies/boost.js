@@ -27,7 +27,7 @@
     plots: {
       main: [
         { key: "vin", label: "V<sub>in</sub>", color: "--trace-vin", dash: [8, 5] },
-        { key: "vSwitch", label: "v<sub>sw</sub>", color: "--trace-vx", step: true },
+        { key: "vSwitch", label: "v<sub>x</sub>", color: "--trace-vx", step: true },
         { key: "vo", label: "v<sub>o</sub>", color: "--trace-vr", width: 3 },
       ],
       second: [{ key: "vL", label: "v<sub>L</sub>", color: "--trace-vl" }],
