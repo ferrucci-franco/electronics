@@ -45,7 +45,7 @@ Commande de puissance par angle de phase alimentant une charge R–L série : le
 
 La source représente le réseau : sa tension efficace se choisit entre 110 V et 230 V, à côté de la fréquence 50/60 Hz. Le mode avancé ajoute les tensions et courants détaillés des composants et les impulsions de gâchette. Les deux modes affichent également les courbes de puissance active et de tension efficace de charge en fonction de α, avec le point de fonctionnement courant superposé. La fenêtre d’analyse donne directement la loi de V_o,eff(α) pour une charge résistive idéale ; la simulation numérique ajoute l’effet de L et présente aussi les puissances, le facteur de puissance et la THD du courant absorbé.
 
-## Topologie « PV solaire → réseau »
+## Topologie « Solaire PV → réseau »
 
 Chaîne photovoltaïque complète : champ PV, boost MPPT, bus continu et pont en H qui injecte un courant sinusoïdal dans le réseau 230 V / 50 Hz.
 

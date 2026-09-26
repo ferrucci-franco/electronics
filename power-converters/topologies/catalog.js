@@ -82,8 +82,8 @@
       status: "available",
       name: Object.freeze({
         en: "Solar PV → grid",
-        fr: "PV solaire → réseau",
-        es: "PV solar → red",
+        fr: "Solaire PV → réseau",
+        es: "Solar FV → red",
       }),
       conversion: "DC → AC",
       description: Object.freeze({

@@ -262,6 +262,36 @@
   function cloudShape() {
     return '<ellipse cx="0" cy="0" rx="46" ry="17"/><ellipse cx="-31" cy="6" rx="30" ry="13"/><ellipse cx="29" cy="7" rx="32" ry="14"/><ellipse cx="-3" cy="-13" rx="30" ry="14"/>';
   }
+  // Texte SVG avec indices : une chaîne = texte normal, ["indice"] = tspan en indice.
+  function setSubText(element, parts) {
+    element.replaceChildren(...parts.map((part) => {
+      if (typeof part === "string") return document.createTextNode(part);
+      const sub = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
+      sub.setAttribute("baseline-shift", "sub"); sub.setAttribute("font-size", "72%"); sub.textContent = part[0];
+      return sub;
+    }));
+  }
+
+  // Textes de la scène lisibles sur petit écran : quand le dessin est réduit (portable), on les
+  // grossit d'autant (facteur 0,72 / échelle, entre 1 et 1,3 ; étiquettes des boîtes et puissance inchangées) ; sur grand écran, taille d'origine.
+  let textScaleObserver = null;
+  function updateTextScale() {
+    const svg = document.querySelector(".pv-scene > svg");
+    if (!svg) return;
+    // Échelle du dessin (meet) en px CSS, indépendante des zooms et transformations d'affichage.
+    const scale = Math.min(svg.clientWidth / 1000, svg.clientHeight / 520);
+    if (!scale) return;
+    const k = Math.min(1.3, Math.max(1, .72 / scale));
+    svg.style.setProperty("--pv-k", String(k));
+    // Lignes jumelles : l'écart entre les deux lignes grandit comme le texte.
+    const setY = (id, y) => { const node = svg.querySelector(`#${id}`); if (node) node.setAttribute("y", y.toFixed(1)); };
+    setY("pv-tilt-text", 314 - 20 * k);
+    setY("pv-temp-line", 428 + 22 * k);
+    ["pv-duty-text", "pv-hz-text"].forEach((id) => setY(id, 428 + 26 * k)); // sous V_pv et V_bus, dont l'indice descend
+    if (!textScaleObserver && typeof ResizeObserver === "function") { textScaleObserver = new ResizeObserver(() => updateTextScale()); window.addEventListener("resize", () => requestAnimationFrame(updateTextScale)); }
+    if (textScaleObserver && svg._scaleObserved !== true) { textScaleObserver.disconnect(); textScaleObserver.observe(svg); svg._scaleObserved = true; }
+  }
+
   function sceneMarkup() {
     const rays = Array.from({ length: 8 }, (_, index) => {
       const angle = index * Math.PI / 4;
@@ -271,11 +301,11 @@
     return `
     <svg viewBox="0 0 1000 520" preserveAspectRatio="xMidYMax meet" role="img" aria-label="">
       <style>
-        .pv-txt { fill: #24405c; font-family: Inter, "Segoe UI", Arial, sans-serif; font-size: 15.5px; font-weight: 760; text-anchor: middle; paint-order: stroke; stroke: rgba(255,255,255,.72); stroke-width: 3.4px; }
-        .pv-txt-small { font-size: 13px; font-weight: 720; }
+        .pv-txt { fill: #24405c; font-family: Inter, "Segoe UI", Arial, sans-serif; font-size: calc(15.5px * var(--pv-k, 1)); font-weight: 760; text-anchor: middle; paint-order: stroke; stroke: rgba(255,255,255,.72); stroke-width: 3.4px; }
+        .pv-txt-small { font-size: calc(13px * var(--pv-k, 1)); font-weight: 720; }
         .pv-txt-end { text-anchor: end; }
         .pv-txt-big { font-size: 24px; font-weight: 850; fill: #0b6b62; }
-        .pv-txt-dim { fill: rgba(28,44,64,.62); font-size: 13.5px; letter-spacing: .12em; font-weight: 850; }
+        .pv-txt-dim { fill: rgba(28,44,64,.62); font-size: calc(13.5px * var(--pv-k, 1)); letter-spacing: .12em; font-weight: 850; }
         .pv-box { fill: rgba(255,253,248,.92); stroke: #33566f; stroke-width: 2.6; }
         .pv-box-label { font-size: 18px; font-weight: 850; fill: #16324a; }
         .pv-wire { stroke: #3d5266; stroke-width: 3; fill: none; stroke-linecap: round; }
@@ -330,10 +360,10 @@
       <text id="pv-gpanel-text" class="pv-txt pv-txt-end" x="413" y="314">—</text>
       <rect class="pv-box" x="380" y="332" width="90" height="52" rx="9"/>
       <text class="pv-box-label pv-txt" x="425" y="355">DC/DC</text>
-      <text id="pv-boost-name" class="pv-txt pv-txt-small" x="425" y="374">boost</text>
+      <text id="pv-boost-name" class="pv-txt pv-txt-small" x="425" y="374" style="font-size:13px">boost</text>
       <rect class="pv-box" x="235" y="332" width="90" height="52" rx="9"/>
       <text class="pv-box-label pv-txt" x="280" y="355">DC/AC</text>
-      <text id="pv-bridge-name" class="pv-txt pv-txt-small" x="280" y="374">pont en H</text>
+      <text id="pv-bridge-name" class="pv-txt pv-txt-small" x="280" y="374" style="font-size:13px">pont en H</text>
       <path class="pv-wire" d="M 534 358 H 470 M 380 358 H 325 M 235 358 H 196 Q 172 356 166 267"/>
       <path id="pv-flow" class="pv-wire pv-flow-wire" d="M 534 358 H 470 M 380 358 H 325 M 235 358 H 196 Q 172 356 166 267" stroke="#f2c230" stroke-width="4.4"/>
       <text id="pv-array-line" class="pv-txt" x="660" y="428">—</text>
@@ -536,10 +566,10 @@
     const result = lastResult;
     const format = fmt(1);
     el.arrayLine.textContent = `${result.ns} × ${result.np} = ${result.ns * result.np} ${t("modules")} · ${format.format(result.stc.pmp / 1000)} ${t("kwc")}`;
-    el.tempLine.textContent = `T amb ${fmt(0).format(result.env.ambient)} °C · T cell ${fmt(0).format(result.env.tc)} °C`;
-    el.vpvText.textContent = `Vpv ${fmt(0).format(result.vPvMean)} V`;
+    setSubText(el.tempLine, ["T", ["amb"], ` ${fmt(0).format(result.env.ambient)} °C · T`, ["cell"], ` ${fmt(0).format(result.env.tc)} °C`]);
+    setSubText(el.vpvText, ["V", ["pv"], ` ${fmt(0).format(result.vPvMean)} V`]);
     el.dutyText.textContent = `α = ${fmt(2).format(result.duty)}`;
-    el.vdcText.textContent = `V bus ${fmt(0).format(result.vDcMean)} V`;
+    setSubText(el.vdcText, ["V", ["bus"], ` ${fmt(0).format(result.vDcMean)} V`]);
     const kw = result.activePower / 1000;
     el.powerText.textContent = result.standby ? `0 W · ${t("night")}` : (Math.abs(result.activePower) < 1000 ? `${fmt(0).format(result.activePower)} W` : `${format.format(kw)} kW`);
     const flowing = Math.abs(result.activePower) > 25;
@@ -851,6 +881,7 @@
       lastState = state;
       mountScene();
       mountCurves();
+      updateTextScale();
       updateSceneVisual();
       drawCurves();
     },
