@@ -166,7 +166,7 @@ input[type="range"]::-moz-range-thumb { width: 15px; height: 15px; border: 3px s
 .schematic-placeholder p { max-width: 430px; margin: 9px 0 0; color: var(--muted); font-size: clamp(.82rem, .9vw, 1rem); line-height: 1.4; }
 .lc-info { display: grid; flex: 0 0 auto; grid-template-columns: repeat(3, 1fr); height: clamp(108px, 12.5vh, 126px); margin: clamp(6px, .8vh, 10px) clamp(10px, 1vw, 16px) clamp(8px, 1vh, 12px); overflow: hidden; border: 1px solid #c9d9d5; border-radius: 14px; background: #edf7f4; }
 .lc-info.four-columns { grid-template-columns: 1.02fr .88fr 1fr 1.25fr; }
-.lc-info > div { display: flex; min-width: 0; flex-direction: column; align-items: center; justify-content: center; padding: 8px 10px; text-align: center; }
+.lc-info > div { display: flex; min-width: 0; flex-direction: column; align-items: center; justify-content: flex-start; padding: 8px 10px; text-align: center; }
 .lc-info > div + div { border-left: 1px solid #c9d9d5; }
 .lc-info > div > span { margin-bottom: 6px; color: #4f746f; font-size: clamp(.7rem, .76vw, .86rem); font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
 .lc-info strong { color: #075f59; font-size: clamp(.95rem, 1.04vw, 1.16rem); }
@@ -388,9 +388,9 @@ body.dark-theme .topology-card[aria-disabled="true"] .topology-status { backgrou
   .commutation-selector { min-height: 32px; }
   .commutation-selector button { min-height: 26px; padding-block: 2px; }
   /* Pont en H et PV (schéma le plus à l'étroit) : bandeau d'infos sur une seule rangée,
-     deux blocs visibles, les suivants à droite (défilement horizontal, calé bloc par bloc). */
-  .circuit-panel:has(.bridge-schematic) .lc-info, .circuit-panel:has(.pv-scene) .lc-info { display: grid; height: auto; grid-auto-flow: column; grid-template-columns: none; grid-template-rows: auto; grid-auto-columns: 50%; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x proximity; overscroll-behavior-x: contain; }
-  .circuit-panel:has(.bridge-schematic) .lc-info > div, .circuit-panel:has(.pv-scene) .lc-info > div { scroll-snap-align: start; border-top: 0 !important; border-left: 1px solid #c9d9d5 !important; }
+     deux blocs visibles, les suivants à droite (défilement horizontal ; la molette avance d'un bloc). */
+  .circuit-panel:has(.bridge-schematic) .lc-info, .circuit-panel:has(.pv-scene) .lc-info { display: grid; height: auto; grid-auto-flow: column; grid-template-columns: none; grid-template-rows: auto; grid-auto-columns: 50%; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; }
+  .circuit-panel:has(.bridge-schematic) .lc-info > div, .circuit-panel:has(.pv-scene) .lc-info > div { border-top: 0 !important; border-left: 1px solid #c9d9d5 !important; }
   .circuit-panel:has(.bridge-schematic) .lc-info > div:first-child, .circuit-panel:has(.pv-scene) .lc-info > div:first-child { border-left: 0 !important; }
   body.dark-theme .circuit-panel:has(.bridge-schematic) .lc-info > div, body.dark-theme .circuit-panel:has(.pv-scene) .lc-info > div { border-left-color: #27605b !important; }
   /* PV : blocs à la largeur de leur contenu (les quatre tiennent souvent sans défiler) ; sinon on défile, fin toujours atteignable (proximity). */
