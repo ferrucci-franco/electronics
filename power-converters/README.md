@@ -14,8 +14,10 @@ L’application comprend :
 - `styles.css` et `pv.css`
 - `app.js`
 - `topologies/` pour les modèles Buck, Boost, pont en H, redresseurs et PV → réseau
-- `assets/` pour les schémas SVG locaux
+- `assets/` pour les schémas SVG ; ceux du redresseur et de la commande de puissance sont générés par calques à partir des dessins Inkscape de `app/` (`tools/empiler-calques-svg.py`, voir `CLAUDE.md`)
 - `vendor/` pour KaTeX, utilisable sans connexion Internet
+
+Notation : minuscule pour une grandeur instantanée (v_o, i_L, v_x), majuscule pour une constante, une moyenne ou une valeur efficace (V_in continue, V_o = ⟨v_o⟩) ; le rapport cyclique est noté α. Le sélecteur de circuit est le bouton du titre, en haut à gauche.
 
 Le Buck et le Boost sont synchrones par défaut. Le mode avancé permet de choisir la commutation synchrone ou une réalisation avec interrupteur et diode ; cette dernière prend en compte les régimes CCM et DCM.
 
@@ -33,15 +35,15 @@ Dans l’application réseau du pont en H, la commande du courant peut utiliser 
 
 ## Topologie « Redresseur à diodes »
 
-Redresseur AC-DC classique alimenté par une source sinusoïdale réglable (50 ou 60 Hz) : simple diode (monoalternance) ou pont de Graetz (double alternance, paires D1–D2 et D3–D4), filtre L–C (inductance de lissage L_f en série puis condensateur en parallèle) et charge R–L série. Chaque curseur de filtre descend à zéro pour retirer l’élément — la branche s’estompe alors dans le schéma — et l’inductance de charge descend à zéro pour retrouver la charge R pure. Le filtre à entrée inductive illustre le compromis classique : sans L_f le condensateur se recharge par pointes (tension proche de V̂ mais facteur de puissance dégradé) ; avec L_f suffisante la conduction devient continue, la tension moyenne rejoint 2V̂/π et le facteur de puissance remonte vers 0,9.
+Redresseur AC-DC classique alimenté par une source sinusoïdale réglable (50 ou 60 Hz) : simple diode (monoalternance) ou pont de Graetz (double alternance, paires D1–D3 et D2–D4), filtre L–C (inductance de lissage L_f côté continu, puis condensateur en parallèle) et charge R–L série. Le mode simple ne propose que V_in, R et C ; L_f et l’inductance de charge L n’apparaissent qu’en mode avancé (et valent zéro en mode simple). Un curseur de filtre à zéro retire l’élément : la branche s’estompe dans le schéma. Le filtre à entrée inductive illustre le compromis classique : sans L_f le condensateur se recharge par pointes (tension proche de V̂ mais facteur de puissance dégradé) ; avec L_f suffisante la conduction devient continue, la tension moyenne rejoint 2V̂/π et le facteur de puissance remonte vers 0,9.
 
-Les valeurs moyennes de v_ch et i_ch sont rappelées sur le bord droit de l’oscilloscope et le bandeau compare la tension moyenne simulée à la formule idéale V̂/π ou 2V̂/π. Le mode avancé ajoute la tension de la diode D1 (lecture de la tension inverse de crête), les courants côté alternatif (i_in et les courants des paires de diodes, avec les pointes de recharge du condensateur), le choix entre diodes idéales et diodes à chute de 0,6 V, ainsi qu’une vue « Démarrage » avec angle d’enclenchement réglable pour observer le régime transitoire, dont l’appel de courant du condensateur. Une petite résistance série de 0,5 Ω côté source limite les pointes de courant, comme dans un redresseur réel.
+Les valeurs moyennes de v_o et i_o sont rappelées sur le bord droit de l’oscilloscope et le bandeau compare la tension moyenne simulée à la formule idéale V̂/π ou 2V̂/π. Les courants tracés suivent la loi des nœuds au condensateur : i_in et i_o en mode simple, plus i_C en mode avancé. Le mode avancé ajoute la tension v_x en sortie du redresseur (avant L_f, tracée si L_f > 0), la tension de la diode D1 (lecture de la tension inverse de crête), les courants côté alternatif (i_in et les courants des paires de diodes, avec les pointes de recharge du condensateur), le choix entre diodes idéales et diodes à chute de 0,6 V, ainsi qu’une vue « Démarrage » avec angle d’enclenchement réglable pour observer le régime transitoire, dont l’appel de courant du condensateur. En régime permanent, source et diodes sont idéales : pendant la conduction, v_o suit exactement v_in redressée. La vue « Démarrage » ajoute une résistance R_in de 0,5 Ω côté source, qui limite l’appel de courant du condensateur déchargé.
 
 ## Topologie « Commande de puissance »
 
 Commande de puissance par angle de phase alimentant une charge R–L série : le SCR peut conduire une seule alternance, tandis que le TRIAC peut conduire les deux. L’angle d’amorçage α se règle de 0° à 170° et se mesure depuis chaque passage par zéro de la sinusoïde. Le modèle conserve automatiquement la conduction jusqu’à l’annulation naturelle du courant de charge.
 
-La source représente le réseau : sa tension efficace se choisit entre 110 V et 230 V, à côté de la fréquence 50/60 Hz. Le mode avancé ajoute les tensions et courants détaillés des composants et les impulsions de gâchette. Les deux modes affichent également les courbes de puissance active et de tension efficace de charge en fonction de α, avec le point de fonctionnement courant superposé. La fenêtre d’analyse donne directement la loi de Vch,eff(α) pour une charge résistive idéale ; la simulation numérique ajoute l’effet de L et présente aussi les puissances, le facteur de puissance et la THD du courant absorbé.
+La source représente le réseau : sa tension efficace se choisit entre 110 V et 230 V, à côté de la fréquence 50/60 Hz. Le mode avancé ajoute les tensions et courants détaillés des composants et les impulsions de gâchette. Les deux modes affichent également les courbes de puissance active et de tension efficace de charge en fonction de α, avec le point de fonctionnement courant superposé. La fenêtre d’analyse donne directement la loi de V_o,eff(α) pour une charge résistive idéale ; la simulation numérique ajoute l’effet de L et présente aussi les puissances, le facteur de puissance et la THD du courant absorbé.
 
 ## Topologie « PV solaire → réseau »
 
