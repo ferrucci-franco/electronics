@@ -36,7 +36,7 @@
     },
     motor: {
       top: [
-        control("motorDuty", "δ", ["Manual duty cycle", "Rapport cyclique manuel", "Ciclo de trabajo manual"], 0, 100, 1, "%"),
+        control("motorDuty", "α", ["Manual duty cycle", "Rapport cyclique manuel", "Ciclo de trabajo manual"], 0, 100, 1, "%"),
         control("loadTorque", "T<sub>L</sub>", ["Load torque", "Couple résistant", "Par resistente"], 0, 1.5, .05, "N·m"),
         control("motorSwitchingFrequency", "f<sub>PWM</sub>", ["PWM frequency", "Fréquence PWM", "Frecuencia PWM"], 2000, 25000, 1000, "kHz", { scale: .001 }),
       ],

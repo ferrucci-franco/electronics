@@ -538,7 +538,7 @@
     el.arrayLine.textContent = `${result.ns} × ${result.np} = ${result.ns * result.np} ${t("modules")} · ${format.format(result.stc.pmp / 1000)} ${t("kwc")}`;
     el.tempLine.textContent = `T amb ${fmt(0).format(result.env.ambient)} °C · T cell ${fmt(0).format(result.env.tc)} °C`;
     el.vpvText.textContent = `Vpv ${fmt(0).format(result.vPvMean)} V`;
-    el.dutyText.textContent = `δ = ${fmt(2).format(result.duty)}`;
+    el.dutyText.textContent = `α = ${fmt(2).format(result.duty)}`;
     el.vdcText.textContent = `V bus ${fmt(0).format(result.vDcMean)} V`;
     const kw = result.activePower / 1000;
     el.powerText.textContent = result.standby ? `0 W · ${t("night")}` : (Math.abs(result.activePower) < 1000 ? `${fmt(0).format(result.activePower)} W` : `${format.format(kw)} kW`);
@@ -896,7 +896,7 @@
       helpers.setInfoMath("pv-info-p", `P_{pv}=${texPower(helpers, result.pvPower)}`);
       helpers.setInfoMath("pv-info-vpv", `V_{pv}=${helpers.texNumber(result.vPvMean)}\\,\\mathrm{V}`);
       helpers.setInfoMath("pv-info-ipv", `I_{pv}=${helpers.texNumber(result.iLMean)}\\,\\mathrm{A}`);
-      helpers.setInfoMath("pv-info-duty", `\\delta=1-\\tfrac{V_{pv}}{V_{bus}}=${helpers.texNumber(result.duty)}`);
+      helpers.setInfoMath("pv-info-duty", `\\alpha=1-\\tfrac{V_{pv}}{V_{bus}}=${helpers.texNumber(result.duty)}`);
       const tracking = result.mpp.p > 1 ? clamp(result.pvPower / result.mpp.p * 100, 0, 100) : 100;
       helpers.setInfoMath("pv-info-eta", `\\eta_{MPPT}=${helpers.texNumber(tracking)}\\,\\%`);
       document.querySelector("#pv-info-eta")?.classList.toggle("warning", tracking < 96);
@@ -914,8 +914,8 @@
           <p>${t("pvNote")}</p>
         </section>
         <section class="approximation-section"><h3>${t("chainTitle")}</h3>
-          <div class="approximation-formula math" data-tex="\\displaystyle V_{pv}=(1-\\delta)\\,V_{bus}"></div>
-          ${comparison([[t("dutyLabel"), "pv-th-duty"], [`V<sub>pv</sub> — ${t("simulation").toLowerCase()}`, "pv-th-vpv"], [`(1−δ)·V<sub>bus DC</sub>`, "pv-th-vpv-law"]])}
+          <div class="approximation-formula math" data-tex="\\displaystyle V_{pv}=(1-\\alpha)\\,V_{bus}"></div>
+          ${comparison([[t("dutyLabel"), "pv-th-duty"], [`V<sub>pv</sub> — ${t("simulation").toLowerCase()}`, "pv-th-vpv"], [`(1−α)·V<sub>bus DC</sub>`, "pv-th-vpv-law"]])}
           <div class="approximation-formula math" data-tex="\\displaystyle \\Delta V_{bus}\\simeq\\frac{P}{\\omega\\,C_{dc}\\,V_{bus}}"></div>
           ${comparison([[t("simulation"), "pv-th-ripple-sim"], [t("approximation"), "pv-th-ripple-approx"], [t("relativeError"), "pv-th-ripple-err"]])}
           <div class="approximation-formula math" data-tex="\\displaystyle P_{ac}=V_gI_g\\cos\\varphi\\simeq P_{pv}"></div>

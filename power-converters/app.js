@@ -359,12 +359,12 @@
     if (currentTopology === "buck" || currentTopology === "boost") {
       const boost = currentTopology === "boost";
       const lawLabel = commutationMode() === "diode" ? tr().conversionLawCcm : tr().conversionLaw;
-      const law = boost ? "\\displaystyle V_o=\\frac{V_{in}}{1-\\delta}" : "\\displaystyle V_o=\\delta V_{in}";
+      const law = boost ? "\\displaystyle V_o=\\frac{V_{in}}{1-\\alpha}" : "\\displaystyle V_o=\\alpha V_{in}";
       const rippleCell = `<div><span>${tr().ripples}</span><div class="info-lines"><span class="math info-equation" id="info-current-ripple"></span><span class="math info-equation" id="info-voltage-ripple"></span></div></div>`;
       const filterCell = `<div><span>${tr().lcFilter}</span><div class="info-lines"><span class="math info-equation" id="info-resonance"></span><span class="math info-equation" id="info-secondary"></span></div></div>`;
       infoBand.innerHTML = `<div><span>${lawLabel}</span><strong class="math conversion-formula" data-tex="${law}"></strong></div><div><span>${tr().voltages}</span><div class="info-lines"><span class="math info-equation" id="info-vin"></span><span class="math info-equation" id="info-output"></span></div></div>${boost ? "" : filterCell}${rippleCell}`;
     } else if (bridgeMode.application === "motor") {
-      const law = bridgeMode.switching === "bipolar" ? "\\displaystyle \\langle v_a\\rangle=(2\\delta-1)V_{dc}" : "\\displaystyle \\langle v_a\\rangle=\\pm\\delta V_{dc}";
+      const law = bridgeMode.switching === "bipolar" ? "\\displaystyle \\langle v_a\\rangle=(2\\alpha-1)V_{dc}" : "\\displaystyle \\langle v_a\\rangle=\\pm\\alpha V_{dc}";
       infoBand.innerHTML = `<div><span>${tr().motorCommand}</span><strong class="math conversion-formula" data-tex="${law}"></strong></div><div><span>${tr().averageArmatureVoltage}</span><strong class="math info-equation" id="info-primary"></strong></div><div><span>${tr().motorResult}</span><div class="info-lines"><span class="math info-equation" id="info-secondary"></span><span class="math info-equation" id="info-tertiary"></span></div></div><div><span>${tr().torque}</span><div class="info-lines"><span class="math info-equation" id="info-quaternary"></span><span class="math info-equation" id="info-quinary"></span></div></div>`;
     } else if (bridgeMode.application === "grid") {
       infoBand.innerHTML = `<div><span>${tr().setpoint}</span><div class="info-lines"><span class="math info-equation" id="info-primary"></span><span class="math info-equation" id="info-secondary"></span></div></div><div><span>${tr().power}</span><div class="info-lines"><span class="math info-equation" id="info-tertiary"></span><span class="math info-equation" id="info-quaternary"></span></div></div><div><span>${tr().powerFactor}</span><strong class="math info-equation" id="info-quinary"></strong></div><div><span>${tr().currentThd}</span><strong class="math info-equation" id="info-senary"></strong></div>`;
@@ -412,14 +412,14 @@
     if (currentTopology === "buck" || currentTopology === "boost") {
       const boost = currentTopology === "boost";
       const diodeMode = commutationMode() === "diode";
-      const currentFormula = boost ? "\\displaystyle \\Delta i_L\\simeq\\frac{V_{in}\\delta}{Lf_s}" : "\\displaystyle \\Delta i_L\\simeq\\frac{(V_{in}-V_o)\\delta}{Lf_s}";
-      const voltageFormula = boost ? "\\displaystyle \\Delta v_o\\simeq\\frac{V_o\\delta}{RCf_s}" : "\\displaystyle \\Delta v_o\\simeq\\frac{\\Delta i_L}{8Cf_s}";
+      const currentFormula = boost ? "\\displaystyle \\Delta i_L\\simeq\\frac{V_{in}\\alpha}{Lf_s}" : "\\displaystyle \\Delta i_L\\simeq\\frac{(V_{in}-V_o)\\alpha}{Lf_s}";
+      const voltageFormula = boost ? "\\displaystyle \\Delta v_o\\simeq\\frac{V_o\\alpha}{RCf_s}" : "\\displaystyle \\Delta v_o\\simeq\\frac{\\Delta i_L}{8Cf_s}";
       const note = diodeMode ? tr().diodeNote : `${tr().approximationNote} ${tr().synchronousNote}`;
       const conductionDetails = boost && diodeMode ? comparison([[tr().conductionMode, "theory-conduction-mode"], [tr().criticalInductanceRatio, "theory-critical-ratio"]]) : "";
       const resonanceDetails = !boost ? `<div class="balance-equation"><strong class="math" data-tex="\\displaystyle f_0=\\frac{1}{2\\pi\\sqrt{LC}}"></strong><div><span>${tr().resonanceFrequency}</span><b id="theory-resonance"></b></div></div>` : "";
       theoryGrid.innerHTML = `<section><h3>${tr().balanceTitle}</h3>${balance("\\left\\langle v_L\\right\\rangle=0", "balance-vl")}${balance("\\left\\langle i_C\\right\\rangle=0", "balance-ic")}${resonanceDetails}${conductionDetails}</section><section class="approximation-section"><h3>${tr().rippleTheoryTitle}</h3><div class="approximation-formula math" data-tex="${currentFormula}"></div>${comparison([[tr().simulation, "theory-il-sim"], [tr().approximation, "theory-il-approx"], [tr().relativeError, "theory-il-error"]])}<div class="approximation-formula math" data-tex="${voltageFormula}"></div>${comparison([[tr().simulation, "theory-vo-sim"], [tr().approximation, "theory-vo-approx"], [tr().relativeError, "theory-vo-error"]])}<p>${note}</p></section>`;
     } else if (bridgeMode.application === "motor") {
-      const voltageLaw = bridgeMode.switching === "bipolar" ? "\\displaystyle \\langle v_a\\rangle=(2\\delta-1)V_{dc}" : "\\displaystyle \\langle v_a\\rangle=\\pm\\delta V_{dc}";
+      const voltageLaw = bridgeMode.switching === "bipolar" ? "\\displaystyle \\langle v_a\\rangle=(2\\alpha-1)V_{dc}" : "\\displaystyle \\langle v_a\\rangle=\\pm\\alpha V_{dc}";
       theoryGrid.innerHTML = `<section><h3>${tr().electricalModel}</h3><div class="approximation-formula math" data-tex="${voltageLaw}"></div><div class="approximation-formula math" data-tex="\\displaystyle L_a\\frac{di_a}{dt}=v_a-R_ai_a-K_e\\omega"></div>${comparison([[tr().averageArmatureVoltage, "theory-motor-voltage"], [tr().armatureCurrent, "theory-motor-current"], [tr().dcBus, "theory-motor-bus"]])}</section><section class="approximation-section"><h3>${tr().mechanicalModel}</h3><div class="approximation-formula math" data-tex="\\displaystyle J\\frac{d\\omega}{dt}=K_ti_a-B\\omega-T_L"></div>${comparison([[tr().speed, "theory-motor-speed"], [tr().torque, "theory-motor-torque"], [tr().loadType, "theory-load"]])}<p>${tr().motorNote}</p></section>`;
     } else if (bridgeMode.application === "grid") {
       const controlFormula = bridgeMode.currentControl === "hysteresis" ? "\\displaystyle i_g^*-h_i\\leq i_g\\leq i_g^*+h_i" : "\\displaystyle L_g\\frac{di_g}{dt}=v_{ab}-v_g-R_gi_g";

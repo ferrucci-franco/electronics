@@ -85,9 +85,9 @@
                 <input data-key="frequency" aria-label="Fréquence de découpage" data-i18n-aria="frequencyAria" type="range" min="10000" max="200000" step="5000" value="50000" />
               </label>
               <label class="control">
-                <span class="control-copy"><b>δ</b><small data-i18n="duty">Rapport cyclique δ</small></span>
+                <span class="control-copy"><b>α</b><small data-i18n="duty">Rapport cyclique α</small></span>
                 <output data-output="duty">50 %</output>
-                <input data-key="duty" aria-label="Rapport cyclique delta" data-i18n-aria="dutyAria" type="range" min="10" max="90" step="2" value="50" />
+                <input data-key="duty" aria-label="Rapport cyclique alpha" data-i18n-aria="dutyAria" type="range" min="10" max="90" step="2" value="50" />
               </label>
               <label class="control advanced-control" hidden>
                 <span class="control-copy"><b>V<span class="symbol-index">in</span></b><small data-i18n="inputVoltage">Tension d’entrée</small></span>
@@ -165,7 +165,7 @@
           <div class="lc-info four-columns">
             <div>
               <span data-i18n="conversionLaw">Loi de conversion</span>
-              <strong class="math conversion-formula" data-tex="\displaystyle V_o=\delta V_{in}">Vₒ = δVᵢₙ</strong>
+              <strong class="math conversion-formula" data-tex="\displaystyle V_o=\alpha V_{in}">Vₒ = αVᵢₙ</strong>
             </div>
             <div>
               <span data-i18n="voltages">Tensions</span>
@@ -232,7 +232,7 @@
 
         <section class="approximation-section">
           <h3 data-i18n="rippleTheoryTitle">Approximation des ondulations</h3>
-          <div class="approximation-formula math" data-tex="\displaystyle \Delta i_L\simeq\frac{(V_{in}-V_o)\delta}{Lf_s}">Δiₗ ≃ (Vin − Vo)δ/(Lfs)</div>
+          <div class="approximation-formula math" data-tex="\displaystyle \Delta i_L\simeq\frac{(V_{in}-V_o)\alpha}{Lf_s}">Δiₗ ≃ (Vin − Vo)α/(Lfs)</div>
           <div class="comparison-grid">
             <span data-i18n="simulation">Simulation</span><strong id="theory-il-sim">0 A</strong>
             <span data-i18n="approximation">Approximation</span><strong id="theory-il-approx">0 A</strong>

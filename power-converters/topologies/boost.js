@@ -10,7 +10,7 @@
     controls: {
       top: [
         { key: "frequency", symbol: "f<sub>s</sub>", label: text("Frequency", "Fréquence", "Frecuencia"), aria: text("Switching frequency", "Fréquence de découpage", "Frecuencia de conmutación"), min: 20000, max: 200000, step: 5000, scale: 0.001, unit: "kHz" },
-        { key: "duty", symbol: "δ", label: text("Duty cycle δ", "Rapport cyclique δ", "Ciclo de trabajo δ"), aria: text("Duty cycle delta", "Rapport cyclique delta", "Ciclo de trabajo delta"), min: 10, max: 80, step: 2, unit: "%" },
+        { key: "duty", symbol: "α", label: text("Duty cycle α", "Rapport cyclique α", "Ciclo de trabajo α"), aria: text("Duty cycle alpha", "Rapport cyclique alpha", "Ciclo de trabajo alfa"), min: 10, max: 80, step: 2, unit: "%" },
         { key: "inputVoltage", symbol: "V<sub>in</sub>", label: text("Input voltage", "Tension d’entrée", "Tensión de entrada"), aria: text("Input voltage", "Tension d’entrée", "Tensión de entrada"), min: 6, max: 48, step: 2, unit: "V", advanced: true },
       ],
       bottom: [
