@@ -24,14 +24,14 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
      inkscape:zoom="4.0717487"
-     inkscape:cx="175.60023"
-     inkscape:cy="94.185576"
+     inkscape:cx="172.1619"
+     inkscape:cy="90.74725"
      inkscape:window-width="1920"
      inkscape:window-height="1001"
      inkscape:window-x="-9"
      inkscape:window-y="-9"
      inkscape:window-maximized="1"
-     inkscape:current-layer="layer1" />
+     inkscape:current-layer="layer3" />
   <defs
      id="defs1" />
   <g
@@ -66,7 +66,7 @@
          style="font-size:3.175px;stroke-width:0.264583">+</tspan></text>
     <g
        id="g74"
-       transform="translate(2.104251,-4.4089069)">
+       transform="translate(2.104251,-4.1489857)">
       <text
          xml:space="preserve"
          style="font-style:normal;font-weight:normal;font-size:10.5833px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
@@ -386,40 +386,6 @@
        id="path3-2"
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="csc" />
-    <g
-       id="g3"
-       transform="translate(-39.465576)">
-      <text
-         xml:space="preserve"
-         style="font-style:normal;font-weight:normal;font-size:10.5833px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
-         x="121.50793"
-         y="153.41273"
-         id="text1"><tspan
-           sodipodi:role="line"
-           id="tspan1"
-           x="121.50793"
-           y="153.41273"
-           style="font-size:3.175px;stroke-width:0.264583">+</tspan></text>
-      <path
-         style="font-size:3.175px;line-height:1.25;letter-spacing:0px;word-spacing:0px;stroke-width:0.264583"
-         d="m 123.15894,168.56745 v 0.22542 h -1.49225 v -0.22542 z"
-         id="path1"
-         aria-label="+"
-         sodipodi:nodetypes="ccccc" />
-      <text
-         id="text3"
-         y="160.67313"
-         x="121.40585"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.88056px;line-height:1.25;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
-         xml:space="preserve"><tspan
-           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.88056px;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';stroke-width:0.264583"
-           y="160.67313"
-           x="121.40585"
-           id="tspan3"
-           sodipodi:role="line">V<tspan
-   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:65%;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';baseline-shift:sub"
-   id="tspan2">x</tspan></tspan></text>
-    </g>
   </g>
   <g
      inkscape:groupmode="layer"
@@ -662,6 +628,41 @@
          sodipodi:role="line">L<tspan
    style="font-size:65%;baseline-shift:sub"
    id="tspan50">f</tspan></tspan></text>
+    <g
+       id="g3"
+       transform="translate(-39.465575,0.25992108)"
+       style="display:inline">
+      <text
+         xml:space="preserve"
+         style="font-style:normal;font-weight:normal;font-size:10.5833px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
+         x="121.50793"
+         y="153.41273"
+         id="text1"><tspan
+           sodipodi:role="line"
+           id="tspan1"
+           x="121.50793"
+           y="153.41273"
+           style="font-size:3.175px;stroke-width:0.264583">+</tspan></text>
+      <path
+         style="font-size:3.175px;line-height:1.25;letter-spacing:0px;word-spacing:0px;stroke-width:0.264583"
+         d="m 123.15894,168.56745 v 0.22542 h -1.49225 v -0.22542 z"
+         id="path1"
+         aria-label="+"
+         sodipodi:nodetypes="ccccc" />
+      <text
+         id="text3"
+         y="160.67313"
+         x="121.40585"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.88056px;line-height:1.25;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
+         xml:space="preserve"><tspan
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.88056px;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';stroke-width:0.264583"
+           y="160.67313"
+           x="121.40585"
+           id="tspan3"
+           sodipodi:role="line">V<tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:65%;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';baseline-shift:sub"
+   id="tspan2">x</tspan></tspan></text>
+    </g>
   </g>
   <g
      inkscape:groupmode="layer"
