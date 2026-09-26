@@ -178,6 +178,18 @@ input[type="range"]::-moz-range-thumb { width: 15px; height: 15px; border: 3px s
 .info-equation { display: flex; min-height: 1.45em; align-items: center; justify-content: center; white-space: nowrap; }
 .info-equation .katex { font-size: clamp(1rem, 1.08vw, 1.2rem); }
 .lc-info .warning { color: #b75050; }
+/* Barre de défilement du bandeau d'infos : fine, arrondie, couleur d'accent. */
+.lc-info::-webkit-scrollbar { height: 8px; width: 8px; }
+.lc-info::-webkit-scrollbar-track { margin-inline: 14px; border-radius: 999px; background: #0b93881a; }
+.lc-info::-webkit-scrollbar-thumb { border: 2px solid transparent; border-radius: 999px; background: #0b9388a6 padding-box; }
+.lc-info::-webkit-scrollbar-thumb:hover { background: var(--teal) padding-box; }
+body.dark-theme .lc-info::-webkit-scrollbar-track { background: #74ddd01a; }
+body.dark-theme .lc-info::-webkit-scrollbar-thumb { background: #55d2c6a6 padding-box; }
+/* Firefox (scrollbar-color désactiverait le style arrondi ci-dessus dans Chrome) */
+@supports (-moz-appearance: none) {
+  .lc-info { scrollbar-width: thin; scrollbar-color: #0b9388a6 #0b93881a; }
+  body.dark-theme .lc-info { scrollbar-color: #55d2c6a6 #74ddd01a; }
+}
 .lc-info .info-equation.warning { color: #b75050; }
 
 .scope-panel { background: var(--scope); color: var(--ink); }
@@ -375,8 +387,12 @@ body.dark-theme .topology-card[aria-disabled="true"] .topology-status { backgrou
   .bridge-mode-group button { min-height: 26px; padding-block: 2px; }
   .commutation-selector { min-height: 32px; }
   .commutation-selector button { min-height: 26px; padding-block: 2px; }
-  /* Pont en H et PV (schéma le plus à l'étroit) : bandeau d'infos plafonné, le reste défile. */
-  .circuit-panel:has(.bridge-schematic) .lc-info, .circuit-panel:has(.pv-scene) .lc-info { height: auto; max-height: clamp(96px, 15vh, 120px); overflow-y: auto; scrollbar-width: thin; scrollbar-color: #8fb9b2 transparent; }
+  /* Pont en H et PV (schéma le plus à l'étroit) : bandeau d'infos sur une seule rangée,
+     deux blocs visibles, les suivants à droite (défilement horizontal, calé bloc par bloc). */
+  .circuit-panel:has(.bridge-schematic) .lc-info, .circuit-panel:has(.pv-scene) .lc-info { display: grid; height: auto; grid-auto-flow: column; grid-template-columns: none; grid-template-rows: auto; grid-auto-columns: 50%; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; }
+  .circuit-panel:has(.bridge-schematic) .lc-info > div, .circuit-panel:has(.pv-scene) .lc-info > div { scroll-snap-align: start; border-top: 0 !important; border-left: 1px solid #c9d9d5 !important; }
+  .circuit-panel:has(.bridge-schematic) .lc-info > div:first-child, .circuit-panel:has(.pv-scene) .lc-info > div:first-child { border-left: 0 !important; }
+  body.dark-theme .circuit-panel:has(.bridge-schematic) .lc-info > div, body.dark-theme .circuit-panel:has(.pv-scene) .lc-info > div { border-left-color: #27605b !important; }
 }
 
 @media (max-width: 1100px) {
