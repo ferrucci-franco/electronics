@@ -232,7 +232,7 @@
 
   const model = {
     id: "thyristor",
-    defaults: { vinRms: 230, alpha: 60, resistance: 15, inductance: 100 },
+    defaults: { vinRms: 230, alpha: 60, resistance: 15, inductance: 0 },
     controlsFor() {
       return { top: [controls.alpha, controls.resistance, controls.inductance], bottom: [] };
     },

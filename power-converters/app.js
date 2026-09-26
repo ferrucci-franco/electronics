@@ -472,7 +472,10 @@
     try { history.replaceState(null, "", hash); } catch (_error) { window.location.hash = hash; }
   }
   function selectTopology(id, sync = true) {
-    if (!models[id]) return; saveState(); currentTopology = id; if (sync) syncRoute(); renderCatalog(); renderTopology(); if (topologyDialog.open) topologyDialog.close();
+    if (!models[id]) return; saveState();
+    // Changer de circuit ramène toujours au mode simple : le mode avancé ne suit pas d'un circuit à l'autre.
+    if (id !== currentTopology && advanced) { advanced = false; advancedButton.setAttribute("aria-pressed", "false"); document.body.classList.remove("advanced-mode"); }
+    currentTopology = id; if (sync) syncRoute(); renderCatalog(); renderTopology(); if (topologyDialog.open) topologyDialog.close();
   }
   function initializeRoute() { const requested = decodeURIComponent(window.location.hash.slice(1)); currentTopology = models[requested] ? requested : "buck"; syncRoute(); }
 
