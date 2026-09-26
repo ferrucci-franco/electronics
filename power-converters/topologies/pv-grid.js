@@ -269,7 +269,7 @@
     }).join("");
     const clouds = CLOUD_BASES.map((base, index) => `<g id="pv-cloud-${index}" class="pv-cloud" fill="#ffffff">${cloudShape()}</g>`).join("");
     return `
-    <svg viewBox="0 0 1000 520" preserveAspectRatio="xMidYMax slice" role="img" aria-label="">
+    <svg viewBox="0 0 1000 520" preserveAspectRatio="xMidYMax meet" role="img" aria-label="">
       <style>
         .pv-txt { fill: #24405c; font-family: Inter, "Segoe UI", Arial, sans-serif; font-size: 15.5px; font-weight: 760; text-anchor: middle; paint-order: stroke; stroke: rgba(255,255,255,.72); stroke-width: 3.4px; }
         .pv-txt-small { font-size: 13px; font-weight: 720; }
@@ -789,10 +789,10 @@
     defaultHiddenTraces: ["iBusInRaw"],
     controls,
     controlsFor(_application, options = {}) {
-      // Toujours deux rangées de cartes : la scène garde la même taille
-      // en mode simple (2 + 2) et en mode avancé (3 + 2).
+      // Mode simple : les quatre cartes dans la rangée du haut — 2 × 2 sur grand écran,
+      // une seule ligne de 4 sur écran peu haut (pv.css), pour laisser la place à la scène.
       const ambient = controls.top.find((item) => item.key === "ambientTemp");
-      if (!options.advanced) return { top: controls.top.slice(0, 2), bottom: controls.top.slice(2) };
+      if (!options.advanced) return { top: controls.top, bottom: [] };
       return { top: controls.top.filter((item) => item.key !== "ambientTemp"), bottom: [ambient, ...controls.bottom] };
     },
     diagram: { type: "inline", aria: text("Interactive PV-to-grid scene", "Scène interactive PV vers réseau", "Escena interactiva PV a red") },
