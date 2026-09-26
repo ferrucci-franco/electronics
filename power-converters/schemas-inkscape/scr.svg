@@ -23,15 +23,15 @@
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
-     inkscape:zoom="5.2809764"
-     inkscape:cx="145.04893"
-     inkscape:cy="54.630049"
+     inkscape:zoom="2.6404882"
+     inkscape:cx="206.02251"
+     inkscape:cy="59.269343"
      inkscape:window-width="1920"
      inkscape:window-height="1001"
      inkscape:window-x="-9"
      inkscape:window-y="-9"
      inkscape:window-maximized="1"
-     inkscape:current-layer="layer1" />
+     inkscape:current-layer="layer3" />
   <defs
      id="defs1" />
   <g
@@ -146,9 +146,9 @@
        id="text55"
        y="3.6851814"
        x="35.16666"
-       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.88056px;line-height:1.25;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';letter-spacing:0px;word-spacing:0px;display:inline;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.175px;line-height:1.25;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';letter-spacing:0px;word-spacing:0px;display:inline;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
        xml:space="preserve"><tspan
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.88056px;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';stroke-width:0.264583"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.175px;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';stroke-width:0.264583"
          y="3.6851814"
          x="35.16666"
          id="tspan55"
@@ -259,9 +259,9 @@
        id="text12"
        y="3.6851814"
        x="36.02874"
-       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.88056px;line-height:1.25;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';letter-spacing:0px;word-spacing:0px;display:inline;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.175px;line-height:1.25;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';letter-spacing:0px;word-spacing:0px;display:inline;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
        xml:space="preserve"><tspan
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.88056px;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';stroke-width:0.264583"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.175px;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';stroke-width:0.264583"
          y="3.6851814"
          x="36.02874"
          id="tspan12"
@@ -290,7 +290,7 @@
      id="layer6"
      inkscape:label="60hz"
      transform="translate(-51.303642,-149.40181)"
-     style="display:none">
+     style="display:inline">
     <text
        id="text76"
        y="168.46725"
@@ -307,11 +307,11 @@
      inkscape:groupmode="layer"
      id="layer9"
      inkscape:label="load_R"
-     style="display:none"
+     style="display:inline"
      transform="translate(-51.303642,-149.40181)">
     <path
        style="display:inline;fill:none;stroke:#000000;stroke-width:0.264583px;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1"
-       d="m 100.90546,155.50741 h 9.79893 v 19.09572 h -9.79893"
+       d="m 85.340911,155.50741 h 25.363479 v 19.09572 h -9.79893"
        id="path3"
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="cccc" />
@@ -348,11 +348,11 @@
      inkscape:groupmode="layer"
      id="layer10"
      inkscape:label="load_RL"
-     style="display:inline"
+     style="display:none"
      transform="translate(-51.303642,-149.40181)">
     <path
        style="display:inline;fill:none;stroke:#000000;stroke-width:0.264583px;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1"
-       d="m 110.70439,157.62566 v -2.11825 l -25.363479,0"
+       d="m 110.70439,157.62566 v -2.11825 H 85.340911"
        id="path26"
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="ccc" />
