@@ -1,0 +1,70 @@
+/* Styles de la topologie « PV solaire → réseau » (scène interactive + courbes I-V / P-V). */
+
+.pv-scene { position: relative; width: 100%; height: 100%; overflow: hidden; border-radius: inherit; touch-action: none; user-select: none; -webkit-user-select: none; }
+/* Scène entière (meet) ; ciel et sol, dessinés plus larges que le cadre, débordent pour
+   remplir les côtés quand le cadre est plus large que le dessin. */
+.pv-scene > svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.pv-scene text { pointer-events: none; }
+.pv-hud-card > svg { width: 21px; height: 14px; }
+
+.pv-sun-group { cursor: grab; }
+.pv-sun-group.pv-dragging { cursor: grabbing; }
+.pv-sun-rays { animation: pv-sun-spin 60s linear infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes pv-sun-spin { to { transform: rotate(360deg); } }
+.pv-cloud { cursor: grab; transition: opacity 260ms ease; }
+.pv-cloud.pv-dragging { cursor: grabbing; }
+#pv-panel-rot { cursor: grab; }
+#pv-panel-rot.pv-dragging { cursor: grabbing; }
+.workspace:has(.pv-scene) .measurements { display: none; }
+.pv-flow-wire { stroke-dasharray: 15 13; animation: pv-flow 5s linear infinite; }
+.pv-flow-paused .pv-flow-wire, .pv-flow-wire.paused { animation-play-state: paused; opacity: .25; }
+@keyframes pv-flow { to { stroke-dashoffset: -56; } }
+
+.pv-hud { position: absolute; z-index: 3; display: flex; flex-direction: column; gap: 6px; top: 10px; left: 12px; }
+.pv-hud-card { display: flex; align-items: center; gap: 8px; border: 1px solid #ffffff66; border-radius: 999px; padding: 5px 12px; background: #ffffffb8; box-shadow: 0 4px 14px #17243822; backdrop-filter: blur(4px); color: #21374f; font-size: clamp(.72rem, .8vw, .86rem); font-weight: 750; }
+.pv-hud-card svg { flex: 0 0 auto; }
+.pv-hud-card input[type="range"] { width: clamp(84px, 9vw, 130px); height: 5px; margin: 0; }
+.pv-hud-card output { min-width: 3.2em; text-align: right; font-variant-numeric: tabular-nums; }
+.pv-play-button { display: flex; align-items: center; gap: 7px; border: 1px solid #ffffff66; border-radius: 999px; padding: 6px 13px; background: #ffffffb8; box-shadow: 0 4px 14px #17243822; backdrop-filter: blur(4px); color: #21374f; cursor: pointer; font: inherit; font-size: clamp(.72rem, .8vw, .86rem); font-weight: 800; }
+.pv-play-button:hover { border-color: var(--teal); color: #075f59; }
+.pv-play-button[aria-pressed="true"] { border-color: #087f76; background: var(--teal); color: #ffffff; }
+.pv-play-button:focus-visible, .pv-hud-card input:focus-visible { outline: 3px solid #0b93883b; outline-offset: 2px; }
+
+body.dark-theme .pv-hud-card, body.dark-theme .pv-play-button { border-color: #94a3b84d; background: #101c2cd9; color: #dbe6f3; }
+body.dark-theme .pv-play-button:hover { border-color: #55d2c6; color: #a4eee6; }
+body.dark-theme .pv-play-button[aria-pressed="true"] { background: var(--teal); color: #ffffff; }
+
+/* Topologie PV : la rangée « avancée » se place au-dessus de la scène pour
+   que l'animation ne bouge pas quand on active le mode avancé. */
+.circuit-content:has(.pv-scene) .controls-top { order: -2; }
+.circuit-content:has(.pv-scene) .controls-bottom { order: -1; }
+@media (min-width: 1101px) {
+  .circuit-content:has(.pv-scene) .control { height: clamp(82px, 10vh, 98px); }
+}
+
+/* Bandeau d'infos : lignes compactes pour trois équations par colonne. */
+.lc-info .pv-info-lines { gap: 4px; }
+.lc-info .pv-info-lines .info-equation { min-height: 1.28em; }
+.lc-info .pv-info-lines .info-equation .katex { font-size: clamp(.92rem, 1vw, 1.08rem); }
+
+/* Bandeau des courbes caractéristiques (panneau oscilloscope). */
+.pv-curves-host { display: flex; flex: 0 0 auto; flex-direction: column; height: clamp(190px, 27vh, 260px); margin: clamp(10px, 1vw, 17px) clamp(10px, 1vw, 17px) 0; overflow: hidden; border: 1px solid var(--scope-border); border-radius: 12px; background: var(--scope-screen); }
+.pv-curves-header { display: flex; flex: 0 0 auto; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 12px 2px; }
+.pv-curves-title { color: var(--scope-text); font-size: clamp(.72rem, .78vw, .86rem); font-weight: 850; letter-spacing: .07em; text-transform: uppercase; }
+.pv-mode-toggle { display: flex; padding: 3px; border: 1px solid #c9d9d5; border-radius: 999px; background: #edf7f4; }
+.pv-mode-toggle button { min-height: 26px; border: 0; border-radius: 999px; padding: 2px 12px; background: transparent; color: #516b68; cursor: pointer; font: inherit; font-size: clamp(.7rem, .76vw, .84rem); font-weight: 800; }
+.pv-mode-toggle button:hover { color: var(--teal); }
+.pv-mode-toggle button[aria-pressed="true"] { background: var(--teal); color: #ffffff; box-shadow: 0 3px 9px #0b93882b; }
+.pv-mode-toggle button:focus-visible { outline: 3px solid #0b93883b; outline-offset: 2px; }
+.pv-curves-canvas { display: block; flex: 1 1 auto; min-height: 0; width: 100%; cursor: crosshair; touch-action: none; }
+body.dark-theme .pv-mode-toggle { border-color: #27605b; background: #123330; }
+body.dark-theme .pv-mode-toggle button { color: #a8bbb7; }
+body.dark-theme .pv-mode-toggle button[aria-pressed="true"] { background: var(--teal); color: #ffffff; }
+
+@media (max-width: 1100px) {
+  .pv-curves-host { height: clamp(210px, 34vw, 300px); }
+}
+@media (max-width: 600px) {
+  .pv-curves-host { margin: 8px 8px 0; }
+  .pv-hud { top: 6px; left: 8px; }
+}

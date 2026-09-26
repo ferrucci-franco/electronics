@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Laboratoire interactif de convertisseurs de puissance en régime permanent." />
+    <title>Simulateur de convertisseurs — Convertisseur buck</title>
+    <link rel="stylesheet" href="vendor/katex/katex.min.css" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="pv.css" />
+  <!-- Contador de visitas (GoatCounter, sin cookies ni datos personales). No cuenta en localhost ni desde file://. -->
+<script data-goatcounter="https://ferrucci-franco.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</head>
+  <body>
+    <main>
+      <section class="workspace" aria-label="Simulateur de convertisseurs de puissance" data-i18n-aria="workspace">
+        <article class="panel circuit-panel">
+          <header class="panel-heading">
+            <div class="topology-heading">
+              <h1 class="topology-title">
+                <button id="topology-trigger" class="topology-trigger" type="button" aria-haspopup="dialog" aria-controls="topology-dialog" aria-label="Choisir une topologie" data-i18n-aria="topologySelectorAria" title="Changer de circuit" data-i18n-title="changeTopology">
+                  <span id="topology-name">Convertisseur buck</span>
+                  <i aria-hidden="true"></i>
+                </button>
+              </h1>
+            </div>
+            <div class="header-actions">
+              <div class="language-switch">
+                <button id="language-trigger" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="language-menu" aria-label="Langue" data-i18n-aria="languageSelector"><span id="language-current">FR</span><i aria-hidden="true"></i></button>
+                <div id="language-menu" class="language-menu" role="group" aria-label="Langue" data-i18n-aria="languageSelector" hidden>
+                  <button type="button" data-lang="en" aria-pressed="false">EN</button>
+                  <button type="button" data-lang="fr" aria-pressed="true">FR</button>
+                  <button type="button" data-lang="es" aria-pressed="false">ES</button>
+                </div>
+              </div>
+              <button id="theme-toggle" type="button" aria-label="Activer le thème sombre" aria-pressed="false" data-i18n-aria="themeDark"><span class="theme-glyph" aria-hidden="true"></span></button>
+              <button id="advanced-toggle" type="button" aria-pressed="false" data-i18n="advanced">Avancé</button>
+              <button id="theory-trigger" type="button" aria-haspopup="dialog" aria-controls="theory-dialog" aria-label="Ouvrir les informations complémentaires" data-i18n-aria="theoryButtonAria" title="Plus d’infos" data-i18n-title="theoryOpen"><svg class="info-glyph" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 11v5.5" /><circle class="info-dot" cx="12" cy="7.6" r=".4" /></svg></button>
+              <button id="reset" type="button" aria-label="Réinitialiser" title="Réinitialiser" data-i18n-aria="reset" data-i18n-title="reset"><svg class="reset-glyph" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3" /><path d="M4 3.5v4.2h4.2" /></svg><span class="reset-label" data-i18n="reset">Réinitialiser</span></button>
+            </div>
+          </header>
+
+          <div class="circuit-content">
+            <div class="bridge-mode-panel bridge-application-panel" id="bridge-application-panel" hidden>
+              <div class="bridge-mode-group">
+                <span id="bridge-application-label">Application</span>
+                <div id="bridge-application-options" role="group" aria-label="Application du pont en H">
+                  <button type="button" data-bridge-application="standalone" aria-pressed="true">Onduleur</button>
+                  <button type="button" data-bridge-application="motor" aria-pressed="false">Moteur CC</button>
+                  <button type="button" data-bridge-application="grid" aria-pressed="false">Réseau</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="bridge-mode-panel bridge-application-panel" id="rectifier-panel" hidden>
+              <div class="bridge-mode-group">
+                <div id="rectifier-montage-options" role="group" aria-label="Choisir le montage du redresseur">
+                  <button type="button" data-rectifier-montage="single" aria-pressed="true">Simple diode</button>
+                  <button type="button" data-rectifier-montage="bridge" aria-pressed="false">Pont de diodes</button>
+                </div>
+              </div>
+              <div class="bridge-mode-group rectifier-source-settings">
+                <div id="rectifier-frequency-options">
+                  <button type="button" id="rectifier-frequency-toggle" class="frequency-toggle" aria-label="Fréquence de la source : 60 Hz. Passer à 50 Hz" title="Passer à 50 Hz"><span id="rectifier-frequency-value">60 Hz</span><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 5.5h10M10 3l2.5 2.5L10 8M13.5 10.5h-10M6 8l-2.5 2.5L6 13" /></svg></button>
+                </div>
+                <div id="thyristor-voltage-group" role="group" aria-label="Choisir la tension efficace du réseau" hidden>
+                  <button type="button" data-thyristor-voltage="110" aria-pressed="false">110 V</button>
+                  <button type="button" data-thyristor-voltage="230" aria-pressed="true">230 V</button>
+                </div>
+              </div>
+              <div class="bridge-mode-group" id="rectifier-diodes-group" hidden>
+                <div id="rectifier-diodes-options" role="group" aria-label="Choisir le modèle de diode">
+                  <button type="button" data-rectifier-diodes="ideal" aria-pressed="true">Idéales</button>
+                  <button type="button" data-rectifier-diodes="real" aria-pressed="false">Chute 0,6 V</button>
+                </div>
+              </div>
+              <div class="bridge-mode-group" id="rectifier-view-group" hidden>
+                <div id="rectifier-view-options" role="group" aria-label="Choisir la fenêtre temporelle du redresseur">
+                  <button type="button" data-rectifier-view="steady" aria-pressed="true">Permanent</button>
+                  <button type="button" data-rectifier-view="transient" aria-pressed="false">Démarrage</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="controls-row controls-top" aria-label="Réglages supérieurs" data-i18n-aria="upperSettings">
+              <label class="control">
+                <span class="control-copy"><b>f<span class="symbol-index">s</span></b><small data-i18n="frequency">Fréquence</small></span>
+                <output data-output="frequency">50 kHz</output>
+                <input data-key="frequency" aria-label="Fréquence de découpage" data-i18n-aria="frequencyAria" type="range" min="10000" max="200000" step="5000" value="50000" />
+              </label>
+              <label class="control">
+                <span class="control-copy"><b>α</b><small data-i18n="duty">Rapport cyclique α</small></span>
+                <output data-output="duty">50 %</output>
+                <input data-key="duty" aria-label="Rapport cyclique alpha" data-i18n-aria="dutyAria" type="range" min="10" max="90" step="2" value="50" />
+              </label>
+              <label class="control advanced-control" hidden>
+                <span class="control-copy"><b>V<span class="symbol-index">in</span></b><small data-i18n="inputVoltage">Tension d’entrée</small></span>
+                <output data-output="inputVoltage">24 V</output>
+                <input data-key="inputVoltage" aria-label="Tension d’entrée" data-i18n-aria="inputVoltageAria" type="range" min="6" max="48" step="2" value="24" />
+              </label>
+              <label class="control" hidden></label>
+            </div>
+
+            <div class="commutation-selector" id="commutation-selector" hidden>
+              <span id="commutation-label">Commutation</span>
+              <div id="commutation-options" role="group" aria-label="Type de commutation">
+                <button type="button" data-commutation="synchronous" aria-pressed="true">Synchrone</button>
+                <button type="button" data-commutation="diode" aria-pressed="false">Interrupteur + diode</button>
+              </div>
+            </div>
+
+            <div class="bridge-mode-panel" id="bridge-mode-panel" hidden>
+              <div class="bridge-mode-group" id="bridge-switching-group">
+                <span id="bridge-switching-label">Modulation</span>
+                <div id="bridge-switching-options" role="group" aria-label="Type de modulation PWM">
+                  <button type="button" data-bridge-switching="bipolar" aria-pressed="true">Bipolaire</button>
+                  <button type="button" data-bridge-switching="unipolar" aria-pressed="false">Unipolaire</button>
+                </div>
+              </div>
+              <div class="bridge-mode-group" id="grid-current-control-group" hidden>
+                <span id="grid-current-control-label">Commande du courant</span>
+                <div role="group" aria-label="Algorithme de commande du courant réseau">
+                  <button type="button" data-grid-current-control="pwm" aria-pressed="true">PWM</button>
+                  <button type="button" data-grid-current-control="hysteresis" aria-pressed="false">Hystérésis</button>
+                </div>
+              </div>
+              <div class="bridge-mode-group" id="motor-direction-group" hidden>
+                <span id="motor-direction-label">Sens</span>
+                <div role="group" aria-label="Sens de rotation">
+                  <button type="button" data-motor-direction="forward" aria-pressed="true">Avant</button>
+                  <button type="button" data-motor-direction="reverse" aria-pressed="false">Arrière</button>
+                </div>
+              </div>
+              <div class="bridge-mode-group" id="motor-view-group" hidden>
+                <span id="motor-view-label">Affichage</span>
+                <div role="group" aria-label="Fenêtre temporelle du moteur">
+                  <button type="button" data-motor-view="transient" aria-pressed="true">Démarrage</button>
+                  <button type="button" data-motor-view="steady" aria-pressed="false">Régime permanent</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="circuit-diagram" aria-label="Schéma du convertisseur buck synchrone">
+              <div class="schematic-frame">
+                <img class="converter-schematic" src="assets/buck.svg" alt="" draggable="false" />
+                <b class="schematic-vin-value" aria-hidden="true"><span id="vin-label-value">24</span> V</b>
+              </div>
+            </div>
+
+            <div class="controls-row controls-bottom" aria-label="Réglages inférieurs" data-i18n-aria="lowerSettings">
+              <label class="control">
+                <span class="control-copy"><b>L</b><small data-i18n="inductance">Inductance</small></span>
+                <output data-output="inductance">5 µH</output>
+                <input data-key="inductance" aria-label="Inductance" data-i18n-aria="inductanceAria" type="range" min="0.5" max="15" step="0.5" value="5" />
+              </label>
+              <label class="control">
+                <span class="control-copy"><b>C</b><small data-i18n="capacitance">Capacité</small></span>
+                <output data-output="capacitance">20 µF</output>
+                <input data-key="capacitance" aria-label="Capacité" data-i18n-aria="capacitanceAria" type="range" min="2" max="100" step="2" value="20" />
+              </label>
+              <label class="control advanced-control" hidden>
+                <span class="control-copy"><b>R</b><small data-i18n="load">Charge</small></span>
+                <output data-output="resistance">10 Ω</output>
+                <input data-key="resistance" aria-label="Résistance de charge" data-i18n-aria="resistanceAria" type="range" min="1" max="20" step="1" value="10" />
+              </label>
+            </div>
+          </div>
+
+          <div class="lc-info four-columns">
+            <div>
+              <span data-i18n="conversionLaw">Loi de conversion</span>
+              <strong class="math conversion-formula" data-tex="\displaystyle V_o=\alpha V_{in}">Vₒ = αVᵢₙ</strong>
+            </div>
+            <div>
+              <span data-i18n="voltages">Tensions</span>
+              <div class="info-lines">
+                <span class="math info-equation" id="info-vin" data-tex="\displaystyle V_{in}=24\,\mathrm{V}">Vᵢₙ = 24 V</span>
+                <span class="math info-equation" id="info-output" data-tex="\displaystyle V_o=12\,\mathrm{V}">Vₒ = 12 V</span>
+              </div>
+            </div>
+            <div>
+              <span data-i18n="lcFilter">Filtre LC</span>
+              <div class="info-lines">
+                <span class="math info-equation" id="info-resonance" data-tex="\displaystyle f_0=15{,}92\,\mathrm{kHz}">f₀ = 15,92 kHz</span>
+                <span class="math info-equation" id="info-secondary" data-tex="\displaystyle f_s/f_0=3{,}14">fₛ/f₀ = 3,14</span>
+              </div>
+            </div>
+            <div>
+              <span data-i18n="ripples">Ondulations</span>
+              <div class="info-lines">
+                <span class="math info-equation" id="info-current-ripple" data-tex="\displaystyle \Delta i_L/I_L=0\,\%">Δiₗ/Iₗ = 0 %</span>
+                <span class="math info-equation" id="info-voltage-ripple" data-tex="\displaystyle \Delta v_o/V_o=0\,\%">Δvₒ/Vₒ = 0 %</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel scope-panel">
+          <div class="pv-curves-host" id="pv-curves" hidden></div>
+          <div class="scope-screen">
+            <div id="scope-legends"></div>
+            <canvas id="scope" aria-label="Tracés superposés de Vin, V0x et de la tension de la résistance" data-i18n-aria="scopeAria"></canvas>
+            <div id="zoom-selection" aria-hidden="true" hidden></div>
+          </div>
+
+          <div class="measurements">
+            <div id="metric-1"><span id="metric-label-1">Moyenne V<span class="symbol-index">o</span></span><strong id="metric-value-1">12 V</strong></div>
+            <div id="metric-2"><span id="metric-label-2">Ondulation crête à crête</span><strong id="metric-value-2">0 V</strong></div>
+            <div id="metric-3"><span id="metric-label-3">Période</span><strong id="metric-value-3">20 µs</strong></div>
+          </div>
+        </article>
+      </section>
+    </main>
+
+    <dialog class="theory-dialog" id="theory-dialog" aria-labelledby="theory-title">
+      <div class="theory-dialog-header">
+        <div>
+          <span data-i18n="theoryKicker">Analyse électrique</span>
+          <h2 id="theory-title" data-i18n="theoryTitle">Régime permanent</h2>
+        </div>
+        <button id="theory-close" class="dialog-close" type="button" aria-label="Fermer" data-i18n-aria="closeTheory">×</button>
+      </div>
+
+      <div class="theory-grid">
+        <section class="balance-section">
+          <h3 data-i18n="balanceTitle">Équilibres</h3>
+          <div class="balance-equation">
+            <strong class="math" data-tex="\left\langle v_L\right\rangle=0">⟨vₗ⟩ = 0</strong>
+            <div><span data-i18n="numericalResidual">Résidu numérique</span><b id="balance-vl">0 mV</b></div>
+          </div>
+          <div class="balance-equation">
+            <strong class="math" data-tex="\left\langle i_C\right\rangle=0">⟨i꜀⟩ = 0</strong>
+            <div><span data-i18n="numericalResidual">Résidu numérique</span><b id="balance-ic">0 mA</b></div>
+          </div>
+        </section>
+
+        <section class="approximation-section">
+          <h3 data-i18n="rippleTheoryTitle">Approximation des ondulations</h3>
+          <div class="approximation-formula math" data-tex="\displaystyle \Delta i_L\simeq\frac{(V_{in}-V_o)\alpha}{Lf_s}">Δiₗ ≃ (Vin − Vo)α/(Lfs)</div>
+          <div class="comparison-grid">
+            <span data-i18n="simulation">Simulation</span><strong id="theory-il-sim">0 A</strong>
+            <span data-i18n="approximation">Approximation</span><strong id="theory-il-approx">0 A</strong>
+            <span data-i18n="relativeError">Écart relatif</span><strong id="theory-il-error">0 %</strong>
+          </div>
+          <div class="approximation-formula math" data-tex="\displaystyle \Delta v_o\simeq\frac{\Delta i_L}{8Cf_s}">Δvo ≃ Δiₗ/(8Cfs)</div>
+          <div class="comparison-grid">
+            <span data-i18n="simulation">Simulation</span><strong id="theory-vo-sim">0 V</strong>
+            <span data-i18n="approximation">Approximation</span><strong id="theory-vo-approx">0 V</strong>
+            <span data-i18n="relativeError">Écart relatif</span><strong id="theory-vo-error">0 %</strong>
+          </div>
+          <p data-i18n="approximationNote">Ces approximations supposent une ondulation faible et une fréquence de découpage nettement supérieure à la résonance.</p>
+        </section>
+      </div>
+    </dialog>
+    <dialog class="topology-dialog" id="topology-dialog" aria-labelledby="topology-dialog-title">
+      <div class="topology-dialog-header">
+        <div>
+          <span data-i18n="topologyDialogKicker">Laboratoire de conversion</span>
+          <h2 id="topology-dialog-title" data-i18n="chooseTopology">Choisir une topologie</h2>
+        </div>
+        <button id="topology-close" class="dialog-close" type="button" aria-label="Fermer le sélecteur" data-i18n-aria="closeTopology">×</button>
+      </div>
+      <div class="topology-grid" id="topology-grid"></div>
+    </dialog>
+    <script src="vendor/katex/katex.min.js"></script>
+    <script src="topologies/catalog.js"></script>
+    <script src="topologies/buck.js"></script>
+    <script src="topologies/boost.js"></script>
+    <script src="topologies/pont-h.js"></script>
+    <script src="topologies/redresseur.js"></script>
+    <script src="topologies/thyristor.js"></script>
+    <script src="topologies/pv-grid.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
