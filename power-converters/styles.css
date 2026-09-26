@@ -43,7 +43,7 @@ button, input { font: inherit; }
 main { width: 100%; height: 100dvh; padding: clamp(8px, 1.2vw, 18px); }
 .workspace { display: grid; grid-template-columns: minmax(420px, .95fr) minmax(480px, 1.05fr); gap: clamp(8px, 1vw, 16px); height: 100%; }
 .panel { min-width: 0; min-height: 0; overflow: hidden; border: 1px solid #74706638; border-radius: clamp(14px, 1.3vw, 22px); background: #fffdf8f2; box-shadow: 0 16px 45px #2b344010; }
-.panel-heading { display: flex; flex: 0 0 auto; align-items: center; justify-content: space-between; gap: 8px; min-height: clamp(70px, 8.8vh, 90px); padding: 10px clamp(10px, 1vw, 18px); }
+.panel-heading { display: flex; flex: 0 0 auto; align-items: center; justify-content: space-between; gap: 8px; min-height: clamp(54px, 7vh, 68px); padding: 8px clamp(10px, 1vw, 18px); }
 .panel-heading > div:first-child { min-width: 0; }
 .kicker { margin: 0 0 4px; color: var(--teal); font-size: clamp(.86rem, .92vw, 1.02rem); font-weight: 850; letter-spacing: .11em; text-transform: uppercase; }
 h1, h2 { margin: 0; font-size: clamp(1.08rem, 1.35vw, 1.72rem); line-height: 1.08; letter-spacing: -.035em; }
@@ -342,7 +342,7 @@ body.dark-theme .topology-status { background: #194943; color: #74ddd0; }
 body.dark-theme .topology-card[aria-disabled="true"] .topology-status { background: #29364a; color: #a5afbe; }
 
 @media (max-height: 720px) {
-  .panel-heading { height: 64px; }
+  .panel-heading { height: 54px; }
   .control { min-height: 82px; height: auto; padding-block: 7px; }
   .lc-info { height: 112px; margin-block: 5px 7px; }
   .lc-info > div { padding: 4px 8px; }
@@ -371,7 +371,7 @@ body.dark-theme .topology-card[aria-disabled="true"] .topology-status { backgrou
   main { height: auto; min-height: 100dvh; padding: 10px; }
   .workspace { grid-template-columns: minmax(0, 1fr); gap: 12px; height: auto; }
   .panel { overflow: hidden; }
-  .panel-heading { height: auto; min-height: 82px; }
+  .panel-heading { height: auto; min-height: 64px; }
   h1 { font-size: clamp(1.35rem, 3vw, 1.8rem); }
   .header-actions { gap: 6px; }
   #theme-toggle, #advanced-toggle, #theory-trigger, #reset { min-height: 44px; }
