@@ -10,10 +10,11 @@
         fr: "Redresseur à diodes",
         es: "Rectificador de diodos",
       }),
+      conversion: "AC → DC",
       description: Object.freeze({
-        en: "Single-diode or full-bridge AC-DC rectifier with L-C filter and R–L load.",
-        fr: "Redresseur AC-DC à simple diode ou pont de diodes, filtre L-C et charge R–L.",
-        es: "Rectificador AC-DC de diodo simple o puente de diodos, filtro L-C y carga R–L.",
+        en: "Turns an AC voltage into a DC voltage.",
+        fr: "Transforme une tension alternative en tension continue.",
+        es: "Convierte una tensión alterna en tensión continua.",
       }),
     }),
     Object.freeze({
@@ -24,10 +25,11 @@
         fr: "Commande de puissance",
         es: "Control de potencia",
       }),
+      conversion: "AC → AC",
       description: Object.freeze({
-        en: "Phase-angle power control using an SCR for one half-cycle or a TRIAC for both half-cycles, with an R–L load.",
-        fr: "Commande de puissance par angle de phase : SCR sur une alternance ou TRIAC sur les deux, avec charge R–L.",
-        es: "Control de potencia por ángulo de fase: SCR en un semiciclo o TRIAC en ambos, con carga R–L.",
+        en: "Adjusts the power sent to a load (lamp, heater).",
+        fr: "Règle la puissance envoyée à une charge (lampe, chauffage).",
+        es: "Regula la potencia entregada a una carga (lámpara, calefactor).",
       }),
     }),
     Object.freeze({
@@ -38,10 +40,11 @@
         fr: "Convertisseur buck",
         es: "Convertidor buck",
       }),
+      conversion: "DC → DC",
       description: Object.freeze({
-        en: "Step-down converter with an LC output filter.",
-        fr: "Convertisseur abaisseur avec filtre de sortie LC.",
-        es: "Convertidor reductor con filtro de salida LC.",
+        en: "Steps a DC voltage down.",
+        fr: "Abaisse une tension continue.",
+        es: "Reduce una tensión continua.",
       }),
     }),
     Object.freeze({
@@ -52,10 +55,11 @@
         fr: "Convertisseur boost",
         es: "Convertidor boost",
       }),
+      conversion: "DC → DC",
       description: Object.freeze({
-        en: "Step-up converter with synchronous or diode switching.",
-        fr: "Convertisseur élévateur à commutation synchrone ou par diode.",
-        es: "Convertidor elevador con conmutación síncrona o mediante diodo.",
+        en: "Steps a DC voltage up.",
+        fr: "Élève une tension continue.",
+        es: "Eleva una tensión continua.",
       }),
     }),
     Object.freeze({
@@ -66,10 +70,11 @@
         fr: "Pont en H",
         es: "Puente H",
       }),
+      conversion: "DC → AC",
       description: Object.freeze({
-        en: "Inverter, DC motor drive and grid connection with bipolar or unipolar PWM.",
-        fr: "Onduleur, entraînement de moteur CC et connexion réseau en PWM bipolaire ou unipolaire.",
-        es: "Inversor, accionamiento de motor CC y conexión a red con PWM bipolar o unipolar.",
+        en: "Makes an AC voltage or drives a DC motor.",
+        fr: "Crée une tension alternative ou pilote un moteur.",
+        es: "Genera una tensión alterna o controla un motor.",
       }),
     }),
     Object.freeze({
@@ -80,10 +85,11 @@
         fr: "PV solaire → réseau",
         es: "PV solar → red",
       }),
+      conversion: "DC → AC",
       description: Object.freeze({
-        en: "Full chain: solar array, MPPT boost, DC bus and H-bridge injecting sinusoidal current into the grid.",
-        fr: "Chaîne complète : champ PV, boost MPPT, bus continu et pont en H injectant un courant sinusoïdal au réseau.",
-        es: "Cadena completa: campo PV, boost con MPPT, bus continuo y puente H inyectando corriente senoidal a la red.",
+        en: "Feeds solar-panel energy into the grid.",
+        fr: "Injecte l’énergie des panneaux solaires dans le réseau.",
+        es: "Inyecta la energía de paneles solares en la red.",
       }),
     }),
   ]);

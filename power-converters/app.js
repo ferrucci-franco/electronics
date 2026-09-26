@@ -440,6 +440,7 @@
       else card.setAttribute("aria-disabled", "true");
       const name = document.createElement("h3"); name.textContent = localize(topology.name);
       const description = document.createElement("p"); description.textContent = localize(topology.description);
+      if (topology.conversion) { const conversion = document.createElement("span"); conversion.className = "topology-conversion"; conversion.textContent = topology.conversion; card.append(conversion); }
       card.append(name, description);
       // Seules les topologies à venir portent un badge ; « Disponible » sur toutes n'apprenait rien.
       if (!available) { const status = document.createElement("span"); status.className = "topology-status"; status.textContent = tr().comingSoon; card.append(status); }

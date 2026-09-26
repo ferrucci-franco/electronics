@@ -247,6 +247,8 @@ button.topology-card:focus-visible { outline: 3px solid #0b93883b; outline-offse
 .topology-card h3 { margin: 0 0 7px; font-size: 1.04rem; line-height: 1.15; }
 .topology-card p { margin: 0; color: #64716d; font-size: .78rem; line-height: 1.42; }
 .topology-status { align-self: flex-start; margin-top: auto; border-radius: 999px; padding: 5px 8px; background: var(--teal-soft); color: #08756d; font-size: .64rem; font-weight: 850; letter-spacing: .06em; line-height: 1; text-transform: uppercase; }
+.topology-conversion { align-self: flex-start; margin-bottom: 8px; border-radius: 999px; padding: 3px 9px; background: var(--teal-soft); color: #08756d; font-size: .72rem; font-weight: 850; letter-spacing: .04em; white-space: nowrap; }
+body.dark-theme .topology-conversion { background: #194943; color: #74ddd0; }
 .topology-card[aria-disabled="true"] .topology-status { background: #e3e6e4; color: #6f7884; }
 
 body.dark-theme {
