@@ -33,6 +33,15 @@ Dans l’oscilloscope, faites glisser avec le bouton gauche horizontalement, ver
 
 Dans l’application réseau du pont en H, la commande du courant peut utiliser une PWM à fréquence fixe ou un comparateur à hystérésis. Dans ce second cas, la demi-bande est réglable et la fréquence de commutation devient variable.
 
+## Publication (GitHub Pages)
+
+Copie publique : https://ferrucci-franco.github.io/electronics/power-converters/ (dépôt public `ferrucci-franco/electronics`, dossier `power-converters/`). On modifie toujours ici, on committe, puis, depuis la racine du dépôt :
+
+    node tools/publier-simulateur.js            # tests, copie, carte de l’index, commit, push
+    node tools/publier-simulateur.js --essai    # montre ce qui changerait, sans rien écrire
+
+Seuls les fichiers versionnés de ce dossier sont publiés (pas `OUVRIR.md`), dans leur version committée ; la copie publiée reçoit le compteur de visites GoatCounter commun au site. Le script travaille dans un clone dédié (`C:/Users/ferrucci/repos/electronics-power-converters-publish`, créé au besoin) et s’arrête si la source n’est pas committée, si un test échoue ou si le clone est modifié.
+
 ## Topologie « Redresseur à diodes »
 
 Redresseur AC-DC classique alimenté par une source sinusoïdale réglable (50 ou 60 Hz) : simple diode (monoalternance) ou pont de Graetz (double alternance, paires D1–D3 et D2–D4), filtre L–C (inductance de lissage L_f côté continu, puis condensateur en parallèle) et charge R–L série. Le mode simple ne propose que V_in, R et C ; L_f et l’inductance de charge L n’apparaissent qu’en mode avancé (et valent zéro en mode simple). Un curseur de filtre à zéro retire l’élément : la branche s’estompe dans le schéma. Le filtre à entrée inductive illustre le compromis classique : sans L_f le condensateur se recharge par pointes (tension proche de V̂ mais facteur de puissance dégradé) ; avec L_f suffisante la conduction devient continue, la tension moyenne rejoint 2V̂/π et le facteur de puissance remonte vers 0,9.
