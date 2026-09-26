@@ -6,7 +6,7 @@
   const translations = {
     en: {
       documentTitle: "Power Converter Simulator", metaDescription: "Interactive steady-state laboratory for power converters.", workspace: "Power converter simulator",
-      topologySelectorAria: "Choose a converter topology", topologyDialogKicker: "Power conversion laboratory", chooseTopology: "Choose a topology", closeTopology: "Close topology selector", comingSoon: "Coming soon",
+      changeTopology: "Change circuit", topologySelectorAria: "Choose a converter topology", topologyDialogKicker: "Power conversion laboratory", chooseTopology: "Choose a topology", closeTopology: "Close topology selector", comingSoon: "Coming soon",
       languageSelector: "Language", themeDark: "Switch to dark theme", themeLight: "Switch to light theme", advanced: "Advanced", reset: "Reset", upperSettings: "Upper controls", lowerSettings: "Lower controls", commutation: "Switching", commutationAria: "Choose the switching implementation", synchronousSwitch: "Synchronous", switchAndDiode: "Switch + diode", hideTrace: "Hide trace", showTrace: "Show trace",
       legend: "Legend", advancedLegend: "Advanced legend", scopeAria: "Steady-state converter waveforms", zoomAria: "Drag with the left button to zoom and with the right button to pan. Double-click or double-tap to reset the zoom.", mean: "Average", ripple: "Peak-to-peak ripple", period: "Period", currentAverage: "Average current", currentRipple: "Current ripple", currentRange: "Current range", currentRms: "RMS current", voltageRms: "Fundamental RMS voltage", phaseShift: "Phase shift", switchingRatio: "Switching ratio",
       outputVoltage: "Output voltage", conductionMode: "Conduction mode", minimumCurrent: "Minimum current", fundamentalFrequency: "Fundamental frequency", formula: "Formula", ratio: "Ratio", resonanceFrequency: "LC circuit resonant frequency", conversionLaw: "Conversion law", conversionLawCcm: "Conversion law · CCM", voltages: "Voltages", lcFilter: "LC filter", ripples: "Ripples",
@@ -18,7 +18,7 @@
     },
     fr: {
       documentTitle: "Simulateur de convertisseurs", metaDescription: "Laboratoire interactif de convertisseurs de puissance en régime permanent.", workspace: "Simulateur de convertisseurs de puissance",
-      topologySelectorAria: "Choisir une topologie de convertisseur", topologyDialogKicker: "Laboratoire de conversion", chooseTopology: "Choisir une topologie", closeTopology: "Fermer le sélecteur de topologie", comingSoon: "Bientôt disponible",
+      changeTopology: "Changer de circuit", topologySelectorAria: "Choisir une topologie de convertisseur", topologyDialogKicker: "Laboratoire de conversion", chooseTopology: "Choisir une topologie", closeTopology: "Fermer le sélecteur de topologie", comingSoon: "Bientôt disponible",
       languageSelector: "Langue", themeDark: "Activer le thème sombre", themeLight: "Activer le thème clair", advanced: "Avancé", reset: "Réinitialiser", upperSettings: "Réglages supérieurs", lowerSettings: "Réglages inférieurs", commutation: "Commutation", commutationAria: "Choisir la réalisation de la commutation", synchronousSwitch: "Synchrone", switchAndDiode: "Interrupteur + diode", hideTrace: "Masquer la trace", showTrace: "Afficher la trace",
       legend: "Légende", advancedLegend: "Légende avancée", scopeAria: "Formes d’onde du convertisseur en régime permanent", zoomAria: "Faites glisser avec le bouton gauche pour zoomer et avec le bouton droit pour déplacer la vue. Double-cliquez ou touchez deux fois pour réinitialiser le zoom.", mean: "Moyenne", ripple: "Ondulation crête à crête", period: "Période", currentAverage: "Courant moyen", currentRipple: "Ondulation du courant", currentRange: "Plage du courant", currentRms: "Courant efficace", voltageRms: "Tension fondamentale efficace", phaseShift: "Déphasage", switchingRatio: "Rapport de fréquences",
       outputVoltage: "Tension de sortie", conductionMode: "Mode de conduction", minimumCurrent: "Courant minimal", fundamentalFrequency: "Fréquence fondamentale", formula: "Formule", ratio: "Rapport", resonanceFrequency: "Fréquence de résonance du circuit LC", conversionLaw: "Loi de conversion", conversionLawCcm: "Loi de conversion · CCM", voltages: "Tensions", lcFilter: "Filtre LC", ripples: "Ondulations",
@@ -30,7 +30,7 @@
     },
     es: {
       documentTitle: "Simulador de convertidores", metaDescription: "Laboratorio interactivo de convertidores de potencia en régimen permanente.", workspace: "Simulador de convertidores de potencia",
-      topologySelectorAria: "Elegir una topología de convertidor", topologyDialogKicker: "Laboratorio de conversión", chooseTopology: "Elegir una topología", closeTopology: "Cerrar el selector de topología", comingSoon: "Próximamente",
+      changeTopology: "Cambiar de circuito", topologySelectorAria: "Elegir una topología de convertidor", topologyDialogKicker: "Laboratorio de conversión", chooseTopology: "Elegir una topología", closeTopology: "Cerrar el selector de topología", comingSoon: "Próximamente",
       languageSelector: "Idioma", themeDark: "Activar el tema oscuro", themeLight: "Activar el tema claro", advanced: "Avanzado", reset: "Reinicializar", upperSettings: "Controles superiores", lowerSettings: "Controles inferiores", commutation: "Conmutación", commutationAria: "Elegir la implementación de la conmutación", synchronousSwitch: "Síncrono", switchAndDiode: "Interruptor + diodo", hideTrace: "Ocultar traza", showTrace: "Mostrar traza",
       legend: "Leyenda", advancedLegend: "Leyenda avanzada", scopeAria: "Formas de onda del convertidor en régimen permanente", zoomAria: "Arrastre con el botón izquierdo para ampliar y con el derecho para desplazar la vista. Haga doble clic o toque dos veces para restablecer el zoom.", mean: "Promedio", ripple: "Ondulación pico a pico", period: "Período", currentAverage: "Corriente media", currentRipple: "Ondulación de corriente", currentRange: "Rango de corriente", currentRms: "Corriente eficaz", voltageRms: "Tensión fundamental eficaz", phaseShift: "Desfase", switchingRatio: "Relación de frecuencias",
       outputVoltage: "Tensión de salida", conductionMode: "Modo de conducción", minimumCurrent: "Corriente mínima", fundamentalFrequency: "Frecuencia fundamental", formula: "Fórmula", ratio: "Relación", resonanceFrequency: "Frecuencia de resonancia del circuito LC", conversionLaw: "Ley de conversión", conversionLawCcm: "Ley de conversión · CCM", voltages: "Tensiones", lcFilter: "Filtro LC", ripples: "Ondulaciones",
@@ -54,6 +54,8 @@
   const topSlots = [...document.querySelectorAll(".controls-top .control")];
   const bottomSlots = [...document.querySelectorAll(".controls-bottom .control")];
   const languageButtons = [...document.querySelectorAll("[data-lang]")];
+  const languageTrigger = document.querySelector("#language-trigger");
+  const languageMenu = document.querySelector("#language-menu");
   const advancedButton = document.querySelector("#advanced-toggle");
   const theoryButton = document.querySelector("#theory-trigger");
   const themeButton = document.querySelector("#theme-toggle");
@@ -463,6 +465,7 @@
     document.querySelectorAll("[data-i18n-aria]").forEach((element) => { const value = tr()[element.dataset.i18nAria]; if (value) element.setAttribute("aria-label", value); });
     document.querySelectorAll("[data-i18n-title]").forEach((element) => { const value = tr()[element.dataset.i18nTitle]; if (value) element.setAttribute("title", value); });
     languageButtons.forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.lang === language)));
+    document.querySelector("#language-current").textContent = language.toUpperCase();
     themeButton.setAttribute("aria-label", tr()[dark ? "themeLight" : "themeDark"]); renderCatalog();
   }
   function setLanguage(value) { if (!translations[value]) return; saveState(); language = value; number = new Intl.NumberFormat(locales[value], { maximumFractionDigits: 2 }); applyTranslations(); renderTopology(); }
@@ -861,7 +864,12 @@
     if (panDrag) { panDrag = null; canvas.classList.remove("panning"); }
   });
 
-  languageButtons.forEach((button) => button.addEventListener("click", () => setLanguage(button.dataset.lang)));
+  // Langue : un bouton « FR ▾ » ouvre le choix des trois langues (gain de place dans l'en-tête).
+  const setLanguageMenu = (open) => { languageMenu.hidden = !open; languageTrigger.setAttribute("aria-expanded", String(open)); };
+  languageTrigger.addEventListener("click", () => setLanguageMenu(languageMenu.hidden));
+  languageButtons.forEach((button) => button.addEventListener("click", () => { setLanguage(button.dataset.lang); setLanguageMenu(false); languageTrigger.focus(); }));
+  document.addEventListener("click", (event) => { if (!languageMenu.hidden && !event.target.closest(".language-switch")) setLanguageMenu(false); });
+  document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !languageMenu.hidden) { setLanguageMenu(false); languageTrigger.focus(); } });
   commutationButtons.forEach((button) => button.addEventListener("click", () => {
     if (currentTopology !== "buck" && currentTopology !== "boost") return;
     saveState();

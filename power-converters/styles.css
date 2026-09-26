@@ -49,11 +49,12 @@ main { width: 100%; height: 100dvh; padding: clamp(8px, 1.2vw, 18px); }
 h1, h2 { margin: 0; font-size: clamp(1.08rem, 1.35vw, 1.72rem); line-height: 1.08; letter-spacing: -.035em; }
 .topology-heading { display: flex; min-width: 0; flex-direction: column; align-items: flex-start; }
 .topology-title { min-width: 0; max-width: 100%; }
-.topology-trigger { display: flex; min-width: 0; max-width: 100%; align-items: center; gap: 8px; border: 0; border-radius: 10px; padding: 2px 4px 3px 2px; background: transparent; color: var(--ink); cursor: pointer; font-size: clamp(1.08rem, 1.35vw, 1.72rem); font-weight: 800; letter-spacing: -.035em; line-height: 1.08; text-align: left; }
-.topology-trigger:hover { color: var(--teal); background: #0b93880a; }
+.topology-trigger { display: flex; min-width: 0; max-width: 100%; align-items: center; gap: 8px; border: 1px solid #0b938866; border-radius: 12px; padding: 4px 5px 4px 12px; background: #0b938812; color: var(--ink); cursor: pointer; font-size: clamp(1.08rem, 1.35vw, 1.72rem); font-weight: 800; letter-spacing: -.035em; line-height: 1.08; text-align: left; }
+.topology-trigger:hover { border-color: var(--teal); background: #0b938824; color: #075f59; }
 .topology-trigger:focus-visible { outline: 3px solid #0b93883b; outline-offset: 2px; }
 .topology-trigger > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.topology-trigger > i { flex: 0 0 auto; width: 9px; height: 9px; margin: -4px 3px 0 1px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); }
+.topology-trigger > i { position: relative; flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%; background: var(--teal); }
+.topology-trigger > i::before { position: absolute; top: 44%; left: 50%; width: 6px; height: 6px; content: ""; border-right: 2px solid #ffffff; border-bottom: 2px solid #ffffff; transform: translate(-50%, -50%) rotate(45deg); }
 .header-actions { display: flex; min-width: 0; flex: 1 1 auto; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 5px; }
 .reset-glyph { display: none; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 /* Bureau : les boutons restent sur une ligne et le titre prend la place restante. */
@@ -62,10 +63,16 @@ h1, h2 { margin: 0; font-size: clamp(1.08rem, 1.35vw, 1.72rem); line-height: 1.0
   .header-actions { flex: 0 0 auto; flex-wrap: nowrap; }
 }
 .time-pill { font-size: clamp(.75rem, .82vw, .9rem); font-weight: 850; letter-spacing: .05em; text-transform: uppercase; }
-.language-switch { display: flex; align-items: center; padding: 3px; border: 1px solid #dce1e7; border-radius: 14px; background: #fffdf8; box-shadow: 0 5px 14px #1724380a; }
-.language-switch button { width: 30px; height: 30px; padding: 0; border: 0; border-radius: 10px; background: transparent; color: #59657a; cursor: pointer; font-size: .82rem; font-weight: 850; }
-.language-switch button:hover { color: var(--teal); }
-.language-switch button[aria-pressed="true"] { background: #eef1f3; color: #101827; }
+/* Langue : bouton « FR ▾ » et petit menu des trois langues. */
+.language-switch { position: relative; }
+#language-trigger { display: inline-flex; height: 38px; align-items: center; gap: 6px; border: 1px solid #cbc5ba; border-radius: 999px; padding: 0 11px; background: #fffdf8; color: var(--ink); cursor: pointer; font-size: clamp(.78rem, .82vw, .9rem); font-weight: 800; }
+#language-trigger > i { width: 6px; height: 6px; margin-top: -3px; border-right: 1.8px solid currentColor; border-bottom: 1.8px solid currentColor; transform: rotate(45deg); }
+#language-trigger:hover, #language-trigger[aria-expanded="true"] { border-color: var(--teal); }
+.language-menu { position: absolute; z-index: 20; top: calc(100% + 5px); right: 0; display: flex; padding: 3px; border: 1px solid #dce1e7; border-radius: 14px; background: #fffdf8; box-shadow: 0 10px 24px #17243824; }
+.language-menu[hidden] { display: none; }
+.language-menu button { width: 34px; height: 30px; padding: 0; border: 0; border-radius: 10px; background: transparent; color: #59657a; cursor: pointer; font-size: .82rem; font-weight: 850; }
+.language-menu button:hover { color: var(--teal); }
+.language-menu button[aria-pressed="true"] { background: #eef1f3; color: #101827; }
 #theme-toggle, #advanced-toggle, #theory-trigger, #reset { height: 38px; border: 1px solid #cbc5ba; border-radius: 999px; padding: 0 10px; background: #fffdf8; color: var(--ink); cursor: pointer; font-size: clamp(.78rem, .82vw, .9rem); font-weight: 750; }
 #theme-toggle { display: grid; width: 40px; padding: 0; place-items: center; border-radius: 13px; }
 .theme-glyph { width: 18px; height: 18px; border: 1.5px solid #1f2b3e; border-radius: 50%; background: linear-gradient(90deg, #ffbd45 0 50%, #172438 50% 100%); box-shadow: 0 1px 4px #17243825; transform: rotate(-18deg); }
@@ -77,20 +84,19 @@ h1, h2 { margin: 0; font-size: clamp(1.08rem, 1.35vw, 1.72rem); line-height: 1.0
 #advanced-toggle::before { display: inline-block; width: .74em; height: .74em; margin-right: 6px; content: ""; border: 1.6px solid currentColor; border-radius: 50%; background: transparent; vertical-align: -.08em; transition: background-color 130ms ease, box-shadow 130ms ease; }
 #advanced-toggle[aria-pressed="true"] { border-color: #087f76; background: var(--teal); color: white; box-shadow: inset 0 3px 5px #075f596b, 0 0 0 1px #0b93882b; }
 #advanced-toggle[aria-pressed="true"]::before { background: currentColor; box-shadow: inset 0 0 0 2.5px var(--teal); }
-#theme-toggle:focus-visible, #advanced-toggle:focus-visible, #theory-trigger:focus-visible, #reset:focus-visible, .language-switch button:focus-visible, input[type="range"]:focus-visible { outline: 3px solid #0b93883b; outline-offset: 2px; }
+#theme-toggle:focus-visible, #advanced-toggle:focus-visible, #theory-trigger:focus-visible, #reset:focus-visible, #language-trigger:focus-visible, .language-menu button:focus-visible, input[type="range"]:focus-visible { outline: 3px solid #0b93883b; outline-offset: 2px; }
 /* Portables (≈1280 px CSS, p. ex. 1920×1200 à 150 %) : barre d'actions compacte,
    « Réinitialiser » réduit à son icône pour laisser le nom de topologie lisible. */
 @media (min-width: 1101px) and (max-width: 1680px) {
   .panel-heading { gap: 6px; padding-inline: 10px; }
   .header-actions { gap: 3px; }
-  .language-switch button { width: 27px; }
   #theme-toggle { width: 36px; }
   #advanced-toggle { padding-inline: 8px; }
   #theory-trigger { width: 36px; }
   #reset { display: grid; width: 38px; padding: 0; place-items: center; }
   .reset-glyph { display: block; }
   .reset-label { display: none; }
-  .topology-trigger { gap: 6px; padding-right: 1px; font-size: clamp(.96rem, 1.35vw, 1.72rem); }
+  .topology-trigger { gap: 6px; padding: 3px 4px 3px 10px; font-size: clamp(.96rem, 1.35vw, 1.72rem); }
 }
 
 .circuit-panel, .scope-panel { display: flex; flex-direction: column; }
@@ -277,7 +283,8 @@ body.dark-theme {
 }
 body.dark-theme .panel { border-color: #94a3b829; background: #142033f2; box-shadow: 0 18px 50px #0000002b; }
 body.dark-theme .control,
-body.dark-theme .language-switch,
+body.dark-theme #language-trigger,
+body.dark-theme .language-menu,
 body.dark-theme #theme-toggle,
 body.dark-theme #advanced-toggle,
 body.dark-theme #theory-trigger,
@@ -285,10 +292,11 @@ body.dark-theme #reset { border-color: #94a3b847; background: #19283b; color: va
 body.dark-theme #advanced-toggle[aria-pressed="true"] { border-color: #55d2c6; background: var(--teal); color: #ffffff; box-shadow: inset 0 3px 6px #041a186e, 0 0 0 1px #55d2c638; }
 body.dark-theme #theory-trigger { border-color: #28b9ac; background: #19283b; color: #74ddd0; }
 body.dark-theme #theory-trigger:hover { border-color: #55d2c6; background: #183a3a; color: #a4eee6; }
-body.dark-theme .language-switch button { color: #aeb9c9; }
-body.dark-theme .language-switch button[aria-pressed="true"] { background: #314158; color: #ffffff; }
+body.dark-theme .language-menu button { color: #aeb9c9; }
+body.dark-theme .language-menu button[aria-pressed="true"] { background: #314158; color: #ffffff; }
 body.dark-theme .theme-glyph { border-color: #e5edf6; background: linear-gradient(90deg, #ffcc61 0 50%, #26364c 50% 100%); box-shadow: 0 0 8px #ffcc6138; transform: rotate(18deg); }
-body.dark-theme .topology-trigger:hover { background: #74ddd00d; }
+body.dark-theme .topology-trigger { border-color: #55d2c666; background: #74ddd014; }
+body.dark-theme .topology-trigger:hover { border-color: #55d2c6; background: #74ddd026; color: #a4eee6; }
 body.dark-theme .circuit-diagram { border-color: #94a3b829; background: linear-gradient(#e8eef608 1px, transparent 1px), linear-gradient(90deg, #e8eef608 1px, transparent 1px), #0f1a2a; background-size: 20px 20px; }
 body.dark-theme .converter-schematic { filter: invert(1) hue-rotate(180deg); }
 body.dark-theme .schematic-vin-value { color: #ffffff; }
@@ -377,7 +385,8 @@ body.dark-theme .topology-card[aria-disabled="true"] .topology-status { backgrou
   h1 { font-size: clamp(1.35rem, 3vw, 1.8rem); }
   .header-actions { gap: 6px; }
   #theme-toggle, #advanced-toggle, #theory-trigger, #reset { min-height: 44px; }
-  .language-switch button { width: 36px; height: 36px; }
+  #language-trigger { min-height: 44px; }
+  .language-menu button { width: 40px; height: 36px; }
   .circuit-content { flex: none; gap: 10px; }
   .controls-top, .controls-bottom { padding-inline: 2%; }
   .control { min-height: 90px; height: auto; }
@@ -398,7 +407,7 @@ body.dark-theme .topology-card[aria-disabled="true"] .topology-status { backgrou
   .panel-heading { flex-direction: column; align-items: stretch; gap: 10px; padding: 14px 12px 10px; }
   h1 { text-align: center; font-size: clamp(1.3rem, 6vw, 1.65rem); }
   .header-actions { flex-wrap: nowrap; justify-content: center; gap: 4px; }
-  .language-switch button { width: 28px; height: 36px; }
+  #language-trigger { min-height: 40px; height: 40px; padding-inline: 9px; }
   #theme-toggle, #advanced-toggle, #theory-trigger, #reset { min-height: 40px; height: 40px; }
   #theme-toggle { width: 38px; }
   #advanced-toggle, #theory-trigger, #reset { padding-inline: 8px; font-size: .75rem; }

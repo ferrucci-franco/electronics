@@ -16,17 +16,20 @@
           <header class="panel-heading">
             <div class="topology-heading">
               <h1 class="topology-title">
-                <button id="topology-trigger" class="topology-trigger" type="button" aria-haspopup="dialog" aria-controls="topology-dialog" aria-label="Choisir une topologie" data-i18n-aria="topologySelectorAria">
+                <button id="topology-trigger" class="topology-trigger" type="button" aria-haspopup="dialog" aria-controls="topology-dialog" aria-label="Choisir une topologie" data-i18n-aria="topologySelectorAria" title="Changer de circuit" data-i18n-title="changeTopology">
                   <span id="topology-name">Convertisseur buck</span>
                   <i aria-hidden="true"></i>
                 </button>
               </h1>
             </div>
             <div class="header-actions">
-              <div class="language-switch" role="group" aria-label="Langue" data-i18n-aria="languageSelector">
-                <button type="button" data-lang="en" aria-pressed="false">EN</button>
-                <button type="button" data-lang="fr" aria-pressed="true">FR</button>
-                <button type="button" data-lang="es" aria-pressed="false">ES</button>
+              <div class="language-switch">
+                <button id="language-trigger" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="language-menu" aria-label="Langue" data-i18n-aria="languageSelector"><span id="language-current">FR</span><i aria-hidden="true"></i></button>
+                <div id="language-menu" class="language-menu" role="group" aria-label="Langue" data-i18n-aria="languageSelector" hidden>
+                  <button type="button" data-lang="en" aria-pressed="false">EN</button>
+                  <button type="button" data-lang="fr" aria-pressed="true">FR</button>
+                  <button type="button" data-lang="es" aria-pressed="false">ES</button>
+                </div>
               </div>
               <button id="theme-toggle" type="button" aria-label="Activer le thème sombre" aria-pressed="false" data-i18n-aria="themeDark"><span class="theme-glyph" aria-hidden="true"></span></button>
               <button id="advanced-toggle" type="button" aria-pressed="false" data-i18n="advanced">Avancé</button>
