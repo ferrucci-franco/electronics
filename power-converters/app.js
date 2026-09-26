@@ -107,8 +107,8 @@
   const states = {};
   const commutationModes = { buck: "synchronous", boost: "synchronous" };
   const bridgeMode = { application: "standalone", switching: "bipolar", direction: "forward", motorView: "transient", currentControl: "pwm" };
-  const rectifierMode = { montage: "single", view: "steady", diodes: "ideal", frequency: 50 };
-  const thyristorMode = { montage: "single", frequency: 50 };
+  const rectifierMode = { montage: "single", view: "steady", diodes: "ideal", frequency: 60 };
+  const thyristorMode = { montage: "single", frequency: 60 };
   const hiddenTraces = { buck: new Set(), boost: new Set(), "pont-h": new Set(), "pv-grid": new Set(models["pv-grid"]?.defaultHiddenTraces || []), redresseur: new Set(models.redresseur?.defaultHiddenTraces || []), thyristor: new Set(models.thyristor?.defaultHiddenTraces || []) };
   const zoomStates = {
     buck: { x: null, y: [null, null, null] },
@@ -952,7 +952,7 @@
   topologyDialog.addEventListener("click", (event) => { if (event.target === topologyDialog) topologyDialog.close(); });
   advancedButton.addEventListener("click", () => { advanced = !advanced; advancedButton.setAttribute("aria-pressed", String(advanced)); document.body.classList.toggle("advanced-mode", advanced); renderRectifierPanel(); renderControls(); renderCommutationSelector(); renderBridgeModePanel(); renderLegends(); update(); });
   // Configuration initiale du circuit courant (bouton ↺, et à chaque changement de circuit).
-  function resetCurrentTopology() { states[currentTopology] = { ...activeModel().defaults }; hiddenTraces[currentTopology] = new Set(activeModel().defaultHiddenTraces || []); resetZoom(); if (currentTopology in commutationModes) commutationModes[currentTopology] = "synchronous"; if (currentTopology === "pont-h") { bridgeMode.switching = "bipolar"; bridgeMode.direction = "forward"; bridgeMode.motorView = "transient"; bridgeMode.currentControl = "pwm"; } if (currentTopology === "redresseur") { rectifierMode.montage = "single"; rectifierMode.view = "steady"; rectifierMode.diodes = "ideal"; rectifierMode.frequency = 50; } if (currentTopology === "thyristor") { thyristorMode.montage = "single"; thyristorMode.frequency = 50; } if (typeof activeModel().resetInteractive === "function") activeModel().resetInteractive(); }
+  function resetCurrentTopology() { states[currentTopology] = { ...activeModel().defaults }; hiddenTraces[currentTopology] = new Set(activeModel().defaultHiddenTraces || []); resetZoom(); if (currentTopology in commutationModes) commutationModes[currentTopology] = "synchronous"; if (currentTopology === "pont-h") { bridgeMode.switching = "bipolar"; bridgeMode.direction = "forward"; bridgeMode.motorView = "transient"; bridgeMode.currentControl = "pwm"; } if (currentTopology === "redresseur") { rectifierMode.montage = "single"; rectifierMode.view = "steady"; rectifierMode.diodes = "ideal"; rectifierMode.frequency = 60; } if (currentTopology === "thyristor") { thyristorMode.montage = "single"; thyristorMode.frequency = 60; } if (typeof activeModel().resetInteractive === "function") activeModel().resetInteractive(); }
   document.querySelector("#reset").addEventListener("click", () => { resetCurrentTopology(); renderTopology(); });
   document.addEventListener("contextmenu", (event) => event.preventDefault());
   window.addEventListener("hashchange", () => { const requested = decodeURIComponent(window.location.hash.slice(1)); if (models[requested]) selectTopology(requested, false); else syncRoute(); });
