@@ -48,7 +48,6 @@ main { width: 100%; height: 100dvh; padding: clamp(8px, 1.2vw, 18px); }
 .kicker { margin: 0 0 4px; color: var(--teal); font-size: clamp(.86rem, .92vw, 1.02rem); font-weight: 850; letter-spacing: .11em; text-transform: uppercase; }
 h1, h2 { margin: 0; font-size: clamp(1.08rem, 1.35vw, 1.72rem); line-height: 1.08; letter-spacing: -.035em; }
 .topology-heading { display: flex; min-width: 0; flex-direction: column; align-items: flex-start; }
-.topology-kicker { margin: 0 0 3px 2px; color: var(--teal); font-size: clamp(.66rem, .7vw, .76rem); font-weight: 850; letter-spacing: .1em; text-transform: uppercase; }
 .topology-title { min-width: 0; max-width: 100%; }
 .topology-trigger { display: flex; min-width: 0; max-width: 100%; align-items: center; gap: 8px; border: 0; border-radius: 10px; padding: 2px 4px 3px 2px; background: transparent; color: var(--ink); cursor: pointer; font-size: clamp(1.08rem, 1.35vw, 1.72rem); font-weight: 800; letter-spacing: -.035em; line-height: 1.08; text-align: left; }
 .topology-trigger:hover { color: var(--teal); background: #0b93880a; }
