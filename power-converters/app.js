@@ -51,6 +51,21 @@
   const zoomSelection = document.querySelector("#zoom-selection");
   const diagram = document.querySelector(".circuit-diagram");
   const infoBand = document.querySelector(".lc-info");
+  // Bandeau d'infos défilant horizontalement (pont en H, PV sur écran peu haut) : la molette et le
+  // glissement vertical du pavé tactile le font avancer d'un bloc ; le glissement horizontal reste natif.
+  let infoWheelDelta = 0; let infoWheelLock = 0;
+  infoBand.addEventListener("wheel", (event) => {
+    if (infoBand.scrollWidth <= infoBand.clientWidth + 1 || Math.abs(event.deltaX) >= Math.abs(event.deltaY)) return;
+    event.preventDefault();
+    const now = performance.now(); if (now < infoWheelLock) return;
+    infoWheelDelta += event.deltaY;
+    if (Math.abs(infoWheelDelta) < 30) return;
+    const direction = Math.sign(infoWheelDelta); infoWheelDelta = 0; infoWheelLock = now + 220;
+    const left = infoBand.scrollLeft; const origin = infoBand.getBoundingClientRect().left - left;
+    const starts = [...infoBand.children].map((cell) => cell.getBoundingClientRect().left - origin);
+    const target = direction > 0 ? starts.find((x) => x > left + 2) : starts.reverse().find((x) => x < left - 2);
+    infoBand.scrollTo({ left: target ?? (direction > 0 ? infoBand.scrollWidth : 0), behavior: "smooth" });
+  }, { passive: false });
   const topSlots = [...document.querySelectorAll(".controls-top .control")];
   const bottomSlots = [...document.querySelectorAll(".controls-bottom .control")];
   const languageButtons = [...document.querySelectorAll("[data-lang]")];

@@ -389,10 +389,13 @@ body.dark-theme .topology-card[aria-disabled="true"] .topology-status { backgrou
   .commutation-selector button { min-height: 26px; padding-block: 2px; }
   /* Pont en H et PV (schéma le plus à l'étroit) : bandeau d'infos sur une seule rangée,
      deux blocs visibles, les suivants à droite (défilement horizontal, calé bloc par bloc). */
-  .circuit-panel:has(.bridge-schematic) .lc-info, .circuit-panel:has(.pv-scene) .lc-info { display: grid; height: auto; grid-auto-flow: column; grid-template-columns: none; grid-template-rows: auto; grid-auto-columns: 50%; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; }
+  .circuit-panel:has(.bridge-schematic) .lc-info, .circuit-panel:has(.pv-scene) .lc-info { display: grid; height: auto; grid-auto-flow: column; grid-template-columns: none; grid-template-rows: auto; grid-auto-columns: 50%; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x proximity; overscroll-behavior-x: contain; }
   .circuit-panel:has(.bridge-schematic) .lc-info > div, .circuit-panel:has(.pv-scene) .lc-info > div { scroll-snap-align: start; border-top: 0 !important; border-left: 1px solid #c9d9d5 !important; }
   .circuit-panel:has(.bridge-schematic) .lc-info > div:first-child, .circuit-panel:has(.pv-scene) .lc-info > div:first-child { border-left: 0 !important; }
   body.dark-theme .circuit-panel:has(.bridge-schematic) .lc-info > div, body.dark-theme .circuit-panel:has(.pv-scene) .lc-info > div { border-left-color: #27605b !important; }
+  /* PV : blocs à la largeur de leur contenu (les quatre tiennent souvent sans défiler) ; sinon on défile, fin toujours atteignable (proximity). */
+  .circuit-panel:has(.pv-scene) .lc-info { grid-auto-columns: minmax(max-content, 1fr); }
+  .circuit-panel:has(.pv-scene) .lc-info > div { padding-inline: 7px; }
 }
 
 @media (max-width: 1100px) {
