@@ -219,7 +219,8 @@
     const currentModel = activeModel();
     const values = { ...currentModel.defaults, ...(states[currentTopology] || {}) };
     const definitions = activeControls();
-    const twoByTwoLayout = !advanced && definitions.top.length === 4;
+    // 2 × 2 seulement pour quatre cartes réellement visibles (une carte « avancée » est masquée en mode simple).
+    const twoByTwoLayout = !advanced && definitions.top.filter((def) => !def.advanced).length === 4;
     topSlots[0].parentElement.classList.toggle("four-controls", twoByTwoLayout);
     const renderRow = (slots, rowDefinitions) => {
       slots.forEach((card, index) => {
@@ -234,6 +235,7 @@
         updateRange(input); bindControl(card, input); reserveOutputWidth(card, def);
       });
       slots[0].parentElement.hidden = !rowDefinitions.some((def) => !def.advanced || advanced);
+      slots[0].parentElement.dataset.count = String(rowDefinitions.filter((def) => !def.advanced || advanced).length);
     };
     renderRow(topSlots, definitions.top); renderRow(bottomSlots, definitions.bottom);
     inputs = [...document.querySelectorAll(".control input[data-key]")];
