@@ -8,7 +8,7 @@
       documentTitle: "Power Converter Simulator", metaDescription: "Interactive steady-state laboratory for power converters.", workspace: "Power converter simulator",
       changeTopology: "Change circuit", topologySelectorAria: "Choose a converter topology", topologyDialogKicker: "Power conversion laboratory", chooseTopology: "Choose a topology", closeTopology: "Close topology selector", comingSoon: "Coming soon",
       languageSelector: "Language", themeDark: "Switch to dark theme", themeLight: "Switch to light theme", advanced: "Advanced", reset: "Reset", upperSettings: "Upper controls", lowerSettings: "Lower controls", commutation: "Switching", commutationAria: "Choose the switching implementation", synchronousSwitch: "Synchronous", switchAndDiode: "Switch + diode", hideTrace: "Hide trace", showTrace: "Show trace",
-      legend: "Legend", advancedLegend: "Advanced legend", scopeAria: "Steady-state converter waveforms", zoomAria: "Drag with the left button to zoom and with the right button to pan. Double-click or double-tap to reset the zoom.", mean: "Average", ripple: "Peak-to-peak ripple", period: "Period", currentAverage: "Average current", currentRipple: "Current ripple", currentRange: "Current range", currentRms: "RMS current", voltageRms: "Fundamental RMS voltage", phaseShift: "Phase shift", switchingRatio: "Switching ratio",
+      legend: "Legend", advancedLegend: "Advanced legend", scopeAria: "Steady-state converter waveforms", zoomAria: "Drag with the left button to zoom and with the right button to pan. Double-click or double-tap to reset the zoom. On a touch screen, swipe horizontally to zoom in time, or press and hold, then drag.", mean: "Average", ripple: "Peak-to-peak ripple", period: "Period", currentAverage: "Average current", currentRipple: "Current ripple", currentRange: "Current range", currentRms: "RMS current", voltageRms: "Fundamental RMS voltage", phaseShift: "Phase shift", switchingRatio: "Switching ratio",
       outputVoltage: "Output voltage", conductionMode: "Conduction mode", minimumCurrent: "Minimum current", fundamentalFrequency: "Fundamental frequency", formula: "Formula", ratio: "Ratio", resonanceFrequency: "LC circuit resonant frequency", conversionLaw: "Conversion law", conversionLawCcm: "Conversion law · CCM", voltages: "Voltages", lcFilter: "LC filter", ripples: "Ripples",
       theoryButtonAria: "Open more information", theoryOpen: "More info", theoryKicker: "Electrical analysis", theoryTitle: "Steady state", closeTheory: "Close", balanceTitle: "Balances", numericalResidual: "Numerical residual", rippleTheoryTitle: "Ripple approximation", fundamentalTitle: "Fundamental component", loadTitle: "Series R–L load", simulation: "Simulation", approximation: "Approximation", relativeError: "Relative error", loadType: "Load", seriesRl: "Series resistance and inductance", criticalInductanceRatio: "Critical inductance ratio",
       approximationNote: "These approximations assume low ripple and a switching frequency well above the natural dynamics.", synchronousNote: "The synchronous switch always provides a current path; negative inductor current is therefore possible.", diodeNote: "The diode blocks reverse current, so the model can enter CCM or DCM. v<sub>D</sub> is measured from anode to cathode; ripple formulas are CCM estimates.", hBridgeNote: "The bridge is modeled with ideal complementary switches.", schematicPending: "Circuit SVG placeholder", schematicTomorrow: "The simulation is active. The final circuit drawing can be inserted here without changing the model.", time: "Time", voltage: "voltage", currentAxis: "current",
@@ -20,7 +20,7 @@
       documentTitle: "Simulateur de convertisseurs", metaDescription: "Laboratoire interactif de convertisseurs de puissance en régime permanent.", workspace: "Simulateur de convertisseurs de puissance",
       changeTopology: "Changer de circuit", topologySelectorAria: "Choisir une topologie de convertisseur", topologyDialogKicker: "Laboratoire de conversion", chooseTopology: "Choisir une topologie", closeTopology: "Fermer le sélecteur de topologie", comingSoon: "Bientôt disponible",
       languageSelector: "Langue", themeDark: "Activer le thème sombre", themeLight: "Activer le thème clair", advanced: "Avancé", reset: "Réinitialiser", upperSettings: "Réglages supérieurs", lowerSettings: "Réglages inférieurs", commutation: "Commutation", commutationAria: "Choisir la réalisation de la commutation", synchronousSwitch: "Synchrone", switchAndDiode: "Interrupteur + diode", hideTrace: "Masquer la trace", showTrace: "Afficher la trace",
-      legend: "Légende", advancedLegend: "Légende avancée", scopeAria: "Formes d’onde du convertisseur en régime permanent", zoomAria: "Faites glisser avec le bouton gauche pour zoomer et avec le bouton droit pour déplacer la vue. Double-cliquez ou touchez deux fois pour réinitialiser le zoom.", mean: "Moyenne", ripple: "Ondulation crête à crête", period: "Période", currentAverage: "Courant moyen", currentRipple: "Ondulation du courant", currentRange: "Plage du courant", currentRms: "Courant efficace", voltageRms: "Tension fondamentale efficace", phaseShift: "Déphasage", switchingRatio: "Rapport de fréquences",
+      legend: "Légende", advancedLegend: "Légende avancée", scopeAria: "Formes d’onde du convertisseur en régime permanent", zoomAria: "Faites glisser avec le bouton gauche pour zoomer et avec le bouton droit pour déplacer la vue. Double-cliquez ou touchez deux fois pour réinitialiser le zoom. Sur écran tactile, glissez horizontalement pour zoomer sur le temps, ou maintenez le doigt appuyé puis glissez.", mean: "Moyenne", ripple: "Ondulation crête à crête", period: "Période", currentAverage: "Courant moyen", currentRipple: "Ondulation du courant", currentRange: "Plage du courant", currentRms: "Courant efficace", voltageRms: "Tension fondamentale efficace", phaseShift: "Déphasage", switchingRatio: "Rapport de fréquences",
       outputVoltage: "Tension de sortie", conductionMode: "Mode de conduction", minimumCurrent: "Courant minimal", fundamentalFrequency: "Fréquence fondamentale", formula: "Formule", ratio: "Rapport", resonanceFrequency: "Fréquence de résonance du circuit LC", conversionLaw: "Loi de conversion", conversionLawCcm: "Loi de conversion · CCM", voltages: "Tensions", lcFilter: "Filtre LC", ripples: "Ondulations",
       theoryButtonAria: "Ouvrir les informations complémentaires", theoryOpen: "Plus d’infos", theoryKicker: "Analyse électrique", theoryTitle: "Régime permanent", closeTheory: "Fermer", balanceTitle: "Équilibres", numericalResidual: "Résidu numérique", rippleTheoryTitle: "Approximation des ondulations", fundamentalTitle: "Composante fondamentale", loadTitle: "Charge R–L série", simulation: "Simulation", approximation: "Approximation", relativeError: "Écart relatif", loadType: "Charge", seriesRl: "Résistance et inductance en série", criticalInductanceRatio: "Rapport d’inductance critique",
       approximationNote: "Ces approximations supposent une faible ondulation et une fréquence de découpage nettement supérieure à la dynamique naturelle.", synchronousNote: "L’interrupteur synchrone offre toujours un chemin au courant ; le courant de l’inductance peut donc devenir négatif.", diodeNote: "La diode bloque le courant inverse : le modèle peut être en CCM ou DCM. v<sub>D</sub> est mesurée de l’anode vers la cathode ; les formules d’ondulation sont des estimations CCM.", hBridgeNote: "Le pont est modélisé avec des interrupteurs complémentaires idéaux.", schematicPending: "Emplacement du SVG du circuit", schematicTomorrow: "La simulation est active. Le dessin définitif pourra être inséré ici sans modifier le modèle.", time: "Temps", voltage: "tension", currentAxis: "courant",
@@ -32,7 +32,7 @@
       documentTitle: "Simulador de convertidores", metaDescription: "Laboratorio interactivo de convertidores de potencia en régimen permanente.", workspace: "Simulador de convertidores de potencia",
       changeTopology: "Cambiar de circuito", topologySelectorAria: "Elegir una topología de convertidor", topologyDialogKicker: "Laboratorio de conversión", chooseTopology: "Elegir una topología", closeTopology: "Cerrar el selector de topología", comingSoon: "Próximamente",
       languageSelector: "Idioma", themeDark: "Activar el tema oscuro", themeLight: "Activar el tema claro", advanced: "Avanzado", reset: "Reinicializar", upperSettings: "Controles superiores", lowerSettings: "Controles inferiores", commutation: "Conmutación", commutationAria: "Elegir la implementación de la conmutación", synchronousSwitch: "Síncrono", switchAndDiode: "Interruptor + diodo", hideTrace: "Ocultar traza", showTrace: "Mostrar traza",
-      legend: "Leyenda", advancedLegend: "Leyenda avanzada", scopeAria: "Formas de onda del convertidor en régimen permanente", zoomAria: "Arrastre con el botón izquierdo para ampliar y con el derecho para desplazar la vista. Haga doble clic o toque dos veces para restablecer el zoom.", mean: "Promedio", ripple: "Ondulación pico a pico", period: "Período", currentAverage: "Corriente media", currentRipple: "Ondulación de corriente", currentRange: "Rango de corriente", currentRms: "Corriente eficaz", voltageRms: "Tensión fundamental eficaz", phaseShift: "Desfase", switchingRatio: "Relación de frecuencias",
+      legend: "Leyenda", advancedLegend: "Leyenda avanzada", scopeAria: "Formas de onda del convertidor en régimen permanente", zoomAria: "Arrastre con el botón izquierdo para ampliar y con el derecho para desplazar la vista. Haga doble clic o toque dos veces para restablecer el zoom. En pantalla táctil, deslice horizontalmente para ampliar el tiempo, o mantenga pulsado y luego deslice.", mean: "Promedio", ripple: "Ondulación pico a pico", period: "Período", currentAverage: "Corriente media", currentRipple: "Ondulación de corriente", currentRange: "Rango de corriente", currentRms: "Corriente eficaz", voltageRms: "Tensión fundamental eficaz", phaseShift: "Desfase", switchingRatio: "Relación de frecuencias",
       outputVoltage: "Tensión de salida", conductionMode: "Modo de conducción", minimumCurrent: "Corriente mínima", fundamentalFrequency: "Frecuencia fundamental", formula: "Fórmula", ratio: "Relación", resonanceFrequency: "Frecuencia de resonancia del circuito LC", conversionLaw: "Ley de conversión", conversionLawCcm: "Ley de conversión · CCM", voltages: "Tensiones", lcFilter: "Filtro LC", ripples: "Ondulaciones",
       theoryButtonAria: "Abrir más información", theoryOpen: "Más info", theoryKicker: "Análisis eléctrico", theoryTitle: "Régimen permanente", closeTheory: "Cerrar", balanceTitle: "Equilibrios", numericalResidual: "Residuo numérico", rippleTheoryTitle: "Aproximación de las ondulaciones", fundamentalTitle: "Componente fundamental", loadTitle: "Carga R–L serie", simulation: "Simulación", approximation: "Aproximación", relativeError: "Error relativo", loadType: "Carga", seriesRl: "Resistencia e inductancia en serie", criticalInductanceRatio: "Relación de inductancia crítica",
       approximationNote: "Estas aproximaciones suponen una ondulación pequeña y una frecuencia de conmutación muy superior a la dinámica natural.", synchronousNote: "El interruptor síncrono siempre ofrece un camino para la corriente; por eso la corriente de la inductancia puede hacerse negativa.", diodeNote: "El diodo bloquea la corriente inversa: el modelo puede estar en CCM o DCM. v<sub>D</sub> se mide del ánodo al cátodo; las fórmulas de ondulación son estimaciones CCM.", hBridgeNote: "El puente se modela con interruptores complementarios ideales.", schematicPending: "Espacio para el SVG del circuito", schematicTomorrow: "La simulación está activa. El dibujo definitivo podrá insertarse aquí sin modificar el modelo.", time: "Tiempo", voltage: "tensión", currentAxis: "corriente",
@@ -120,6 +120,8 @@
   };
   const ZOOM_BAND = 12;
   const ZOOM_MIN_DRAG = 8;
+  // Mise en page empilée (téléphone, tablette) : même seuil que la feuille de style.
+  const compactScreen = window.matchMedia("(max-width: 1100px)");
   let inputs = [];
   let language = "fr";
   let number = new Intl.NumberFormat(locales.fr, { maximumFractionDigits: 2 });
@@ -251,6 +253,8 @@
       });
       slots[0].parentElement.hidden = !rowDefinitions.some((def) => !def.advanced || advanced);
       slots[0].parentElement.dataset.count = String(rowDefinitions.filter((def) => !def.advanced || advanced).length);
+      // Dernière carte visible : seule sur sa ligne quand la grille (téléphone) a deux colonnes et que le compte est impair.
+      const visibleCards = slots.filter((card) => !card.hidden); slots.forEach((card) => card.classList.toggle("row-last", card === visibleCards.at(-1)));
     };
     renderRow(topSlots, definitions.top); renderRow(bottomSlots, definitions.bottom);
     inputs = [...document.querySelectorAll(".control input[data-key]")];
@@ -627,10 +631,15 @@
     const groups = activePlotGroups(); const axes = activeAxes(); const hasRightAxis = groups.some((group) => group.some((trace) => trace.axis === "right")); const hasSpeedAxis = axes.some((axis) => axis.unit === "tr/min"); const axisInteger = new Intl.NumberFormat(locales[language], { maximumFractionDigits: 0 }); const axisOneDecimal = new Intl.NumberFormat(locales[language], { maximumFractionDigits: 1 }); const axisValue = (value, unit) => unit === "tr/min" || Math.abs(value) >= 100 ? axisInteger.format(value) : Math.abs(value) >= 10 ? axisOneDecimal.format(value) : number.format(value);
     const hasRightAxisLabel = axes.some((axis) => axis.rightLabel && !axis.hideRightAxis);
     const hasAxisMarks = typeof activeModel().axisMarksFor === "function";
-    const left = width < 520 ? (hasSpeedAxis ? 72 : 64) : (hasSpeedAxis ? 84 : 78); const right = hasRightAxis ? (width < 520 ? 64 : hasRightAxisLabel ? 96 : 74) : hasAxisMarks ? (width < 520 ? 58 : 68) : 17; const top = 46; const bottom = currentTopology === "redresseur" ? 50 : currentTopology === "thyristor" ? 48 : 36; const gap = groups.length > 1 ? 54 : 0; const plotHeight = groups.length > 1 ? Math.max(72, (height - top - bottom - gap * (groups.length - 1)) / groups.length) : height - top - bottom; const plotWidth = width - left - right; const duration = points.at(-1).t;
+    const left = width < 520 ? (hasSpeedAxis ? 72 : 64) : (hasSpeedAxis ? 84 : 78); const right = hasRightAxis ? (width < 520 ? 64 : hasRightAxisLabel ? 96 : 74) : hasAxisMarks ? (width < 520 ? 58 : 68) : 17; const top = 46; const bottom = currentTopology === "redresseur" ? 50 : currentTopology === "thyristor" ? 48 : 36; const gap = groups.length > 1 ? 54 : 0; const mixedHorizontalAxes = axes.some((axis) => axis.xKey);
+    // Écrans étroits (téléphone) : la légende du tracé suivant est à gauche et le titre d'axe x centré ;
+    // sur un canevas étroit ils se chevauchent, d'où un intervalle plus grand sous un axe x intermédiaire.
+    const gaps = groups.slice(0, -1).map((_, index) => gap + (mixedHorizontalAxes && axes[index]?.showXLabels && compactScreen.matches ? 24 : 0));
+    const gapTotal = gaps.reduce((sum, value) => sum + value, 0);
+    const plotHeight = groups.length > 1 ? Math.max(72, (height - top - bottom - gapTotal) / groups.length) : height - top - bottom; const plotWidth = width - left - right; const duration = points.at(-1).t;
     const zoom = activeZoom(); const xMinFraction = zoom.x?.min ?? 0; const xMaxFraction = zoom.x?.max ?? 1; const xMinTime = duration * xMinFraction; const xMaxTime = duration * xMaxFraction;
     const xAt = (time) => left + (time - xMinTime) / (xMaxTime - xMinTime) * plotWidth;
-    const tops = groups.map((_, index) => top + index * (plotHeight + gap));
+    const tops = groups.map((_, index) => top + index * plotHeight + gaps.slice(0, index).reduce((sum, value) => sum + value, 0));
     // Round tick values (1/2/2.5/5 × 10^n steps) covering the axis range.
     const axisTicks = (minValue, maxValue) => {
       const span = maxValue - minValue;
@@ -688,7 +697,6 @@
       ctx.restore(); ctx.textAlign = "center"; ctx.fillStyle = color("--scope-text");
       ctx.fillText(`${localize(axis.xLabel)}${axis.xUnit ? ` (${axis.xUnit})` : ""}`, left + plotWidth / 2, plotTop + plotHeight + 33);
     };
-    const mixedHorizontalAxes = axes.some((axis) => axis.xKey);
     const plotLayouts = [];
     groups.forEach((traces, groupIndex) => {
       const axis = axes[groupIndex] || {}; const plotTop = tops[groupIndex]; const visibleTraces = traces.filter(traceIsVisible); const hasVisibleTrace = visibleTraces.some((item) => !item.ghost);
@@ -762,7 +770,9 @@
     } else if (!mixedHorizontalAxes) { ctx.textAlign = "center"; ctx.fillText(tr().time, left + plotWidth / 2, plotBottom + 25); }
     const labelInset = width < 520 ? 12 : 24;
     const axisLabel = (value) => value ? value.charAt(0).toUpperCase() + value.slice(1) : value;
-    groups.forEach((_, index) => { ctx.save(); ctx.translate(labelInset, tops[index] + plotHeight / 2); ctx.rotate(-Math.PI / 2); ctx.fillStyle = axes[index].tint ? color(axes[index].tint) : index === 1 ? color("--trace-vl") : index === 2 ? color("--trace-il") : color("--scope-text"); ctx.fillText(`${axisLabel(axes[index].label)} (${axes[index].unit})`, 0, 0); ctx.restore(); if (axes[index].rightLabel && !axes[index].hideRightAxis) { ctx.save(); ctx.translate(width - labelInset, tops[index] + plotHeight / 2); ctx.rotate(Math.PI / 2); ctx.fillStyle = color(groups[index].filter((item) => item.axis === "right").at(-1)?.color || "--trace-vr"); ctx.fillText(`${axisLabel(axes[index].rightLabel)} (${axes[index].rightUnit})`, 0, 0); ctx.restore(); } });
+    // Titre vertical plus long que le tracé (tracés bas sur téléphone) : police réduite pour qu'il tienne.
+    const fitAxisTitle = (label) => { if (!compactScreen.matches) return; const room = plotHeight + gap - 8; const measured = ctx.measureText(label).width; if (measured > room) ctx.font = `500 ${Math.max(10, Math.floor(15 * room / measured))}px Inter, "Segoe UI", Arial, sans-serif`; };
+    groups.forEach((_, index) => { const leftTitle = `${axisLabel(axes[index].label)} (${axes[index].unit})`; ctx.save(); fitAxisTitle(leftTitle); ctx.translate(labelInset, tops[index] + plotHeight / 2); ctx.rotate(-Math.PI / 2); ctx.fillStyle = axes[index].tint ? color(axes[index].tint) : index === 1 ? color("--trace-vl") : index === 2 ? color("--trace-il") : color("--scope-text"); ctx.fillText(leftTitle, 0, 0); ctx.restore(); if (axes[index].rightLabel && !axes[index].hideRightAxis) { const rightTitle = `${axisLabel(axes[index].rightLabel)} (${axes[index].rightUnit})`; ctx.save(); fitAxisTitle(rightTitle); ctx.translate(width - labelInset, tops[index] + plotHeight / 2); ctx.rotate(Math.PI / 2); ctx.fillStyle = color(groups[index].filter((item) => item.axis === "right").at(-1)?.color || "--trace-vr"); ctx.fillText(rightTitle, 0, 0); ctx.restore(); } });
   }
 
   let modelUpdateQueued = false;
@@ -817,10 +827,31 @@
     if (currentPoints.length) draw(currentPoints);
   }
 
+  // Écran tactile : un doigt fait défiler la page (touch-action: pan-y). Le zoom démarre
+  // par un glissement horizontal (zoom en x) ou par un appui long suivi d'un glissement
+  // (zoom libre) ; le toucher double réinitialise toujours la vue.
+  let touchPending = null;
+  const TOUCH_HOLD_DELAY = 350;
+  const cancelTouchPending = () => { if (touchPending) clearTimeout(touchPending.timer); touchPending = null; };
+  const startTouchZoom = () => {
+    if (!touchPending) return;
+    const { pointerId, groupIndex, x0, y0, x1, y1 } = touchPending; cancelTouchPending();
+    zoomDrag = { pointerId, groupIndex, x0, y0, x1, y1 };
+    try { canvas.setPointerCapture(pointerId); } catch (_error) {}
+    updateZoomSelection();
+  };
+  // Une fois le zoom engagé, le navigateur ne doit plus reprendre le geste pour défiler.
+  canvas.addEventListener("touchmove", (event) => { if (zoomDrag && event.cancelable) event.preventDefault(); }, { passive: false });
   canvas.addEventListener("pointerdown", (event) => {
     if (!plotView) return;
     const point = canvasPoint(event); const plot = plotAtPosition(point.x, point.y);
     if (!plot) return;
+    if (event.pointerType === "touch") {
+      cancelTouchPending();
+      touchPending = { pointerId: event.pointerId, groupIndex: plot.groupIndex, x0: point.x, y0: point.y, x1: point.x, y1: point.y };
+      touchPending.timer = setTimeout(() => { if (touchPending && Math.hypot(touchPending.x1 - touchPending.x0, touchPending.y1 - touchPending.y0) < ZOOM_MIN_DRAG) startTouchZoom(); }, TOUCH_HOLD_DELAY);
+      return;
+    }
       if (event.button === 2) {
         const zoom = activeZoom();
         panDrag = {
@@ -841,6 +872,13 @@
     try { canvas.setPointerCapture(event.pointerId); } catch (_error) {}
   });
   canvas.addEventListener("pointermove", (event) => {
+    if (touchPending && touchPending.pointerId === event.pointerId) {
+      const point = canvasPoint(event); touchPending.x1 = point.x; touchPending.y1 = point.y;
+      const dx = Math.abs(point.x - touchPending.x0); const dy = Math.abs(point.y - touchPending.y0);
+      if (dx >= ZOOM_MIN_DRAG && dx > 2 * dy) startTouchZoom();
+      else if (dy >= ZOOM_MIN_DRAG) cancelTouchPending();
+      return;
+    }
     if (panDrag && panDrag.pointerId === event.pointerId) {
       const point = canvasPoint(event); const zoom = activeZoom();
       if (!panDrag.independentX) {
@@ -865,7 +903,8 @@
       try { canvas.releasePointerCapture(event.pointerId); } catch (_error) {}
       return;
     }
-    const drag = zoomDrag; const point = canvasPoint(event); const moved = drag ? Math.hypot(point.x - drag.x0, point.y - drag.y0) >= ZOOM_MIN_DRAG : true;
+    const pending = touchPending && touchPending.pointerId === event.pointerId ? touchPending : null; if (pending) cancelTouchPending();
+    const drag = zoomDrag || pending; const point = canvasPoint(event); const moved = drag ? Math.hypot(point.x - drag.x0, point.y - drag.y0) >= ZOOM_MIN_DRAG : true;
     finishZoom(event);
     if (!moved) {
       const now = performance.now();
@@ -874,6 +913,7 @@
     }
   });
   canvas.addEventListener("pointercancel", (event) => {
+    if (touchPending && touchPending.pointerId === event.pointerId) { cancelTouchPending(); return; }
     if (panDrag && panDrag.pointerId === event.pointerId) { panDrag = null; canvas.classList.remove("panning"); return; }
     finishZoom(event, true);
   });

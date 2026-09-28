@@ -29,7 +29,7 @@ Le pont en H propose trois applications :
 
 Le mode avancé affiche les trois sous-graphes et les paramètres complémentaires. Les légendes sont cliquables pour masquer ou réafficher chaque trace.
 
-Dans l’oscilloscope, faites glisser avec le bouton gauche horizontalement, verticalement ou en diagonale pour zoomer sur le temps, sur l’axe vertical du sous-graphe choisi, ou sur les deux axes. Faites glisser avec le bouton droit pour déplacer la vue agrandie. Un double-clic ou un double toucher rétablit la vue complète.
+Dans l’oscilloscope, faites glisser avec le bouton gauche horizontalement, verticalement ou en diagonale pour zoomer sur le temps, sur l’axe vertical du sous-graphe choisi, ou sur les deux axes. Faites glisser avec le bouton droit pour déplacer la vue agrandie. Un double-clic ou un double toucher rétablit la vue complète. Sur écran tactile, un doigt fait défiler la page : on zoome sur le temps en glissant horizontalement, ou sur n’importe quel axe après un appui long (≈ 0,35 s) suivi d’un glissement. Dans la scène PV, la page défile aussi, sauf si le doigt se pose sur le soleil, un nuage ou le panneau ; dans les courbes I–V et P–V, un toucher choisit la tension et le point de fonctionnement se fait glisser.
 
 Dans l’application réseau du pont en H, la commande du courant peut utiliser une PWM à fréquence fixe ou un comparateur à hystérésis. Dans ce second cas, la demi-bande est réglable et la fréquence de commutation devient variable.
 
