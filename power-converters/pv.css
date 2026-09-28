@@ -66,6 +66,9 @@ body.dark-theme .pv-mode-toggle button[aria-pressed="true"] { background: var(--
   /* Mise en page empilée : cadre assez haut pour que la scène (1000 × 520, calée en bas) tienne
      en largeur et laisse au-dessus une bande de ciel pour les réglages (nuages, lecture) ;
      sinon le curseur des nuages cache le soleil et les nuages. */
+  /* Mise en page empilée : curseurs sous la scène, comme pour les autres topologies (styles.css). */
+  .circuit-content:has(.pv-scene) .controls-top { order: 1; }
+  .circuit-content:has(.pv-scene) .controls-bottom { order: 2; }
   .circuit-panel:has(.pv-scene) .circuit-diagram { height: min(calc((100vw - 42px) * .52 + 84px), 640px); }
 }
 @media (max-width: 600px) {
