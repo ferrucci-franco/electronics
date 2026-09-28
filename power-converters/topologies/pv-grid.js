@@ -442,6 +442,10 @@
     el.playButton.addEventListener("click", () => { setPlaying(!scene.playing); });
 
     const dragState = { mode: null, cloudIndex: -1, pointerId: null };
+    // Écran tactile : la scène laisse défiler la page (touch-action: pan-y), sauf quand le
+    // doigt se pose sur le soleil, un nuage ou le panneau, qu'on fait alors glisser.
+    const isDraggable = (target) => target === el.sunHit || el.sun.contains(target) || el.panelRot.contains(target) || el.clouds.some((cloud) => cloud.contains(target));
+    svg.addEventListener("touchstart", (event) => { if (event.cancelable && isDraggable(event.target)) event.preventDefault(); }, { passive: false });
     svg.addEventListener("pointerdown", (event) => {
       const target = event.target;
       if (target === el.sunHit || el.sun.contains(target)) { dragState.mode = "sun"; setPlaying(false); el.sun.classList.add("pv-dragging"); }
@@ -619,7 +623,16 @@
       const fraction = clamp((x - plot.x) / plot.width, 0, 1);
       return fraction * curves.layout.vMax;
     };
-    curves.canvas.addEventListener("pointerdown", (event) => {
+    // Écran tactile : un doigt fait défiler la page ; on reprend la main si le doigt se pose
+    // sur le point de fonctionnement, glisse horizontalement, ou tape (tension choisie au toucher).
+    const nearOperatingPoint = (event) => {
+      if (!curves.layout) return false;
+      const rect = curves.canvas.getBoundingClientRect();
+      const x = event.clientX - rect.left; const y = event.clientY - rect.top;
+      return curves.layout.plots.some((plot) => Number.isFinite(plot.opX) && Math.hypot(x - plot.opX, y - plot.opY) < 28);
+    };
+    let touchPending = null;
+    const startCurveDrag = (event) => {
       const voltage = pickVoltage(event);
       if (voltage === null) return;
       curves.dragging = true;
@@ -630,8 +643,20 @@
       event.preventDefault();
       try { curves.canvas.setPointerCapture(event.pointerId); } catch (_error) {}
       if (requestUpdate) requestUpdate();
+    };
+    curves.canvas.addEventListener("touchstart", (event) => { if (event.cancelable && event.touches.length === 1 && nearOperatingPoint(event.touches[0])) event.preventDefault(); }, { passive: false });
+    curves.canvas.addEventListener("touchmove", (event) => { if (curves.dragging && event.cancelable) event.preventDefault(); }, { passive: false });
+    curves.canvas.addEventListener("pointerdown", (event) => {
+      if (event.pointerType === "touch" && !nearOperatingPoint(event)) { touchPending = { pointerId: event.pointerId, x0: event.clientX, y0: event.clientY }; return; }
+      startCurveDrag(event);
     });
     curves.canvas.addEventListener("pointermove", (event) => {
+      if (touchPending && touchPending.pointerId === event.pointerId) {
+        const dx = Math.abs(event.clientX - touchPending.x0); const dy = Math.abs(event.clientY - touchPending.y0);
+        if (dx >= 8 && dx > 2 * dy) { touchPending = null; startCurveDrag(event); }
+        else if (dy >= 8) touchPending = null;
+        return;
+      }
       if (!curves.dragging) {
         if (!curves.layout) return;
         const rect = curves.canvas.getBoundingClientRect();
@@ -647,8 +672,12 @@
       if (requestUpdate) requestUpdate();
     });
     const endCurveDrag = () => { curves.dragging = false; curves.canvas.style.cursor = "crosshair"; };
-    curves.canvas.addEventListener("pointerup", endCurveDrag);
-    curves.canvas.addEventListener("pointercancel", endCurveDrag);
+    curves.canvas.addEventListener("pointerup", (event) => {
+      // Toucher bref sans glisser : la tension est choisie à l'endroit touché.
+      if (touchPending && touchPending.pointerId === event.pointerId) { touchPending = null; startCurveDrag(event); }
+      endCurveDrag();
+    });
+    curves.canvas.addEventListener("pointercancel", () => { touchPending = null; endCurveDrag(); });
     if (curves.observer) curves.observer.disconnect();
     if ("ResizeObserver" in window) {
       curves.observer = new ResizeObserver(() => drawCurves());

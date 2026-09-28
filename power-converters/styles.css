@@ -158,6 +158,10 @@ input[type="range"]::-moz-range-thumb { width: 15px; height: 15px; border: 3px s
 .circuit-diagram.has-mode-title .bridge-schematic { grid-row: 2; }
 .bridge-schematic { display: block; max-width: 100%; max-height: 100%; }
 .schematic-frame { position: relative; width: min(96%, 920px); aspect-ratio: 63.199951 / 21.965773; max-height: 94%; container-type: inline-size; }
+/* Cadre peu haut (paysage de téléphone, fenêtre basse) : max-height seul coupait le schéma en
+   haut et en bas ; la largeur est aussi bornée par la hauteur disponible (94 % × rapport). */
+.circuit-diagram:has(> .schematic-frame) { container-type: size; }
+.circuit-diagram > .schematic-frame { width: min(96cqw, 920px, 94cqh * 63.199951 / 21.965773); }
 .converter-schematic { display: block; width: 100%; height: 100%; user-select: none; }
 .schematic-vin-value { position: absolute; top: 69%; left: 5.5%; color: #000000; font-family: "Cambria Math", Cambria, serif; font-size: clamp(15px, 1.8vw, 29px); font-size: 4.6cqw; font-weight: 400; line-height: 1.2; white-space: nowrap; transform: translateX(-50%); }
 .schematic-placeholder { display: flex; width: min(78%, 560px); min-height: 54%; flex-direction: column; align-items: center; justify-content: center; border: 2px dashed #8eb6b0; border-radius: 18px; padding: 22px; background: #edf7f47a; text-align: center; }
@@ -215,7 +219,8 @@ body.dark-theme .lc-info::-webkit-scrollbar-thumb { background: #55d2c6a6 paddin
 .legend-ic i { background: repeating-linear-gradient(90deg, var(--trace-ic) 0 7px, transparent 7px 11px); }
 .legend-iout i { background: var(--trace-iout); }
 [hidden] { display: none !important; }
-#scope { display: block; width: 100%; height: 100%; cursor: crosshair; touch-action: none; }
+/* Tactile : un doigt fait défiler la page ; le zoom passe par un glissement horizontal ou un appui long (app.js). */
+#scope { display: block; width: 100%; height: 100%; cursor: crosshair; touch-action: pan-y pinch-zoom; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 #scope.panning { cursor: grabbing; }
 #zoom-selection { position: absolute; z-index: 1; border: 1.5px dashed var(--zoom-stroke); background: var(--zoom-fill); pointer-events: none; }
 .measurements { display: grid; flex: 0 0 auto; grid-template-columns: repeat(3, 1fr); height: clamp(64px, 8.5vh, 82px); margin: 8px clamp(12px, 1.2vw, 20px) clamp(10px, 1.3vh, 17px); border: 1px solid var(--scope-border); border-radius: 12px; background: #f8faf9; }
@@ -434,6 +439,9 @@ body.dark-theme .topology-card[aria-disabled="true"] .topology-status { backgrou
   h1 { text-align: center; font-size: clamp(1.3rem, 6vw, 1.65rem); }
   .header-actions { flex-wrap: nowrap; justify-content: center; gap: 4px; }
   #language-trigger { min-height: 40px; height: 40px; padding-inline: 9px; }
+  /* Le bouton de langue est le premier de la rangée centrée : le menu s'ouvre vers la droite
+     (aligné à droite, il sortait de l'écran à gauche et masquait EN). */
+  .language-menu { right: auto; left: 0; }
   #theme-toggle, #advanced-toggle, #theory-trigger, #reset, .topology-trigger { min-height: 40px; height: 40px; }
   #theme-toggle { width: 38px; }
   #advanced-toggle, #theory-trigger, #reset { padding-inline: 8px; font-size: .75rem; }
@@ -441,8 +449,10 @@ body.dark-theme .topology-card[aria-disabled="true"] .topology-status { backgrou
   .controls-top, .controls-bottom,
   .advanced-mode .controls-top, .advanced-mode .controls-bottom,
   .controls-top.four-controls, .advanced-mode .controls-top.four-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); padding-inline: 0; }
-  .advanced-mode .advanced-control { grid-column: 1 / -1; width: calc(50% - 4px); justify-self: center; }
-  .advanced-mode .control input[type="range"] { width: 86%; }
+  /* Nombre impair de cartes : la dernière, seule sur sa ligne, prend toute la largeur,
+     et son curseur aussi (comme en mode simple). */
+  .controls-row:is([data-count="1"], [data-count="3"], [data-count="5"]) .control.row-last { grid-column: 1 / -1; }
+  .advanced-mode .control input[type="range"] { width: 100%; }
   .commutation-selector { flex-wrap: wrap; gap: 5px 9px; }
   .commutation-selector button { min-height: 34px; padding-inline: 11px; }
   .bridge-mode-panel { gap: 6px 10px; }
@@ -456,6 +466,8 @@ body.dark-theme .topology-card[aria-disabled="true"] .topology-status { backgrou
   body.dark-theme .lc-info > div + div { border-top-color: #27605b; }
   .scope-screen { height: 440px; margin: 8px 8px 0; }
   .advanced-mode .scope-screen { height: 760px; }
+  /* Commande de puissance : trois tracés, dont un à axe x propre ; un peu plus de hauteur. */
+  body:not(.advanced-mode) .workspace:has(.thy-schematic) .scope-screen { height: 540px; }
   .legend { left: 58px; gap: 10px; font-size: .92rem; }
   .legend i { width: 15px; }
   .measurements { grid-template-columns: 1fr; height: auto; margin: 8px; }
@@ -512,13 +524,17 @@ body.dark-theme #rectifier-panel .bridge-mode-group .frequency-toggle { color: #
 
 @media (max-width: 600px) {
   .advanced-mode[data-topology="thyristor"] .control { padding-inline: 11px; }
+  /* Téléphone : deux colonnes fixes (pas d'auto-fit), la carte impaire s'étale sur la ligne. */
+  .circuit-content:has(.rect-schematic) .controls-top,
+  .circuit-content:has(.rect-schematic) .controls-bottom,
+  .circuit-content:has(.thy-schematic) .controls-top,
+  .circuit-content:has(.thy-schematic) .controls-bottom { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 400px) {
   .controls-top, .controls-bottom,
   .advanced-mode .controls-top, .advanced-mode .controls-bottom,
   .controls-top.four-controls, .advanced-mode .controls-top.four-controls { grid-template-columns: 1fr; }
-  .advanced-mode .advanced-control { width: 100%; }
   .commutation-selector { flex-direction: column; }
   .bridge-mode-panel, .bridge-mode-group { flex-direction: column; }
   .control { min-height: 86px; height: auto; }
