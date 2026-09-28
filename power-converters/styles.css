@@ -426,6 +426,8 @@ body.dark-theme .topology-card[aria-disabled="true"] .topology-status { backgrou
   input[type="range"]::-moz-range-thumb { width: 22px; height: 22px; }
   .circuit-diagram { flex: none; height: clamp(310px, 46vw, 430px); }
   .lc-info { height: 116px; }
+  /* Bandeau d'infos déplacé sous l'oscilloscope (app.js) : même respiration que les mesures. */
+  .scope-panel > .lc-info { margin-top: 10px; }
   .scope-screen { flex: none; height: 520px; }
   .advanced-mode .scope-screen { height: 820px; }
   .measurements { height: 78px; }
@@ -501,8 +503,8 @@ body.dark-theme .topology-card[aria-disabled="true"] .topology-status { backgrou
 .workspace:has(.thy-schematic) .measurements { display: none; }
 .workspace:has(.rect-schematic) .scope-screen,
 .workspace:has(.thy-schematic) .scope-screen { margin-bottom: clamp(10px, 1.3vh, 17px); }
-.circuit-panel:has(.rect-schematic) .lc-info,
-.circuit-panel:has(.thy-schematic) .lc-info { height: auto; min-height: clamp(108px, 12.5vh, 126px); padding-block: 5px; }
+.workspace:has(.rect-schematic) .lc-info,
+.workspace:has(.thy-schematic) .lc-info { height: auto; min-height: clamp(108px, 12.5vh, 126px); padding-block: 5px; }
 #rectifier-panel .bridge-mode-group button { min-height: 27px; padding: 3px 9px; font-size: clamp(.7rem, .76vw, .84rem); }
 /* Fréquence de la source : un seul bouton qui affiche la valeur active et bascule 50 ↔ 60 Hz. */
 #rectifier-panel .bridge-mode-group .frequency-toggle { display: inline-flex; align-items: center; gap: 5px; color: #075f59; }
