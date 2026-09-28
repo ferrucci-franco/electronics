@@ -122,6 +122,11 @@
   const ZOOM_MIN_DRAG = 8;
   // Mise en page empilée (téléphone, tablette) : même seuil que la feuille de style.
   const compactScreen = window.matchMedia("(max-width: 1100px)");
+  // Mise en page empilée : le bandeau d'infos passe sous l'oscilloscope, pour que les tracés
+  // suivent directement les curseurs et que l'effet d'un réglage se voie sans défiler.
+  const infoBandHome = document.createComment("lc-info"); infoBand.before(infoBandHome);
+  const placeInfoBand = () => { if (compactScreen.matches) document.querySelector(".scope-panel").append(infoBand); else infoBandHome.after(infoBand); };
+  placeInfoBand(); compactScreen.addEventListener("change", placeInfoBand);
   let inputs = [];
   let language = "fr";
   let number = new Intl.NumberFormat(locales.fr, { maximumFractionDigits: 2 });
