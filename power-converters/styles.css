@@ -426,6 +426,10 @@ body.dark-theme .topology-card[aria-disabled="true"] .topology-status { backgrou
   input[type="range"]::-moz-range-thumb { width: 22px; height: 22px; }
   .circuit-diagram { flex: none; height: clamp(310px, 46vw, 430px); }
   .lc-info { height: 116px; }
+  /* Tous les curseurs sous le schéma (les sélecteurs de montage restent au-dessus) : ils
+     précèdent directement l'oscilloscope, l'effet d'un réglage se voit sans défiler. */
+  .circuit-content > .controls-top { order: 1; }
+  .circuit-content > .controls-bottom { order: 2; }
   /* Bandeau d'infos déplacé sous l'oscilloscope (app.js) : même respiration que les mesures. */
   .scope-panel > .lc-info { margin-top: 10px; }
   .scope-screen { flex: none; height: 520px; }
