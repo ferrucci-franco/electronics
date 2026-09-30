@@ -19,7 +19,7 @@
         { key: "inputVoltage", symbol: "V<sub>in</sub>", label: text("Input voltage", "Tension d’entrée", "Tensión de entrada"), aria: text("Input voltage", "Tension d’entrée", "Tensión de entrada"), min: 6, max: 48, step: 2, unit: "V", advanced: true },
       ],
       bottom: [
-        { key: "inductance", symbol: "L", label: text("Inductance", "Inductance", "Inductancia"), aria: text("Inductance", "Inductance", "Inductancia"), min: 0.5, max: 30, step: 0.5, unit: "µH" },
+        { key: "inductance", symbol: "L", label: text("Inductance", "Inductance", "Inductancia"), aria: text("Inductance", "Inductance", "Inductancia"), min: 1, max: 30, step: 1, unit: "µH" },
         { key: "capacitance", symbol: "C", label: text("Capacitance", "Capacité", "Capacitancia"), aria: text("Capacitance", "Capacité", "Capacitancia"), min: 2, max: 100, step: 2, unit: "µF" },
         { key: "resistance", symbol: "R", label: text("Load", "Charge", "Carga"), aria: text("Load resistance", "Résistance de charge", "Resistencia de carga"), min: 1, max: 100, step: 1, unit: "Ω", advanced: true },
       ],
