@@ -345,8 +345,9 @@ let plot3D = null, plotRe = null, plotIm = null;
 let aspectState="cube";
 function aspectSpec(s,maxAmp){
   if(aspectState==="cube") return {aspectmode:"cube"};
-  var rx=s/(2*maxAmp), m=Math.max(rx,1);
-  return {aspectmode:"manual", aspectratio:{x:rx/m,y:1/m,z:1/m}};
+  // time is in fractions of a second while amplitudes are O(1): data proportions would
+  // squash the plot, so use a fixed, comfortably elongated time axis instead.
+  return {aspectmode:"manual", aspectratio:{x:1,y:0.5,z:0.5}};
 }
 function get3DView(){
   if(!plot3D || !plot3D._fullLayout || !plot3D._fullLayout.scene) return {};
