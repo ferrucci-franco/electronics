@@ -22,7 +22,7 @@
     --bg:#1e1e1e; --fg:#e0e0e0; --muted:#a0a0a0;
     --panel:#2d2d2d; --panel-strong:#3d3d3d; --border:#444444;
     --sidebar:#252525; --hover:#353535; --accent:#64b5f6;
-    --plot-bg:#222222; --shadow:0 2px 6px rgba(0,0,0,0.25);
+    --plot-bg:#2d2d2d; --shadow:0 2px 6px rgba(0,0,0,0.25);
   }
   *{box-sizing:border-box}
   html, body { height: 100%; }
@@ -71,6 +71,7 @@
 
   /* Sidebar ocupa toda la altura; scroll sólo vertical; nada de scroll horizontal */
   .controls{
+    scrollbar-width:auto; scrollbar-color:color-mix(in srgb, var(--muted) 45%, transparent) var(--sidebar);
     background:var(--sidebar); border:1px solid var(--border); border-radius:14px;
     padding:10px; display:grid; grid-template-columns:1fr; gap:10px;
     height:100%; min-height:0; overflow-y:auto; overflow-x:hidden;
@@ -161,7 +162,58 @@
   }
   .sidebar-author a{color:var(--primary-color); text-decoration:none}
   .sidebar-author a:hover{text-decoration:underline}
+
+  /* zero mark for signed sliders */
+  .zero-wrap{position:relative; padding-bottom:16px}
+  .zero-wrap input[type="range"]{display:block; margin-bottom:0}
+  .zero-tick{position:absolute; bottom:0; width:0; pointer-events:none; color:var(--muted); transition:color .15s}
+  .zero-tick::before{content:""; position:absolute; left:-0.5px; bottom:10px; width:1px; height:7px; background:currentColor}
+  .zero-tick span{position:absolute; left:0; bottom:-2px; transform:translateX(-50%); font-size:.7rem; line-height:1}
+  .zero-tick.on{color:var(--primary-color)}
+  .zero-tick.on::before{width:2px; left:-1px}
+  input[type="range"]{accent-color:var(--primary-color)}
+  /* edge pill (as in timeseries-explorer) */
+  .edge-toggle{
+    position:absolute; top:50%; left:100%; transform:translate(-50%,-50%);
+    width:14px; height:46px; padding:0; display:flex; align-items:center; justify-content:center;
+    border:1px solid color-mix(in srgb, var(--primary-color) 40%, var(--border)); border-radius:999px;
+    background:color-mix(in srgb, var(--primary-color) 8%, var(--bg));
+    color:color-mix(in srgb, var(--primary-color) 45%, var(--muted));
+    box-shadow:0 1px 3px rgba(0,0,0,.18); z-index:20; transition:color .15s, border-color .15s, background-color .15s;
+  }
+  .edge-toggle:hover,.edge-toggle:focus-visible{
+    color:var(--primary-color); border-color:var(--primary-color);
+    background:color-mix(in srgb, var(--primary-color) 16%, var(--bg)); box-shadow:0 1px 3px rgba(0,0,0,.18);
+  }
+  .edge-toggle svg{width:8px; height:16px}
+  .edge-toggle.collapsed{left:0; transform:translate(0,-50%)}
+  .edge-toggle.collapsed svg{transform:rotate(180deg)}
+  @media (max-width:900px){
+    .edge-toggle{top:100%; left:50%; width:46px; height:14px}
+    .edge-toggle svg{transform:rotate(90deg)}
+    .edge-toggle.collapsed{left:50%; top:0; transform:translate(-50%,0)}
+    .edge-toggle.collapsed svg{transform:rotate(-90deg)}
+  }
+  /* scrollbar (as in timeseries-explorer) */
+  .nice-scroll{
+    scrollbar-width:auto; scrollbar-color:color-mix(in srgb, var(--muted) 45%, transparent) var(--sidebar);
+  }
+  .nice-scroll::-webkit-scrollbar{width:18px}
+  .nice-scroll::-webkit-scrollbar-track{background:var(--sidebar)}
+  .nice-scroll::-webkit-scrollbar-thumb{
+    background:color-mix(in srgb, var(--muted) 38%, transparent);
+    border:3px solid var(--sidebar); border-radius:999px; background-clip:content-box;
+  }
+  .nice-scroll:hover::-webkit-scrollbar-thumb{
+    background:color-mix(in srgb, var(--primary-color) 58%, var(--muted));
+    border:3px solid var(--sidebar); background-clip:content-box;
+  }
   input[type="range"]{ width:100% }
+  #toggleControls{display:none}
+  .ctrl-wrap{position:relative; min-height:0; min-width:0}
+  .ctrl-wrap > .controls{height:100%}
+  .wrapper.controls-hidden{ grid-template-columns:0 1fr; gap:0 }
+  @media (max-width:900px){ .wrapper.controls-hidden{ grid-template-columns:1fr } }
 
   #plot{
     min-height:420px; height:100%;
@@ -249,7 +301,10 @@
   </div>
 
   <div class="wrapper" id="wrapper">
-    <aside id="controlsPanel" class="controls"></aside>
+    <div class="ctrl-wrap">
+      <aside id="controlsPanel" class="controls nice-scroll"></aside>
+      <button id="edgeToggle" class="edge-toggle" type="button" aria-expanded="true"><svg viewBox="0 0 8 16" aria-hidden="true" focusable="false"><path d="M6 2.5 1.8 8 6 13.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
     <main id="plot"></main>
   </div>
 
@@ -598,7 +653,7 @@ function createControls() {
     phaLabel.appendChild(phaText);
     phaLabel.appendChild(phaInput);
     phaWrap.appendChild(phaLabel);
-    phaWrap.appendChild(phaSlider);
+    phaWrap.appendChild(zeroMarked(phaSlider, 4));
 
     /* -------- ensamblar -------- */
     row.appendChild(ampWrap);
@@ -1015,7 +1070,7 @@ function buildTraces(t){
       x:t, y:yTotal, mode:"lines",
       line:{width:3.5,color:totalColor},
       name:I18N[lang].total,
-      hoverinfo:'skip'
+      hovertemplate:"%{y:.3f}<extra>"+I18N[lang].total+"</extra>"
     });
   }
   return traces;
@@ -1044,7 +1099,7 @@ function buildFunctionSignalTraces(model) {
       name:I18N[lang].signalOriginal,
       legendgroup:"original",
       showlegend:!legendShown,
-      hoverinfo:'skip'
+      hovertemplate:"%{y:.3f}<extra>"+I18N[lang].signalOriginal+"</extra>"
     });
     legendShown = true;
   }
@@ -1071,7 +1126,7 @@ function buildPiecewiseTraces(model) {
         name:I18N[lang].signalOriginal,
         legendgroup:"original",
         showlegend:!legendShown,
-        hoverinfo:'skip'
+        hovertemplate:"%{y:.3f}<extra>"+I18N[lang].signalOriginal+"</extra>"
       });
       legendShown = true;
     }
@@ -1091,25 +1146,27 @@ function buildPiecewiseTraces(model) {
   return traces;
 }
 function plotLayout(){
-  const bg = darkMode ? "#222222" : "#ffffff";
+  const bg = darkMode ? "#2d2d2d" : "#ffffff";
   const fg = darkMode ? "#e0e0e0" : "#212121";
-  const grid = darkMode ? "#444444" : "#e5e5e5";
+  const grid = darkMode ? "#3d3d3d" : "#e8e8e8";
   return {
     margin:{t:24,r:16,b:48,l:56},
-    xaxis:{title:I18N[lang].xaxis, color:fg, gridcolor:grid, zerolinecolor:grid},
-    yaxis:{title:I18N[lang].yaxis, color:fg, gridcolor:grid, zerolinecolor:grid},
+    xaxis:{title:I18N[lang].xaxis, color:fg, gridcolor:grid, zerolinecolor:grid, hoverformat:".3f", showspikes:true, spikemode:"across", spikethickness:1, spikedash:"dot", spikecolor:"#888", spikesnap:"cursor"},
+    yaxis:{title:I18N[lang].yaxis, color:fg, gridcolor:grid, zerolinecolor:grid, hoverformat:".3f"},
     paper_bgcolor:bg, plot_bgcolor:bg,
     font:{color:fg},
     legend:{tracegroupgap:0, itemsizing:"constant", font:{size:12,color:fg}},
     template: "plotly_white",
-    hovermode: false
+    hovermode: "x",
+    hoverdistance: 30,
+    hoverlabel: {bgcolor:bg, bordercolor:grid, font:{color:fg}}
   };
 }
 function updatePlot(){
   const t=xVector();
   Plotly.react("plot", buildTraces(t), plotLayout(), {
-    responsive:true, scrollZoom:true, displaylogo:false
-  });
+    responsive:true, scrollZoom:true, displaylogo:false, displayModeBar:false
+  }).then(function(gd){ if(!gd._panAttached){ gd._panAttached=true; attachPan2D(gd); } });
 }
 
 /* ====================== PRESETS ====================== */
@@ -1485,6 +1542,78 @@ createControls();
 updateHelpButton();
 updatePlot();
 applySquarePreset();
+
+/* ===== UI enhancements ===== */
+document.addEventListener("contextmenu", function(e){ e.preventDefault(); });
+
+/* signed sliders: mark at zero, magnetic while dragging */
+function zeroMarked(input, snap){
+  var wrap=document.createElement("div"); wrap.className="zero-wrap"; wrap.appendChild(input);
+  var tick=document.createElement("div"); tick.className="zero-tick"; tick.innerHTML="<span>0</span>"; wrap.appendChild(tick);
+  var mn=parseFloat(input.min), mx=parseFloat(input.max), f=(0-mn)/(mx-mn);
+  tick.style.left="calc(8px + (100% - 16px) * "+f+")";
+  var dragging=false, d=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"value");
+  function sync(){ tick.classList.toggle("on", parseFloat(d.get.call(input))===0); }
+  Object.defineProperty(input,"value",{configurable:true,get:function(){return d.get.call(this);},set:function(v){d.set.call(this,v); sync();}});
+  input.addEventListener("pointerdown", function(){ dragging=true; });
+  window.addEventListener("pointerup", function(){ dragging=false; });
+  input.addEventListener("input", function(){
+    if(dragging && Math.abs(parseFloat(d.get.call(input)))<=snap) input.value=0;
+    sync();
+  });
+  sync();
+  return wrap;
+}
+
+/* mouse wheel on any slider once the pointer has rested on it for a moment */
+(function(){
+  var DWELL=350, hoverEl=null, since=0;
+  function rangeOf(t){ return t&&t.closest?t.closest('input[type="range"]'):null; }
+  document.addEventListener("mouseover", function(e){ var r=rangeOf(e.target); if(r!==hoverEl){ hoverEl=r; since=Date.now(); } });
+  document.addEventListener("wheel", function(e){
+    var input=rangeOf(e.target);
+    if(!input||input!==hoverEl||input.disabled||Date.now()-since<DWELL) return;
+    e.preventDefault();
+    var dir=e.deltaY<0?1:-1, v=parseFloat(input.value), mn=parseFloat(input.min), mx=parseFloat(input.max), st=parseFloat(input.step)||1;
+    var notch=Math.max(st,Math.round((mx-mn)/100/st)*st);
+    var nv=Math.round((v+dir*notch-mn)/st)*st+mn;
+    nv=parseFloat(Math.min(mx,Math.max(mn,nv)).toFixed(6));
+    if(nv===v) return;
+    input.value=nv;
+    input.dispatchEvent(new Event("input",{bubbles:true}));
+  },{passive:false,capture:true});
+})();
+
+/* pan with right / middle mouse button on a 2D plot */
+function attachPan2D(el){
+  var st=null;
+  el.addEventListener("mousedown", function(e){
+    if(e.button!==1&&e.button!==2) return;
+    var xa=el._fullLayout.xaxis, ya=el._fullLayout.yaxis;
+    st={x:e.clientX,y:e.clientY,xr:xa.range.slice(),yr:ya.range.slice(),wx:xa._length,wy:ya._length};
+    e.preventDefault(); e.stopPropagation();
+  }, true);
+  window.addEventListener("mousemove", function(e){
+    if(!st) return;
+    var dx=(e.clientX-st.x)/st.wx*(st.xr[1]-st.xr[0]), dy=(e.clientY-st.y)/st.wy*(st.yr[1]-st.yr[0]);
+    Plotly.relayout(el,{"xaxis.range[0]":st.xr[0]-dx,"xaxis.range[1]":st.xr[1]-dx,"yaxis.range[0]":st.yr[0]+dy,"yaxis.range[1]":st.yr[1]+dy});
+  });
+  window.addEventListener("mouseup", function(){ st=null; });
+  el.addEventListener("auxclick", function(e){ e.preventDefault(); });
+}
+
+/* edge pill drives the (hidden) original toggle button and mirrors its state */
+(function(){
+  var pill=document.getElementById("edgeToggle"), orig=document.getElementById("toggleControls"), wrap=document.getElementById("wrapper");
+  function sync(){
+    var hidden=wrap.classList.contains("controls-hidden"), t=orig.textContent.trim();
+    pill.classList.toggle("collapsed",hidden); pill.title=t; pill.setAttribute("aria-label",t); pill.setAttribute("aria-expanded",String(!hidden));
+  }
+  pill.addEventListener("click", function(){ orig.click(); });
+  new MutationObserver(sync).observe(wrap,{attributes:true,attributeFilter:["class"]});
+  new MutationObserver(sync).observe(orig,{childList:true,characterData:true,subtree:true});
+  sync();
+})();
 </script>
 </body>
 </html>
