@@ -436,6 +436,14 @@ function computeSignals(){
 }
 
 /* view helpers */
+/* The 3D box shape is owned by the app, never read back from Plotly (which silently
+   freezes "auto" into a stale manual ratio after user interaction). */
+var aspectState="cube";
+function aspectSpec(s,maxAmp){
+  if(aspectState==="cube") return {aspectmode:"cube"};
+  var rx=s/(2*maxAmp), m=Math.max(rx,1);
+  return {aspectmode:"manual", aspectratio:{x:rx/m,y:1/m,z:1/m}};
+}
 function get3DView(){ if(!plot3D||!plot3D._fullLayout||!plot3D._fullLayout.scene) return {}; var cam=plot3D._fullLayout.scene.camera; var aspect=plot3D._fullLayout.scene.aspectmode||"auto"; return {camera:JSON.parse(JSON.stringify(cam)),aspect:aspect}; }
 function getXRange(gd){ if(!gd||!gd._fullLayout||!gd._fullLayout.xaxis) return undefined; var r=gd._fullLayout.xaxis.range; return r?[r[0],r[1]]:undefined; }
 function rangesEqual(a,b){ return a&&b&&a.length===2&&b.length===2&&Math.abs(a[0]-b[0])<1e-9&&Math.abs(a[1]-b[1])<1e-9; }
@@ -514,7 +522,8 @@ function updateAll(){
   hover3dIdx=traces3d.length-1;
   var lay=layout3D(dat.maxAbs,!initialized3D);
   if(view.camera){ var cam=JSON.parse(JSON.stringify(view.camera)); cam.projection=cam.projection||{}; cam.projection.type="orthographic"; lay.scene.camera=cam; }
-  if(view.aspect){ lay.scene.aspectmode=view.aspect; }
+  var asp=aspectSpec(span(),dat.maxAbs); lay.scene.aspectmode=asp.aspectmode;
+  if(asp.aspectratio) lay.scene.aspectratio=asp.aspectratio; else delete lay.scene.aspectratio;
   var cfg={responsive:true, displaylogo:false, displayModeBar:false};
   if(!initialized3D){ Plotly.newPlot("plot3d",traces3d,lay,cfg).then(function(gd){plot3D=gd; initialized3D=true;}); }
   else{ Plotly.react("plot3d",traces3d,lay,cfg).then(function(gd){plot3D=gd;}); }
@@ -581,7 +590,7 @@ function setHover3D(n){
     // Update the marker AND re-pin the live camera in one call, so the user's
     // viewpoint (rotation, pan, zoom) can never be reset by the redraw.
     var sc=plot3D._fullLayout&&plot3D._fullLayout.scene, live=sc&&sc._scene&&sc._scene.getCamera&&sc._scene.getCamera(), lay={};
-    if(live){ lay["scene.camera"]=JSON.parse(JSON.stringify(live)); lay["scene.aspectmode"]=sc.aspectmode; if(sc.aspectmode==="manual") lay["scene.aspectratio"]=JSON.parse(JSON.stringify(sc.aspectratio)); }
+    if(live){ lay["scene.camera"]=JSON.parse(JSON.stringify(live)); var asp=aspectSpec(span(),lastDat.maxAbs); lay["scene.aspectmode"]=asp.aspectmode; if(asp.aspectratio) lay["scene.aspectratio"]=asp.aspectratio; }
     Plotly.update(plot3D,{x:[x],y:[y],z:[z],"marker.color":[c]},lay,[hover3dIdx]);
   });
 }
@@ -666,7 +675,10 @@ function setView(which){
   else if(which==="imag"){ eye={x:0,y:-2.8,z:0}; up={x:0,y:0,z:1}; }
   else if(which==="plane"){ eye={x:2.8,y:0,z:0}; up={x:0,y:0,z:1}; aspect="cube"; }
   else { eye={x:1.8,y:-1.8,z:1.2}; up={x:0,y:0,z:1}; aspect="cube"; }
-  Plotly.relayout("plot3d",{"scene.camera.eye":eye,"scene.camera.up":up,"scene.camera.projection.type":"orthographic","scene.aspectmode":aspect});
+  aspectState=aspect;
+  var asp=aspectSpec(span(),lastDat?lastDat.maxAbs:1.1), upd={"scene.camera.eye":eye,"scene.camera.up":up,"scene.camera.projection.type":"orthographic","scene.aspectmode":asp.aspectmode};
+  if(asp.aspectratio) upd["scene.aspectratio"]=asp.aspectratio;
+  Plotly.relayout("plot3d",upd);
 }
 
 function syncThemeBtn(){
