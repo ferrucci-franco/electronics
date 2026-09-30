@@ -41,13 +41,11 @@
 
   /* Sidebar credits */
   .sidebar-credits{
-    text-align:center;
-    padding: 6px 8px 14px;
-    color: var(--fg);
-    opacity: .75;
-    font-size: .9rem;
+    margin-top:auto; padding:12px 8px 4px; text-align:center;
+    border-top:1px solid var(--panel-border); font-size:.78rem; color:var(--text-secondary);
   }
-  .sidebar-credits small{ letter-spacing:.02em; }
+  .sidebar-credits a{color:var(--primary); text-decoration:none}
+  .sidebar-credits a:hover{text-decoration:underline}
 
   header{
     grid-area:header; background:var(--bar-bg); border-bottom:1px solid var(--panel-border);
@@ -264,8 +262,9 @@
       </div>
     </div>
     
-    <div class="sidebar-credits" aria-label="Credits">
-        <small>© 2025 Franco FERRUCCI — HTML + JavaScript + Plotly</small>
+    <div class="sidebar-credits">
+      Franco FERRUCCI &nbsp;·&nbsp;
+      <a href="https://ferrucci-franco.github.io/electronics/" target="_blank" rel="noopener">ferrucci-franco.github.io</a>
     </div>
     
   </aside>
