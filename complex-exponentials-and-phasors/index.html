@@ -537,7 +537,6 @@ function updateAll(){
   else{ Plotly.react("plotIm",trIm,layIm,cfg).then(function(gd){plotIm=gd;}); }
 
   lastSpan = currSpan;
-  if(window.MathJax && window.MathJax.typesetPromise){ MathJax.typesetPromise(); }
 }
 
 /* sync x-axes */
@@ -562,9 +561,8 @@ function attachSyncIfReady(){
   syncAttached=true;
 }
 
-/* Proximity hover, linked: when the pointer is near a curve in either 2D plot,
-   the Re and Im values at that time are shown at once, each in its own plot. */
-var hvEls={};
+/* Linked hover: the pointer's time in either 2D plot selects the sample; the Re and Im values at that time are shown at once, each in its own plot. */
+var hvEls={}, lastHoverN=-1;
 function makeOverlay(id){
   var host=$(id), o=document.createElement("div");
   o.className="hv"; o.innerHTML='<div class="hv-line"></div><div class="hv-label"></div>';
@@ -588,7 +586,7 @@ function setHover3D(n){
     Plotly.update(plot3D,{x:[x],y:[y],z:[z],"marker.color":[c]},lay,[hover3dIdx]);
   });
 }
-function hideHover(){ Object.keys(hvEls).forEach(function(k){ hvEls[k].o.style.display="none"; }); setHover3D(null); }
+function hideHover(){ lastHoverN=-1; Object.keys(hvEls).forEach(function(k){ hvEls[k].o.style.display="none"; }); setHover3D(null); }
 function drawHover(id,n){
   var g=$(id), e=hvEls[id], xa=g._fullLayout.xaxis, ya=g._fullLayout.yaxis;
   var px=xa._offset+xa.l2p(g.data[0].x[n]);
@@ -619,14 +617,11 @@ function linkHover(){
       var xa=g._fullLayout.xaxis, ya=g._fullLayout.yaxis, r=g.getBoundingClientRect();
       var mx=ev.clientX-r.left, my=ev.clientY-r.top;
       var xs=g.data[0].x, last=xs[xs.length-1];
-      var x=xa.p2l(mx-xa._offset), n0=Math.round(x/last*(xs.length-1)), best=1e9, bn=-1;
-      for(var n=Math.max(0,n0-4); n<=Math.min(xs.length-1,n0+4); n++){
-        g.data.forEach(function(tr){
-          var dx=xa._offset+xa.l2p(xs[n])-mx, dy=ya._offset+ya.l2p(tr.y[n])-my, d=Math.sqrt(dx*dx+dy*dy);
-          if(d<best){ best=d; bn=n; }
-        });
-      }
-      if(bn>=0 && best<=22){ drawHover("plotRe",bn); drawHover("plotIm",bn); setHover3D(bn); } else hideHover();
+      if(mx<xa._offset||mx>xa._offset+xa._length||my<ya._offset||my>ya._offset+ya._length){ hideHover(); return; }
+      var x=xa.p2l(mx-xa._offset), n=Math.round(x/last*(xs.length-1));
+      if(n<0||n>xs.length-1){ hideHover(); return; }
+      if(n===lastHoverN && hvEls.plotRe.o.style.display==="block") return;
+      lastHoverN=n; drawHover("plotRe",n); drawHover("plotIm",n); setHover3D(n);
     });
     g.addEventListener("mouseleave", hideHover);
     g.addEventListener("wheel", hideHover);
@@ -712,7 +707,7 @@ function refreshTexts(){
   $("valPeriods").textContent = String(periods);
 
   $("modalContent").innerHTML=infoHTML[lang];
-  if(window.MathJax && window.MathJax.typesetPromise){ MathJax.typesetPromise(); }
+  if(modal.style.display==="flex" && window.MathJax && window.MathJax.typesetPromise){ MathJax.typesetPromise([$("modalContent")]); }
 }
 
 /* bindings */
