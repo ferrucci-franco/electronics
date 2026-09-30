@@ -85,7 +85,7 @@
     gap:6px;
   }
   @media (max-width:520px){ .row{ grid-template-columns:1fr; } }
-  .row2{display:grid; gap:6px}
+  .row2{display:grid; gap:6px; align-content:start}
   .row2 label{
     display:flex; justify-content:space-between; align-items:center;
     font-size:0.85rem; gap:8px; flex-wrap:wrap;
@@ -1070,7 +1070,7 @@ function buildTraces(t){
       x:t, y:yTotal, mode:"lines",
       line:{width:3.5,color:totalColor},
       name:I18N[lang].total,
-      hovertemplate:"%{y:.3f}<extra>"+I18N[lang].total+"</extra>"
+      hoverinfo:'skip'
     });
   }
   return traces;
@@ -1099,7 +1099,7 @@ function buildFunctionSignalTraces(model) {
       name:I18N[lang].signalOriginal,
       legendgroup:"original",
       showlegend:!legendShown,
-      hovertemplate:"%{y:.3f}<extra>"+I18N[lang].signalOriginal+"</extra>"
+      hoverinfo:'skip'
     });
     legendShown = true;
   }
@@ -1126,7 +1126,7 @@ function buildPiecewiseTraces(model) {
         name:I18N[lang].signalOriginal,
         legendgroup:"original",
         showlegend:!legendShown,
-        hovertemplate:"%{y:.3f}<extra>"+I18N[lang].signalOriginal+"</extra>"
+        hoverinfo:'skip'
       });
       legendShown = true;
     }
@@ -1151,15 +1151,13 @@ function plotLayout(){
   const grid = darkMode ? "#3d3d3d" : "#e8e8e8";
   return {
     margin:{t:24,r:16,b:48,l:56},
-    xaxis:{title:I18N[lang].xaxis, color:fg, gridcolor:grid, zerolinecolor:grid, hoverformat:".3f", showspikes:true, spikemode:"across", spikethickness:1, spikedash:"dot", spikecolor:"#888", spikesnap:"cursor"},
-    yaxis:{title:I18N[lang].yaxis, color:fg, gridcolor:grid, zerolinecolor:grid, hoverformat:".3f"},
+    xaxis:{title:I18N[lang].xaxis, color:fg, gridcolor:grid, zerolinecolor:grid},
+    yaxis:{title:I18N[lang].yaxis, color:fg, gridcolor:grid, zerolinecolor:grid},
     paper_bgcolor:bg, plot_bgcolor:bg,
     font:{color:fg},
     legend:{tracegroupgap:0, itemsizing:"constant", font:{size:12,color:fg}},
     template: "plotly_white",
-    hovermode: "x",
-    hoverdistance: 30,
-    hoverlabel: {bgcolor:bg, bordercolor:grid, font:{color:fg}}
+    hovermode: false
   };
 }
 function updatePlot(){

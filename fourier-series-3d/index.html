@@ -1736,7 +1736,7 @@ function layoutWithCamera(includeCamera=false, maxAmp=1){
         title:tr[lang].axisX,
         color:fg,
         gridcolor:grid,
-        zeroline:false, 
+        zeroline:false, showspikes:false,
         backgroundcolor:plotBg,
         range:[0, animationState.maxTime],
         autorange: false,
@@ -1746,7 +1746,7 @@ function layoutWithCamera(includeCamera=false, maxAmp=1){
         title:tr[lang].axisY,
         color:fg,
         gridcolor:grid,
-        zeroline:false, 
+        zeroline:false, showspikes:false,
         backgroundcolor:plotBg,
         range:[-maxAmp, maxAmp],
         autorange: false,
@@ -1756,7 +1756,7 @@ function layoutWithCamera(includeCamera=false, maxAmp=1){
         title:tr[lang].axisZ,
         color:fg,
         gridcolor:grid,
-        zeroline:false, 
+        zeroline:false, showspikes:false,
         backgroundcolor:plotBg,
         range:[-maxAmp, maxAmp],
         autorange: false,
@@ -1820,7 +1820,7 @@ function rememberSceneState(scene){
 let plotDiv = null;
 // The box shape is owned by the app (set only by setView), never read back from Plotly,
 // which silently rewrites it after user interaction.
-let ownAspect = {x:2, y:1, z:1};
+
 
 function appendPolyline(targetX, targetY, targetZ, x, y, z) {
   for(let i = 0; i < x.length; i++) {
@@ -2069,8 +2069,15 @@ function updatePlot(useReact=false){
   cam.projection = cam.projection || {};
   cam.projection.type = "orthographic";
   layout.scene.camera = cam;
-  layout.scene.aspectmode = "manual";
-  layout.scene.aspectratio = JSON.parse(JSON.stringify(ownAspect));
+  layout.scene.aspectmode = view.aspect || lastAspect;
+  if (layout.scene.aspectmode === "manual") {
+    // Plotly keeps the user's zoom in the aspect ratio, so it must be carried over.
+    layout.scene.aspectratio = view.aspectratio
+      ? JSON.parse(JSON.stringify(view.aspectratio))
+      : JSON.parse(JSON.stringify(lastAspectratio));
+  } else {
+    delete layout.scene.aspectratio;
+  }
 
   // Remember this camera/aspect so that the next render can restore it even
   // when the scene has been torn down.
@@ -2084,6 +2091,7 @@ function updatePlot(useReact=false){
   layout.scene.yaxis.range = [-maxAmp, maxAmp];
   layout.scene.zaxis.range = [-maxAmp, maxAmp];
 
+  traces.forEach(function(t){ t.hoverinfo = "skip"; });
   if(!initialized){
     Plotly.newPlot("plot3d", traces, layout, config).then(gd => { 
       plotDiv = gd; 
@@ -2245,7 +2253,6 @@ function setView(view){
     center:{x:0, y:0, z:0},
     projection:{type:"orthographic"}
   };
-  ownAspect = JSON.parse(JSON.stringify(aspectratio));
   rememberSceneState({
     camera,
     aspectmode: aspect,
