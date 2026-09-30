@@ -47,6 +47,17 @@
     psi: control("psi", "ψ", ["Energization angle", "Angle d’enclenchement", "Ángulo de conexión"], 0, 360, 5, "°", { advanced: true }),
   };
 
+  // Mode « 1 kHz (générateur) » : montage de TP au générateur de fonctions (diode + R + C sur
+  // breadboard). Les curseurs R et C sont alors exprimés en kΩ et en nF, et l'état les porte
+  // dans ces unités (simulate() convertit) ; L et Lf restent ceux du mode avancé.
+  const generatorFrequency = 1000;
+  const generatorDefaults = { vinRms: 7, resistance: 10, capacitance: 0 };
+  const generatorControls = {
+    vinRms: control("vinRms", "V<sub>in</sub>", ["RMS voltage", "Tension efficace", "Tensión eficaz"], 1, 10, .5, "V"),
+    resistance: control("resistance", "R", ["Load resistance", "Résistance de charge", "Resistencia de carga"], 1, 20, 1, "kΩ"),
+    capacitance: control("capacitance", "C", ["Filter capacitor", "Filtre capacitif", "Filtro capacitivo"], 0, 2200, 100, "nF"),
+  };
+
   const tracesMain = [
     { key: "vIn", label: "v<sub>in</sub>", color: "--trace-vin", width: 1.8 },
     { key: "vCh", label: "v<sub>o</sub>", color: "--trace-vr", width: 3 },
@@ -82,12 +93,13 @@
     const transient = options.view === "transient";
     const vf = options.diodes === "real" ? .6 : 0;
     const drops = montage === "bridge" ? 2 * vf : vf;
-    const frequency = options.frequency === 60 ? 60 : 50; const omega = 2 * Math.PI * frequency; const period = 1 / frequency;
+    const generator = options.frequency === generatorFrequency;
+    const frequency = generator ? generatorFrequency : options.frequency === 60 ? 60 : 50; const omega = 2 * Math.PI * frequency; const period = 1 / frequency;
     const vrms = state.vinRms; const amplitude = Math.SQRT2 * vrms;
-    const r = Math.max(state.resistance, .5);
+    const r = Math.max(generator ? state.resistance * 1e3 : state.resistance, .5); // kΩ → Ω en mode générateur
     const l = options.advanced ? Math.max(0, state.inductance) / 1000 : 0; // L de charge : mode avancé seulement
     const lf = options.advanced ? Math.max(0, state.filterInductance) / 1000 : 0; // Lf : mode avancé seulement
-    const c = Math.max(0, state.capacitance) / 1e6;
+    const c = Math.max(0, state.capacitance) / (generator ? 1e9 : 1e6); // nF en mode générateur, µF sinon
     // Régime permanent : source et diodes idéales (v_o = v_in pendant la conduction).
     // Démarrage : 0,5 Ω en série pour borner l'appel de courant à la mise sous tension.
     const rs = transient ? .5 : 0;
@@ -184,11 +196,12 @@
     const mean = (key) => metricPoints.reduce((sum, point) => sum + point[key], 0) / metricPoints.length;
     const rms = (key) => Math.sqrt(metricPoints.reduce((sum, point) => sum + point[key] ** 2, 0) / metricPoints.length);
     const vChMean = mean("vCh"); const iChMean = mean("iCh"); const iChRms = rms("iCh"); const iInRms = rms("iIn"); const iInMean = mean("iIn");
+    const conductionThreshold = generator ? 1e-6 : 1e-3; // courants de l'ordre du mA en mode générateur
     let vMin = Infinity; let vMax = -Infinity; let piv = 0; let conductionSamples = 0;
     metricPoints.forEach((point) => {
       vMin = Math.min(vMin, point.vCh); vMax = Math.max(vMax, point.vCh);
       piv = Math.min(piv, point.vD1);
-      if (point.iD1 > 1e-3) conductionSamples += 1;
+      if (point.iD1 > conductionThreshold) conductionSamples += 1;
     });
     const pCh = metricPoints.reduce((sum, point) => sum + point.vCh * point.iCh, 0) / metricPoints.length;
     const pIn = metricPoints.reduce((sum, point) => sum + point.vIn * point.iIn, 0) / metricPoints.length;
@@ -202,7 +215,9 @@
     const rippleApprox = c > 0 && iChMean > 1e-6 ? iChMean / ((montage === "bridge" ? 2 : 1) * frequency * c) : null;
 
     return {
-      points, montage, view: options.view || "steady", diodes: options.diodes || "ideal",
+      // Mode générateur : courants de l'ordre du mA, tracés en mA (les grandeurs ci-dessous restent en A).
+      points: generator ? points.map((point) => ({ ...point, iCh: point.iCh * 1e3, iLf: point.iLf * 1e3, iC: point.iC * 1e3, iD1: point.iD1 * 1e3, iD24: point.iD24 * 1e3, iIn: point.iIn * 1e3 })) : points,
+      generator, montage, view: options.view || "steady", diodes: options.diodes || "ideal",
       amplitude, frequency, duration: points.at(-1).t,
       vChMean, vChRipple: vMax - vMin, iChMean, iChRms, iInRms, iInMean,
       formFactor: iChMean > 1e-6 ? iChRms / iChMean : null,
@@ -233,30 +248,33 @@
   const model = {
     id: "redresseur",
     defaults: { vinRms: 12, resistance: 20, inductance: 0, filterInductance: 0, capacitance: 0, psi: 0 },
+    defaultsFor(options = {}) { return options.frequency === generatorFrequency ? { ...this.defaults, ...generatorDefaults } : { ...this.defaults }; },
     controlsFor(_montage, options = {}) {
+      const { vinRms, resistance, capacitance } = options.frequency === generatorFrequency ? generatorControls : controlDefinitions;
       // Basique : V, R et C sur une seule rangée ; L et Lf n'apparaissent qu'en mode avancé.
-      if (!options.advanced) return { top: [controlDefinitions.vinRms, controlDefinitions.resistance, controlDefinitions.capacitance], bottom: [] };
-      const bottom = [controlDefinitions.filterInductance, controlDefinitions.capacitance];
+      if (!options.advanced) return { top: [vinRms, resistance, capacitance], bottom: [] };
+      const bottom = [controlDefinitions.filterInductance, capacitance];
       if (options.view === "transient") bottom.push(controlDefinitions.psi);
-      return { top: [controlDefinitions.vinRms, controlDefinitions.resistance, controlDefinitions.inductance], bottom };
+      return { top: [vinRms, resistance, controlDefinitions.inductance], bottom };
     },
     diagram: { type: "inline", aria: text("Diode rectifier with R-L load and filter capacitor", "Redresseur à diodes avec charge R–L et condensateur de filtrage", "Rectificador de diodos con carga R–L y capacitor de filtrado") },
     diagramFor(montage, language) { return schematic(montage, language); },
     plotsFor(montage, _view, state = {}) { return { main: tracesMainAdvancedFor(montage, state.filterInductance > 0), second: tracesCurrentsFor(montage, true), third: montage === "bridge" ? tracesAcBridge : null }; },
     basicPlotsFor(montage) { return [tracesMain, tracesCurrentsFor(montage, false)]; },
-    axesFor(montage, isAdvanced = false) {
+    axesFor(montage, isAdvanced = false, options = {}) {
+      const currentUnit = options.frequency === generatorFrequency ? "mA" : "A";
       const axes = [
         { label: i18n.tensions, unit: "V", tint: "--scope-text" },
-        { label: isAdvanced && montage === "bridge" ? i18n.dcCurrents : i18n.currentAxis, unit: "A", tint: "--scope-text" },
+        { label: isAdvanced && montage === "bridge" ? i18n.dcCurrents : i18n.currentAxis, unit: currentUnit, tint: "--scope-text" },
       ];
-      if (isAdvanced && montage === "bridge") axes.push({ label: i18n.acCurrents, unit: "A", tint: "--scope-text" });
+      if (isAdvanced && montage === "bridge") axes.push({ label: i18n.acCurrents, unit: currentUnit, tint: "--scope-text" });
       return axes;
     },
     axisMarksFor(groupIndex, advanced) {
       const result = this.lastResult;
       if (!result) return [];
       if (groupIndex === 0) return [{ value: result.vChMean, color: "--trace-vr" }];
-      if (groupIndex === 1) return [{ value: result.iChMean, color: "--trace-il" }];
+      if (groupIndex === 1) return [{ value: result.generator ? result.iChMean * 1e3 : result.iChMean, color: "--trace-il" }];
       return [];
     },
     calculate(state, _commutation, options = {}) {
@@ -271,7 +289,7 @@
         const hasChoke = advanced && state.filterInductance > 0;
         const hasLoadInductor = advanced && state.inductance > 0;
         const show = (layer, visible, opacity = 1) => { const image = layered.querySelector(`[data-layer="${layer}"]`); if (image) { image.style.display = visible ? "" : "none"; image.style.opacity = String(opacity); } };
-        show("50hz", result.frequency !== 60);
+        show("50hz", result.frequency === 50);
         show("60hz", result.frequency === 60);
         show("rin", result.view === "transient");
         show("c", true, state.capacitance > 0 ? 1 : .14);
@@ -285,7 +303,7 @@
       const t = (value) => localizeText(value, language);
       const format = new Intl.NumberFormat({ en: "en-US", fr: "fr-FR", es: "es-ES" }[language] || "fr-FR", { maximumFractionDigits: 2 });
       const volts = (value) => `${format.format(value)} V`;
-      const amps = (value) => Math.abs(value) < 1 ? `${format.format(value * 1000)} mA` : `${format.format(value)} A`;
+      const amps = (value) => Math.abs(value) < 1e-3 ? `${format.format(value * 1e6)} µA` : Math.abs(value) < 1 ? `${format.format(value * 1000)} mA` : `${format.format(value)} A`;
       if (!advanced) {
         return [
           { label: `${t(i18n.meanVoltage)} ⟨v<span class="symbol-index">o</span>⟩`, value: volts(result.vChMean) },
@@ -310,15 +328,19 @@
     },
     infoValuesFor(result, _state, helpers) {
       const { setInfoMath, texNumber, texVoltage } = helpers;
+      // Mode générateur : courants en mA (µA si < 1 mA) et puissance en mW (µW si < 1 mW) ; sinon A et W comme avant.
+      const scaled = (value, unit, small, milli, micro) => { const a = Math.abs(value); return result.generator ? (a < small ? `${texNumber(value * 1e6)}\\,\\mathrm{${micro}}` : `${texNumber(value * 1e3)}\\,\\mathrm{${milli}}`) : `${texNumber(value)}\\,\\mathrm{${unit}}`; };
+      const texCurrent = (value) => scaled(value, "A", 1e-3, "mA", "\\mu A");
+      const texPower = (value) => scaled(value, "W", 1e-3, "mW", "\\mu W");
       setInfoMath("info-rect-law", `${idealLawTex(result.montage)}=${texVoltage(result.idealMean)}`);
       setInfoMath("info-rect-peak", `\\hat V=\\sqrt{2}\\,V_{in}=${texVoltage(result.amplitude)}`);
       setInfoMath("info-rect-vmean", `\\langle v_{o}\\rangle=${texVoltage(result.vChMean)}`);
       setInfoMath("info-rect-vripple", `\\Delta v_{o}=${texVoltage(result.vChRipple)}`);
       setInfoMath("info-rect-piv", `\\hat V_{inv}=${texVoltage(Math.abs(result.piv))}`);
-      setInfoMath("info-rect-imean", `\\langle i_{o}\\rangle=${texNumber(result.iChMean)}\\,\\mathrm{A}`);
-      setInfoMath("info-rect-irms", `I_{o,eff}=${texNumber(result.iChRms)}\\,\\mathrm{A}`);
+      setInfoMath("info-rect-imean", `\\langle i_{o}\\rangle=${texCurrent(result.iChMean)}`);
+      setInfoMath("info-rect-irms", `I_{o,eff}=${texCurrent(result.iChRms)}`);
       setInfoMath("info-rect-angle", `\\theta_{cond}=${texNumber(result.conductionDegrees)}^\\circ`);
-      setInfoMath("info-rect-power", `P_{o}=${texNumber(result.pCh)}\\,\\mathrm{W}`);
+      setInfoMath("info-rect-power", `P_{o}=${texPower(result.pCh)}`);
       setInfoMath("info-rect-pf", `\\mathrm{FP}_{in}=${texNumber(result.powerFactor)}`);
       setInfoMath("info-rect-thd", `\\mathrm{THD}_{i}=${texNumber(result.thdI)}\\,\\%`);
     },
