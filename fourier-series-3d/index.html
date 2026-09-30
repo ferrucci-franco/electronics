@@ -23,7 +23,7 @@
     --bg:#1e1e1e; --fg:#e0e0e0; --muted:#a0a0a0;
     --panel:#2d2d2d; --panel-strong:#3d3d3d; --panel-border:#444444;
     --sidebar:#252525; --btn:#1e1e1e; --hover:#353535; --accent:#64b5f6;
-    --plot-bg:#222222; --plot-paper:#222222; --shadow:0 2px 6px rgba(0,0,0,0.25);
+    --plot-bg:#2d2d2d; --plot-paper:#2d2d2d; --shadow:0 2px 6px rgba(0,0,0,0.25);
     --tab-active:#64b5f6; --tab-inactive:#a0a0a0;
   }
   *{box-sizing:border-box}
@@ -36,6 +36,7 @@
     grid-template-areas:"header header" "sidebar main" "sidebar controls";
   }
   body.sidebar-collapsed{ grid-template-columns:0 1fr; }
+  #sideWrap{min-width:0}
 
   header{
     grid-area:header; background:var(--panel); border-bottom:1px solid var(--panel-border);
@@ -65,7 +66,7 @@
   button:disabled{ opacity: 0.5; cursor: not-allowed; }
 
   #sidebar{
-    grid-area:sidebar; background:var(--sidebar); border-right:1px solid var(--panel-border);
+    background:var(--sidebar); border-right:1px solid var(--panel-border);
     display:flex; flex-direction:column; gap:10px; padding:12px; overflow-y:auto; width:340px;
   }
   body.sidebar-collapsed #sidebar{ display:none; }
@@ -115,6 +116,57 @@
   .sidebar-author a{color:var(--primary-color); text-decoration:none}
   .sidebar-author a:hover{text-decoration:underline}
   
+
+  /* zero mark for signed sliders */
+  .zero-wrap{position:relative; padding-bottom:16px}
+  .zero-wrap input[type="range"]{display:block; margin-bottom:0}
+  .zero-tick{position:absolute; bottom:0; width:0; pointer-events:none; color:var(--muted); transition:color .15s}
+  .zero-tick::before{content:""; position:absolute; left:-0.5px; bottom:10px; width:1px; height:7px; background:currentColor}
+  .zero-tick span{position:absolute; left:0; bottom:-2px; transform:translateX(-50%); font-size:.7rem; line-height:1}
+  .zero-tick.on{color:var(--primary-color)}
+  .zero-tick.on::before{width:2px; left:-1px}
+  input[type="range"]{accent-color:var(--primary-color)}
+  /* edge pill (as in timeseries-explorer) */
+  .edge-toggle{
+    position:absolute; top:50%; left:100%; transform:translate(-50%,-50%);
+    width:14px; height:46px; padding:0; display:flex; align-items:center; justify-content:center;
+    border:1px solid color-mix(in srgb, var(--primary-color) 40%, var(--panel-border)); border-radius:999px;
+    background:color-mix(in srgb, var(--primary-color) 8%, var(--bg));
+    color:color-mix(in srgb, var(--primary-color) 45%, var(--muted));
+    box-shadow:0 1px 3px rgba(0,0,0,.18); z-index:20; transition:color .15s, border-color .15s, background-color .15s;
+  }
+  .edge-toggle:hover,.edge-toggle:focus-visible{
+    color:var(--primary-color); border-color:var(--primary-color);
+    background:color-mix(in srgb, var(--primary-color) 16%, var(--bg)); box-shadow:0 1px 3px rgba(0,0,0,.18);
+  }
+  .edge-toggle svg{width:8px; height:16px}
+  .edge-toggle.collapsed{left:0; transform:translate(0,-50%)}
+  .edge-toggle.collapsed svg{transform:rotate(180deg)}
+  @media (max-width:900px){
+    .edge-toggle{top:100%; left:50%; width:46px; height:14px}
+    .edge-toggle svg{transform:rotate(90deg)}
+    .edge-toggle.collapsed{left:50%; top:0; transform:translate(-50%,0)}
+    .edge-toggle.collapsed svg{transform:rotate(-90deg)}
+  }
+  /* scrollbar (as in timeseries-explorer) */
+  .nice-scroll{
+    scrollbar-width:auto; scrollbar-color:color-mix(in srgb, var(--muted) 45%, transparent) var(--sidebar);
+  }
+  .nice-scroll::-webkit-scrollbar{width:18px}
+  .nice-scroll::-webkit-scrollbar-track{background:var(--sidebar)}
+  .nice-scroll::-webkit-scrollbar-thumb{
+    background:color-mix(in srgb, var(--muted) 38%, transparent);
+    border:3px solid var(--sidebar); border-radius:999px; background-clip:content-box;
+  }
+  .nice-scroll:hover::-webkit-scrollbar-thumb{
+    background:color-mix(in srgb, var(--primary-color) 58%, var(--muted));
+    border:3px solid var(--sidebar); background-clip:content-box;
+  }
+  #sideWrap{grid-area:sidebar; position:relative; width:340px; z-index:5; min-height:0}
+  body.sidebar-collapsed #sideWrap{width:0}
+  #sidebar{height:100%}
+  #toggleSidebar{display:none}
+  .plot-hint{}
   /* Tabs */
   .tabs-container{margin-top:10px}
   .tabs-header{display:flex; border-bottom:2px solid var(--panel-border); background:var(--panel)}
@@ -202,7 +254,9 @@
       grid-template-areas:"header" "sidebar" "main" "controls";
     }
     body.sidebar-collapsed{ grid-template-rows:auto 1fr auto; grid-template-areas:"header" "main" "controls"; }
-    #sidebar{max-height:45vh}
+    #sideWrap{width:auto; max-height:45vh}
+    body.sidebar-collapsed #sideWrap{width:auto; max-height:0}
+    #sidebar{width:auto; max-height:45vh}
     #main{min-height:35vh}
     .time-control{min-width:250px}
   }
@@ -270,7 +324,8 @@
     </div>
   </header>
 
-  <aside id="sidebar">
+  <div id="sideWrap">
+  <aside id="sidebar" class="nice-scroll">
     <div class="presets" style="margin-bottom:6px">
       <button id="presetSquare">Square</button>
       <button id="presetTriangle">Triangle</button>
@@ -313,6 +368,8 @@
       <a href="https://ferrucci-franco.github.io/electronics/" target="_blank" rel="noopener">ferrucci-franco.github.io</a>
     </div>
   </aside>
+  <button id="edgeToggle" class="edge-toggle" type="button" aria-expanded="true"><svg viewBox="0 0 8 16" aria-hidden="true" focusable="false"><path d="M6 2.5 1.8 8 6 13.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  </div>
 
   <main id="main">
     <div class="toolbar" style="margin:4px 6px">
@@ -1172,7 +1229,7 @@ function buildControlsForTab(tab){
     inner.appendChild(labAmp);
     inner.appendChild(sliderAmp);
     inner.appendChild(labPh);
-    inner.appendChild(sliderPh);
+    inner.appendChild(zeroMarked(sliderPh, 4));
     card.appendChild(inner);
     grid.appendChild(card);
   }
@@ -1761,6 +1818,9 @@ function rememberSceneState(scene){
 }
 
 let plotDiv = null;
+// The box shape is owned by the app (set only by setView), never read back from Plotly,
+// which silently rewrites it after user interaction.
+let ownAspect = {x:2, y:1, z:1};
 
 function appendPolyline(targetX, targetY, targetZ, x, y, z) {
   for(let i = 0; i < x.length; i++) {
@@ -1996,7 +2056,7 @@ function updatePlot(useReact=false){
     }
   }
 
-  const config = {responsive: true, displaylogo: false, scrollZoom:true};
+  const config = {responsive: true, displaylogo: false, scrollZoom:true, displayModeBar:false};
   const view = getCurrentView();
   let layout = layoutWithCamera(!initialized, maxAmp);
 
@@ -2009,14 +2069,8 @@ function updatePlot(useReact=false){
   cam.projection = cam.projection || {};
   cam.projection.type = "orthographic";
   layout.scene.camera = cam;
-  layout.scene.aspectmode = view.aspect || lastAspect;
-  if (layout.scene.aspectmode === "manual") {
-    layout.scene.aspectratio = view.aspectratio
-      ? JSON.parse(JSON.stringify(view.aspectratio))
-      : JSON.parse(JSON.stringify(lastAspectratio));
-  } else {
-    delete layout.scene.aspectratio;
-  }
+  layout.scene.aspectmode = "manual";
+  layout.scene.aspectratio = JSON.parse(JSON.stringify(ownAspect));
 
   // Remember this camera/aspect so that the next render can restore it even
   // when the scene has been torn down.
@@ -2191,6 +2245,7 @@ function setView(view){
     center:{x:0, y:0, z:0},
     projection:{type:"orthographic"}
   };
+  ownAspect = JSON.parse(JSON.stringify(aspectratio));
   rememberSceneState({
     camera,
     aspectmode: aspect,
@@ -2503,6 +2558,76 @@ if (document.readyState === 'loading') {
 } else {
   initializeApp();
 }
+
+/* ===== UI enhancements ===== */
+document.addEventListener("contextmenu", function(e){ e.preventDefault(); });
+
+/* signed sliders: mark at zero, magnetic while dragging */
+function zeroMarked(input, snap){
+  var wrap=document.createElement("div"); wrap.className="zero-wrap"; wrap.appendChild(input);
+  var tick=document.createElement("div"); tick.className="zero-tick"; tick.innerHTML="<span>0</span>"; wrap.appendChild(tick);
+  var mn=parseFloat(input.min), mx=parseFloat(input.max), f=(0-mn)/(mx-mn);
+  tick.style.left="calc(8px + (100% - 16px) * "+f+")";
+  var dragging=false, d=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"value");
+  function sync(){ tick.classList.toggle("on", parseFloat(d.get.call(input))===0); }
+  Object.defineProperty(input,"value",{configurable:true,get:function(){return d.get.call(this);},set:function(v){d.set.call(this,v); sync();}});
+  input.addEventListener("pointerdown", function(){ dragging=true; });
+  window.addEventListener("pointerup", function(){ dragging=false; });
+  input.addEventListener("input", function(){
+    if(dragging && Math.abs(parseFloat(d.get.call(input)))<=snap) input.value=0;
+    sync();
+  });
+  sync();
+  return wrap;
+}
+
+/* mouse wheel on any slider once the pointer has rested on it for a moment */
+(function(){
+  var DWELL=350, hoverEl=null, since=0;
+  function rangeOf(t){ return t&&t.closest?t.closest('input[type="range"]'):null; }
+  document.addEventListener("mouseover", function(e){ var r=rangeOf(e.target); if(r!==hoverEl){ hoverEl=r; since=Date.now(); } });
+  document.addEventListener("wheel", function(e){
+    var input=rangeOf(e.target);
+    if(!input||input!==hoverEl||input.disabled||Date.now()-since<DWELL) return;
+    e.preventDefault();
+    var dir=e.deltaY<0?1:-1, v=parseFloat(input.value), mn=parseFloat(input.min), mx=parseFloat(input.max), st=parseFloat(input.step)||1;
+    var notch=Math.max(st,Math.round((mx-mn)/100/st)*st);
+    var nv=Math.round((v+dir*notch-mn)/st)*st+mn;
+    nv=parseFloat(Math.min(mx,Math.max(mn,nv)).toFixed(6));
+    if(nv===v) return;
+    input.value=nv;
+    input.dispatchEvent(new Event("input",{bubbles:true}));
+  },{passive:false,capture:true});
+})();
+
+/* pan with the middle button in 3D: replayed as a right-button drag (Plotly pans with right) */
+(function(){
+  var el=document.getElementById("plot3d"), mid=false;
+  function fake(type,e){
+    var t=(type==="mousedown")?e.target:(document.elementFromPoint(e.clientX,e.clientY)||e.target);
+    t.dispatchEvent(new MouseEvent(type,{bubbles:true,cancelable:true,view:window,clientX:e.clientX,clientY:e.clientY,screenX:e.screenX,screenY:e.screenY,button:2,buttons:type==="mouseup"?0:2}));
+  }
+  el.addEventListener("mousedown", function(e){ if(e.button===1&&e.isTrusted){ mid=true; e.preventDefault(); e.stopImmediatePropagation(); fake("mousedown",e); } }, true);
+  window.addEventListener("mousemove", function(e){ if(mid&&e.isTrusted){ e.stopImmediatePropagation(); fake("mousemove",e); } }, true);
+  window.addEventListener("mouseup", function(e){ if(mid&&e.isTrusted){ mid=false; e.stopImmediatePropagation(); fake("mouseup",e); } }, true);
+  el.addEventListener("auxclick", function(e){ e.preventDefault(); });
+})();
+
+/* double-click on the 3D plot: zoom fit (back to the current view preset) */
+document.getElementById("plot3d").addEventListener("dblclick", function(){ setTimeout(function(){ setView(currentViewMode); },0); });
+
+/* edge pill drives the (hidden) original toggle button and mirrors its state */
+(function(){
+  var pill=document.getElementById("edgeToggle"), orig=document.getElementById("toggleSidebar");
+  function sync(){
+    var hidden=document.body.classList.contains("sidebar-collapsed"), t=orig.textContent.trim();
+    pill.classList.toggle("collapsed",hidden); pill.title=t; pill.setAttribute("aria-label",t); pill.setAttribute("aria-expanded",String(!hidden));
+  }
+  pill.addEventListener("click", function(){ orig.click(); });
+  new MutationObserver(sync).observe(document.body,{attributes:true,attributeFilter:["class"]});
+  new MutationObserver(sync).observe(orig,{childList:true,characterData:true,subtree:true});
+  sync();
+})();
 </script>
 </body>
 </html>
