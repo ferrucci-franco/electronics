@@ -292,7 +292,7 @@
 /* ================= constants ================= */
 var RAD = Math.PI/180;
 var COLORS = { z:"#2563eb", dz:"#ff8c00", int:"#7e57c2", phasorTip:"#1f2937" };
-var AXIS_GRAY="gray", W3D=6, W2D=3, WPH=6, TIP_SIZE=5;
+var AXIS_GRAY="gray", W3D=6, W2D=3, WPH=4, TIP_SIZE=5;
 var N_SAMPLES=1000;
 
 /* i18n text and info popup (same as before, trimmed here for brevity) */
@@ -454,7 +454,7 @@ function layout3D(maxAmp, includeCamera){
       aspectmode:"cube"
     },
     paper_bgcolor:paper, plot_bgcolor:bg, template: darkMode?"plotly_dark":"plotly_white",
-    hovermode:false, legend:{x:1,y:0,xanchor:"right",yanchor:"bottom",bgcolor:"rgba(0,0,0,0)"}
+    hovermode:false, legend:{x:1,y:0,xanchor:"right",yanchor:"bottom",bgcolor:"rgba(0,0,0,0)",itemwidth:60,itemsizing:"constant",font:{size:13}}
   };
   if(includeCamera){ lay.scene.camera={eye:{x:1.8,y:-1.8,z:1.2},up:{x:0,y:0,z:1},projection:{type:"orthographic"}}; }
   return lay;
