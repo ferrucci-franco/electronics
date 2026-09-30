@@ -14,14 +14,14 @@
     defaults: { frequency: 50000, duty: 50, inductance: 5, capacitance: 20, inputVoltage: 24, resistance: 10 },
     controls: {
       top: [
-        { key: "frequency", symbol: "f<sub>s</sub>", label: text("Frequency", "Fréquence", "Frecuencia"), aria: text("Switching frequency", "Fréquence de découpage", "Frecuencia de conmutación"), min: 10000, max: 200000, step: 5000, scale: 0.001, unit: "kHz" },
+        { key: "frequency", symbol: "f<sub>s</sub>", label: text("Frequency", "Fréquence", "Frecuencia"), aria: text("Switching frequency", "Fréquence de découpage", "Frecuencia de conmutación"), min: 10000, max: 1200000, step: 10000, scale: 0.001, unit: "kHz" },
         { key: "duty", symbol: "α", label: text("Duty cycle α", "Rapport cyclique α", "Ciclo de trabajo α"), aria: text("Duty cycle alpha", "Rapport cyclique alpha", "Ciclo de trabajo alfa"), min: 10, max: 90, step: 2, unit: "%" },
         { key: "inputVoltage", symbol: "V<sub>in</sub>", label: text("Input voltage", "Tension d’entrée", "Tensión de entrada"), aria: text("Input voltage", "Tension d’entrée", "Tensión de entrada"), min: 6, max: 48, step: 2, unit: "V", advanced: true },
       ],
       bottom: [
-        { key: "inductance", symbol: "L", label: text("Inductance", "Inductance", "Inductancia"), aria: text("Inductance", "Inductance", "Inductancia"), min: 0.5, max: 15, step: 0.5, unit: "µH" },
+        { key: "inductance", symbol: "L", label: text("Inductance", "Inductance", "Inductancia"), aria: text("Inductance", "Inductance", "Inductancia"), min: 0.5, max: 30, step: 0.5, unit: "µH" },
         { key: "capacitance", symbol: "C", label: text("Capacitance", "Capacité", "Capacitancia"), aria: text("Capacitance", "Capacité", "Capacitancia"), min: 2, max: 100, step: 2, unit: "µF" },
-        { key: "resistance", symbol: "R", label: text("Load", "Charge", "Carga"), aria: text("Load resistance", "Résistance de charge", "Resistencia de carga"), min: 1, max: 20, step: 1, unit: "Ω", advanced: true },
+        { key: "resistance", symbol: "R", label: text("Load", "Charge", "Carga"), aria: text("Load resistance", "Résistance de charge", "Resistencia de carga"), min: 1, max: 100, step: 1, unit: "Ω", advanced: true },
       ],
     },
     diagram: { type: "svg", aria: text("Buck converter diagram", "Schéma du convertisseur buck", "Esquema del convertidor buck") },
