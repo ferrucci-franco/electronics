@@ -109,6 +109,14 @@
   .control-card{background:var(--bg); border:1px solid var(--panel-border); border-radius:8px; padding:12px}
   .row{display:grid; gap:8px}
   input[type="range"]{accent-color:var(--primary)}
+  /* zero mark for signed sliders */
+  .zero-wrap{position:relative; padding-bottom:16px}
+  .zero-wrap input[type="range"]{display:block; margin-bottom:0}
+  .zero-tick{position:absolute; bottom:0; width:0; pointer-events:none; color:var(--text-secondary); transition:color .15s}
+  .zero-tick::before{content:""; position:absolute; left:-0.5px; bottom:10px; width:1px; height:7px; background:currentColor}
+  .zero-tick span{position:absolute; left:0; bottom:-2px; transform:translateX(-50%); font-size:.7rem; line-height:1}
+  .zero-tick.on{color:var(--primary)}
+  .zero-tick.on::before{width:2px; left:-1px}
   .row label{display:flex; justify-content:space-between; align-items:center; font-size:0.9rem}
   .hint{font-size:0.86rem; opacity:.9; margin-top:2px}
   input[type="range"]{width:100%}
@@ -707,6 +715,28 @@ $("toggleSidebar").addEventListener("click", ()=>{
   setTimeout(()=>{ Plotly.Plots.resize("plot3d"); Plotly.Plots.resize("plotRe"); Plotly.Plots.resize("plotIm"); }, 0);
 });
 
+/* signed sliders: a mark at zero, magnetic while dragging */
+function addZeroMark(input, snap){
+  const wrap=document.createElement("div"); wrap.className="zero-wrap";
+  input.parentNode.insertBefore(wrap, input); wrap.appendChild(input);
+  const tick=document.createElement("div"); tick.className="zero-tick"; tick.innerHTML="<span>0</span>"; wrap.appendChild(tick);
+  const mn=parseFloat(input.min), mx=parseFloat(input.max), f=(0-mn)/(mx-mn);
+  tick.style.left="calc(8px + (100% - 16px) * "+f+")";
+  let dragging=false;
+  const sync=()=>tick.classList.toggle("on", parseFloat(input.value)===0);
+  input.addEventListener("pointerdown", ()=>{ dragging=true; });
+  window.addEventListener("pointerup", ()=>{ dragging=false; });
+  input.addEventListener("input", ()=>{
+    if(dragging && Math.abs(parseFloat(input.value))<=snap) input.value=0;
+    sync();
+  });
+  input.addEventListener("change", sync);
+  input._syncZero=sync; sync();
+}
+addZeroMark($("slSigma"), 0.2);
+addZeroMark($("slOmega"), 3);
+addZeroMark($("slPhi"), 3);
+
 /* Sliders */
 $("slA").addEventListener("input", (e)=>{ A=parseFloat(e.target.value); $("valA").textContent=A.toFixed(2); scheduleUpdate(); });
 $("slSigma").addEventListener("input", (e)=>{ sigma=parseFloat(e.target.value); $("valSigma").textContent=sigma.toFixed(2); scheduleUpdate(); });
@@ -726,6 +756,7 @@ $("btnDefault").addEventListener("click", ()=>{
   A=DEF_A; sigma=DEF_SIGMA; omega=DEF_OMEGA; phi=DEF_PHI;
   $("slA").value=A; $("slSigma").value=sigma; $("slOmega").value=omega;
   $("slPhi").value=(phi*180/Math.PI); // degrees slider
+  ["slSigma","slOmega","slPhi"].forEach((id)=>$(id)._syncZero());
   refreshTexts();
   scheduleUpdate();
 });
