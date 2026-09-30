@@ -343,6 +343,18 @@ let plot3D = null, plotRe = null, plotIm = null;
 /* The 3D box shape is owned by the app, never read back from Plotly (which silently
    freezes "auto" into a stale manual ratio after user interaction). */
 let aspectState="cube";
+/* Plotly keeps the user's 3D zoom inside the aspect ratio. Carry it over: the app decides the
+   base shape, and the zoom factor measured from Plotly is re-applied on top of it. */
+let zoomZ=1, appliedAspect=null;
+function resolveAspect(spec){
+  let base=spec.aspectmode==="cube"?{x:1,y:1,z:1}:spec.aspectratio;
+  let sc=plot3D&&plot3D._fullLayout&&plot3D._fullLayout.scene;
+  if(sc&&sc.aspectmode==="manual"&&sc.aspectratio&&appliedAspect&&appliedAspect.y>0){
+    let m=sc.aspectratio.y/appliedAspect.y; if(isFinite(m)&&m>0.05&&m<20) zoomZ*=m;
+  }
+  appliedAspect={x:base.x*zoomZ,y:base.y*zoomZ,z:base.z*zoomZ};
+  return {aspectmode:"manual",aspectratio:appliedAspect};
+}
 function aspectSpec(s,maxAmp){
   if(aspectState==="cube") return {aspectmode:"cube"};
   // time is in fractions of a second while amplitudes are O(1): data proportions would
@@ -474,7 +486,7 @@ function updateAll(){
     cam.projection.scale = cam.projection.scale || 1;
     layout.scene.camera = cam;
   }
-  const asp = aspectSpec(span(), maxAbs); layout.scene.aspectmode = asp.aspectmode;
+  const asp = resolveAspect(aspectSpec(span(), maxAbs)); layout.scene.aspectmode = asp.aspectmode;
   if(asp.aspectratio) layout.scene.aspectratio = asp.aspectratio; else delete layout.scene.aspectratio;
   const config = {responsive:true, displaylogo:false, displayModeBar:false};
   if(!initialized3D){
@@ -555,7 +567,7 @@ function setHover3D(n){
     // Update the marker AND re-pin the live camera in one call, so the user's
     // viewpoint (rotation, pan, zoom) can never be reset by the redraw.
     var sc=plot3D._fullLayout&&plot3D._fullLayout.scene, live=sc&&sc._scene&&sc._scene.getCamera&&sc._scene.getCamera(), lay={};
-    if(live){ lay["scene.camera"]=JSON.parse(JSON.stringify(live)); var asp=aspectSpec(span(),lastDat.maxAbs); lay["scene.aspectmode"]=asp.aspectmode; if(asp.aspectratio) lay["scene.aspectratio"]=asp.aspectratio; }
+    if(live){ lay["scene.camera"]=JSON.parse(JSON.stringify(live)); var asp=resolveAspect(aspectSpec(span(),lastDat.maxAbs)); lay["scene.aspectmode"]=asp.aspectmode; if(asp.aspectratio) lay["scene.aspectratio"]=asp.aspectratio; }
     Plotly.update(plot3D,{x:[x],y:[y],z:[z],"marker.color":[c]},lay,[hover3dIdx]);
   });
 }
@@ -640,8 +652,8 @@ function setView(which){
   else if(which==="imag"){ eye={x:0,y:-2.8,z:0}; up={x:0,y:0,z:1}; }
   else if(which==="plane"){ eye={x:2.8,y:0,z:0}; up={x:0,y:0,z:1}; aspect="cube"; }
   else { eye={x:1.8,y:-1.8,z:1.2}; up={x:0,y:0,z:1}; aspect="cube"; }
-  aspectState=aspect;
-  var asp=aspectSpec(span(),lastDat?lastDat.maxAbs:1.1), upd={"scene.camera.eye":eye,"scene.camera.up":up,"scene.camera.projection.type":"orthographic","scene.aspectmode":asp.aspectmode};
+  aspectState=aspect; zoomZ=1;
+  var asp=resolveAspect(aspectSpec(span(),lastDat?lastDat.maxAbs:1.1)), upd={"scene.camera.eye":eye,"scene.camera.up":up,"scene.camera.projection.type":"orthographic","scene.aspectmode":asp.aspectmode};
   if(asp.aspectratio) upd["scene.aspectratio"]=asp.aspectratio;
   Plotly.relayout("plot3d",upd);
 }
