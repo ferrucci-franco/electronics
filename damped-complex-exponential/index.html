@@ -5,56 +5,134 @@
 <title>Damped Complex Exponential</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
 <style>
   :root{
-    --bg:#ffffff; --fg:#0f172a; --panel:#f8fafc; --panel-border:#e5e7eb;
-    --btn:#e2e8f0; --accent:#0ea5e9; --plot-bg:#ffffff; --plot-paper:#ffffff;
-    --grid:#e5e7eb;
+    --bg:#ffffff; --fg:#212121; --panel:#fafafa; --panel-border:#cccccc;
+    --bar-bg:#f5f5f5; --bg-tertiary:#e0e0e0; --hover-bg:#e8e8e8; --text-secondary:#757575;
+    --primary:#2196F3;
+    --btn:#ffffff; --accent:#2196F3; --plot-bg:#ffffff; --plot-paper:#ffffff; --grid:#e8e8e8; --plot-font:#333333;
+    --modal-overlay: rgba(0,0,0,0.35);
+    --modal-bg: #f0f0f0;
+    --modal-fg: #111111;
+    --modal-border: #bdbdbd;
   }
   .dark-mode{
-    --bg:#0b0b0c; --fg:#f1f5f9; --panel:#151618; --panel-border:#2a2c30;
-    --btn:#1f2937; --accent:#22d3ee; --plot-bg:#0b0b0c; --plot-paper:#0b0b0c;
-    --grid:rgba(220,220,220,0.28);
+    --bg:#1e1e1e; --fg:#e0e0e0; --panel:#252525; --panel-border:#444444;
+    --bar-bg:#2d2d2d; --bg-tertiary:#3d3d3d; --hover-bg:#353535; --text-secondary:#a0a0a0;
+    --primary:#2196F3;
+    --btn:#1e1e1e; --accent:#2196F3; --plot-bg:#2d2d2d; --plot-paper:#2d2d2d; --grid:#3d3d3d; --plot-font:#d0d0d0;
+    --modal-overlay: rgba(0,0,0,0.6);
+    --modal-bg: #1b1d22;
+    --modal-fg: #e5e7eb;
+    --modal-border: #2f343b;
   }
   *{box-sizing:border-box}
   html,body{height:100%}
   body{
-    margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    margin:0; font-family:Calibri,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
     background:var(--bg); color:var(--fg);
     height:100vh; overflow:hidden;
     display:grid; grid-template-columns:320px 1fr; grid-template-rows:auto 1fr;
     grid-template-areas:"header header" "sidebar main";
   }
   body.sidebar-collapsed{ grid-template-columns:0 1fr; }
+  #sideWrap{ min-width:0 }
+
+  /* Sidebar credits */
+  .sidebar-credits{
+    margin-top:auto; padding:12px 8px 4px; text-align:center;
+    border-top:1px solid var(--panel-border); font-size:.78rem; color:var(--text-secondary);
+  }
+  .sidebar-credits a{color:var(--primary); text-decoration:none}
+  .sidebar-credits a:hover{text-decoration:underline}
 
   header{
-    grid-area:header; background:var(--panel); border-bottom:1px solid var(--panel-border);
-    padding:10px 14px; display:flex; gap:10px; align-items:center; justify-content:space-between;
+    grid-area:header; background:var(--bar-bg); border-bottom:1px solid var(--panel-border);
+    padding:8px 16px; display:flex; gap:16px; align-items:center; justify-content:space-between;
   }
-  .title{margin:0; font-weight:700; font-size:1.05rem}
-  .toolbar{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+  .title{margin:0; font-weight:700; font-size:1.25rem; white-space:nowrap}
+  #formula{flex:1 1 auto; text-align:center; min-width:0; overflow:hidden; font-size:1.4rem}
+  .toolbar{display:flex; gap:8px; align-items:center; flex-wrap:nowrap}
   button,select,label{font-size:0.95rem}
   button{
     background:var(--btn); color:var(--fg); border:1px solid var(--panel-border);
-    border-radius:10px; padding:8px 12px; cursor:pointer;
+    border-radius:8px; padding:6px 12px; cursor:pointer; font-family:inherit; transition:all .2s; white-space:nowrap;
   }
-  button:hover{border-color:var(--accent)}
+  button:hover{background:var(--hover-bg); border-color:var(--panel-border)}
+  .language-selector{display:flex; gap:4px; background:var(--bg-tertiary); padding:4px; border-radius:8px; margin-right:6px}
+  .lang-btn{padding:4px 12px; border:none; background:transparent; font-size:.85rem; border-radius:6px}
+  .lang-btn:hover{background:var(--hover-bg)}
+  .lang-btn.active,.lang-btn.active:hover{background:var(--primary); color:#fff; box-shadow:0 2px 4px rgba(0,0,0,.2)}
+  .top-btn{height:36px}
+  .icon-only{width:40px; padding:0; font-size:1.15rem; line-height:1}
+  .top-btn:hover{transform:translateY(-1px); box-shadow:0 2px 4px rgba(0,0,0,.1)}
 
+  #sideWrap{grid-area:sidebar; position:relative; width:320px; z-index:5; min-height:0}
+  body.sidebar-collapsed #sideWrap{ width:0; }
   #sidebar{
-    grid-area:sidebar; background:var(--panel); border-right:1px solid var(--panel-border);
-    display:flex; flex-direction:column; gap:10px; padding:12px; overflow-y:auto; width:320px;
+    background:var(--panel); border-right:1px solid var(--panel-border);
+    display:flex; flex-direction:column; gap:10px; padding:12px; overflow-x:hidden; overflow-y:auto; width:320px; height:100%;
+    scrollbar-width:auto;
+    scrollbar-color:color-mix(in srgb, var(--text-secondary) 45%, transparent) var(--panel);
+  }
+  #sidebar::-webkit-scrollbar{width:18px}
+  #sidebar::-webkit-scrollbar-track{background:var(--panel)}
+  #sidebar::-webkit-scrollbar-thumb{
+    background:color-mix(in srgb, var(--text-secondary) 38%, transparent);
+    border:3px solid var(--panel); border-radius:999px; background-clip:content-box;
+  }
+  #sidebar:hover::-webkit-scrollbar-thumb{
+    background:color-mix(in srgb, var(--primary) 58%, var(--text-secondary));
+    border:3px solid var(--panel); background-clip:content-box;
   }
   body.sidebar-collapsed #sidebar{ display:none; }
 
-  .control-card{background:var(--bg); border:1px solid var(--panel-border); border-radius:12px; padding:12px}
+  /* edge pill (as in timeseries-explorer) */
+  .edge-toggle{
+    position:absolute; top:50%; left:100%; transform:translate(-50%,-50%);
+    width:14px; height:46px; padding:0; display:flex; align-items:center; justify-content:center;
+    border:1px solid color-mix(in srgb, var(--primary) 40%, var(--panel-border)); border-radius:999px;
+    background:color-mix(in srgb, var(--primary) 8%, var(--bg));
+    color:color-mix(in srgb, var(--primary) 45%, var(--text-secondary));
+    box-shadow:0 1px 3px rgba(0,0,0,.18); z-index:20;
+    transition:color .15s, border-color .15s, background-color .15s;
+  }
+  .edge-toggle:hover,.edge-toggle:focus-visible{
+    color:var(--primary); border-color:var(--primary);
+    background:color-mix(in srgb, var(--primary) 16%, var(--bg));
+  }
+  .edge-toggle svg{width:8px; height:16px}
+  body.sidebar-collapsed .edge-toggle{left:0; transform:translate(0,-50%)}
+  body.sidebar-collapsed .edge-toggle svg{transform:rotate(180deg)}
+
+  .control-card{background:var(--bg); border:1px solid var(--panel-border); border-radius:8px; padding:12px}
   .row{display:grid; gap:8px}
+  input[type="range"]{accent-color:var(--primary)}
   .row label{display:flex; justify-content:space-between; align-items:center; font-size:0.9rem}
   .hint{font-size:0.86rem; opacity:.9; margin-top:2px}
   input[type="range"]{width:100%}
+  .checks{display:grid; gap:6px; margin-top:8px}
+  .checks label{display:flex; align-items:center; gap:8px; font-size:0.95rem}
 
   #main{grid-area:main; padding:8px; display:flex; flex-direction:column; overflow:hidden}
-  #plots{flex:1; display:grid; gap:8px; grid-template-columns:1.2fr 1fr; grid-template-rows:1fr 1fr; grid-template-areas:"plot3d plotRe" "plot3d plotIm"; min-height:480px}
+  #plots{flex:1; display:grid; gap:0; column-gap:0; row-gap:8px; grid-template-columns:var(--w3d,1.2fr) 10px minmax(0,1fr); grid-template-rows:1fr 1fr;
+         grid-template-areas:"plot3d split plotRe" "plot3d split plotIm"; min-height:480px; min-width:0}
+  #plot3d,#plotRe,#plotIm{min-width:0}
+  #plotRe,#plotIm{position:relative}
+  .hv{position:absolute; inset:0; pointer-events:none; overflow:hidden; display:none; z-index:5}
+  .hv-line{position:absolute; width:0; border-left:1px dashed var(--text-secondary)}
+  .hv-dot{position:absolute; width:9px; height:9px; margin:-4.5px 0 0 -4.5px; border-radius:50%; border:2px solid var(--bg); box-shadow:0 0 0 1px rgba(0,0,0,.35)}
+  .hv-label{position:absolute; background:var(--bg); color:var(--fg); border:1px solid var(--panel-border); border-radius:6px; padding:4px 8px; font-size:.85rem; white-space:nowrap; box-shadow:0 2px 6px rgba(0,0,0,.2)}
+  .hv-t{opacity:.7; margin-bottom:2px}
+  .hv-sw{display:inline-block; width:10px; height:3px; margin-right:6px; vertical-align:middle; border-radius:2px}
+  #splitter{grid-area:split; cursor:col-resize; touch-action:none; position:relative}
+  #splitter::after{content:""; position:absolute; top:0; bottom:0; left:50%; width:3px; margin-left:-1.5px; background:color-mix(in srgb, var(--primary) 35%, transparent); border-radius:3px; transition:background .2s}
+  #splitter::before{content:""; position:absolute; top:50%; left:50%; width:8px; height:44px; margin:-22px 0 0 -4px; border-radius:999px; z-index:1;
+    background:var(--primary); opacity:.75; transition:opacity .2s, box-shadow .2s;
+    background-image:radial-gradient(circle, #fff 1.2px, transparent 1.6px); background-size:8px 8px; background-position:center; }
+  #splitter:hover::after,#splitter.dragging::after{background:var(--primary)}
+  #splitter:hover::before,#splitter.dragging::before{opacity:1; box-shadow:0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent)}
   #plot3d{grid-area:plot3d; min-height:460px}
   #plotRe{grid-area:plotRe; min-height:220px}
   #plotIm{grid-area:plotIm; min-height:220px}
@@ -62,16 +140,21 @@
   .mini-toolbar{display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin:4px 6px}
   .flex-split{display:flex; gap:8px; align-items:center; justify-content:space-between}
 
+
   @media (max-width:1100px){
-    #plots{grid-template-columns:1fr; grid-template-rows:1fr 280px 280px; grid-template-areas:"plot3d" "plotRe" "plotIm";}
+    #plots{grid-template-columns:1fr; grid-template-rows:1fr 280px 280px; grid-template-areas:"plot3d" "plotRe" "plotIm"; row-gap:8px} #splitter{display:none}
   }
   @media (max-width:900px){
-    body{
-      grid-template-columns:1fr; grid-template-rows:auto auto 1fr;
-      grid-template-areas:"header" "sidebar" "main";
-    }
+    body{ grid-template-columns:1fr; grid-template-rows:auto auto 1fr; grid-template-areas:"header" "sidebar" "main"; }
     body.sidebar-collapsed{ grid-template-rows:auto 1fr; }
-    #sidebar{max-height:48vh}
+    #sideWrap{width:auto; max-height:48vh}
+    body.sidebar-collapsed #sideWrap{width:auto; max-height:0}
+    #sidebar{width:auto; max-height:48vh; border-right:none; border-bottom:1px solid var(--panel-border)}
+    .edge-toggle{top:100%; left:50%; width:46px; height:14px}
+    .edge-toggle svg{transform:rotate(90deg)}
+    body.sidebar-collapsed .edge-toggle{left:50%; top:0; transform:translate(-50%,0)}
+    body.sidebar-collapsed .edge-toggle svg{transform:rotate(-90deg)}
+    header{flex-wrap:wrap}
     #main{min-height:52vh}
   }
 </style>
@@ -81,17 +164,20 @@
 <body>
   <header>
     <h1 class="title" id="mainTitle">Damped Complex Exponential</h1>
+    <div id="formula">\( z(t)=A\,e^{(\sigma+\mathrm{j}\,\omega)t+\mathrm{j}\,\phi}
+          = A\,e^{\sigma t}\,e^{\mathrm{j}(\omega t+\phi)}
+          = A\,e^{\sigma t}\big(\cos(\omega t+\phi)+\mathrm{j}\,\sin(\omega t+\phi)\big) \)</div>
     <div class="toolbar">
-      <select id="languageSelector" aria-label="Language">
-        <option value="en" selected>English</option>
-        <option value="es">Español</option>
-        <option value="fr">Français</option>
-      </select>
-      <button id="toggleTheme">Dark Mode</button>
-      <button id="toggleSidebar">Hide Controls</button>
+      <div class="language-selector" role="group" aria-label="Language">
+        <button class="lang-btn active" data-lang="en">EN</button>
+        <button class="lang-btn" data-lang="es">ES</button>
+        <button class="lang-btn" data-lang="fr">FR</button>
+      </div>
+      <button id="toggleTheme" class="top-btn icon-only" title="Dark Mode" aria-label="Dark Mode">🌙</button>
     </div>
   </header>
 
+  <div id="sideWrap">
   <aside id="sidebar">
     <div class="control-card">
       <div class="flex-split">
@@ -143,18 +229,19 @@
         <button id="view3D">3D</button>
       </div>
     </div>
+    <div class="sidebar-credits">
+      Franco FERRUCCI &nbsp;·&nbsp;
+      <a href="https://ferrucci-franco.github.io/electronics/" target="_blank" rel="noopener">ferrucci-franco.github.io</a>
+    </div>
+    
   </aside>
+  <button id="toggleSidebar" class="edge-toggle" type="button" aria-expanded="true"><svg viewBox="0 0 8 16" aria-hidden="true" focusable="false"><path d="M6 2.5 1.8 8 6 13.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  </div>
 
   <main id="main">
-    <div class="mini-toolbar">
-      <div id="formula">
-        \( z(t)=A\,e^{(\sigma+\mathrm{j}\,\omega)t+\mathrm{j}\,\phi}
-          = A\,e^{\sigma t}\,e^{\mathrm{j}(\omega t+\phi)}
-          = A\,e^{\sigma t}\big(\cos(\omega t+\phi)+\mathrm{j}\,\sin(\omega t+\phi)\big) \)
-      </div>
-    </div>
     <div id="plots">
       <div id="plot3d"></div>
+      <div id="splitter" role="separator" aria-orientation="vertical"></div>
       <div id="plotRe"></div>
       <div id="plotIm"></div>
     </div>
@@ -163,6 +250,7 @@
 <script>
 /* ================= CONSTANTS ================= */
 const RAD = Math.PI/180;
+const $ = (id)=>document.getElementById(id);
 
 /* Trace colors (3 constants) */
 const COLOR_3D = "#2563eb";  // blue
@@ -175,6 +263,8 @@ const PHASOR_WIDTH = 4;           // thicker line
 
 /* Fixed time-window constants */
 const T_SECONDS   = 0.25;
+function span(){ return T_SECONDS; }
+const COLORS = {z:COLOR_3D, dz:"#ff8c00", int:"#7e57c2"};
 const N_SAMPLES   = 1000;
 const LINE_W_TOTAL = 5;
 
@@ -210,7 +300,7 @@ const tr = {
     viewReal:"Real", viewImag:"Imag.", viewPlane:"Plano complejo", view3D:"3D",
     axisTime:"Tiempo", axisReal:"Parte real", axisImag:"Parte imaginaria",
     axisX3d:"Tiempo", axisY3d:"Real", axisZ3d:"Imaginaria",
-    reset:"Valores por defecto"
+    reset:"Por defecto"
   },
   fr: {
     title:"Exponentielle complexe amortie",
@@ -233,6 +323,7 @@ let A=DEF_A, sigma=DEF_SIGMA, omega=DEF_OMEGA, phi=DEF_PHI; // phi in radians
 let darkMode=false, sidebarHidden=false;
 let initialized3D=false, initializedRe=false, initializedIm=false;
 let syncAttached=false;
+let lastDat=null, hover3dIdx=-1, h3Pending=null, h3Raf=0;
 
 /* Time vector */
 const dt = T_SECONDS / (N_SAMPLES-1);
@@ -241,11 +332,17 @@ const tvec = Array.from({length:N_SAMPLES}, (_,i)=> i*dt);
 /* ================= UTIL: View & ranges ================= */
 let plot3D = null, plotRe = null, plotIm = null;
 
+/* The 3D box shape is owned by the app, never read back from Plotly (which silently
+   freezes "auto" into a stale manual ratio after user interaction). */
+let aspectState="cube";
+function aspectSpec(s,maxAmp){
+  if(aspectState==="cube") return {aspectmode:"cube"};
+  var rx=s/(2*maxAmp), m=Math.max(rx,1);
+  return {aspectmode:"manual", aspectratio:{x:rx/m,y:1/m,z:1/m}};
+}
 function get3DView(){
   if(!plot3D || !plot3D._fullLayout || !plot3D._fullLayout.scene) return {};
-  const cam = plot3D._fullLayout.scene.camera;
-  const aspect = plot3D._fullLayout.scene.aspectmode || "auto";
-  return { camera: JSON.parse(JSON.stringify(cam)), aspect };
+  return { camera: JSON.parse(JSON.stringify(plot3D._fullLayout.scene.camera)) };
 }
 function getXRange(gd){
   if(!gd || !gd._fullLayout || !gd._fullLayout.xaxis) return undefined;
@@ -297,9 +394,10 @@ function layout3D(maxAmp, includeCamera=false){
     },
     paper_bgcolor:paper,
     plot_bgcolor:bg,
+    font:{color:getComputedStyle(document.body).getPropertyValue("--plot-font").trim()},
     template: darkMode ? "plotly_dark" : "plotly_white",
     hovermode:false,
-    legend:{bgcolor:"rgba(0,0,0,0)"}
+    showlegend:false
   };
   if(includeCamera){
     lay.scene.camera = INITIAL_CAMERA;
@@ -318,6 +416,7 @@ function layout2D(titleY, xr){
     yaxis:{title:titleY, autorange:true, showgrid:true, gridcolor:grid},
     paper_bgcolor:paper,
     plot_bgcolor:bg,
+    font:{color:getComputedStyle(document.body).getPropertyValue("--plot-font").trim()},
     template: darkMode ? "plotly_dark" : "plotly_white",
     hovermode:false,
     showlegend:false
@@ -334,6 +433,7 @@ function scheduleUpdate(){
 
 function updateAll(){
   const {re, im, maxAbs} = computeSignals();
+  lastDat = {t:tvec, re, im, maxAbs};
 
   /* -------- 3D traces: curve + phasor at t=0 -------- */
   const view3d = get3DView();
@@ -355,6 +455,8 @@ function updateAll(){
       hoverinfo:"skip", name:"phasor @ t=0", showlegend:false
     }
   ];
+  traces3d.push({type:"scatter3d", mode:"markers", x:[], y:[], z:[], marker:{size:7, color:[], line:{width:2, color:darkMode?"#ffffff":"#111111"}}, hoverinfo:"skip", showlegend:false, name:"hover"});
+  hover3dIdx = traces3d.length-1;
   let layout = layout3D(maxAbs, !initialized3D);
   if(view3d.camera){
     const cam = JSON.parse(JSON.stringify(view3d.camera));
@@ -363,8 +465,9 @@ function updateAll(){
     cam.projection.scale = cam.projection.scale || 1;
     layout.scene.camera = cam;
   }
-  if(view3d.aspect){ layout.scene.aspectmode = view3d.aspect; }
-  const config = {responsive:true, displaylogo:false};
+  const asp = aspectSpec(span(), maxAbs); layout.scene.aspectmode = asp.aspectmode;
+  if(asp.aspectratio) layout.scene.aspectratio = asp.aspectratio; else delete layout.scene.aspectratio;
+  const config = {responsive:true, displaylogo:false, displayModeBar:false};
   if(!initialized3D){
     Plotly.newPlot("plot3d", traces3d, layout, config).then(gd=>{ plot3D=gd; initialized3D=true; });
   }else{
@@ -373,7 +476,7 @@ function updateAll(){
 
   /* -------- 2D: Re -------- */
   const xrRe = getXRange(plotRe);
-  const trRe = [{type:"scatter", mode:"lines", x:tvec, y:Array.from(re), line:{width:3, color:COLOR_RE}, hoverinfo:"skip"}];
+  const trRe = [{type:"scatter", mode:"lines", x:tvec, y:Array.from(re), line:{width:3, color:COLOR_RE}, name:"Re", hoverinfo:"skip"}];
   const layRe = layout2D(tr[lang].axisReal, xrRe);
   if(!initializedRe){
     Plotly.newPlot("plotRe", trRe, layRe, config).then(gd=>{ plotRe=gd; initializedRe=true; attachSyncIfReady(); });
@@ -383,7 +486,7 @@ function updateAll(){
 
   /* -------- 2D: Im -------- */
   const xrIm = getXRange(plotIm);
-  const trIm = [{type:"scatter", mode:"lines", x:tvec, y:Array.from(im), line:{width:3, color:COLOR_IM}, hoverinfo:"skip"}];
+  const trIm = [{type:"scatter", mode:"lines", x:tvec, y:Array.from(im), line:{width:3, color:COLOR_IM}, name:"Im", hoverinfo:"skip"}];
   const layIm = layout2D(tr[lang].axisImag, xrIm);
   if(!initializedIm){
     Plotly.newPlot("plotIm", trIm, layIm, config).then(gd=>{ plotIm=gd; initializedIm=true; attachSyncIfReady(); });
@@ -396,6 +499,7 @@ function updateAll(){
 let syncing = false;
 function attachSyncIfReady(){
   if(syncAttached || !plotRe || !plotIm) return;
+  linkHover(); attachPan2D("plotRe"); attachPan2D("plotIm");
 
   function syncX(srcGd, dstGd, ev){
     if(syncing || !ev) return;
@@ -421,38 +525,128 @@ function attachSyncIfReady(){
   syncAttached = true;
 }
 
-/* ================= CAMERA PRESETS (orientation) ================= */
-function setView(which){
-  let eye, up, aspect="auto";
-  if(which==="real"){
-    eye={x:0, y:0, z:2.8};   // look down +z
-    up ={x:0, y:1, z:0};     // +y (Real) up; +x (Time) right
-  }else if(which==="imag"){
-    eye={x:0, y:-2.8, z:0};  // look down -y (time grows right)
-    up ={x:0, y:0, z:1};     // +z (Imag) up; +x right
-  }else if(which==="plane"){
-    eye={x:2.8, y:0, z:0};   // along +x (Time)
-    up ={x:0, y:0, z:1};     // +z up; +y right
-    aspect="cube";
-  }else{ /* 3D */
-    eye={x:1.8, y:-1.8, z:1.2};
-    up ={x:0, y:0, z:1};
-    aspect="cube";
-  }
-  Plotly.relayout("plot3d", {
-    "scene.camera.eye": eye,
-    "scene.camera.up": up,
-    "scene.camera.projection.type": "orthographic",
-    "scene.aspectmode": aspect
+/* Linked hover: the pointer's time in either 2D plot selects the sample; the Re and Im values at that time are shown at once, each in its own plot. */
+var hvEls={}, lastHoverN=-1;
+function makeOverlay(id){
+  var host=$(id), o=document.createElement("div");
+  o.className="hv"; o.innerHTML='<div class="hv-line"></div><div class="hv-label"></div>';
+  host.appendChild(o); hvEls[id]={o:o,line:o.firstChild,label:o.lastChild,dots:[]};
+}
+function setHover3D(n){
+  h3Pending=n; if(h3Raf) return;
+  h3Raf=requestAnimationFrame(function(){
+    h3Raf=0; if(!plot3D||hover3dIdx<0||!lastDat) return;
+    var d=lastDat, x=[],y=[],z=[],c=[];
+    if(h3Pending!==null && h3Pending<d.t.length){
+      var m=h3Pending;
+      x.push(d.t[m]); y.push(d.re[m]); z.push(d.im[m]); c.push(COLORS.z);
+      if(d.dre){ x.push(d.t[m]); y.push(d.dre[m]); z.push(d.dim[m]); c.push(COLORS.dz); }
+      if(d.ire){ x.push(d.t[m]); y.push(d.ire[m]); z.push(d.iim[m]); c.push(COLORS.int); }
+    }
+    // Update the marker AND re-pin the live camera in one call, so the user's
+    // viewpoint (rotation, pan, zoom) can never be reset by the redraw.
+    var sc=plot3D._fullLayout&&plot3D._fullLayout.scene, live=sc&&sc._scene&&sc._scene.getCamera&&sc._scene.getCamera(), lay={};
+    if(live){ lay["scene.camera"]=JSON.parse(JSON.stringify(live)); var asp=aspectSpec(span(),lastDat.maxAbs); lay["scene.aspectmode"]=asp.aspectmode; if(asp.aspectratio) lay["scene.aspectratio"]=asp.aspectratio; }
+    Plotly.update(plot3D,{x:[x],y:[y],z:[z],"marker.color":[c]},lay,[hover3dIdx]);
+  });
+}
+function hideHover(){ lastHoverN=-1; Object.keys(hvEls).forEach(function(k){ hvEls[k].o.style.display="none"; }); setHover3D(null); }
+function drawHover(id,n){
+  var g=$(id), e=hvEls[id], xa=g._fullLayout.xaxis, ya=g._fullLayout.yaxis;
+  var px=xa._offset+xa.l2p(g.data[0].x[n]);
+  if(px<xa._offset-0.5||px>xa._offset+xa._length+0.5){ e.o.style.display="none"; return; }
+  e.o.style.display="block";
+  e.line.style.left=px+"px"; e.line.style.top=ya._offset+"px"; e.line.style.height=ya._length+"px";
+  var rows='<div class="hv-t">t = '+g.data[0].x[n].toFixed(3)+'</div>', topY=1e9;
+  g.data.forEach(function(tr,i){
+    var py=ya._offset+ya.l2p(tr.y[n]);
+    if(!e.dots[i]){ var d=document.createElement("div"); d.className="hv-dot"; e.o.appendChild(d); e.dots[i]=d; }
+    var d=e.dots[i]; d.style.display="block"; d.style.background=tr.line.color;
+    d.style.left=px+"px"; d.style.top=py+"px"; topY=Math.min(topY,py);
+    rows+='<div><span class="hv-sw" style="background:'+tr.line.color+'"></span>'+tr.name+' = '+tr.y[n].toFixed(3)+'</div>';
+  });
+  for(var j=g.data.length;j<e.dots.length;j++) e.dots[j].style.display="none";
+  e.label.innerHTML=rows; e.label.style.display="block";
+  var w=e.label.offsetWidth, h=e.label.offsetHeight;
+  var lx=px+12; if(lx+w>xa._offset+xa._length) lx=px-12-w;
+  var ly=Math.max(ya._offset+2, Math.min(topY-h/2, ya._offset+ya._length-h-2));
+  e.label.style.left=lx+"px"; e.label.style.top=ly+"px";
+}
+function linkHover(){
+  ["plotRe","plotIm"].forEach(function(id){
+    makeOverlay(id);
+    var g=$(id);
+    g.addEventListener("mousemove", function(ev){
+      if(ev.buttons){ hideHover(); return; }
+      var xa=g._fullLayout.xaxis, ya=g._fullLayout.yaxis, r=g.getBoundingClientRect();
+      var mx=ev.clientX-r.left, my=ev.clientY-r.top;
+      var xs=g.data[0].x, last=xs[xs.length-1];
+      if(mx<xa._offset||mx>xa._offset+xa._length||my<ya._offset||my>ya._offset+ya._length){ hideHover(); return; }
+      var x=xa.p2l(mx-xa._offset), n=Math.round(x/last*(xs.length-1));
+      if(n<0||n>xs.length-1){ hideHover(); return; }
+      if(n===lastHoverN && hvEls.plotRe.o.style.display==="block") return;
+      lastHoverN=n; drawHover("plotRe",n); drawHover("plotIm",n); setHover3D(n);
+    });
+    g.addEventListener("mouseleave", hideHover);
+    g.addEventListener("wheel", hideHover);
+    g.on("plotly_relayout", hideHover);
   });
 }
 
-/* ================= UI BINDINGS ================= */
-const $ = (id)=>document.getElementById(id);
-
-function typesetFormula(){
-  if(window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise();
+/* pan with right / middle button in the 2D plots */
+function attachPan2D(id){
+  var el=$(id), st=null;
+  el.addEventListener("mousedown", function(e){
+    if(e.button!==1&&e.button!==2) return;
+    var gd=el, xa=gd._fullLayout.xaxis, ya=gd._fullLayout.yaxis;
+    st={x:e.clientX,y:e.clientY,xr:xa.range.slice(),yr:ya.range.slice(),wx:xa._length,wy:ya._length};
+    e.preventDefault(); e.stopPropagation();
+  }, true);
+  window.addEventListener("mousemove", function(e){
+    if(!st) return;
+    var dx=(e.clientX-st.x)/st.wx*(st.xr[1]-st.xr[0]), dy=(e.clientY-st.y)/st.wy*(st.yr[1]-st.yr[0]);
+    Plotly.relayout(el,{"xaxis.range[0]":st.xr[0]-dx,"xaxis.range[1]":st.xr[1]-dx,"yaxis.range[0]":st.yr[0]+dy,"yaxis.range[1]":st.yr[1]+dy});
+  });
+  window.addEventListener("mouseup", function(){ st=null; });
+  el.addEventListener("auxclick", function(e){ e.preventDefault(); });
 }
+
+/* pan with middle button in 3D: replay it as a right-button drag (Plotly pans with right) */
+(function(){
+  var el=$("plot3d"), mid=false;
+  function fake(type,e){
+    var t=(type==="mousedown")?e.target:(document.elementFromPoint(e.clientX,e.clientY)||e.target);
+    t.dispatchEvent(new MouseEvent(type,{bubbles:true,cancelable:true,view:window,clientX:e.clientX,clientY:e.clientY,screenX:e.screenX,screenY:e.screenY,button:2,buttons:type==="mouseup"?0:2}));
+  }
+  el.addEventListener("mousedown", function(e){ if(e.button===1&&e.isTrusted){ mid=true; e.preventDefault(); e.stopImmediatePropagation(); fake("mousedown",e); } }, true);
+  window.addEventListener("mousemove", function(e){ if(mid&&e.isTrusted){ e.stopImmediatePropagation(); fake("mousemove",e); } }, true);
+  window.addEventListener("mouseup", function(e){ if(mid&&e.isTrusted){ mid=false; e.stopImmediatePropagation(); fake("mouseup",e); } }, true);
+  el.addEventListener("auxclick", function(e){ e.preventDefault(); });
+})();
+
+/* views */
+function setView(which){
+  let eye,up,aspect="auto";
+  if(which==="real"){ eye={x:0,y:0,z:2.8}; up={x:0,y:1,z:0}; }
+  else if(which==="imag"){ eye={x:0,y:-2.8,z:0}; up={x:0,y:0,z:1}; }
+  else if(which==="plane"){ eye={x:2.8,y:0,z:0}; up={x:0,y:0,z:1}; aspect="cube"; }
+  else { eye={x:1.8,y:-1.8,z:1.2}; up={x:0,y:0,z:1}; aspect="cube"; }
+  aspectState=aspect;
+  var asp=aspectSpec(span(),lastDat?lastDat.maxAbs:1.1), upd={"scene.camera.eye":eye,"scene.camera.up":up,"scene.camera.projection.type":"orthographic","scene.aspectmode":asp.aspectmode};
+  if(asp.aspectratio) upd["scene.aspectratio"]=asp.aspectratio;
+  Plotly.relayout("plot3d",upd);
+}
+
+function syncThemeBtn(){
+  var b=$("toggleTheme"), t=darkMode?tr[lang].light:tr[lang].dark;
+  b.textContent=darkMode?"☀️":"🌙"; b.title=t; b.setAttribute("aria-label",t);
+}
+function syncSidebarBtn(){
+  var b=$("toggleSidebar"), t=sidebarHidden?tr[lang].show:tr[lang].hide;
+  b.title=t; b.setAttribute("aria-label",t); b.setAttribute("aria-expanded",String(!sidebarHidden));
+}
+/* ================= UI BINDINGS ================= */
+
 function refreshHints(){
   $("hintFreq").textContent   = tr[lang].freqHint(omega/(2*Math.PI));
   $("hintPhiRad").textContent = tr[lang].phiHintRad(phi); // radians display
@@ -461,8 +655,7 @@ function refreshTexts(){
   $("mainTitle").textContent = tr[lang].title;
   $("paramsTitle").textContent = tr[lang].params;
   $("viewsTitle").textContent = tr[lang].views;
-  $("toggleTheme").textContent = darkMode ? tr[lang].light : tr[lang].dark;
-  $("toggleSidebar").textContent = sidebarHidden ? tr[lang].show : tr[lang].hide;
+  syncThemeBtn(); syncSidebarBtn();
   $("labA").textContent = tr[lang].A;
   $("labSigma").textContent = tr[lang].sigma;
   $("labOmega").textContent = tr[lang].omega;
@@ -481,23 +674,36 @@ function refreshTexts(){
   $("valPhi").textContent = (phi*180/Math.PI).toFixed(2);
 
   refreshHints();
-  typesetFormula();
 }
 
-$("languageSelector").addEventListener("change", (e)=>{ lang=e.target.value; refreshTexts(); scheduleUpdate(); });
+function syncThemeBtn(){
+  const b=$("toggleTheme"), t=darkMode?tr[lang].light:tr[lang].dark;
+  b.textContent=darkMode?"☀️":"🌙"; b.title=t; b.setAttribute("aria-label",t);
+}
+function syncSidebarBtn(){
+  const b=$("toggleSidebar"), t=sidebarHidden?tr[lang].show:tr[lang].hide;
+  b.title=t; b.setAttribute("aria-label",t); b.setAttribute("aria-expanded",String(!sidebarHidden));
+}
+document.querySelectorAll(".lang-btn").forEach((b)=>{
+  b.addEventListener("click", ()=>{
+    lang=b.dataset.lang;
+    document.querySelectorAll(".lang-btn").forEach((x)=>x.classList.toggle("active", x===b));
+    document.documentElement.lang=lang;
+    refreshTexts(); scheduleUpdate();
+  });
+});
 
 $("toggleTheme").addEventListener("click", ()=>{
   darkMode = !darkMode;
   document.body.classList.toggle("dark-mode", darkMode);
-  $("toggleTheme").textContent = darkMode ? tr[lang].light : tr[lang].dark;
-  typesetFormula();
+  syncThemeBtn();
   scheduleUpdate();
 });
 
 $("toggleSidebar").addEventListener("click", ()=>{
   sidebarHidden = !sidebarHidden;
   document.body.classList.toggle("sidebar-collapsed", sidebarHidden);
-  $("toggleSidebar").textContent = sidebarHidden ? tr[lang].show : tr[lang].hide;
+  syncSidebarBtn();
   setTimeout(()=>{ Plotly.Plots.resize("plot3d"); Plotly.Plots.resize("plotRe"); Plotly.Plots.resize("plotIm"); }, 0);
 });
 
@@ -529,6 +735,28 @@ $("viewReal").addEventListener("click", ()=>setView("real"));
 $("viewImag").addEventListener("click", ()=>setView("imag"));
 $("viewPlane").addEventListener("click", ()=>setView("plane"));
 $("view3D").addEventListener("click", ()=>setView("3D"));
+
+/* 1) double-click on the 3D plot: zoom fit (default camera) */
+$("plot3d").addEventListener("dblclick", function(){ setTimeout(function(){ setView("3D"); },0); });
+
+/* 3) no context menu anywhere */
+document.addEventListener("contextmenu", function(e){ e.preventDefault(); });
+
+/* 8) draggable splitter between 3D and 2D plots */
+(function(){
+  var sp=$("splitter"), plots=$("plots"), drag=false, raf=0;
+  function resizeAll(){ if(raf) return; raf=requestAnimationFrame(function(){ raf=0; ["plot3d","plotRe","plotIm"].forEach(function(id){ try{Plotly.Plots.resize(id);}catch(e){} }); }); }
+  sp.addEventListener("pointerdown", function(e){ drag=true; sp.setPointerCapture(e.pointerId); sp.classList.add("dragging"); document.body.style.userSelect="none"; e.preventDefault(); });
+  sp.addEventListener("pointermove", function(e){
+    if(!drag) return;
+    var r=plots.getBoundingClientRect(), w=e.clientX-r.left-5;
+    w=Math.max(r.width*0.25, Math.min(r.width*0.75, w));
+    plots.style.setProperty("--w3d", w+"px"); resizeAll();
+  });
+  function end(e){ if(!drag) return; drag=false; sp.classList.remove("dragging"); document.body.style.userSelect=""; resizeAll(); }
+  sp.addEventListener("pointerup", end); sp.addEventListener("pointercancel", end);
+  sp.addEventListener("dblclick", function(){ plots.style.removeProperty("--w3d"); resizeAll(); });
+})();
 
 /* Resize handling */
 window.addEventListener("resize", ()=>{ Plotly.Plots.resize("plot3d"); Plotly.Plots.resize("plotRe"); Plotly.Plots.resize("plotIm"); });
