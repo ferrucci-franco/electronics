@@ -8,16 +8,20 @@
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
 <style>
   :root{
-    --bg:#ffffff; --fg:#0f172a; --panel:#f8fafc; --panel-border:#e5e7eb;
-    --btn:#e2e8f0; --accent:#0ea5e9; --plot-bg:#ffffff; --plot-paper:#ffffff; --grid:#e5e7eb;
+    --bg:#ffffff; --fg:#212121; --panel:#fafafa; --panel-border:#cccccc;
+    --bar-bg:#f5f5f5; --bg-tertiary:#e0e0e0; --hover-bg:#e8e8e8; --text-secondary:#757575;
+    --primary:#2196F3;
+    --btn:#ffffff; --accent:#2196F3; --plot-bg:#ffffff; --plot-paper:#ffffff; --grid:#e5e7eb;
     --modal-overlay: rgba(0,0,0,0.35);
     --modal-bg: #f0f0f0;
     --modal-fg: #111111;
     --modal-border: #bdbdbd;
   }
   .dark-mode{
-    --bg:#0b0b0c; --fg:#f1f5f9; --panel:#151618; --panel-border:#2a2c30;
-    --btn:#1f2937; --accent:#22d3ee; --plot-bg:#0b0b0c; --plot-paper:#0b0b0c; --grid:rgba(220,220,220,0.28);
+    --bg:#1e1e1e; --fg:#e0e0e0; --panel:#252525; --panel-border:#444444;
+    --bar-bg:#2d2d2d; --bg-tertiary:#3d3d3d; --hover-bg:#353535; --text-secondary:#a0a0a0;
+    --primary:#2196F3;
+    --btn:#1e1e1e; --accent:#2196F3; --plot-bg:#1e1e1e; --plot-paper:#1e1e1e; --grid:rgba(220,220,220,0.28);
     --modal-overlay: rgba(0,0,0,0.6);
     --modal-bg: #1b1d22;
     --modal-fg: #e5e7eb;
@@ -33,6 +37,7 @@
     grid-template-areas:"header header" "sidebar main";
   }
   body.sidebar-collapsed{ grid-template-columns:0 1fr; }
+  #sideWrap{ min-width:0 }
 
   /* Sidebar credits */
   .sidebar-credits{
@@ -45,26 +50,66 @@
   .sidebar-credits small{ letter-spacing:.02em; }
 
   header{
-    grid-area:header; background:var(--panel); border-bottom:1px solid var(--panel-border);
-    padding:10px 14px; display:flex; gap:10px; align-items:center; justify-content:space-between;
+    grid-area:header; background:var(--bar-bg); border-bottom:1px solid var(--panel-border);
+    padding:8px 16px; display:flex; gap:16px; align-items:center; justify-content:space-between;
   }
-  .title{margin:0; font-weight:700; font-size:1.25rem} /* 5) bigger title */
-  .toolbar{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+  .title{margin:0; font-weight:700; font-size:1.25rem; white-space:nowrap}
+  #formula{flex:1 1 auto; text-align:center; min-width:0; overflow:hidden; font-size:1.05rem}
+  .toolbar{display:flex; gap:8px; align-items:center; flex-wrap:nowrap}
   button,select,label{font-size:0.95rem}
   button{
     background:var(--btn); color:var(--fg); border:1px solid var(--panel-border);
-    border-radius:10px; padding:8px 12px; cursor:pointer;
+    border-radius:8px; padding:6px 12px; cursor:pointer; font-family:inherit; transition:all .2s; white-space:nowrap;
   }
-  button:hover{border-color:var(--accent)}
+  button:hover{background:var(--hover-bg); border-color:var(--panel-border)}
+  .language-selector{display:flex; gap:4px; background:var(--bg-tertiary); padding:4px; border-radius:8px; margin-right:6px}
+  .lang-btn{padding:4px 12px; border:none; background:transparent; font-size:.85rem; border-radius:6px}
+  .lang-btn:hover{background:var(--hover-bg)}
+  .lang-btn.active,.lang-btn.active:hover{background:var(--primary); color:#fff; box-shadow:0 2px 4px rgba(0,0,0,.2)}
+  .top-btn{height:36px}
+  .top-btn:hover{transform:translateY(-1px); box-shadow:0 2px 4px rgba(0,0,0,.1)}
 
+  #sideWrap{grid-area:sidebar; position:relative; width:320px; z-index:5; min-height:0}
+  body.sidebar-collapsed #sideWrap{ width:0; }
   #sidebar{
-    grid-area:sidebar; background:var(--panel); border-right:1px solid var(--panel-border);
-    display:flex; flex-direction:column; gap:10px; padding:12px; overflow-y:auto; width:320px;
+    background:var(--panel); border-right:1px solid var(--panel-border);
+    display:flex; flex-direction:column; gap:10px; padding:12px; overflow-x:hidden; overflow-y:auto; width:320px; height:100%;
+    scrollbar-width:auto;
+    scrollbar-color:color-mix(in srgb, var(--text-secondary) 45%, transparent) var(--panel);
+  }
+  #sidebar::-webkit-scrollbar{width:18px}
+  #sidebar::-webkit-scrollbar-track{background:var(--panel)}
+  #sidebar::-webkit-scrollbar-thumb{
+    background:color-mix(in srgb, var(--text-secondary) 38%, transparent);
+    border:3px solid var(--panel); border-radius:999px; background-clip:content-box;
+  }
+  #sidebar:hover::-webkit-scrollbar-thumb{
+    background:color-mix(in srgb, var(--primary) 58%, var(--text-secondary));
+    border:3px solid var(--panel); background-clip:content-box;
   }
   body.sidebar-collapsed #sidebar{ display:none; }
 
-  .control-card{background:var(--bg); border:1px solid var(--panel-border); border-radius:12px; padding:12px}
+  /* edge pill (as in timeseries-explorer) */
+  .edge-toggle{
+    position:absolute; top:50%; left:100%; transform:translate(-50%,-50%);
+    width:14px; height:46px; padding:0; display:flex; align-items:center; justify-content:center;
+    border:1px solid color-mix(in srgb, var(--primary) 40%, var(--panel-border)); border-radius:999px;
+    background:color-mix(in srgb, var(--primary) 8%, var(--bg));
+    color:color-mix(in srgb, var(--primary) 45%, var(--text-secondary));
+    box-shadow:0 1px 3px rgba(0,0,0,.18); z-index:20;
+    transition:color .15s, border-color .15s, background-color .15s;
+  }
+  .edge-toggle:hover,.edge-toggle:focus-visible{
+    color:var(--primary); border-color:var(--primary);
+    background:color-mix(in srgb, var(--primary) 16%, var(--bg));
+  }
+  .edge-toggle svg{width:8px; height:16px}
+  body.sidebar-collapsed .edge-toggle{left:0; transform:translate(0,-50%)}
+  body.sidebar-collapsed .edge-toggle svg{transform:rotate(180deg)}
+
+  .control-card{background:var(--bg); border:1px solid var(--panel-border); border-radius:8px; padding:12px}
   .row{display:grid; gap:8px}
+  input[type="range"]{accent-color:var(--primary)}
   .row label{display:flex; justify-content:space-between; align-items:center; font-size:0.9rem}
   .hint{font-size:0.86rem; opacity:.9; margin-top:2px}
   input[type="range"]{width:100%}
@@ -72,8 +117,12 @@
   .checks label{display:flex; align-items:center; gap:8px; font-size:0.95rem}
 
   #main{grid-area:main; padding:8px; display:flex; flex-direction:column; overflow:hidden}
-  #plots{flex:1; display:grid; gap:8px; grid-template-columns:1.2fr 1fr; grid-template-rows:1fr 1fr;
-         grid-template-areas:"plot3d plotRe" "plot3d plotIm"; min-height:480px}
+  #plots{flex:1; display:grid; gap:0; column-gap:0; row-gap:8px; grid-template-columns:var(--w3d,1.2fr) 10px minmax(0,1fr); grid-template-rows:1fr 1fr;
+         grid-template-areas:"plot3d split plotRe" "plot3d split plotIm"; min-height:480px; min-width:0}
+  #plot3d,#plotRe,#plotIm{min-width:0}
+  #splitter{grid-area:split; cursor:col-resize; touch-action:none; position:relative}
+  #splitter::after{content:""; position:absolute; top:0; bottom:0; left:50%; width:2px; margin-left:-1px; background:transparent; border-radius:2px; transition:background .2s}
+  #splitter:hover::after,#splitter.dragging::after{background:color-mix(in srgb, var(--primary) 55%, transparent)}
   #plot3d{grid-area:plot3d; min-height:460px}
   #plotRe{grid-area:plotRe; min-height:220px}
   #plotIm{grid-area:plotIm; min-height:220px}
@@ -101,12 +150,19 @@
   .modal .close{margin-top:10px}
 
   @media (max-width:1100px){
-    #plots{grid-template-columns:1fr; grid-template-rows:1fr 280px 280px; grid-template-areas:"plot3d" "plotRe" "plotIm";}
+    #plots{grid-template-columns:1fr; grid-template-rows:1fr 280px 280px; grid-template-areas:"plot3d" "plotRe" "plotIm"; row-gap:8px} #splitter{display:none}
   }
   @media (max-width:900px){
     body{ grid-template-columns:1fr; grid-template-rows:auto auto 1fr; grid-template-areas:"header" "sidebar" "main"; }
     body.sidebar-collapsed{ grid-template-rows:auto 1fr; }
-    #sidebar{max-height:48vh}
+    #sideWrap{width:auto; max-height:48vh}
+    body.sidebar-collapsed #sideWrap{width:auto; max-height:0}
+    #sidebar{width:auto; max-height:48vh; border-right:none; border-bottom:1px solid var(--panel-border)}
+    .edge-toggle{top:100%; left:50%; width:46px; height:14px}
+    .edge-toggle svg{transform:rotate(90deg)}
+    body.sidebar-collapsed .edge-toggle{left:50%; top:0; transform:translate(-50%,0)}
+    body.sidebar-collapsed .edge-toggle svg{transform:rotate(-90deg)}
+    header{flex-wrap:wrap}
     #main{min-height:52vh}
   }
 </style>
@@ -116,19 +172,19 @@
 <body>
   <header>
     <h1 class="title" id="mainTitle">Complex exponentials and phasors</h1>
+    <div id="formula">\( z(t)=A\,e^{j(\omega t+\phi)} = A\cos(\omega t+\phi) + j\,A\sin(\omega t+\phi) \)</div>
     <div class="toolbar">
-      <!-- language first, then info (swapped earlier) -->
-      <select id="languageSelector" aria-label="Language">
-        <option value="en" selected>English</option>
-        <option value="es">Español</option>
-        <option value="fr">Français</option>
-      </select>
-      <button id="btnInfo">ℹ️ Info</button>
-      <button id="toggleTheme">Dark Mode</button>
-      <button id="toggleSidebar">Hide Controls</button>
+      <div class="language-selector" role="group" aria-label="Language">
+        <button class="lang-btn active" data-lang="en">EN</button>
+        <button class="lang-btn" data-lang="es">ES</button>
+        <button class="lang-btn" data-lang="fr">FR</button>
+      </div>
+      <button id="btnInfo" class="top-btn">ℹ️ Info</button>
+      <button id="toggleTheme" class="top-btn">Dark Mode</button>
     </div>
   </header>
 
+  <div id="sideWrap">
   <aside id="sidebar">
     <div class="control-card">
       <div class="flex-split">
@@ -201,15 +257,13 @@
     </div>
     
   </aside>
+  <button id="toggleSidebar" class="edge-toggle" type="button" aria-expanded="true"><svg viewBox="0 0 8 16" aria-hidden="true" focusable="false"><path d="M6 2.5 1.8 8 6 13.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  </div>
 
   <main id="main">
-    <div class="mini-toolbar">
-      <div id="formula">
-        \( z(t)=A\,e^{j(\omega t+\phi)} = A\cos(\omega t+\phi) + j\,A\sin(\omega t+\phi) \)
-      </div>
-    </div>
     <div id="plots">
       <div id="plot3d"></div>
+      <div id="splitter" role="separator" aria-orientation="vertical"></div>
       <div id="plotRe"></div>
       <div id="plotIm"></div>
     </div>
@@ -401,10 +455,11 @@ function layout2D(titleY, xr, forceNewSpan){
   return {
     uirevision:"keep-2d",
     margin:{l:50,r:10,b:40,t:10},
-    xaxis:{title:tr[lang].axisTime, range:xRange, showgrid:true, gridcolor:grid},
+    xaxis:{title:tr[lang].axisTime, range:xRange, showgrid:true, gridcolor:grid, hoverformat:".3f"},
     yaxis:{title:titleY, autorange:true, showgrid:true, gridcolor:grid},
     paper_bgcolor:paper, plot_bgcolor:bg, template: darkMode?"plotly_dark":"plotly_white",
-    hovermode:false, showlegend:false
+    hovermode:"x unified", showlegend:false,
+    hoverlabel:{bgcolor:darkMode?"#2d2d2d":"#ffffff", bordercolor:"#888", font:{color:darkMode?"#e0e0e0":"#212121"}}
   };
 }
 
@@ -447,22 +502,22 @@ function updateAll(){
   var lay=layout3D(dat.maxAbs,!initialized3D);
   if(view.camera){ var cam=JSON.parse(JSON.stringify(view.camera)); cam.projection=cam.projection||{}; cam.projection.type="orthographic"; lay.scene.camera=cam; }
   if(view.aspect){ lay.scene.aspectmode=view.aspect; }
-  var cfg={responsive:true, displaylogo:false};
+  var cfg={responsive:true, displaylogo:false, displayModeBar:false};
   if(!initialized3D){ Plotly.newPlot("plot3d",traces3d,lay,cfg).then(function(gd){plot3D=gd; initialized3D=true;}); }
   else{ Plotly.react("plot3d",traces3d,lay,cfg).then(function(gd){plot3D=gd;}); }
 
   var xrRe=getXRange(plotRe);
-  var trRe=[{type:"scatter",mode:"lines",x:dat.t,y:dat.re,line:{width:W2D,color:COLORS.z},name:"Re",hoverinfo:"skip"}];
-  if(showDeriv) trRe.push({type:"scatter",mode:"lines",x:dat.t,y:dat.dre,line:{width:W2D,color:COLORS.dz},name:"Re{dz/dt}",hoverinfo:"skip"});
-  if(showInt)   trRe.push({type:"scatter",mode:"lines",x:dat.t,y:dat.ire,line:{width:W2D,color:COLORS.int},name:"Re{∫z}",hoverinfo:"skip"});
+  var trRe=[{type:"scatter",mode:"lines",x:dat.t,y:dat.re,line:{width:W2D,color:COLORS.z},name:"Re",hovertemplate:"%{y:.3f}<extra>Re</extra>"}];
+  if(showDeriv) trRe.push({type:"scatter",mode:"lines",x:dat.t,y:dat.dre,line:{width:W2D,color:COLORS.dz},name:"Re{dz/dt}",hovertemplate:"%{y:.3f}<extra>Re{dz/dt}</extra>"});
+  if(showInt)   trRe.push({type:"scatter",mode:"lines",x:dat.t,y:dat.ire,line:{width:W2D,color:COLORS.int},name:"Re{∫z}",hovertemplate:"%{y:.3f}<extra>Re{∫z}</extra>"});
   var layRe=layout2D(tr[lang].axisReal, xrRe, spanChanged);
   if(!initializedRe){ Plotly.newPlot("plotRe",trRe,layRe,cfg).then(function(gd){plotRe=gd; initializedRe=true; attachSyncIfReady();}); }
   else{ Plotly.react("plotRe",trRe,layRe,cfg).then(function(gd){plotRe=gd;}); }
 
   var xrIm=getXRange(plotIm);
-  var trIm=[{type:"scatter",mode:"lines",x:dat.t,y:dat.im,line:{width:W2D,color:COLORS.z},name:"Im",hoverinfo:"skip"}];
-  if(showDeriv) trIm.push({type:"scatter",mode:"lines",x:dat.t,y:dat.dim,line:{width:W2D,color:COLORS.dz},name:"Im{dz/dt}",hoverinfo:"skip"});
-  if(showInt)   trIm.push({type:"scatter",mode:"lines",x:dat.t,y:dat.iim,line:{width:W2D,color:COLORS.int},name:"Im{∫z}",hoverinfo:"skip"});
+  var trIm=[{type:"scatter",mode:"lines",x:dat.t,y:dat.im,line:{width:W2D,color:COLORS.z},name:"Im",hovertemplate:"%{y:.3f}<extra>Im</extra>"}];
+  if(showDeriv) trIm.push({type:"scatter",mode:"lines",x:dat.t,y:dat.dim,line:{width:W2D,color:COLORS.dz},name:"Im{dz/dt}",hovertemplate:"%{y:.3f}<extra>Im{dz/dt}</extra>"});
+  if(showInt)   trIm.push({type:"scatter",mode:"lines",x:dat.t,y:dat.iim,line:{width:W2D,color:COLORS.int},name:"Im{∫z}",hovertemplate:"%{y:.3f}<extra>Im{∫z}</extra>"});
   var layIm=layout2D(tr[lang].axisImag, xrIm, spanChanged);
   if(!initializedIm){ Plotly.newPlot("plotIm",trIm,layIm,cfg).then(function(gd){plotIm=gd; initializedIm=true; attachSyncIfReady();}); }
   else{ Plotly.react("plotIm",trIm,layIm,cfg).then(function(gd){plotIm=gd;}); }
@@ -502,6 +557,10 @@ function setView(which){
   Plotly.relayout("plot3d",{"scene.camera.eye":eye,"scene.camera.up":up,"scene.camera.projection.type":"orthographic","scene.aspectmode":aspect});
 }
 
+function syncSidebarBtn(){
+  var b=$("toggleSidebar"), t=sidebarHidden?tr[lang].show:tr[lang].hide;
+  b.title=t; b.setAttribute("aria-label",t); b.setAttribute("aria-expanded",String(!sidebarHidden));
+}
 /* language + UI text */
 function refreshTexts(){
   $("mainTitle").textContent=tr[lang].title;
@@ -509,7 +568,7 @@ function refreshTexts(){
   $("compareTitle").textContent=tr[lang].compare;
   $("viewsTitle").textContent=tr[lang].views;
   $("toggleTheme").textContent=darkMode?tr[lang].light:tr[lang].dark;
-  $("toggleSidebar").textContent=sidebarHidden?tr[lang].show:tr[lang].hide;
+  syncSidebarBtn();
   $("labPhi").textContent=tr[lang].phi;
   $("labA").textContent=tr[lang].A;
   $("labOmega").textContent=tr[lang].omega;
@@ -532,9 +591,16 @@ function refreshTexts(){
 }
 
 /* bindings */
-$("languageSelector").addEventListener("change", function(e){ lang=e.target.value; refreshTexts(); scheduleUpdate(); });
+document.querySelectorAll(".lang-btn").forEach(function(b){
+  b.addEventListener("click", function(){
+    lang=b.dataset.lang;
+    document.querySelectorAll(".lang-btn").forEach(function(x){ x.classList.toggle("active", x===b); });
+    document.documentElement.lang=lang;
+    refreshTexts(); scheduleUpdate();
+  });
+});
 $("toggleTheme").addEventListener("click", function(){ darkMode=!darkMode; document.body.classList.toggle("dark-mode",darkMode); $("toggleTheme").textContent=darkMode?tr[lang].light:tr[lang].dark; scheduleUpdate(); });
-$("toggleSidebar").addEventListener("click", function(){ sidebarHidden=!sidebarHidden; document.body.classList.toggle("sidebar-collapsed",sidebarHidden); $("toggleSidebar").textContent=sidebarHidden?tr[lang].show:tr[lang].hide; setTimeout(function(){ Plotly.Plots.resize("plot3d"); Plotly.Plots.resize("plotRe"); Plotly.Plots.resize("plotIm"); },0); });
+$("toggleSidebar").addEventListener("click", function(){ sidebarHidden=!sidebarHidden; document.body.classList.toggle("sidebar-collapsed",sidebarHidden); syncSidebarBtn(); setTimeout(function(){ Plotly.Plots.resize("plot3d"); Plotly.Plots.resize("plotRe"); Plotly.Plots.resize("plotIm"); },0); });
 
 /* φ slider (integer 5° steps) */
 $("slPhi").addEventListener("input", function(e){
@@ -590,6 +656,28 @@ $("viewReal").addEventListener("click", function(){ setView("real");});
 $("viewImag").addEventListener("click", function(){ setView("imag");});
 $("viewPlane").addEventListener("click", function(){ setView("plane");});
 $("view3D").addEventListener("click", function(){ setView("3D");});
+
+/* 1) double-click on the 3D plot: zoom fit (default camera) */
+$("plot3d").addEventListener("dblclick", function(){ setTimeout(function(){ setView("3D"); },0); });
+
+/* 3) no context menu anywhere */
+document.addEventListener("contextmenu", function(e){ e.preventDefault(); });
+
+/* 8) draggable splitter between 3D and 2D plots */
+(function(){
+  var sp=$("splitter"), plots=$("plots"), drag=false, raf=0;
+  function resizeAll(){ if(raf) return; raf=requestAnimationFrame(function(){ raf=0; ["plot3d","plotRe","plotIm"].forEach(function(id){ try{Plotly.Plots.resize(id);}catch(e){} }); }); }
+  sp.addEventListener("pointerdown", function(e){ drag=true; sp.setPointerCapture(e.pointerId); sp.classList.add("dragging"); document.body.style.userSelect="none"; e.preventDefault(); });
+  sp.addEventListener("pointermove", function(e){
+    if(!drag) return;
+    var r=plots.getBoundingClientRect(), w=e.clientX-r.left-5;
+    w=Math.max(r.width*0.25, Math.min(r.width*0.75, w));
+    plots.style.setProperty("--w3d", w+"px"); resizeAll();
+  });
+  function end(e){ if(!drag) return; drag=false; sp.classList.remove("dragging"); document.body.style.userSelect=""; resizeAll(); }
+  sp.addEventListener("pointerup", end); sp.addEventListener("pointercancel", end);
+  sp.addEventListener("dblclick", function(){ plots.style.removeProperty("--w3d"); resizeAll(); });
+})();
 
 /* resize */
 window.addEventListener("resize", function(){ Plotly.Plots.resize("plot3d"); Plotly.Plots.resize("plotRe"); Plotly.Plots.resize("plotIm"); });
