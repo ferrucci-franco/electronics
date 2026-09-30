@@ -54,7 +54,7 @@
     padding:8px 16px; display:flex; gap:16px; align-items:center; justify-content:space-between;
   }
   .title{margin:0; font-weight:700; font-size:1.25rem; white-space:nowrap}
-  #formula{flex:1 1 auto; text-align:center; min-width:0; overflow:hidden; font-size:1.05rem}
+  #formula{flex:1 1 auto; text-align:center; min-width:0; overflow:hidden; font-size:1.4rem}
   .toolbar{display:flex; gap:8px; align-items:center; flex-wrap:nowrap}
   button,select,label{font-size:0.95rem}
   button{
@@ -67,6 +67,7 @@
   .lang-btn:hover{background:var(--hover-bg)}
   .lang-btn.active,.lang-btn.active:hover{background:var(--primary); color:#fff; box-shadow:0 2px 4px rgba(0,0,0,.2)}
   .top-btn{height:36px}
+  .icon-only{width:40px; padding:0; font-size:1.15rem; line-height:1}
   .top-btn:hover{transform:translateY(-1px); box-shadow:0 2px 4px rgba(0,0,0,.1)}
 
   #sideWrap{grid-area:sidebar; position:relative; width:320px; z-index:5; min-height:0}
@@ -120,9 +121,20 @@
   #plots{flex:1; display:grid; gap:0; column-gap:0; row-gap:8px; grid-template-columns:var(--w3d,1.2fr) 10px minmax(0,1fr); grid-template-rows:1fr 1fr;
          grid-template-areas:"plot3d split plotRe" "plot3d split plotIm"; min-height:480px; min-width:0}
   #plot3d,#plotRe,#plotIm{min-width:0}
+  #plotRe,#plotIm{position:relative}
+  .hv{position:absolute; inset:0; pointer-events:none; overflow:hidden; display:none; z-index:5}
+  .hv-line{position:absolute; width:0; border-left:1px dashed var(--text-secondary)}
+  .hv-dot{position:absolute; width:9px; height:9px; margin:-4.5px 0 0 -4.5px; border-radius:50%; border:2px solid var(--bg); box-shadow:0 0 0 1px rgba(0,0,0,.35)}
+  .hv-label{position:absolute; background:var(--bg); color:var(--fg); border:1px solid var(--panel-border); border-radius:6px; padding:4px 8px; font-size:.85rem; white-space:nowrap; box-shadow:0 2px 6px rgba(0,0,0,.2)}
+  .hv-t{opacity:.7; margin-bottom:2px}
+  .hv-sw{display:inline-block; width:10px; height:3px; margin-right:6px; vertical-align:middle; border-radius:2px}
   #splitter{grid-area:split; cursor:col-resize; touch-action:none; position:relative}
-  #splitter::after{content:""; position:absolute; top:0; bottom:0; left:50%; width:2px; margin-left:-1px; background:transparent; border-radius:2px; transition:background .2s}
-  #splitter:hover::after,#splitter.dragging::after{background:color-mix(in srgb, var(--primary) 55%, transparent)}
+  #splitter::after{content:""; position:absolute; top:0; bottom:0; left:50%; width:3px; margin-left:-1.5px; background:color-mix(in srgb, var(--primary) 35%, transparent); border-radius:3px; transition:background .2s}
+  #splitter::before{content:""; position:absolute; top:50%; left:50%; width:8px; height:44px; margin:-22px 0 0 -4px; border-radius:999px; z-index:1;
+    background:var(--primary); opacity:.75; transition:opacity .2s, box-shadow .2s;
+    background-image:radial-gradient(circle, #fff 1.2px, transparent 1.6px); background-size:8px 8px; background-position:center; }
+  #splitter:hover::after,#splitter.dragging::after{background:var(--primary)}
+  #splitter:hover::before,#splitter.dragging::before{opacity:1; box-shadow:0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent)}
   #plot3d{grid-area:plot3d; min-height:460px}
   #plotRe{grid-area:plotRe; min-height:220px}
   #plotIm{grid-area:plotIm; min-height:220px}
@@ -180,7 +192,7 @@
         <button class="lang-btn" data-lang="fr">FR</button>
       </div>
       <button id="btnInfo" class="top-btn">ℹ️ Info</button>
-      <button id="toggleTheme" class="top-btn">Dark Mode</button>
+      <button id="toggleTheme" class="top-btn icon-only" title="Dark Mode" aria-label="Dark Mode">🌙</button>
     </div>
   </header>
 
@@ -456,10 +468,9 @@ function layout2D(titleY, xr, forceNewSpan){
     uirevision:"keep-2d",
     margin:{l:50,r:10,b:40,t:10},
     xaxis:{title:tr[lang].axisTime, range:xRange, showgrid:true, gridcolor:grid, hoverformat:".3f"},
-    yaxis:{title:titleY, autorange:true, showgrid:true, gridcolor:grid},
+    yaxis:{title:titleY, autorange:true, showgrid:true, gridcolor:grid, hoverformat:".3f"},
     paper_bgcolor:paper, plot_bgcolor:bg, template: darkMode?"plotly_dark":"plotly_white",
-    hovermode:"x unified", showlegend:false,
-    hoverlabel:{bgcolor:darkMode?"#2d2d2d":"#ffffff", bordercolor:"#888", font:{color:darkMode?"#e0e0e0":"#212121"}}
+    hovermode:false, showlegend:false
   };
 }
 
@@ -507,17 +518,17 @@ function updateAll(){
   else{ Plotly.react("plot3d",traces3d,lay,cfg).then(function(gd){plot3D=gd;}); }
 
   var xrRe=getXRange(plotRe);
-  var trRe=[{type:"scatter",mode:"lines",x:dat.t,y:dat.re,line:{width:W2D,color:COLORS.z},name:"Re",hovertemplate:"%{y:.3f}<extra>Re</extra>"}];
-  if(showDeriv) trRe.push({type:"scatter",mode:"lines",x:dat.t,y:dat.dre,line:{width:W2D,color:COLORS.dz},name:"Re{dz/dt}",hovertemplate:"%{y:.3f}<extra>Re{dz/dt}</extra>"});
-  if(showInt)   trRe.push({type:"scatter",mode:"lines",x:dat.t,y:dat.ire,line:{width:W2D,color:COLORS.int},name:"Re{∫z}",hovertemplate:"%{y:.3f}<extra>Re{∫z}</extra>"});
+  var trRe=[{type:"scatter",mode:"lines",x:dat.t,y:dat.re,line:{width:W2D,color:COLORS.z},name:"Re", hoverinfo:"skip"}];
+  if(showDeriv) trRe.push({type:"scatter",mode:"lines",x:dat.t,y:dat.dre,line:{width:W2D,color:COLORS.dz},name:"Re{dz/dt}", hoverinfo:"skip"});
+  if(showInt)   trRe.push({type:"scatter",mode:"lines",x:dat.t,y:dat.ire,line:{width:W2D,color:COLORS.int},name:"Re{∫z}", hoverinfo:"skip"});
   var layRe=layout2D(tr[lang].axisReal, xrRe, spanChanged);
   if(!initializedRe){ Plotly.newPlot("plotRe",trRe,layRe,cfg).then(function(gd){plotRe=gd; initializedRe=true; attachSyncIfReady();}); }
   else{ Plotly.react("plotRe",trRe,layRe,cfg).then(function(gd){plotRe=gd;}); }
 
   var xrIm=getXRange(plotIm);
-  var trIm=[{type:"scatter",mode:"lines",x:dat.t,y:dat.im,line:{width:W2D,color:COLORS.z},name:"Im",hovertemplate:"%{y:.3f}<extra>Im</extra>"}];
-  if(showDeriv) trIm.push({type:"scatter",mode:"lines",x:dat.t,y:dat.dim,line:{width:W2D,color:COLORS.dz},name:"Im{dz/dt}",hovertemplate:"%{y:.3f}<extra>Im{dz/dt}</extra>"});
-  if(showInt)   trIm.push({type:"scatter",mode:"lines",x:dat.t,y:dat.iim,line:{width:W2D,color:COLORS.int},name:"Im{∫z}",hovertemplate:"%{y:.3f}<extra>Im{∫z}</extra>"});
+  var trIm=[{type:"scatter",mode:"lines",x:dat.t,y:dat.im,line:{width:W2D,color:COLORS.z},name:"Im", hoverinfo:"skip"}];
+  if(showDeriv) trIm.push({type:"scatter",mode:"lines",x:dat.t,y:dat.dim,line:{width:W2D,color:COLORS.dz},name:"Im{dz/dt}", hoverinfo:"skip"});
+  if(showInt)   trIm.push({type:"scatter",mode:"lines",x:dat.t,y:dat.iim,line:{width:W2D,color:COLORS.int},name:"Im{∫z}", hoverinfo:"skip"});
   var layIm=layout2D(tr[lang].axisImag, xrIm, spanChanged);
   if(!initializedIm){ Plotly.newPlot("plotIm",trIm,layIm,cfg).then(function(gd){plotIm=gd; initializedIm=true; attachSyncIfReady();}); }
   else{ Plotly.react("plotIm",trIm,layIm,cfg).then(function(gd){plotIm=gd;}); }
@@ -530,6 +541,7 @@ function updateAll(){
 var syncing=false, syncAttached=false;
 function attachSyncIfReady(){
   if(syncAttached || !plotRe || !plotIm) return;
+  linkHover(); attachPan2D("plotRe"); attachPan2D("plotIm");
   function rangesEqual(a,b){ return a&&b&&a.length===2&&b.length===2&&Math.abs(a[0]-b[0])<1e-9&&Math.abs(a[1]-b[1])<1e-9; }
   function getXRange(gd){ if(!gd||!gd._fullLayout||!gd._fullLayout.xaxis) return undefined; var r=gd._fullLayout.xaxis.range; return r?[r[0],r[1]]:undefined; }
   function syncX(src,dst,ev){
@@ -547,6 +559,91 @@ function attachSyncIfReady(){
   syncAttached=true;
 }
 
+/* Proximity hover, linked: when the pointer is near a curve in either 2D plot,
+   the Re and Im values at that time are shown at once, each in its own plot. */
+var hvEls={};
+function makeOverlay(id){
+  var host=$(id), o=document.createElement("div");
+  o.className="hv"; o.innerHTML='<div class="hv-line"></div><div class="hv-label"></div>';
+  host.appendChild(o); hvEls[id]={o:o,line:o.firstChild,label:o.lastChild,dots:[]};
+}
+function hideHover(){ Object.keys(hvEls).forEach(function(k){ hvEls[k].o.style.display="none"; }); }
+function drawHover(id,n){
+  var g=$(id), e=hvEls[id], xa=g._fullLayout.xaxis, ya=g._fullLayout.yaxis;
+  var px=xa._offset+xa.l2p(g.data[0].x[n]);
+  if(px<xa._offset-0.5||px>xa._offset+xa._length+0.5){ e.o.style.display="none"; return; }
+  e.o.style.display="block";
+  e.line.style.left=px+"px"; e.line.style.top=ya._offset+"px"; e.line.style.height=ya._length+"px";
+  var rows='<div class="hv-t">t = '+g.data[0].x[n].toFixed(3)+'</div>', topY=1e9;
+  g.data.forEach(function(tr,i){
+    var py=ya._offset+ya.l2p(tr.y[n]);
+    if(!e.dots[i]){ var d=document.createElement("div"); d.className="hv-dot"; e.o.appendChild(d); e.dots[i]=d; }
+    var d=e.dots[i]; d.style.display="block"; d.style.background=tr.line.color;
+    d.style.left=px+"px"; d.style.top=py+"px"; topY=Math.min(topY,py);
+    rows+='<div><span class="hv-sw" style="background:'+tr.line.color+'"></span>'+tr.name+' = '+tr.y[n].toFixed(3)+'</div>';
+  });
+  for(var j=g.data.length;j<e.dots.length;j++) e.dots[j].style.display="none";
+  e.label.innerHTML=rows; e.label.style.display="block";
+  var w=e.label.offsetWidth, h=e.label.offsetHeight;
+  var lx=px+12; if(lx+w>xa._offset+xa._length) lx=px-12-w;
+  var ly=Math.max(ya._offset+2, Math.min(topY-h/2, ya._offset+ya._length-h-2));
+  e.label.style.left=lx+"px"; e.label.style.top=ly+"px";
+}
+function linkHover(){
+  ["plotRe","plotIm"].forEach(function(id){
+    makeOverlay(id);
+    var g=$(id);
+    g.addEventListener("mousemove", function(ev){
+      if(ev.buttons){ hideHover(); return; }
+      var xa=g._fullLayout.xaxis, ya=g._fullLayout.yaxis, r=g.getBoundingClientRect();
+      var mx=ev.clientX-r.left, my=ev.clientY-r.top;
+      var xs=g.data[0].x, last=xs[xs.length-1];
+      var x=xa.p2l(mx-xa._offset), n0=Math.round(x/last*(xs.length-1)), best=1e9, bn=-1;
+      for(var n=Math.max(0,n0-4); n<=Math.min(xs.length-1,n0+4); n++){
+        g.data.forEach(function(tr){
+          var dx=xa._offset+xa.l2p(xs[n])-mx, dy=ya._offset+ya.l2p(tr.y[n])-my, d=Math.sqrt(dx*dx+dy*dy);
+          if(d<best){ best=d; bn=n; }
+        });
+      }
+      if(bn>=0 && best<=22){ drawHover("plotRe",bn); drawHover("plotIm",bn); } else hideHover();
+    });
+    g.addEventListener("mouseleave", hideHover);
+    g.addEventListener("wheel", hideHover);
+    g.on("plotly_relayout", hideHover);
+  });
+}
+
+/* pan with right / middle button in the 2D plots */
+function attachPan2D(id){
+  var el=$(id), st=null;
+  el.addEventListener("mousedown", function(e){
+    if(e.button!==1&&e.button!==2) return;
+    var gd=el, xa=gd._fullLayout.xaxis, ya=gd._fullLayout.yaxis;
+    st={x:e.clientX,y:e.clientY,xr:xa.range.slice(),yr:ya.range.slice(),wx:xa._length,wy:ya._length};
+    e.preventDefault(); e.stopPropagation();
+  }, true);
+  window.addEventListener("mousemove", function(e){
+    if(!st) return;
+    var dx=(e.clientX-st.x)/st.wx*(st.xr[1]-st.xr[0]), dy=(e.clientY-st.y)/st.wy*(st.yr[1]-st.yr[0]);
+    Plotly.relayout(el,{"xaxis.range[0]":st.xr[0]-dx,"xaxis.range[1]":st.xr[1]-dx,"yaxis.range[0]":st.yr[0]+dy,"yaxis.range[1]":st.yr[1]+dy});
+  });
+  window.addEventListener("mouseup", function(){ st=null; });
+  el.addEventListener("auxclick", function(e){ e.preventDefault(); });
+}
+
+/* pan with middle button in 3D: replay it as a right-button drag (Plotly pans with right) */
+(function(){
+  var el=$("plot3d"), mid=false;
+  function fake(type,e){
+    var t=(type==="mousedown")?e.target:(document.elementFromPoint(e.clientX,e.clientY)||e.target);
+    t.dispatchEvent(new MouseEvent(type,{bubbles:true,cancelable:true,view:window,clientX:e.clientX,clientY:e.clientY,screenX:e.screenX,screenY:e.screenY,button:2,buttons:type==="mouseup"?0:2}));
+  }
+  el.addEventListener("mousedown", function(e){ if(e.button===1&&e.isTrusted){ mid=true; e.preventDefault(); e.stopImmediatePropagation(); fake("mousedown",e); } }, true);
+  window.addEventListener("mousemove", function(e){ if(mid&&e.isTrusted){ e.stopImmediatePropagation(); fake("mousemove",e); } }, true);
+  window.addEventListener("mouseup", function(e){ if(mid&&e.isTrusted){ mid=false; e.stopImmediatePropagation(); fake("mouseup",e); } }, true);
+  el.addEventListener("auxclick", function(e){ e.preventDefault(); });
+})();
+
 /* views */
 function setView(which){
   var eye,up,aspect="auto";
@@ -557,6 +654,10 @@ function setView(which){
   Plotly.relayout("plot3d",{"scene.camera.eye":eye,"scene.camera.up":up,"scene.camera.projection.type":"orthographic","scene.aspectmode":aspect});
 }
 
+function syncThemeBtn(){
+  var b=$("toggleTheme"), t=darkMode?tr[lang].light:tr[lang].dark;
+  b.textContent=darkMode?"☀️":"🌙"; b.title=t; b.setAttribute("aria-label",t);
+}
 function syncSidebarBtn(){
   var b=$("toggleSidebar"), t=sidebarHidden?tr[lang].show:tr[lang].hide;
   b.title=t; b.setAttribute("aria-label",t); b.setAttribute("aria-expanded",String(!sidebarHidden));
@@ -567,7 +668,7 @@ function refreshTexts(){
   $("paramsTitle").textContent=tr[lang].params;
   $("compareTitle").textContent=tr[lang].compare;
   $("viewsTitle").textContent=tr[lang].views;
-  $("toggleTheme").textContent=darkMode?tr[lang].light:tr[lang].dark;
+  syncThemeBtn();
   syncSidebarBtn();
   $("labPhi").textContent=tr[lang].phi;
   $("labA").textContent=tr[lang].A;
@@ -599,7 +700,7 @@ document.querySelectorAll(".lang-btn").forEach(function(b){
     refreshTexts(); scheduleUpdate();
   });
 });
-$("toggleTheme").addEventListener("click", function(){ darkMode=!darkMode; document.body.classList.toggle("dark-mode",darkMode); $("toggleTheme").textContent=darkMode?tr[lang].light:tr[lang].dark; scheduleUpdate(); });
+$("toggleTheme").addEventListener("click", function(){ darkMode=!darkMode; document.body.classList.toggle("dark-mode",darkMode); syncThemeBtn(); scheduleUpdate(); });
 $("toggleSidebar").addEventListener("click", function(){ sidebarHidden=!sidebarHidden; document.body.classList.toggle("sidebar-collapsed",sidebarHidden); syncSidebarBtn(); setTimeout(function(){ Plotly.Plots.resize("plot3d"); Plotly.Plots.resize("plotRe"); Plotly.Plots.resize("plotIm"); },0); });
 
 /* φ slider (integer 5° steps) */
