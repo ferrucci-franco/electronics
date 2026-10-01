@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Réponse indicielle — TD2</title>
+    <title>Réponse indicielle</title>
     <link rel="stylesheet" href="vendor/katex/katex.min.css" />
     <link rel="stylesheet" href="style.css" />
   <!-- Contador de visitas (GoatCounter, sin cookies ni datos personales). No cuenta en localhost ni desde file://. -->
@@ -19,7 +19,17 @@
           <button type="button" data-mode="1" aria-pressed="false" data-i18n="mode1"></button>
           <button type="button" data-mode="2" aria-pressed="true" data-i18n="mode2"></button>
         </div>
-        <button id="theme-toggle" class="icon-button" type="button" aria-pressed="false"><span class="theme-glyph" aria-hidden="true"></span></button>
+        <div class="header-actions">
+          <div class="language-switch">
+            <button id="language-trigger" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="language-menu" data-i18n-aria="languageAria"><span id="language-current">FR</span><i aria-hidden="true"></i></button>
+            <div id="language-menu" class="language-menu" role="group" data-i18n-aria="languageAria" hidden>
+              <button type="button" data-lang="en" aria-pressed="false">EN</button>
+              <button type="button" data-lang="fr" aria-pressed="true">FR</button>
+              <button type="button" data-lang="es" aria-pressed="false">ES</button>
+            </div>
+          </div>
+          <button id="theme-toggle" class="icon-button" type="button" aria-pressed="false"><span class="theme-glyph" aria-hidden="true"></span></button>
+        </div>
       </header>
 
       <main class="workspace">

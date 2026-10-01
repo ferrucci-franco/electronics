@@ -2,18 +2,20 @@
   "use strict";
 
   // ---------------------------------------------------------------------------
-  // UI strings. Only French for now; add a sibling object to support a language.
+  // UI strings, one object per language (fr, en, es). To add a language: add a sibling
+  // object here and a button in the language menu of index.html.
   // ---------------------------------------------------------------------------
   const STRINGS = {
     fr: {
       locale: "fr-FR",
-      documentTitle: "Réponse indicielle — TD2",
+      documentTitle: "Réponse indicielle",
       title: "Réponse indicielle",
       modeAria: "Ordre du système",
       mode1: "1er ordre",
       mode2: "2e ordre",
       themeDark: "Activer le thème sombre",
       themeLight: "Activer le thème clair",
+      languageAria: "Langue",
       reframe: "Recadrer",
       autoAxes: "Axes auto",
       memorize: "Mémoriser",
@@ -58,8 +60,116 @@
         u0: "Amplitude de l’échelon",
       },
     },
+    en: {
+      locale: "en-US",
+      documentTitle: "Step response",
+      title: "Step response",
+      modeAria: "System order",
+      mode1: "1st order",
+      mode2: "2nd order",
+      themeDark: "Switch to dark theme",
+      themeLight: "Switch to light theme",
+      languageAria: "Language",
+      reframe: "Reframe",
+      autoAxes: "Auto axes",
+      memorize: "Store",
+      clear: "Clear",
+      graphAria: "Step response y(t). Drag on the graph to move the nearest cursor.",
+      cursor1: "Cursor 1",
+      cursor2: "Cursor 2",
+      cursorsAria: "Read cursors",
+      snap: "Snap to extrema",
+      marksAria: "Markers",
+      markBand: "y∞ ± 5 %",
+      markTau: "63 % and τ",
+      markEnvelope: "Envelope",
+      timeAxis: "t (s)",
+      paramsTitle: "Parameters",
+      eqTitle: "Differential equation",
+      regimeLabel: "Regime:",
+      regimes: { undamped: "undamped", under: "underdamped", critical: "critically damped", over: "overdamped" },
+      valuesTitle: "Characteristic values",
+      finalValue: "Final value",
+      valueAtTau: "Value at t = τ",
+      overshoot: "Overshoot",
+      dampedPeriod: "Pseudo-period",
+      period: "Oscillation period",
+      dampedPulsation: "Damped frequency",
+      settling: "5 % settling time",
+      theory: "theory",
+      measured: "measured",
+      inverse: "inverse",
+      overshootFraction: "with D as a fraction ({D}), not in %",
+      noOvershoot: "no overshoot for ξ ≥ 1",
+      settlingNone: "undefined: the oscillation does not decay",
+      fieldAria: "value",
+      negative: "neg.",
+      negativeAria: { K: "Negative static gain", u0: "Negative step" },
+      sliderAria: "slider",
+      params: {
+        K: "Static gain",
+        tau: "Time constant",
+        omega0: "Natural frequency",
+        xi: "Damping ratio",
+        u0: "Step amplitude",
+      },
+    },
+    es: {
+      locale: "es-ES",
+      documentTitle: "Respuesta al escalón",
+      title: "Respuesta al escalón",
+      modeAria: "Orden del sistema",
+      mode1: "1.er orden",
+      mode2: "2.º orden",
+      themeDark: "Activar el tema oscuro",
+      themeLight: "Activar el tema claro",
+      languageAria: "Idioma",
+      reframe: "Reencuadrar",
+      autoAxes: "Ejes auto",
+      memorize: "Memorizar",
+      clear: "Borrar",
+      graphAria: "Respuesta al escalón y(t). Arrastra sobre el gráfico para mover el cursor más cercano.",
+      cursor1: "Cursor 1",
+      cursor2: "Cursor 2",
+      cursorsAria: "Cursores de lectura",
+      snap: "Imán a extremos",
+      marksAria: "Marcas",
+      markBand: "y∞ ± 5 %",
+      markTau: "63 % y τ",
+      markEnvelope: "Envolvente",
+      timeAxis: "t (s)",
+      paramsTitle: "Parámetros",
+      eqTitle: "Ecuación diferencial",
+      regimeLabel: "Régimen:",
+      regimes: { undamped: "no amortiguado", under: "subamortiguado", critical: "amortiguamiento crítico", over: "sobreamortiguado" },
+      valuesTitle: "Valores característicos",
+      finalValue: "Valor final",
+      valueAtTau: "Valor en t = τ",
+      overshoot: "Sobrepaso",
+      dampedPeriod: "Pseudoperíodo",
+      period: "Período de las oscilaciones",
+      dampedPulsation: "Pseudopulsación",
+      settling: "Tiempo de respuesta al 5 %",
+      theory: "teoría",
+      measured: "medido",
+      inverse: "inversa",
+      overshootFraction: "con D en fracción ({D}), no en %",
+      noOvershoot: "sin sobrepaso para ξ ≥ 1",
+      settlingNone: "no definido: la oscilación no se amortigua",
+      fieldAria: "valor",
+      negative: "neg.",
+      negativeAria: { K: "Ganancia estática negativa", u0: "Escalón negativo" },
+      sliderAria: "control deslizante",
+      params: {
+        K: "Ganancia estática",
+        tau: "Constante de tiempo",
+        omega0: "Pulsación propia",
+        xi: "Amortiguamiento",
+        u0: "Amplitud del escalón",
+      },
+    },
   };
-  const S = STRINGS.fr;
+  let S = STRINGS.fr;
 
   // ---------------------------------------------------------------------------
   // Parameters per order. Log sliders map 0..LOG_STEPS onto [min, max].
@@ -128,10 +238,15 @@
   function defaults(mode) { return Object.fromEntries(PARAMS[mode].map((def) => [def.key, def.value])); }
 
   // ---------------------------------------------------------------------------
-  // Number formatting (French, 3 significant digits).
+  // Number formatting (language locale, 3 significant digits).
   // ---------------------------------------------------------------------------
-  const sig3 = new Intl.NumberFormat(S.locale, { minimumSignificantDigits: 3, maximumSignificantDigits: 3 });
-  const sig3Short = new Intl.NumberFormat(S.locale, { maximumSignificantDigits: 3 });
+  let sig3;
+  let sig3Short;
+  function setNumberFormats() {
+    sig3 = new Intl.NumberFormat(S.locale, { minimumSignificantDigits: 3, maximumSignificantDigits: 3 });
+    sig3Short = new Intl.NumberFormat(S.locale, { maximumSignificantDigits: 3 });
+  }
+  setNumberFormats();
   const round3 = (value) => Number(value.toPrecision(3));
   const fmt = (value) => (value === 0 ? "0" : sig3.format(value));
   function tex(value) {
@@ -249,11 +364,16 @@
   const autoAxesBox = $("#auto-axes");
   const clearButton = $("#clear-memory");
   const markBoxes = [...document.querySelectorAll("[data-mark]")];
+  const languageTrigger = $("#language-trigger");
+  const languageMenu = $("#language-menu");
+  const languageButtons = [...document.querySelectorAll("[data-lang]")];
+  let language = "fr";
   let controlRefs = {};
   let plotView = null;
 
   function applyStrings() {
     document.title = S.documentTitle;
+    document.documentElement.lang = language;
     document.querySelectorAll("[data-i18n]").forEach((el) => { el.textContent = S[el.dataset.i18n]; });
     document.querySelectorAll("[data-i18n-aria]").forEach((el) => el.setAttribute("aria-label", S[el.dataset.i18nAria]));
   }
@@ -692,6 +812,26 @@
     update();
   }
 
+  // Language: rebuild every text, number and formula; parameters, cursors and curves stay.
+  function setLanguage(lang) {
+    if (!STRINGS[lang]) return;
+    language = lang;
+    S = STRINGS[lang];
+    setNumberFormats();
+    applyStrings();
+    $("#language-current").textContent = lang.toUpperCase();
+    languageButtons.forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.lang === lang)));
+    themeButton.setAttribute("aria-label", state.dark ? S.themeLight : S.themeDark);
+    renderControls();
+    update();
+  }
+
+  const setLanguageMenu = (open) => { languageMenu.hidden = !open; languageTrigger.setAttribute("aria-expanded", String(open)); };
+  languageTrigger.addEventListener("click", () => setLanguageMenu(languageMenu.hidden));
+  languageButtons.forEach((button) => button.addEventListener("click", () => { setLanguage(button.dataset.lang); setLanguageMenu(false); languageTrigger.focus(); }));
+  document.addEventListener("click", (event) => { if (!languageMenu.hidden && !event.target.closest(".language-switch")) setLanguageMenu(false); });
+  document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !languageMenu.hidden) { setLanguageMenu(false); languageTrigger.focus(); } });
+
   function setTheme(dark) {
     state.dark = dark;
     document.body.classList.toggle("dark-theme", dark);
@@ -769,10 +909,10 @@
   if ("ResizeObserver" in window) new ResizeObserver(scheduleDraw).observe(screen);
   else window.addEventListener("resize", scheduleDraw);
 
-  applyStrings();
   document.querySelectorAll("[data-tex]").forEach((el) => renderTex(el, el.dataset.tex));
   // Canvas symbols use the KaTeX math font: redraw once it is loaded.
   if (document.fonts) document.fonts.load(`italic 16px ${MATH_FONT}`).then(scheduleDraw, () => {});
+  setLanguage("fr");
   setTheme(false); // always start in the light theme, as the reference simulator
   setMode(state.mode);
 

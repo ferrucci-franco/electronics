@@ -61,7 +61,21 @@ h1 { margin: 0; font-size: clamp(1.2rem, 1.5vw, 1.5rem); line-height: 1.08; lett
 .app-header { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "title theme" "mode mode"; align-items: center; gap: 6px 12px; padding: 6px 8px 6px 14px; }
 .title-block { grid-area: title; min-width: 0; }
 .mode-switch { grid-area: mode; }
-#theme-toggle { grid-area: theme; }
+.header-actions { display: flex; grid-area: theme; align-items: center; gap: 6px; }
+
+/* Language: « FR ▾ » pill and a small menu with the three languages (reference: .language-switch). */
+.language-switch { position: relative; }
+#language-trigger { display: inline-flex; height: 44px; align-items: center; gap: 6px; border: 1px solid var(--button-border); border-radius: 999px; padding: 0 13px; background: var(--panel); color: var(--ink); cursor: pointer; font-size: .9rem; font-weight: 800; }
+#language-trigger > i { width: 6px; height: 6px; margin-top: -3px; border-right: 1.8px solid currentColor; border-bottom: 1.8px solid currentColor; transform: rotate(45deg); }
+#language-trigger:hover, #language-trigger[aria-expanded="true"] { border-color: var(--teal); }
+#language-trigger:focus-visible, .language-menu button:focus-visible { outline: var(--focus); outline-offset: 2px; }
+.language-menu { position: absolute; z-index: 20; top: calc(100% + 5px); right: 0; display: flex; padding: 3px; border: 1px solid #dce1e7; border-radius: 16px; background: var(--panel); box-shadow: 0 10px 24px #17243824; }
+.language-menu button { width: 44px; height: 44px; padding: 0; border: 0; border-radius: 13px; background: transparent; color: #59657a; cursor: pointer; font-size: .86rem; font-weight: 850; }
+.language-menu button:hover { color: var(--teal); }
+.language-menu button[aria-pressed="true"] { background: #eef1f3; color: #101827; }
+body.dark-theme .language-menu { border-color: #94a3b847; }
+body.dark-theme .language-menu button { color: #aeb9c9; }
+body.dark-theme .language-menu button[aria-pressed="true"] { background: #314158; color: #fff; }
 
 /* Segmented pills (reference: .bridge-mode-group). */
 .segmented { display: flex; padding: 3px; border: 1px solid var(--info-border); border-radius: 999px; background: var(--info-bg); }
