@@ -832,6 +832,26 @@
   document.addEventListener("click", (event) => { if (!languageMenu.hidden && !event.target.closest(".language-switch")) setLanguageMenu(false); });
   document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !languageMenu.hidden) { setLanguageMenu(false); languageTrigger.focus(); } });
 
+  // Opening « Valeurs caractéristiques » scrolls it into view: it sits at the bottom of the
+  // column (desktop) or of the page (mobile), where its content would stay hidden.
+  $("#values-panel").addEventListener("toggle", (event) => {
+    const panel = event.target;
+    if (!panel.open) return;
+    requestAnimationFrame(() => {
+      const side = $(".side");
+      const scrollable = side.scrollHeight > side.clientHeight + 1 && getComputedStyle(side).overflowY !== "visible";
+      const box = scrollable ? side.getBoundingClientRect() : { top: 0, bottom: window.innerHeight };
+      const rect = panel.getBoundingClientRect();
+      const margin = 8;
+      const delta = rect.height + 2 * margin > box.bottom - box.top
+        ? rect.top - box.top - margin // taller than the view: show its top
+        : rect.bottom > box.bottom - margin ? rect.bottom - box.bottom + margin : 0;
+      if (delta <= 0) return;
+      const smooth = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      (scrollable ? side : window).scrollBy({ top: delta, behavior: smooth ? "smooth" : "auto" });
+    });
+  });
+
   function setTheme(dark) {
     state.dark = dark;
     document.body.classList.toggle("dark-theme", dark);
