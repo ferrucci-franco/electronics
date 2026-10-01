@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Réponse indicielle — TD2</title>
+    <link rel="stylesheet" href="vendor/katex/katex.min.css" />
+    <link rel="stylesheet" href="style.css" />
+<!-- Contador de visitas (GoatCounter, sin cookies ni datos personales). No cuenta en localhost ni desde file://. -->
+<script data-goatcounter="https://ferrucci-franco.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+  </head>
+  <body>
+    <div class="page">
+      <header class="panel app-header">
+        <div class="title-block">
+          <h1 data-i18n="title"></h1>
+        </div>
+        <div class="segmented mode-switch" id="mode-switch" role="group" data-i18n-aria="modeAria">
+          <button type="button" data-mode="1" aria-pressed="false" data-i18n="mode1"></button>
+          <button type="button" data-mode="2" aria-pressed="true" data-i18n="mode2"></button>
+        </div>
+        <button id="theme-toggle" class="icon-button" type="button" aria-pressed="false"><span class="theme-glyph" aria-hidden="true"></span></button>
+      </header>
+
+      <main class="workspace">
+        <section class="panel graph-panel">
+          <div class="graph-toolbar">
+            <button type="button" class="btn" id="reframe" data-i18n="reframe"></button>
+            <label class="toggle"><input type="checkbox" id="auto-axes" /><span data-i18n="autoAxes"></span></label>
+            <button type="button" class="btn btn-accent" id="memorize" data-i18n="memorize"></button>
+            <button type="button" class="btn" id="clear-memory" data-i18n="clear" disabled></button>
+            <div class="marks" role="group" data-i18n-aria="marksAria">
+              <label class="toggle"><input type="checkbox" data-mark="band" /><span data-i18n="markBand"></span></label>
+              <label class="toggle" data-only="1"><input type="checkbox" data-mark="tau" /><span data-i18n="markTau"></span></label>
+              <label class="toggle" data-only="2"><input type="checkbox" data-mark="envelope" /><span data-i18n="markEnvelope"></span></label>
+            </div>
+            <label class="toggle"><input type="checkbox" id="snap" checked /><span data-i18n="snap"></span></label>
+          </div>
+          <div class="scope-screen" id="scope-screen">
+            <canvas id="scope" data-i18n-aria="graphAria" role="img"></canvas>
+          </div>
+          <div class="readout" role="group" data-i18n-aria="cursorsAria" aria-live="polite">
+            <button type="button" class="cursor-toggle" id="cursor-1" data-n="1" data-i18n-aria="cursor1" aria-pressed="false"><i aria-hidden="true"></i><span data-i18n="cursor1"></span></button>
+            <div class="read-cell"><var data-tex="t_1"></var><strong id="read-t1">—</strong></div>
+            <div class="read-cell"><var data-tex="y_1"></var><strong id="read-y1">—</strong></div>
+            <button type="button" class="cursor-toggle" id="cursor-2" data-n="2" data-i18n-aria="cursor2" aria-pressed="false"><i aria-hidden="true"></i><span data-i18n="cursor2"></span></button>
+            <div class="read-cell"><var data-tex="t_2"></var><strong id="read-t2">—</strong></div>
+            <div class="read-cell"><var data-tex="y_2"></var><strong id="read-y2">—</strong></div>
+            <div class="read-delta">
+              <div class="read-cell"><var data-tex="\Delta t"></var><strong id="read-dt">—</strong></div>
+              <div class="read-cell"><var data-tex="\Delta y"></var><strong id="read-dy">—</strong></div>
+            </div>
+          </div>
+        </section>
+
+        <div class="side">
+          <section class="panel params-panel">
+            <h2 class="kicker" data-i18n="paramsTitle"></h2>
+            <div class="controls" id="controls"></div>
+          </section>
+
+          <section class="panel equation-panel">
+            <h2 class="kicker" data-i18n="eqTitle"></h2>
+            <div class="eq-box">
+              <div class="eq-line" id="eq-symbolic"></div>
+              <div class="eq-line eq-numeric" id="eq-numeric"></div>
+            </div>
+            <p class="regime" id="regime"><span data-i18n="regimeLabel"></span> <strong id="regime-value"></strong></p>
+          </section>
+
+          <details class="panel values-panel" id="values-panel">
+            <summary><span class="kicker" data-i18n="valuesTitle"></span><i aria-hidden="true"></i></summary>
+            <div class="values-grid" id="values-grid"></div>
+          </details>
+        </div>
+      </main>
+    </div>
+
+    <script src="vendor/katex/katex.min.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
