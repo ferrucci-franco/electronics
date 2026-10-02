@@ -155,6 +155,14 @@
   }
   .status-line{font-size:12px; opacity:0.85; min-height:1.2em}
   .status-line.error{color:var(--danger-color); opacity:1}
+  .example-confirm{
+    display:grid; gap:8px; margin:6px 0; padding:8px 10px; font-size:0.82rem;
+    border:1px solid var(--danger-color); border-radius:8px;
+    background:color-mix(in srgb, var(--danger-color) 10%, transparent);
+  }
+  .example-confirm[hidden]{display:none}
+  .example-confirm-actions{display:flex; gap:8px; justify-content:flex-end}
+  .danger-action{background:var(--danger-color); border-color:var(--danger-color); color:white; font-weight:600}
   .signal-note{font-size:12px; color:var(--muted); margin:0}
   .sidebar-author{
     padding:12px 8px 4px; margin-top:auto; text-align:center;
@@ -348,7 +356,7 @@ const I18N = {
        displayTitle:"Display", showOriginalSignal:"Show original signal",
        showFourierSum:"Show Fourier sum", showComponents:"Show components",
        piecewiseTitle:"Piecewise signal", period:"Period T", points:"Points (x, y)",
-       applySignal:"Apply", loadExample:"Example", dc:"a_0",
+       applySignal:"Apply", exampleWarning:"This replaces the period and the points with the example. Your changes will be lost.", replaceExample:"Replace", cancel:"Cancel", loadExample:"Example", dc:"a_0",
        signalOriginal:"Original signal",
        piNote:'You can use "pi" and "T" in the table, for example pi/2, 2*pi or T/4.',
        pointsPlaceholder:"0, 0\nT/4, 1\nT/2, -1\nT/2, 1\nT, 0",
@@ -413,7 +421,7 @@ const I18N = {
        displayTitle:"Visualización", showOriginalSignal:"Mostrar señal original",
        showFourierSum:"Mostrar suma de Fourier", showComponents:"Mostrar componentes",
        piecewiseTitle:"Señal por trazos", period:"Periodo T", points:"Puntos (x, y)",
-       applySignal:"Aplicar", loadExample:"Ejemplo", dc:"a_0",
+       applySignal:"Aplicar", exampleWarning:"Esto reemplaza el período y los puntos por el ejemplo. Se perderán tus cambios.", replaceExample:"Reemplazar", cancel:"Cancelar", loadExample:"Ejemplo", dc:"a_0",
        signalOriginal:"Señal original",
        piNote:'Se puede usar "pi" y "T" en la tabla, por ejemplo pi/2, 2*pi o T/4.',
        pointsPlaceholder:"0, 0\nT/4, 1\nT/2, -1\nT/2, 1\nT, 0",
@@ -478,7 +486,7 @@ const I18N = {
        displayTitle:"Affichage", showOriginalSignal:"Afficher le signal original",
        showFourierSum:"Afficher la somme de Fourier", showComponents:"Afficher les composantes",
        piecewiseTitle:"Signal par morceaux", period:"Période T", points:"Points (x, y)",
-       applySignal:"Appliquer", loadExample:"Exemple", dc:"a_0",
+       applySignal:"Appliquer", exampleWarning:"Cela remplace la période et les points par l'exemple. Vos modifications seront perdues.", replaceExample:"Remplacer", cancel:"Annuler", loadExample:"Exemple", dc:"a_0",
        signalOriginal:"Signal original",
        piNote:'Vous pouvez utiliser « pi » et « T » dans le tableau, par exemple pi/2, 2*pi ou T/4.',
        pointsPlaceholder:"0, 0\nT/4, 1\nT/2, -1\nT/2, 1\nT, 0",
@@ -736,6 +744,43 @@ function getDisplayFlags() {
   };
 }
 
+// The editor text only counts as edited if it differs from the example
+// beyond blank lines and surrounding spaces.
+function normalizeSignalText(text) {
+  return String(text).split(/\r?\n/).map(line => line.trim()).filter(Boolean).join("\n");
+}
+
+// "Example" overwrites the editor: ask first if the user has edited it.
+function createExampleConfirm(t, isEdited, loadExample) {
+  const box = document.createElement("div");
+  box.className = "example-confirm";
+  box.hidden = true;
+  const msg = document.createElement("div");
+  msg.textContent = t.exampleWarning;
+  const row = document.createElement("div");
+  row.className = "example-confirm-actions";
+  const cancelBtn = document.createElement("button");
+  cancelBtn.type = "button";
+  cancelBtn.textContent = t.cancel;
+  cancelBtn.addEventListener("click", () => { box.hidden = true; });
+  const replaceBtn = document.createElement("button");
+  replaceBtn.type = "button";
+  replaceBtn.className = "danger-action";
+  replaceBtn.textContent = t.replaceExample;
+  replaceBtn.addEventListener("click", () => { box.hidden = true; loadExample(); });
+  row.appendChild(cancelBtn);
+  row.appendChild(replaceBtn);
+  box.appendChild(msg);
+  box.appendChild(row);
+  return {
+    box,
+    request() {
+      if (isEdited()) box.hidden = false;
+      else loadExample();
+    }
+  };
+}
+
 function createSignalEditor() {
   const card = document.createElement("div");
   card.className = "control-group piecewise-group";
@@ -787,19 +832,24 @@ function createSignalEditor() {
   exampleBtn.type = "button";
   exampleBtn.className = "secondary-action";
   exampleBtn.textContent = I18N[lang].loadExample;
-  exampleBtn.addEventListener("click", () => {
+  const exampleConfirm = createExampleConfirm(I18N[lang], () =>
+    periodInput.value.trim() !== DEFAULT_PERIOD_TEXT ||
+    normalizeSignalText(piecewiseText) !== normalizeSignalText(DEFAULT_PIECEWISE_TEXT),
+  () => {
     periodText = DEFAULT_PERIOD_TEXT;
     period = TWO_PI;
     piecewiseText = DEFAULT_PIECEWISE_TEXT;
     createControls();
     applyPiecewiseSignal(true);
   });
+  exampleBtn.addEventListener("click", () => exampleConfirm.request());
 
   actions.appendChild(applyBtn);
   actions.appendChild(exampleBtn);
   top.appendChild(periodLabel);
   top.appendChild(actions);
   card.appendChild(top);
+  card.appendChild(exampleConfirm.box);
 
   const pointsLabel = document.createElement("label");
   pointsLabel.className = "mini-label";

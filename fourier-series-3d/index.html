@@ -109,6 +109,14 @@
   }
   .status-line{font-size:0.78rem; color:var(--muted); min-height:1.2em}
   .status-line.error{color:var(--danger-color)}
+  .example-confirm{
+    display:grid; gap:8px; margin:6px 0; padding:8px 10px; font-size:0.82rem;
+    border:1px solid var(--danger-color); border-radius:8px;
+    background:color-mix(in srgb, var(--danger-color) 10%, transparent);
+  }
+  .example-confirm[hidden]{display:none}
+  .example-confirm-actions{display:flex; gap:8px; justify-content:flex-end}
+  .danger-action{background:var(--danger-color); border-color:var(--danger-color); color:white; font-weight:600}
   .sidebar-author{
     padding:12px 8px 4px; margin-top:auto; text-align:center;
     font-size:12px; color:var(--muted); border-top:1px solid var(--panel-border);
@@ -489,7 +497,7 @@ const tr = {
        viewReal:"Real vs t", viewImag:"Imag. vs t", viewPlane:"Complex plane", view3D:"3D",
        square:"Square", triangle:"Triangle", all0:"All 0", rcCharge:"RC charge/discharge", flower:"Flower", pentagon:"Pentagon", lissajous:"Lissajous",
        mySignal:"My signal", piecewiseTitle:"Piecewise complex signal", period:"Period T", points:"Points (t, y) or (t, real, imag)",
-       applySignal:"Apply", loadExample:"Example", signalOriginal:"Original signal",
+       applySignal:"Apply", exampleWarning:"This replaces the period and the points with the example. Your changes will be lost.", replaceExample:"Replace", cancel:"Cancel", loadExample:"Example", signalOriginal:"Original signal",
        piNote:'Use columns t, y or t, real, imag. You can use "pi" and "T".',
        invalidPeriod:"Invalid period. Use a positive value.", invalidLine:"Invalid line",
        needTwoPoints:"Enter at least two points.", nonMonotonic:"t values must be nondecreasing; repeat t only for jumps.",
@@ -546,7 +554,7 @@ const tr = {
        viewReal:"Real vs t", viewImag:"Imag. vs t", viewPlane:"Plano complejo", view3D:"3D",
        square:"Cuadrada", triangle:"Triangular", all0:"Todo 0", rcCharge:"Carga/descarga RC", flower:"Flor", pentagon:"Pentágono", lissajous:"Lissajous",
        mySignal:"Mi señal", piecewiseTitle:"Señal compleja por trazos", period:"Periodo T", points:"Puntos (t, y) o (t, real, imag)",
-       applySignal:"Aplicar", loadExample:"Ejemplo", signalOriginal:"Señal original",
+       applySignal:"Aplicar", exampleWarning:"Esto reemplaza el período y los puntos por el ejemplo. Se perderán tus cambios.", replaceExample:"Reemplazar", cancel:"Cancelar", loadExample:"Ejemplo", signalOriginal:"Señal original",
        piNote:'Usa columnas t, y o t, real, imag. Puedes usar "pi" y "T".',
        invalidPeriod:"Periodo inválido. Usa un valor positivo.", invalidLine:"Línea inválida",
        needTwoPoints:"Introduce al menos dos puntos.", nonMonotonic:"Los valores de t deben ser crecientes; repite t solo para saltos.",
@@ -603,7 +611,7 @@ const tr = {
        viewReal:"Réel vs t", viewImag:"Imag. vs t", viewPlane:"Plan complexe", view3D:"3D",
        square:"Carrée", triangle:"Triangulaire", all0:"Tout 0", rcCharge:"Charge/décharge RC", flower:"Fleur", pentagon:"Pentagone", lissajous:"Lissajous",
        mySignal:"Mon signal", piecewiseTitle:"Signal complexe par morceaux", period:"Période T", points:"Points (t, y) ou (t, réel, imag.)",
-       applySignal:"Appliquer", loadExample:"Exemple", signalOriginal:"Signal original",
+       applySignal:"Appliquer", exampleWarning:"Cela remplace la période et les points par l'exemple. Vos modifications seront perdues.", replaceExample:"Remplacer", cancel:"Annuler", loadExample:"Exemple", signalOriginal:"Signal original",
        piNote:'Utilisez les colonnes t, y ou t, réel, imag. Vous pouvez utiliser « pi » et « T ».',
        invalidPeriod:"Période invalide. Utilisez une valeur positive.", invalidLine:"Ligne invalide",
        needTwoPoints:"Entrez au moins deux points.", nonMonotonic:"Les valeurs de t doivent être croissantes; répétez t seulement pour les sauts.",
@@ -1011,6 +1019,43 @@ function coefficientsFromComplexPiecewise(model) {
   }
 }
 
+// The editor text only counts as edited if it differs from the example
+// beyond blank lines and surrounding spaces.
+function normalizeSignalText(text) {
+  return String(text).split(/\r?\n/).map(line => line.trim()).filter(Boolean).join("\n");
+}
+
+// "Example" overwrites the editor: ask first if the user has edited it.
+function createExampleConfirm(t, isEdited, loadExample) {
+  const box = document.createElement("div");
+  box.className = "example-confirm";
+  box.hidden = true;
+  const msg = document.createElement("div");
+  msg.textContent = t.exampleWarning;
+  const row = document.createElement("div");
+  row.className = "example-confirm-actions";
+  const cancelBtn = document.createElement("button");
+  cancelBtn.type = "button";
+  cancelBtn.textContent = t.cancel;
+  cancelBtn.addEventListener("click", () => { box.hidden = true; });
+  const replaceBtn = document.createElement("button");
+  replaceBtn.type = "button";
+  replaceBtn.className = "danger-action";
+  replaceBtn.textContent = t.replaceExample;
+  replaceBtn.addEventListener("click", () => { box.hidden = true; loadExample(); });
+  row.appendChild(cancelBtn);
+  row.appendChild(replaceBtn);
+  box.appendChild(msg);
+  box.appendChild(row);
+  return {
+    box,
+    request() {
+      if (isEdited()) box.hidden = false;
+      else loadExample();
+    }
+  };
+}
+
 function buildSignalEditor() {
   const panel = document.getElementById("signalEditor");
   panel.classList.toggle("hidden", !signalEditorVisible);
@@ -1062,17 +1107,22 @@ function buildSignalEditor() {
   exampleBtn.type = "button";
   exampleBtn.className = "secondary-action";
   exampleBtn.textContent = tr[lang].loadExample;
-  exampleBtn.addEventListener("click", () => {
+  const exampleConfirm = createExampleConfirm(tr[lang], () =>
+    periodInput.value.trim() !== DEFAULT_PERIOD_TEXT ||
+    normalizeSignalText(complexSignalText) !== normalizeSignalText(DEFAULT_COMPLEX_SIGNAL_TEXT),
+  () => {
     periodText = DEFAULT_PERIOD_TEXT;
     period = TWO_PI;
     complexSignalText = DEFAULT_COMPLEX_SIGNAL_TEXT;
     buildSignalEditor();
     applyCustomSignal(true);
   });
+  exampleBtn.addEventListener("click", () => exampleConfirm.request());
   actions.appendChild(applyBtn);
   actions.appendChild(exampleBtn);
   top.appendChild(actions);
   panel.appendChild(top);
+  panel.appendChild(exampleConfirm.box);
 
   const pointsLabel = document.createElement("label");
   pointsLabel.className = "signal-note";
@@ -1915,56 +1965,44 @@ function pushGroupedPolylineTraces(traces, items, options) {
   }
 }
 
-function pushGroupedSegmentTraces(traces, segments, options) {
+// Phasor segments and tips go in a single trace each, coloured per point.
+// Every Plotly 3D trace costs several synchronous WebGL calls when it is
+// created; with one trace per harmonic, presets with all 21 harmonics (RC)
+// took seconds to draw in Firefox.
+function pushSegmentTrace(traces, segments, options) {
   if(!segments || segments.length === 0) return;
-  const groups = new Map();
+  const x = [], y = [], z = [], color = [];
   for(const segment of segments) {
-    const color = options.colorForItem(segment);
-    if(!groups.has(color)) groups.set(color, []);
-    groups.get(color).push(segment);
+    const c = options.colorForItem(segment);
+    x.push(segment.x0, segment.x1, NaN);
+    y.push(segment.y0, segment.y1, NaN);
+    z.push(segment.z0, segment.z1, NaN);
+    color.push(c, c, c);
   }
-
-  for(const [color, groupSegments] of groups.entries()) {
-    const x = [], y = [], z = [];
-    for(const segment of groupSegments) {
-      x.push(segment.x0, segment.x1, NaN);
-      y.push(segment.y0, segment.y1, NaN);
-      z.push(segment.z0, segment.z1, NaN);
-    }
-    traces.push({
-      type:"scatter3d",
-      mode:"lines",
-      x, y, z,
-      line:{width:options.width, color},
-      hoverinfo:"skip",
-      name:options.name || "",
-      showlegend:options.showlegend ?? false
-    });
-  }
+  traces.push({
+    type:"scatter3d",
+    mode:"lines",
+    x, y, z,
+    line:{width:options.width, color},
+    hoverinfo:"skip",
+    name:options.name || "",
+    showlegend:false
+  });
 }
 
-function pushGroupedMarkerTraces(traces, points, options) {
+function pushMarkerTrace(traces, points, options) {
   if(!points || points.length === 0) return;
-  const groups = new Map();
-  for(const point of points) {
-    const color = options.colorForItem(point);
-    if(!groups.has(color)) groups.set(color, []);
-    groups.get(color).push(point);
-  }
-
-  for(const [color, groupPoints] of groups.entries()) {
-    traces.push({
-      type:"scatter3d",
-      mode:"markers",
-      x:groupPoints.map(point => point.x),
-      y:groupPoints.map(point => point.y),
-      z:groupPoints.map(point => point.z),
-      marker:{size:options.size, color},
-      hoverinfo:"skip",
-      name:options.name || "",
-      showlegend:options.showlegend ?? false
-    });
-  }
+  traces.push({
+    type:"scatter3d",
+    mode:"markers",
+    x:points.map(point => point.x),
+    y:points.map(point => point.y),
+    z:points.map(point => point.z),
+    marker:{size:options.size, color:points.map(point => options.colorForItem(point))},
+    hoverinfo:"skip",
+    name:options.name || "",
+    showlegend:false
+  });
 }
 
 function updatePlot(useReact=false){
@@ -2059,11 +2097,11 @@ function updatePlot(useReact=false){
         accumIm = nextIm;
       }
 
-      pushGroupedSegmentTraces(traces, phasorSegments, {
+      pushSegmentTrace(traces, phasorSegments, {
         width: LINE_WIDTH_PHASOR,
         colorForItem: item => item.color
       });
-      pushGroupedMarkerTraces(traces, phasorMarkers, {
+      pushMarkerTrace(traces, phasorMarkers, {
         size: 4,
         colorForItem: item => item.color
       });
@@ -2095,11 +2133,11 @@ function updatePlot(useReact=false){
           phasorMarkers.push({ k, color, x:tRef, y:tipRe, z:tipIm });
         }
       }
-      pushGroupedSegmentTraces(traces, phasorSegments, {
+      pushSegmentTrace(traces, phasorSegments, {
         width: LINE_WIDTH_PHASOR,
         colorForItem: item => item.color
       });
-      pushGroupedMarkerTraces(traces, phasorMarkers, {
+      pushMarkerTrace(traces, phasorMarkers, {
         size: 6,
         colorForItem: item => item.color
       });
@@ -2179,6 +2217,28 @@ function tuneGlScene(gd) {
       return updateFx.call(this, dragmode, hovermode);
     };
     proto._skipSameDragmode = true;
+  }
+  // Nothing in the app hovers or clicks on 3D points, but gl-plot3d still
+  // renders every object into a hit-test buffer and reads it back with
+  // gl.readPixels after each change (every animation frame, every rotation
+  // step). That read stalls on the GPU, badly in Firefox, so objects are
+  // left out of picking.
+  const glplot = scene.glplot;
+  if (glplot && typeof glplot.add === "function" && !glplot._noPicking) {
+    const add = glplot.add;
+    glplot.add = function(obj) {
+      if (obj) obj.pickSlots = 0;
+      return add.apply(this, arguments);
+    };
+    glplot._noPicking = true;
+    const objects = (glplot.objects || []).slice();
+    objects.forEach(obj => { obj.pickSlots = 0; });
+    if (objects.length) {
+      // Re-adding one object makes gl-plot3d drop the pick buffers it already allocated.
+      const last = objects[objects.length - 1];
+      glplot.remove(last);
+      glplot.add(last);
+    }
   }
   if (scene.axesOptions && Array.isArray(scene.axesOptions.labelPad)) {
     scene.axesOptions.labelPad = [AXIS_TITLE_PAD, AXIS_TITLE_PAD, AXIS_TITLE_PAD];
