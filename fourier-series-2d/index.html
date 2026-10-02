@@ -1175,7 +1175,7 @@ function plotLayout(){
 function updatePlot(){
   const t=xVector();
   Plotly.react("plot", buildTraces(t), plotLayout(), {
-    responsive:true, scrollZoom:true, displaylogo:false, displayModeBar:false
+    responsive:true, scrollZoom:true, displaylogo:false, displayModeBar:false, showTips:false
   }).then(function(gd){ if(!gd._panAttached){ gd._panAttached=true; attachPan2D(gd); } });
 }
 
