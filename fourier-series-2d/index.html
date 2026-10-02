@@ -208,6 +208,18 @@
     background:color-mix(in srgb, var(--primary-color) 58%, var(--muted));
     border:3px solid var(--sidebar); background-clip:content-box;
   }
+  /* Firefox only honours scrollbar-color, and while the thumb is dragged it
+     darkens that colour by a fixed ratio: with these greys the result vanished
+     against the sidebar. Firefox therefore gets its native scrollbar (dark in
+     the dark theme); the other browsers keep the custom one above. */
+  @supports (-moz-appearance:none){
+    .nice-scroll, .nice-scroll.controls{scrollbar-color:auto}
+    body.theme-dark .nice-scroll{color-scheme:dark}
+    body.theme-dark .nice-scroll > *{color-scheme:normal}
+  }
+  /* No text selection anywhere, except in the fields the user types in. */
+  body{-webkit-user-select:none; user-select:none}
+  input, textarea, [contenteditable="true"]{-webkit-user-select:text; user-select:text}
   input[type="range"]{ width:100% }
   #toggleControls{display:none}
   .ctrl-wrap{position:relative; min-height:0; min-width:0}

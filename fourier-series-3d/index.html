@@ -162,6 +162,18 @@
     background:color-mix(in srgb, var(--primary-color) 58%, var(--muted));
     border:3px solid var(--sidebar); background-clip:content-box;
   }
+  /* Firefox only honours scrollbar-color, and while the thumb is dragged it
+     darkens that colour by a fixed ratio: with these greys the result vanished
+     against the sidebar. Firefox therefore gets its native scrollbar (dark in
+     the dark theme); the other browsers keep the custom one above. */
+  @supports (-moz-appearance:none){
+    .nice-scroll, .nice-scroll.controls{scrollbar-color:auto}
+    body.theme-dark .nice-scroll{color-scheme:dark}
+    body.theme-dark .nice-scroll > *{color-scheme:normal}
+  }
+  /* No text selection anywhere, except in the fields the user types in. */
+  body{-webkit-user-select:none; user-select:none}
+  input, textarea, [contenteditable="true"]{-webkit-user-select:text; user-select:text}
   #sideWrap{grid-area:sidebar; position:relative; width:340px; z-index:5; min-height:0}
   body.sidebar-collapsed #sideWrap{width:0}
   #sidebar{height:100%}
@@ -191,7 +203,11 @@
     background:color-mix(in srgb, var(--tab-color) 12%, var(--bg)); transform:translateY(-1px);
   }
   
-  .conjugate-btn{width:100%; margin-top:8px}
+  .conjugate-btn{
+    width:100%; margin-bottom:10px; padding:9px 12px;
+    background:#c2410c; border-color:#c2410c; color:white; font-weight:700;
+  }
+  .conjugate-btn:hover{background:#9a3412; border-color:#9a3412}
   .tab-content{display:none; padding:12px 0; background:var(--bg); border-radius:0 0 8px 8px}
   .tab-content.active{display:block}
   
@@ -354,8 +370,8 @@
         <button class="tab-button tab-zero" data-tab="zero" id="tabZero">k = 0</button>
         <button class="tab-button tab-positive active" data-tab="positive" id="tabPositive">k &gt; 0</button>
       </div>
-      <button type="button" id="conjugateBtn" class="conjugate-btn"></button>
       <div class="tab-content" id="tabContentNegative">
+        <button type="button" id="conjugateBtn" class="conjugate-btn"></button>
         <div class="control-grid" id="controlsGridNegative"></div>
       </div>
       <div class="tab-content" id="tabContentZero">
@@ -482,8 +498,8 @@ const tr = {
        axisX:"Time (s)", axisY:"Real", axisZ:"Imag", total:"Total",
        timeUnit:"s",
        tabNegative:"k < 0", tabZero:"k = 0", tabPositive:"k > 0",
-       conjugate:"Real signal: c<sub>−k</sub> = c<sub>k</sub><sup>*</sup>",
-       conjugateTitle:"Set every c₋ₖ to the conjugate of cₖ (and keep only the real part of c₀), so the sum is a real signal",
+       conjugate:"Force c<sub>−k</sub> = c<sub>k</sub><sup>*</sup>",
+       conjugateTitle:"Set every c₋ₖ to the conjugate of cₖ (with c₀ real, the sum is then a real signal)",
        play:"▶ Play", pause:"⏸ Pause", reset:"Reset", animationOn:"Animation on", speed:"Speed",
        helpButton:"Help", helpClose:"Close", helpTitle:"Fourier series — complex exponential form",
        helpSections:[
@@ -539,8 +555,8 @@ const tr = {
        axisX:"Tiempo (seg)", axisY:"Real", axisZ:"Imaginaria", total:"Total",
        timeUnit:"seg",
        tabNegative:"k < 0", tabZero:"k = 0", tabPositive:"k > 0",
-       conjugate:"Señal real: c<sub>−k</sub> = c<sub>k</sub><sup>*</sup>",
-       conjugateTitle:"Asigna a cada c₋ₖ el conjugado de cₖ (y deja solo la parte real de c₀), de modo que la suma sea una señal real",
+       conjugate:"Forzar c<sub>−k</sub> = c<sub>k</sub><sup>*</sup>",
+       conjugateTitle:"Asigna a cada c₋ₖ el conjugado de cₖ (con c₀ real, la suma es entonces una señal real)",
        play:"▶ Reproducir", pause:"⏸ Pausar", reset:"Reiniciar", animationOn:"Animación activada", speed:"Velocidad",
        helpButton:"Ayuda", helpClose:"Cerrar", helpTitle:"Serie de Fourier — forma exponencial compleja",
        helpSections:[
@@ -596,8 +612,8 @@ const tr = {
        axisX:"Temps (s)", axisY:"Réel", axisZ:"Imaginaire", total:"Total",
        timeUnit:"s",
        tabNegative:"k < 0", tabZero:"k = 0", tabPositive:"k > 0",
-       conjugate:"Signal réel : c<sub>−k</sub> = c<sub>k</sub><sup>*</sup>",
-       conjugateTitle:"Donne à chaque c₋ₖ le conjugué de cₖ (et ne garde que la partie réelle de c₀), pour que la somme soit un signal réel",
+       conjugate:"Forcer c<sub>−k</sub> = c<sub>k</sub><sup>*</sup>",
+       conjugateTitle:"Donne à chaque c₋ₖ le conjugué de cₖ (avec c₀ réel, la somme est alors un signal réel)",
        play:"▶ Jouer", pause:"⏸ Pause", reset:"Réinitialiser", animationOn:"Animation activée", speed:"Vitesse",
        helpButton:"Aide", helpClose:"Fermer", helpTitle:"Série de Fourier — forme exponentielle complexe",
        helpSections:[
@@ -1254,17 +1270,13 @@ function switchTab(tabName){
   });
 }
 
-/* Conjugate symmetry: c_{-k} = c_k^*, which makes the Fourier sum real.
-   c_0 must equal its own conjugate, so only its real part is kept. */
+/* Conjugate symmetry c_{-k} = c_k^* (with c_0 real, the Fourier sum is real). */
 function applyConjugateSymmetry(){
   for(let k = 1; k <= N_HARMONICS; k++){
     const phase = coefficients[k].phase;
     coefficients[-k].magnitude = coefficients[k].magnitude;
     coefficients[-k].phase = Math.atan2(-Math.sin(phase), Math.cos(phase));
   }
-  const re0 = coefficients[0].magnitude * Math.cos(coefficients[0].phase);
-  coefficients[0].magnitude = Math.abs(re0);
-  coefficients[0].phase = re0 < 0 ? Math.PI : 0;
   buildControls();
   scheduleUpdate();
 }
