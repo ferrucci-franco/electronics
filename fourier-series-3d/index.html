@@ -191,6 +191,7 @@
     background:color-mix(in srgb, var(--tab-color) 12%, var(--bg)); transform:translateY(-1px);
   }
   
+  .conjugate-btn{width:100%; margin-top:8px}
   .tab-content{display:none; padding:12px 0; background:var(--bg); border-radius:0 0 8px 8px}
   .tab-content.active{display:block}
   
@@ -353,6 +354,7 @@
         <button class="tab-button tab-zero" data-tab="zero" id="tabZero">k = 0</button>
         <button class="tab-button tab-positive active" data-tab="positive" id="tabPositive">k &gt; 0</button>
       </div>
+      <button type="button" id="conjugateBtn" class="conjugate-btn"></button>
       <div class="tab-content" id="tabContentNegative">
         <div class="control-grid" id="controlsGridNegative"></div>
       </div>
@@ -393,7 +395,7 @@
     </div>
     <div class="speed-control">
       <label id="labelSpeed">Speed:</label>
-      <input type="range" id="speedSlider" min="5" max="60" step="1" value="60" />
+      <input type="range" id="speedSlider" min="5" max="60" step="1" value="25" />
     </div>
   </div>
 
@@ -459,7 +461,7 @@ let animationState = {
   startTimestamp: null,
   pausedAt: 0,
   enabled: false,  // Animation starts disabled
-  cycleDuration: 5000  // Animation duration in milliseconds (5 seconds default)
+  cycleDuration: 40000  // Animation duration in milliseconds (matches the speed slider's initial value)
 };
 
 /* ================= i18n ================= */
@@ -480,6 +482,8 @@ const tr = {
        axisX:"Time (s)", axisY:"Real", axisZ:"Imag", total:"Total",
        timeUnit:"s",
        tabNegative:"k < 0", tabZero:"k = 0", tabPositive:"k > 0",
+       conjugate:"Real signal: c<sub>−k</sub> = c<sub>k</sub><sup>*</sup>",
+       conjugateTitle:"Set every c₋ₖ to the conjugate of cₖ (and keep only the real part of c₀), so the sum is a real signal",
        play:"▶ Play", pause:"⏸ Pause", reset:"Reset", animationOn:"Animation on", speed:"Speed",
        helpButton:"Help", helpClose:"Close", helpTitle:"Fourier series — complex exponential form",
        helpSections:[
@@ -535,6 +539,8 @@ const tr = {
        axisX:"Tiempo (seg)", axisY:"Real", axisZ:"Imaginaria", total:"Total",
        timeUnit:"seg",
        tabNegative:"k < 0", tabZero:"k = 0", tabPositive:"k > 0",
+       conjugate:"Señal real: c<sub>−k</sub> = c<sub>k</sub><sup>*</sup>",
+       conjugateTitle:"Asigna a cada c₋ₖ el conjugado de cₖ (y deja solo la parte real de c₀), de modo que la suma sea una señal real",
        play:"▶ Reproducir", pause:"⏸ Pausar", reset:"Reiniciar", animationOn:"Animación activada", speed:"Velocidad",
        helpButton:"Ayuda", helpClose:"Cerrar", helpTitle:"Serie de Fourier — forma exponencial compleja",
        helpSections:[
@@ -590,6 +596,8 @@ const tr = {
        axisX:"Temps (s)", axisY:"Réel", axisZ:"Imaginaire", total:"Total",
        timeUnit:"s",
        tabNegative:"k < 0", tabZero:"k = 0", tabPositive:"k > 0",
+       conjugate:"Signal réel : c<sub>−k</sub> = c<sub>k</sub><sup>*</sup>",
+       conjugateTitle:"Donne à chaque c₋ₖ le conjugué de cₖ (et ne garde que la partie réelle de c₀), pour que la somme soit un signal réel",
        play:"▶ Jouer", pause:"⏸ Pause", reset:"Réinitialiser", animationOn:"Animation activée", speed:"Vitesse",
        helpButton:"Aide", helpClose:"Fermer", helpTitle:"Série de Fourier — forme exponentielle complexe",
        helpSections:[
@@ -657,7 +665,7 @@ function setCustomLabel(type, k, text){
 
 let darkMode=false, sidebarHidden=false;
 let initialized=false;
-let activeTab = "negative";
+let activeTab = "positive";
 let currentViewMode = "3D";
 let cachedMaxAmp = null; // Cache for max amplitude to ensure consistent axis limits
 let signalEditorVisible = false;
@@ -1246,6 +1254,21 @@ function switchTab(tabName){
   });
 }
 
+/* Conjugate symmetry: c_{-k} = c_k^*, which makes the Fourier sum real.
+   c_0 must equal its own conjugate, so only its real part is kept. */
+function applyConjugateSymmetry(){
+  for(let k = 1; k <= N_HARMONICS; k++){
+    const phase = coefficients[k].phase;
+    coefficients[-k].magnitude = coefficients[k].magnitude;
+    coefficients[-k].phase = Math.atan2(-Math.sin(phase), Math.cos(phase));
+  }
+  const re0 = coefficients[0].magnitude * Math.cos(coefficients[0].phase);
+  coefficients[0].magnitude = Math.abs(re0);
+  coefficients[0].phase = re0 < 0 ? Math.PI : 0;
+  buildControls();
+  scheduleUpdate();
+}
+
 /* ================= PRESETS ================= */
 function setPresetPeriod() {
   period = TWO_PI;
@@ -1724,6 +1747,17 @@ let lastAspect = "manual";
 let lastAspectratio = {x:2, y:1, z:1};
 let interactionResumeTimer = null;
 
+// In the flat views one axis points at the viewer: its title and tick labels
+// collapse into a single spot over the other axis, so they are hidden until the
+// user rotates away from the preset direction.
+const FLAT_VIEW_AXIS = {real:"zaxis", imag:"yaxis", plane:"xaxis"};
+const FLAT_VIEW_EYE = {real:{x:0, y:0, z:1}, imag:{x:0, y:-1, z:0}, plane:{x:1, y:0, z:0}};
+let flatAxisHidden = false;
+
+// Distance (px) between an axis title and the axis; Plotly's default (30) puts
+// the titles on top of the tick labels.
+const AXIS_TITLE_PAD = 52;
+
 function layoutWithCamera(includeCamera=false, maxAmp=1){
   const fg = getComputedStyle(document.body).getPropertyValue('--fg').trim();
   const grid = getComputedStyle(document.body).getPropertyValue('--panel-border').trim();
@@ -1737,6 +1771,7 @@ function layoutWithCamera(includeCamera=false, maxAmp=1){
         color:fg,
         gridcolor:grid,
         zeroline:false, showspikes:false,
+        tickangle:0,
         backgroundcolor:plotBg,
         range:[0, animationState.maxTime],
         autorange: false,
@@ -1747,6 +1782,7 @@ function layoutWithCamera(includeCamera=false, maxAmp=1){
         color:fg,
         gridcolor:grid,
         zeroline:false, showspikes:false,
+        tickangle:0,
         backgroundcolor:plotBg,
         range:[-maxAmp, maxAmp],
         autorange: false,
@@ -1757,6 +1793,7 @@ function layoutWithCamera(includeCamera=false, maxAmp=1){
         color:fg,
         gridcolor:grid,
         zeroline:false, showspikes:false,
+        tickangle:0,
         backgroundcolor:plotBg,
         range:[-maxAmp, maxAmp],
         autorange: false,
@@ -1788,6 +1825,11 @@ function layoutWithCamera(includeCamera=false, maxAmp=1){
   };
   if(includeCamera){
     layout.scene.camera = INITIAL_CAMERA;
+  }
+  const flatAxis = flatAxisHidden && FLAT_VIEW_AXIS[currentViewMode];
+  if(flatAxis){
+    layout.scene[flatAxis].title = "";
+    layout.scene[flatAxis].showticklabels = false;
   }
   return layout;
 }
@@ -2096,11 +2138,65 @@ function updatePlot(useReact=false){
     Plotly.newPlot("plot3d", traces, layout, config).then(gd => { 
       plotDiv = gd; 
       initialized = true; 
+      tuneGlScene(gd);
       attachPlotInteractionHandlers(gd);
     });
   } else {
     Plotly.react("plot3d", traces, layout, config);
+    tuneGlScene(plotDiv);
   }
+}
+
+// Tweaks to Plotly's gl3d scene that its public API does not expose.
+// The scene object can be rebuilt by Plotly, so this runs after every render.
+function tuneGlScene(gd) {
+  const scene = gd && gd._fullLayout && gd._fullLayout.scene && gd._fullLayout.scene._scene;
+  if (!scene) return;
+  // Plotly re-applies the drag mode on every redraw, and for "turntable" the
+  // camera setter queues a 500 ms transition into the future. During the
+  // animation (one redraw every 50 ms) that made a new rotation lag by up to
+  // half a second. Only switch the mode when it actually changes.
+  const proto = Object.getPrototypeOf(scene);
+  if (typeof proto.updateFx === "function" && !proto._skipSameDragmode) {
+    const updateFx = proto.updateFx;
+    proto.updateFx = function(dragmode, hovermode) {
+      if (this.camera && this.camera.mode === dragmode) {
+        this.fullSceneLayout.hovermode = hovermode;
+        return;
+      }
+      return updateFx.call(this, dragmode, hovermode);
+    };
+    proto._skipSameDragmode = true;
+  }
+  if (scene.axesOptions && Array.isArray(scene.axesOptions.labelPad)) {
+    scene.axesOptions.labelPad = [AXIS_TITLE_PAD, AXIS_TITLE_PAD, AXIS_TITLE_PAD];
+  }
+}
+
+// Relayout patch that shows/hides the title and tick labels of each axis
+// according to the current view (see FLAT_VIEW_AXIS).
+function axisLabelsRelayout() {
+  const titles = {xaxis:tr[lang].axisX, yaxis:tr[lang].axisY, zaxis:tr[lang].axisZ};
+  const flatAxis = flatAxisHidden && FLAT_VIEW_AXIS[currentViewMode];
+  const update = {};
+  for (const axis of Object.keys(titles)) {
+    const hidden = axis === flatAxis;
+    update[`scene.${axis}.title.text`] = hidden ? "" : titles[axis];
+    update[`scene.${axis}.showticklabels`] = !hidden;
+  }
+  return update;
+}
+
+// True when the camera no longer looks along the preset direction of the
+// current flat view (pans and zooms keep the direction, rotations don't).
+function rotatedAwayFromFlatView(camera) {
+  const ref = FLAT_VIEW_EYE[currentViewMode];
+  if (!ref || !camera || !camera.eye) return false;
+  const c = camera.center || {x:0, y:0, z:0};
+  const dx = camera.eye.x - c.x, dy = camera.eye.y - c.y, dz = camera.eye.z - c.z;
+  const len = Math.hypot(dx, dy, dz);
+  if (!(len > 0)) return false;
+  return (dx*ref.x + dy*ref.y + dz*ref.z)/len < Math.cos(1.5*RAD);
 }
 
 function attachPlotInteractionHandlers(gd) {
@@ -2150,6 +2246,18 @@ function attachPlotInteractionHandlers(gd) {
     if (gd._fullLayout && gd._fullLayout.scene) {
       rememberSceneState(gd._fullLayout.scene);
     }
+  });
+  // Bring back the hidden axis labels as soon as a drag rotates the view.
+  gd.on("plotly_relayouting", function(update) {
+    if (!flatAxisHidden) return;
+    const camera = update && update["scene.camera"];
+    if (!rotatedAwayFromFlatView(camera)) return;
+    flatAxisHidden = false;
+    // Pass the live camera too: Plotly only stores it in the layout at mouseup,
+    // and a redraw with the stored one would snap the view back mid-drag.
+    const relayoutUpdate = axisLabelsRelayout();
+    relayoutUpdate["scene.camera"] = camera;
+    Plotly.relayout(gd, relayoutUpdate);
   });
 }
 
@@ -2224,6 +2332,7 @@ function buildPiecewiseOriginalTraces(model, color) {
 /* ================= CAMERA VIEWS ================= */
 function setView(view){
   currentViewMode = view;
+  flatAxisHidden = !!FLAT_VIEW_AXIS[view];
   let eye, up = {x:0, y:0, z:1};
   let aspect = "manual";
   let aspectratio = {x:2, y:1, z:1};
@@ -2258,11 +2367,11 @@ function setView(view){
     aspectmode: aspect,
     aspectratio
   });
-  const relayoutUpdate = {
+  const relayoutUpdate = Object.assign(axisLabelsRelayout(), {
     "scene.camera": camera,
     "scene.aspectmode": aspect,
     "dragmode": currentViewMode === "3D" ? "turntable" : "orbit"
-  };
+  });
   if (aspectratio) {
     relayoutUpdate["scene.aspectratio"] = aspectratio;
   } else {
@@ -2272,7 +2381,9 @@ function setView(view){
     updatePlot(true);
     return;
   }
-  const shouldResume = animationState.enabled && animationState.isPlaying;
+  // A double-click fit arrives while the click itself has paused the animation.
+  const shouldResume = animationState.enabled && (animationState.isPlaying || resumeAfterCameraDrag);
+  resumeAfterCameraDrag = false;
   if (interactionResumeTimer) {
     clearTimeout(interactionResumeTimer);
     interactionResumeTimer = null;
@@ -2412,6 +2523,8 @@ function applyLanguage(){
   document.getElementById("tabNegative").textContent = tr[lang].tabNegative;
   document.getElementById("tabZero").textContent = tr[lang].tabZero;
   document.getElementById("tabPositive").textContent = tr[lang].tabPositive;
+  document.getElementById("conjugateBtn").innerHTML = tr[lang].conjugate;
+  document.getElementById("conjugateBtn").title = tr[lang].conjugateTitle;
   document.getElementById("resetBtn").textContent = tr[lang].reset;
   
   // Update time slider max value
@@ -2503,6 +2616,7 @@ function wireEvents(){
   document.getElementById("presetPentagon").addEventListener("click", applyPresetPentagon);
   document.getElementById("presetLissajous").addEventListener("click", applyPresetLissajous);
   document.getElementById("presetHeart").addEventListener("click", applyPresetHeart);
+  document.getElementById("conjugateBtn").addEventListener("click", applyConjugateSymmetry);
   
   // Animation controls
   document.getElementById("resetBtn").addEventListener("click", resetAnimation);
@@ -2551,6 +2665,9 @@ function initializeApp() {
   updateHelpButton();
   buildSignalEditor();
   buildControls();
+  switchTab("positive");
+  document.getElementById("conjugateBtn").innerHTML = tr[lang].conjugate;
+  document.getElementById("conjugateBtn").title = tr[lang].conjugateTitle;
   updateShowOriginalState();
   updateShowComponentsState();
   updateAnimationControlsState(); // Initialize animation controls state
