@@ -6,7 +6,7 @@ Application HTML/JavaScript autonome pour la classe.
 
 Double-cliquez sur `index.html`. Aucune installation et aucun serveur ne sont nécessaires.
 
-La vérification numérique du modèle à thyristors se lance avec `node tests/thyristor.test.js`.
+Les vérifications numériques se lancent à la main, un script par topologie : `node tests/thyristor.test.js`, `node tests/redresseur.test.js`, `node tests/pont-h.test.js`.
 
 L’application comprend :
 
@@ -23,7 +23,9 @@ Le Buck et le Boost sont synchrones par défaut. Le mode avancé permet de chois
 
 Le pont en H propose trois applications :
 
-- onduleur monophasé à PWM bipolaire ou unipolaire, filtre LC et charge R–L ;
+- onduleur monophasé à PWM bipolaire ou unipolaire, sous deux montages :
+  - **pont + LC** : filtre LC et charge R–L série, dont R_o et L_o se règlent en mode avancé (L_o = 0 donne une charge purement résistive) ;
+  - **générateur + RC** : le montage de TP, où la MLI sinusoïdale sort d’un générateur de fonctions (±V_in à vide, résistance interne R_g = 50 Ω) et attaque un filtre RC passe-bas (R en kΩ, C en µF), la sortie v_o étant relevée à vide à l’oscilloscope ; le bandeau donne f_c = 1/(2π(R_g+R)C), le fondamental et son déphasage ;
 - moteur CC commandé manuellement, sans régulateur PI, soit autour de 50 % (50 % = arrêt), soit par sens et roue libre à tension nulle, avec affichage du démarrage ou de huit périodes PWM en régime permanent ;
 - injection de courant dans un réseau rigide de 50 Hz à travers une inductance, avec réglage du courant efficace et de sa phase, puis calcul de P, Q, du facteur de puissance et de la THD.
 
