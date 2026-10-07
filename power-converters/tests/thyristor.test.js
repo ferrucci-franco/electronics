@@ -14,6 +14,16 @@ assert.equal(model.id, "thyristor");
 assert.equal(model.defaults.vinRms, 230);
 assert.deepEqual(model.controlsFor().top.map((item) => item.key), ["alpha", "resistance", "inductance"]);
 assert.equal(model.axesFor("single", false)[1].label.es, "corrientes");
+
+// Plages de charge : R jusqu'à 40 W sous 230 V (R = 230²/40), L jusqu'à 1 H.
+const [, resistanceControl, inductanceControl] = model.controlsFor().top;
+assert.ok(resistanceControl.max >= 230 ** 2 / 40, "R permet 40 W sous 230 V");
+assert.equal(inductanceControl.max, 1000);
+assert.ok(model.defaults.resistance >= resistanceControl.min && (model.defaults.resistance - resistanceControl.min) % resistanceControl.step === 0, "R par défaut sur un cran du curseur");
+const fortyWatts = model.calculate(state({ alpha: 0, resistance: 1325, inductance: 0 }), null, { montage: "triac", frequency: 50 });
+assert.ok(relativeError(fortyWatts.pCh, 230 ** 2 / 1325) < .01, "TRIAC à α = 0 sur 1 325 Ω : P ≈ 40 W");
+const heavyInductance = model.calculate(state({ alpha: 60, resistance: 1325, inductance: 1000 }), null, { montage: "single", frequency: 50 });
+assert.ok(Number.isFinite(heavyInductance.pCh) && heavyInductance.pCh > 0 && heavyInductance.pCh < fortyWatts.pCh, "L = 1 H : simulation stable");
 assert.equal(model.axesFor("triac", true)[1].label.fr, "courants");
 
 const singleR = model.calculate(state({ alpha: 60, inductance: 0 }), null, options());
