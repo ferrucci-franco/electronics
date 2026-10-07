@@ -24,6 +24,36 @@ assert.deepEqual([model.defaults.loadResistance, model.defaults.loadInductance],
   assert.ok(Number.isFinite(result.currentRms), `LC ${JSON.stringify(overrides)} : simulation stable`);
   assert.ok(relativeError(result.currentRms, result.expectedCurrentRms) < .02, `LC ${JSON.stringify(overrides)} : I_o = V_o,1/|Z_o|`);
 });
+// Plages étendues (montage au générateur : L_f jusqu'à 100 mH, C_f de 100 nF à 100 µF, R_o jusqu'à 1 kΩ,
+// L_o jusqu'à 100 mH, V_dc dès 3 V) : la simulation reste stable aux extrêmes et le fondamental suit
+// V_o,1 = |H(jω_1)| mV_dc/√2.
+const ranges = Object.fromEntries([...lc.top, ...lc.bottom].map((item) => [item.key, [item.min, item.max]]));
+assert.deepEqual([ranges.filterInductance[1], ranges.filterCapacitance, ranges.loadResistance[1], ranges.loadInductance[1], ranges.dcVoltage[0]], [100, [.1, 100], 1000, 100, 3]);
+const lcFirstOrder = (s) => {
+  // |H| pour L_o = 0 : v_o / v_ab avec Z_C = r_d + 1/(jωC_f) parallèle à R_o, puis diviseur par jωL_f.
+  const w = 2 * Math.PI * s.fundamentalFrequency; const lf = s.filterInductance / 1000; const cf = s.filterCapacitance / 1e6; const rd = 1.5;
+  const zc = [rd, -1 / (w * cf)]; const r = s.loadResistance; const den = [r + zc[0], zc[1]]; const dd = den[0] ** 2 + den[1] ** 2;
+  const zp = [(r * zc[0] * den[0] + r * zc[1] * den[1]) / dd, (r * zc[1] * den[0] - r * zc[0] * den[1]) / dd];
+  const total = [zp[0], zp[1] + w * lf];
+  return Math.hypot(...zp) / Math.hypot(...total) * s.modulation / 100 * s.dcVoltage / Math.SQRT2;
+};
+[
+  { filterInductance: 100, filterCapacitance: 1, loadResistance: 1000, loadInductance: 0, dcVoltage: 5 },
+  { filterInductance: 100, filterCapacitance: 100, loadResistance: 1000, loadInductance: 0 },
+  { filterInductance: .5, filterCapacitance: .1, loadResistance: 2, loadInductance: 0, switchingFrequency: 2000 },
+  { filterInductance: 100, filterCapacitance: .1, loadResistance: 1000, loadInductance: 0, dcVoltage: 3 },
+].forEach((overrides) => {
+  const s = state(overrides); const result = model.calculate(s, null, { filter: "lc" }); const label = `LC ${JSON.stringify(overrides)}`;
+  assert.ok(relativeError(result.expectedVoltageRms, lcFirstOrder(s)) < 1e-6, `${label} : |H| des phaseurs`);
+  assert.ok(relativeError(result.fundamentalVoltageRms, result.expectedVoltageRms) < .02, `${label} : V_o,1 simulée`);
+});
+[{ loadResistance: 1000, loadInductance: 1 }, { filterInductance: .5, filterCapacitance: .1, loadResistance: 1000, loadInductance: 1, switchingFrequency: 2000 }, { fundamentalFrequency: 20, switchingFrequency: 30000, filterInductance: 100, filterCapacitance: 100, loadResistance: 2, loadInductance: 100 }].forEach((overrides) => {
+  const result = model.calculate(state(overrides), null, { filter: "lc" });
+  assert.ok(Number.isFinite(result.fundamentalVoltageRms) && Number.isFinite(result.currentRms), `LC ${JSON.stringify(overrides)} : stable`);
+  // I_o efficace ≈ fondamental seulement si le filtre coupe sous f_PWM (sinon les harmoniques MLI passent).
+  if (result.resonance < (overrides.switchingFrequency || model.defaults.switchingFrequency) / 2) assert.ok(relativeError(result.currentRms, result.expectedCurrentRms) < .02, `LC ${JSON.stringify(overrides)} : I_o = V_o,1/|Z_o|`);
+});
+
 // L_o = 0 : charge résistive, courant en phase avec la tension.
 assert.ok(Math.abs(model.calculate(state({ loadInductance: 0 }), null, { filter: "lc" }).phaseDegrees) < 1, "L_o = 0 : φ ≈ 0");
 

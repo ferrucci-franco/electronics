@@ -27,13 +27,13 @@
         control("fundamentalFrequency", "f<sub>1</sub>", ["Fundamental frequency", "Fréquence fondamentale", "Frecuencia fundamental"], 20, 200, 10, "Hz"),
         control("modulation", "m", ["Modulation index", "Indice de modulation", "Índice de modulación"], 10, 100, 5, "%"),
         control("switchingFrequency", "f<sub>PWM</sub>", ["PWM frequency", "Fréquence PWM", "Frecuencia PWM"], 2000, 30000, 1000, "kHz", { scale: .001 }),
-        control("dcVoltage", "V<sub>dc</sub>", ["DC bus voltage", "Tension du bus continu", "Tensión del bus continuo"], 20, 400, 20, "V", { advanced: true }),
+        control("dcVoltage", "V<sub>dc</sub>", ["DC bus voltage", "Tension du bus continu", "Tensión del bus continuo"], 3, 400, 1, "V", { advanced: true }),
       ],
       bottom: [
-        control("filterInductance", "L<sub>f</sub>", ["Filter inductance", "Inductance du filtre", "Inductancia del filtro"], .5, 10, .5, "mH"),
-        control("filterCapacitance", "C<sub>f</sub>", ["Filter capacitance", "Capacité du filtre", "Capacidad del filtro"], 5, 100, 5, "µF"),
-        control("loadResistance", "R<sub>o</sub>", ["Load resistance", "Résistance de charge", "Resistencia de carga"], 2, 50, 1, "Ω", { advanced: true }),
-        control("loadInductance", "L<sub>o</sub>", ["Load inductance", "Inductance de charge", "Inductancia de carga"], 0, 50, 1, "mH", { advanced: true }),
+        control("filterInductance", "L<sub>f</sub>", ["Filter inductance", "Inductance du filtre", "Inductancia del filtro"], .5, 100, .5, "mH"),
+        control("filterCapacitance", "C<sub>f</sub>", ["Filter capacitance", "Capacité du filtre", "Capacidad del filtro"], .1, 100, .1, "µF"),
+        control("loadResistance", "R<sub>o</sub>", ["Load resistance", "Résistance de charge", "Resistencia de carga"], 2, 1000, 2, "Ω", { advanced: true }),
+        control("loadInductance", "L<sub>o</sub>", ["Load inductance", "Inductance de charge", "Inductancia de carga"], 0, 100, 1, "mH", { advanced: true }),
       ],
     },
     // Montage de TP : la MLI sinusoïdale vient d'un générateur de fonctions (sortie 50 Ω) et
@@ -160,21 +160,60 @@
     return `<svg class="bridge-schematic" viewBox="0 0 900 300" role="img" aria-label="H bridge"><style>.bridge-schematic{width:96%;height:96%;color:#152238;font-family:Inter,Segoe UI,Arial,sans-serif}.bridge-schematic line,.bridge-schematic path,.bridge-schematic circle,.bridge-schematic rect{fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.bridge-schematic .component{stroke:#07958a;stroke-width:4}.bridge-schematic text{fill:#087f76;stroke:none;font-size:21px;font-weight:750;text-anchor:middle}.bridge-schematic .large{font-size:34px}.bridge-schematic .sub{font-size:14px;baseline-shift:sub}.bridge-schematic .switch{stroke:#07958a}.bridge-schematic .node{fill:#ff6b72;stroke:none}</style><text x="85" y="55">V<tspan class="sub">dc</tspan></text><text x="85" y="278">${dictionary[0]}</text><line x1="110" y1="70" x2="110" y2="260"/><line x1="75" y1="130" x2="145" y2="130" class="component"/><line x1="88" y1="143" x2="132" y2="143" class="component"/><line x1="110" y1="70" x2="500" y2="70"/><line x1="110" y1="260" x2="500" y2="260"/><line x1="250" y1="70" x2="250" y2="105"/><line x1="250" y1="225" x2="250" y2="260"/><line x1="430" y1="70" x2="430" y2="105"/><line x1="430" y1="225" x2="430" y2="260"/><rect x="220" y="105" width="60" height="42" rx="8" class="switch"/><rect x="220" y="183" width="60" height="42" rx="8" class="switch"/><rect x="400" y="105" width="60" height="42" rx="8" class="switch"/><rect x="400" y="183" width="60" height="42" rx="8" class="switch"/><line x1="250" y1="147" x2="250" y2="183"/><line x1="430" y1="147" x2="430" y2="183"/><path d="M250 165 H320 V105 H530"/><path d="M430 165 H500 V225 H530"/><circle cx="250" cy="165" r="5" class="node"/><circle cx="430" cy="165" r="5" class="node"/><text x="248" y="134">S1</text><text x="248" y="212">S2</text><text x="428" y="134">S3</text><text x="428" y="212">S4</text>${destination}</svg>`;
   }
 
+  // Algèbre des petits systèmes linéaires (3 états au plus) pour le modèle LC.
+  const matMul = (a, b) => a.map((row) => b[0].map((_, j) => row.reduce((sum, value, k) => sum + value * b[k][j], 0)));
+  const identity = (n) => Array.from({ length: n }, (_, i) => Array.from({ length: n }, (__, j) => (i === j ? 1 : 0)));
+  // e^M par mise à l'échelle et élévation au carré (série de Taylor sur M/2^s, de norme < 1/2).
+  function expm(matrix) {
+    const n = matrix.length; const norm = Math.max(...matrix.map((row) => row.reduce((sum, value) => sum + Math.abs(value), 0)));
+    const squarings = Math.max(0, Math.ceil(Math.log2(norm + 1e-300)) + 1); const scaled = matrix.map((row) => row.map((value) => value / 2 ** squarings));
+    let term = identity(n); let result = identity(n);
+    for (let k = 1; k <= 16; k += 1) { term = matMul(term, scaled).map((row) => row.map((value) => value / k)); result = result.map((row, i) => row.map((value, j) => value + term[i][j])); }
+    for (let k = 0; k < squarings; k += 1) result = matMul(result, result);
+    return result;
+  }
+  // Régime sinusoïdal : (jω I − A) X = B U, résolu par élimination de Gauss en complexes [re, im].
+  function phasorSolve(a, b, omega, amplitude) {
+    const n = a.length; const mul = (x, y) => [x[0] * y[0] - x[1] * y[1], x[0] * y[1] + x[1] * y[0]];
+    const div = (x, y) => { const d = y[0] ** 2 + y[1] ** 2; return [(x[0] * y[0] + x[1] * y[1]) / d, (x[1] * y[0] - x[0] * y[1]) / d]; };
+    const m = a.map((row, i) => [...row.map((value, j) => [-value, i === j ? omega : 0]), [b[i] * amplitude, 0]]);
+    for (let col = 0; col < n; col += 1) {
+      let pivot = col; for (let row = col + 1; row < n; row += 1) if (Math.hypot(...m[row][col]) > Math.hypot(...m[pivot][col])) pivot = row;
+      [m[col], m[pivot]] = [m[pivot], m[col]];
+      for (let row = 0; row < n; row += 1) { if (row === col) continue; const factor = div(m[row][col], m[col][col]); for (let k = col; k <= n; k += 1) { const product = mul(factor, m[col][k]); m[row][k] = [m[row][k][0] - product[0], m[row][k][1] - product[1]]; } }
+    }
+    return m.map((row, i) => div(row[n], row[i]));
+  }
+
+  // Pont + filtre L_f–C_f (r_d en série avec C_f) + charge R_o–L_o série. Le système est linéaire et v_ab
+  // reste constante sur un pas : x ← Φx + Γv_ab (Φ = e^{AΔt}) est exact et stable quels que soient
+  // L, C et R — un RK4 à pas fixe divergeait dès que L_o/R_o ou R_oC_f passait sous le pas de calcul.
   function simulateStandalone(state, switching) {
     const f1 = state.fundamentalFrequency; const fs = state.switchingFrequency; const m = state.modulation / 100; const vdc = state.dcVoltage; const lf = state.filterInductance / 1000; const cf = state.filterCapacitance / 1e6; const rd = 1.5; const rLoad = state.loadResistance; const lLoad = state.loadInductance / 1000; const omega = 2 * Math.PI * f1;
     const bridge = (time) => pwmVoltage(m * Math.sin(omega * time), triangle(time, fs), vdc, switching);
-    // L_o = 0 : charge purement résistive, i_o = v_o/R_o devient algébrique et v_o se résout
-    // avec la résistance d'amortissement : v_o = v_C + r_d (i_Lf − v_o/R_o).
-    const resistive = lLoad <= 0;
-    const output = (x) => { if (!resistive) { const iCap = x[0] - x[2]; return { iCap, vo: x[1] + rd * iCap, iLoad: x[2] }; } const vo = (x[1] + rd * x[0]) / (1 + rd / rLoad); const iLoad = vo / rLoad; return { iCap: x[0] - iLoad, vo, iLoad }; };
-    const derivative = (x, time) => { const { iCap, vo } = output(x); return [(bridge(time) - vo) / lf, iCap / cf, resistive ? 0 : (vo - rLoad * x[2]) / lLoad]; };
-    const step = (x, time, dt) => { const k1 = derivative(x, time); const k2 = derivative(x.map((v, i) => v + k1[i] * dt / 2), time + dt / 2); const k3 = derivative(x.map((v, i) => v + k2[i] * dt / 2), time + dt / 2); const k4 = derivative(x.map((v, i) => v + k3[i] * dt), time + dt); return x.map((v, i) => v + dt / 6 * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i])); };
-    const settle = 6 / f1; const duration = 2 / f1; const dt = 1 / (fs * 24); let x = [0, 0, 0];
-    for (let t = 0; t < settle; t += dt) x = step(x, t, dt);
-    const total = Math.ceil(duration / dt); const keepEvery = Math.max(1, Math.ceil(total / 48000)); const points = [];
-    for (let index = 0; index <= total; index += 1) { const t = Math.min(duration, index * dt); const absolute = settle + t; const { iCap, vo, iLoad } = output(x); const vab = bridge(absolute); if (index % keepEvery === 0 || index === total) points.push({ t, vref: m * vdc * Math.sin(omega * absolute), vab, vo, vLf: vab - vo, vC: x[1], iFilter: x[0], iLoad, iCap }); if (index < total) x = step(x, absolute, dt); }
+    // États [i_Lf, v_C, i_o] ; L_o = 0 : charge résistive, i_o = v_o/R_o algébrique, états [i_Lf, v_C].
+    const resistive = lLoad <= 0; const k = rLoad / (rLoad + rd);
+    const a = resistive
+      ? [[-k * rd / lf, -k / lf], [(1 - k * rd / rLoad) / cf, -k / (rLoad * cf)]]
+      : [[-rd / lf, -1 / lf, rd / lf], [1 / cf, 0, -1 / cf], [rd / lLoad, 1 / lLoad, -(rd + rLoad) / lLoad]];
+    const b = resistive ? [1 / lf, 0] : [1 / lf, 0, 0];
+    const output = (x) => { if (resistive) { const vo = k * (x[1] + rd * x[0]); const iLoad = vo / rLoad; return { iCap: x[0] - iLoad, vo, iLoad }; } const iCap = x[0] - x[2]; return { iCap, vo: x[1] + rd * iCap, iLoad: x[2] }; };
+    const dt = 1 / (fs * 48); const n = a.length;
+    const augmented = expm([...a.map((row, i) => [...row.map((value) => value * dt), b[i] * dt]), Array(n + 1).fill(0)]);
+    const phi = augmented.slice(0, n).map((row) => row.slice(0, n)); const gamma = augmented.slice(0, n).map((row) => row[n]);
+    const advance = (x, time) => { const vab = bridge(time + dt / 2); return phi.map((row, i) => row.reduce((sum, value, j) => sum + value * x[j], gamma[i] * vab)); };
+    // Départ sur le régime sinusoïdal du fondamental (x = Im(X e^{jωt}) à t = 0) : avec un filtre peu
+    // amorti accordé près de f_1, le transitoire durerait bien plus que la fenêtre simulée.
+    const phasors = phasorSolve(a, b, omega, m * vdc);
+    let x = phasors.map((value) => value[1]);
+    const settleSteps = Math.ceil(4 / f1 / dt);
+    for (let index = 0; index < settleSteps; index += 1) x = advance(x, index * dt);
+    const settle = settleSteps * dt; const duration = 2 / f1; const total = Math.ceil(duration / dt); const keepEvery = Math.max(1, Math.ceil(total / 48000)); const points = [];
+    for (let index = 0; index <= total; index += 1) { const t = Math.min(duration, index * dt); const absolute = settle + t; const { iCap, vo, iLoad } = output(x); const vab = bridge(absolute); if (index % keepEvery === 0 || index === total) points.push({ t, vref: m * vdc * Math.sin(omega * absolute), vab, vo, vLf: vab - vo, vC: x[1], iFilter: x[0], iLoad, iCap }); if (index < total) x = advance(x, absolute); }
+    // Fondamental attendu : V_o,1 = |H(jω_1)| mV_dc/√2, H tiré du même calcul de phaseurs.
+    const voPhasor = output(phasors.map((value) => value[0])).vo; const voPhasorIm = output(phasors.map((value) => value[1])).vo; const voAmplitude = Math.hypot(voPhasor, voPhasorIm);
     const voFundamental = harmonic(points, "vo", f1); const currentFundamental = harmonic(points, "iLoad", f1); const resonance = 1 / (2 * Math.PI * Math.sqrt(lf * cf));
-    return { points, application: "standalone", filter: "lc", fundamentalVoltageRms: voFundamental.rms, expectedVoltageRms: m * vdc / Math.sqrt(2), currentRms: rms(points, "iLoad"), expectedCurrentRms: voFundamental.rms / Math.hypot(rLoad, omega * lLoad), phaseDegrees: (voFundamental.phase - currentFundamental.phase) * 180 / Math.PI, thd: thd(points, "vo", f1), resonance, switchingRatio: fs / f1, voltageBalance: mean(points, "vLf"), currentBalance: mean(points, "iCap"), duration };
+    return { points, application: "standalone", filter: "lc", fundamentalVoltageRms: voFundamental.rms, expectedVoltageRms: voAmplitude / Math.SQRT2, currentRms: rms(points, "iLoad"), expectedCurrentRms: voFundamental.rms / Math.hypot(rLoad, omega * lLoad), phaseDegrees: (voFundamental.phase - currentFundamental.phase) * 180 / Math.PI, thd: thd(points, "vo", f1), resonance, switchingRatio: fs / f1, voltageBalance: mean(points, "vLf"), currentBalance: mean(points, "iCap"), duration };
   }
 
   // Générateur MLI (±V_in à vide, résistance interne R_g) → R série → C, sortie v_o = v_C à vide
