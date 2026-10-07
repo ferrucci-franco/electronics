@@ -107,17 +107,26 @@ h1, h2 { margin: 0; font-size: clamp(1.08rem, 1.35vw, 1.72rem); line-height: 1.0
 .controls-top.four-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); padding-inline: 4%; }
 /* Trois cartes visibles en mode simple : une seule rangée de trois, pas 2 + 1. */
 @media (min-width: 601px) { .controls-row[data-count="3"] { grid-template-columns: repeat(3, minmax(0, 1fr)); padding-inline: 0; } }
-/* Onduleur en mode avancé : quatre réglages par rangée (V_dc en haut ; L_f, C_f, R_o, L_o en bas).
-   Une seule rangée de quatre, pour garder la hauteur des rangées de trois (un 2 × 2 poussait les
-   curseurs sur le bandeau d'infos) : symbole et valeur en tête, libellé sur toute la largeur. */
+/* Onduleur : rangées de quatre réglages (mode avancé du montage pont + LC ; montage générateur + LC
+   dès le mode simple). Une seule rangée de quatre, pour garder la hauteur des rangées de trois (un
+   2 × 2 poussait les curseurs sur le bandeau d'infos) : symbole et valeur en tête, libellé dessous. */
 @media (min-width: 1101px) {
-  .advanced-mode .circuit-content:has(.bridge-schematic) .controls-row[data-count="4"] { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .advanced-mode .circuit-content:has(.bridge-schematic) .controls-row[data-count="4"] .control { grid-template-rows: auto minmax(0, 1fr) auto; column-gap: 6px; padding-inline: 10px; }
-  .advanced-mode .circuit-content:has(.bridge-schematic) .controls-row[data-count="4"] .control-copy { display: contents; }
-  .advanced-mode .circuit-content:has(.bridge-schematic) .controls-row[data-count="4"] .control b { grid-column: 1; grid-row: 1; align-self: center; }
-  .advanced-mode .circuit-content:has(.bridge-schematic) .controls-row[data-count="4"] .control output { grid-column: 2; grid-row: 1; }
-  .advanced-mode .circuit-content:has(.bridge-schematic) .controls-row[data-count="4"] .control small { grid-column: 1 / -1; grid-row: 2; align-self: center; font-size: clamp(.74rem, .78vw, .88rem); hyphens: manual; }
-  .advanced-mode .circuit-content:has(.bridge-schematic) .controls-row[data-count="4"] .control input { grid-row: 3; width: 100%; }
+  :is(.advanced-mode .circuit-content:has(.bridge-schematic), .circuit-content:has(.generator-schematic)) .controls-row[data-count="4"] { grid-template-columns: repeat(4, minmax(0, 1fr)); padding-inline: 0; }
+  :is(.advanced-mode .circuit-content:has(.bridge-schematic), .circuit-content:has(.generator-schematic)) .controls-row[data-count="4"] .control { grid-template-rows: auto minmax(0, 1fr) auto; column-gap: 6px; padding-inline: 10px; }
+  :is(.advanced-mode .circuit-content:has(.bridge-schematic), .circuit-content:has(.generator-schematic)) .controls-row[data-count="4"] .control-copy { display: contents; }
+  :is(.advanced-mode .circuit-content:has(.bridge-schematic), .circuit-content:has(.generator-schematic)) .controls-row[data-count="4"] .control b { grid-column: 1; grid-row: 1; align-self: center; }
+  :is(.advanced-mode .circuit-content:has(.bridge-schematic), .circuit-content:has(.generator-schematic)) .controls-row[data-count="4"] .control output { grid-column: 2; grid-row: 1; }
+  :is(.advanced-mode .circuit-content:has(.bridge-schematic), .circuit-content:has(.generator-schematic)) .controls-row[data-count="4"] .control small { grid-column: 1 / -1; grid-row: 2; align-self: center; font-size: clamp(.74rem, .78vw, .88rem); hyphens: manual; }
+  :is(.advanced-mode .circuit-content:has(.bridge-schematic), .circuit-content:has(.generator-schematic)) .controls-row[data-count="4"] .control input { grid-row: 3; width: 100%; }
+}
+/* Pont en H : libellés de groupe sur deux lignes (« MODULATION / PWM ») pour que les trois montages
+   et la modulation tiennent sur une seule rangée de pilules. */
+@media (min-width: 601px) {
+  #bridge-mode-panel .bridge-mode-group > span { max-width: 8em; line-height: 1.15; text-align: right; text-wrap: balance; }
+  #bridge-switching-label { width: min-content; }
+  #bridge-mode-panel { column-gap: 12px; }
+  #bridge-mode-panel .bridge-mode-group { gap: 6px; }
+  #bridge-mode-panel .bridge-mode-group button { padding-inline: 10px; }
 }
 .controls-row[hidden] { display: none; }
 .control, .commutation-selector, .bridge-mode-group { user-select: none; -webkit-user-select: none; }
