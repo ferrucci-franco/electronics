@@ -26,6 +26,7 @@ Le pont en H propose trois applications :
 - onduleur monophasé à PWM bipolaire ou unipolaire, sous deux montages :
   - **pont + LC** : filtre LC et charge R–L série, dont R_o et L_o se règlent en mode avancé (L_o = 0 donne une charge purement résistive) ;
   - **générateur + RC** : le montage de TP, où la MLI sinusoïdale sort d’un générateur de fonctions (±V_in à vide, résistance interne R_g = 50 Ω) et attaque un filtre RC passe-bas (R en kΩ, C en µF), la sortie v_o étant relevée à vide à l’oscilloscope ; le bandeau donne f_c = 1/(2π(R_g+R)C), le fondamental et son déphasage ;
+  - **générateur + LC** : même générateur (R_g = 50 Ω), bobine L_f avec sa résistance de bobinage R_L (mode avancé), condensateur C_f et charge R_o en kΩ ; R_g et R_L amortissent la résonance, et la valeur attendue du fondamental est |H(jω₁)|·mV_in/√2 ;
 - moteur CC commandé manuellement, sans régulateur PI, soit autour de 50 % (50 % = arrêt), soit par sens et roue libre à tension nulle, avec affichage du démarrage ou de huit périodes PWM en régime permanent ;
 - injection de courant dans un réseau rigide de 50 Hz à travers une inductance, avec réglage du courant efficace et de sa phase, puis calcul de P, Q, du facteur de puissance et de la THD.
 

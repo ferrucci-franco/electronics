@@ -83,6 +83,33 @@ assert.match(model.diagramFor("standalone", "bipolar", "fr", "pwm", "rc"), /R<ts
   assert.ok(Math.abs(result.currentBalance) < 1e-3 * result.currentRms + 1e-9, `${label} : ⟨i_C⟩ = 0`);
 }));
 
+// --- Générateur + LC (TP) : R_g = 50 Ω et R_L du bobinage en série avec L_f, C_f ∥ R_o ---
+const glc = model.controlsFor("standalone", { filter: "glc", advanced: true });
+assert.deepEqual(glc.top.map((item) => item.key), ["fundamentalFrequency", "modulation", "switchingFrequency", "generatorVoltage"]);
+assert.deepEqual(glc.bottom.map((item) => [item.key, item.unit, item.min, item.max]), [["glcInductance", "mH", .5, 100], ["glcCapacitance", "µF", .1, 100], ["glcLoadResistance", "kΩ", .1, 10], ["glcWindingResistance", "Ω", 0, 200]]);
+assert.deepEqual([model.defaults.glcInductance, model.defaults.glcCapacitance, model.defaults.glcLoadResistance, model.defaults.glcWindingResistance], [100, 1, 1, 0]);
+[...glc.top, ...glc.bottom].forEach((item) => ["en", "fr", "es"].forEach((lang) => assert.ok(item.label[lang], `libellé ${item.key} en ${lang}`)));
+assert.equal(model.axesFor("standalone", true, { filter: "glc" })[2].unit, "mA");
+assert.match(model.diagramFor("standalone", "bipolar", "fr", "pwm", "glc"), /generator-schematic/);
+// V_o,1 = |Z_p / (Z_p + R_g + R_L + jωL_f)| mV_in/√2, Z_p = R_o ∥ 1/(jωC_f).
+const glcFundamental = (s) => {
+  const w = 2 * Math.PI * s.fundamentalFrequency; const r = s.glcLoadResistance * 1000; const c = s.glcCapacitance * 1e-6; const lf = s.glcInductance / 1000;
+  const zp = [r / (1 + (w * r * c) ** 2), -w * r * r * c / (1 + (w * r * c) ** 2)];
+  const total = [zp[0] + 50 + s.glcWindingResistance, zp[1] + w * lf];
+  return Math.hypot(...zp) / Math.hypot(...total) * s.modulation / 100 * s.generatorVoltage / Math.SQRT2;
+};
+[{}, { glcWindingResistance: 120 }, { glcLoadResistance: 10, glcCapacitance: 100 }, { glcInductance: .5, glcCapacitance: .1, switchingFrequency: 2000 }].forEach((overrides) => ["bipolar", "unipolar"].forEach((switching) => {
+  const s = state(overrides); const result = model.calculate(s, null, { filter: "glc", switching }); const label = `GLC ${switching} ${JSON.stringify(overrides)}`;
+  assert.equal(result.filter, "glc");
+  assert.equal(result.sourceResistance, 50 + s.glcWindingResistance);
+  assert.ok(relativeError(result.expectedVoltageRms, glcFundamental(s)) < 1e-6, `${label} : |H| des phaseurs`);
+  assert.ok(relativeError(result.fundamentalVoltageRms, result.expectedVoltageRms) < .02, `${label} : V_o,1 simulée`);
+  assert.ok(Math.abs(result.voltageBalance) < .02 * s.generatorVoltage, `${label} : ⟨v_Lf⟩ = 0`);
+}));
+// R_L amortit : la résonance (100 mH + 100 µF ≈ 50 Hz) est moins haute avec un bobinage résistif.
+const peak = (glcWindingResistance) => model.calculate(state({ glcCapacitance: 100, glcLoadResistance: 10, glcWindingResistance }), null, { filter: "glc" }).fundamentalVoltageRms;
+assert.ok(peak(100) < peak(0), "R_L amortit la résonance");
+
 // Plus f_c est basse devant f_PWM, plus la sortie est propre.
 const thdAt = (rcCapacitance) => model.calculate(state({ rcCapacitance }), null, { filter: "rc" }).thd;
 assert.ok(thdAt(10) < thdAt(1) && thdAt(1) < thdAt(.1), "THD décroît quand C augmente");
