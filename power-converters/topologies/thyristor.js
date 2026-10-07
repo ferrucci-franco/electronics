@@ -43,8 +43,9 @@
 
   const controls = {
     alpha: control("alpha", "α", ["Firing angle", "Angle d’amorçage", "Ángulo de disparo"], 0, 170, 5, "°"),
-    resistance: control("resistance", "R", ["Load resistance", "Résistance de charge", "Resistencia de carga"], 2, 50, 1, "Ω"),
-    inductance: control("inductance", "L", ["Load inductance", "Inductance de charge", "Inductancia de carga"], 0, 500, 5, "mH"),
+    // R jusqu'à 1,5 kΩ : sous 230 V, 40 W demandent R = 230²/40 ≈ 1,3 kΩ.
+    resistance: control("resistance", "R", ["Load resistance", "Résistance de charge", "Resistencia de carga"], 5, 1500, 5, "Ω"),
+    inductance: control("inductance", "L", ["Load inductance", "Inductance de charge", "Inductancia de carga"], 0, 1000, 5, "mH"),
   };
 
   const tracesMain = [
