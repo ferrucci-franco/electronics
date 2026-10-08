@@ -140,13 +140,17 @@ body.dark-theme .language-menu button[aria-pressed="true"] { background: #314158
 .symbol-index { position: relative; bottom: -.23em; margin-left: .03em; font-size: .68em; font-style: normal; font-weight: inherit; line-height: 0; }
 .control small { color: var(--muted); font-size: clamp(.84rem, .88vw, .95rem); font-weight: 700; line-height: 1.12; overflow-wrap: break-word; }
 .value-field { display: flex; align-items: center; gap: 6px; }
-.value-field input { width: 6.2em; height: 44px; border: 1px solid var(--button-border); border-radius: 11px; padding: 0 10px; background: #fffdf8; color: var(--ink); font-size: 1.02rem; font-variant-numeric: tabular-nums; font-weight: 800; text-align: right; user-select: text; -webkit-user-select: text; }
-.value-field input:focus { border-color: var(--teal); outline: var(--focus); outline-offset: 1px; }
-.value-field input.invalid { border-color: #cf3349; }
+.value-field input[type="text"] { width: 6.2em; height: 44px; border: 1px solid var(--button-border); border-radius: 11px; padding: 0 10px; background: #fffdf8; color: var(--ink); font-size: 1.02rem; font-variant-numeric: tabular-nums; font-weight: 800; text-align: right; user-select: text; -webkit-user-select: text; }
+.value-field input[type="text"]:focus { border-color: var(--teal); outline: var(--focus); outline-offset: 1px; }
+.value-field input[type="text"].invalid { border-color: #cf3349; }
 .value-field .unit { min-width: 3.4em; color: var(--muted); font-size: .9rem; font-weight: 700; }
 .control input[type="range"] { grid-column: 1 / -1; }
 .sign-toggle { display: inline-flex; min-height: 44px; align-items: center; gap: 6px; padding: 0 2px 0 4px; color: var(--muted); cursor: pointer; font-size: .86rem; font-weight: 750; }
-.sign-toggle input { width: 20px; height: 20px; margin: 0; accent-color: var(--teal); cursor: pointer; }
+/* Drawn by the app (not the browser's checkbox, whose size and look vary, e.g. on iOS). */
+.sign-toggle input { display: grid; flex: 0 0 20px; width: 20px; height: 20px; margin: 0; padding: 0; place-content: center; border: 2px solid var(--button-border); border-radius: 6px; background: var(--panel); cursor: pointer; appearance: none; -webkit-appearance: none; }
+.sign-toggle input::after { width: 5px; height: 10px; margin-top: -2px; content: ""; border: solid #fff; border-width: 0 2.5px 2.5px 0; opacity: 0; transform: rotate(45deg); }
+.sign-toggle input:checked { border-color: var(--teal); background: var(--teal); }
+.sign-toggle input:checked::after { opacity: 1; }
 .sign-toggle:has(input:checked) { color: var(--ink); }
 .sign-toggle:has(input:focus-visible) { outline: var(--focus); outline-offset: 2px; border-radius: 8px; }
 
@@ -249,7 +253,7 @@ body.dark-theme .btn-accent { border-color: #28b9ac; color: #74ddd0; }
 body.dark-theme .toggle { color: #a8bbb7; }
 body.dark-theme .readout { background: #ffffff08; }
 body.dark-theme .read-cell var { color: #93a1b6; }
-body.dark-theme .value-field input { background: #101c2c; }
+body.dark-theme .value-field input[type="text"] { background: #101c2c; }
 body.dark-theme input[type="range"]::-webkit-slider-runnable-track { background: linear-gradient(to right, var(--teal) 0 var(--range-progress, 50%), #33445a var(--range-progress, 50%) 100%); }
 body.dark-theme input[type="range"]::-moz-range-track { background: #33445a; }
 body.dark-theme input[type="range"]::-webkit-slider-thumb { border-color: #19283b; }
@@ -262,7 +266,8 @@ body.dark-theme .eq-line { scrollbar-color: #55d2c6a6 #74ddd01a; }
 
 /* Same trailing slot (unit or « négatif » box) in every card, so the value fields line up. */
 .value-field > .unit, .value-field > .sign-toggle { flex: 0 0 58px; width: 58px; min-width: 0; }
-.value-field > .sign-toggle { justify-content: flex-end; gap: 6px; padding: 0; font-size: .82rem; }
+/* The « nég. » slot widens rather than spill over the value field (larger fonts, other languages). */
+.value-field > .sign-toggle { flex-basis: auto; width: auto; min-width: 58px; justify-content: flex-end; gap: 6px; padding: 0; font-size: .82rem; white-space: nowrap; }
 @media (max-width: 420px) {
-  .value-field input { width: 4.8em; }
+  .value-field input[type="text"] { width: 4.8em; }
 }
