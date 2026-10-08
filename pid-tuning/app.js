@@ -506,7 +506,7 @@
     loop: { r0: SETPOINT_PARAMS[0].value, sat: false, uMax: SAT_PARAMS[0].value },
     regulator: "PID", // Ziegler–Nichols row shown
     autoAxes: true, // « Axes auto » checked at start
-    snap: true, // cursors snap to the extrema of the active curve
+    snap: true, // cursors snap to the extrema of the active curve (2nd order alone, y in the loop)
     sign: { 1: { K: 1, u0: 1 }, 2: { K: 1, u0: 1 }, 3: { K: 1, u0: 1 } }, // signs of K and u0 (sliders set magnitudes)
     axes: { tMax: 1, yMin: 0, yMax: 1, uMin: -1, uMax: 1 }, // fixed axes (u: closed loop only)
     cursors: [ // read cursors; t is a time (s)
@@ -2397,17 +2397,48 @@
     const x = event.clientX - canvas.getBoundingClientRect().left;
     return Math.min(plotView.tMax, Math.max(0, (x - plotView.left) / plotView.plotWidth * plotView.tMax));
   }
-  // Extrema of the active curve are analytic: dy/dt is proportional to sin(wd t), so they lie
-  // at k*pi/wd (wd = w0 when xi = 0). First order, xi >= 1 and the reaction curve are
-  // monotonic: nothing to snap to.
-  function snapTime(t, pointerType) {
+  // Times the cursors snap to. Second order alone: the extrema are analytic, dy/dt is
+  // proportional to sin(wd t), so they lie at k*pi/wd (wd = w0 when xi = 0); first order,
+  // xi >= 1 and the reaction curve are monotonic: nothing to snap to. Closed loop: the extrema
+  // of y found on the samples of the run (overshoot peak, undershoot, oscillation of the relay).
+  function snapTargets(t) {
+    if (context() === "loop") return loopExtrema();
     const p = state.params[state.mode];
-    if (!state.snap || !showing("process") || state.mode !== 2 || p.xi >= 1 || Math.abs(p.xi - 1) < CRITICAL_TOL) return t;
+    if (!showing("process") || state.mode !== 2 || p.xi >= 1 || Math.abs(p.xi - 1) < CRITICAL_TOL) return [];
     const halfPeriod = Math.PI / (p.omega0 * Math.sqrt(1 - p.xi * p.xi));
-    const k = Math.max(1, Math.round(t / halfPeriod));
-    const extremum = k * halfPeriod;
+    return [Math.max(1, Math.round(t / halfPeriod)) * halfPeriod];
+  }
+  function snapTime(t, pointerType) {
+    if (!state.snap) return t;
     const radius = (pointerType === "mouse" ? 14 : 24) / plotView.plotWidth * plotView.tMax;
-    return Math.abs(extremum - t) <= radius && extremum <= plotView.tMax ? extremum : t;
+    let best = t;
+    let distance = radius;
+    snapTargets(t).forEach((extremum) => {
+      const d = Math.abs(extremum - t);
+      if (extremum <= plotView.tMax && d <= distance) { best = extremum; distance = d; }
+    });
+    return best;
+  }
+  // Local extrema of y in the closed-loop run (cached with it). Ripples smaller than 0,1 % of
+  // the swing of y (numerical residue once settled) are not extrema.
+  let extremaCache = null;
+  function loopExtrema() {
+    const run = loopRun();
+    if (extremaCache && extremaCache.run === run) return extremaCache.times;
+    const y = run.y;
+    let lo = Infinity;
+    let hi = -Infinity;
+    y.forEach((v) => { if (Number.isFinite(v)) { lo = Math.min(lo, v); hi = Math.max(hi, v); } });
+    const tol = 1e-3 * (hi - lo);
+    const times = [];
+    let last = y[0];
+    for (let i = 1; i < y.length - 1; i += 1) {
+      const v = y[i];
+      const peak = (v >= y[i - 1] && v > y[i + 1]) || (v <= y[i - 1] && v < y[i + 1]);
+      if (peak && Math.abs(v - last) > tol) { times.push(run.t[i]); last = v; }
+    }
+    extremaCache = { run, times };
+    return times;
   }
   function moveCursor(index, t) {
     state.cursors[index].on = true;
@@ -2531,6 +2562,8 @@
     controllerStep,
     loopConfig,
     loopRun: () => loopRun(),
+    loopExtrema: () => loopExtrema(),
+    plotView: () => (plotView ? { ...plotView } : null),
     indicators: () => loopAssessment(),
     cascadeOf,
     chainConstruction,
