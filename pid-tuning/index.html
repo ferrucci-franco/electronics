@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Réglage PID</title>
+    <link rel="stylesheet" href="vendor/katex/katex.min.css" />
+    <link rel="stylesheet" href="style.css" />
+  <!-- Contador de visitas (GoatCounter, sin cookies ni datos personales). No cuenta en localhost ni desde file://. -->
+<script data-goatcounter="https://ferrucci-franco.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</head>
+  <body>
+    <div class="page">
+      <header class="panel app-header">
+        <div class="title-block">
+          <h1 data-i18n="title"></h1>
+        </div>
+        <div class="segmented mode-switch" id="view-switch" role="group" data-i18n-aria="viewAria">
+          <button type="button" data-view="loop" aria-pressed="true" data-i18n="viewLoop"></button>
+          <button type="button" data-view="elements" aria-pressed="false"><span class="mode-long" data-i18n="viewElements"></span><span class="mode-short" data-i18n="viewElementsShort"></span></button>
+        </div>
+        <div class="header-actions">
+          <div class="language-switch">
+            <button id="language-trigger" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="language-menu" data-i18n-aria="languageAria"><span id="language-current">FR</span><i aria-hidden="true"></i></button>
+            <div id="language-menu" class="language-menu" role="group" data-i18n-aria="languageAria" hidden>
+              <button type="button" data-lang="en" aria-pressed="false">EN</button>
+              <button type="button" data-lang="fr" aria-pressed="true">FR</button>
+              <button type="button" data-lang="es" aria-pressed="false">ES</button>
+            </div>
+          </div>
+          <button id="theme-toggle" class="icon-button" type="button" aria-pressed="false"><span class="theme-glyph" aria-hidden="true"></span></button>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <section class="panel graph-panel">
+          <div class="graph-toolbar">
+            <div class="segmented element-switch" id="element-switch" role="group" data-i18n-aria="elementAria" data-only="process sensor ctrl">
+              <button type="button" data-element="process" aria-pressed="true" data-i18n="elProcess"></button>
+              <button type="button" data-element="sensor" aria-pressed="false" data-i18n="elSensor"></button>
+              <button type="button" data-element="ctrl" aria-pressed="false" data-i18n="elCtrl"></button>
+            </div>
+            <button type="button" class="btn" id="reframe" data-i18n="reframe"></button>
+            <label class="toggle"><input type="checkbox" id="auto-axes" checked /><span data-i18n="autoAxes"></span></label>
+            <button type="button" class="btn btn-accent" id="memorize" data-i18n="memorize"></button>
+            <button type="button" class="btn" id="clear-memory" data-i18n="clear" disabled></button>
+            <label class="toggle"><input type="checkbox" id="show-cursors" checked /><span data-i18n="cursorsToggle"></span></label>
+            <div class="marks" role="group" data-i18n-aria="marksAria">
+              <label class="toggle" data-only="p1 p2"><input type="checkbox" data-mark="band" /><span data-i18n="markBand"></span></label>
+              <label class="toggle" data-only="p1"><input type="checkbox" data-mark="tau" /><span data-i18n="markTau"></span></label>
+              <label class="toggle" data-only="p2"><input type="checkbox" data-mark="envelope" /><span data-i18n="markEnvelope"></span></label>
+              <label class="toggle" data-only="p3"><input type="checkbox" data-mark="tangent" /><span data-i18n="markTangent"></span></label>
+              <label class="toggle" data-only="p3"><input type="checkbox" data-mark="zntau" /><span data-i18n="markTau"></span></label>
+              <label class="toggle" data-only="p3"><input type="checkbox" data-mark="final" /><span data-i18n="markFinal"></span></label>
+              <label class="toggle" data-only="p3"><input type="checkbox" data-mark="model" /><span data-i18n="markModel"></span></label>
+              <label class="toggle" data-only="sensor"><input type="checkbox" data-mark="tauc" /><span data-i18n="markTauC"></span></label>
+              <label class="toggle" data-only="ctrl"><input type="checkbox" data-mark="actions" checked /><span data-i18n="markActions"></span></label>
+            </div>
+            <label class="toggle" data-only="p2"><input type="checkbox" id="snap" checked /><span data-i18n="snap"></span></label>
+          </div>
+          <div class="indicators" id="indicators" data-only="loop" aria-live="polite">
+            <div class="indicator"><span id="ind-error-label"></span><strong id="ind-error">—</strong></div>
+            <div class="indicator"><span id="ind-overshoot-label"></span><strong id="ind-overshoot">—</strong></div>
+            <div class="indicator"><span id="ind-settling-label"></span><strong id="ind-settling">—</strong></div>
+            <div class="indicator alert" id="ind-unstable" hidden><strong></strong></div>
+          </div>
+          <div class="scope-screen" id="scope-screen">
+            <canvas id="scope" data-i18n-aria="graphAria" role="img"></canvas>
+          </div>
+          <div class="readout" role="group" data-i18n-aria="cursorsAria" aria-live="polite"></div>
+        </section>
+
+        <div class="side">
+          <section class="panel diagram-panel" data-only="loop">
+            <svg class="loop-diagram" viewBox="0 0 400 146" role="img" data-i18n-aria="diagramAria">
+              <defs>
+                <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" /></marker>
+              </defs>
+              <g class="wires" marker-end="url(#arrow)">
+                <path d="M4 44 H34" /><path d="M56 44 H84" /><path d="M182 44 H212" /><path d="M310 44 H394" />
+                <path d="M352 44 V116 H312" /><path d="M214 116 H45 V56" />
+              </g>
+              <circle class="sum" cx="45" cy="44" r="10" />
+              <rect class="block" x="86" y="25" width="96" height="38" rx="9" />
+              <rect class="block" x="214" y="25" width="96" height="38" rx="9" />
+              <rect class="block" x="214" y="97" width="96" height="38" rx="9" />
+              <circle class="node" cx="352" cy="44" r="3.5" />
+              <text class="block-label" x="134" y="49" data-i18n="elCtrl"></text>
+              <text class="block-label" x="262" y="49" data-i18n="elProcess"></text>
+              <text class="block-label" x="262" y="121" data-i18n="elSensor"></text>
+              <text class="signal" x="8" y="34">r</text>
+              <text class="signal" x="62" y="34">ε</text>
+              <text class="signal" x="191" y="34">u</text>
+              <text class="signal" x="372" y="34">y</text>
+              <text class="signal" x="118" y="108">y<tspan class="sub" dy="4">m</tspan></text>
+              <text class="sign" x="50" y="78">−</text>
+            </svg>
+          </section>
+
+          <section class="panel params-panel" data-only="loop">
+            <h2 class="kicker" data-i18n="setpointTitle"></h2>
+            <div class="controls" id="loop-controls"></div>
+          </section>
+
+          <section class="panel params-panel" data-only="loop ctrl">
+            <h2 class="kicker" data-i18n="ctrlTitle"></h2>
+            <div class="segmented panel-switch" id="ctrl-switch" role="group" data-i18n-aria="znAria">
+              <button type="button" data-ctrl="P" aria-pressed="false">P</button>
+              <button type="button" data-ctrl="PI" aria-pressed="false">PI</button>
+              <button type="button" data-ctrl="PID" aria-pressed="true">PID</button>
+              <button type="button" data-ctrl="Hyst" aria-pressed="false">Hyst.</button>
+            </div>
+            <div class="controls" id="ctrl-controls"></div>
+            <div class="zn-apply" data-only="loop">
+              <p class="zn-caption" id="zn-info"></p>
+              <div class="zn-values" id="zn-values"></div>
+              <button type="button" class="btn btn-accent zn-button" id="zn-apply"></button>
+            </div>
+            <div class="sat-row" data-only="loop">
+              <label class="toggle"><input type="checkbox" id="saturation" /><span data-i18n="saturation"></span></label>
+            </div>
+            <div class="controls" id="sat-controls" data-only="loop"></div>
+          </section>
+
+          <section class="panel params-panel" data-only="loop process">
+            <div class="panel-head">
+              <h2 class="kicker" data-i18n="processTitle"></h2>
+              <button type="button" class="btn btn-accent" id="randomize" data-i18n="randomize"></button>
+            </div>
+            <div class="segmented panel-switch" id="mode-switch" role="group" data-i18n-aria="modeAria">
+              <button type="button" data-mode="1" aria-pressed="true" data-i18n="mode1"></button>
+              <button type="button" data-mode="2" aria-pressed="false" data-i18n="mode2"></button>
+              <button type="button" data-mode="3" aria-pressed="false" data-i18n="mode3"></button>
+            </div>
+            <div class="controls" id="controls"></div>
+            <p class="note s-limit" id="s-limit" hidden></p>
+          </section>
+
+          <section class="panel params-panel" data-only="loop sensor">
+            <h2 class="kicker" data-i18n="sensorTitle"></h2>
+            <div class="controls" id="sensor-controls"></div>
+          </section>
+
+          <section class="panel equation-panel" id="equation-panel"></section>
+
+          <details class="panel values-panel zn-panel" id="zn-panel" data-only="p3">
+            <summary><span class="kicker" data-i18n="znTitle"></span><i aria-hidden="true"></i></summary>
+            <div class="zn-body">
+              <div class="segmented zn-switch" id="zn-switch" role="group" data-i18n-aria="znAria">
+                <button type="button" data-reg="P" aria-pressed="false">P</button>
+                <button type="button" data-reg="PI" aria-pressed="false">PI</button>
+                <button type="button" data-reg="PID" aria-pressed="true">PID</button>
+              </div>
+              <div class="eq-box">
+                <div class="eq-line" id="zn-table"></div>
+                <div class="eq-line eq-numeric" id="zn-numeric"></div>
+              </div>
+            </div>
+          </details>
+
+          <details class="panel values-panel" id="values-panel" data-only="process">
+            <summary><span class="kicker" data-i18n="valuesTitle"></span><i aria-hidden="true"></i></summary>
+            <div class="values-grid" id="values-grid"></div>
+          </details>
+        </div>
+      </main>
+    </div>
+
+    <script src="vendor/katex/katex.min.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
