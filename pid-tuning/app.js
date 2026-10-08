@@ -39,9 +39,7 @@
       paramsTitle: "Paramètres",
       eqTitle: { 1: "Équation différentielle", 2: "Équation différentielle", 3: "Modèle identifié (approché)" },
       regimeLabel: "Régime :",
-      structureLabel: "Procédé :",
-      sNote: "courbe en S ; l’équation n’en retient que K, L et τ",
-      sLimit: "L ≥ {r} τ : en dessous, la courbe ne serait plus en S.",
+      sLimit: "L minimum : {r} τ",
       regimes: { undamped: "non amorti", under: "sous-amorti", critical: "amortissement critique", over: "sur-amorti" },
       valuesTitle: "Valeurs caractéristiques",
       finalValue: "Valeur finale",
@@ -65,7 +63,7 @@
       znTitle: "Réglage Ziegler–Nichols",
       znAria: "Régulateur",
       znRegulator: "Régulateur",
-      znNotApplicable: "L = 0 : la table ne s’applique pas",
+      znNotApplicable: "Pas de retard (L = 0) : la méthode de Ziegler–Nichols ne s’applique pas.",
       viewAria: "Vue",
       viewLoop: "Boucle fermée",
       viewElements: "Réponses indicielles des éléments",
@@ -81,7 +79,7 @@
       sensorTitle: "Capteur",
       saturation: "Saturation de la commande",
       znApply: "Réglage Z-N : {type}",
-      znNoDelay: "1er ordre et capteur parfait : la courbe de réaction part avec sa pente maximale, L = 0 et la table ne s’applique pas. Un capteur un peu lent (τ_{c} > 0) donne la courbe en S.",
+      znTableShow: "Table de Ziegler–Nichols",
       znFrom: "Lu sur la courbe de réaction",
       znFromChain: "Lu sur la courbe de réaction (procédé + capteur)",
       staticError: "Erreur statique",
@@ -93,8 +91,6 @@
       markActions: "Actions P, I, D",
       eqLaw: "Loi de commande",
       eqSensor: "Équation du capteur",
-      derivLabel: "Dérivée :",
-      derivValue: "filtrée (N = 10), sans coup au saut de consigne",
       perfectSensor: "τ_{c} = 0 : capteur parfait",
       sensorLabel: "Capteur :",
       sensorValue: "premier ordre de gain 1",
@@ -164,9 +160,7 @@
       paramsTitle: "Parameters",
       eqTitle: { 1: "Differential equation", 2: "Differential equation", 3: "Identified model (approximate)" },
       regimeLabel: "Regime:",
-      structureLabel: "Process:",
-      sNote: "S-shaped curve; the equation keeps only K, L and τ",
-      sLimit: "L ≥ {r} τ: below that, the curve would no longer be S-shaped.",
+      sLimit: "Minimum L: {r} τ",
       regimes: { undamped: "undamped", under: "underdamped", critical: "critically damped", over: "overdamped" },
       valuesTitle: "Characteristic values",
       finalValue: "Final value",
@@ -190,7 +184,7 @@
       znTitle: "Ziegler–Nichols tuning",
       znAria: "Controller",
       znRegulator: "Controller",
-      znNotApplicable: "L = 0: the table does not apply",
+      znNotApplicable: "No delay (L = 0): the Ziegler–Nichols method does not apply.",
       viewAria: "View",
       viewLoop: "Closed loop",
       viewElements: "Step responses of the blocks",
@@ -206,7 +200,7 @@
       sensorTitle: "Sensor",
       saturation: "Control saturation",
       znApply: "Z-N tuning: {type}",
-      znNoDelay: "First order and perfect sensor: the reaction curve starts at its steepest, L = 0 and the table does not apply. A slightly slow sensor (τ_{c} > 0) gives the S curve.",
+      znTableShow: "Ziegler–Nichols table",
       znFrom: "Read on the reaction curve",
       znFromChain: "Read on the reaction curve (process + sensor)",
       staticError: "Steady-state error",
@@ -218,8 +212,6 @@
       markActions: "P, I, D actions",
       eqLaw: "Control law",
       eqSensor: "Sensor equation",
-      derivLabel: "Derivative:",
-      derivValue: "filtered (N = 10), no kick on the setpoint step",
       perfectSensor: "τ_{c} = 0: perfect sensor",
       sensorLabel: "Sensor:",
       sensorValue: "first order, gain 1",
@@ -289,9 +281,7 @@
       paramsTitle: "Parámetros",
       eqTitle: { 1: "Ecuación diferencial", 2: "Ecuación diferencial", 3: "Modelo identificado (aproximado)" },
       regimeLabel: "Régimen:",
-      structureLabel: "Proceso:",
-      sNote: "curva en S; la ecuación solo conserva K, L y τ",
-      sLimit: "L ≥ {r} τ: por debajo, la curva ya no sería en S.",
+      sLimit: "L mínimo: {r} τ",
       regimes: { undamped: "no amortiguado", under: "subamortiguado", critical: "amortiguamiento crítico", over: "sobreamortiguado" },
       valuesTitle: "Valores característicos",
       finalValue: "Valor final",
@@ -315,7 +305,7 @@
       znTitle: "Ajuste Ziegler–Nichols",
       znAria: "Regulador",
       znRegulator: "Regulador",
-      znNotApplicable: "L = 0: la tabla no se aplica",
+      znNotApplicable: "Sin retardo (L = 0): el método de Ziegler–Nichols no se aplica.",
       viewAria: "Vista",
       viewLoop: "Lazo cerrado",
       viewElements: "Respuestas al escalón de los bloques",
@@ -331,7 +321,7 @@
       sensorTitle: "Sensor",
       saturation: "Saturación del mando",
       znApply: "Ajuste Z-N: {type}",
-      znNoDelay: "Primer orden y sensor perfecto: la curva de reacción arranca con su pendiente máxima, L = 0 y la tabla no se aplica. Un sensor algo lento (τ_{c} > 0) da la curva en S.",
+      znTableShow: "Tabla de Ziegler–Nichols",
       znFrom: "Leído en la curva de reacción",
       znFromChain: "Leído en la curva de reacción (proceso + sensor)",
       staticError: "Error estático",
@@ -343,8 +333,6 @@
       markActions: "Acciones P, I, D",
       eqLaw: "Ley de control",
       eqSensor: "Ecuación del sensor",
-      derivLabel: "Derivada:",
-      derivValue: "filtrada (N = 10), sin golpe en el escalón de consigna",
       perfectSensor: "τ_{c} = 0: sensor perfecto",
       sensorLabel: "Sensor:",
       sensorValue: "primer orden de ganancia 1",
@@ -893,7 +881,6 @@
     const relay = ctrl.type === "Hyst";
     const useI = ctrl.type === "PI" || ctrl.type === "PID";
     const useD = ctrl.type === "PID" && ctrl.Td > 0;
-    const Tf = useD ? ctrl.Td / N_FILTER : 1;
     const iS = np;
     const iI = np + (hasSensor ? 1 : 0);
     const iZ = iI + 1;
@@ -901,6 +888,11 @@
 
     const steps = Math.min(MAX_LOOP_STEPS, loopStepCount(cfg));
     const h = tEnd / steps;
+    // A sensor or a derivative filter faster than the step allows (long window, step count
+    // capped) is integrated as a lag of h/2: RK4 stays stable, and such a lag is instantaneous
+    // at the scale of the window. Below the cap, h <= 2 Tf already: nothing changes.
+    const Tf = useD ? Math.max(ctrl.Td / N_FILTER, h / 2) : 1;
+    const tauS = hasSensor ? Math.max(tauC, h / 2) : 0;
     const delay = mode === 3 && p.theta > 0 ? Math.max(1, Math.round(p.theta / h)) : 0; // in steps
     const every = Math.ceil(steps / LOOP_OUTPUT_POINTS);
     const bound = 1e3 * Math.max(Math.abs(r0), Math.abs(p.K) * (sat ? uMax : 0), 1e-9);
@@ -932,7 +924,7 @@
         dx[0] = (p.K * ud - x[0]) / p.T;
         for (let k = 1; k < np; k += 1) dx[k] = (x[k - 1] - x[k]) / p.T;
       }
-      if (hasSensor) dx[iS] = (output(x) - x[iS]) / tauC;
+      if (hasSensor) dx[iS] = (output(x) - x[iS]) / tauS;
       const e = r0 - measure(x);
       dx[iI] = useI ? e : 0;
       dx[iZ] = useD ? (e - x[iZ]) / Tf : 0;
@@ -973,7 +965,7 @@
       stage(x, k3, h); deriv(tmp, delay ? delayed(k, 1) : law(tmp), k4);
       for (let j = 0; j < dim; j += 1) x[j] += h / 6 * (k1[j] + 2 * k2[j] + 2 * k3[j] + k4[j]);
       const y = output(x);
-      if (!Number.isFinite(y) || Math.abs(y) > bound || !Number.isFinite(x[iI]) || !Number.isFinite(x[iZ])) { diverged = true; break; }
+      if (!Number.isFinite(y) || Math.abs(y) > bound || !Number.isFinite(u) || !Number.isFinite(x[iI]) || !Number.isFinite(x[iZ])) { diverged = true; break; }
       if (k === steps - 1) {
         if (sigma > 0) noise = sigma * gaussian(cfg.noiseSeed, Math.floor(steps * h / noisePeriod)); // the noise at t = tEnd
         record(steps, law(x));
@@ -1023,7 +1015,12 @@
 
   // Live indicators of a run: static error (end of the run, if settled) and overshoot.
   function loopIndicators(run, r0) {
-    if (run.unstable) return { unstable: true, settled: false, error: null, overshoot: null, settlingTime: null };
+    if (run.unstable) {
+      // Instant where y leaves 3 |r| (or the run stops on a divergence): the graph is fitted to it.
+      const i = run.y.findIndex((v) => !(Math.abs(v) <= 3 * Math.abs(r0)));
+      const escape = i > 0 ? run.t[i] : run.diverged ? run.t[run.t.length - 1] : null;
+      return { unstable: true, settled: false, error: null, overshoot: null, settlingTime: null, escape };
+    }
     const y = run.y;
     const n = y.length;
     const yEnd = y[n - 1];
@@ -1357,7 +1354,7 @@
   function znAvailability() {
     if (state.ctrl.type === "Hyst") return { ok: false, note: S.znHyst };
     const c = znReading();
-    if (!c.applicable) return { ok: false, note: state.mode === 1 && state.sensor.tauC === 0 ? S.znNoDelay : S.znNotApplicable };
+    if (!c.applicable) return { ok: false, note: S.znNotApplicable };
     return { ok: true, c, note: state.sensor.tauC > 0 ? S.znFromChain : S.znFrom };
   }
   function applyZN() {
@@ -1369,6 +1366,7 @@
     if (tuning.Ti !== null) state.ctrl.Ti = round3(tuning.Ti);
     if (tuning.Td !== null) state.ctrl.Td = round3(tuning.Td);
     state.regulator = state.ctrl.type;
+    $("#zn-details").open = true; // the row just applied, under the button
     CTRL_PARAMS.forEach((def) => syncControl(def, true));
     reframe();
     update();
@@ -1430,8 +1428,6 @@
       title: S.eqLaw,
       symbolic: law("K_p", "T_i", "T_d"),
       numeric: law(tex(k.Kp), `${tex(k.Ti)}`, `${tex(k.Td)}`),
-      label: S.derivLabel,
-      value: k.type === "PID" ? S.derivValue : null,
     };
   }
 
@@ -1446,7 +1442,7 @@
     }
     if (state.mode === 3) {
       // The identified model of polycopié 4 (approximate: the process itself is an S).
-      return { title, symbolic: "\\tau\\,\\dot{y}(t) + y(t) = K\\,u(t - L)", numeric: identifiedModelTex(p), label: S.structureLabel, value: S.sNote };
+      return { title, symbolic: "\\tau\\,\\dot{y}(t) + y(t) = K\\,u(t - L)", numeric: identifiedModelTex(p) };
     }
     const damping = p.xi > 0 ? ` + ${tex(2 * p.xi * p.omega0)}\\,\\dot{y}` : "";
     return {
@@ -1545,9 +1541,8 @@
 
   // Ziegler–Nichols panel: the table of polycopié 4 (selected row in colour) and the
   // selected row evaluated with the K, L, tau of the construction.
-  function renderTuning() {
-    if (state.mode !== 3) return;
-    document.querySelectorAll("#zn-switch [data-reg]").forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.reg === state.regulator)));
+  // The Ziegler–Nichols table of polycopié 4, the row of « regulator » in colour.
+  function znTableTex(regulator) {
     const k = (v) => texConst(v);
     const rows = {
       P: ["\\text{P}", "\\dfrac{\\tau}{K\\,L}", "-", "-"],
@@ -1555,10 +1550,28 @@
       PID: ["\\text{PID}", `${k(1.2)}\\,\\dfrac{\\tau}{K\\,L}`, "2\\,L", `${k(0.5)}\\,L`],
     };
     const accent = getComputedStyle(document.body).getPropertyValue("--trace-final").trim();
-    const body = Object.entries(rows).map(([name, cells]) => (name === state.regulator
+    const body = Object.entries(rows).map(([name, cells]) => (name === regulator
       ? cells.map((cell) => `{\\color{${accent}}${cell}}`) : cells).join(" & ")).join(" \\\\ ");
-    renderTex($("#zn-table"), `\\def\\arraystretch{2.1} \\begin{array}{lccc} \\text{${S.znRegulator}} & K_p & T_i & T_d \\\\ \\hline ${body} \\end{array}`);
-
+    return `\\def\\arraystretch{2.1} \\begin{array}{lccc} \\text{${S.znRegulator}} & K_p & T_i & T_d \\\\ \\hline ${body} \\end{array}`;
+  }
+  // Its row computed with the K, L, tau read on the reaction curve.
+  function znNumericTex(regulator, c) {
+    const k = (v) => texConst(v);
+    const sec = "\\,\\mathrm{s}";
+    const row = ZN_TABLE[regulator];
+    const tuning = znTuning(regulator, c);
+    const factor = row.kp === 1 ? "" : `${k(row.kp)}\\cdot`;
+    const lines = [`K_p = ${factor}\\frac{${tex(c.tau)}}{${tex(c.K)}\\cdot ${tex(c.L)}} = ${tex(tuning.Kp)}`];
+    if (tuning.Ti !== null) lines.push(`T_i = ${row.ti === 2 ? "2" : k(row.ti)}\\cdot ${tex(c.L)} = ${tex(tuning.Ti)}${sec}`);
+    if (tuning.Td !== null) lines.push(`T_d = ${k(row.td)}\\cdot ${tex(c.L)} = ${tex(tuning.Td)}${sec}`);
+    return `\\begin{gathered} ${lines.join(" \\\\ ")} \\end{gathered}`;
+  }
+  // « Réglage Ziegler–Nichols » panel of the process alone (S curve): its own row selector,
+  // K, L, tau of the sliders.
+  function renderTuning() {
+    if (state.mode !== 3) return;
+    document.querySelectorAll("#zn-switch [data-reg]").forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.reg === state.regulator)));
+    renderTex($("#zn-table"), znTableTex(state.regulator));
     const host = $("#zn-numeric");
     const c = znFromSliders(current());
     if (!c.applicable) {
@@ -1567,14 +1580,16 @@
       return;
     }
     host.classList.remove("note");
-    const sec = "\\,\\mathrm{s}";
-    const row = ZN_TABLE[state.regulator];
-    const tuning = znTuning(state.regulator, c);
-    const factor = row.kp === 1 ? "" : `${k(row.kp)}\\cdot`;
-    const lines = [`K_p = ${factor}\\frac{${tex(c.tau)}}{${tex(c.K)}\\cdot ${tex(c.L)}} = ${tex(tuning.Kp)}`];
-    if (tuning.Ti !== null) lines.push(`T_i = ${row.ti === 2 ? "2" : k(row.ti)}\\cdot ${tex(c.L)} = ${tex(tuning.Ti)}${sec}`);
-    if (tuning.Td !== null) lines.push(`T_d = ${k(row.td)}\\cdot ${tex(c.L)} = ${tex(tuning.Td)}${sec}`);
-    renderTex(host, `\\begin{gathered} ${lines.join(" \\\\ ")} \\end{gathered}`);
+    renderTex(host, znNumericTex(state.regulator, c));
+  }
+  // Loop: the same table folded under the « Réglage Z-N » button, on the row of the controller
+  // in use and with the K, L, tau read for the loop (process + sensor); unfolded by the button.
+  function renderLoopTuning(zn = znAvailability()) {
+    const details = $("#zn-details");
+    details.hidden = state.view !== "loop" || !zn.ok;
+    if (details.hidden) return;
+    renderTex($("#zn-loop-table"), znTableTex(state.ctrl.type));
+    renderTex($("#zn-loop-numeric"), znNumericTex(state.ctrl.type, zn.c));
   }
 
   // Panels, marks and controls of the current view; pressed state of the selectors.
@@ -1610,8 +1625,11 @@
     }
     $("#zn-apply").disabled = !zn.ok;
     $("#zn-apply").textContent = S.znApply.replace("{type}", state.ctrl.type);
+    renderLoopTuning(zn);
     const limit = $("#s-limit");
-    limit.hidden = state.mode !== 3 || !(state.view === "loop" || showing("process"));
+    // Shown only when L sits on its minimum (the student has run into it).
+    const p3 = state.params[3];
+    limit.hidden = state.mode !== 3 || !(state.view === "loop" || showing("process")) || p3.L > ceil3(S_RATIO_MIN * p3.tau);
     limit.textContent = S.sLimit.replace("{r}", fmt(ceil3(S_RATIO_MIN)));
   }
 
@@ -1640,17 +1658,22 @@
     return loopCache.run;
   }
   // Time axis fitted to the response: three settling times, rounded up to 1, 2, 2,5 or 5 x 10^n,
-  // within the base horizon. A loop that does not settle there (or oscillates by design, on-off)
-  // keeps the base horizon.
+  // within the horizon where the indicators found it settled (base horizon or 4, 16, 64 times
+  // longer: a slow loop is shown until it settles). A loop that does not settle even there is
+  // shown over that longest horizon. A diverging loop: twice the instant y leaves 3 |r|, the
+  // start of the divergence. A loop oscillating for good (saturated, or on-off by design): the
+  // base horizon.
   function fittedDuration() {
     const base = baseDuration();
     if (state.ctrl.type === "Hyst") return base;
     const ind = loopAssessment();
-    if (ind.unstable || !ind.settled || !(ind.settlingTime > 0)) return base;
-    const rough = 3 * ind.settlingTime;
-    const magnitude = Math.pow(10, Math.floor(Math.log10(rough)));
-    const nice = [1, 2, 2.5, 5, 10].map((m) => m * magnitude).find((v) => v >= rough * (1 - 1e-9));
-    return Math.min(base, nice);
+    const nice = (rough) => {
+      const magnitude = Math.pow(10, Math.floor(Math.log10(rough)));
+      return [1, 2, 2.5, 5, 10].map((m) => m * magnitude).find((v) => v >= rough * (1 - 1e-9));
+    };
+    if (ind.unstable) return ind.escape > 0 ? Math.min(base, nice(2 * ind.escape)) : base;
+    if (!ind.settled || !(ind.settlingTime > 0)) return ind.horizon;
+    return Math.min(ind.horizon, nice(3 * ind.settlingTime));
   }
   // Indicators of the loop « after a long time », on the base horizon: when it ends before the
   // response settles, the same loop is run again, 4, 16 then 64 times longer (in the background:
@@ -1783,6 +1806,7 @@
     let uLo = 0;
     let uHi = 0;
     for (let i = 0; i < cut; i += 1) {
+      if (![run.y[i], run.ym[i], run.u[i]].every(Number.isFinite)) break;
       yLo = Math.min(yLo, run.y[i], run.ym[i]); yHi = Math.max(yHi, run.y[i], run.ym[i]);
       uLo = Math.min(uLo, run.u[i]); uHi = Math.max(uHi, run.u[i]);
     }
@@ -1821,9 +1845,22 @@
     for (let i = Math.ceil(minValue / step - 1e-9); i * step <= maxValue + step * 1e-6; i += 1) values.push(Math.abs(i * step) < step * 1e-6 ? 0 : i * step);
     return { values, step };
   }
+  // Large values (ticks of 100 000 and more, e.g. the command of a loop that diverges) are
+  // written m·10^n, so that the labels keep a sensible width.
+  const SUPERSCRIPTS = { "-": "⁻", 0: "⁰", 1: "¹", 2: "²", 3: "³", 4: "⁴", 5: "⁵", 6: "⁶", 7: "⁷", 8: "⁸", 9: "⁹" };
   function tickFormatter(step) {
     const exponent = Math.floor(Math.log10(step) + 1e-9);
     const mantissa = step / Math.pow(10, exponent);
+    if (exponent >= 5) {
+      const digits = new Intl.NumberFormat(S.locale, { maximumFractionDigits: 3 });
+      return { format: (v) => {
+        if (v === 0) return "0";
+        const n = Math.floor(Math.log10(Math.abs(v)) + 1e-9);
+        const power = `10${String(n).replace(/./g, (c) => SUPERSCRIPTS[c])}`;
+        const m = v / Math.pow(10, n);
+        return Math.abs(Math.abs(m) - 1) < 1e-9 ? `${m < 0 ? "−" : ""}${power}` : `${digits.format(m).replace("-", "−")}·${power}`;
+      } };
+    }
     const decimals = Math.max(0, -exponent + (Math.abs(mantissa - 2.5) < 1e-6 ? 1 : 0));
     return new Intl.NumberFormat(S.locale, { maximumFractionDigits: Math.min(decimals, 8) });
   }
@@ -2359,10 +2396,10 @@
   document.addEventListener("click", (event) => { if (!languageMenu.hidden && !event.target.closest(".language-switch")) setLanguageMenu(false); });
   document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !languageMenu.hidden) { setLanguageMenu(false); languageTrigger.focus(); } });
 
-  // Opening a folded panel (« Réglage Ziegler–Nichols », « Valeurs caractéristiques ») scrolls
-  // it into view: it sits at the bottom of the column (desktop) or of the page (mobile),
-  // where its content would stay hidden.
-  document.querySelectorAll(".values-panel").forEach((details) => details.addEventListener("toggle", (event) => {
+  // Opening a folded panel (« Réglage Ziegler–Nichols », « Valeurs caractéristiques », the
+  // table under the Z-N button) scrolls it into view: it sits at the bottom of the column
+  // (desktop) or of the page (mobile), where its content would stay hidden.
+  document.querySelectorAll(".values-panel, .zn-details").forEach((details) => details.addEventListener("toggle", (event) => {
     const panel = event.target;
     if (!panel.open) return;
     panel.querySelectorAll(".eq-line, .value-card > div").forEach(fitFormula); // laid out only now
@@ -2387,6 +2424,7 @@
     themeButton.setAttribute("aria-pressed", String(dark));
     themeButton.setAttribute("aria-label", dark ? S.themeLight : S.themeDark);
     renderTuning(); // the selected row is coloured with a theme colour
+    renderLoopTuning();
     scheduleDraw();
   }
 
@@ -2564,6 +2602,7 @@
     loopRun: () => loopRun(),
     loopExtrema: () => loopExtrema(),
     plotView: () => (plotView ? { ...plotView } : null),
+    tickLabel: (value, step) => tickFormatter(step).format(value),
     indicators: () => loopAssessment(),
     cascadeOf,
     chainConstruction,

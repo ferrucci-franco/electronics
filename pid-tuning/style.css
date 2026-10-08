@@ -243,6 +243,16 @@ input[type="range"]:focus-visible { outline: var(--focus); outline-offset: 2px; 
 .zn-values > span { flex: 1 1 auto; border-radius: 10px; padding: 6px 4px; background: var(--panel); color: var(--teal-deep); text-align: center; white-space: nowrap; }
 .zn-values .katex { font-size: .92rem; }
 .zn-button { width: 100%; }
+/* Ziegler–Nichols table folded under the button (loop view). */
+.zn-details > summary { display: flex; min-height: 44px; align-items: center; justify-content: space-between; gap: 10px; padding: 0 4px; color: var(--info-label); cursor: pointer; font-size: .9rem; font-weight: 750; list-style: none; }
+.zn-details > summary::-webkit-details-marker { display: none; }
+.zn-details > summary:focus-visible { outline: var(--focus); outline-offset: 2px; border-radius: 10px; }
+.zn-details > summary > i { position: relative; flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%; background: var(--teal); transition: transform 160ms ease; }
+.zn-details > summary > i::before { position: absolute; top: 44%; left: 50%; width: 6px; height: 6px; content: ""; border-right: 2px solid #fff; border-bottom: 2px solid #fff; transform: translate(-50%, -50%) rotate(45deg); }
+.zn-details[open] > summary > i { transform: rotate(180deg); }
+.zn-details .eq-box { background: var(--panel); }
+.zn-details .eq-line { padding: 4px 2px; }
+.zn-details .eq-line .katex { font-size: .9rem; }
 .sat-row { margin: 10px 0 8px; }
 /* Equation panel: one block per block shown. */
 .equation-block + .equation-block { margin-top: 16px; }
