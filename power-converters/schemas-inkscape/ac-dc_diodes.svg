@@ -24,14 +24,14 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
      inkscape:zoom="2.6404882"
-     inkscape:cx="132.92996"
-     inkscape:cy="94.86882"
+     inkscape:cx="93.16459"
+     inkscape:cy="3.5978195"
      inkscape:window-width="1920"
      inkscape:window-height="1001"
      inkscape:window-x="-9"
      inkscape:window-y="-9"
      inkscape:window-maximized="1"
-     inkscape:current-layer="layer1" />
+     inkscape:current-layer="layer13" />
   <defs
      id="defs1" />
   <g
@@ -104,21 +104,6 @@
    style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:65%;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';baseline-shift:sub"
    id="tspan53">o</tspan></tspan></text>
     </g>
-    <g
-       id="g55"
-       transform="rotate(90,45.508957,91.380709)">
-      <path
-         style="fill:#000000;stroke:#000000;stroke-width:0.264583px;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1"
-         d="m 108.31273,60.05309 1.32292,-2.645833 v 0 l 1.32292,2.645833 v 0 z"
-         id="path54"
-         inkscape:connector-curvature="0"
-         sodipodi:nodetypes="ccccccc" />
-      <path
-         style="fill:none;stroke:#000000;stroke-width:0.264583px;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1"
-         d="m 108.31273,57.407257 h 2.64584"
-         id="path55"
-         inkscape:connector-curvature="0" />
-    </g>
     <text
        id="text55"
        y="152.38557"
@@ -170,6 +155,68 @@
   </g>
   <g
      inkscape:groupmode="layer"
+     id="layer11"
+     inkscape:label="D_on"
+     style="display:none">
+    <g
+       id="g16"
+       style="display:inline;fill:#00b050;fill-opacity:1;stroke:#00b050;stroke-opacity:1">
+      <path
+         style="fill:#00b050;fill-opacity:1;stroke:#00b050;stroke-width:0.1;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+         d="m 25.532935,4.7826727 2.645833,1.32292 v 0 l -2.645833,1.32292 v 0 z"
+         id="path15"
+         inkscape:connector-curvature="0"
+         sodipodi:nodetypes="ccccccc" />
+      <path
+         style="fill:#00b050;fill-opacity:1;stroke:#00b050;stroke-width:0.264583px;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1"
+         d="m 28.178768,4.7826727 v 2.64584"
+         id="path16"
+         inkscape:connector-curvature="0" />
+    </g>
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer12"
+     inkscape:label="D_off"
+     style="display:none">
+    <g
+       id="g14"
+       style="display:inline;fill:#a6a6a6;fill-opacity:1;stroke:#a6a6a6;stroke-opacity:1">
+      <path
+         style="fill:#a6a6a6;fill-opacity:1;stroke:#a6a6a6;stroke-width:0.1;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+         d="m 25.532935,4.7826727 2.645833,1.32292 v 0 l -2.645833,1.32292 v 0 z"
+         id="path13"
+         inkscape:connector-curvature="0"
+         sodipodi:nodetypes="ccccccc" />
+      <path
+         style="fill:#a6a6a6;fill-opacity:1;stroke:#a6a6a6;stroke-width:0.264583px;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1"
+         d="m 28.178768,4.7826727 v 2.64584"
+         id="path14"
+         inkscape:connector-curvature="0" />
+    </g>
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer8"
+     inkscape:label="diodes"
+     style="display:inline">
+    <g
+       id="g13">
+      <path
+         style="fill:#000000;stroke:#000000;stroke-width:0.1;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1"
+         d="m 25.532935,4.7826727 2.645833,1.32292 v 0 l -2.645833,1.32292 v 0 z"
+         id="path6"
+         inkscape:connector-curvature="0"
+         sodipodi:nodetypes="ccccccc" />
+      <path
+         style="fill:none;stroke:#000000;stroke-width:0.264583px;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1"
+         d="m 28.178768,4.7826727 v 2.64584"
+         id="path7"
+         inkscape:connector-curvature="0" />
+    </g>
+  </g>
+  <g
+     inkscape:groupmode="layer"
      id="layer5"
      inkscape:label="50hz"
      transform="translate(-51.303642,-149.40181)"
@@ -185,6 +232,24 @@
          x="52.046627"
          id="tspan75"
          sodipodi:role="line">50Hz</tspan></text>
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer13"
+     inkscape:label="1kHz"
+     style="display:none">
+    <text
+       id="text16"
+       y="168.46725"
+       x="52.046627"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.38801px;line-height:1.25;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';letter-spacing:0px;word-spacing:0px;display:inline;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583"
+       xml:space="preserve"
+       transform="translate(-51.303642,-149.40181)"><tspan
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.38801px;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';stroke-width:0.264583"
+         y="168.46725"
+         x="52.046627"
+         id="tspan16"
+         sodipodi:role="line">1kHz</tspan></text>
   </g>
   <g
      inkscape:groupmode="layer"
