@@ -207,7 +207,15 @@
           <div class="scope-screen">
             <div id="scope-legends"></div>
             <canvas id="scope" aria-label="Tracés superposés de Vin, V0x et de la tension de la résistance" data-i18n-aria="scopeAria"></canvas>
+            <canvas id="scope-cursor" aria-hidden="true"></canvas>
             <div id="zoom-selection" aria-hidden="true" hidden></div>
+          </div>
+
+          <div class="cursor-bar" id="cursor-bar" hidden>
+            <button id="cursor-play" type="button" aria-pressed="false" data-i18n-aria="cursorPlay" data-i18n-title="cursorPlay">▶</button>
+            <input id="cursor-range" type="range" min="0" max="720" step="1" value="0" data-i18n-aria="cursorAria" />
+            <output id="cursor-value" for="cursor-range">ωt = 0°</output>
+            <button id="cursor-hide" type="button" data-i18n-aria="cursorHide" data-i18n-title="cursorHide" hidden>×</button>
           </div>
 
           <div class="measurements">
