@@ -232,15 +232,30 @@
   // (#nom-du-calque), toutes dans le même cadre, allumées ou éteintes par onResult.
   // Le balisage ne dépend d'aucun réglage (fréquence comprise) : app.js garde alors les
   // mêmes nœuds d'un calcul à l'autre, et un calque estompé ne clignote pas.
+  // Diodes : le calque « diodes » (noir) est l'état neutre, sans curseur d'instant ; avec le
+  // curseur, chaque diode passe sur son calque « -on » (vert) ou « -off » (gris).
   const layeredSchematics = {
-    single: { src: "assets/ac-dc_diodes.svg" },
-    bridge: { src: "assets/ac-dc_4diodes.svg" },
+    single: { src: "assets/ac-dc_diodes.svg", diodes: ["d"] },
+    bridge: { src: "assets/ac-dc_4diodes.svg", diodes: ["d1", "d2", "d3", "d4"] },
   };
-  const schematicLayers = ["base", "50hz", "60hz", "rin", "c", "lf-cable", "lf", "load-r", "load-rl"];
+  const schematicLayers = ["base", "diodes", "50hz", "60hz", "1khz", "rin", "c", "lf-cable", "lf", "load-r", "load-rl"];
+  const initiallyVisible = new Set(["base", "diodes"]);
   function schematic(montage, language) {
     const aria = localizeText(i18n.schematic, language);
-    const { src } = layeredSchematics[montage === "bridge" ? "bridge" : "single"];
-    return `<div class="rect-schematic rect-layered" role="img" aria-label="${aria}">${schematicLayers.map((layer) => `<img class="converter-schematic" data-layer="${layer}" src="${src}#${layer}" alt="" draggable="false"${layer === "base" ? "" : ' style="display:none"'} />`).join("")}</div>`;
+    const { src, diodes } = layeredSchematics[montage === "bridge" ? "bridge" : "single"];
+    const layers = [...schematicLayers, ...diodes.flatMap((diode) => [`${diode}-off`, `${diode}-on`])];
+    return `<div class="rect-schematic rect-layered" role="img" aria-label="${aria}">${layers.map((layer) => `<img class="converter-schematic" data-layer="${layer}" src="${src}#${layer}" alt="" draggable="false"${initiallyVisible.has(layer) ? "" : ' style="display:none"'} />`).join("")}</div>`;
+  }
+
+  // État des diodes à l'instant d'un échantillon tracé : passante si son courant est non nul.
+  // simulate() met ce courant exactement à zéro quand la diode est bloquée ; un seuil (celui de
+  // l'angle de conduction, 1 mA) retarderait l'amorçage de quelques degrés avec une charge R–L,
+  // où le courant part de zéro. Dans le pont, D1 et D3 conduisent ensemble, de même que D2 et D4.
+  function diodeStates(point, result) {
+    const pairA = point.iD1 > 0;
+    if (result.montage !== "bridge") return { d: pairA };
+    const pairB = point.iD24 > 0;
+    return { d1: pairA, d2: pairB, d3: pairA, d4: pairB };
   }
 
   const idealLawTex = (montage) => montage === "bridge" ? "\\langle v_{o}\\rangle=2\\hat V/\\pi" : "\\langle v_{o}\\rangle=\\hat V/\\pi";
@@ -291,6 +306,7 @@
         const show = (layer, visible, opacity = 1) => { const image = layered.querySelector(`[data-layer="${layer}"]`); if (image) { image.style.display = visible ? "" : "none"; image.style.opacity = String(opacity); } };
         show("50hz", result.frequency === 50);
         show("60hz", result.frequency === 60);
+        show("1khz", result.frequency === generatorFrequency);
         show("rin", result.view === "transient");
         show("c", true, state.capacitance > 0 ? 1 : .14);
         show("lf", advanced, hasChoke ? 1 : .14);
@@ -298,6 +314,19 @@
         show("load-r", !hasLoadInductor);
         show("load-rl", hasLoadInductor);
       }
+    },
+    diodeStates,
+    // Curseur d'instant (app.js) : point = échantillon le plus proche, ou null sans curseur.
+    onCursor(point, result) {
+      const layered = document.querySelector(".rect-layered");
+      if (!layered) return;
+      const states = point && result ? diodeStates(point, result) : null;
+      const show = (layer, visible) => { const image = layered.querySelector(`[data-layer="${layer}"]`); if (image) image.style.display = visible ? "" : "none"; };
+      show("diodes", !states);
+      layered.querySelectorAll('[data-layer$="-on"], [data-layer$="-off"]').forEach((image) => {
+        const [diode, state] = image.dataset.layer.split("-");
+        image.style.display = states && diode in states && states[diode] === (state === "on") ? "" : "none";
+      });
     },
     metricsFor(result, _state, advanced, language) {
       const t = (value) => localizeText(value, language);

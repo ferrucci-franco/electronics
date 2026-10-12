@@ -6,7 +6,7 @@
     <meta name="description" content="Laboratoire interactif de convertisseurs de puissance en régime permanent." />
     <title>Simulateur de convertisseurs — Convertisseur buck</title>
     <link rel="stylesheet" href="vendor/katex/katex.min.css?v=d9e556392d" />
-    <link rel="stylesheet" href="styles.css?v=b0d5f2bc4c" />
+    <link rel="stylesheet" href="styles.css?v=3d3f14db2e" />
     <link rel="stylesheet" href="pv.css?v=672beb20b5" />
   <!-- Contador de visitas (GoatCounter, sin cookies ni datos personales). No cuenta en localhost ni desde file://. -->
 <script data-goatcounter="https://ferrucci-franco.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
@@ -209,7 +209,15 @@
           <div class="scope-screen">
             <div id="scope-legends"></div>
             <canvas id="scope" aria-label="Tracés superposés de Vin, V0x et de la tension de la résistance" data-i18n-aria="scopeAria"></canvas>
+            <canvas id="scope-cursor" aria-hidden="true"></canvas>
             <div id="zoom-selection" aria-hidden="true" hidden></div>
+          </div>
+
+          <div class="cursor-bar" id="cursor-bar" hidden>
+            <button id="cursor-play" type="button" aria-pressed="false" data-i18n-aria="cursorPlay" data-i18n-title="cursorPlay"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg></button>
+            <input id="cursor-range" type="range" min="0" max="720" step="1" value="0" data-i18n-aria="cursorAria" />
+            <output id="cursor-value" for="cursor-range">ωt = 0°</output>
+            <button id="cursor-hide" type="button" data-i18n-aria="cursorHide" data-i18n-title="cursorHide" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" /></svg></button>
           </div>
 
           <div class="measurements">
@@ -276,9 +284,9 @@
     <script src="topologies/buck.js?v=b1f66e8d93"></script>
     <script src="topologies/boost.js?v=78363f5387"></script>
     <script src="topologies/pont-h.js?v=7d6c2fa28d"></script>
-    <script src="topologies/redresseur.js?v=b5946e54e1"></script>
+    <script src="topologies/redresseur.js?v=2807bc34fb"></script>
     <script src="topologies/thyristor.js?v=77a0da0837"></script>
     <script src="topologies/pv-grid.js?v=4cf77c1b27"></script>
-    <script src="app.js?v=9743bae5ed"></script>
+    <script src="app.js?v=a41732a155"></script>
   </body>
 </html>

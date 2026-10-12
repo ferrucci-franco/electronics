@@ -95,4 +95,44 @@ model.infoValuesFor(mains, {}, { setInfoMath: (id, tex) => { mainsTexts[id] = te
 assert.match(mainsTexts["info-rect-imean"], /mathrm\{A\}$/);
 assert.match(mainsTexts["info-rect-power"], /mathrm\{W\}$/);
 
+// --- Curseur d'instant : état des diodes ---
+const angleOf = (result, point) => ((2 * Math.PI * result.frequency * point.t) * 180 / Math.PI) % 360;
+const awayFromCrossing = (angle, margin = 2) => Math.min(angle % 180, 180 - angle % 180) > margin;
+// Charge R, diodes idéales : D passante si et seulement si v_in > 0 (aux passages par zéro près).
+[options(), generator()].forEach((opts) => {
+  const result = model.calculate(state({}, opts.frequency), null, opts);
+  result.points.forEach((point) => {
+    const angle = angleOf(result, point);
+    if (awayFromCrossing(angle)) assert.equal(model.diodeStates(point, result).d, angle < 180, `diode simple à ${angle.toFixed(1)}° (${opts.frequency} Hz)`);
+  });
+});
+// Pont, charge R : D1 et D3 pendant l'alternance positive, D2 et D4 pendant la négative.
+const bridgeR = model.calculate(state(), null, options({ montage: "bridge" }));
+bridgeR.points.forEach((point) => {
+  const angle = angleOf(bridgeR, point); const states = model.diodeStates(point, bridgeR);
+  assert.equal(states.d1, states.d3); assert.equal(states.d2, states.d4);
+  if (awayFromCrossing(angle)) assert.deepEqual([states.d1, states.d2], [angle < 180, angle >= 180], `pont à ${angle.toFixed(1)}°`);
+});
+// Pont avec C : les deux paires ne conduisent jamais ensemble, et toutes les diodes sont
+// bloquées pendant la décharge du condensateur.
+const bridgeC = model.calculate(state({ capacitance: 2200 }), null, options({ montage: "bridge" }));
+const bridgeStates = bridgeC.points.map((point) => model.diodeStates(point, bridgeC));
+assert.ok(bridgeStates.every((item) => !(item.d1 && item.d2)), "pont : jamais D1 et D2 ensemble");
+assert.ok(bridgeStates.some((item) => item.d1) && bridgeStates.some((item) => item.d2), "pont avec C : chaque paire conduit");
+assert.ok(bridgeStates.filter((item) => !item.d1 && !item.d2).length > bridgeStates.length / 2, "pont avec C : diodes bloquées la plupart du temps");
+// Diode simple, charge R–L : la diode conduit au-delà de 180°, jusqu'à l'angle d'extinction β,
+// racine de sin(β − φ) + sin(φ)·exp(−β/tan φ) = 0 avec tan φ = Lω/R.
+{
+  const frequency = 60; const resistance = 20; const inductance = 100;
+  const phi = Math.atan(2 * Math.PI * frequency * inductance / 1000 / resistance);
+  const f = (beta) => Math.sin(beta - phi) + Math.sin(phi) * Math.exp(-beta / Math.tan(phi));
+  let low = Math.PI; let high = 2 * Math.PI;
+  for (let iteration = 0; iteration < 60; iteration += 1) { const middle = (low + high) / 2; if (f(middle) > 0) low = middle; else high = middle; }
+  const betaDegrees = low * 180 / Math.PI;
+  const rl = model.calculate(state({ resistance, inductance }), null, options({ advanced: true }));
+  const onAngles = rl.points.filter((point) => model.diodeStates(point, rl).d).map((point) => angleOf(rl, point));
+  const extinction = Math.max(...onAngles);
+  assert.ok(betaDegrees > 180 && Math.abs(extinction - betaDegrees) < 1, `charge R–L : β = ${betaDegrees.toFixed(1)}°, simulé ${extinction.toFixed(1)}°`);
+}
+
 console.log("redresseur : tous les tests passent");

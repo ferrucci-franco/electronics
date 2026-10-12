@@ -13,6 +13,7 @@
       theoryButtonAria: "Open more information", theoryOpen: "More info", theoryKicker: "Electrical analysis", theoryTitle: "Steady state", closeTheory: "Close", balanceTitle: "Balances", numericalResidual: "Numerical residual", rippleTheoryTitle: "Ripple approximation", fundamentalTitle: "Fundamental component", loadTitle: "Series R–L load", simulation: "Simulation", approximation: "Approximation", relativeError: "Relative error", loadType: "Load", seriesRl: "Series resistance and inductance", criticalInductanceRatio: "Critical inductance ratio",
       approximationNote: "These approximations assume low ripple and a switching frequency well above the natural dynamics.", synchronousNote: "The synchronous switch always provides a current path; negative inductor current is therefore possible.", diodeNote: "The diode blocks reverse current, so the model can enter CCM or DCM. v<sub>D</sub> is measured from anode to cathode; ripple formulas are CCM estimates.", hBridgeNote: "The bridge is modeled with ideal complementary switches.", schematicPending: "Circuit SVG placeholder", schematicTomorrow: "The simulation is active. The final circuit drawing can be inserted here without changing the model.", time: "Time", voltage: "voltage", currentAxis: "current",
       singleDiode: "Single diode", diodeBridge: "Diode bridge", singleThyristor: "SCR", triac: "TRIAC", rectifierMontageAria: "Choose the rectifier circuit", thyristorMontageAria: "Choose SCR or TRIAC power control", rectifierViewAria: "Choose the rectifier time window", frequencyToggleAria: "Source frequency: {f}. Switch to {g}", frequencyToggleTitle: "Switch to {g}", generatorFrequency: "1 kHz", thyristorVoltageAria: "Choose the RMS mains voltage", rectifierSteady: "Steady", diodesIdeal: "Ideal", diodesReal: "0.6 V drop", rectifierDiodesAria: "Choose the diode model",
+      cursorAria: "Instant shown on the waveforms (angle ωt)", cursorPlay: "Play: sweep the instant", cursorPause: "Pause", cursorHide: "Hide the instant cursor",
       bridgeApplication: "Application", inverter: "Inverter", dcMotor: "DC motor", grid: "Grid", modulationType: "PWM pattern", bipolar: "Bipolar", unipolar: "Unipolar", motorBipolar: "50% = stop", motorUnipolar: "Direction + coast", direction: "Direction", forward: "Forward", reverse: "Reverse", motorView: "Display", motorTransient: "Start-up", motorSteady: "Steady state", motorViewAria: "Choose the motor time window", bridgeApplicationAria: "Choose the H-bridge application", bridgeSwitchingAria: "Choose the PWM pattern", motorDirectionAria: "Choose motor direction", inverterFilter: "Circuit", inverterFilterAria: "Choose the inverter circuit", bridgeLc: "Bridge + LC", generatorRc: "Gen. + RC", generatorLc: "Gen. + LC", generatorRcTitle: "Function generator + RC filter", generatorLcTitle: "Function generator + LC filter", rcFilter: "RC filter", cutoffFrequency: "RC filter cutoff frequency", gridCurrentControlMode: "Current control", gridCurrentControlAria: "Choose the grid current-control algorithm", pwmControl: "PWM", hysteresisControl: "Hysteresis",
       filteredOutput: "Filtered output", filterQuality: "Output filter", voltageThd: "Voltage THD", motorCommand: "Manual command", motorResult: "Motor response", speed: "Speed", torque: "Torque", armatureCurrent: "Armature current", averageArmatureVoltage: "Average armature voltage", power: "Power", activePower: "Active power", reactivePower: "Reactive power", powerFactor: "Power factor", currentThd: "Current THD", trackingError: "Tracking error", setpoint: "Setpoint", electricalModel: "Electrical model", mechanicalModel: "Mechanical model", currentControl: "Current tracking", filterAndLoad: "Filter and load", measured: "Measured", expected: "Expected", dcBus: "DC bus", motorNote: "No speed controller is used: duty cycle and direction are set manually.", gridNote: "A stiff 50 Hz grid and a proportional current tracker with voltage feedforward are used. No PLL is required in this introductory model.", gridHysteresisNote: "The bridge changes state when the current reaches either limit. The switching frequency is therefore variable and is not imposed by a carrier.", standaloneNote: "The output LC filter includes a small damping resistance and supplies a series R–L load (R<sub>o</sub> and L<sub>o</sub> in advanced mode). H(jω<sub>1</sub>) is the filter-and-load transfer function. The source has no internal resistance: neither a function generator’s 50 Ω output nor the winding resistance of L<sub>f</sub> is modelled.", generatorLcNote: "The function generator is an ideal PWM source ±V<sub>in</sub> (open-circuit voltage) behind R<sub>g</sub> = 50 Ω; the coil’s winding resistance R<sub>L</sub> (advanced mode, measure it with an ohmmeter) adds in series. Both damp the LC resonance. If the generator displays its amplitude “into 50 Ω”, the open-circuit voltage is twice the displayed value.", generatorNote: "The function generator is modelled as an ideal PWM source ±V<sub>in</sub> (open-circuit voltage) in series with its internal resistance R<sub>g</sub> = 50 Ω. The output v<sub>o</sub> is taken with no load: the 1 MΩ scope probe does not load the filter. If the generator displays its amplitude “into 50 Ω”, the open-circuit voltage is twice the displayed value.", percent: "Percent",
     },
@@ -25,6 +26,7 @@
       theoryButtonAria: "Ouvrir les informations complémentaires", theoryOpen: "Plus d’infos", theoryKicker: "Analyse électrique", theoryTitle: "Régime permanent", closeTheory: "Fermer", balanceTitle: "Équilibres", numericalResidual: "Résidu numérique", rippleTheoryTitle: "Approximation des ondulations", fundamentalTitle: "Composante fondamentale", loadTitle: "Charge R–L série", simulation: "Simulation", approximation: "Approximation", relativeError: "Écart relatif", loadType: "Charge", seriesRl: "Résistance et inductance en série", criticalInductanceRatio: "Rapport d’inductance critique",
       approximationNote: "Ces approximations supposent une faible ondulation et une fréquence de découpage nettement supérieure à la dynamique naturelle.", synchronousNote: "L’interrupteur synchrone offre toujours un chemin au courant ; le courant de l’inductance peut donc devenir négatif.", diodeNote: "La diode bloque le courant inverse : le modèle peut être en CCM ou DCM. v<sub>D</sub> est mesurée de l’anode vers la cathode ; les formules d’ondulation sont des estimations CCM.", hBridgeNote: "Le pont est modélisé avec des interrupteurs complémentaires idéaux.", schematicPending: "Emplacement du SVG du circuit", schematicTomorrow: "La simulation est active. Le dessin définitif pourra être inséré ici sans modifier le modèle.", time: "Temps", voltage: "tension", currentAxis: "courant",
       singleDiode: "Simple diode", diodeBridge: "Pont de diodes", singleThyristor: "SCR", triac: "TRIAC", rectifierMontageAria: "Choisir le montage du redresseur", thyristorMontageAria: "Choisir la commande de puissance SCR ou TRIAC", rectifierViewAria: "Choisir la fenêtre temporelle du redresseur", frequencyToggleAria: "Fréquence de la source : {f}. Passer à {g}", frequencyToggleTitle: "Passer à {g}", generatorFrequency: "1 kHz", thyristorVoltageAria: "Choisir la tension efficace du réseau", rectifierSteady: "Permanent", diodesIdeal: "Idéales", diodesReal: "Chute 0,6 V", rectifierDiodesAria: "Choisir le modèle de diode",
+      cursorAria: "Instant repéré sur les tracés (angle ωt)", cursorPlay: "Lecture : faire défiler l’instant", cursorPause: "Pause", cursorHide: "Masquer le curseur d’instant",
       bridgeApplication: "Application", inverter: "Onduleur", dcMotor: "Moteur CC", grid: "Réseau", modulationType: "Modulation PWM", bipolar: "Bipolaire", unipolar: "Unipolaire", motorBipolar: "50 % = arrêt", motorUnipolar: "Sens + roue libre", direction: "Sens", forward: "Avant", reverse: "Arrière", motorView: "Affichage", motorTransient: "Démarrage", motorSteady: "Régime permanent", motorViewAria: "Choisir la fenêtre temporelle du moteur", bridgeApplicationAria: "Choisir l’application du pont en H", bridgeSwitchingAria: "Choisir la modulation PWM", motorDirectionAria: "Choisir le sens de rotation", inverterFilter: "Montage", inverterFilterAria: "Choisir le montage de l’onduleur", bridgeLc: "Pont + LC", generatorRc: "Gén. + RC", generatorLc: "Gén. + LC", generatorRcTitle: "Générateur de fonctions + filtre RC", generatorLcTitle: "Générateur de fonctions + filtre LC", rcFilter: "Filtre RC", cutoffFrequency: "Fréquence de coupure du filtre RC", gridCurrentControlMode: "Commande du courant", gridCurrentControlAria: "Choisir l’algorithme de commande du courant réseau", pwmControl: "PWM", hysteresisControl: "Hystérésis",
       filteredOutput: "Sortie filtrée", filterQuality: "Filtre de sortie", voltageThd: "THD de la tension", motorCommand: "Commande manuelle", motorResult: "Réponse du moteur", speed: "Vitesse", torque: "Couple", armatureCurrent: "Courant d’induit", averageArmatureVoltage: "Tension moyenne d’induit", power: "Puissances", activePower: "Puissance active", reactivePower: "Puissance réactive", powerFactor: "Facteur de puissance", currentThd: "THD du courant", trackingError: "Erreur de suivi", setpoint: "Consigne", electricalModel: "Modèle électrique", mechanicalModel: "Modèle mécanique", currentControl: "Suivi du courant", filterAndLoad: "Filtre et charge", measured: "Mesuré", expected: "Attendu", dcBus: "Bus continu", motorNote: "Aucun régulateur de vitesse n’est utilisé : le rapport cyclique et le sens sont imposés manuellement.", gridNote: "Le réseau est supposé rigide à 50 Hz. Le suivi du courant utilise une action proportionnelle et une anticipation de tension, sans PLL dans ce modèle introductif.", gridHysteresisNote: "Le pont change d’état lorsque le courant atteint l’une des deux limites. La fréquence de commutation est donc variable et n’est pas imposée par une porteuse.", standaloneNote: "Le filtre LC de sortie inclut une faible résistance d’amortissement et alimente une charge R–L série (R<sub>o</sub> et L<sub>o</sub> en mode avancé). H(jω<sub>1</sub>) est la fonction de transfert du filtre chargé. La source n’a pas de résistance interne : ni la sortie 50 Ω d’un générateur de fonctions ni la résistance du bobinage de L<sub>f</sub> ne sont modélisées.", generatorLcNote: "Le générateur de fonctions est une source MLI idéale ±V<sub>in</sub> (tension à vide) derrière R<sub>g</sub> = 50 Ω ; la résistance du bobinage R<sub>L</sub> (mode avancé, à mesurer à l’ohmmètre) s’y ajoute en série. Toutes deux amortissent la résonance LC. Si le générateur affiche l’amplitude « sur 50 Ω », la tension à vide vaut le double de la valeur affichée.", generatorNote: "Le générateur de fonctions est modélisé par une source MLI idéale ±V<sub>in</sub> (tension à vide) en série avec sa résistance interne R<sub>g</sub> = 50 Ω. La sortie v<sub>o</sub> est relevée à vide : la sonde d’oscilloscope (1 MΩ) ne charge pas le filtre. Si le générateur affiche l’amplitude « sur 50 Ω », la tension à vide vaut le double de la valeur affichée.", percent: "Pourcentage",
     },
@@ -37,6 +39,7 @@
       theoryButtonAria: "Abrir más información", theoryOpen: "Más info", theoryKicker: "Análisis eléctrico", theoryTitle: "Régimen permanente", closeTheory: "Cerrar", balanceTitle: "Equilibrios", numericalResidual: "Residuo numérico", rippleTheoryTitle: "Aproximación de las ondulaciones", fundamentalTitle: "Componente fundamental", loadTitle: "Carga R–L serie", simulation: "Simulación", approximation: "Aproximación", relativeError: "Error relativo", loadType: "Carga", seriesRl: "Resistencia e inductancia en serie", criticalInductanceRatio: "Relación de inductancia crítica",
       approximationNote: "Estas aproximaciones suponen una ondulación pequeña y una frecuencia de conmutación muy superior a la dinámica natural.", synchronousNote: "El interruptor síncrono siempre ofrece un camino para la corriente; por eso la corriente de la inductancia puede hacerse negativa.", diodeNote: "El diodo bloquea la corriente inversa: el modelo puede estar en CCM o DCM. v<sub>D</sub> se mide del ánodo al cátodo; las fórmulas de ondulación son estimaciones CCM.", hBridgeNote: "El puente se modela con interruptores complementarios ideales.", schematicPending: "Espacio para el SVG del circuito", schematicTomorrow: "La simulación está activa. El dibujo definitivo podrá insertarse aquí sin modificar el modelo.", time: "Tiempo", voltage: "tensión", currentAxis: "corriente",
       singleDiode: "Diodo simple", diodeBridge: "Puente de diodos", singleThyristor: "SCR", triac: "TRIAC", rectifierMontageAria: "Elegir el montaje del rectificador", thyristorMontageAria: "Elegir el control de potencia SCR o TRIAC", rectifierViewAria: "Elegir la ventana temporal del rectificador", frequencyToggleAria: "Frecuencia de la fuente: {f}. Cambiar a {g}", frequencyToggleTitle: "Cambiar a {g}", generatorFrequency: "1 kHz", thyristorVoltageAria: "Elegir la tensión eficaz de la red", rectifierSteady: "Permanente", diodesIdeal: "Ideales", diodesReal: "Caída 0,6 V", rectifierDiodesAria: "Elegir el modelo de diodo",
+      cursorAria: "Instante marcado en las curvas (ángulo ωt)", cursorPlay: "Reproducir: recorrer el instante", cursorPause: "Pausa", cursorHide: "Ocultar el cursor de instante",
       bridgeApplication: "Aplicación", inverter: "Inversor", dcMotor: "Motor CC", grid: "Red", modulationType: "Modulación PWM", bipolar: "Bipolar", unipolar: "Unipolar", motorBipolar: "50 % = paro", motorUnipolar: "Sentido + rueda libre", direction: "Sentido", forward: "Adelante", reverse: "Atrás", motorView: "Visualización", motorTransient: "Arranque", motorSteady: "Régimen permanente", motorViewAria: "Elegir la ventana temporal del motor", bridgeApplicationAria: "Elegir la aplicación del puente H", bridgeSwitchingAria: "Elegir la modulación PWM", motorDirectionAria: "Elegir el sentido de giro", inverterFilter: "Montaje", inverterFilterAria: "Elegir el montaje del inversor", bridgeLc: "Puente + LC", generatorRc: "Gen. + RC", generatorLc: "Gen. + LC", generatorRcTitle: "Generador de funciones + filtro RC", generatorLcTitle: "Generador de funciones + filtro LC", rcFilter: "Filtro RC", cutoffFrequency: "Frecuencia de corte del filtro RC", gridCurrentControlMode: "Control de corriente", gridCurrentControlAria: "Elegir el algoritmo de control de la corriente de red", pwmControl: "PWM", hysteresisControl: "Histéresis",
       filteredOutput: "Salida filtrada", filterQuality: "Filtro de salida", voltageThd: "THD de tensión", motorCommand: "Mando manual", motorResult: "Respuesta del motor", speed: "Velocidad", torque: "Par", armatureCurrent: "Corriente de armadura", averageArmatureVoltage: "Tensión media de armadura", power: "Potencias", activePower: "Potencia activa", reactivePower: "Potencia reactiva", powerFactor: "Factor de potencia", currentThd: "THD de corriente", trackingError: "Error de seguimiento", setpoint: "Consigna", electricalModel: "Modelo eléctrico", mechanicalModel: "Modelo mecánico", currentControl: "Seguimiento de corriente", filterAndLoad: "Filtro y carga", measured: "Medido", expected: "Esperado", dcBus: "Bus continuo", motorNote: "No se utiliza un regulador de velocidad: el ciclo de trabajo y el sentido se imponen manualmente.", gridNote: "La red se supone rígida a 50 Hz. El seguimiento de corriente usa una acción proporcional y anticipación de tensión, sin PLL en este modelo introductorio.", gridHysteresisNote: "El puente cambia de estado cuando la corriente alcanza uno de los dos límites. Por eso, la frecuencia de conmutación es variable y no la impone una portadora.", standaloneNote: "El filtro LC de salida incluye una pequeña resistencia de amortiguamiento y alimenta una carga R–L serie (R<sub>o</sub> y L<sub>o</sub> en modo avanzado). H(jω<sub>1</sub>) es la función de transferencia del filtro cargado. La fuente no tiene resistencia interna: no se modelan ni la salida de 50 Ω de un generador de funciones ni la resistencia del bobinado de L<sub>f</sub>.", generatorLcNote: "El generador de funciones es una fuente PWM ideal ±V<sub>in</sub> (tensión en vacío) detrás de R<sub>g</sub> = 50 Ω; la resistencia del bobinado R<sub>L</sub> (modo avanzado, medirla con un óhmetro) se suma en serie. Ambas amortiguan la resonancia LC. Si el generador muestra la amplitud «sobre 50 Ω», la tensión en vacío es el doble del valor mostrado.", generatorNote: "El generador de funciones se modela como una fuente PWM ideal ±V<sub>in</sub> (tensión en vacío) en serie con su resistencia interna R<sub>g</sub> = 50 Ω. La salida v<sub>o</sub> se mide en vacío: la sonda del osciloscopio (1 MΩ) no carga el filtro. Si el generador muestra la amplitud «sobre 50 Ω», la tensión en vacío es el doble del valor mostrado.", percent: "Porcentaje",
     },
@@ -810,7 +813,111 @@
     // Titre vertical plus long que le tracé (tracés bas sur téléphone) : police réduite pour qu'il tienne.
     const fitAxisTitle = (label) => { if (!compactScreen.matches) return; const room = plotHeight + gap - 8; const measured = ctx.measureText(label).width; if (measured > room) ctx.font = `500 ${Math.max(10, Math.floor(15 * room / measured))}px Inter, "Segoe UI", Arial, sans-serif`; };
     groups.forEach((_, index) => { const leftTitle = `${axisLabel(axes[index].label)} (${axes[index].unit})`; ctx.save(); fitAxisTitle(leftTitle); ctx.translate(labelInset, tops[index] + plotHeight / 2); ctx.rotate(-Math.PI / 2); ctx.fillStyle = axes[index].tint ? color(axes[index].tint) : index === 1 ? color("--trace-vl") : index === 2 ? color("--trace-il") : color("--scope-text"); ctx.fillText(leftTitle, 0, 0); ctx.restore(); if (axes[index].rightLabel && !axes[index].hideRightAxis) { const rightTitle = `${axisLabel(axes[index].rightLabel)} (${axes[index].rightUnit})`; ctx.save(); fitAxisTitle(rightTitle); ctx.translate(width - labelInset, tops[index] + plotHeight / 2); ctx.rotate(Math.PI / 2); ctx.fillStyle = color(groups[index].filter((item) => item.axis === "right").at(-1)?.color || "--trace-vr"); ctx.fillText(rightTitle, 0, 0); ctx.restore(); } });
+    refreshCursor();
   }
+
+  // Curseur d'instant (redresseur) : la barre sous l'oscilloscope déplace un instant ωt sur la
+  // fenêtre visible ; une ligne verticale et des pastilles le repèrent sur les tracés, et le modèle
+  // reçoit l'échantillon le plus proche (onCursor) pour montrer l'état des diodes sur le schéma.
+  // Le tout est dessiné sur un canevas superposé : déplacer le curseur ne redessine pas les tracés.
+  const cursorCanvas = document.querySelector("#scope-cursor");
+  const cursorCtx = cursorCanvas.getContext("2d");
+  const cursorBar = document.querySelector("#cursor-bar");
+  const cursorPlay = document.querySelector("#cursor-play");
+  const cursorRange = document.querySelector("#cursor-range");
+  const cursorValue = document.querySelector("#cursor-value");
+  const cursorHide = document.querySelector("#cursor-hide");
+  const cursor = { active: false, time: 0, playing: false, last: 0 };
+  let lastResult = null;
+  const DEGREES = 180 / Math.PI;
+  const cursorSupported = () => typeof activeModel().onCursor === "function";
+  const cursorOmega = () => 2 * Math.PI * (lastResult?.frequency || 50);
+  // Indice du premier échantillon d'instant ≥ time (recherche dichotomique, t croissant).
+  const sampleIndexAt = (time) => {
+    let low = 0; let high = currentPoints.length - 1;
+    while (low < high) { const middle = (low + high) >> 1; if (currentPoints[middle].t < time) low = middle + 1; else high = middle; }
+    return low;
+  };
+  function drawCursor() {
+    const rect = canvas.getBoundingClientRect(); const width = Math.max(rect.width, 280); const scale = canvas.width / width;
+    if (cursorCanvas.width !== canvas.width || cursorCanvas.height !== canvas.height) { cursorCanvas.width = canvas.width; cursorCanvas.height = canvas.height; }
+    cursorCtx.setTransform(scale, 0, 0, scale, 0, 0); cursorCtx.clearRect(0, 0, width, canvas.height / scale);
+    if (!cursor.active || !plotView || currentPoints.length < 2) return;
+    const index = Math.max(1, sampleIndexAt(cursor.time)); const before = currentPoints[index - 1]; const after = currentPoints[index];
+    const fraction = after.t > before.t ? Math.min(1, Math.max(0, (cursor.time - before.t) / (after.t - before.t))) : 0;
+    const valueAt = (key) => before[key] + (after[key] - before[key]) * fraction;
+    const x = plotView.left + (cursor.time - plotView.xMinTime) / (plotView.xMaxTime - plotView.xMinTime) * plotView.plotWidth;
+    const css = getComputedStyle(document.body); const color = (name) => css.getPropertyValue(name).trim();
+    const groups = activePlotGroups();
+    plotView.plots.forEach((plot) => {
+      if (plot.independentX) return;
+      cursorCtx.save(); cursorCtx.beginPath(); cursorCtx.rect(plotView.left - 6, plot.top, plotView.plotWidth + 12, plot.height); cursorCtx.clip();
+      cursorCtx.beginPath(); cursorCtx.setLineDash([5, 4]); cursorCtx.moveTo(x, plot.top); cursorCtx.lineTo(x, plot.top + plot.height);
+      cursorCtx.strokeStyle = color("--scope-text"); cursorCtx.lineWidth = 1.4; cursorCtx.stroke(); cursorCtx.setLineDash([]);
+      (groups[plot.groupIndex] || []).filter((trace) => traceIsVisible(trace) && !trace.ghost && !trace.marker).forEach((trace) => {
+        const value = valueAt(trace.key); if (!Number.isFinite(value)) return;
+        const right = trace.axis === "right" && Number.isFinite(plot.rightMin) && Number.isFinite(plot.rightMax);
+        const [min, max] = right ? [plot.rightMin, plot.rightMax] : [plot.min, plot.max];
+        const y = plot.top + (max - value) / (max - min) * plot.height;
+        cursorCtx.beginPath(); cursorCtx.arc(x, y, 4.5, 0, 2 * Math.PI);
+        cursorCtx.fillStyle = color("--scope-screen"); cursorCtx.fill(); cursorCtx.strokeStyle = color(trace.color); cursorCtx.lineWidth = 2.2; cursorCtx.stroke();
+      });
+      cursorCtx.restore();
+    });
+  }
+  // Barre en angle ωt (degrés depuis le début du tracé) ; l'affichage est ramené à [0, 360°[.
+  function syncCursorBar() {
+    if (cursorBar.hidden || !plotView) return;
+    const omega = cursorOmega(); const minimum = omega * plotView.xMinTime * DEGREES; const maximum = omega * plotView.xMaxTime * DEGREES;
+    const fine = maximum - minimum < 90;
+    cursorRange.min = String(minimum); cursorRange.max = String(maximum); cursorRange.step = fine ? ".1" : "1";
+    const angle = omega * cursor.time * DEGREES; cursorRange.value = String(angle); updateRange(cursorRange);
+    const shown = ((angle % 360) + 360) % 360;
+    cursorValue.textContent = `ωt = ${new Intl.NumberFormat(locales[language], { maximumFractionDigits: fine ? 1 : 0 }).format(fine ? shown : Math.round(shown) % 360)}°`;
+    cursorValue.classList.toggle("inactive", !cursor.active);
+    cursorHide.hidden = !cursor.active;
+  }
+  function refreshCursor() {
+    if (!cursorSupported()) { drawCursor(); return; }
+    // Le zoom peut laisser l'instant hors de la fenêtre : on le ramène au bord le plus proche.
+    if (plotView) cursor.time = Math.min(plotView.xMaxTime, Math.max(plotView.xMinTime, cursor.time));
+    drawCursor(); syncCursorBar();
+    const point = cursor.active && currentPoints.length ? currentPoints[(() => { const index = sampleIndexAt(cursor.time); return index > 0 && cursor.time - currentPoints[index - 1].t < currentPoints[index].t - cursor.time ? index - 1 : index; })()] : null;
+    activeModel().onCursor(point, lastResult);
+  }
+  function labelCursorPlay() {
+    // Icônes en SVG plutôt qu'en caractères (▶, ❚❚) : leurs métriques de police les décentrent dans le rond.
+    cursorPlay.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${cursor.playing ? "M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" : "M8 5v14l11-7z"}" /></svg>`; cursorPlay.setAttribute("aria-pressed", String(cursor.playing));
+    const label = tr()[cursor.playing ? "cursorPause" : "cursorPlay"]; cursorPlay.setAttribute("aria-label", label); cursorPlay.title = label;
+  }
+  function setCursorPlaying(playing) {
+    const start = playing && !cursor.playing;
+    cursor.playing = playing; labelCursorPlay();
+    if (start) { cursor.last = performance.now(); requestAnimationFrame(playCursor); }
+  }
+  // Lecture : la fenêtre visible défile en boucle, à 90°/s (entre 3 et 12 s par passage).
+  function playCursor(now) {
+    if (!cursor.playing) return;
+    const elapsed = Math.min(.1, Math.max(0, (now - cursor.last) / 1000)); cursor.last = now;
+    if (plotView) {
+      const span = plotView.xMaxTime - plotView.xMinTime; const seconds = Math.min(12, Math.max(3, cursorOmega() * span * DEGREES / 90));
+      cursor.time += span * elapsed / seconds;
+      if (cursor.time >= plotView.xMaxTime) cursor.time = plotView.xMinTime;
+    }
+    refreshCursor();
+    requestAnimationFrame(playCursor);
+  }
+  function hideCursor() { setCursorPlaying(false); cursor.active = false; cursor.time = 0; }
+  cursorRange.addEventListener("input", () => {
+    if (cursor.playing) setCursorPlaying(false);
+    cursor.active = true; cursor.time = Number(cursorRange.value) / DEGREES / cursorOmega(); refreshCursor();
+  });
+  cursorPlay.addEventListener("click", () => {
+    if (cursor.playing) { setCursorPlaying(false); return; }
+    if (!cursor.active || (plotView && cursor.time >= plotView.xMaxTime)) cursor.time = plotView ? plotView.xMinTime : 0;
+    cursor.active = true; setCursorPlaying(true);
+  });
+  cursorHide.addEventListener("click", () => { hideCursor(); refreshCursor(); cursorPlay.focus(); });
 
   let modelUpdateQueued = false;
   function scheduleModelUpdate() {
@@ -825,13 +932,14 @@
     // Les traces peuvent dépendre des réglages (v_x du redresseur n'existe que si Lf > 0) : légendes à refaire si la liste change.
     const traceSignature = activePlotGroups().map((group) => group.map((trace) => trace.key).join()).join("|");
     if (traceSignature !== lastTraceSignature) { lastTraceSignature = traceSignature; renderLegends(); }
-    const result = activeModel().calculate(state, commutationMode(), modelOptions()); currentPoints = result.points; renderInfoValues(result, state); renderMeasurements(result, state); renderTheoryValues(result, state); draw(currentPoints);
+    const result = activeModel().calculate(state, commutationMode(), modelOptions()); currentPoints = result.points; lastResult = result; renderInfoValues(result, state); renderMeasurements(result, state); renderTheoryValues(result, state); draw(currentPoints);
     if (typeof activeModel().onResult === "function") activeModel().onResult(result, state, { language, advanced, dark, requestUpdate: scheduleModelUpdate });
   }
   function renderTopology() {
     document.body.dataset.topology = currentTopology;
     const topology = catalog.find((item) => item.id === currentTopology); document.title = `${tr().documentTitle} — ${localize(topology?.name)}`; document.querySelector('meta[name="description"]').setAttribute("content", tr().metaDescription); canvas.setAttribute("aria-label", `${tr().scopeAria}: ${localize(topology?.name)}. ${tr().zoomAria}`);
     const curvesHost = document.querySelector("#pv-curves"); if (curvesHost) curvesHost.hidden = currentTopology !== "pv-grid";
+    cursorBar.hidden = !cursorSupported(); if (cursorBar.hidden) hideCursor(); else labelCursorPlay();
     renderRectifierPanel(); renderControls(); renderCommutationSelector(); renderBridgeModePanel(); renderDiagram(); renderInfoBand(); renderLegends(); renderTheoryShell(); update();
   }
 
@@ -1040,7 +1148,7 @@
   topologyDialog.addEventListener("click", (event) => { if (event.target === topologyDialog) topologyDialog.close(); });
   advancedButton.addEventListener("click", () => { advanced = !advanced; advancedButton.setAttribute("aria-pressed", String(advanced)); document.body.classList.toggle("advanced-mode", advanced); renderRectifierPanel(); renderControls(); renderCommutationSelector(); renderBridgeModePanel(); renderLegends(); update(); });
   // Configuration initiale du circuit courant (bouton ↺, et à chaque changement de circuit).
-  function resetCurrentTopology() { states[currentTopology] = { ...activeModel().defaults }; hiddenTraces[currentTopology] = new Set(activeModel().defaultHiddenTraces || []); resetZoom(); if (currentTopology in commutationModes) commutationModes[currentTopology] = "synchronous"; if (currentTopology === "pont-h") { bridgeMode.switching = "bipolar"; bridgeMode.direction = "forward"; bridgeMode.motorView = "transient"; bridgeMode.currentControl = "pwm"; bridgeMode.filter = "lc"; } if (currentTopology === "redresseur") { rectifierMode.montage = "single"; rectifierMode.view = "steady"; rectifierMode.diodes = "ideal"; rectifierMode.frequency = 60; } if (currentTopology === "thyristor") { thyristorMode.montage = "single"; thyristorMode.frequency = 60; } if (typeof activeModel().resetInteractive === "function") activeModel().resetInteractive(); }
+  function resetCurrentTopology() { hideCursor(); states[currentTopology] = { ...activeModel().defaults }; hiddenTraces[currentTopology] = new Set(activeModel().defaultHiddenTraces || []); resetZoom(); if (currentTopology in commutationModes) commutationModes[currentTopology] = "synchronous"; if (currentTopology === "pont-h") { bridgeMode.switching = "bipolar"; bridgeMode.direction = "forward"; bridgeMode.motorView = "transient"; bridgeMode.currentControl = "pwm"; bridgeMode.filter = "lc"; } if (currentTopology === "redresseur") { rectifierMode.montage = "single"; rectifierMode.view = "steady"; rectifierMode.diodes = "ideal"; rectifierMode.frequency = 60; } if (currentTopology === "thyristor") { thyristorMode.montage = "single"; thyristorMode.frequency = 60; } if (typeof activeModel().resetInteractive === "function") activeModel().resetInteractive(); }
   document.querySelector("#reset").addEventListener("click", () => { resetCurrentTopology(); renderTopology(); });
   document.addEventListener("contextmenu", (event) => event.preventDefault());
   window.addEventListener("hashchange", () => { const requested = decodeURIComponent(window.location.hash.slice(1)); if (models[requested]) selectTopology(requested, false); else syncRoute(); });
