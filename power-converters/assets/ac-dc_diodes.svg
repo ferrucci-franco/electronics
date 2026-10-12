@@ -12,18 +12,35 @@
       <path style="font-size:3.175px;line-height:1.25;letter-spacing:0px;word-spacing:0px;stroke-width:0.264583" d="m 115.76302,172.97636 v 0.22542 h -1.49225 v -0.22542 z" id="path52" aria-label="+" />
       <text id="text54" y="165.08203" x="114.00993" style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.88056px;line-height:1.25;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583" xml:space="preserve"><tspan style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.88056px;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';stroke-width:0.264583" y="165.08203" x="114.00993" id="tspan54">v<tspan style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:65%;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';baseline-shift:sub" id="tspan53">o</tspan></tspan></text>
     </g>
-    <g id="g55" transform="rotate(90,45.508957,91.380709)">
-      <path style="fill:#000000;stroke:#000000;stroke-width:0.264583px;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1" d="m 108.31273,60.05309 1.32292,-2.645833 v 0 l 1.32292,2.645833 v 0 z" id="path54" />
-      <path style="fill:none;stroke:#000000;stroke-width:0.264583px;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1" d="m 108.31273,57.407257 h 2.64584" id="path55" />
-    </g>
     <text id="text55" y="152.38557" x="76.884872" style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.88056px;line-height:1.25;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583" xml:space="preserve"><tspan style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.88056px;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';stroke-width:0.264583" y="152.38557" x="76.884872" id="tspan55">D</tspan></text>
     <text xml:space="preserve" style="font-style:normal;font-weight:normal;font-size:10.5833px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583" x="153.0993" y="-74.225815" id="text56" transform="rotate(90)"><tspan id="tspan56" x="153.0993" y="-74.225815" style="font-size:3.175px;stroke-width:0.264583">+</tspan></text>
     <circle style="fill:#ffffff;stroke:#000000;stroke-width:0.264583px;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1" id="circle56" cx="60.432285" cy="165.05527" r="2.7278719" />
     <text id="text58" y="164.78532" x="52.570438" style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.88056px;line-height:1.25;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583" xml:space="preserve"><tspan style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:3.88056px;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';stroke-width:0.264583" y="164.78532" x="52.570438" id="tspan58">v<tspan style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:65%;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';baseline-shift:sub" id="tspan57">in</tspan></tspan></text>
     <path style="display:inline;fill:none;stroke:#000000;stroke-width:0.265001;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" d="m 59.109365,165.0552 c 0.39682,-1.73608 0.92591,-1.73608 1.32244,3.1e-4 0.39642,1.7359 0.9262,1.73577 1.3234,-3.1e-4" id="path3-2" />
   </g>
+  <g id="d-on">
+    <g id="g16" style="display:inline;fill:#00b050;fill-opacity:1;stroke:#00b050;stroke-opacity:1">
+      <path style="fill:#00b050;fill-opacity:1;stroke:#00b050;stroke-width:0.1;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1" d="m 25.532935,4.7826727 2.645833,1.32292 v 0 l -2.645833,1.32292 v 0 z" id="path15" />
+      <path style="fill:#00b050;fill-opacity:1;stroke:#00b050;stroke-width:0.264583px;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1" d="m 28.178768,4.7826727 v 2.64584" id="path16" />
+    </g>
+  </g>
+  <g id="d-off">
+    <g id="g14" style="display:inline;fill:#a6a6a6;fill-opacity:1;stroke:#a6a6a6;stroke-opacity:1">
+      <path style="fill:#a6a6a6;fill-opacity:1;stroke:#a6a6a6;stroke-width:0.1;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1" d="m 25.532935,4.7826727 2.645833,1.32292 v 0 l -2.645833,1.32292 v 0 z" id="path13" />
+      <path style="fill:#a6a6a6;fill-opacity:1;stroke:#a6a6a6;stroke-width:0.264583px;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1" d="m 28.178768,4.7826727 v 2.64584" id="path14" />
+    </g>
+  </g>
+  <g id="diodes">
+    <g id="g13">
+      <path style="fill:#000000;stroke:#000000;stroke-width:0.1;stroke-linecap:round;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1" d="m 25.532935,4.7826727 2.645833,1.32292 v 0 l -2.645833,1.32292 v 0 z" id="path6" />
+      <path style="fill:none;stroke:#000000;stroke-width:0.264583px;stroke-linecap:round;stroke-linejoin:miter;stroke-opacity:1" d="m 28.178768,4.7826727 v 2.64584" id="path7" />
+    </g>
+  </g>
   <g id="50hz" transform="translate(-51.303642,-149.40181)">
     <text id="text75" y="168.46725" x="52.046627" style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.38801px;line-height:1.25;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';letter-spacing:0px;word-spacing:0px;display:inline;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583" xml:space="preserve"><tspan style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.38801px;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';stroke-width:0.264583" y="168.46725" x="52.046627" id="tspan75">50Hz</tspan></text>
+  </g>
+  <g id="1khz">
+    <text id="text16" y="168.46725" x="52.046627" style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.38801px;line-height:1.25;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';letter-spacing:0px;word-spacing:0px;display:inline;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583" xml:space="preserve" transform="translate(-51.303642,-149.40181)"><tspan style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.38801px;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';stroke-width:0.264583" y="168.46725" x="52.046627" id="tspan16">1kHz</tspan></text>
   </g>
   <g id="60hz" transform="translate(-51.303642,-149.40181)">
     <text id="text76" y="168.46725" x="52.046627" style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.38801px;line-height:1.25;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';letter-spacing:0px;word-spacing:0px;display:inline;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.264583" xml:space="preserve"><tspan style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.38801px;font-family:'Cambria Math';-inkscape-font-specification:'Cambria Math';stroke-width:0.264583" y="168.46725" x="52.046627" id="tspan76">60Hz</tspan></text>

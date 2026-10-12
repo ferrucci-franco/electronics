@@ -238,7 +238,7 @@
     single: { src: "assets/ac-dc_diodes.svg", diodes: ["d"] },
     bridge: { src: "assets/ac-dc_4diodes.svg", diodes: ["d1", "d2", "d3", "d4"] },
   };
-  const schematicLayers = ["base", "diodes", "50hz", "60hz", "rin", "c", "lf-cable", "lf", "load-r", "load-rl"];
+  const schematicLayers = ["base", "diodes", "50hz", "60hz", "1khz", "rin", "c", "lf-cable", "lf", "load-r", "load-rl"];
   const initiallyVisible = new Set(["base", "diodes"]);
   function schematic(montage, language) {
     const aria = localizeText(i18n.schematic, language);
@@ -306,6 +306,7 @@
         const show = (layer, visible, opacity = 1) => { const image = layered.querySelector(`[data-layer="${layer}"]`); if (image) { image.style.display = visible ? "" : "none"; image.style.opacity = String(opacity); } };
         show("50hz", result.frequency === 50);
         show("60hz", result.frequency === 60);
+        show("1khz", result.frequency === generatorFrequency);
         show("rin", result.view === "transient");
         show("c", true, state.capacitance > 0 ? 1 : .14);
         show("lf", advanced, hasChoke ? 1 : .14);
