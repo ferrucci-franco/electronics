@@ -248,10 +248,12 @@ body.dark-theme .lc-info::-webkit-scrollbar-thumb { background: #55d2c6a6 paddin
 .cursor-bar { display: flex; flex: 0 0 auto; align-items: center; gap: 12px; margin: 8px clamp(12px, 1.2vw, 20px) clamp(10px, 1.3vh, 17px); padding: 6px 12px; border: 1px solid var(--scope-border); border-radius: 12px; background: var(--scope-screen); }
 .cursor-bar[hidden] { display: none; }
 .cursor-bar input[type="range"] { flex: 1 1 auto; margin: 0; }
-.cursor-bar button { display: inline-grid; flex: 0 0 auto; width: 34px; height: 34px; place-items: center; border: 1px solid #cbc5ba; border-radius: 50%; padding: 0; background: #fffdf8; color: var(--teal); cursor: pointer; font-size: .95rem; font-weight: 800; line-height: 1; }
+.cursor-bar button { display: inline-grid; flex: 0 0 auto; width: 34px; height: 34px; place-items: center; border: 1px solid #cbc5ba; border-radius: 50%; padding: 0; background: #fffdf8; color: var(--teal); cursor: pointer; }
+.cursor-bar button svg { display: block; width: 18px; height: 18px; fill: currentColor; }
+#cursor-hide svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; }
 .cursor-bar button[aria-pressed="true"] { border-color: var(--teal); background: var(--teal-soft); }
 .cursor-bar button:focus-visible { outline: 3px solid #0b93883b; outline-offset: 2px; }
-#cursor-hide { width: 28px; height: 28px; color: var(--muted); font-size: 1.1rem; }
+#cursor-hide { width: 28px; height: 28px; color: var(--muted); }
 #cursor-value { flex: 0 0 auto; min-width: 6.5em; color: var(--ink); font-family: "Cambria Math", Cambria, serif; font-size: clamp(1rem, 1.05vw, 1.15rem); font-variant-numeric: tabular-nums; text-align: right; }
 #cursor-value.inactive { color: var(--muted); }
 .workspace:has(.rect-schematic) .scope-screen:has(+ .cursor-bar:not([hidden])) { margin-bottom: 0; }

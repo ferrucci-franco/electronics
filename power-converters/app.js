@@ -886,7 +886,8 @@
     activeModel().onCursor(point, lastResult);
   }
   function labelCursorPlay() {
-    cursorPlay.textContent = cursor.playing ? "❚❚" : "▶"; cursorPlay.setAttribute("aria-pressed", String(cursor.playing));
+    // Icônes en SVG plutôt qu'en caractères (▶, ❚❚) : leurs métriques de police les décentrent dans le rond.
+    cursorPlay.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${cursor.playing ? "M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" : "M8 5v14l11-7z"}" /></svg>`; cursorPlay.setAttribute("aria-pressed", String(cursor.playing));
     const label = tr()[cursor.playing ? "cursorPause" : "cursorPlay"]; cursorPlay.setAttribute("aria-label", label); cursorPlay.title = label;
   }
   function setCursorPlaying(playing) {
