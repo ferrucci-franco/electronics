@@ -289,6 +289,15 @@
             font-style: italic;
         }
 
+        /* A live reading rather than a hint: upright and in the main colour. */
+        .readout-text {
+            font-size: 12px;
+            font-style: normal;
+            font-weight: 600;
+            font-family: 'Consolas', 'Menlo', monospace;
+            color: var(--text-primary);
+        }
+
         button {
             width: 100%;
             padding: 10px;
@@ -778,6 +787,7 @@
             <div class="form-group">
                 <label for="cycles" id="cycles-label">Número de Ciclos Mostrados</label>
                 <input type="number" id="cycles" value="5" step="0.1" min="1">
+                <div class="info-text readout-text" id="cycles-tobs">Tobs = —</div>
                 <div class="info-text" id="cycles-info">Acepta decimales (ej. 5.5): muestra fuga espectral en FFT</div>
             </div>
 
@@ -2486,6 +2496,15 @@
             });
         }
 
+        // Observation time of the record on screen, the same N/Fs the FFT box reports.
+        function updateObservationTimeLabel(sampleCount, sampleRate) {
+            const observationTime = sampleCount / sampleRate;
+            const label = document.getElementById('cycles-tobs');
+            label.textContent = Number.isFinite(observationTime) && observationTime > 0
+                ? `Tobs = ${formatWithSIPrefix(observationTime, 's')}`
+                : 'Tobs = —';
+        }
+
         // Update plots
         async function renderPlots(job = null) {
             throwIfPlotUpdateCancelled(job);
@@ -2520,6 +2539,7 @@
 
             // Generate first signal
             let {t: time, signal} = generateSignal(signalType, amplitude, offset, frequency, dutyCycle, duration, sampleRate, phase);
+            updateObservationTimeLabel(time.length, sampleRate);
 
             // Check if second signal is enabled
             if (enableSignal2) {
