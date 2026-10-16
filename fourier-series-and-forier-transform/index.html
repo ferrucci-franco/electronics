@@ -26,6 +26,9 @@
             --input-bg: #ffffff;
             --hover-bg: #eceef3;
             --shadow: rgba(0, 0, 0, 0.1);
+            --fft-info-color: #7c3aed;
+            --fft-info-bg: rgba(255, 255, 255, 0.78);
+            --fft-info-border: rgba(124, 58, 237, 0.45);
         }
 
         [data-theme="dark"] {
@@ -41,6 +44,9 @@
             --input-bg: #24242a;
             --hover-bg: #33343c;
             --shadow: rgba(0, 0, 0, 0.3);
+            --fft-info-color: #d0a2ff;
+            --fft-info-bg: rgba(31, 31, 35, 0.78);
+            --fft-info-border: rgba(208, 162, 255, 0.45);
         }
 
         body {
@@ -951,6 +957,7 @@
                 timeDisplayOriginal: 'Original',
                 timeDisplayWindowed: 'Con ventana',
                 timeDisplayBoth: 'Ambas',
+                fftPointsUnit: 'pts',
                 continuousLabel: 'Líneas Continuas',
                 updateBtn: 'Actualizar Gráficos',
                 timeSignal: 'Señal Temporal',
@@ -1069,6 +1076,7 @@
                 timeDisplayOriginal: 'Original',
                 timeDisplayWindowed: 'With window',
                 timeDisplayBoth: 'Both',
+                fftPointsUnit: 'pts',
                 continuousLabel: 'Continuous Lines',
                 updateBtn: 'Update Plots',
                 timeSignal: 'Time Signal',
@@ -1187,6 +1195,7 @@
                 timeDisplayOriginal: 'Original',
                 timeDisplayWindowed: 'Avec fenêtre',
                 timeDisplayBoth: 'Les deux',
+                fftPointsUnit: 'pts',
                 continuousLabel: 'Lignes Continues',
                 updateBtn: 'Mettre à jour',
                 timeSignal: 'Signal Temporel',
@@ -1729,6 +1738,70 @@
 
         const PHASE_ZERO_EPSILON_DEGREES = 1e-9;
         const PLOT_NUMBER_FORMAT = '.3~g';
+        // SI prefixes on the frequency axis: 5k, 10k, 15k instead of 5e+3, 1e+4.
+        const FREQUENCY_TICK_FORMAT = '.3~s';
+
+        const SI_PREFIXES = [
+            {exponent: 9, symbol: 'G'},
+            {exponent: 6, symbol: 'M'},
+            {exponent: 3, symbol: 'k'},
+            {exponent: 0, symbol: ''},
+            {exponent: -3, symbol: 'm'},
+            {exponent: -6, symbol: 'µ'},
+            {exponent: -9, symbol: 'n'}
+        ];
+
+        // Four significant digits with the trailing zeros trimmed, keeping one decimal
+        // below 100, and the decimal separator of the current language.
+        function formatMantissa(value) {
+            let text = value.toPrecision(4);
+
+            if (text.includes('.')) {
+                text = text.replace(/0+$/, '').replace(/\.$/, '');
+            }
+            if (Math.abs(value) < 100 && !text.includes('.')) {
+                text += '.0';
+            }
+
+            return currentLang === 'en' ? text : text.replace('.', ',');
+        }
+
+        // Instrument-style reading: 200 kSa/s, 12.5 Hz, 80.0 ms.
+        function formatWithSIPrefix(value, unit) {
+            if (!Number.isFinite(value) || value === 0) {
+                return `0 ${unit}`;
+            }
+
+            const magnitude = Math.abs(value);
+            let prefixIndex = SI_PREFIXES.findIndex(prefix => magnitude >= Math.pow(10, prefix.exponent));
+            if (prefixIndex === -1) {
+                prefixIndex = SI_PREFIXES.length - 1;
+            }
+
+            let scaled = value / Math.pow(10, SI_PREFIXES[prefixIndex].exponent);
+            // Rounding can push the mantissa up to 1000, as in 999.97 kHz.
+            if (prefixIndex > 0 && Math.abs(Number(scaled.toPrecision(4))) >= 1000) {
+                prefixIndex -= 1;
+                scaled = value / Math.pow(10, SI_PREFIXES[prefixIndex].exponent);
+            }
+
+            return `${formatMantissa(scaled)} ${SI_PREFIXES[prefixIndex].symbol}${unit}`;
+        }
+
+        // The purple box a Siglent scope shows next to its FFT: sampling rate, record
+        // length, bin width and observation time, as actually used by calculateFFT().
+        function buildFftInfoText(fftInfo) {
+            const t = translations[currentLang];
+            const binWidth = fftInfo.sampleRate / fftInfo.sampleCount;
+            const observationTime = fftInfo.sampleCount / fftInfo.sampleRate;
+
+            return [
+                `Fs = ${formatWithSIPrefix(fftInfo.sampleRate, 'Sa/s')}`,
+                `N = ${fftInfo.sampleCount} ${t.fftPointsUnit}`,
+                `Δf = ${formatWithSIPrefix(binWidth, 'Hz')}`,
+                `Tobs = ${formatWithSIPrefix(observationTime, 's')}`
+            ].join('<br>');
+        }
 
         function snapPhaseToZero(phaseDegrees) {
             return Math.abs(phaseDegrees) < PHASE_ZERO_EPSILON_DEGREES ? 0 : phaseDegrees;
@@ -2332,6 +2405,8 @@
             // The raw signal is kept untouched so it can be plotted like an oscilloscope
             // trace; only this copy is windowed and fed to the FFT.
             let windowedSignal = null;
+            // Record length and sampling rate exactly as handed to calculateFFT().
+            let fftInfo = null;
 
             if (isFFT) {
                 // Apply window to the analysis copy only
@@ -2340,6 +2415,7 @@
 
                 // Calculate FFT, compensating the window's coherent gain
                 const coherentGain = windowCoherentGain(signal.length, windowType);
+                fftInfo = {sampleRate, sampleCount: windowedSignal.length};
                 const fftResult = await calculateFFT(windowedSignal, sampleRate, maxFreq, job, coherentGain);
                 freqs = fftResult.freqs;
                 magnitudes = fftResult.magnitudes;
@@ -2378,6 +2454,26 @@
             const magnitudeColor = '#2f80ed';
             const phaseColor = '#f59e0b';
             const windowedColor = '#2f80ed';
+            const fftInfoColor = styles.getPropertyValue('--fft-info-color').trim();
+            const fftInfoBg = styles.getPropertyValue('--fft-info-bg').trim();
+            const fftInfoBorder = styles.getPropertyValue('--fft-info-border').trim();
+            // FFT only: the purple info box of an oscilloscope, top-right of the spectrum.
+            const spectrumAnnotations = fftInfo ? [{
+                xref: 'paper',
+                yref: 'paper',
+                x: 0.99,
+                y: 0.98,
+                xanchor: 'right',
+                yanchor: 'top',
+                text: buildFftInfoText(fftInfo),
+                showarrow: false,
+                align: 'left',
+                font: {family: 'monospace', size: 11, color: fftInfoColor},
+                bgcolor: fftInfoBg,
+                bordercolor: fftInfoBorder,
+                borderwidth: 1,
+                borderpad: 6
+            }] : [];
             const magnitudeHoverUnit = ` ${magnitudeUnit}`;
             const frequencyHoverTemplate = `%{x:${PLOT_NUMBER_FORMAT}} Hz<br>%{y:${PLOT_NUMBER_FORMAT}}${magnitudeHoverUnit}<extra>%{fullData.name}</extra>`;
             const timeHoverTemplate = `%{x:${PLOT_NUMBER_FORMAT}} s<br>%{y:${PLOT_NUMBER_FORMAT}} V<extra>%{fullData.name}</extra>`;
@@ -2486,8 +2582,9 @@
                 const layout2 = {
                     ...layout,
                     title: t.magnitude,
-                    xaxis: {...layout.xaxis, title: t.frequency},
-                    yaxis: {...layout.yaxis, title: yAxisTitle}
+                    xaxis: {...layout.xaxis, title: t.frequency, tickformat: FREQUENCY_TICK_FORMAT},
+                    yaxis: {...layout.yaxis, title: yAxisTitle},
+                    annotations: spectrumAnnotations
                 };
 
                 plotPromises.push(Plotly.newPlot('plot2', [trace2, ...stemTraces], layout2, {responsive: true}));
@@ -2529,8 +2626,9 @@
                 const layout2 = {
                     ...layout,
                     title: t.magnitude,
-                    xaxis: {...layout.xaxis, title: t.frequency},
-                    yaxis: {...layout.yaxis, title: yAxisTitle}
+                    xaxis: {...layout.xaxis, title: t.frequency, tickformat: FREQUENCY_TICK_FORMAT},
+                    yaxis: {...layout.yaxis, title: yAxisTitle},
+                    annotations: spectrumAnnotations
                 };
 
                 plotPromises.push(Plotly.newPlot('plot2', [trace2, ...stemTraces2], layout2, {responsive: true}));
@@ -2568,7 +2666,7 @@
                 const layout3 = {
                     ...layout,
                     title: phaseTitle,
-                    xaxis: {...layout.xaxis, title: t.frequency},
+                    xaxis: {...layout.xaxis, title: t.frequency, tickformat: FREQUENCY_TICK_FORMAT},
                     yaxis: {...layout.yaxis, title: t.phaseUnit}
                 };
 
