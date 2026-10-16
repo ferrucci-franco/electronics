@@ -2254,7 +2254,12 @@
         let plotUpdateFrameId = null;
         let plotUpdateTimeoutId = null;
         let lastRenderedControlState = null;
+        let busyDisplayTimeoutId = null;
         const BUSY_WORK_THRESHOLD = 100000;
+        // A calculation of a few tens of milliseconds should not flash the modal, and
+        // above all it must not appear between mousedown and mouseup: the overlay would
+        // take the mouseup and the click on the control would never happen.
+        const BUSY_DISPLAY_DELAY_MS = 250;
 
         function captureFocusState() {
             const element = document.activeElement;
@@ -2296,6 +2301,24 @@
         function setBusyState(isBusy) {
             document.getElementById('busy-backdrop').hidden = !isBusy;
             document.body.classList.toggle('is-busy', isBusy);
+        }
+
+        function showBusyStateAfterDelay(job) {
+            if (busyDisplayTimeoutId !== null) return;
+
+            busyDisplayTimeoutId = setTimeout(() => {
+                busyDisplayTimeoutId = null;
+                job.busyDisplayed = true;
+                setBusyState(true);
+            }, BUSY_DISPLAY_DELAY_MS);
+        }
+
+        function hideBusyState() {
+            if (busyDisplayTimeoutId !== null) {
+                clearTimeout(busyDisplayTimeoutId);
+                busyDisplayTimeoutId = null;
+            }
+            setBusyState(false);
         }
 
         function captureControlState() {
@@ -2349,7 +2372,7 @@
             }
 
             restoreControlState(lastRenderedControlState);
-            setBusyState(false);
+            hideBusyState();
         }
 
         function shouldShowBusyForCurrentUpdate() {
@@ -2401,12 +2424,13 @@
                 cancelled: false,
                 controlState: captureControlState(),
                 focusState,
-                busyShown
+                busyShown,
+                busyDisplayed: false
             };
             activePlotJob = job;
 
             if (busyShown) {
-                setBusyState(true);
+                showBusyStateAfterDelay(job);
             }
 
             plotUpdateFrameId = requestAnimationFrame(() => {
@@ -2419,8 +2443,11 @@
                     const finishPlotUpdate = (error = null) => {
                         plotUpdateRunning = false;
                         if (job.busyShown) {
-                            setBusyState(false);
-                            restoreFocusState(job.focusState);
+                            hideBusyState();
+                            // Only worth restoring when the overlay really took the focus.
+                            if (job.busyDisplayed) {
+                                restoreFocusState(job.focusState);
+                            }
                         }
 
                         if (error && error.message === PLOT_UPDATE_CANCELLED) {
