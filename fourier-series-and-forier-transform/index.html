@@ -57,6 +57,21 @@
             height: 100vh;
             overflow: hidden;
             transition: background-color 0.3s, color 0.3s;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        /* The fields the student types into stay selectable and editable. */
+        input,
+        select,
+        textarea {
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+            user-select: text;
         }
 
         .sidebar {
@@ -1263,6 +1278,12 @@
 
         let currentLang = 'en';
         let currentTheme = 'light';
+        // Evening lab sessions: the app starts in dark theme at night and switches on
+        // its own while it stays open, until the student picks a theme by hand.
+        const DARK_THEME_START_HOUR = 18;
+        const DARK_THEME_END_HOUR = 7;
+        const THEME_CLOCK_INTERVAL_MS = 60000;
+        let themeFollowsClock = true;
         let lastFocusedElement = null;
 
         function updateThemeToggle() {
@@ -1481,11 +1502,30 @@
         }
 
         function toggleTheme() {
+            // A manual choice wins over the clock for the rest of the session.
+            themeFollowsClock = false;
             setTheme(currentTheme === 'light' ? 'dark' : 'light');
+        }
+
+        function themeForCurrentTime(date = new Date()) {
+            const hour = date.getHours();
+            return (hour >= DARK_THEME_START_HOUR || hour < DARK_THEME_END_HOUR) ? 'dark' : 'light';
+        }
+
+        function applyClockTheme() {
+            if (!themeFollowsClock) return;
+
+            const theme = themeForCurrentTime();
+            if (theme !== currentTheme) {
+                setTheme(theme);
+            }
         }
 
         // Theme handling
         document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+
+        // No context menu on right click or long press.
+        document.addEventListener('contextmenu', event => event.preventDefault());
 
         // Help handling
         document.getElementById('help-btn').addEventListener('click', openHelpModal);
@@ -2676,6 +2716,10 @@
 
             return Promise.all(plotPromises);
         }
+
+        // Theme from the clock, before the first plot so the colours are right away
+        applyClockTheme();
+        setInterval(applyClockTheme, THEME_CLOCK_INTERVAL_MS);
 
         // Initial plot
         updatePlots();
