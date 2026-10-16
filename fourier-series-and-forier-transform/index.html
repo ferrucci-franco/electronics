@@ -555,7 +555,10 @@
         }
 
         body.is-busy {
-            cursor: wait;
+            /* A plain arrow: an hourglass makes a calculation of a few hundred
+               milliseconds look like the app has frozen. The spinner already says
+               that something is running. */
+            cursor: default;
         }
 
         .busy-backdrop {
@@ -580,7 +583,6 @@
             border-radius: 8px;
             background-color: var(--bg-secondary);
             color: var(--text-primary);
-            box-shadow: 0 16px 40px var(--shadow);
             display: flex;
             flex-direction: column;
             align-items: center;
