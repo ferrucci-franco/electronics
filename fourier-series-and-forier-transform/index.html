@@ -973,6 +973,9 @@
                 timeDisplayWindowed: 'Con ventana',
                 timeDisplayBoth: 'Ambas',
                 fftPointsUnit: 'pts',
+                fitXTitle: 'Ajustar eje X',
+                fitYTitle: 'Ajustar eje Y',
+                fitAllTitle: 'Ajustar todo',
                 continuousLabel: 'Líneas Continuas',
                 updateBtn: 'Actualizar Gráficos',
                 timeSignal: 'Señal Temporal',
@@ -1092,6 +1095,9 @@
                 timeDisplayWindowed: 'With window',
                 timeDisplayBoth: 'Both',
                 fftPointsUnit: 'pts',
+                fitXTitle: 'Fit X axis',
+                fitYTitle: 'Fit Y axis',
+                fitAllTitle: 'Fit all',
                 continuousLabel: 'Continuous Lines',
                 updateBtn: 'Update Plots',
                 timeSignal: 'Time Signal',
@@ -1211,6 +1217,9 @@
                 timeDisplayWindowed: 'Avec fenêtre',
                 timeDisplayBoth: 'Les deux',
                 fftPointsUnit: 'pts',
+                fitXTitle: 'Ajuster l\'axe X',
+                fitYTitle: 'Ajuster l\'axe Y',
+                fitAllTitle: 'Tout ajuster',
                 continuousLabel: 'Lignes Continues',
                 updateBtn: 'Mettre à jour',
                 timeSignal: 'Signal Temporel',
@@ -2101,6 +2110,79 @@
             });
         }
 
+        // Modebar icons, drawn in a 1000x1000 box with the y axis pointing down:
+        // two bars and a double arrow, one for each direction.
+        const FIT_X_ICON = {
+            width: 1000,
+            height: 1000,
+            transform: 'matrix(1 0 0 1 0 0)',
+            path: 'M60,250h90v500H60Z M850,250h90v500h-90Z ' +
+                  'M210,500L380,370v85h240v-85L790,500L620,630v-85H380v85Z'
+        };
+
+        const FIT_Y_ICON = {
+            width: 1000,
+            height: 1000,
+            transform: 'matrix(1 0 0 1 0 0)',
+            path: 'M250,60h500v90H250Z M250,850h500v90H250Z ' +
+                  'M500,210L630,380h-85v240h85L500,790L370,620h85V380h-85Z'
+        };
+
+        // Fit X, fit Y and fit all, next to the zoom and pan tools.
+        function buildPlotConfig() {
+            const t = translations[currentLang];
+            const fitButton = (name, title, icon, update) => ({
+                name,
+                title,
+                icon,
+                click: gd => Plotly.relayout(gd, update)
+            });
+
+            return {
+                responsive: true,
+                displaylogo: false,
+                modeBarButtons: [
+                    [
+                        fitButton('fitX', t.fitXTitle, FIT_X_ICON, {'xaxis.autorange': true}),
+                        fitButton('fitY', t.fitYTitle, FIT_Y_ICON, {'yaxis.autorange': true}),
+                        fitButton('fitAll', t.fitAllTitle, Plotly.Icons.autoscale, {
+                            'xaxis.autorange': true,
+                            'yaxis.autorange': true
+                        })
+                    ],
+                    ['zoom2d', 'pan2d'],
+                    ['toImage']
+                ]
+            };
+        }
+
+        // Axis ranges the student zoomed into. Re-plotting keeps them, so the effect of
+        // changing the window or the observation time can be watched without the view
+        // jumping back. The signature keeps a range from being restored onto an axis
+        // that now shows something else, such as dB after V or a logarithmic sweep.
+        const plotAxisSignatures = {};
+
+        function preserveAxisView(layout, plotId, signatures) {
+            const gd = document.getElementById(plotId);
+            const previous = plotAxisSignatures[plotId] || {};
+            const preserved = {...layout};
+
+            ['xaxis', 'yaxis'].forEach(axis => {
+                const current = gd && gd.layout ? gd.layout[axis] : null;
+                const isZoomed = current &&
+                    current.autorange === false &&
+                    Array.isArray(current.range) &&
+                    previous[axis] === signatures[axis];
+
+                if (isZoomed) {
+                    preserved[axis] = {...preserved[axis], range: current.range.slice(), autorange: false};
+                }
+            });
+
+            plotAxisSignatures[plotId] = signatures;
+            return preserved;
+        }
+
         function setPlotMode(showPhase) {
             document.getElementById('plots-grid').classList.toggle('phase-layout', showPhase);
             document.getElementById('phase-plot-container').setAttribute('aria-hidden', String(!showPhase));
@@ -2518,6 +2600,9 @@
             const frequencyHoverTemplate = `%{x:${PLOT_NUMBER_FORMAT}} Hz<br>%{y:${PLOT_NUMBER_FORMAT}}${magnitudeHoverUnit}<extra>%{fullData.name}</extra>`;
             const timeHoverTemplate = `%{x:${PLOT_NUMBER_FORMAT}} s<br>%{y:${PLOT_NUMBER_FORMAT}} V<extra>%{fullData.name}</extra>`;
             const phaseHoverTemplate = `%{x:${PLOT_NUMBER_FORMAT}} Hz<br>%{y:${PLOT_NUMBER_FORMAT}}°<extra>${phaseTitle}</extra>`;
+            const plotConfig = buildPlotConfig();
+            // What each axis currently shows; a zoom is only restored while it stays the same.
+            const frequencyAxisView = `frequency:${xScale}`;
             const plotPromises = [];
 
             const layout = {
@@ -2567,7 +2652,7 @@
                 });
             }
 
-            const layout1 = {
+            const layout1 = preserveAxisView({
                 ...layout,
                 title: t.timeSignal,
                 xaxis: {...layout.xaxis, title: t.time, type: 'linear'},
@@ -2582,11 +2667,11 @@
                     font: {size: 11}
                 },
                 margin: showBothTimeTraces ? {...layout.margin, b: 95} : layout.margin
-            };
+            }, 'plot1', {xaxis: 'time', yaxis: 'volt'});
 
             if (!showPhase) {
                 // Plot 1: Time-domain signal
-                plotPromises.push(Plotly.newPlot('plot1', timeTraces, layout1, {responsive: true}));
+                plotPromises.push(Plotly.newPlot('plot1', timeTraces, layout1, plotConfig));
 
                 // Plot 2: Magnitude spectrum (stems)
                 const trace2 = {
@@ -2619,19 +2704,19 @@
                     visible: magData[i] !== null // Ocultar stem si el valor es null
                 }));
 
-                const layout2 = {
+                const layout2 = preserveAxisView({
                     ...layout,
                     title: t.magnitude,
                     xaxis: {...layout.xaxis, title: t.frequency, tickformat: FREQUENCY_TICK_FORMAT},
                     yaxis: {...layout.yaxis, title: yAxisTitle},
                     annotations: spectrumAnnotations
-                };
+                }, 'plot2', {xaxis: frequencyAxisView, yaxis: `magnitude:${yScale}`});
 
-                plotPromises.push(Plotly.newPlot('plot2', [trace2, ...stemTraces], layout2, {responsive: true}));
+                plotPromises.push(Plotly.newPlot('plot2', [trace2, ...stemTraces], layout2, plotConfig));
 
             } else {
                 // Plot 1: Time-domain signal in the left column
-                plotPromises.push(Plotly.newPlot('plot1', timeTraces, layout1, {responsive: true}));
+                plotPromises.push(Plotly.newPlot('plot1', timeTraces, layout1, plotConfig));
 
                 // Plot 2: Magnitude spectrum in the upper-right row
                 const trace2 = {
@@ -2663,15 +2748,15 @@
                     visible: magData[i] !== null // Ocultar stem si el valor es null
                 }));
 
-                const layout2 = {
+                const layout2 = preserveAxisView({
                     ...layout,
                     title: t.magnitude,
                     xaxis: {...layout.xaxis, title: t.frequency, tickformat: FREQUENCY_TICK_FORMAT},
                     yaxis: {...layout.yaxis, title: yAxisTitle},
                     annotations: spectrumAnnotations
-                };
+                }, 'plot2', {xaxis: frequencyAxisView, yaxis: `magnitude:${yScale}`});
 
-                plotPromises.push(Plotly.newPlot('plot2', [trace2, ...stemTraces2], layout2, {responsive: true}));
+                plotPromises.push(Plotly.newPlot('plot2', [trace2, ...stemTraces2], layout2, plotConfig));
 
                 // Plot 3: Phase spectrum in the lower-right row
                 const trace3 = {
@@ -2703,14 +2788,14 @@
                     hoverinfo: 'skip'
                 }));
 
-                const layout3 = {
+                const layout3 = preserveAxisView({
                     ...layout,
                     title: phaseTitle,
                     xaxis: {...layout.xaxis, title: t.frequency, tickformat: FREQUENCY_TICK_FORMAT},
                     yaxis: {...layout.yaxis, title: t.phaseUnit}
-                };
+                }, 'plot3', {xaxis: frequencyAxisView, yaxis: 'phase'});
 
-                plotPromises.push(Plotly.newPlot('plot3', [trace3, ...stemTraces3], layout3, {responsive: true}));
+                plotPromises.push(Plotly.newPlot('plot3', [trace3, ...stemTraces3], layout3, plotConfig));
                 Promise.all(plotPromises).then(linkSpectrumAxes);
             }
 
