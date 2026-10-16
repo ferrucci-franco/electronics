@@ -754,7 +754,8 @@
             
             <div class="form-group">
                 <label for="cycles" id="cycles-label">Número de Ciclos Mostrados</label>
-                <input type="number" id="cycles" value="5" step="1" min="1">
+                <input type="number" id="cycles" value="5" step="0.1" min="1">
+                <div class="info-text" id="cycles-info">Acepta decimales (ej. 5.5): muestra fuga espectral en FFT</div>
             </div>
 
             <div class="form-group">
@@ -795,6 +796,11 @@
             </div>
 
             <div class="checkbox-group">
+                <input type="checkbox" id="rms-mode">
+                <label for="rms-mode" id="rms-label">Valores eficaces (Vrms)</label>
+            </div>
+
+            <div class="checkbox-group">
                 <input type="checkbox" id="show-advanced">
                 <label for="show-advanced" id="advanced-label">Modo Avanzado</label>
             </div>
@@ -825,6 +831,15 @@
                     <option value="hanning" id="window-hanning">Hanning</option>
                     <option value="blackman" id="window-blackman">Blackman</option>
                     <option value="flattop" id="window-flattop">Flat Top</option>
+                </select>
+            </div>
+
+            <div class="form-group" id="time-display-group">
+                <label for="time-display" id="time-display-label">Señal mostrada</label>
+                <select id="time-display">
+                    <option value="original" id="time-display-original">Original</option>
+                    <option value="windowed" id="time-display-windowed">Con ventana</option>
+                    <option value="both" id="time-display-both">Ambas</option>
                 </select>
             </div>
 
@@ -908,6 +923,7 @@
                 dutyInfo: 'Solo para onda cuadrada',
                 samplingTitle: 'Opciones de Muestra',
                 cyclesLabel: 'Número de Ciclos Mostrados',
+                cyclesInfo: 'Acepta decimales (ej. 5.5): muestra fuga espectral en FFT',
                 maxfreqLabel: 'Frecuencia Máxima (Hz)',
                 maxfreqInfo: 'Default: 20 × frecuencia señal',
                 scaleTitle: 'Escalas',
@@ -919,6 +935,7 @@
                 yscaleDB: 'dB',
                 displayTitle: 'Opciones de Visualización',
                 phaseLabel: 'Mostrar Fase',
+                rmsLabel: 'Valores eficaces (Vrms)',
                 advancedLabel: 'Modo Avanzado',
                 advancedTitle: 'Modo Avanzado',
                 analysisTypeLabel: 'Tipo de Análisis',
@@ -930,6 +947,10 @@
                 windowHanning: 'Hanning',
                 windowBlackman: 'Blackman',
                 windowFlattop: 'Flat Top',
+                timeDisplayLabel: 'Señal mostrada',
+                timeDisplayOriginal: 'Original',
+                timeDisplayWindowed: 'Con ventana',
+                timeDisplayBoth: 'Ambas',
                 continuousLabel: 'Líneas Continuas',
                 updateBtn: 'Actualizar Gráficos',
                 timeSignal: 'Señal Temporal',
@@ -1020,6 +1041,7 @@
                 dutyInfo: 'For square wave only',
                 samplingTitle: 'Sampling Options',
                 cyclesLabel: 'Number of Cycles Displayed',
+                cyclesInfo: 'Decimals allowed (e.g. 5.5): shows spectral leakage in FFT',
                 maxfreqLabel: 'Maximum Frequency (Hz)',
                 maxfreqInfo: 'Default: 20 × signal frequency',
                 scaleTitle: 'Scales',
@@ -1031,6 +1053,7 @@
                 yscaleDB: 'dB',
                 displayTitle: 'Display Options',
                 phaseLabel: 'Show Phase',
+                rmsLabel: 'RMS values (Vrms)',
                 advancedLabel: 'Advanced Mode',
                 advancedTitle: 'Advanced Mode',
                 analysisTypeLabel: 'Analysis Type',
@@ -1042,6 +1065,10 @@
                 windowHanning: 'Hanning',
                 windowBlackman: 'Blackman',
                 windowFlattop: 'Flat Top',
+                timeDisplayLabel: 'Displayed signal',
+                timeDisplayOriginal: 'Original',
+                timeDisplayWindowed: 'With window',
+                timeDisplayBoth: 'Both',
                 continuousLabel: 'Continuous Lines',
                 updateBtn: 'Update Plots',
                 timeSignal: 'Time Signal',
@@ -1132,6 +1159,7 @@
                 dutyInfo: 'Pour onde carrée uniquement',
                 samplingTitle: 'Options d\'Échantillonnage',
                 cyclesLabel: 'Nombre de Cycles Affichés',
+                cyclesInfo: 'Décimales acceptées (ex. 5.5) : montre la fuite spectrale en FFT',
                 maxfreqLabel: 'Fréquence Maximale (Hz)',
                 maxfreqInfo: 'Défaut: 20 × fréquence signal',
                 scaleTitle: 'Échelles',
@@ -1143,6 +1171,7 @@
                 yscaleDB: 'dB',
                 displayTitle: 'Options d\'Affichage',
                 phaseLabel: 'Afficher la Phase',
+                rmsLabel: 'Valeurs efficaces (Vrms)',
                 advancedLabel: 'Mode Avancé',
                 advancedTitle: 'Mode Avancé',
                 analysisTypeLabel: 'Type d\'Analyse',
@@ -1154,6 +1183,10 @@
                 windowHanning: 'Hanning',
                 windowBlackman: 'Blackman',
                 windowFlattop: 'Flat Top',
+                timeDisplayLabel: 'Signal affiché',
+                timeDisplayOriginal: 'Original',
+                timeDisplayWindowed: 'Avec fenêtre',
+                timeDisplayBoth: 'Les deux',
                 continuousLabel: 'Lignes Continues',
                 updateBtn: 'Mettre à jour',
                 timeSignal: 'Signal Temporel',
@@ -1382,6 +1415,7 @@
             document.getElementById('duty-info').textContent = t.dutyInfo;
             document.getElementById('sampling-title').textContent = t.samplingTitle;
             document.getElementById('cycles-label').textContent = t.cyclesLabel;
+            document.getElementById('cycles-info').textContent = t.cyclesInfo;
             document.getElementById('maxfreq-label').textContent = t.maxfreqLabel;
             document.getElementById('maxfreq-info').textContent = t.maxfreqInfo;
             document.getElementById('scale-title').textContent = t.scaleTitle;
@@ -1393,6 +1427,7 @@
             document.getElementById('yscale-db').textContent = t.yscaleDB;
             document.getElementById('display-title').textContent = t.displayTitle;
             document.getElementById('phase-label').textContent = t.phaseLabel;
+            document.getElementById('rms-label').textContent = t.rmsLabel;
             document.getElementById('advanced-label').textContent = t.advancedLabel;
             document.getElementById('advanced-title').textContent = t.advancedTitle;
             document.getElementById('analysis-type-label').textContent = t.analysisTypeLabel;
@@ -1404,6 +1439,10 @@
             document.getElementById('window-hanning').textContent = t.windowHanning;
             document.getElementById('window-blackman').textContent = t.windowBlackman;
             document.getElementById('window-flattop').textContent = t.windowFlattop;
+            document.getElementById('time-display-label').textContent = t.timeDisplayLabel;
+            document.getElementById('time-display-original').textContent = t.timeDisplayOriginal;
+            document.getElementById('time-display-windowed').textContent = t.timeDisplayWindowed;
+            document.getElementById('time-display-both').textContent = t.timeDisplayBoth;
             document.getElementById('continuous-label').textContent = t.continuousLabel;
             document.getElementById('update-btn').textContent = t.updateBtn;
             updateThemeToggle();
@@ -1597,6 +1636,15 @@
             updatePlots();
         });
 
+        // FFT-only controls: window type and displayed time signal
+        function updateAnalysisControlsVisibility() {
+            const isFFT = document.getElementById('show-advanced').checked &&
+                document.getElementById('analysis-type').value === 'fft';
+            document.getElementById('window-group').style.display = isFFT ? 'block' : 'none';
+            document.getElementById('time-display-group').style.display = isFFT ? 'block' : 'none';
+            document.getElementById('continuous-mode').disabled = !isFFT;
+        }
+
         // Advanced mode handling
         document.getElementById('show-advanced').addEventListener('change', function() {
             const advancedSection = document.getElementById('advanced-section');
@@ -1605,32 +1653,29 @@
             // Si se desactiva el modo avanzado, volver a Serie de Fourier
             if (!this.checked) {
                 document.getElementById('analysis-type').value = 'fourier';
-                document.getElementById('window-group').style.display = 'none';
                 document.getElementById('continuous-mode').checked = false;
-                document.getElementById('continuous-mode').disabled = true;
+                updateAnalysisControlsVisibility();
                 updatePlots();
+            } else {
+                updateAnalysisControlsVisibility();
             }
         });
 
         // Analysis type handling
         document.getElementById('analysis-type').addEventListener('change', function() {
-            const windowGroup = document.getElementById('window-group');
-            const continuousModeCheckbox = document.getElementById('continuous-mode');
             const isFFT = this.value === 'fft';
-            windowGroup.style.display = isFFT ? 'block' : 'none';
-            
+
             // Habilitar/deshabilitar líneas continuas según el tipo de análisis
-            continuousModeCheckbox.disabled = !isFFT;
             if (!isFFT) {
-                continuousModeCheckbox.checked = false;
+                document.getElementById('continuous-mode').checked = false;
             }
+            updateAnalysisControlsVisibility();
             updatePlots();
         });
 
         // Window functions
-        function applyWindow(signal, windowType) {
-            const N = signal.length;
-            const windowed = [];
+        function windowFunction(N, windowType) {
+            const values = [];
 
             for (let n = 0; n < N; n++) {
                 let w = 1;
@@ -1662,10 +1707,24 @@
                         break;
                 }
                 
-                windowed.push(signal[n] * w);
+                values.push(w);
             }
 
-            return windowed;
+            return values;
+        }
+
+        function applyWindow(signal, windowType) {
+            const values = windowFunction(signal.length, windowType);
+            return signal.map((sample, n) => sample * values[n]);
+        }
+
+        // Coherent gain = sum(w[n])/N. The 2/N normalisation of the FFT is only correct
+        // for the rectangular window (gain 1); dividing by this factor makes a sine of
+        // amplitude A read A with every window (Hanning 0.5, Flat Top 0.216, ...).
+        function windowCoherentGain(N, windowType) {
+            const values = windowFunction(N, windowType);
+            const sum = values.reduce((total, w) => total + w, 0);
+            return sum > 0 ? sum / N : 1;
         }
 
         const PHASE_ZERO_EPSILON_DEGREES = 1e-9;
@@ -1699,7 +1758,7 @@
         }
 
         // Calculate FFT (using DFT algorithm optimized for display)
-        async function calculateFFT(signal, sampleRate, maxFreq, job = null) {
+        async function calculateFFT(signal, sampleRate, maxFreq, job = null, coherentGain = 1) {
             const N = signal.length;
             const freqs = [];
             const magnitudes = [];
@@ -1728,9 +1787,11 @@
                     }
                 }
 
-                // Normalize for oscilloscope-like display (RMS for sine waves)
-                // Multiply by 2/N for amplitude, then divide by sqrt(2) for RMS
-                const normFactor = 2 / N;
+                // Normalize for oscilloscope-like display: 2/N gives the peak amplitude
+                // of each sinusoid, and dividing by the window's coherent gain undoes the
+                // amplitude loss the window introduces.
+                const gain = coherentGain > 0 ? coherentGain : 1;
+                const normFactor = 2 / (N * gain);
                 real *= normFactor;
                 imag *= normFactor;
 
@@ -1843,8 +1904,11 @@
                 let imag = 0;
 
                 // Integrate over one period for better accuracy
-                const numPeriods = Math.floor(N / samplesPerPeriod);
-                const samplesToUse = numPeriods * samplesPerPeriod;
+                // With a non-integer number of cycles the extra samples are dropped, so the
+                // series keeps integrating over whole periods. Below one period, use what
+                // there is instead of dividing by zero.
+                const numPeriods = Math.max(1, Math.floor(N / samplesPerPeriod));
+                const samplesToUse = Math.min(N, numPeriods * samplesPerPeriod);
 
                 // DFT calculation for specific harmonic
                 for (let n = 0; n < samplesToUse; n++) {
@@ -2068,9 +2132,7 @@
             noiseControls.style.display = document.getElementById('enable-noise').checked ? 'block' : 'none';
             const advancedSection = document.getElementById('advanced-section');
             advancedSection.style.display = document.getElementById('show-advanced').checked ? 'block' : 'none';
-            const isFFT = document.getElementById('analysis-type').value === 'fft';
-            document.getElementById('window-group').style.display = isFFT ? 'block' : 'none';
-            document.getElementById('continuous-mode').disabled = !isFFT;
+            updateAnalysisControlsVisibility();
         }
 
         function cancelPlotUpdate() {
@@ -2215,6 +2277,7 @@
             const xScale = document.getElementById('x-scale').value;
             const yScale = document.getElementById('y-scale').value;
             const showPhase = document.getElementById('show-phase').checked;
+            const rmsMode = document.getElementById('rms-mode').checked;
             setPlotMode(showPhase);
             clearPlotSync(['plot1', 'plot2', 'plot3']);
 
@@ -2266,14 +2329,18 @@
 
             let freqs, magnitudes, phases;
             const isFFT = analysisType === 'fft';
+            // The raw signal is kept untouched so it can be plotted like an oscilloscope
+            // trace; only this copy is windowed and fed to the FFT.
+            let windowedSignal = null;
 
             if (isFFT) {
-                // Apply window
-                signal = applyWindow(signal, windowType);
+                // Apply window to the analysis copy only
+                windowedSignal = applyWindow(signal, windowType);
                 throwIfPlotUpdateCancelled(job);
-                
-                // Calculate FFT
-                const fftResult = await calculateFFT(signal, sampleRate, maxFreq, job);
+
+                // Calculate FFT, compensating the window's coherent gain
+                const coherentGain = windowCoherentGain(signal.length, windowType);
+                const fftResult = await calculateFFT(windowedSignal, sampleRate, maxFreq, job, coherentGain);
                 freqs = fftResult.freqs;
                 magnitudes = fftResult.magnitudes;
                 phases = fftResult.phases;
@@ -2289,9 +2356,19 @@
             const phaseData = isFFT ? unwrapPhase(phases) : phases;
             const phaseTitle = isFFT ? t.phaseUnwrapped : t.phase;
 
+            // RMS display: every component with k >= 1 is a sinusoid, so V_rms = V_peak / sqrt(2).
+            // The DC bar (f = 0) is left alone: the RMS value of a constant is the constant itself.
+            if (rmsMode) {
+                magnitudes = magnitudes.map((magnitude, i) => (freqs[i] === 0 ? magnitude : magnitude / Math.SQRT2));
+            }
+
             // Prepare magnitude data
             const magData = yScale === 'db' ? toDecibels(magnitudes, continuousMode) : magnitudes;
-            const yAxisTitle = yScale === 'db' ? t.amplitude + ' (dB)' : t.amplitude + ' (V)';
+            // In dB the scale follows the linear unit: 20*log10(V_rms) or 20*log10(V_peak).
+            const magnitudeUnit = yScale === 'db'
+                ? (rmsMode ? 'dBVrms' : 'dBVpk')
+                : (rmsMode ? 'Vrms' : 'V');
+            const yAxisTitle = `${t.amplitude} (${magnitudeUnit})`;
 
             const styles = getComputedStyle(document.body);
             const plotBg = styles.getPropertyValue('--bg-secondary').trim();
@@ -2300,9 +2377,10 @@
             const timeColor = styles.getPropertyValue('--accent-color').trim();
             const magnitudeColor = '#2f80ed';
             const phaseColor = '#f59e0b';
-            const magnitudeHoverUnit = yScale === 'db' ? ' dB' : ' V';
+            const windowedColor = '#2f80ed';
+            const magnitudeHoverUnit = ` ${magnitudeUnit}`;
             const frequencyHoverTemplate = `%{x:${PLOT_NUMBER_FORMAT}} Hz<br>%{y:${PLOT_NUMBER_FORMAT}}${magnitudeHoverUnit}<extra>%{fullData.name}</extra>`;
-            const timeHoverTemplate = `%{x:${PLOT_NUMBER_FORMAT}} s<br>%{y:${PLOT_NUMBER_FORMAT}} V<extra>${t.timeSignal}</extra>`;
+            const timeHoverTemplate = `%{x:${PLOT_NUMBER_FORMAT}} s<br>%{y:${PLOT_NUMBER_FORMAT}} V<extra>%{fullData.name}</extra>`;
             const phaseHoverTemplate = `%{x:${PLOT_NUMBER_FORMAT}} Hz<br>%{y:${PLOT_NUMBER_FORMAT}}°<extra>${phaseTitle}</extra>`;
             const plotPromises = [];
 
@@ -2323,26 +2401,56 @@
                 margin: {l: 70, r: 30, t: 50, b: 60}
             };
 
-            if (!showPhase) {
-                // Plot 1: Time-domain signal
-                const trace1 = {
+            // Displayed time signal: an oscilloscope shows the raw signal, so that is the
+            // default; the windowed copy is what the FFT actually sees.
+            const timeDisplay = isFFT ? document.getElementById('time-display').value : 'original';
+            const showBothTimeTraces = isFFT && timeDisplay === 'both';
+            const timeTraces = [];
+
+            if (!isFFT || timeDisplay !== 'windowed') {
+                timeTraces.push({
                     x: time,
                     y: signal,
                     type: 'scatter',
                     mode: 'lines',
-                    name: t.timeSignal,
+                    name: showBothTimeTraces ? t.timeDisplayOriginal : t.timeSignal,
                     hovertemplate: timeHoverTemplate,
                     line: {color: timeColor, width: 2}
-                };
+                });
+            }
 
-                const layout1 = {
-                    ...layout,
-                    title: t.timeSignal,
-                    xaxis: {...layout.xaxis, title: t.time, type: 'linear'},
-                    yaxis: {...layout.yaxis, title: t.amplitude + ' (V)'}
-                };
+            if (isFFT && timeDisplay !== 'original') {
+                timeTraces.push({
+                    x: time,
+                    y: windowedSignal,
+                    type: 'scatter',
+                    mode: 'lines',
+                    name: t.timeDisplayWindowed,
+                    hovertemplate: timeHoverTemplate,
+                    line: {color: windowedColor, width: 2}
+                });
+            }
 
-                plotPromises.push(Plotly.newPlot('plot1', [trace1], layout1, {responsive: true}));
+            const layout1 = {
+                ...layout,
+                title: t.timeSignal,
+                xaxis: {...layout.xaxis, title: t.time, type: 'linear'},
+                yaxis: {...layout.yaxis, title: t.amplitude + ' (V)'},
+                showlegend: showBothTimeTraces,
+                legend: {
+                    orientation: 'h',
+                    x: 0.5,
+                    xanchor: 'center',
+                    y: -0.28,
+                    yanchor: 'top',
+                    font: {size: 11}
+                },
+                margin: showBothTimeTraces ? {...layout.margin, b: 95} : layout.margin
+            };
+
+            if (!showPhase) {
+                // Plot 1: Time-domain signal
+                plotPromises.push(Plotly.newPlot('plot1', timeTraces, layout1, {responsive: true}));
 
                 // Plot 2: Magnitude spectrum (stems)
                 const trace2 = {
@@ -2386,24 +2494,7 @@
 
             } else {
                 // Plot 1: Time-domain signal in the left column
-                const trace1 = {
-                    x: time,
-                    y: signal,
-                    type: 'scatter',
-                    mode: 'lines',
-                    name: t.timeSignal,
-                    hovertemplate: timeHoverTemplate,
-                    line: {color: timeColor, width: 2}
-                };
-
-                const layout1 = {
-                    ...layout,
-                    title: t.timeSignal,
-                    xaxis: {...layout.xaxis, title: t.time, type: 'linear'},
-                    yaxis: {...layout.yaxis, title: t.amplitude + ' (V)'}
-                };
-
-                plotPromises.push(Plotly.newPlot('plot1', [trace1], layout1, {responsive: true}));
+                plotPromises.push(Plotly.newPlot('plot1', timeTraces, layout1, {responsive: true}));
 
                 // Plot 2: Magnitude spectrum in the upper-right row
                 const trace2 = {
@@ -2494,11 +2585,8 @@
         // Initialize language
         updateLanguage();
 
-        // Initialize window group visibility
-        document.getElementById('window-group').style.display = 'none';
-        
-        // Initialize continuous mode as disabled (only enabled for FFT)
-        document.getElementById('continuous-mode').disabled = true;
+        // Initialize FFT-only controls (hidden, continuous mode disabled)
+        updateAnalysisControlsVisibility();
         updateFrequencySteps();
 
         // Auto-update on any input change
