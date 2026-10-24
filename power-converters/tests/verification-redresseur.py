@@ -164,8 +164,11 @@ def formules(amplitude, frequence, resistance, capacite, montage, vd0):
         inverse_avec_c = 2 * amplitude - vd0
     frequence_ondulation = (2 if montage == "pont" else 1) * frequence
     ondulation = None
+    moyenne_avec_c = None
     if capacite > 0:
         ondulation = (vo_max / resistance) / (frequence_ondulation * capacite)
+        # La sortie oscille entre v_o max et v_o max − Δv_o : moyenne à mi-ondulation.
+        moyenne_avec_c = vo_max - ondulation / 2
     # Moyenne exacte (intégrale), pour mesurer l'erreur propre du développement
     # au premier ordre en V_D0 ; elle ne sert pas de critère.
     if chute < amplitude:
@@ -182,6 +185,7 @@ def formules(amplitude, frequence, resistance, capacite, montage, vd0):
         "voMoyenExacte": exacte,
         "tensionInverseFormule": inverse_avec_c if capacite > 0 else inverse_sans_c,
         "ondulationFormule": ondulation,
+        "moyenneAvecCFormule": moyenne_avec_c,
         "frequenceOndulation": frequence_ondulation,
         "hypotheseRC": capacite > 0 and resistance * capacite >= 5 / frequence_ondulation,
     }
@@ -265,6 +269,7 @@ def main():
                         ("formule ⟨v_o⟩", "voMoyenFormule", "voMoyenFormule"),
                         ("formule V_inv", "tensionInverseFormule", "tensionInverseFormule"),
                         ("formule Δv_o", "ondulationFormule", "ondulationFormule"),
+                        ("formule ⟨v_o⟩ avec C", "moyenneAvecCFormule", "moyenneAvecCFormule"),
                     ]:
                         attendu = formule[champ_script]
                         obtenu = reference["formules"].get(champ_app)

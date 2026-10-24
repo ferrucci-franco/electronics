@@ -61,6 +61,7 @@ familles.forEach(({ amplitude, frequency, resistance, nanofarads }) => {
             voMoyenFormule: result.meanFormula,
             tensionInverseFormule: result.pivFormula,
             ondulationFormule: result.rippleApprox,
+            moyenneAvecCFormule: result.meanWithCapFormula,
             frequenceOndulation: result.rippleFrequency,
             hypotheseRC: result.hasCapacitor && result.timeConstant >= 5 / result.rippleFrequency,
           },
