@@ -73,6 +73,10 @@ const filteredBridge = model.calculate(state({ vinRms: 7, resistance: 10, capaci
 assert.equal(filteredBridge.rippleFrequency, 2000);
 assert.ok(relativeError(filteredBridge.rippleApprox, filteredBridge.peakFormula / 10e3 / (2 * 1000 * 1e-6)) < 1e-9, "pont : Δv_o ≈ ⟨i_o⟩/(2fC)");
 assert.equal(gen.rippleApprox, null, "sans condensateur, pas d'ondulation à approcher");
+assert.equal(gen.meanWithCapFormula, null, "sans condensateur, pas de ⟨v_o⟩ à mi-ondulation");
+// Avec C : ⟨v_o⟩ ≈ v_o max − Δv_o/2, et la simulation s'en approche quand RC ≫ 1/f_r.
+assert.ok(relativeError(filtered.meanWithCapFormula, filtered.peakFormula - filtered.rippleApprox / 2) < 1e-12);
+assert.ok(relativeError(filtered.vChMean, filtered.meanWithCapFormula) < .05, "⟨v_o⟩ simulé proche de v_o max − Δv_o/2");
 
 // --- Formules du panneau « Régime permanent » (V_D0 = seuil du modèle de diode) ---
 // Valeurs de référence recoupées par la simulation indépendante du script Python
@@ -152,10 +156,12 @@ assert.match(mainsTexts["info-rect-power"], /mathrm\{W\}$/);
   assert.ok(!/undefined/.test(html), `panneau sans libellé manquant en ${lang}`);
   ["theory-rect-case", "theory-rect-peak-single", "theory-rect-peak-bridge", "theory-rect-mean-single",
     "theory-rect-pivOpen-bridge", "theory-rect-ripple-single", "theory-rect-frequency-bridge",
+    "theory-rect-meanCap-single", "theory-rect-meanCap-bridge",
     "theory-rect-pivCap-single", "theory-rect-notes", "theory-rect-form", "theory-rect-angle",
     "theory-rect-idpeak", "theory-rect-piv"].forEach((id) => assert.ok(html.includes(`id="${id}"`), `${id} présent en ${lang}`));
   assert.ok(html.includes('data-block="noCap"') && html.includes('data-block="withCap"'), "les deux blocs sont toujours affichés");
-  assert.ok((html.match(/data-col="single"/g) || []).length === 7, "sept cellules par colonne (en-tête compris)");
+  assert.ok((html.match(/data-col="single"/g) || []).length === 8, "huit cellules par colonne (en-tête compris)");
+  assert.ok(!html.includes("(D)"), "pas de « (D) » accolé à l'angle de conduction");
 });
 // En français, l'espace avant « : » est une fine insécable ; les autres langues n'en mettent pas.
 assert.ok(model.theoryHtml("fr").includes("\u202f:"), "espace fine insécable avant le deux-points");

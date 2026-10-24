@@ -308,12 +308,12 @@ body.dark-theme .cursor-bar button[aria-pressed="true"] { border-color: #74ddd0;
 .rect-cases-table tbody th { min-width: 8.6em; color: #172438; font-weight: 600; }
 .rect-cases-table .rect-block-head th { padding-top: 12px; border-bottom: 0; color: #315f5a; font-size: .8rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
 .rect-formula { display: block; color: #075f59; font-size: 1.02rem; }
-.rect-values { display: grid; grid-template-columns: auto auto; gap: 1px 10px; margin-top: 5px; font-size: .82rem; }
+.rect-values { margin-top: 5px; font-size: .84rem; line-height: 1.5; }
 .rect-values span { color: #61746f; }
-.rect-values span:empty { display: none; }
 .rect-values b { color: #172438; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.rect-cases-table .rect-col-active { background: #edf7f4; }
-.rect-cases-table .rect-block-active .rect-col-active { background: var(--teal-soft); }
+.rect-gap { display: block; }
+.rect-cases-table .rect-head-active { background: #edf7f4; }
+.rect-cases-table .rect-cell-active { background: var(--teal-soft); }
 .rect-cases-legend { margin: 12px 2px 0; color: #68756f; font-size: .78rem; line-height: 1.45; }
 .rect-cases-notes { margin: 9px 2px 0; border-left: 3px solid var(--teal); padding-left: 9px; color: #315f5a; font-size: .8rem; line-height: 1.45; }
 .approximation-section p sub { position: relative; bottom: -.2em; font-size: .72em; line-height: 0; }
@@ -428,8 +428,8 @@ body.dark-theme .rect-cases-table thead th, body.dark-theme .rect-values span, b
 body.dark-theme .rect-cases-table tbody th, body.dark-theme .rect-values b { color: #e8eef6; }
 body.dark-theme .rect-cases-table .rect-block-head th, body.dark-theme .rect-cases-notes { color: #91c4be; }
 body.dark-theme .rect-formula { color: #74ddd0; }
-body.dark-theme .rect-cases-table .rect-col-active { background: #123330; }
-body.dark-theme .rect-cases-table .rect-block-active .rect-col-active { background: #17433f; }
+body.dark-theme .rect-cases-table .rect-head-active { background: #123330; }
+body.dark-theme .rect-cases-table .rect-cell-active { background: #17433f; }
 body.dark-theme .topology-dialog { border-color: #36514f; background: #142033; color: #e8eef6; }
 body.dark-theme .topology-dialog-header { border-color: #36514f; background: #142033f2; }
 body.dark-theme .topology-card { border-color: #36514f; background: #101c2c; color: #e8eef6; }
