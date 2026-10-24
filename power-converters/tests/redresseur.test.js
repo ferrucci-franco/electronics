@@ -57,14 +57,65 @@ assert.ok(relativeError(gen.duration, 2e-3) < 1e-3, "deux périodes de 1 ms enre
 const genBridge = model.calculate(state({ vinRms: 5, resistance: 4 }, 1000), null, generator({ montage: "bridge" }));
 assert.ok(relativeError(genBridge.vChMean, 2 * Math.SQRT2 * 5 / Math.PI) < .02, "1 kHz : ⟨v_o⟩ = 2V̂/π pour le pont");
 
-// --- 1 kHz avec C : ondulation et Δv_o ≈ I_o/(fC) ---
+// --- 1 kHz avec C : ondulation et Δv_o ≈ ⟨i_o⟩/(f_r·C) ---
+// La formule du panneau ne dépend que des réglages : ⟨i_o⟩ ≈ v_o max / R, et f_r = f (simple
+// alternance) ou 2f (pont). Comparer l'ondulation simulée à une formule qui reprendrait le
+// courant simulé ne mesurerait plus l'erreur de la formule.
 const filtered = model.calculate(state({ vinRms: 7, resistance: 10, capacitance: 1000 }, 1000), null, generator());
 assert.equal(filtered.hasCapacitor, true);
 assert.ok(filtered.vChMean > gen.vChMean && filtered.vChMean < filtered.amplitude, "C relève la tension moyenne");
-assert.ok(relativeError(filtered.rippleApprox, filtered.iChMean / (1000 * 1e-6)) < 1e-9, "Δv_o ≈ I_o/(fC) avec C en nF et f = 1 kHz");
-assert.ok(relativeError(filtered.vChRipple, filtered.rippleApprox) < .15, "Δv_o simulé proche de I_o/(fC)");
+assert.equal(filtered.rippleFrequency, 1000);
+assert.ok(relativeError(filtered.meanCurrentFormula, filtered.peakFormula / 10e3) < 1e-12, "⟨i_o⟩ ≈ v_o max / R");
+assert.ok(relativeError(filtered.rippleApprox, filtered.peakFormula / 10e3 / (1000 * 1e-6)) < 1e-9, "Δv_o ≈ ⟨i_o⟩/(fC) avec C en nF et f = 1 kHz");
+assert.ok(relativeError(filtered.vChRipple, filtered.rippleApprox) < .15, "Δv_o simulé proche de ⟨i_o⟩/(fC)");
+assert.ok(relativeError(filtered.timeConstant, 10e3 * 1e-6) < 1e-12, "RC en secondes");
 const filteredBridge = model.calculate(state({ vinRms: 7, resistance: 10, capacitance: 1000 }, 1000), null, generator({ montage: "bridge" }));
-assert.ok(relativeError(filteredBridge.rippleApprox, filteredBridge.iChMean / (2 * 1000 * 1e-6)) < 1e-9, "pont : Δv_o ≈ I_o/(2fC)");
+assert.equal(filteredBridge.rippleFrequency, 2000);
+assert.ok(relativeError(filteredBridge.rippleApprox, filteredBridge.peakFormula / 10e3 / (2 * 1000 * 1e-6)) < 1e-9, "pont : Δv_o ≈ ⟨i_o⟩/(2fC)");
+assert.equal(gen.rippleApprox, null, "sans condensateur, pas d'ondulation à approcher");
+
+// --- Formules du panneau « Régime permanent » (V_D0 = seuil du modèle de diode) ---
+// Valeurs de référence recoupées par la simulation indépendante du script Python
+// (tests/verification-redresseur.py) : V̂ = 10 V, V_D0 = 0,6 V, charge R, sans condensateur.
+{
+  const vinRms = 10 / Math.SQRT2;
+  const real = (overrides) => model.calculate(state({ vinRms, resistance: 10, capacitance: 0 }, 1000), null, generator({ diodes: "real", ...overrides }));
+  const simpleReal = real({});
+  assert.equal(simpleReal.threshold, .6);
+  assert.ok(Math.abs(simpleReal.peakFormula - 9.4) < 1e-9, "v_o max = V̂ − V_D0");
+  assert.ok(Math.abs(simpleReal.meanFormula - 2.883) < .001, `⟨v_o⟩ ≈ V̂/π − V_D0/2 = 2,883 V (obtenu ${simpleReal.meanFormula})`);
+  assert.ok(Math.abs(simpleReal.vChMean - 2.889) < .002, `⟨v_o⟩ simulé = 2,889 V (obtenu ${simpleReal.vChMean})`);
+  assert.ok(Math.abs(simpleReal.pivFormula - 10) < 1e-9, "sans C, simple alternance : V_inv = V̂");
+  const bridgeReal = real({ montage: "bridge" });
+  assert.ok(Math.abs(bridgeReal.peakFormula - 8.8) < 1e-9, "pont : v_o max = V̂ − 2V_D0");
+  assert.ok(Math.abs(bridgeReal.meanFormula - 5.166) < .001, `pont : ⟨v_o⟩ ≈ 2V̂/π − 2V_D0 = 5,166 V (obtenu ${bridgeReal.meanFormula})`);
+  assert.ok(Math.abs(bridgeReal.vChMean - 5.212) < .002, `pont : ⟨v_o⟩ simulé = 5,212 V (obtenu ${bridgeReal.vChMean})`);
+  assert.ok(Math.abs(bridgeReal.pivFormula - 9.4) < 1e-9, "pont : V_inv = V̂ − V_D0");
+  // Avec condensateur, la tension inverse double en simple alternance (2V̂ − V_D0) et reste
+  // à V̂ − V_D0 dans le pont ; la simulation s'en approche quand l'ondulation est faible.
+  const capacitor = (overrides) => model.calculate(state({ vinRms, resistance: 10, capacitance: 2200 }, 1000), null, generator({ diodes: "real", ...overrides }));
+  const simpleCap = capacitor({});
+  assert.ok(Math.abs(simpleCap.pivFormula - 19.4) < 1e-9, "avec C, simple alternance : V_inv = 2V̂ − V_D0");
+  assert.ok(relativeError(Math.abs(simpleCap.piv), simpleCap.pivFormula) < .05, "V_inv simulée proche de 2V̂ − V_D0");
+  const bridgeCap = capacitor({ montage: "bridge" });
+  assert.ok(Math.abs(bridgeCap.pivFormula - 9.4) < 1e-9, "avec C, pont : V_inv = V̂ − V_D0");
+  assert.ok(relativeError(Math.abs(bridgeCap.piv), bridgeCap.pivFormula) < .05, "pont : V_inv simulée proche de V̂ − V_D0");
+  // Diodes idéales : les formules se réduisent aux lois classiques.
+  const ideal = model.calculate(state({ vinRms, resistance: 10, capacitance: 0 }, 1000), null, generator());
+  assert.equal(ideal.threshold, 0);
+  assert.ok(Math.abs(ideal.peakFormula - 10) < 1e-9);
+  assert.ok(relativeError(ideal.meanFormula, ideal.idealMean) < 1e-12, "modèle idéal : ⟨v_o⟩ = V̂/π");
+  // Courant de crête dans la diode et maximum de v_o, lus par le panneau.
+  assert.ok(relativeError(ideal.iD1Peak, 10 / 10e3) < .01, "sans C : i_D crête = V̂/R");
+  assert.ok(relativeError(ideal.vChMax, 10) < 1e-3, "sans C : v_o max = V̂");
+  assert.ok(simpleCap.iD1Peak > 10 * simpleCap.iChMean, "avec C : la recharge se fait par pointes");
+}
+
+// --- Charge inductive et vue Démarrage : signalées au panneau ---
+assert.equal(mains.inductive, false);
+assert.equal(model.calculate(state({ inductance: 50 }), null, options({ advanced: true })).inductive, true);
+assert.equal(model.calculate(state({ filterInductance: 50 }), null, options({ advanced: true })).inductive, true);
+assert.equal(model.calculate(state(), null, options({ advanced: true, view: "transient" })).view, "transient");
 
 // --- Bandeau : valeurs lisibles avec les unités du mode ---
 const fr = model.metricsFor(filtered, state({}, 1000), false, "fr").map((item) => item.value);
@@ -94,6 +145,21 @@ const mainsTexts = {};
 model.infoValuesFor(mains, {}, { setInfoMath: (id, tex) => { mainsTexts[id] = tex; }, texNumber: (value) => String(Number(value.toPrecision(4))), texVoltage: (value) => `${value}V` });
 assert.match(mainsTexts["info-rect-imean"], /mathrm\{A\}$/);
 assert.match(mainsTexts["info-rect-power"], /mathrm\{W\}$/);
+
+// --- Panneau « Régime permanent » : trois langues et typographie française ---
+["en", "fr", "es"].forEach((lang) => {
+  const html = model.theoryHtml(lang);
+  assert.ok(!/undefined/.test(html), `panneau sans libellé manquant en ${lang}`);
+  ["theory-rect-case", "theory-rect-peak-single", "theory-rect-peak-bridge", "theory-rect-mean-single",
+    "theory-rect-pivOpen-bridge", "theory-rect-ripple-single", "theory-rect-frequency-bridge",
+    "theory-rect-pivCap-single", "theory-rect-notes", "theory-rect-form", "theory-rect-angle",
+    "theory-rect-idpeak", "theory-rect-piv"].forEach((id) => assert.ok(html.includes(`id="${id}"`), `${id} présent en ${lang}`));
+  assert.ok(html.includes('data-block="noCap"') && html.includes('data-block="withCap"'), "les deux blocs sont toujours affichés");
+  assert.ok((html.match(/data-col="single"/g) || []).length === 7, "sept cellules par colonne (en-tête compris)");
+});
+// En français, l'espace avant « : » est une fine insécable ; les autres langues n'en mettent pas.
+assert.ok(model.theoryHtml("fr").includes("\u202f:"), "espace fine insécable avant le deux-points");
+assert.ok(!model.theoryHtml("en").includes("\u202f"), "pas d'espace fine en anglais");
 
 // --- Curseur d'instant : état des diodes ---
 const angleOf = (result, point) => ((2 * Math.PI * result.frequency * point.t) * 180 / Math.PI) % 360;

@@ -2,7 +2,12 @@
   "use strict";
 
   const text = (en, fr, es) => Object.freeze({ en, fr, es });
-  const localizeText = (value, language) => value?.[language] || value?.fr || "";
+  // Typographie française : les chaînes sont tapées avec des espaces ordinaires avant
+  // « : ; ! ? » et dans les guillemets ; on les rend insécables à l'affichage (espace fine
+  // devant la ponctuation haute), comme babel-french le fait dans le polycopié.
+  const frenchSpacing = (value) => value.replace(/ ([:;!?])/g, "\u202f$1").replace(/« /g, "«\u00a0").replace(/ »/g, "\u00a0»");
+  const localizeText = (value, language) => { const raw = value?.[language] || value?.fr || ""; return language === "fr" ? frenchSpacing(raw) : raw; };
+  const sub = (value) => `<span class="symbol-index">${value}</span>`;
   const clamp = (value, low, high) => Math.min(high, Math.max(low, value));
   const control = (key, symbol, labels, min, max, step, unit, extra = {}) => ({ key, symbol, label: text(...labels), aria: text(...labels), min, max, step, unit, ...extra });
 
@@ -23,17 +28,50 @@
     rmsCurrent: text("RMS current", "Courant efficace", "Corriente eficaz"),
     conductionAngle: text("Conduction angle", "Angle de conduction", "Ángulo de conducción"),
     piv: text("Peak inverse voltage", "Tension inverse de crête", "Tensión inversa de pico"),
-    characteristic: text("Characteristic values", "Grandeurs caractéristiques", "Magnitudes características"),
-    capacitiveFiltering: text("Capacitive filtering", "Filtrage capacitif", "Filtrado capacitivo"),
     simulation: text("Simulation", "Simulation", "Simulación"),
-    idealFormula: text("Ideal formula", "Formule idéale", "Fórmula ideal"),
-    relativeGap: text("Relative gap", "Écart relatif", "Diferencia relativa"),
     formFactor: text("Form factor", "Facteur de forme", "Factor de forma"),
-    approximation: text("Approximation", "Approximation", "Aproximación"),
+    caseTable: text("Steady-state formulas", "Formules du régime permanent", "Fórmulas del régimen permanente"),
+    columnSingle: text("Half-wave", "Simple alternance", "Media onda"),
+    columnBridge: text("Bridge", "Pont", "Puente"),
+    blockNoCap: text("Without capacitor", "Sans condensateur", "Sin capacitor"),
+    blockWithCap: text("With capacitor", "Avec condensateur", "Con capacitor"),
+    diodesIdealName: text("ideal diodes", "diodes idéales", "diodos ideales"),
+    diodesRealName: text("0.6 V diodes", "diodes à 0,6 V", "diodos de 0,6 V"),
+    formulaValue: text("Formula", "Formule", "Fórmula"),
+    gap: text("Gap", "Écart", "Diferencia"),
+    measuredTitle: text("Simulated values", "Valeurs simulées", "Valores simulados"),
+    diodePeak: text("Peak diode current", "Courant de crête dans la diode", "Corriente de pico en el diodo"),
+    pivMeasured: text("Measured peak inverse voltage", "Tension inverse de crête mesurée", "Tensión inversa de pico medida"),
+    hypotheses: text("Model and assumptions", "Modèle et hypothèses", "Modelo e hipótesis"),
+    tableLegend: text(
+      `V̂ = √2·V${sub("in")} is the amplitude of the source, and V${sub("D0")} the threshold voltage of the diode model: 0 V with ideal diodes, 0.6 V with the 0.6 V model. For Δv${sub("o")}, ⟨i${sub("o")}⟩ ≈ v${sub("o")} max / R and f${sub("r")} is the ripple frequency; the formula assumes RC ≫ 1/f${sub("r")}.`,
+      `V̂ = √2·V${sub("in")} est l’amplitude de la source, et V${sub("D0")} la tension de seuil du modèle de diode : 0 V en modèle idéal, 0,6 V en modèle 0,6 V. Pour Δv${sub("o")}, ⟨i${sub("o")}⟩ ≈ v${sub("o")} max / R et f${sub("r")} est la fréquence de l’ondulation ; la formule suppose RC ≫ 1/f${sub("r")}.`,
+      `V̂ = √2·V${sub("in")} es la amplitud de la fuente, y V${sub("D0")} la tensión de umbral del modelo de diodo: 0 V en modelo ideal, 0,6 V en modelo 0,6 V. Para Δv${sub("o")}, ⟨i${sub("o")}⟩ ≈ v${sub("o")} max / R y f${sub("r")} es la frecuencia de la ondulación; la fórmula supone RC ≫ 1/f${sub("r")}.`,
+    ),
+    noteRc: text(
+      "Assumption RC ≫ 1/f{r} not satisfied (RC = {rc}, 1/f{r} = {period}): the ripple formula gives an order of magnitude only.",
+      "Hypothèse RC ≫ 1/f{r} non vérifiée (RC = {rc}, 1/f{r} = {period}) : la formule de l’ondulation ne donne qu’un ordre de grandeur.",
+      "Hipótesis RC ≫ 1/f{r} no verificada (RC = {rc}, 1/f{r} = {period}): la fórmula de la ondulación solo da un orden de magnitud.",
+    ),
+    noteFirstOrder: text(
+      "Average voltage: formula approximated to first order in V{d0}, hence the residual gap with the simulation.",
+      "Tension moyenne : formule approchée au premier ordre en V{d0}, d’où l’écart résiduel avec la simulation.",
+      "Tensión media: fórmula aproximada al primer orden en V{d0}, de ahí la diferencia residual con la simulación.",
+    ),
+    noteInductive: text(
+      `Inductance in the circuit (load L or filter L${sub("f")}): the formulas in the table assume a purely resistive load.`,
+      `Inductance dans le circuit (charge L ou filtre L${sub("f")}) : les formules du tableau supposent une charge purement résistive.`,
+      `Inductancia en el circuito (carga L o filtro L${sub("f")}): las fórmulas de la tabla suponen una carga puramente resistiva.`,
+    ),
+    noteTransient: text(
+      "Start-up view: the simulated values are read on the last period of the window, with the 0.5 Ω series resistance.",
+      "Vue Démarrage : les valeurs simulées sont lues sur la dernière période de la fenêtre, avec la résistance série de 0,5 Ω.",
+      "Vista Arranque: los valores simulados se leen en el último período de la ventana, con la resistencia serie de 0,5 Ω.",
+    ),
     theoryNote: text(
-      "In the steady-state view, the source and diodes are ideal: while a diode conducts, v<sub>o</sub> equals the rectified v<sub>in</sub> (minus 0.6 V per conducting diode with the 0.6 V drop model), and the current is i<sub>D</sub> = C·dv<sub>in</sub>/dt + i<sub>o</sub>. The start-up view adds a 0.5 Ω series resistance, which limits the inrush current into the discharged capacitor at switch-on, as the transformer and wiring do in a real rectifier. The ideal average-voltage formulas assume an R load, no capacitor and ideal diodes.",
-      "En régime permanent, la source et les diodes sont idéales : tant qu’une diode conduit, v<sub>o</sub> est égale à v<sub>in</sub> redressée (moins 0,6 V par diode passante avec le modèle à chute de 0,6 V), et le courant vaut i<sub>D</sub> = C·dv<sub>in</sub>/dt + i<sub>o</sub>. La vue Démarrage ajoute une résistance série de 0,5 Ω, qui limite l’appel de courant dans le condensateur déchargé à la mise sous tension, comme le font le transformateur et le câblage dans un redresseur réel. Les formules idéales de tension moyenne supposent une charge R, sans condensateur et avec des diodes idéales.",
-      "En régimen permanente, la fuente y los diodos son ideales: mientras un diodo conduce, v<sub>o</sub> es igual a v<sub>in</sub> rectificada (menos 0,6 V por diodo en conducción con el modelo de caída de 0,6 V), y la corriente vale i<sub>D</sub> = C·dv<sub>in</sub>/dt + i<sub>o</sub>. La vista Arranque agrega una resistencia serie de 0,5 Ω, que limita la corriente de conexión en el capacitor descargado, como lo hacen el transformador y el cableado en un rectificador real. Las fórmulas ideales de tensión media suponen carga R, sin capacitor y con diodos ideales.",
+      `The source is ideal; the diodes follow the selected model (ideal or 0.6 V). While a diode conducts, v${sub("o")} follows the rectified v${sub("in")} minus the drop of the conducting diodes, and the diode current is i${sub("D")} = C·dv${sub("o")}/dt + i${sub("o")}; when every diode is off, the capacitor discharges into R. The formulas in the table assume an R load and an established steady state. The start-up view adds a 0.5 Ω series resistance, which limits the inrush current into the discharged capacitor at switch-on, as the transformer and wiring do in a real rectifier.`,
+      `La source est idéale ; les diodes suivent le modèle choisi (idéal ou 0,6 V). Tant qu’une diode conduit, v${sub("o")} suit v${sub("in")} redressée moins la chute des diodes passantes, et le courant de la diode vaut i${sub("D")} = C·dv${sub("o")}/dt + i${sub("o")} ; quand toutes les diodes sont bloquées, le condensateur se décharge dans R. Les formules du tableau supposent une charge R et un régime permanent établi. La vue Démarrage ajoute une résistance série de 0,5 Ω, qui limite l’appel de courant dans le condensateur déchargé à la mise sous tension, comme le font le transformateur et le câblage dans un redresseur réel.`,
+      `La fuente es ideal; los diodos siguen el modelo elegido (ideal o 0,6 V). Mientras un diodo conduce, v${sub("o")} sigue a v${sub("in")} rectificada menos la caída de los diodos en conducción, y la corriente del diodo vale i${sub("D")} = C·dv${sub("o")}/dt + i${sub("o")}; cuando todos los diodos están bloqueados, el capacitor se descarga en R. Las fórmulas de la tabla suponen carga R y régimen permanente establecido. La vista Arranque agrega una resistencia serie de 0,5 Ω, que limita la corriente de conexión en el capacitor descargado, como lo hacen el transformador y el cableado en un rectificador real.`,
     ),
     schematic: text("Diode rectifier", "Redresseur à diodes", "Rectificador de diodos"),
   };
@@ -197,10 +235,11 @@
     const rms = (key) => Math.sqrt(metricPoints.reduce((sum, point) => sum + point[key] ** 2, 0) / metricPoints.length);
     const vChMean = mean("vCh"); const iChMean = mean("iCh"); const iChRms = rms("iCh"); const iInRms = rms("iIn"); const iInMean = mean("iIn");
     const conductionThreshold = generator ? 1e-6 : 1e-3; // courants de l'ordre du mA en mode générateur
-    let vMin = Infinity; let vMax = -Infinity; let piv = 0; let conductionSamples = 0;
+    let vMin = Infinity; let vMax = -Infinity; let piv = 0; let conductionSamples = 0; let iD1Peak = 0;
     metricPoints.forEach((point) => {
       vMin = Math.min(vMin, point.vCh); vMax = Math.max(vMax, point.vCh);
       piv = Math.min(piv, point.vD1);
+      iD1Peak = Math.max(iD1Peak, point.iD1);
       if (point.iD1 > conductionThreshold) conductionSamples += 1;
     });
     const pCh = metricPoints.reduce((sum, point) => sum + point.vCh * point.iCh, 0) / metricPoints.length;
@@ -212,18 +251,31 @@
     const thdI = fundamentalRms > 1e-6 ? Math.sqrt(distortion) / fundamentalRms * 100 : 0;
     const apparent = vrms * iInRms;
     const idealMean = (montage === "bridge" ? 2 : 1) * amplitude / Math.PI;
-    const rippleApprox = c > 0 && iChMean > 1e-6 ? iChMean / ((montage === "bridge" ? 2 : 1) * frequency * c) : null;
+    // Formules du panneau « Régime permanent », en V_D0 = seuil du modèle de diode : elles ne
+    // dépendent que des réglages (jamais de la simulation), pour que l'écart affiché mesure
+    // bien l'erreur de la formule. f_r est la fréquence de l'ondulation : f, ou 2f pour le pont.
+    const peakFormula = amplitude - drops;
+    const meanFormula = montage === "bridge" ? 2 * amplitude / Math.PI - 2 * vf : amplitude / Math.PI - vf / 2;
+    const pivFormula = c > 0
+      ? (montage === "bridge" ? amplitude - vf : 2 * amplitude - vf)
+      : (montage === "bridge" ? amplitude - vf : amplitude);
+    const rippleFrequency = (montage === "bridge" ? 2 : 1) * frequency;
+    const meanCurrentFormula = peakFormula / r;
+    const rippleApprox = c > 0 ? meanCurrentFormula / (rippleFrequency * c) : null;
 
     return {
       // Mode générateur : courants de l'ordre du mA, tracés en mA (les grandeurs ci-dessous restent en A).
       points: generator ? points.map((point) => ({ ...point, iCh: point.iCh * 1e3, iLf: point.iLf * 1e3, iC: point.iC * 1e3, iD1: point.iD1 * 1e3, iD24: point.iD24 * 1e3, iIn: point.iIn * 1e3 })) : points,
       generator, montage, view: options.view || "steady", diodes: options.diodes || "ideal",
       amplitude, frequency, duration: points.at(-1).t,
-      vChMean, vChRipple: vMax - vMin, iChMean, iChRms, iInRms, iInMean,
+      vChMean, vChRipple: vMax - vMin, vChMax: vMax, iChMean, iChRms, iInRms, iInMean,
       formFactor: iChMean > 1e-6 ? iChRms / iChMean : null,
       pCh, pIn, apparent, powerFactor: apparent > 1e-9 ? pIn / apparent : 0, thdI,
       conductionDegrees: conductionSamples / metricPoints.length * 360,
-      piv, idealMean, rippleApprox, hasCapacitor: c > 0,
+      piv, iD1Peak, idealMean, hasCapacitor: c > 0,
+      // Panneau « Régime permanent » : formules, réglages en unités SI et hypothèse RC ≫ 1/f_r.
+      threshold: vf, resistance: r, capacitance: c, inductive: l > 0 || lf > 0,
+      rippleFrequency, timeConstant: r * c, peakFormula, meanFormula, pivFormula, meanCurrentFormula, rippleApprox,
     };
   }
 
@@ -376,33 +428,104 @@
     theoryHtml(language) {
       const t = (value) => localizeText(value, language);
       const comparison = (rows) => `<div class="comparison-grid">${rows.map(([label, id]) => `<span>${label}</span><strong id="${id}"></strong>`).join("")}</div>`;
-      return `<section><h3>${t(i18n.characteristic)} · <span id="theory-rect-montage"></span></h3>
-<div class="approximation-formula math" id="theory-rect-law"></div>
-${comparison([[t(i18n.simulation), "theory-rect-vmean"], [t(i18n.idealFormula), "theory-rect-videal"], [t(i18n.relativeGap), "theory-rect-verror"]])}
-<div class="approximation-formula math" data-tex="\\displaystyle F=\\frac{I_{o,eff}}{\\langle i_{o}\\rangle}"></div>
-${comparison([[t(i18n.formFactor), "theory-rect-form"], [t(i18n.conductionAngle), "theory-rect-angle"], [t(i18n.piv), "theory-rect-piv"]])}</section>
-<section class="approximation-section"><h3>${t(i18n.capacitiveFiltering)}</h3>
-<div class="approximation-formula math" id="theory-rect-ripple-formula"></div>
-${comparison([[t(i18n.simulation), "theory-rect-ripple-sim"], [t(i18n.approximation), "theory-rect-ripple-approx"], [t(i18n.relativeGap), "theory-rect-ripple-error"]])}
+      // Une cellule par cas : la formule reste affichée en permanence ; les valeurs
+      // numériques n'apparaissent que dans le cas actif, remplies par theoryValuesFor.
+      const cell = (id, column, tex) => `<td data-col="${column}"><span class="rect-formula math" data-tex="${tex}"></span><div class="rect-values" id="theory-rect-${id}-${column}"></div></td>`;
+      const line = (label, id, single, bridge) => `<tr><th scope="row">${label}</th>${cell(id, "single", single)}${cell(id, "bridge", bridge)}</tr>`;
+      const blockHead = (label) => `<tr class="rect-block-head"><th scope="row" colspan="3">${label}</th></tr>`;
+      const vo = `v${sub("o")}`;
+      return `<section class="rect-cases"><h3>${t(i18n.caseTable)}</h3>
+<p class="rect-cases-case" id="theory-rect-case"></p>
+<div class="rect-cases-scroll"><table class="rect-cases-table">
+<thead><tr><td></td><th scope="col" data-col="single">${t(i18n.columnSingle)}</th><th scope="col" data-col="bridge">${t(i18n.columnBridge)}</th></tr></thead>
+<tbody data-block="common">
+${line(`${vo} max`, "peak", "\\hat V-V_{D0}", "\\hat V-2V_{D0}")}
+</tbody>
+<tbody data-block="noCap">
+${blockHead(t(i18n.blockNoCap))}
+${line(`⟨${vo}⟩`, "mean", "\\simeq\\hat V/\\pi-V_{D0}/2", "\\simeq 2\\hat V/\\pi-2V_{D0}")}
+${line(t(i18n.piv), "pivOpen", "\\hat V", "\\hat V-V_{D0}")}
+</tbody>
+<tbody data-block="withCap">
+${blockHead(t(i18n.blockWithCap))}
+${line(`Δ${vo}`, "ripple", "\\simeq\\langle i_{o}\\rangle/(f_rC)", "\\simeq\\langle i_{o}\\rangle/(f_rC)")}
+${line(`f${sub("r")}`, "frequency", "f", "2f")}
+${line(t(i18n.piv), "pivCap", "2\\hat V-V_{D0}", "\\hat V-V_{D0}")}
+</tbody>
+</table></div>
+<p class="rect-cases-legend">${t(i18n.tableLegend)}</p>
+<p class="rect-cases-notes" id="theory-rect-notes" hidden></p></section>
+<section><h3>${t(i18n.measuredTitle)}</h3>
+${comparison([
+        [t(i18n.formFactor), "theory-rect-form"],
+        [`${t(i18n.conductionAngle)} <span id="theory-rect-pair"></span>`, "theory-rect-angle"],
+        [t(i18n.diodePeak), "theory-rect-idpeak"],
+        [t(i18n.pivMeasured), "theory-rect-piv"],
+      ])}</section>
+<section class="approximation-section"><h3>${t(i18n.hypotheses)}</h3>
 <p>${t(i18n.theoryNote)}</p></section>`;
     },
     theoryValuesFor(result, _state, helpers) {
-      const { setText, number, displayVoltage, relativeError } = helpers;
-      setText("theory-rect-montage", localizeText(result.montage === "bridge" ? i18n.montageBridgeName : i18n.montageSingleName, helpers.language));
-      const lawElement = document.querySelector("#theory-rect-law");
-      if (lawElement && window.katex) window.katex.render(`\\displaystyle ${idealLawTex(result.montage)}\\qquad \\hat V=\\sqrt{2}\\,V_{in}`, lawElement, { throwOnError: false });
-      const rippleFormula = document.querySelector("#theory-rect-ripple-formula");
-      const k = result.montage === "bridge" ? "2" : "";
-      if (rippleFormula && window.katex) window.katex.render(`\\displaystyle \\Delta v_{o}\\simeq\\frac{\\langle i_{o}\\rangle}{${k}fC}`, rippleFormula, { throwOnError: false });
-      setText("theory-rect-vmean", displayVoltage(result.vChMean));
-      setText("theory-rect-videal", displayVoltage(result.idealMean));
-      setText("theory-rect-verror", `${number.format(relativeError(result.idealMean, result.vChMean))} %`);
+      const { setText, number, displayVoltage, displayCurrent, displayFrequency, displayTime, relativeError, language } = helpers;
+      const t = (value) => localizeText(value, language);
+      // Typographie : espace insécable entre le nombre et son unité.
+      const nb = (value) => value.replace(/ /g, "\u00a0");
+      const volts = (value) => nb(displayVoltage(value));
+      const table = document.querySelector(".rect-cases-table");
+      if (!table) return;
+      const column = result.montage === "bridge" ? "bridge" : "single";
+      const block = result.hasCapacitor ? "withCap" : "noCap";
+      // Le cas actif est l'intersection de la colonne du montage et du bloc (sans ou avec
+      // condensateur) ; la ligne v_o max vaut dans les deux blocs.
+      table.querySelectorAll("[data-col]").forEach((element) => element.classList.toggle("rect-col-active", element.dataset.col === column));
+      table.querySelectorAll("[data-block]").forEach((element) => element.classList.toggle("rect-block-active", element.dataset.block === "common" || element.dataset.block === block));
+      const values = (id, lines) => {
+        const other = table.querySelector(`#theory-rect-${id}-${column === "bridge" ? "single" : "bridge"}`);
+        if (other) other.replaceChildren();
+        const host = table.querySelector(`#theory-rect-${id}-${column}`);
+        if (host) host.innerHTML = lines.map(([label, value]) => `<span>${label}</span><b>${value}</b>`).join("");
+      };
+      const compare = (id, formula, simulated) => values(id, [
+        [t(i18n.formulaValue), volts(formula)],
+        [t(i18n.simulation), volts(simulated)],
+        [t(i18n.gap), nb(`${number.format(relativeError(formula, simulated))} %`)],
+      ]);
+      compare("peak", result.peakFormula, result.vChMax);
+      if (result.hasCapacitor) {
+        values("mean", []); values("pivOpen", []);
+        compare("ripple", result.rippleApprox, result.vChRipple);
+        values("frequency", [["", nb(displayFrequency(result.rippleFrequency))]]);
+        compare("pivCap", result.pivFormula, Math.abs(result.piv));
+      } else {
+        values("ripple", []); values("frequency", []); values("pivCap", []);
+        compare("mean", result.meanFormula, result.vChMean);
+        compare("pivOpen", result.pivFormula, Math.abs(result.piv));
+      }
+      const montageName = t(result.montage === "bridge" ? i18n.montageBridgeName : i18n.montageSingleName);
+      const diodeName = t(result.diodes === "real" ? i18n.diodesRealName : i18n.diodesIdealName);
+      setText("theory-rect-case", `${montageName} · ${diodeName} · ${t(result.hasCapacitor ? i18n.blockWithCap : i18n.blockNoCap).toLowerCase()}`);
+      const pair = document.querySelector("#theory-rect-pair");
+      if (pair) pair.innerHTML = result.montage === "bridge" ? `(D${sub("1")}, D${sub("3")})` : "(D)";
       setText("theory-rect-form", result.formFactor === null ? "—" : number.format(result.formFactor));
       setText("theory-rect-angle", `${number.format(result.conductionDegrees)}°`);
-      setText("theory-rect-piv", displayVoltage(Math.abs(result.piv)));
-      setText("theory-rect-ripple-sim", result.hasCapacitor ? displayVoltage(result.vChRipple) : "—");
-      setText("theory-rect-ripple-approx", result.rippleApprox === null ? "—" : displayVoltage(result.rippleApprox));
-      setText("theory-rect-ripple-error", result.rippleApprox === null ? "—" : `${number.format(relativeError(result.rippleApprox, result.vChRipple))} %`);
+      setText("theory-rect-idpeak", nb(displayCurrent(result.iD1Peak)));
+      setText("theory-rect-piv", volts(Math.abs(result.piv)));
+      // Notes du cas actif : hypothèse de l'ondulation, formule au premier ordre en V_D0,
+      // charge inductive et vue Démarrage, dans cet ordre.
+      const notes = [];
+      if (result.hasCapacitor && result.timeConstant < 5 / result.rippleFrequency) {
+        notes.push(t(i18n.noteRc)
+          .replace(/\{rc\}/, nb(displayTime(result.timeConstant)))
+          .replace(/\{period\}/, nb(displayTime(1 / result.rippleFrequency))));
+      }
+      if (!result.hasCapacitor && result.threshold > 0) notes.push(t(i18n.noteFirstOrder));
+      if (result.inductive) notes.push(t(i18n.noteInductive));
+      if (result.view === "transient") notes.push(t(i18n.noteTransient));
+      const noteHost = document.querySelector("#theory-rect-notes");
+      if (noteHost) {
+        noteHost.innerHTML = notes.join(" ").replace(/\{r\}/g, sub("r")).replace(/\{d0\}/g, sub("D0"));
+        noteHost.hidden = notes.length === 0;
+      }
     },
   };
 
