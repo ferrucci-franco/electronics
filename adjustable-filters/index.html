@@ -109,6 +109,9 @@
   /* the red frequency cursor on the Bode plots can be dragged */
   .cursor-hover .nsewdrag, .cursor-hover .draglayer .drag, body.cursor-dragging, body.cursor-dragging *{cursor:ew-resize !important}
   body.cursor-dragging{user-select:none; -webkit-user-select:none}
+  .plotwrap{touch-action:manipulation}
+  /* touch zoom selection (slow double tap + drag) */
+  .zoom-sel{position:fixed; display:none; pointer-events:none; z-index:40; border:1px solid var(--accent); background:color-mix(in srgb, var(--accent) 16%, transparent)}
 
   .card{border:1px solid var(--border);border-radius:12px;padding:10px 12px;background:var(--paper);display:flex;flex-direction:column;gap:6px}
   .card h3{margin:0 0 2px;font-size:15px}
@@ -540,9 +543,9 @@ document.addEventListener('DOMContentLoaded', () => {
     return [{type:'line', x0:state.freq, x1:state.freq, y0:0, y1:1, xref:'x', yref:'paper', layer:'above',
              line:{color:COLORS.cursor, width: cursorActive ? 3 : 2, dash: cursorActive ? 'solid' : 'dot'}}];
   }
-  // Touch-only devices in the scrolling layout: a swipe over a plot scrolls the page
-  // instead of starting a zoom box (the red cursor stays draggable).
-  const plotDragMode = () => (STACKED_MQ.matches && COARSE_MQ.matches) ? false : 'zoom';
+  // Touch: a one-finger swipe never starts Plotly's zoom box (it scrolls the page);
+  // touch zoom is the slow double tap + drag below. A mouse keeps the usual zoom box.
+  const plotDragMode = () => COARSE_MQ.matches ? false : 'zoom';
 
   // ========= Theme toggle (solo light/dark, sin Auto) =========
   (function themeToggle(){
@@ -962,7 +965,9 @@ document.addEventListener('DOMContentLoaded', () => {
   function plotConfig(onReset){
     return {
       displaylogo:false, editable:false, staticPlot:false, doubleClick:false, responsive:false, showTips:false,
-      modeBarButtonsToRemove:['select2d','lasso2d','autoScale2d','resetScale2d','zoomIn2d','zoomOut2d','toggleSpikelines','hoverClosestCartesian','hoverCompareCartesian'],
+      // on touch, zoom is the double-tap gesture, so the zoom / pan mode buttons would do nothing
+      modeBarButtonsToRemove:['select2d','lasso2d','autoScale2d','resetScale2d','zoomIn2d','zoomOut2d','toggleSpikelines','hoverClosestCartesian','hoverCompareCartesian']
+        .concat(COARSE_MQ.matches ? ['zoom2d','pan2d'] : []),
       modeBarButtonsToAdd:[{name:'resetView', title:TXT[LANG].resetView, icon:Plotly.Icons.home, attr:'data-reset-view', val:'1', click:onReset}]
     };
   }
@@ -1098,8 +1103,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const timeGd = document.getElementById('timePlot');
     if(timeGd && timeGd.on){
-      timeGd.on('plotly_doubleclick', () => { resetTimeView(); return false; });
+      timeGd.on('plotly_doubleclick', () => { if(lastPointerType !== 'touch') resetTimeView(); return false; });
     }
+    setupTouchZoom(timeGd, resetTimeView);
 
     // Bode MAG
     rebuildBodeCaches();
@@ -1108,6 +1114,7 @@ document.addEventListener('DOMContentLoaded', () => {
       plotConfig(() => { resetBodeView(); }));
     bodeMagBuilt=true;
     setupCursorDrag(document.getElementById('bodeMag'));
+    setupTouchZoom(document.getElementById('bodeMag'), () => { resetBodeView(); });
 
     // Bode PHASE (si está activo)
     await ensurePhasePlot();
@@ -1129,6 +1136,7 @@ document.addEventListener('DOMContentLoaded', () => {
           plotConfig(() => { resetBodeView(); }));
         bodePhaseBuilt=true;
         setupCursorDrag(document.getElementById('bodePhase'));
+        setupTouchZoom(document.getElementById('bodePhase'), () => { resetBodeView(); });
         setupBodeLinking();
         setupBodeDoubleClick();
       }else{
@@ -1174,7 +1182,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function setupBodeDoubleClick(){
     const home = () => {
-      requestAnimationFrame(() => { resetBodeView(); });
+      if(lastPointerType !== 'touch') requestAnimationFrame(() => { resetBodeView(); });
       return false;
     };
     ['bodeMag','bodePhase'].forEach(id => {
@@ -1281,6 +1289,108 @@ document.addEventListener('DOMContentLoaded', () => {
     gd.addEventListener('click', e => { if(drag) e.stopPropagation(); }, true);
   }
 
+  // ========= Touch zoom: slow double tap, then drag =========
+  // Tap once, touch again at the same spot and drag. As with Plotly's mouse zoom, the
+  // direction decides: mostly horizontal -> x only, mostly vertical -> y only, else a box.
+  // A double tap without dragging resets the view. Mouse and pen keep Plotly's zoom box.
+  // Plotly also sees two taps as a double click; for touch the gesture below owns that
+  let lastPointerType = 'mouse';
+  document.addEventListener('pointerdown', e => { lastPointerType = e.pointerType; }, true);
+  function setupTouchZoom(gd, onReset){
+    if(!gd || gd.dataset.touchZoom) return;
+    gd.dataset.touchZoom = '1';
+    const TAP_MS = 350, GAP_MS = 600, NEAR_PX = 45, MOVE_PX = 12, MINDRAG = 14, MINZOOM = 36;
+    let down = null, lastTap = null, zoom = null;
+    const sel = document.createElement('div');
+    sel.className = 'zoom-sel';
+    document.body.appendChild(sel);
+
+    function plotArea(){
+      const fl = gd._fullLayout;
+      if(!fl || !fl.xaxis || !fl.yaxis || !fl.xaxis._length) return null;
+      const r = gd.getBoundingClientRect();
+      return {xa:fl.xaxis, ya:fl.yaxis, left:r.left + fl.xaxis._offset, top:r.top + fl.yaxis._offset, w:fl.xaxis._length, h:fl.yaxis._length};
+    }
+    const inside = (a, x, y) => x >= a.left && x <= a.left + a.w && y >= a.top && y <= a.top + a.h;
+    function zoomMode(dx, dy){
+      const ax = Math.abs(dx), ay = Math.abs(dy);
+      if(ax < MINDRAG && ay < MINDRAG) return null;
+      if(ay < Math.min(Math.max(ax*0.6, MINDRAG), MINZOOM)) return 'x';
+      if(ax < Math.min(Math.max(ay*0.6, MINDRAG), MINZOOM)) return 'y';
+      return 'xy';
+    }
+    function draw(){
+      const z = zoom, a = z.a;
+      if(!z.mode){ sel.style.display = 'none'; return; }
+      let x0 = Math.min(z.x0, z.x1), x1 = Math.max(z.x0, z.x1), y0 = Math.min(z.y0, z.y1), y1 = Math.max(z.y0, z.y1);
+      if(z.mode === 'y'){ x0 = a.left; x1 = a.left + a.w; }
+      if(z.mode === 'x'){ y0 = a.top; y1 = a.top + a.h; }
+      Object.assign(sel.style, {display:'block', left:x0+'px', top:y0+'px', width:(x1-x0)+'px', height:(y1-y0)+'px'});
+    }
+    function finish(apply){
+      const z = zoom;
+      zoom = null;
+      sel.style.display = 'none';
+      if(!apply) return;
+      if(!z.mode){ onReset(); return; }
+      const {xa, ya, left, top} = z.a, upd = {};
+      if(z.mode !== 'y'){
+        upd['xaxis.autorange'] = false;
+        upd['xaxis.range'] = [xa.p2r(Math.min(z.x0, z.x1) - left), xa.p2r(Math.max(z.x0, z.x1) - left)];
+      }
+      if(z.mode !== 'x'){
+        upd['yaxis.autorange'] = false;
+        upd['yaxis.range'] = [ya.p2r(Math.max(z.y0, z.y1) - top), ya.p2r(Math.min(z.y0, z.y1) - top)];
+      }
+      Plotly.relayout(gd, upd);
+    }
+
+    gd.addEventListener('pointerdown', e => {
+      // a mouse on a touch device still gets the zoom box, a finger never does
+      const want = e.pointerType === 'touch' ? false : 'zoom';
+      if(gd._fullLayout && gd._fullLayout.dragmode !== want) Plotly.relayout(gd, {dragmode:want});
+      if(e.pointerType !== 'touch' || e.defaultPrevented || zoom) return;   // red cursor drags first
+      const a = plotArea(), now = performance.now();
+      if(!a || !inside(a, e.clientX, e.clientY)){ down = null; lastTap = null; return; }
+      if(lastTap && now - lastTap.t < GAP_MS && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < NEAR_PX){
+        e.preventDefault(); e.stopPropagation();
+        lastTap = null; down = null;
+        zoom = {id:e.pointerId, a, x0:e.clientX, y0:e.clientY, x1:e.clientX, y1:e.clientY, mode:null};
+        try{ gd.setPointerCapture(e.pointerId); }catch(_){}
+        if(Plotly.Fx) Plotly.Fx.unhover(gd);
+        return;
+      }
+      down = {id:e.pointerId, t:now, x:e.clientX, y:e.clientY};
+    }, true);
+    gd.addEventListener('pointermove', e => {
+      if(zoom && e.pointerId === zoom.id){
+        e.preventDefault();
+        const a = zoom.a;
+        zoom.x1 = clamp(e.clientX, a.left, a.left + a.w);
+        zoom.y1 = clamp(e.clientY, a.top, a.top + a.h);
+        zoom.mode = zoomMode(zoom.x1 - zoom.x0, zoom.y1 - zoom.y0);
+        draw();
+      }else if(down && e.pointerId === down.id && Math.hypot(e.clientX - down.x, e.clientY - down.y) > MOVE_PX){
+        down = null;
+      }
+    }, true);
+    gd.addEventListener('pointerup', e => {
+      if(zoom && e.pointerId === zoom.id){ finish(true); return; }
+      if(down && e.pointerId === down.id){
+        const now = performance.now();
+        lastTap = (now - down.t < TAP_MS) ? {t:now, x:down.x, y:down.y} : null;
+        down = null;
+      }
+    }, true);
+    gd.addEventListener('pointercancel', e => {
+      if(zoom && e.pointerId === zoom.id) finish(false);
+      down = null;
+    }, true);
+    // while zooming, no page scroll and nothing for Plotly
+    const block = e => { if(zoom){ e.stopPropagation(); if(e.cancelable) e.preventDefault(); } };
+    ['touchstart','touchmove'].forEach(type => gd.addEventListener(type, block, {capture:true, passive:false}));
+  }
+
   // ========= Resize =========
   function observePlotSizes(){
     const pending = new Set();
@@ -1293,7 +1403,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const s = sizeLayout(id);
         Plotly.relayout(gd, {'margin.l':s.margin.l, 'margin.r':s.margin.r, 'margin.t':s.margin.t, 'margin.b':s.margin.b,
           'title.x':s['title.x'], 'title.xanchor':s['title.xanchor'], 'title.font.size':s['title.font.size'],
-          'legend.font.size':s['legend.font.size'], dragmode:plotDragMode()});
+          'legend.font.size':s['legend.font.size']});
         Plotly.Plots.resize(gd);
       });
       pending.clear();
