@@ -644,6 +644,149 @@
                 transform: rotate(360deg);
             }
         }
+
+        html {
+            height: 100%;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        body {
+            height: 100dvh;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* No double-tap page zoom on the controls and the plots (the plots use a
+           double tap for their own zoom gesture, see setupTouchZoom). */
+        button,
+        select,
+        input,
+        label,
+        .plot-container {
+            touch-action: manipulation;
+        }
+
+        /* Selection shown while zooming with a finger. */
+        .zoom-sel {
+            position: fixed;
+            display: none;
+            pointer-events: none;
+            z-index: 40;
+            border: 1px solid var(--accent-color);
+            background: color-mix(in srgb, var(--accent-color) 14%, transparent);
+        }
+
+        /* ===== Tablets: narrower sidebar, the three plots stacked ===== */
+        @media (max-width: 999px) {
+            .sidebar {
+                width: 290px;
+                padding: 14px;
+            }
+
+            .main-content {
+                padding: 12px;
+                gap: 12px;
+            }
+
+            .plots-grid,
+            .spectrum-column {
+                gap: 12px;
+            }
+
+            .plots-grid.phase-layout {
+                display: flex;
+                flex-direction: column;
+            }
+
+            .plots-grid.phase-layout .spectrum-column {
+                flex: 2;
+            }
+        }
+
+        /* ===== Phones and short screens: one scrolling column =====
+           Title and interface first, then the plots, then the settings. */
+        @media (max-width: 699px), (max-height: 520px) {
+            body {
+                flex-direction: column;
+                height: auto;
+                min-height: 100dvh;
+                overflow: auto;
+            }
+
+            .sidebar {
+                display: contents;
+            }
+
+            .sidebar > * {
+                margin-left: 12px;
+                margin-right: 12px;
+            }
+
+            .sidebar > .section,
+            #update-btn {
+                order: 3;
+                width: auto;
+            }
+
+            #app-title {
+                order: 0;
+                margin-top: 14px;
+                margin-bottom: 12px;
+                font-size: 21px;
+            }
+
+            .sidebar > .interface-section {
+                order: 1;
+                margin-bottom: 12px;
+            }
+
+            .main-content {
+                order: 2;
+                flex: none;
+                padding: 0 12px 12px;
+                overflow: visible;
+            }
+
+            .sidebar-author {
+                order: 4;
+                margin-top: 16px;
+                margin-bottom: 16px;
+            }
+
+            .plots-grid,
+            .plots-grid.phase-layout {
+                display: flex;
+                flex-direction: column;
+                height: auto;
+            }
+
+            .plot-row,
+            .plots-grid.phase-layout .plot-row {
+                flex: none;
+                flex-direction: column;
+                gap: 12px;
+                height: auto;
+            }
+
+            /* direct children only: Plotly's own inner div is also a .plot-container */
+            .plot-row > .plot-container {
+                flex: none;
+                height: clamp(300px, 68vh, 460px);
+            }
+
+            /* 16 px keeps iOS from zooming the page into a focused field */
+            input[type="number"],
+            select {
+                font-size: 16px;
+            }
+
+            .help-backdrop {
+                padding: 10px;
+            }
+
+            .help-modal {
+                max-height: 92vh;
+            }
+        }
     </style>
 <!-- Contador de visitas (GoatCounter, sin cookies ni datos personales). No cuenta en localhost ni desde file://. -->
 <script data-goatcounter="https://ferrucci-franco.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
@@ -653,7 +796,7 @@
         <h1 id="app-title">Señales Periódicas & Serie de Fourier</h1>
 
         <!-- Interface Settings -->
-        <div class="section">
+        <div class="section interface-section">
             <div class="section-title" id="interface-title">Interfaz</div>
             <div class="settings-toolbar">
                 <span id="lang-label" class="visually-hidden">Idioma</span>
@@ -1302,7 +1445,18 @@
             }
         };
 
-        let currentLang = 'en';
+        // Same rule as the home page: the saved choice, else the browser language.
+        function preferredLang() {
+            let saved = null;
+            try { saved = localStorage.getItem('lang'); } catch (error) { /* storage blocked */ }
+            if (saved && translations[saved]) return saved;
+            const nav = (navigator.language || 'en').toLowerCase();
+            if (nav.startsWith('fr')) return 'fr';
+            if (nav.startsWith('es')) return 'es';
+            return 'en';
+        }
+
+        let currentLang = preferredLang();
         let currentTheme = 'light';
         // Evening lab sessions: the app starts in dark theme at night and switches on
         // its own while it stays open, until the student picks a theme by hand.
@@ -1311,6 +1465,7 @@
         const THEME_CLOCK_INTERVAL_MS = 60000;
         let themeFollowsClock = true;
         let lastFocusedElement = null;
+        const COARSE_POINTER = window.matchMedia('(pointer: coarse)');
 
         function updateThemeToggle() {
             const t = translations[currentLang];
@@ -1436,6 +1591,7 @@
             const t = translations[lang];
 
             document.documentElement.lang = lang;
+            document.title = t.appTitle;
             document.getElementById('app-title').textContent = t.appTitle;
             document.getElementById('interface-title').textContent = t.interfaceTitle;
             document.getElementById('lang-label').textContent = t.langLabel;
@@ -1517,6 +1673,7 @@
             document.querySelectorAll('.lang-btn').forEach(btn => {
                 btn.classList.toggle('active', btn.getAttribute('data-lang') === lang);
             });
+            try { localStorage.setItem('lang', lang); } catch (error) { /* storage blocked */ }
             updateLanguage();
         }
 
@@ -2155,9 +2312,16 @@
                 click: gd => Plotly.relayout(gd, update)
             });
 
+            // On touch the zoom is the double-tap gesture, so the zoom / pan mode
+            // buttons would do nothing there.
+            const modeButtons = COARSE_POINTER.matches ? [] : [['zoom2d', 'pan2d']];
+
             return {
                 responsive: true,
                 displaylogo: false,
+                showTips: false,
+                // Double click / double tap is handled in attachPlotGestures().
+                doubleClick: false,
                 modeBarButtons: [
                     [
                         fitButton('fitX', t.fitXTitle, FIT_X_ICON, {'xaxis.autorange': true}),
@@ -2167,7 +2331,7 @@
                             'yaxis.autorange': true
                         })
                     ],
-                    ['zoom2d', 'pan2d'],
+                    ...modeButtons,
                     ['toImage']
                 ]
             };
@@ -2246,7 +2410,8 @@
         function linkSpectrumAxes() {
             let isUpdatingMagnitude = false;
             let isUpdatingPhase = false;
-            const axes = ['xaxis', 'yaxis'];
+            // Only the frequency axis is shared: the y axes are volts and degrees.
+            const axes = ['xaxis'];
 
             syncPlotAxes(
                 'plot2',
@@ -2673,7 +2838,21 @@
                     tickformat: PLOT_NUMBER_FORMAT
                 },
                 showlegend: false,
-                margin: {l: 70, r: 30, t: 50, b: 60}
+                margin: {l: 70, r: 30, t: 50, b: 60},
+                // A finger swipe scrolls the page; touch zoom is the double-tap gesture.
+                dragmode: COARSE_POINTER.matches ? false : 'zoom'
+            };
+            // Narrow plots (phones): tighter margins and the title on the left, clear
+            // of the mode bar that touch screens always show.
+            const plotTitle = (text, plotId) => {
+                const el = document.getElementById(plotId);
+                const narrow = el && el.clientWidth > 0 && el.clientWidth < 440;
+                return narrow ? {text, x: 0.04, xanchor: 'left'} : {text};
+            };
+            const plotMargin = (plotId, margin) => {
+                const el = document.getElementById(plotId);
+                const narrow = el && el.clientWidth > 0 && el.clientWidth < 440;
+                return narrow ? {...margin, l: 58, r: 12} : margin;
             };
 
             // Displayed time signal: an oscilloscope shows the raw signal, so that is the
@@ -2708,7 +2887,7 @@
 
             const layout1 = preserveAxisView({
                 ...layout,
-                title: t.timeSignal,
+                title: plotTitle(t.timeSignal, 'plot1'),
                 xaxis: {...layout.xaxis, title: t.time, type: 'linear'},
                 yaxis: {...layout.yaxis, title: t.amplitude + ' (V)'},
                 showlegend: showBothTimeTraces,
@@ -2720,7 +2899,7 @@
                     yanchor: 'top',
                     font: {size: 11}
                 },
-                margin: showBothTimeTraces ? {...layout.margin, b: 95} : layout.margin
+                margin: plotMargin('plot1', showBothTimeTraces ? {...layout.margin, b: 95} : layout.margin)
             }, 'plot1', {xaxis: 'time', yaxis: 'volt'});
 
             if (!showPhase) {
@@ -2760,7 +2939,8 @@
 
                 const layout2 = preserveAxisView({
                     ...layout,
-                    title: t.magnitude,
+                    title: plotTitle(t.magnitude, 'plot2'),
+                    margin: plotMargin('plot2', layout.margin),
                     xaxis: {...layout.xaxis, title: t.frequency, tickformat: FREQUENCY_TICK_FORMAT},
                     yaxis: {...layout.yaxis, title: yAxisTitle},
                     annotations: spectrumAnnotations
@@ -2804,7 +2984,8 @@
 
                 const layout2 = preserveAxisView({
                     ...layout,
-                    title: t.magnitude,
+                    title: plotTitle(t.magnitude, 'plot2'),
+                    margin: plotMargin('plot2', layout.margin),
                     xaxis: {...layout.xaxis, title: t.frequency, tickformat: FREQUENCY_TICK_FORMAT},
                     yaxis: {...layout.yaxis, title: yAxisTitle},
                     annotations: spectrumAnnotations
@@ -2844,7 +3025,8 @@
 
                 const layout3 = preserveAxisView({
                     ...layout,
-                    title: phaseTitle,
+                    title: plotTitle(phaseTitle, 'plot3'),
+                    margin: plotMargin('plot3', layout.margin),
                     xaxis: {...layout.xaxis, title: t.frequency, tickformat: FREQUENCY_TICK_FORMAT},
                     yaxis: {...layout.yaxis, title: t.phaseUnit}
                 }, 'plot3', {xaxis: frequencyAxisView, yaxis: 'phase'});
@@ -2853,8 +3035,254 @@
                 Promise.all(plotPromises).then(linkSpectrumAxes);
             }
 
+            Promise.all(plotPromises).then(attachMouseDoubleClick);
             return Promise.all(plotPromises);
         }
+
+        // ===== Plot gestures =====
+        // Touch: a one-finger swipe scrolls the page. Tap once, touch again at the same
+        // spot and drag to zoom. As with Plotly's mouse zoom the direction decides:
+        // mostly horizontal -> x only, mostly vertical -> y only, else a box. A double
+        // tap without dragging fits both axes. Mouse and pen keep Plotly's zoom box.
+        const PLOT_IDS = ['plot1', 'plot2', 'plot3'];
+        let lastPointerType = 'mouse';
+        document.addEventListener('pointerdown', event => { lastPointerType = event.pointerType; }, true);
+
+        const fitPlot = gd => Plotly.relayout(gd, {'xaxis.autorange': true, 'yaxis.autorange': true});
+
+        // Plotly.newPlot drops the plotly_* handlers, so this runs after every plot.
+        function attachMouseDoubleClick() {
+            PLOT_IDS.forEach(id => {
+                const gd = document.getElementById(id);
+                if (!gd || !gd._fullLayout || typeof gd.on !== 'function') return;
+                gd.removeAllListeners('plotly_doubleclick');
+                gd.on('plotly_doubleclick', () => {
+                    // after a touch the double tap belongs to setupTouchZoom
+                    if (lastPointerType !== 'touch') fitPlot(gd);
+                    return false;
+                });
+            });
+        }
+
+        function setupTouchZoom(gd) {
+            const TAP_MS = 350;
+            const GAP_MS = 600;
+            const NEAR_PX = 45;
+            const MOVE_PX = 12;
+            const MINDRAG = 14;
+            const MINZOOM = 36;
+            let down = null;
+            let lastTap = null;
+            let zoom = null;
+            const selection = document.createElement('div');
+            selection.className = 'zoom-sel';
+            document.body.appendChild(selection);
+
+            function plotArea() {
+                const fullLayout = gd._fullLayout;
+                if (!fullLayout || !fullLayout.xaxis || !fullLayout.yaxis || !fullLayout.xaxis._length) return null;
+                const rect = gd.getBoundingClientRect();
+                return {
+                    xa: fullLayout.xaxis,
+                    ya: fullLayout.yaxis,
+                    left: rect.left + fullLayout.xaxis._offset,
+                    top: rect.top + fullLayout.yaxis._offset,
+                    w: fullLayout.xaxis._length,
+                    h: fullLayout.yaxis._length
+                };
+            }
+            const inside = (area, x, y) => x >= area.left && x <= area.left + area.w && y >= area.top && y <= area.top + area.h;
+            const clampTo = (value, low, high) => Math.min(high, Math.max(low, value));
+
+            function zoomMode(dx, dy) {
+                const ax = Math.abs(dx);
+                const ay = Math.abs(dy);
+                if (ax < MINDRAG && ay < MINDRAG) return null;
+                if (ay < Math.min(Math.max(ax * 0.6, MINDRAG), MINZOOM)) return 'x';
+                if (ax < Math.min(Math.max(ay * 0.6, MINDRAG), MINZOOM)) return 'y';
+                return 'xy';
+            }
+
+            function drawSelection() {
+                const area = zoom.area;
+                if (!zoom.mode) {
+                    selection.style.display = 'none';
+                    return;
+                }
+                let x0 = Math.min(zoom.x0, zoom.x1);
+                let x1 = Math.max(zoom.x0, zoom.x1);
+                let y0 = Math.min(zoom.y0, zoom.y1);
+                let y1 = Math.max(zoom.y0, zoom.y1);
+                if (zoom.mode === 'y') { x0 = area.left; x1 = area.left + area.w; }
+                if (zoom.mode === 'x') { y0 = area.top; y1 = area.top + area.h; }
+                Object.assign(selection.style, {
+                    display: 'block',
+                    left: `${x0}px`,
+                    top: `${y0}px`,
+                    width: `${x1 - x0}px`,
+                    height: `${y1 - y0}px`
+                });
+            }
+
+            function finish(apply) {
+                const z = zoom;
+                zoom = null;
+                selection.style.display = 'none';
+                if (!apply) return;
+                if (!z.mode) {
+                    fitPlot(gd);
+                    return;
+                }
+                const {xa, ya, left, top} = z.area;
+                const update = {};
+                // dotted keys, so the magnitude / phase link picks the zoom up
+                if (z.mode !== 'y') {
+                    update['xaxis.range[0]'] = xa.p2r(Math.min(z.x0, z.x1) - left);
+                    update['xaxis.range[1]'] = xa.p2r(Math.max(z.x0, z.x1) - left);
+                }
+                if (z.mode !== 'x') {
+                    update['yaxis.range[0]'] = ya.p2r(Math.max(z.y0, z.y1) - top);
+                    update['yaxis.range[1]'] = ya.p2r(Math.min(z.y0, z.y1) - top);
+                }
+                Plotly.relayout(gd, update);
+            }
+
+            gd.addEventListener('pointerdown', event => {
+                // a mouse on a touch screen still gets the zoom box, a finger never does
+                const wanted = event.pointerType === 'touch' ? false : 'zoom';
+                if (gd._fullLayout && gd._fullLayout.dragmode !== wanted) {
+                    Plotly.relayout(gd, {dragmode: wanted});
+                }
+                if (event.pointerType !== 'touch' || zoom) return;
+
+                const area = plotArea();
+                const now = performance.now();
+                if (!area || !inside(area, event.clientX, event.clientY)) {
+                    down = null;
+                    lastTap = null;
+                    return;
+                }
+                if (lastTap && now - lastTap.t < GAP_MS &&
+                    Math.hypot(event.clientX - lastTap.x, event.clientY - lastTap.y) < NEAR_PX) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    lastTap = null;
+                    down = null;
+                    zoom = {id: event.pointerId, area, x0: event.clientX, y0: event.clientY, x1: event.clientX, y1: event.clientY, mode: null};
+                    try { gd.setPointerCapture(event.pointerId); } catch (error) { /* already released */ }
+                    if (Plotly.Fx) Plotly.Fx.unhover(gd);
+                    return;
+                }
+                down = {id: event.pointerId, t: now, x: event.clientX, y: event.clientY};
+            }, true);
+
+            gd.addEventListener('pointermove', event => {
+                if (zoom && event.pointerId === zoom.id) {
+                    event.preventDefault();
+                    const area = zoom.area;
+                    zoom.x1 = clampTo(event.clientX, area.left, area.left + area.w);
+                    zoom.y1 = clampTo(event.clientY, area.top, area.top + area.h);
+                    zoom.mode = zoomMode(zoom.x1 - zoom.x0, zoom.y1 - zoom.y0);
+                    drawSelection();
+                } else if (down && event.pointerId === down.id &&
+                    Math.hypot(event.clientX - down.x, event.clientY - down.y) > MOVE_PX) {
+                    down = null;
+                }
+            }, true);
+
+            gd.addEventListener('pointerup', event => {
+                if (zoom && event.pointerId === zoom.id) {
+                    finish(true);
+                    return;
+                }
+                if (down && event.pointerId === down.id) {
+                    const now = performance.now();
+                    lastTap = now - down.t < TAP_MS ? {t: now, x: down.x, y: down.y} : null;
+                    down = null;
+                }
+            }, true);
+
+            gd.addEventListener('pointercancel', event => {
+                if (zoom && event.pointerId === zoom.id) finish(false);
+                down = null;
+            }, true);
+
+            // while zooming: no page scroll and nothing for Plotly
+            const block = event => {
+                if (!zoom) return;
+                event.stopPropagation();
+                if (event.cancelable) event.preventDefault();
+            };
+            ['touchstart', 'touchmove'].forEach(type => gd.addEventListener(type, block, {capture: true, passive: false}));
+        }
+
+        // The plot divs stay in place across Plotly.newPlot, so this is done once.
+        PLOT_IDS.forEach(id => setupTouchZoom(document.getElementById(id)));
+
+        // Mouse wheel on a number field once the pointer has rested on it for a moment
+        // (right away when the field has the focus). While the panel is being scrolled
+        // the timer keeps restarting, so a field passing under the pointer does not
+        // steal the scroll.
+        (function wheelOnNumberFields() {
+            const DWELL_MS = 350;
+            const NOTCH = 40;
+            let hovered = null;
+            let since = 0;
+            let accumulated = 0;
+            const numberFieldOf = target => (target && target.closest) ? target.closest('input[type="number"]') : null;
+
+            document.addEventListener('mouseover', event => {
+                const field = numberFieldOf(event.target);
+                if (field !== hovered) {
+                    hovered = field;
+                    since = performance.now();
+                    accumulated = 0;
+                }
+            });
+
+            document.addEventListener('wheel', event => {
+                const field = numberFieldOf(event.target);
+                if (!field || field.disabled || !document.getElementById('busy-backdrop').hidden) return;
+                const now = performance.now();
+                const focused = document.activeElement === field;
+                if (field !== hovered) {
+                    hovered = field;
+                    since = now;
+                    accumulated = 0;
+                    if (!focused) return;
+                }
+                if (!focused && now - since < DWELL_MS) {
+                    since = now;
+                    return;
+                }
+                event.preventDefault();
+
+                const delta = Math.abs(event.deltaY) >= Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
+                accumulated += event.deltaMode === 0 ? delta : Math.sign(delta) * NOTCH;
+                if (Math.abs(accumulated) < NOTCH) return;
+                const direction = accumulated < 0 ? 1 : -1;
+                accumulated = 0;
+
+                if (field.dataset.dynamicStep === 'frequency') {
+                    updateFrequencyStep(field);
+                }
+                const value = parseFloat(field.value);
+                const step = parseFloat(field.step) || 1;
+                if (!Number.isFinite(value)) return;
+                const decimals = (String(step).split('.')[1] || '').length;
+                let next = value + direction * step;
+                if (field.min !== '') next = Math.max(parseFloat(field.min), next);
+                if (field.max !== '') next = Math.min(parseFloat(field.max), next);
+                next = Number(next.toFixed(Math.max(decimals, (String(value).split('.')[1] || '').length)));
+                if (next === value) return;
+
+                field.value = String(next);
+                field.dispatchEvent(new Event('change', {bubbles: true}));
+                if (field.dataset.dynamicStep === 'frequency') {
+                    updateFrequencyStep(field);
+                }
+            }, {passive: false, capture: true});
+        })();
 
         // Theme from the clock, before the first plot so the colours are right away
         applyClockTheme();
@@ -2864,7 +3292,7 @@
         updatePlots();
 
         // Initialize language
-        updateLanguage();
+        setLanguage(currentLang);
 
         // Initialize FFT-only controls (hidden, continuous mode disabled)
         updateAnalysisControlsVisibility();
