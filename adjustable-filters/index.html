@@ -223,9 +223,9 @@
 
         <div class="row" style="margin-top:2px">
           <label for="freq" id="freqLbl" class="grow">Frequency f</label>
-          <span id="freqVal" class="pill">100 Hz</span>
+          <span id="freqVal" class="pill">350 Hz</span>
         </div>
-        <input id="freq" type="range" min="1.00000" max="4.00000" step="0.00001" value="2.00000" />
+        <input id="freq" type="range" min="1.00000" max="4.00000" step="0.00001" value="2.54407" />
 
         <div class="row">
           <label for="nmax" id="nmaxLbl" class="grow">Cycles N<sub>max</sub></label>
@@ -274,7 +274,7 @@
       <div class="card" id="filter2Card">
         <div class="row">
           <label for="f2Enabled" id="fc2Label" class="grow filter-title">Filter 2</label>
-          <input id="f2Enabled" type="checkbox" checked aria-describedby="f2EnabledLabel" />
+          <input id="f2Enabled" type="checkbox" aria-describedby="f2EnabledLabel" />
         </div>
         <div class="muted hint" id="f2EnabledLabel" hidden>Enable filter 2</div>
 
@@ -474,13 +474,13 @@ document.addEventListener('DOMContentLoaded', () => {
   let cursorActive = false;
 
   const state = {
-    wave:'sin', freq:100, nmax:10, duration:10/100,
-    fs: Math.min(Math.max(SPP*100, FS_MIN), FS_MAX),
+    wave:'sin', freq:350, nmax:10, duration:10/350,
+    fs: Math.min(Math.max(SPP*350, FS_MIN), FS_MAX),
     x:null,
     fc1:250, fc2:150, f1type:'lp', f2type:'lp',
     order1:4, order2:4,
     y1:null, y2:null,
-    bodeDb:true, xLog:true, showPhase:false, showTimePlot:true, showBodePlot:true, f1Enabled:true, f2Enabled:true, cascadeFilters:false
+    bodeDb:true, xLog:true, showPhase:false, showTimePlot:true, showBodePlot:true, f1Enabled:true, f2Enabled:false, cascadeFilters:false
   };
 
   const getFs = () => state.fs;
@@ -1076,7 +1076,7 @@ document.addEventListener('DOMContentLoaded', () => {
       margin:s.margin, dragmode:plotDragMode(),
       xaxis:{title:{text:t.bodeX}, ...bodeXAxisLayout(), ...axisStyle()},
       yaxis:{title:{text:yTitle}, autorange:true, ...axisStyle()},
-      legend:legendLayout(id),
+      showlegend:true, legend:legendLayout(id),
       title:titleLayout(title, id),
       uirevision:'keep',
       shapes:cursorShapes()
@@ -1095,7 +1095,7 @@ document.addEventListener('DOMContentLoaded', () => {
       margin:sizeLayout('timePlot').margin, dragmode:plotDragMode(),
       xaxis:{title:{text:'t (s)'}, autorange:false, range:[0, viewWindowSec()], ...axisStyle()},
       yaxis:{title:{text:t.amplitude}, autorange:true, ...axisStyle()},
-      legend:legendLayout('timePlot'),
+      showlegend:true, legend:legendLayout('timePlot'),
       title:titleLayout(t.timeTitle, 'timePlot'),
       uirevision:'keep'
     }, plotConfig(resetTimeView));
@@ -1529,7 +1529,7 @@ document.addEventListener('DOMContentLoaded', () => {
   showPhase.addEventListener('change', ()=>{ state.showPhase=showPhase.checked; if(bodeMagBuilt) ensurePhasePlot(); });
 
   function sanitizeInputs(){
-    let f=Math.round(freqSliderValToHz(freqEl.value||freqHzToSliderVal(100))), N=Math.round(+nmaxEl.value||10);
+    let f=Math.round(freqSliderValToHz(freqEl.value||freqHzToSliderVal(350))), N=Math.round(+nmaxEl.value||10);
     f = clampFreq(f);
     N = Math.min(NMAX_MAX, Math.max(NMAX_MIN, N));
     freqEl.value=freqHzToSliderVal(f).toFixed(LOG_SLIDER_DIGITS); nmaxEl.value=N;
