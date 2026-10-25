@@ -37,6 +37,9 @@
     margin:0; background:var(--bg); color:var(--fg);
     font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
     overflow:hidden; -webkit-text-size-adjust:100%; -webkit-tap-highlight-color:transparent;
+    /* no text selection and no text caret anywhere: the app has no text fields,
+       and caret browsing or a click could otherwise leave a blinking bar on a button or a title */
+    -webkit-user-select:none; user-select:none; caret-color:transparent;
   }
   a{color:var(--link);text-decoration:none}
   a:hover{text-decoration:underline}
@@ -1485,6 +1488,9 @@ document.addEventListener('DOMContentLoaded', () => {
   infoCloseBtn.addEventListener('click', closeInfoModal);
   infoBackdrop.addEventListener('click', ev => { if(ev.target === infoBackdrop) closeInfoModal(); });
   window.addEventListener('keydown', ev => { if(ev.key === 'Escape') closeInfoModal(); });
+
+  // no browser context menu (right click / long press) over the app
+  document.addEventListener('contextmenu', ev => ev.preventDefault());
 
   // ========= Init =========
   setLang(preferredLang());
