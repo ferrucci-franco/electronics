@@ -87,6 +87,21 @@
         case 'isource': elements.push({ type: 'I', id: c.id, n, I: pr.I }); break;
         case 'ammeter': elements.push({ type: 'AM', id: c.id, n }); break;
         case 'voltmeter': elements.push({ type: 'VM', id: c.id, n }); break;
+        case 'led': {
+          // exact model: emission coefficient 2 and I_S chosen so that V = Vf at 10 mA
+          const N = 2, Is = 0.01 / (Math.exp(pr.Vf / (N * 0.025865)) - 1);
+          elements.push({ type: 'D', id: c.id, n, model: pr.model === 'exact' ? 'exact' : 'cvd', Vf: pr.Vf, rd: pr.rd, Is, N });
+          break;
+        }
+        case 'rgbled': {
+          // three junctions sharing the common terminal (cathode or anode)
+          const ca = pr.common === 'ca';
+          ['R', 'G', 'B'].forEach((ch, k) => {
+            const vf = pr['Vf' + ch], N = 2, Is = 0.01 / (Math.exp(vf / (N * 0.025865)) - 1);
+            elements.push({ type: 'D', id: c.id + '#' + k, n: ca ? [n[3], n[k]] : [n[k], n[3]], model: pr.model === 'exact' ? 'exact' : 'cvd', Vf: vf, rd: 0, Is, N });
+          });
+          break;
+        }
         case 'diode': case 'schottky':
           elements.push({ type: 'D', id: c.id, n, model: pr.model, Vf: pr.Vf, rd: pr.rd, Is: pr.Is, N: pr.N }); break;
         case 'opamp': elements.push({ type: 'OA', id: c.id, n, sat: !!pr.sat, Vpos: Math.max(pr.Vpos, pr.Vneg), Vneg: Math.min(pr.Vpos, pr.Vneg) }); break;

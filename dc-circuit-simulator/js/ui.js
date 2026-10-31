@@ -7,7 +7,7 @@
   const PALETTE = [
     { type: 'resistor', key: 'resistor' }, { type: 'vsource', key: 'vsource' }, { type: 'isource', key: 'isource' },
     { type: 'ground', key: 'ground' }, { type: 'ammeter', key: 'ammeter' }, { type: 'voltmeter', key: 'voltmeter' },
-    { type: 'diode', key: 'diode' }, { type: 'schottky', key: 'schottky' }, { type: 'opamp', key: 'opamp' },
+    { type: 'diode', key: 'diode' }, { type: 'schottky', key: 'schottky' }, { type: 'led', key: 'led' }, { type: 'rgbled', key: 'rgbled' }, { type: 'opamp', key: 'opamp' },
     { type: 'bjt', key: 'npn', props: { pol: 'npn' } }, { type: 'bjt', key: 'pnp', props: { pol: 'pnp' } }
   ];
 
@@ -199,7 +199,10 @@
       const ap = el('button', { type: 'button', class: 'btn primary' }, t('apply'));
       ap.addEventListener('click', () => {
         app.checkpoint();
-        for (const c of app.circuit.comps) if (c.type === 'diode' || c.type === 'schottky') c.props.model = sel.value;
+        for (const c of app.circuit.comps) {
+          if (c.type === 'diode' || c.type === 'schottky') c.props.model = sel.value;
+          else if ((c.type === 'led' || c.type === 'rgbled') && sel.value !== 'ideal') c.props.model = sel.value;
+        }
         app.commit();
       });
       all.appendChild(sel); all.appendChild(ap);
@@ -459,6 +462,7 @@
             app.checkpoint();
             c.props[d.key] = s.value;
             if (d.key === 'pol') c.flip = !c.flip;
+            if (d.onChange) d.onChange(c);
             app.commit();
           });
           field(propLabel(c, d), s);
@@ -571,6 +575,8 @@
         html = `<dt>${t('vout')}</dt><dd class="v">${fmt(r.vout, 'V')}</dd><dt>${t('iout')}</dt><dd class="i">${fmt(r.iout, 'A')}</dd>` +
           `<dt>${t('vdiff')}</dt><dd>${fmt(r.vd, 'V')}</dd><dt>${t('res_state')}</dt><dd>${r.state === 'lin' ? 'linear' : r.state === 'sp' ? 'SAT +' : 'SAT −'}</dd>` +
           `<dt>${t('supply_p')}</dt><dd class="pg">${fmt(-r.p, 'W')}</dd>`;
+      } else if (c.type === 'rgbled') {
+        html = ['R', 'G', 'B'].map((n, k) => { const q = r.ch[k]; return `<dt>${n}: V / I</dt><dd><span class="v">${fmt(q.v, 'V')}</span> · <span class="i">${fmt(q.i, 'A')}</span> · ${Math.round(100 * Math.max(0, Math.min(1, q.i / c.props.Imax)))} %</dd>`; }).join('') + pRow(r.p);
       } else if (c.type === 'bjt') {
         const pnp = c.props.pol === 'pnp';
         html = `<dt>${t('res_region')}</dt><dd>${t('region_' + r.state)}</dd>` +
@@ -581,14 +587,15 @@
         const sg = app.settings.realDir ? { v: r.v, i: r.i } : C.signed(c, r);
         const nm = esc(c.name || '');
         html = `<dt>V<sub>${nm}</sub></dt><dd class="v">${fmt(sg.v, 'V')}</dd><dt>I<sub>${nm}</sub></dt><dd class="i">${fmt(sg.i, 'A')}</dd>` + pRow(r.p);
-        if ((c.type === 'diode' || c.type === 'schottky') && r.state) html += `<dt>${t('res_state')}</dt><dd>${t('state_' + r.state)}</dd>`;
+        if (C.isDiode(c) && r.state) html += `<dt>${t('res_state')}</dt><dd>${t('state_' + r.state)}</dd>`;
+        if (c.type === 'led') html += `<dt>${t('brightness')}</dt><dd>${Math.round(100 * Math.max(0, Math.min(1, r.i / c.props.Imax)))} %</dd>`;
         if (c.type === 'resistor') html += `<dt>V/R</dt><dd>${fmt(r.v / c.props.R, 'A')}</dd>`;
       }
       card.appendChild(el('dl', { class: 'kv' }, html));
       if (C.flippable(c)) card.appendChild(el('div', { class: 'hint' }, app.settings.realDir ? t('conv') : t(C.signed(c, r).passive ? 'ref_passive' : 'ref_active')));
       // terminal voltages
       const nodes = app.net.compNodes.get(c.id);
-      const names = C.TYPES[c.type].termNames || (c.type === 'diode' || c.type === 'schottky' ? ['A', 'K'] : ['1', '2']);
+      const names = C.TYPES[c.type].termNames || (C.isDiode(c) ? ['A', 'K'] : ['1', '2']);
       card.appendChild(el('div', { class: 'hint' }, t('terminal_voltages') + ': ' + nodes.map((n, j) => `${names[j]} = ${fmt(res.v[n], 'V')}`).join(' · ')));
       return card;
     }
@@ -625,7 +632,7 @@
       nd.appendChild(el('div', { class: 'hint' }, t('nodes_hint')));
       nd.appendChild(nt);
       pane.appendChild(nd);
-      const order = ['vsource', 'isource', 'resistor', 'diode', 'schottky', 'bjt', 'opamp', 'ammeter', 'voltmeter'];
+      const order = ['vsource', 'isource', 'resistor', 'diode', 'schottky', 'led', 'rgbled', 'bjt', 'opamp', 'ammeter', 'voltmeter'];
       const comps = app.circuit.comps.filter(c => c.type !== 'ground').sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type) || String(a.name).localeCompare(String(b.name), undefined, { numeric: true }));
       const tbl = el('table', { class: 'res' });
       let rows = `<tr><th>${t('tbl_comp')}</th><th>${t('tbl_v')}</th><th>${t('tbl_i')}</th><th>${t('tbl_p')}</th></tr>`;
@@ -637,6 +644,7 @@
         if (!app.settings.realDir && C.flippable(c)) { const sg = C.signed(c, r); v = sg.v; i = sg.i; }
         if (c.type === 'opamp') { v = r.vout; i = r.iout; p = r.p; }
         if (c.type === 'bjt') { v = r.vce; i = r.ic; }
+        if (c.type === 'rgbled') { v = NaN; i = r.tc[3]; }
         if (c.type === 'opamp') { if (p > 0) pAbs += p; else pGen -= p; }
         else if (p >= 0) pAbs += p; else pGen -= p;
         const meter = c.type === 'ammeter' || c.type === 'voltmeter';
@@ -688,6 +696,9 @@
           multi = true;
           const s = c.props.pol === 'pnp' ? -1 : 1;
           addI(n[0], s, sub('I', 'B,' + c.name), r.ib); addI(n[1], s, sub('I', 'C,' + c.name), r.ic); addI(n[2], -s, sub('I', 'E,' + c.name), r.ie);
+        } else if (c.type === 'rgbled') {
+          multi = true;
+          ['R', 'G', 'B', 'COM'].forEach((tn, j) => addI(n[j], 1, sub('I', tn + ',' + c.name), r.tc[j]));
         } else if (c.type === 'opamp') {
           multi = true;
           addI(n[2], -1, sub('I', 'o,' + c.name), r.iout);

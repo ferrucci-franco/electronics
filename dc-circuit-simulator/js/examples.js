@@ -85,6 +85,23 @@
         w: [[[0, 4], [0, 0], [2, 0]], [[6, 0], [14, 0], [14, 4]], [[6, 6], [6, 4], [8, 4]], [[12, 4], [14, 4]]]
       }
     },
+    leds: {
+      t: { en: 'LEDs and an RGB LED', fr: 'LED et LED RVB', es: 'LEDs y un LED RGB' },
+      d: { en: 'Each LED needs a series resistor: I = (V − Vγ)/R. LED4 has too small a resistor (warning). The RGB LED mixes its three colours according to the channel currents: change RR, RG, RB.', fr: 'Chaque LED a besoin d’une résistance série : I = (V − Vγ)/R. LED4 a une résistance trop faible (avertissement). La LED RVB mélange ses trois couleurs selon les courants : changez RR, RG, RB.', es: 'Cada LED necesita una resistencia en serie: I = (V − Vγ)/R. LED4 tiene una resistencia demasiado chica (aviso). El LED RGB mezcla sus tres colores según las corrientes de cada canal: cambie RR, RG, RB.' },
+      s: {
+        c: [['vsource', 'V1', 0, 5, 1, { V: 5 }],
+          ['resistor', 'R1', 6, 3, 1, { R: 220 }], ['led', 'LED1', 6, 8, 1, { color: 'red', Vf: 1.8 }],
+          ['resistor', 'R2', 13, 3, 1, { R: 220 }], ['led', 'LED2', 13, 8, 1, { color: 'green', Vf: 2.2 }],
+          ['resistor', 'R3', 20, 3, 1, { R: 150 }], ['led', 'LED3', 20, 8, 1, { color: 'blue', Vf: 3.0 }],
+          ['resistor', 'R4', 27, 3, 1, { R: 47 }], ['led', 'LED4', 27, 8, 1, { color: 'yellow', Vf: 2.1 }],
+          ['resistor', 'RR', 36, 2, 0, { R: 330 }], ['resistor', 'RG', 36, 8, 0, { R: 1000 }], ['resistor', 'RB', 36, 14, 0, { R: 470 }],
+          ['rgbled', 'LED5', 46, 8, 0], ['ground', '', 3, 16, 0]],
+        w: [[[0, 3], [0, 0], [34, 0], [34, 14]], [[6, 0], [6, 1]], [[13, 0], [13, 1]], [[20, 0], [20, 1]], [[27, 0], [27, 1]],
+          [[6, 5], [6, 6]], [[13, 5], [13, 6]], [[20, 5], [20, 6]], [[27, 5], [27, 6]],
+          [[38, 2], [41, 2], [41, 6], [43, 6]], [[38, 8], [43, 8]], [[38, 14], [41, 14], [41, 10], [43, 10]],
+          [[0, 7], [0, 16], [49, 16], [49, 8]], [[6, 10], [6, 16]], [[13, 10], [13, 16]], [[20, 10], [20, 16]], [[27, 10], [27, 16]]]
+      }
+    },
     inverting: {
       t: { en: 'Inverting amplifier', fr: 'Amplificateur inverseur', es: 'Amplificador inversor' },
       d: { en: 'Gain −R2/R1 = −10. The − input is a virtual ground. Raise Vin above 1.5 V to see the saturation.', fr: 'Gain −R2/R1 = −10. L’entrée − est une masse virtuelle. Dépassez 1,5 V en entrée pour voir la saturation.', es: 'Ganancia −R2/R1 = −10. La entrada − es una masa virtual. Suba Vin por encima de 1,5 V para ver la saturación.' },
