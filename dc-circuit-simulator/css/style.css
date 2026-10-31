@@ -368,7 +368,7 @@ html.layout-mobile .field input[type=text], html.layout-mobile .field select{fon
 .monitor[hidden]{display:none}
 .qslider{position:absolute; z-index:8; width:min(300px, calc(100% - 16px)); background:var(--panel); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); padding:6px 10px 10px}
 .qslider[hidden]{display:none}
-.qs-head{display:flex; align-items:center; gap:8px; font-size:14px}
+.qs-head{display:flex; align-items:center; gap:8px; font-size:14px; cursor:move; touch-action:none}
 .qs-name{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600}
 .qs-val{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-variant-numeric:tabular-nums}
 .qs-head .btn{padding:2px 8px; min-height:28px}
@@ -385,7 +385,7 @@ html.layout-mobile .field input[type=text], html.layout-mobile .field select{fon
 .mon2{left:calc(min(380px, 100% - 80px) + 16px)}
 .tmon{left:auto; right:28px; bottom:auto; top:52px; width:min(260px, calc(100% - 80px))}
 .tmon .kv{margin:2px 4px 0; font-size:14px}
-html.layout-mobile .tmon{left:auto; right:6px; width:220px; top:48px}
+html.layout-mobile .monitor.tmon{left:auto; right:6px; width:min(240px, calc(100% - 12px)); top:48px}
 .mon-head{display:flex; align-items:center; gap:4px; font-size:13px; font-weight:600; cursor:move; touch-action:none}
 .mon-title{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .mon-head .btn{padding:2px 8px; min-height:26px; cursor:pointer}

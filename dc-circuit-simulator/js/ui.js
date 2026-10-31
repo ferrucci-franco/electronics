@@ -1346,6 +1346,8 @@
       head.appendChild(name); head.appendChild(val); head.appendChild(x);
       const sl = springSlider(c, d, () => { val.innerHTML = fmtV(); });
       qs.appendChild(head); qs.appendChild(sl);
+      // it can be moved by its title, like the pinned plots
+      dragByHead(qs, head);
       qs.hidden = false;
       // next to the component without covering it nor its labels (value, V, I, + / −): above, else below,
       // else on the side with more room; inside the circuit area
