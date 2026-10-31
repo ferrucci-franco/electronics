@@ -622,10 +622,14 @@
       if (C.flippable(c) && !app.settings.realDir) {
         const f = C.refs(c);
         const rr = el('div', { class: 'field' });
-        rr.appendChild(el('label', null, `${t('ref_title')}<br><span class="muted" style="font-size:12.5px">${t(f.refV === f.refI ? 'ref_passive_s' : 'ref_active_s')}</span>`));
+        const fixed = C.passiveOnly(c);
+        rr.appendChild(el('label', null, `${t('ref_title')}<br><span class="muted" style="font-size:12.5px">${t(fixed ? 'ref_passive_fixed' : f.refV === f.refI ? 'ref_passive_s' : 'ref_active_s')}</span>`));
         const bw = el('div', { class: 'btnrow' });
-        bw.appendChild(button('⇅ V', () => app.flipRef(c.id, 'v')));
-        bw.appendChild(button('⇄ I', () => app.flipRef(c.id, 'i')));
+        if (fixed) bw.appendChild(button('⇅ ' + t('ref_flip_both'), () => app.flipRef(c.id, 'v')));
+        else {
+          bw.appendChild(button('⇅ V', () => app.flipRef(c.id, 'v')));
+          bw.appendChild(button('⇄ I', () => app.flipRef(c.id, 'i')));
+        }
         rr.appendChild(bw);
         card.appendChild(rr);
       }

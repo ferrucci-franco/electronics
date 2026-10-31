@@ -148,6 +148,9 @@
     return { refV: 0, refI: 0 };
   }
   const flippable = (c) => TYPES[c.type].terms.length === 2 && c.type !== 'ground' && c.type !== 'ammeter' && c.type !== 'voltmeter';
+  // passive elements always use the passive convention (the current arrow enters through +): flipping the
+  // voltage reference flips the current reference with it. Only the sources can take the generator convention.
+  const passiveOnly = (c) => c.type === 'resistor' || isDiode(c) || isSwitch(c);
   function refs(c) {
     let d = defRef(c.type);
     if (c.type === 'resistor') {
@@ -157,7 +160,9 @@
       d = { refV: first ? 0 : 1, refI: first ? 0 : 1 };
     }
     if (!flippable(c)) return d;
-    return { refV: c.refV === 1 || c.refV === 0 ? c.refV : d.refV, refI: c.refI === 1 || c.refI === 0 ? c.refI : d.refI };
+    const refV = c.refV === 1 || c.refV === 0 ? c.refV : d.refV;
+    if (passiveOnly(c)) return { refV, refI: refV };
+    return { refV, refI: c.refI === 1 || c.refI === 0 ? c.refI : d.refI };
   }
   // values in the user's reference directions (passive convention values r.v, r.i come from the solver)
   function signed(c, r) {
@@ -382,7 +387,7 @@
     }
   };
 
-  const api = { TYPES, LED_COLORS, isDiode, pressed, isSwitch, isClosed, potX, potFrac, ROT, defaults, defRef, refs, signed, flippable, toWorld, toLocal, terminals, hit, bounds, SYM };
+  const api = { TYPES, LED_COLORS, isDiode, pressed, isSwitch, isClosed, passiveOnly, potX, potFrac, ROT, defaults, defRef, refs, signed, flippable, toWorld, toLocal, terminals, hit, bounds, SYM };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else (root.DCS = root.DCS || {}).comp = api;
 })(typeof window !== 'undefined' ? window : globalThis);
