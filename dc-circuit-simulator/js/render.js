@@ -258,19 +258,21 @@
       const selected = S.sel.has(c.id);
       const hov = S.hover && S.hover.id === c.id;
       const bad = S.badIds && S.badIds.has(c.id);
-      if (selected || hov || bad) {
+      // components of the step of the R_eq reduction being looked at
+      const hl = S.overlay && S.overlay.hl && S.overlay.hl.has(c.id);
+      if (selected || hov || bad || hl) {
         const b = C.TYPES[c.type].box;
         const m = localMatrix(c);
         ctx.setTransform(dpr * s * m[0], dpr * s * m[1], dpr * s * m[2], dpr * s * m[3], dpr * (s * m[4] + view.ox), dpr * (s * m[5] + view.oy));
-        ctx.fillStyle = bad ? col.err : selected ? col.sel : col.hover;
-        ctx.globalAlpha = bad ? 0.16 : selected ? 0.14 : 0.1;
+        ctx.fillStyle = bad ? col.err : hl ? col.port : selected ? col.sel : col.hover;
+        ctx.globalAlpha = bad ? 0.16 : hl ? 0.22 : selected ? 0.14 : 0.1;
         roundRect(ctx, b[0] - 0.15, b[1] - 0.15, b[2] - b[0] + 0.3, b[3] - b[1] + 0.3, 0.35); ctx.fill();
         ctx.globalAlpha = 1;
       }
       let lit;
       if (c.type === 'rgbled' && res && res.el[c.id] && res.el[c.id].ch) lit = res.el[c.id].ch.map(q => Math.max(0, Math.min(1, q.i / c.props.Imax)));
       if (c.type === 'led') lit = [res && res.el[c.id] ? Math.max(0, Math.min(1, res.el[c.id].i / c.props.Imax)) : 0];
-      drawSymbol(this, c, view, selected ? col.sel : bad ? col.err : col.fg, st.style, lw, lit);
+      drawSymbol(this, c, view, hl ? col.port : selected ? col.sel : bad ? col.err : col.fg, st.style, lw, lit);
     }
 
     // junction dots and open terminals
