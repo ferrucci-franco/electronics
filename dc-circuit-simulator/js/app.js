@@ -621,7 +621,7 @@
     if (tool === 'place') {
       const type = opts.type;
       const dm = app.settings.defModel;
-      const props = Object.assign(C.defaults(type), (type === 'diode' || type === 'schottky') ? { model: dm } : (type === 'led' || type === 'rgbled') && dm === 'exact' ? { model: 'exact' } : {}, opts.props || {});
+      const props = Object.assign(C.defaults(type), (type === 'diode' || type === 'schottky' || type === 'zener') ? { model: dm } : (type === 'led' || type === 'rgbled') && dm === 'exact' ? { model: 'exact' } : {}, opts.props || {});
       app.place = { type, props, rot: C.TYPES[type].defRot || 0, flip: type === 'bjt' && props.pol === 'pnp' };
     } else app.place = null;
     if (tool !== 'select') app.sel.clear();

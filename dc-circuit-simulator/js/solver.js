@@ -7,7 +7,8 @@
  *   { type:'I',  id, n:[a,b], I }               ideal current source, I flows from a to b inside the source
  *   { type:'AM', id, n:[p,m] }                  ideal ammeter (0 V), reads the current entering p
  *   { type:'VM', id, n:[p,m] }                  ideal voltmeter (open), reads v(p) - v(m)
- *   { type:'D',  id, n:[a,k], model, Vf, rd, Is, N }   model: 'ideal' | 'cvd' | 'exact'
+ *   { type:'D',  id, n:[a,k], model, Vf, rd, Is, N, bv, rz }   model: 'ideal' | 'cvd' | 'exact'; bv: reverse
+ *        breakdown voltage (Zener / avalanche, > 0) or none, rz: resistance in breakdown (cvd)
  *   { type:'OA', id, n:[inp,inn,out], sat, Vpos, Vneg } ideal op-amp, optional output saturation
  *   { type:'Q',  id, n:[b,c,e], pnp, beta, Vbe, Vcesat }  simple BJT (cutoff / active / saturation)
  *   linear dependent sources (controlled by the voltage between two nodes cn, or by the current of the
@@ -73,10 +74,14 @@
   // Each device: states (null = linear/no states), branches(el, state), stamp(S, el, state, br, ctx),
   // check(el, state, sol, br) -> null | {next, mag}, terminal currents tc(el, state, sol, br)
 
+  // reverse breakdown of the exponential model: I = −IBV e^{−(v + BV)/(N V_T)}, i.e. |I| = 1 mA at v = −BV
+  const IBV = 1e-3;
   function diodeParams(el, Vt) {
     const nVt = (el.N || 1) * Vt;
     const Is = el.Is > 0 ? el.Is : 1e-14;
-    return { nVt, Is, vcrit: nVt * Math.log(nVt / (Math.SQRT2 * Is)) };
+    const p = { nVt, Is, vcrit: nVt * Math.log(nVt / (Math.SQRT2 * Is)) };
+    if (el.bv > 0) { p.bv = el.bv; p.vcritB = nVt * Math.log(nVt / (Math.SQRT2 * IBV)); }
+    return p;
   }
   function diodeCurrent(v, p) {
     // Shockley equation, linearly extrapolated above a large argument to avoid overflow
@@ -88,7 +93,14 @@
       return { i, g: p.Is * e / p.nVt };
     }
     const e = Math.exp(x);
-    return { i: p.Is * (e - 1), g: p.Is * e / p.nVt };
+    const out = { i: p.Is * (e - 1), g: p.Is * e / p.nVt };
+    if (p.bv) {
+      const xb = Math.min(xmax, -(v + p.bv) / p.nVt), eb = Math.exp(xb);
+      const extra = -(v + p.bv) / p.nVt - xb;      // linear beyond the cap, as above
+      out.i -= IBV * eb * (1 + extra);
+      out.g += IBV * eb / p.nVt;
+    }
+    return out;
   }
   function pnjlim(vnew, vold, nVt, vcrit) {
     if (vnew > vcrit && Math.abs(vnew - vold) > 2 * nVt) {
@@ -182,8 +194,8 @@
       tc(el, st, sol, br) { const i = sol.x[br[0]]; return [i, -i]; }
     },
     D: {
-      states(el) { return el.model === 'exact' ? null : ['off', 'on']; },
-      branches(el, st) { return st === 'on' ? 1 : 0; },
+      states(el) { return el.model === 'exact' ? null : el.bv > 0 ? ['off', 'on', 'bd'] : ['off', 'on']; },
+      branches(el, st) { return st === 'on' || st === 'bd' ? 1 : 0; },
       vf(el) { return el.model === 'ideal' ? 0 : (el.Vf || 0); },
       rd(el) { return el.model === 'cvd' ? Math.max(0, el.rd || 0) : 0; },
       stamp(S, el, st, br, k) {
@@ -192,7 +204,10 @@
           const p = diodeParams(el, S.Vt);
           const vraw = S.vguess[a] - S.vguess[c];
           const vold = S.dv[k] == null ? 0 : S.dv[k];
-          const v = pnjlim(vraw, vold, p.nVt, p.vcrit);
+          // limited step of the junction voltage, also on the breakdown side (as SPICE does)
+          const v = p.bv && vraw < Math.min(0, -p.bv + 10 * p.nVt)
+            ? -(pnjlim(-(vraw + p.bv), -(vold + p.bv), p.nVt, p.vcritB) + p.bv)
+            : pnjlim(vraw, vold, p.nVt, p.vcrit);
           if (Math.abs(v - vraw) > 1e-12) S.limited = true;
           S.dv[k] = v;
           const d = diodeCurrent(v, p);
@@ -201,6 +216,8 @@
           return;
         }
         if (st === 'on') S.vbr(a, c, br[0], DEV.D.vf(el), DEV.D.rd(el));
+        // breakdown: v = −BV + r_z·i, the current flowing from the cathode to the anode (i < 0)
+        else if (st === 'bd') S.vbr(a, c, br[0], -el.bv, el.model === 'cvd' ? Math.max(0, el.rz || 0) : 0);
         else S.g(a, c, GMIN);
       },
       check(el, st, sol, br) {
@@ -209,15 +226,20 @@
           const i = sol.x[br[0]];
           return i < -ITOL ? { next: 'off', mag: -i * 1e3 } : null;
         }
+        if (st === 'bd') {
+          const i = sol.x[br[0]];
+          return i > ITOL ? { next: 'off', mag: i * 1e3 } : null;
+        }
         const v = sol.v[el.n[0]] - sol.v[el.n[1]];
         const vf = DEV.D.vf(el);
+        if (el.bv > 0 && v < -el.bv - VTOL) return { next: 'bd', mag: -el.bv - v };
         return v > vf + VTOL ? { next: 'on', mag: v - vf } : null;
       },
       tc(el, st, sol, br, Vt) {
         const v = sol.v[el.n[0]] - sol.v[el.n[1]];
         let i;
         if (el.model === 'exact') i = diodeCurrent(v, diodeParams(el, Vt)).i + GMIN * v;
-        else if (st === 'on') i = sol.x[br[0]];
+        else if (st === 'on' || st === 'bd') i = sol.x[br[0]];
         else i = GMIN * v;
         return [i, -i];
       }
@@ -696,7 +718,7 @@
       if (el.type === 'OA') p = sol.v[el.n[2]] * tc[2];                    // power drawn from the hidden supplies
       else el.n.forEach((node, j) => { p += sol.v[node] * tc[j]; });
       // a conducting junction that carries no current (e.g. in a branch left open by a switch) is shown off
-      const r = { tc, p, state: el.type === 'D' && st === 'on' && Math.abs(tc[0]) < ITOL ? 'off' : st };
+      const r = { tc, p, state: el.type === 'D' && (st === 'on' || st === 'bd') && Math.abs(tc[0]) < ITOL ? 'off' : st };
       if (el.n.length === 2) { r.v = sol.v[el.n[0]] - sol.v[el.n[1]]; r.i = tc[0]; }
       if (el.type === 'Q') {
         const [b, c, e] = el.n, s = el.pnp ? -1 : 1;

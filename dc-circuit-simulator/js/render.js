@@ -125,7 +125,7 @@
   }
 
   /* ---------- label layout ---------- */
-  const HALF = { switch: 1.0, button: 1.1, resistor: 0.4, vsource: 0.9, isource: 0.9, ammeter: 0.9, voltmeter: 0.9, depv: 0.95, depi: 0.95, isense: 0.5, vsense: 0.5, diode: 0.6, schottky: 0.6, led: 0.6 };
+  const HALF = { switch: 1.0, button: 1.1, resistor: 0.4, vsource: 0.9, isource: 0.9, ammeter: 0.9, voltmeter: 0.9, depv: 0.95, depi: 0.95, isense: 0.5, vsense: 0.5, diode: 0.6, schottky: 0.6, zener: 0.6, led: 0.6 };
 
   function worldDir(comp, dx, dy) {
     const m = localMatrix(comp);
