@@ -75,6 +75,11 @@
     return false;
   };
 
+  // pressing the body itself (an inner box) or a terminal, as opposed to its edge where the marks sit
+  Editor.prototype.onBody = function (h, p) {
+    return !!h && (h.kind === 'term' || (h.kind === 'comp' && C.hit(h.comp, p.x, p.y, -0.25)));
+  };
+
   Editor.prototype.snap = function (p) { return [Math.round(p.x), Math.round(p.y)]; };
 
   // Route a wire from a to b with axis-aligned pieces: among the L and Z shapes, keep the one that does
@@ -160,7 +165,7 @@
     if (this.ptrs.size > 1) return;
     app.tip(null);
 
-    const g = { id: e.pointerId, type: e.pointerType, button: e.button, start: p, last: p, moved: false, shift: e.shiftKey || e.ctrlKey || e.metaKey };
+    const g = { id: e.pointerId, type: e.pointerType, button: e.button, start: p, last: p, moved: false, shift: e.shiftKey || e.ctrlKey || e.metaKey, alt: e.altKey };
     this.g = g;
     // panning with the right or middle mouse button, or with space held
     if (e.pointerType === 'mouse' && (e.button === 1 || e.button === 2 || this.space)) {
@@ -182,7 +187,8 @@
 
     // select tool: a tap on a reference mark (+ / − of V, arrow of I) flips it
     const mk = app.renderer.markAt(p.sx, p.sy, e.pointerType === 'touch' ? 6 : 1);
-    if (mk && !g.shift) { g.mode = 'mark'; g.mark = mk; return; }
+    // the component body and its terminals win over a nearby mark
+    if (mk && !g.shift && !this.onBody(h, p)) { g.mode = 'mark'; g.mark = mk; return; }
     if (h && (h.kind === 'term' || (h.kind === 'wend' && !app.sel.has(h.wire.id)))) {
       g.mode = 'maybe-wire'; g.a = h.pt;
     } else if (h && h.kind === 'wend') {
@@ -453,13 +459,14 @@
     g.orig = [];
     for (const c of comps) g.orig.push({ obj: c, pos: { x: c.x, y: c.y } });
     for (const w of wires) g.orig.push({ obj: w, pos: { x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2 } });
-    // wires attached to what moves get stretched
+    // rubber band: wires attached to what moves get stretched (Alt + drag does the opposite of the setting)
+    const rubber = !!app.settings.rubber !== !!g.alt;
     const pts = new Set();
     for (const c of comps) for (const [x, y] of C.terminals(c)) pts.add(x + ',' + y);
     for (const w of wires) { pts.add(w.x1 + ',' + w.y1); pts.add(w.x2 + ',' + w.y2); }
     g.stretch = [];
     for (const w of app.circuit.wires) {
-      if (app.sel.has(w.id)) continue;
+      if (app.sel.has(w.id) || !rubber) continue;
       const e1 = pts.has(w.x1 + ',' + w.y1), e2 = pts.has(w.x2 + ',' + w.y2);
       if (e1 || e2) {
         g.orig.push({ obj: w, pos: { x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2 } });
@@ -564,7 +571,7 @@
       cursor = h ? 'pointer' : 'default';
       if (h && (h.kind === 'term' || h.kind === 'wend')) { app.overlay.snap = h.pt; app.overlay.snapHot = true; }
       else if (h) app.hover = { id: h.comp ? h.comp.id : h.wire.id };
-    } else if (app.renderer.markAt(p.sx, p.sy, 1)) {
+    } else if (app.renderer.markAt(p.sx, p.sy, 1) && !this.onBody(h, p)) {
       cursor = 'pointer';
       app.tip({ kind: 'mark' }, p);
       this.cv.style.cursor = cursor;

@@ -502,7 +502,7 @@
       marks.push(() => {
         const x1 = cx + rd[0] * o - ax * 0.65 * sI, y1 = cy + rd[1] * o - ay * 0.65 * sI, x2 = cx + rd[0] * o + ax * 0.65 * sI, y2 = cy + rd[1] * o + ay * 0.65 * sI;
         arrowScreen(this, S.view, x1, y1, x2, y2, col.cur, 1.8);
-        this.addHit(S, c.id, 'i', (x1 + x2) / 2, (y1 + y2) / 2, 0.85);
+        this.addHit(S, c.id, 'i', (x1 + x2) / 2, (y1 + y2) / 2, 0.6);
       });
       off += 0.5;
     }
@@ -528,7 +528,7 @@
   };
   // tappable areas (screen rectangles) of the reference marks
   Renderer.prototype.addHit = function (S, id, kind, wx, wy, half) {
-    const s = S.view.scale, h = Math.max(10, half * s);
+    const s = S.view.scale, h = Math.max(9, half * s);
     const x = wx * s + S.view.ox, y = wy * s + S.view.oy;
     this.hits.push({ id, kind, r: [x - h, y - h, x + h, y + h] });
   };

@@ -251,3 +251,8 @@ html.layout-mobile .field input[type=text], html.layout-mobile .field select{fon
 .eq-sym{font-family:ui-serif, Georgia, "Times New Roman", serif; font-size:14.5px}
 .eq-num{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:12px; color:var(--muted); overflow-wrap:anywhere}
 .eq-num .ok{color:var(--c-pgen)} .eq-num .bad{color:var(--c-err)}
+
+/* rubber band toggle: the slash shows when the wires do not follow */
+.selbar [data-act=rubber] .cut{display:none}
+.selbar [data-act=rubber].off .cut{display:inline}
+.selbar [data-act=rubber].off{color:var(--muted)}

@@ -184,7 +184,7 @@
       sym.addEventListener('change', () => { s.style = sym.value; changed(); });
       const dg = row(t('set_digits'), select([[3, '3'], [4, '4'], [5, '5']], s.digits));
       dg.addEventListener('change', () => { s.digits = +dg.value; changed(); });
-      for (const [k, lab] of [['realDir', 'set_realdir'], ['showNames', 'set_names'], ['showValues', 'set_values'], ['showState', 'set_state'], ['grid', 'set_grid'], ['colorV', 'colorV']]) {
+      for (const [k, lab] of [['rubber', 'set_rubber'], ['realDir', 'set_realdir'], ['showNames', 'set_names'], ['showValues', 'set_values'], ['showState', 'set_state'], ['grid', 'set_grid'], ['colorV', 'colorV']]) {
         const c = row(t(lab), check(s[k]));
         c.addEventListener('change', () => { s[k] = c.checked; changed(); });
       }
@@ -242,6 +242,12 @@
         case 'rotate': if (app.tool === 'place') app.rotatePlace(); else app.rotateSel(); break;
         case 'flip': if (app.tool === 'place') app.flipPlace(); else app.flipSel(); break;
         case 'cancel': app.setTool('select'); break;
+        case 'rubber':
+          app.settings.rubber = !app.settings.rubber;
+          app.saveSettings();
+          app.toast(t(app.settings.rubber ? 'rubber_on' : 'rubber_off'));
+          syncSelbar();
+          break;
         case 'edit': app.openProps(true); break;
         case 'dup': app.duplicateSel(); break;
         case 'del': app.deleteSel(); break;
@@ -254,7 +260,8 @@
       const placing = app.tool === 'place';
       bar.hidden = !((app.tool === 'select' && app.sel.size) || placing);
       bar.querySelector('[data-act=cancel]').hidden = !placing;
-      for (const a of ['edit', 'thev', 'dup', 'del']) bar.querySelector(`[data-act=${a}]`).hidden = placing;
+      for (const a of ['edit', 'thev', 'dup', 'del', 'rubber']) bar.querySelector(`[data-act=${a}]`).hidden = placing;
+      bar.querySelector('[data-act=rubber]').classList.toggle('off', !app.settings.rubber);
       if (placing) {
         bar.querySelector('[data-act=rotate]').hidden = false;
         bar.querySelector('[data-act=flip]').hidden = false;
