@@ -30,7 +30,7 @@
   const segKey = (w) => { const a = w.x1 + ',' + w.y1, b = w.x2 + ',' + w.y2; return a < b ? a + ';' + b : b + ';' + a; };
 
   // merge collinear horizontal / vertical pieces; diagonal wires are passed through unchanged
-  function mergeLines(wires) {
+  function mergeLines(wires, terms) {
     const out = wires.filter(w => w.x1 !== w.x2 && w.y1 !== w.y2).map(w => ({ x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2 }));
     for (const horiz of [true, false]) {
       const lines = new Map();
@@ -52,12 +52,15 @@
           if (last && a <= last[1]) last[1] = Math.max(last[1], b); else runs.push([a, b]);
         }
         for (const [a, b] of runs) {
-          // keep an end point where another wire crosses: that crossing was a connection
+          // keep an end point where something else connects: a wire crossing there (that crossing was a
+          // connection), the end of a wire across the line, or a component terminal (a branch point)
           const cuts = [a];
           for (const e of Array.from(L.ends).sort((p, q) => p - q)) {
             if (e <= a || e >= b) continue;
             const [x, y] = horiz ? [e, k] : [k, e];
-            if (others.some(o => onInterior(x, y, o))) cuts.push(e);
+            const branch = others.some(o => onInterior(x, y, o) || (o.x1 === x && o.y1 === y) || (o.x2 === x && o.y2 === y)) ||
+              (terms || []).some(t => t[0] === x && t[1] === y);
+            if (branch) cuts.push(e);
           }
           cuts.push(b);
           for (let i = 0; i + 1 < cuts.length; i++) out.push(horiz ? { x1: cuts[i], y1: k, x2: cuts[i + 1], y2: k } : { x1: k, y1: cuts[i], x2: k, y2: cuts[i + 1] });
@@ -141,7 +144,8 @@
         for (let i = 0; i + 1 < path.length; i++) wires.push({ x1: path[i][0], y1: path[i][1], x2: path[i + 1][0], y2: path[i + 1][1] });
       } else wires.push({ x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2 });
     }
-    const ws = trimDead(mergeLines(wires), terminals(circuit), () => true);
+    const terms = terminals(circuit);
+    const ws = trimDead(mergeLines(wires, terms), terms, () => true);
     app.checkpoint();
     const r = apply(app, ws, before);
     if (!r.ok || !r.changed) { app.dropCheckpoint(); return r; }
@@ -153,7 +157,8 @@
   function afterMove(app, oldPts) {
     const circuit = app.circuit;
     const before = signature(circuit);
-    const ws = trimDead(mergeLines(circuit.wires), terminals(circuit), (x, y) => oldPts.has(x + ',' + y));
+    const terms = terminals(circuit);
+    const ws = trimDead(mergeLines(circuit.wires, terms), terms, (x, y) => oldPts.has(x + ',' + y));
     return apply(app, ws, before);
   }
 

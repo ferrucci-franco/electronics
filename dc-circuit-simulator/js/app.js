@@ -108,9 +108,45 @@
     app.requestRender();
   };
   app.commit = function () {
+    splitWires();
     app.circuitChanged(false);
     save();
   };
+
+  // A wire that has a branch on it (the end of another wire, or a component terminal, in its middle) is cut
+  // in two at that point, so that every piece can be selected, moved or deleted on its own.
+  function splitWires() {
+    const wires = app.circuit.wires;
+    const pts = new Map();
+    const add = (x, y) => pts.set(x + ',' + y, [x, y]);
+    for (const w of wires) { add(w.x1, w.y1); add(w.x2, w.y2); }
+    for (const c of app.circuit.comps) for (const [x, y] of C.terminals(c)) add(x, y);
+    const all = Array.from(pts.values());
+    const out = [];
+    let changed = false;
+    for (const w of wires) {
+      const dx = w.x2 - w.x1, dy = w.y2 - w.y1, L2 = dx * dx + dy * dy;
+      const cuts = [];
+      if (L2 > 0) for (const [x, y] of all) {
+        if ((x - w.x1) * dy - (y - w.y1) * dx !== 0) continue;
+        const t = (x - w.x1) * dx + (y - w.y1) * dy;
+        if (t > 0 && t < L2) cuts.push([t, x, y]);
+      }
+      if (!cuts.length) { out.push(w); continue; }
+      changed = true;
+      cuts.sort((a, b) => a[0] - b[0]);
+      let px = w.x1, py = w.y1;
+      const sel = app.sel.has(w.id);
+      cuts.concat([[L2, w.x2, w.y2]]).forEach(([, x, y], k) => {
+        const piece = k === 0 ? Object.assign(w, { x1: px, y1: py, x2: x, y2: y }) : { id: newId('w'), x1: px, y1: py, x2: x, y2: y };
+        if (k > 0 && sel) app.sel.add(piece.id);
+        out.push(piece);
+        px = x; py = y;
+      });
+    }
+    if (changed) app.circuit.wires = out;
+  }
+  app.splitWires = splitWires;
 
   // the three junctions of an RGB LED become one result with four terminal currents
   function mergeRGB(res) {
