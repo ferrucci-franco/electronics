@@ -75,7 +75,7 @@
       model_ideal: 'Ideal (short when on, open when off)', model_cvd: 'Constant drop V<sub>γ</sub> (+ r<sub>d</sub>)', model_exact: 'Exact (Shockley equation)',
       model_ideal_short: 'ideal', model_cvd_short: 'V<sub>γ</sub> model', model_exact_short: 'Shockley',
       state_on: 'ON', state_off: 'OFF', region_off: 'cutoff', region_act: 'active', region_sat: 'saturation',
-      tab_props: 'Element', tab_results: 'Results', tab_thev: 'Thévenin / Norton',
+      tab_props: 'Element', tab_results: 'Results', tab_thev: 'Thévenin & R<sub>eq</sub>',
       rotate: 'Rotate (R)', flip: 'Mirror (F)', duplicate: 'Duplicate (Ctrl+D)', del: 'Delete (Del)', edit: 'Properties', thev_seen: 'Thévenin seen by this element',
       zoom_in: 'Zoom in', zoom_out: 'Zoom out', zoom_fit: 'Fit circuit', panel: 'Panel',
       nothing_selected: 'Nothing selected.',
@@ -147,7 +147,7 @@
 <li>Every element shows its <b>reference directions</b>: + and − for V and an arrow for I. Select the element and tap them to choose your own; the values carry the sign (a negative value means the real polarity or direction is the opposite). In resistors, diodes, LEDs and switches the current arrow always enters through + (passive convention): flipping one flips both; only the sources can take the generator convention. Power: positive = absorbed, negative (green) = delivered.</li><li>Node voltages are measured from ground; name a node by selecting one of its wires. The <b>Results</b> tab checks KCL at each node and KVL around each loop with your references.</li>
 <li>The <b>Results</b> tab lists every element and the power balance.</li>
 <li><b>Live changes</b>: the main value of a component (R, V, I, β, V<sub>γ</sub>) has a slider under its box; dragging it solves the circuit at every step. <b>📌</b> on an I–V plot pins it over the circuit: it stays while you select and change other components, its axes stay put and Q moves on fixed axes (⟲ fits them again, ⇄ switches input / output of a transistor, the title bar moves it).</li></ul>
-<h4>Thévenin / Norton</h4><ul>
+<h4>Thévenin &amp; R<sub>eq</sub></h4><ul>
 <li>Select a two-terminal element and choose “Thévenin seen by this element”, or use the <b>Thévenin A–B</b> tool and tap two nodes.</li></ul>
 <h4>Models</h4><ul>
 <li>Diode: ideal (0 V when on), constant drop V<sub>γ</sub> with optional r<sub>d</sub>, or exact (Shockley: I = I<sub>S</sub>(e^{V/nV<sub>T</sub>} − 1)). Schottky: same models with lower V<sub>γ</sub> and higher I<sub>S</sub>.</li>
@@ -240,7 +240,7 @@
       model_ideal: 'Idéal (court-circuit passant, ouvert bloqué)', model_cvd: 'Seuil constant V<sub>γ</sub> (+ r<sub>d</sub>)', model_exact: 'Exact (équation de Shockley)',
       model_ideal_short: 'idéale', model_cvd_short: 'modèle V<sub>γ</sub>', model_exact_short: 'Shockley',
       state_on: 'PASSANTE', state_off: 'BLOQUÉE', region_off: 'bloqué', region_act: 'actif', region_sat: 'saturé',
-      tab_props: 'Élément', tab_results: 'Résultats', tab_thev: 'Thévenin / Norton',
+      tab_props: 'Élément', tab_results: 'Résultats', tab_thev: 'Thévenin et R<sub>éq</sub>',
       rotate: 'Tourner (R)', flip: 'Miroir (F)', duplicate: 'Dupliquer (Ctrl+D)', del: 'Supprimer (Suppr)', edit: 'Propriétés', thev_seen: 'Thévenin vu par cet élément',
       zoom_in: 'Zoom avant', zoom_out: 'Zoom arrière', zoom_fit: 'Cadrer le circuit', panel: 'Panneau',
       nothing_selected: 'Aucune sélection.',
@@ -312,7 +312,7 @@
 <li>Chaque élément montre ses <b>sens de référence</b> : + et − pour V, une flèche pour I. Sélectionnez l’élément puis touchez-les pour choisir les vôtres ; les valeurs portent le signe (une valeur négative signifie que la polarité ou le sens réel est l’opposé). Dans les résistances, diodes, LED et interrupteurs la flèche du courant entre toujours par + (convention récepteur) : inverser l’un inverse l’autre ; seules les sources peuvent prendre la convention générateur. Puissance : positive = absorbée, négative (vert) = fournie.</li><li>Les potentiels des nœuds sont mesurés par rapport à la masse ; nommez un nœud en sélectionnant un de ses fils. L’onglet <b>Résultats</b> vérifie la loi des nœuds et la loi des mailles avec vos références.</li>
 <li>L’onglet <b>Résultats</b> liste tous les éléments et le bilan de puissance.</li>
 <li><b>Changements en direct</b> : la valeur principale d’un composant (R, V, I, β, V<sub>γ</sub>) a un curseur sous sa case ; en le faisant glisser, le circuit est résolu à chaque pas. <b>📌</b> sur un graphique I–V l’épingle sur le circuit : il reste quand on sélectionne et modifie d’autres composants, ses axes ne bougent pas et Q se déplace sur des axes fixes (⟲ les réajuste, ⇄ passe de l’entrée à la sortie d’un transistor, la barre de titre le déplace).</li></ul>
-<h4>Thévenin / Norton</h4><ul>
+<h4>Thévenin et R<sub>éq</sub></h4><ul>
 <li>Sélectionnez un dipôle et choisissez « Thévenin vu par cet élément », ou utilisez l’outil <b>Thévenin A–B</b> et touchez deux nœuds.</li></ul>
 <h4>Modèles</h4><ul>
 <li>Diode : idéale (0 V passante), seuil constant V<sub>γ</sub> avec r<sub>d</sub> optionnelle, ou exacte (Shockley : I = I<sub>S</sub>(e^{V/nV<sub>T</sub>} − 1)). Schottky : mêmes modèles avec V<sub>γ</sub> plus faible et I<sub>S</sub> plus grand.</li>
@@ -406,7 +406,7 @@
       model_ideal: 'Ideal (cortocircuito si conduce, abierto si no)', model_cvd: 'Caída constante V<sub>γ</sub> (+ r<sub>d</sub>)', model_exact: 'Exacto (ecuación de Shockley)',
       model_ideal_short: 'ideal', model_cvd_short: 'modelo V<sub>γ</sub>', model_exact_short: 'Shockley',
       state_on: 'CONDUCE', state_off: 'CORTADO', region_off: 'corte', region_act: 'activa', region_sat: 'saturación',
-      tab_props: 'Elemento', tab_results: 'Resultados', tab_thev: 'Thévenin / Norton',
+      tab_props: 'Elemento', tab_results: 'Resultados', tab_thev: 'Thévenin y R<sub>eq</sub>',
       rotate: 'Rotar (R)', flip: 'Espejar (F)', duplicate: 'Duplicar (Ctrl+D)', del: 'Borrar (Supr)', edit: 'Propiedades', thev_seen: 'Thévenin visto por este elemento',
       zoom_in: 'Acercar', zoom_out: 'Alejar', zoom_fit: 'Encuadrar el circuito', panel: 'Panel',
       nothing_selected: 'Nada seleccionado.',
@@ -478,7 +478,7 @@
 <li>Cada elemento muestra sus <b>sentidos de referencia</b>: + y − para V y una flecha para I. Seleccione el elemento y tóquelos para elegir los suyos; los valores llevan signo (un valor negativo indica que la polaridad o el sentido real es el opuesto). En resistencias, diodos, LED e interruptores la flecha de la corriente entra siempre por + (convención pasiva): invertir uno invierte el otro; solo las fuentes pueden usar la convención generador. Potencia: positiva = absorbida, negativa (verde) = entregada.</li><li>Las tensiones de nodo se miden respecto de masa; para nombrar un nodo seleccione uno de sus cables. La pestaña <b>Resultados</b> verifica la LKC en cada nodo y la LKT en cada lazo con sus referencias.</li>
 <li>La pestaña <b>Resultados</b> lista todos los elementos y el balance de potencia.</li>
 <li><b>Cambios en vivo</b>: el valor principal de un componente (R, V, I, β, V<sub>γ</sub>) tiene un deslizador debajo de su casilla; al arrastrarlo, el circuito se resuelve a cada paso. <b>📌</b> en una gráfica I–V la fija sobre el circuito: queda mientras se seleccionan y cambian otros componentes, sus ejes no se mueven y Q se mueve sobre ejes fijos (⟲ los reajusta, ⇄ pasa de entrada a salida en un transistor, la barra del título la mueve).</li></ul>
-<h4>Thévenin / Norton</h4><ul>
+<h4>Thévenin y R<sub>eq</sub></h4><ul>
 <li>Seleccione un elemento de dos terminales y elija «Thévenin visto por este elemento», o use la herramienta <b>Thévenin A–B</b> y toque dos nodos.</li></ul>
 <h4>Modelos</h4><ul>
 <li>Diodo: ideal (0 V al conducir), caída constante V<sub>γ</sub> con r<sub>d</sub> opcional, o exacto (Shockley: I = I<sub>S</sub>(e^{V/nV<sub>T</sub>} − 1)). Schottky: los mismos modelos con V<sub>γ</sub> menor e I<sub>S</sub> mayor.</li>

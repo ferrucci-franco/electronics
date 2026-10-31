@@ -994,9 +994,9 @@
       card.appendChild(el('dl', { class: 'kv' }, kv));
       card.appendChild(el('div', { class: 'hint' }, t('thev_method')));
       if (r.rth < 0) card.appendChild(el('div', { class: 'issue warn' }, t('thev_negr')));
-      pane.appendChild(card);
-      // equivalent resistance, step by step
+      // the equivalent resistance, step by step, comes first (right under the choice of A–B), then the equivalents
       try { reqCard(pane, th); } catch (e) { console.error(e); }
+      pane.appendChild(card);
       // with the load
       if (load && load.type === 'resistor' && fin(r.vth) && fin(r.rth) && r.rth > 0) {
         const RL = load.props.R;
