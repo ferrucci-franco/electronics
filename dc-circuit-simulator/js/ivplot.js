@@ -349,7 +349,7 @@
     const col = DCS.render.colors();
     ctx.fillStyle = col.bg; ctx.fillRect(0, 0, W, H);
     const w = spec.win;
-    const L = 52, R = 10, T = 12, B = 30;
+    const L = 52, R = 10, T = 24, B = 30;   // T leaves room above the plot for the name of the y axis
     const X = (v) => L + (v - w.v0) / (w.v1 - w.v0) * (W - L - R);
     const Y = (i) => H - B - (i - w.i0) / (w.i1 - w.i0) * (H - T - B);
     const fmt = (v, u) => U.format(v, u, { digits: 3, trim: true });
@@ -357,11 +357,18 @@
     ctx.font = '11px ui-sans-serif, system-ui, sans-serif';
     ctx.lineWidth = 1;
     const sx = niceStep(w.v1 - w.v0, Math.max(3, Math.floor((W - L) / 70))), sy = niceStep(w.i1 - w.i0, Math.max(3, Math.floor((H - B) / 40)));
+    // the name of the x axis sits at the right end of the row of tick values: the values that would touch
+    // it, or run out of the canvas, are left out (their grid lines stay)
+    ctx.font = '600 12px ui-sans-serif, system-ui, sans-serif';
+    const xlabLeft = W - R - ctx.measureText(spec.xlab).width - 8;
+    ctx.font = '11px ui-sans-serif, system-ui, sans-serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'top';
     for (let v = Math.ceil(w.v0 / sx) * sx; v <= w.v1 + 1e-12; v += sx) {
       const x = Math.round(X(v)) + 0.5;
       ctx.strokeStyle = col.grid; ctx.beginPath(); ctx.moveTo(x, T); ctx.lineTo(x, H - B); ctx.stroke();
-      ctx.fillStyle = col.muted; ctx.fillText(fmt(Math.abs(v) < sx * 1e-6 ? 0 : v, spec.xu), x, H - B + 5);
+      const txt = fmt(Math.abs(v) < sx * 1e-6 ? 0 : v, spec.xu), half = ctx.measureText(txt).width / 2;
+      if (x + half > xlabLeft || x - half < 2) continue;
+      ctx.fillStyle = col.muted; ctx.fillText(txt, x, H - B + 5);
     }
     ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
     for (let i = Math.ceil(w.i0 / sy) * sy; i <= w.i1 + 1e-18; i += sy) {
@@ -374,8 +381,8 @@
     if (w.v0 < 0 && w.v1 > 0) { const x = Math.round(X(0)) + 0.5; ctx.beginPath(); ctx.moveTo(x, T); ctx.lineTo(x, H - B); ctx.stroke(); }
     if (w.i0 < 0 && w.i1 > 0) { const y = Math.round(Y(0)) + 0.5; ctx.beginPath(); ctx.moveTo(L, y); ctx.lineTo(W - R, y); ctx.stroke(); }
     ctx.fillStyle = col.fg; ctx.font = '600 12px ui-sans-serif, system-ui, sans-serif';
-    ctx.textAlign = 'right'; ctx.textBaseline = 'bottom'; ctx.fillText(spec.xlab, W - R, H - B - 3);
-    ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText(spec.ylab, L + 4, T + 1);
+    ctx.textAlign = 'right'; ctx.textBaseline = 'top'; ctx.fillText(spec.xlab, W - R, H - B + 4);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillText(spec.ylab, w.v0 < 0 && w.v1 > 0 ? X(0) : L, T - 5);
     // plot area clip
     ctx.save();
     ctx.beginPath(); ctx.rect(L, T, W - L - R, H - T - B); ctx.clip();
