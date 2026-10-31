@@ -128,7 +128,7 @@
   const HALF = { switch: 1.0, button: 1.1, resistor: 0.4, vsource: 0.9, isource: 0.9, ammeter: 0.9, voltmeter: 0.9, depv: 0.95, depi: 0.95, isense: 0.5, vsense: 0.5, diode: 0.6, lamp: 0.95, schottky: 0.6, zener: 0.6, led: 0.6 };
 
   // drawn extent of a few symbols beyond HALF, on the local −y (up) and +y (down) sides
-  const SIDE_EXT = { lamp: (c) => (c.props.look === 'lamp_bulb' ? [1.15, 1.45] : null), button: [1.6, 0.75], switch: [1.05, 0.3], isense: [0.98, 0.55], vsense: [0.68, 0.55] };
+  const SIDE_EXT = { lamp: (c) => (c.props.look === 'lamp_bulb' ? [2.1, 0.45] : null), button: [1.6, 0.75], switch: [1.05, 0.3], isense: [0.98, 0.55], vsense: [0.68, 0.55] };
   function worldDir(comp, dx, dy) {
     const m = localMatrix(comp);
     return [m[0] * dx + m[2] * dy, m[1] * dx + m[3] * dy];
@@ -691,7 +691,7 @@
         b = Math.min(1.5, ls.b);
         rgb = ls.state === 'hot' ? [255, 80, 30] : [255, 205, 50];
         if (b < 0.02) continue;
-        const [wx, wy] = C.toWorld(c, 0, c.props.look === 'lamp_bulb' ? -0.25 : 0);
+        const [wx, wy] = C.toWorld(c, 0, c.props.look === 'lamp_bulb' ? -1.25 : 0);
         const x = wx * s + view.ox, y = wy * s + view.oy, R0 = s * (1.1 + 1.6 * Math.sqrt(b));
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         const g = ctx.createRadialGradient(x, y, 0, x, y, R0);
