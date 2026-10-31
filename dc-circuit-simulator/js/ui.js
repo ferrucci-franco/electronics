@@ -53,7 +53,8 @@
       const col = R.colors().fg;
       for (const p of palButtons) {
         p.span.textContent = t('cs_' + p.it.key);
-        p.b.title = app.tp('c_' + p.it.key);
+        const sc = { ground: 'G', resistor: 'R', vsource: 'V', isource: 'I', opamp: 'A' }[p.it.key];
+        p.b.title = app.tp('c_' + p.it.key) + (sc ? ` (${sc})` : '');
         const props = Object.assign(C.defaults(p.it.type), p.it.props || {});
         R.drawIcon(p.cv, p.it.type, props, app.settings.style, col);
       }
