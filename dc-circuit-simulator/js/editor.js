@@ -241,7 +241,8 @@
       const id = h.kind === 'comp' ? h.comp.id : h.wire.id;
       if (g.shift) { g.mode = 'toggle'; g.toggleId = id; }
       else {
-        if (!app.sel.has(id)) app.select([id]);
+        // a finger only selects on lifting (tap) or after a long press: a quick drag is a pan, not a move
+        if (!app.sel.has(id) && e.pointerType !== 'touch') app.select([id]);
         g.mode = 'move';
       }
     } else {
@@ -273,8 +274,14 @@
     const h = g.hit;
     const quick = h && h.kind === 'comp' && g.mode === 'move' && app.tool === 'select' && app.valueKey(h.comp);
     if (g.type === 'mouse' && !quick) return;
-    if (h && (h.kind === 'comp' || h.kind === 'wire')) {
-      // (terminals keep drawing wires and junctions keep moving their point)
+    if (h && h.kind === 'wend' && g.mode === 'vertex') {
+      // a wire corner or junction: after the long press the drag moves the point
+      g.long = true;
+      if (navigator.vibrate) { try { navigator.vibrate(10); } catch (_) {} }
+      app.overlay.snap = g.vpt;
+      app.requestRender();
+    } else if (h && (h.kind === 'comp' || h.kind === 'wire')) {
+      // (terminals keep drawing wires)
       if (g.mode !== 'move') return;
       g.long = true;
       const id = h.kind === 'comp' ? h.comp.id : h.wire.id;
@@ -305,6 +312,12 @@
       g.moved = true;
       clearTimeout(g.longTimer);
       if (g.quick) { app.ui.hideQuick(); g.quick = false; }
+      // touch screen: a finger that drags at once pans the view, even over a component or a wire; moving
+      // things needs a long press first (wires are still drawn at once from a terminal, and the wiper of a
+      // potentiometer follows the finger)
+      if (g.type === 'touch' && !g.long && (g.mode === 'move' || g.mode === 'vertex')) {
+        g.mode = 'pan'; g.view0 = Object.assign({}, app.view); g.swToggle = null;
+      }
       if (g.press) this.release(g, true);
       if (g.mode === 'maybe-wire') g.mode = 'wire';
       if (g.mode === 'toggle') { g.mode = 'move'; app.sel.add(g.toggleId); }
