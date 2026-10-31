@@ -9,7 +9,7 @@
     { type: 'ground', key: 'ground' }, { type: 'ammeter', key: 'ammeter' }, { type: 'voltmeter', key: 'voltmeter' },
     { type: 'switch', key: 'switch' }, { type: 'button', key: 'button' },
     { type: 'depv', key: 'depv' }, { type: 'depi', key: 'depi' }, { type: 'isense', key: 'isense' }, { type: 'vsense', key: 'vsense' },
-    { type: 'diode', key: 'diode' }, { type: 'zener', key: 'zener' }, { type: 'schottky', key: 'schottky' }, { type: 'led', key: 'led' }, { type: 'rgbled', key: 'rgbled' }, { type: 'opamp', key: 'opamp' },
+    { type: 'diode', key: 'diode' }, { type: 'zener', key: 'zener' }, { type: 'schottky', key: 'schottky' }, { type: 'led', key: 'led' }, { type: 'lamp', key: 'lamp' }, { type: 'rgbled', key: 'rgbled' }, { type: 'opamp', key: 'opamp' },
     { type: 'bjt', key: 'npn', props: { pol: 'npn' } }, { type: 'bjt', key: 'pnp', props: { pol: 'pnp' } }
   ];
 
@@ -784,7 +784,8 @@
     // the scale is taken again around the new value, so repeated drags reach any value. The potentiometer
     // position is an absolute slider (0…100 %).
     function sliderMap(d, v0) {
-      const nice = (v) => { if (v === 0) return 0; const e = Math.pow(10, Math.floor(Math.log10(Math.abs(v))) - 2); return Math.round(v / e) * e; };
+      // three significant digits, exactly (no 205.00000000001 from multiplying by powers of ten)
+      const nice = (v) => (v === 0 || !isFinite(v) ? 0 : Number(v.toPrecision(3)));
       if (d.key === 'alpha') return { toV: (s) => s / 1000, toS: (v) => Math.round(v * 1000), nice: (v) => Math.round(v * 100) / 100 };
       if (d.min < 0) {
         const span = Math.abs(v0) > 0 ? Math.abs(v0) : ({ I: 1e-3, V: 1 }[d.key] || 1);
@@ -948,6 +949,7 @@
         if (C.isDiode(c) && r.state) html += `<dt>${t('res_state')}</dt><dd>${t('state_' + r.state)}</dd>`;
         if (c.type === 'led') html += `<dt>${t('brightness')}</dt><dd>${Math.round(100 * Math.max(0, Math.min(1, r.i / c.props.Imax)))} %</dd>`;
         if (c.type === 'resistor') html += `<dt>V/R</dt><dd>${fmt(r.v / c.props.R, 'A')}</dd>`;
+        if (c.type === 'lamp') { const ls = C.lampState(c, r); html += `<dt>${t('lamp_r')}</dt><dd>${fmt(c.props.Vn * c.props.Vn / c.props.Pn, 'Ω')}</dd><dt>${t('lamp_bright')}</dt><dd>${Math.round(ls.b * 100)} %</dd><dt>${t('res_state')}</dt><dd>${t('lamp_' + ls.state)}</dd>`; }
       }
       card.appendChild(el('dl', { class: 'kv' }, html));
       return card;
@@ -985,7 +987,7 @@
       nd.appendChild(el('div', { class: 'hint' }, t('nodes_hint')));
       nd.appendChild(nt);
       pane.appendChild(nd);
-      const order = ['vsource', 'isource', 'resistor', 'pot', 'diode', 'zener', 'schottky', 'led', 'rgbled', 'bjt', 'opamp', 'depv', 'depi', 'ammeter', 'voltmeter', 'isense', 'vsense'];
+      const order = ['vsource', 'isource', 'resistor', 'pot', 'lamp', 'diode', 'zener', 'schottky', 'led', 'rgbled', 'bjt', 'opamp', 'depv', 'depi', 'ammeter', 'voltmeter', 'isense', 'vsense'];
       const comps = app.circuit.comps.filter(c => c.type !== 'ground').sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type) || String(a.name).localeCompare(String(b.name), undefined, { numeric: true }));
       const tbl = el('table', { class: 'res' });
       let rows = `<tr><th>${t('tbl_comp')}</th><th>${t('tbl_v')}</th><th>${t('tbl_i')}</th><th>${t('tbl_p')}</th></tr>`;

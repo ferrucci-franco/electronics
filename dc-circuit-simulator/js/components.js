@@ -50,6 +50,15 @@
       props: [{ key: 'I', unit: 'A', def: 1e-3, min: -1e3, max: 1e3 }],
       valueText: (c, f) => f(c.props.I, 'A')
     },
+    lamp: {
+      prefix: 'LP', terms: [[-2, 0], [2, 0]], box: [-2, -1.15, 2, 1.45],
+      props: [
+        { key: 'Vn', unit: 'V', def: 12, min: 0.1, max: 1e4 },
+        { key: 'Pn', unit: 'W', def: 5, min: 1e-3, max: 1e5 },
+        { key: 'look', type: 'select', options: ['lamp_sym', 'lamp_bulb'], def: 'lamp_sym' }
+      ],
+      valueText: (c, f) => f(c.props.Vn, 'V') + ' · ' + f(c.props.Pn, 'W')
+    },
     // dependent sources: value = k · (control variable); the control is a sensor anywhere in the circuit
     depv: {
       prefix: 'E', terms: [[-2, 0], [2, 0]], box: [-2, -1.05, 2, 1.05], defRot: 1,
@@ -203,10 +212,16 @@
   const flippable = (c) => TYPES[c.type].terms.length === 2 && c.type !== 'ground' && !meterKind(c);
   // passive elements always use the passive convention (the current arrow enters through +): flipping the
   // voltage reference flips the current reference with it. Only the sources can take the generator convention.
-  const passiveOnly = (c) => c.type === 'resistor' || isDiode(c) || isSwitch(c);
+  const passiveOnly = (c) => c.type === 'resistor' || c.type === 'lamp' || isDiode(c) || isSwitch(c);
+  // incandescent lamp: a resistance V_n²/P_n; brightness ~ P/P_n; above about 1.1 V_n it overheats
+  const lampState = (c, r) => {
+    if (!r) return null;
+    const b = Math.abs(r.p) / Math.max(1e-12, c.props.Pn);
+    return { b, state: b > 1.21 ? 'hot' : b > 0.5 ? 'on' : b > 0.02 ? 'dim' : 'off' };
+  };
   function refs(c) {
     let d = defRef(c.type);
-    if (c.type === 'resistor') {
+    if (c.type === 'resistor' || c.type === 'lamp') {
       // a resistor has no polarity: by default + is the upper (or left) terminal, passive convention
       const [t0, t1] = terminals(c);
       const first = t0[1] < t1[1] || (t0[1] === t1[1] && t0[0] <= t1[0]);
@@ -298,6 +313,46 @@
       P.line([[-2, 0], [-0.9, 0]]); P.line([[0.9, 0], [2, 0]]);
       P.text(0, 0, 'V', 1.05);
       P.plus(-1.45, -0.6, 0.32);
+    },
+    // lamp: the classic symbol (USA: a filament loop in a circle; IEC: a cross in a circle) or a drawing of a
+    // bulb in its socket; the glass takes the colour of the light (P.lit = [brightness, overheated])
+    lamp(P, c, us) {
+      const b = P.lit ? P.lit[0] : 0, hot = P.lit && P.lit[1];
+      const glow = hot ? '255,90,40' : '255,205,40';
+      if (c.props.look === 'lamp_bulb') {
+        const cy = -0.25, R = 0.85;
+        // glass: a globe narrowing into the neck
+        const pts = [];
+        for (let k = 0; k <= 28; k++) { const a = Math.PI * (0.75 + 1.5 * k / 28); pts.push([Math.cos(a) * R, cy + Math.sin(a) * R]); }
+        pts.push([0.36, 0.78], [-0.36, 0.78]);
+        P.poly(pts, b > 0.01 ? `rgb(${glow})` : false, b > 0.01 ? 0.15 + 0.75 * Math.sqrt(Math.min(1, b)) : 1);
+        // socket with its threads, and the contacts: the side of the base and the tip
+        P.poly([[-0.4, 0.78], [0.4, 0.78], [0.4, 1.2], [-0.4, 1.2]], false);
+        P.line([[-0.4, 0.92], [0.4, 0.92]]); P.line([[-0.4, 1.06], [0.4, 1.06]]);
+        P.line([[-0.14, 1.2], [-0.1, 1.3], [0.1, 1.3], [0.14, 1.2]]);
+        // filament: two supports and a coil
+        P.line([[-0.18, 0.78], [-0.32, -0.3]]); P.line([[0.18, 0.78], [0.32, -0.3]]);
+        const coil = [[-0.32, -0.3]];
+        for (let k = 1; k < 8; k++) coil.push([-0.32 + 0.64 * k / 8, -0.3 + (k % 2 ? -0.16 : 0)]);
+        coil.push([0.32, -0.3]);
+        P.line(coil);
+        // leads: to the side of the base and to the tip
+        P.line([[-2, 0], [-1.25, 0], [-1.25, 0.99], [-0.4, 0.99]]);
+        P.line([[2, 0], [1.25, 0], [1.25, 1.3], [0.1, 1.3]]);
+        return;
+      }
+      P.circle(0, 0, 0.9, b > 0.01 ? `rgb(${glow})` : false, b > 0.01 ? 0.15 + 0.75 * Math.sqrt(Math.min(1, b)) : 1);
+      P.line([[-2, 0], [-0.9, 0]]); P.line([[0.9, 0], [2, 0]]);
+      if (us) {
+        // the filament: a loop between the two leads
+        const f = [[-0.9, 0], [-0.45, 0]];
+        for (let k = 0; k <= 16; k++) { const a = Math.PI * k / 16; f.push([-0.45 * Math.cos(a), -0.5 * Math.sin(a)]); }
+        f.push([0.9, 0]);
+        P.line(f);
+      } else {
+        const d = 0.9 / Math.SQRT2;
+        P.line([[-d, -d], [d, d]]); P.line([[-d, d], [d, -d]]);
+      }
     },
     // dependent sources: a diamond (USA); IEC: the same diamond with the conventions of the independent sources
     depv(P, c, us) {
@@ -478,7 +533,7 @@
     }
   };
 
-  const api = { TYPES, LED_COLORS, meterKind, isDep, ctrlOf, depKind, depText, isDiode, pressed, isSwitch, isClosed, passiveOnly, potX, potFrac, ROT, defaults, defRef, refs, signed, flippable, toWorld, toLocal, terminals, hit, bounds, SYM };
+  const api = { TYPES, LED_COLORS, lampState, meterKind, isDep, ctrlOf, depKind, depText, isDiode, pressed, isSwitch, isClosed, passiveOnly, potX, potFrac, ROT, defaults, defRef, refs, signed, flippable, toWorld, toLocal, terminals, hit, bounds, SYM };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else (root.DCS = root.DCS || {}).comp = api;
 })(typeof window !== 'undefined' ? window : globalThis);
