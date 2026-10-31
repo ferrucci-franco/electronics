@@ -30,6 +30,7 @@ Símbolos USA (por defecto) o IEC/europeos.
 ## Uso
 
 - Colocar: tocar o hacer clic en un componente de la lista y luego en la grilla, o arrastrarlo desde la lista. Arrastrar desde un terminal dibuja un cable (el ruteo esquiva los componentes). Doble clic / doble toque = propiedades.
+- Mover: los cables conectados siguen al componente (rubber band) y al soltar quedan en tramos rectos; se desactiva con 🔗 (barra sobre el circuito) o en Ajustes para mover sin cables (desconectar). Alt + arrastrar invierte el modo en ese movimiento.
 - Rotar y espejar: clic derecho sobre un componente (Mayús + clic derecho = espejo), teclas R / F, o los botones ⟳ / ⇋ de la barra sobre el circuito (también mientras se coloca, para el uso con el dedo).
 - Zoom y desplazamiento: rueda (o pellizco en el touchpad) = zoom alrededor del puntero; arrastrar con el botón derecho o del medio, o Espacio + arrastrar = desplazar; con el dedo, un dedo sobre el fondo desplaza y dos dedos hacen zoom; botones + / − / ⤢ y teclas +, −, 0. Arrastrar sobre el fondo con el ratón (o toque largo y arrastrar con el dedo) = selección por rectángulo.
 - Teclado: Supr, Ctrl+Z / Ctrl+Y, Ctrl+C / Ctrl+V, Ctrl+D, Ctrl+A, flechas, W (cable), Enter (propiedades), Esc.

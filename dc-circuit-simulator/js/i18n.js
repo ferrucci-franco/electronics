@@ -4,6 +4,7 @@
   const T = {
     en: {
       title: 'DC Circuit Simulator',
+      set_rubber: 'Wires follow the components you move (rubber band). Alt + drag does the opposite.', rubber_tip: 'Wires follow when moving (rubber band): on / off', rubber_on: 'Rubber band on: the wires follow what you move', rubber_off: 'Rubber band off: components move without their wires (to disconnect them)',
       place_cancel: 'Stop placing (Esc)',
       tip_flip: 'Tap to flip this reference', node_name: 'Node name', node_hint: 'Node voltages are measured from ground (0 V). Give the node a name (A, B, out…) to find it in the tables and the equations.',
       nodes_hint: 'Unknowns of the nodal method: the voltage of each node with respect to ground. Hover or tap a row to find the node on the circuit.',
@@ -107,7 +108,7 @@
 <li>Transistor (BJT): cutoff, active (V<sub>BE</sub> = 0.7 V, I<sub>C</sub> = βI<sub>B</sub>) or saturation (V<sub>CE</sub> = V<sub>CE,sat</sub>).</li></ul>
 <h4>Rotate and mirror</h4><ul>
 <li>Mouse: <b>right click</b> on a component rotates it a quarter turn, <b>Shift + right click</b> mirrors it. While placing, the right click rotates the component before it is dropped.</li>
-<li>Keyboard: <b>R</b> rotates, <b>F</b> mirrors (the selection, or the component being placed).</li>
+<li>Keyboard: <b>R</b> rotates, <b>F</b> mirrors (the selection, or the component being placed).</li></ul><h4>Moving</h4><ul><li>Drag a component (or a selection): the wires attached to it follow (rubber band) and become straight pieces again when you release. Turn it off with <b>🔗</b> in the bar over the circuit or in Settings to move components without their wires, for example to disconnect them; <b>Alt + drag</b> does the opposite of the current setting for one move.</li>
 <li>Touch: select the component and use <b>⟳</b> / <b>⇋</b> in the bar over the circuit. While placing, the same bar rotates the component before you tap the grid.</li></ul>
 <h4>Zoom and pan</h4><ul>
 <li>Mouse: <b>wheel</b> = zoom around the pointer (pinch on a touchpad too); drag with the <b>right or middle button</b>, or hold <b>Space</b> and drag = pan; drag on the background = box selection.</li>
@@ -121,6 +122,7 @@
     },
     fr: {
       title: 'Simulateur de circuits en continu',
+      set_rubber: 'Les fils suivent les composants déplacés (élastique). Alt + glisser fait l’inverse.', rubber_tip: 'Les fils suivent le déplacement (élastique) : oui / non', rubber_on: 'Élastique activé : les fils suivent ce que vous déplacez', rubber_off: 'Élastique désactivé : les composants bougent sans leurs fils (pour les déconnecter)',
       place_cancel: 'Arrêter de placer (Échap)',
       tip_flip: 'Touchez pour inverser cette référence', node_name: 'Nom du nœud', node_hint: 'Les potentiels sont mesurés par rapport à la masse (0 V). Donnez un nom au nœud (A, B, s…) pour le retrouver dans les tableaux et les équations.',
       nodes_hint: 'Inconnues de la méthode des nœuds : le potentiel de chaque nœud par rapport à la masse. Survolez ou touchez une ligne pour repérer le nœud sur le circuit.',
@@ -224,7 +226,7 @@
 <li>Transistor bipolaire : bloqué, actif (V<sub>BE</sub> = 0,7 V, I<sub>C</sub> = βI<sub>B</sub>) ou saturé (V<sub>CE</sub> = V<sub>CE,sat</sub>).</li></ul>
 <h4>Tourner et retourner</h4><ul>
 <li>Souris : <b>clic droit</b> sur un composant = quart de tour, <b>Maj + clic droit</b> = miroir. Pendant le placement, le clic droit tourne le composant avant de le poser.</li>
-<li>Clavier : <b>R</b> tourne, <b>F</b> retourne (la sélection, ou le composant en cours de placement).</li>
+<li>Clavier : <b>R</b> tourne, <b>F</b> retourne (la sélection, ou le composant en cours de placement).</li></ul><h4>Déplacer</h4><ul><li>Faites glisser un composant (ou une sélection) : les fils qui y sont reliés suivent (élastique) et redeviennent des segments droits au lâcher. Désactivez-le avec <b>🔗</b> dans la barre au-dessus du circuit ou dans les réglages pour déplacer les composants sans leurs fils, par exemple pour les déconnecter ; <b>Alt + glisser</b> fait l’inverse du réglage pour un déplacement.</li>
 <li>Tactile : sélectionnez le composant et utilisez <b>⟳</b> / <b>⇋</b> dans la barre au-dessus du circuit. Pendant le placement, la même barre tourne le composant avant de toucher la grille.</li></ul>
 <h4>Zoom et déplacement</h4><ul>
 <li>Souris : <b>molette</b> = zoom autour du pointeur (pincement sur un pavé tactile aussi) ; glisser avec le <b>bouton droit ou du milieu</b>, ou maintenir <b>Espace</b> et glisser = déplacer la vue ; glisser sur le fond = sélection par rectangle.</li>
@@ -238,6 +240,7 @@
     },
     es: {
       title: 'Simulador de circuitos en continua',
+      set_rubber: 'Los cables siguen a los componentes que se mueven (rubber band). Alt + arrastrar hace lo contrario.', rubber_tip: 'Los cables siguen al mover (rubber band): sí / no', rubber_on: 'Rubber band activado: los cables siguen lo que se mueve', rubber_off: 'Rubber band desactivado: los componentes se mueven sin sus cables (para desconectarlos)',
       place_cancel: 'Dejar de colocar (Esc)',
       tip_flip: 'Toque para invertir esta referencia', node_name: 'Nombre del nodo', node_hint: 'Las tensiones de nodo se miden respecto de masa (0 V). Póngale un nombre al nodo (A, B, sal…) para encontrarlo en las tablas y las ecuaciones.',
       nodes_hint: 'Incógnitas del método de nodos: la tensión de cada nodo respecto de masa. Pase el ratón o toque una fila para ubicar el nodo en el circuito.',
@@ -341,7 +344,7 @@
 <li>Transistor (BJT): corte, activa (V<sub>BE</sub> = 0,7 V, I<sub>C</sub> = βI<sub>B</sub>) o saturación (V<sub>CE</sub> = V<sub>CE,sat</sub>).</li></ul>
 <h4>Rotar y espejar</h4><ul>
 <li>Ratón: <b>clic derecho</b> sobre un componente = un cuarto de vuelta, <b>Mayús + clic derecho</b> = espejar. Mientras se coloca, el clic derecho rota el componente antes de soltarlo.</li>
-<li>Teclado: <b>R</b> rota, <b>F</b> espeja (la selección, o el componente que se está colocando).</li>
+<li>Teclado: <b>R</b> rota, <b>F</b> espeja (la selección, o el componente que se está colocando).</li></ul><h4>Mover</h4><ul><li>Arrastre un componente (o una selección): los cables conectados lo siguen (rubber band) y al soltar vuelven a quedar en tramos rectos. Desactívelo con <b>🔗</b> en la barra sobre el circuito o en Ajustes para mover componentes sin sus cables, por ejemplo para desconectarlos; <b>Alt + arrastrar</b> hace lo contrario del ajuste en ese movimiento.</li>
 <li>Táctil: seleccione el componente y use <b>⟳</b> / <b>⇋</b> en la barra sobre el circuito. Mientras coloca, la misma barra rota el componente antes de tocar la grilla.</li></ul>
 <h4>Zoom y desplazamiento</h4><ul>
 <li>Ratón: <b>rueda</b> = zoom alrededor del puntero (también pellizco en el touchpad); arrastrar con el <b>botón derecho o del medio</b>, o mantener <b>Espacio</b> y arrastrar = desplazar; arrastrar sobre el fondo = selección con rectángulo.</li>
