@@ -138,7 +138,14 @@ html.layout-mobile #layoutBtn .i-mobile, html.layout-desktop #layoutBtn .i-deskt
 .hint b{color:var(--fg)}
 .field{display:grid; grid-template-columns:minmax(0,1fr) 130px; gap:8px; align-items:center; font-size:14px}
 .field label{line-height:1.25}
-.field input[type=text], .field select{width:100%; border:1px solid var(--border); background:var(--bg); border-radius:8px; padding:7px 8px; font-size:14px; min-height:36px}
+.field input[type=text], .field select{width:100%; border:1px solid var(--border); background-color:var(--bg); border-radius:8px; padding:7px 8px; font-size:14px; min-height:36px}
+/* every drop-down: a text that does not fit ends in "…" (the full text is in the tooltip); own arrow, so
+   that the ellipsis works the same in every browser */
+select{-webkit-appearance:none; appearance:none; min-width:0; max-width:100%; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;
+  background-image:linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position:calc(100% - 15px) 52%, calc(100% - 10px) 52%; background-size:5px 5px, 5px 5px; background-repeat:no-repeat}
+select, .field select{padding-right:28px}
+select option{color:var(--fg); background:var(--bg)}
 .field input.bad{border-color:var(--c-err); box-shadow:0 0 0 1px var(--c-err)}
 .field .unit-in{display:flex; align-items:center; gap:4px}
 .field .unit-in span{color:var(--muted); font-size:13px; min-width:14px}

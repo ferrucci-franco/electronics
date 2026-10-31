@@ -169,6 +169,7 @@
       body.innerHTML = '';
       if (typeof html === 'string') body.innerHTML = html; else body.appendChild(html);
       modal.classList.add('open');
+      requestAnimationFrame(() => body.querySelectorAll('select').forEach((s) => { const o = s.options[s.selectedIndex]; s.title = o ? o.textContent : ''; }));
     }
     function closeModal() { modal.classList.remove('open'); }
     app.modalOpen = () => modal.classList.contains('open');
@@ -1104,7 +1105,12 @@
     }
 
     /* ---------- refresh ---------- */
+    // the full text of the chosen option as the tooltip of each drop-down (it may end in "…")
+    const titleSelects = (root) => root.querySelectorAll('select').forEach((s) => { const o = s.options[s.selectedIndex]; s.title = o ? o.textContent : ''; });
+    document.addEventListener('change', (e) => { if (e.target && e.target.tagName === 'SELECT') titleSelects(e.target.parentNode || document); });
+    ui.titleSelects = titleSelects;
     ui.update = function () {
+      requestAnimationFrame(() => titleSelects(document));
       syncTools();
       syncSelbar();
       syncStatus();
