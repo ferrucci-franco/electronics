@@ -226,7 +226,6 @@
     if (isFinite(th.voc) && Math.abs(th.voc) < 1e4) spec.points.push({ v: th.voc, i: 0, color: slot(1), small: true });
     if (isFinite(th.isc) && Math.abs(th.isc) < 1e3) spec.points.push({ v: 0, i: th.isc, color: slot(1), small: true });
     spec.title = t('thev_curve_title');
-    spec.conv = t('thev_curve_conv');
     return spec;
   }
 
