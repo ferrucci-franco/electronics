@@ -589,6 +589,10 @@
         rgb = rgb.map(v => Math.round(255 * v / top));
       }
       if (b < 0.005) continue;
+      // white light does not show on a light background: warm it up and give the halo a faint edge
+      const lightBg = !document.documentElement.classList.contains('dark');
+      const whiteish = Math.min(...rgb) > 200;
+      if (lightBg && whiteish) rgb = [255, 226, 140];
       const [wx, wy] = C.toWorld(c, c.type === 'led' ? 0 : 0.2, 0);
       const x = wx * s + view.ox, y = wy * s + view.oy, R0 = s * (c.type === 'led' ? 1.9 : 2.8);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -599,6 +603,10 @@
       g.addColorStop(1, `rgba(${rgb.join(',')},0)`);
       ctx.fillStyle = g;
       ctx.beginPath(); ctx.arc(x, y, R0, 0, 2 * Math.PI); ctx.fill();
+      if (lightBg && whiteish) {
+        ctx.strokeStyle = `rgba(150,120,40,${0.25 * a})`; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(x, y, R0 * 0.62, 0, 2 * Math.PI); ctx.stroke();
+      }
     }
   };
 
