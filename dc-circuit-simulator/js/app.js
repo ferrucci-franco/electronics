@@ -337,6 +337,45 @@
     for (const c of cs) { [c.x, c.y] = r(c.x, c.y); c.rot = ((c.rot || 0) + 1) % 4; }
     for (const w of ws) { [w.x1, w.y1] = r(w.x1, w.y1); [w.x2, w.y2] = r(w.x2, w.y2); }
   }
+  // Step the main value of a component up or down (mouse wheel, two fingers): E12 series for a resistance,
+  // one tenth of the decade for sources and β, 2 % for a potentiometer. One undo step per burst of steps.
+  const E12 = [1, 1.2, 1.5, 1.8, 2.2, 2.7, 3.3, 3.9, 4.7, 5.6, 6.8, 8.2];
+  function e12(v, up) {
+    const e = Math.floor(Math.log10(v) + 1e-9), m = v / Math.pow(10, e);
+    if (up) { for (const x of E12) if (x > m * (1 + 1e-6)) return x * Math.pow(10, e); return 10 * Math.pow(10, e); }
+    for (let k = E12.length - 1; k >= 0; k--) if (E12[k] < m * (1 - 1e-6)) return E12[k] * Math.pow(10, e);
+    return 8.2 * Math.pow(10, e - 1);
+  }
+  const decStep = (v) => Math.pow(10, Math.floor(Math.log10(Math.max(Math.abs(v), 1e-12)) + 1e-9) - 1);
+  app.valueKey = (c) => ({ resistor: 'R', vsource: 'V', isource: 'I', pot: 'alpha', bjt: 'beta' })[c.type] || null;
+  let adjustT = 0;
+  app.adjustValue = function (c, up) {
+    const key = app.valueKey(c);
+    if (!key) return false;
+    const d = C.TYPES[c.type].props.find(q => q.key === key);
+    const v = c.props[key];
+    let n;
+    if (key === 'R') n = e12(v, up);
+    else if (key === 'alpha') n = Math.round(100 * (v + (up ? 0.02 : -0.02))) / 100;
+    else if (key === 'beta') n = Math.max(1, Math.round(v + (up ? 1 : -1) * Math.max(1, decStep(v))));
+    else {
+      // sources: 0.1 of the current decade (5 V → 0.1 V steps), crossing zero cleanly
+      const st = Math.abs(v) < 1e-12 ? (key === 'V' ? 0.1 : 1e-4) : decStep(v);
+      n = Math.round((v + (up ? st : -st)) / st) * st;
+      if (Math.abs(n) < st * 1e-6) n = 0;
+    }
+    if (d.min != null) n = Math.max(d.min, n);
+    if (d.max != null) n = Math.min(d.max, n);
+    if (key === 'alpha') n = Math.max(0, Math.min(1, n));
+    if (n === v) return true;
+    const now = performance.now();
+    if (now - adjustT > 900) app.checkpoint();
+    adjustT = now;
+    c.props[key] = Number(n.toPrecision(12));
+    app.commit();
+    return true;
+  };
+
   // flip the reference direction of V ('v') or I ('i') of an element
   app.flipRef = function (id, kind) {
     const c = app.circuit.comps.find(x => x.id === id);

@@ -129,7 +129,7 @@
 <h4>Zoom and pan</h4><ul>
 <li>Mouse: <b>wheel</b> = zoom around the pointer (pinch on a touchpad too); drag with the <b>right or middle button</b>, or hold <b>Space</b> and drag = pan; drag on the background = box selection (the components inside and every wire it touches).</li>
 <li>Touch: <b>one finger</b> on the background = pan, <b>two fingers</b> = zoom and pan; long press on the background = box selection, long press on an element = properties.</li>
-<li>Buttons + / − / ⤢ (fit the circuit) at the bottom right; keys <b>+</b>, <b>−</b>, <b>0</b>.</li></ul>
+<li>Buttons + / − / ⤢ (fit the circuit) at the bottom right; keys <b>+</b>, <b>−</b>, <b>0</b>.</li></ul><h4>Changing a value quickly</h4><ul><li>Select a component and turn the <b>mouse wheel over it</b> (or scroll with two fingers on a touchpad, or move two fingers up and down on it on a touch screen): resistance along the E12 series, sources in steps of a tenth of their decade, potentiometer position, β of a transistor. One Ctrl+Z undoes the whole series of steps.</li></ul>
 <h4>Other keys</h4><ul><li>Del, Ctrl+Z / Ctrl+Y, Ctrl+C / Ctrl+V, Ctrl+D, Ctrl+A, arrows (move the selection), W (wire), Enter (properties), Esc.</li></ul>`,
       ex_title: 'Examples', ex_load: 'Load',
       copy_hint: 'Copied', pasted: 'Pasted',
@@ -263,7 +263,7 @@
 <h4>Zoom et déplacement</h4><ul>
 <li>Souris : <b>molette</b> = zoom autour du pointeur (pincement sur un pavé tactile aussi) ; glisser avec le <b>bouton droit ou du milieu</b>, ou maintenir <b>Espace</b> et glisser = déplacer la vue ; glisser sur le fond = sélection par rectangle (les composants à l’intérieur et tous les fils qu’il touche).</li>
 <li>Tactile : <b>un doigt</b> sur le fond = déplacer la vue, <b>deux doigts</b> = zoom et déplacement ; appui long sur le fond = sélection par rectangle, appui long sur un élément = propriétés.</li>
-<li>Boutons + / − / ⤢ (cadrer le circuit) en bas à droite ; touches <b>+</b>, <b>−</b>, <b>0</b>.</li></ul>
+<li>Boutons + / − / ⤢ (cadrer le circuit) en bas à droite ; touches <b>+</b>, <b>−</b>, <b>0</b>.</li></ul><h4>Changer une valeur rapidement</h4><ul><li>Sélectionnez un composant et tournez la <b>molette au-dessus de lui</b> (ou faites défiler à deux doigts sur un pavé tactile, ou déplacez deux doigts vers le haut ou le bas sur lui sur un écran tactile) : résistance selon la série E12, sources par pas d’un dixième de leur décade, position du potentiomètre, β d’un transistor. Un seul Ctrl+Z annule toute la série de pas.</li></ul>
 <h4>Autres touches</h4><ul><li>Suppr, Ctrl+Z / Ctrl+Y, Ctrl+C / Ctrl+V, Ctrl+D, Ctrl+A, flèches (déplacer la sélection), W (fil), Entrée (propriétés), Échap.</li></ul>`,
       ex_title: 'Exemples', ex_load: 'Charger',
       copy_hint: 'Copié', pasted: 'Collé',
@@ -397,7 +397,7 @@
 <h4>Zoom y desplazamiento</h4><ul>
 <li>Ratón: <b>rueda</b> = zoom alrededor del puntero (también pellizco en el touchpad); arrastrar con el <b>botón derecho o del medio</b>, o mantener <b>Espacio</b> y arrastrar = desplazar; arrastrar sobre el fondo = selección con rectángulo (los componentes que quedan adentro y todos los cables que toca).</li>
 <li>Táctil: <b>un dedo</b> sobre el fondo = desplazar, <b>dos dedos</b> = zoom y desplazamiento; toque largo sobre el fondo = selección con rectángulo, toque largo sobre un elemento = propiedades.</li>
-<li>Botones + / − / ⤢ (encuadrar el circuito) abajo a la derecha; teclas <b>+</b>, <b>−</b>, <b>0</b>.</li></ul>
+<li>Botones + / − / ⤢ (encuadrar el circuito) abajo a la derecha; teclas <b>+</b>, <b>−</b>, <b>0</b>.</li></ul><h4>Cambiar un valor rápido</h4><ul><li>Seleccione un componente y gire la <b>rueda del ratón sobre él</b> (o deslice con dos dedos en el touchpad, o mueva dos dedos hacia arriba o abajo sobre él en una pantalla táctil): resistencia según la serie E12, fuentes en pasos de un décimo de su década, posición del potenciómetro, β de un transistor. Un solo Ctrl+Z deshace toda la serie de pasos.</li></ul>
 <h4>Otras teclas</h4><ul><li>Supr, Ctrl+Z / Ctrl+Y, Ctrl+C / Ctrl+V, Ctrl+D, Ctrl+A, flechas (mover la selección), W (cable), Enter (propiedades), Esc.</li></ul>`,
       ex_title: 'Ejemplos', ex_load: 'Cargar',
       copy_hint: 'Copiado', pasted: 'Pegado',

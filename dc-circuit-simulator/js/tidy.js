@@ -136,6 +136,7 @@
   function prettify(app) {
     const circuit = app.circuit;
     const before = signature(circuit);
+    const n0 = circuit.wires.length;
     let wires = [];
     for (const w of circuit.wires) {
       if (w.x1 === w.x2 && w.y1 === w.y2) continue;
@@ -148,9 +149,94 @@
     const ws = trimDead(mergeLines(wires, terms), terms, () => true);
     app.checkpoint();
     const r = apply(app, ws, before);
-    if (!r.ok || !r.changed) { app.dropCheckpoint(); return r; }
+    if (!r.ok) { app.dropCheckpoint(); return r; }
+    const jogs = straightenJogs(app, before);
+    if (!r.changed && !jogs) { app.dropCheckpoint(); return { ok: true, changed: false }; }
     app.commit();
-    return r;
+    return { ok: true, changed: true, before: n0, after: app.circuit.wires.length, jogs };
+  }
+
+  /* Jogs: a wire path that leaves a point, steps aside and goes on in the same direction (a Z made of three
+   * pieces whose corners touch nothing else) becomes straight when one of its ends can slide along the wire
+   * it sits on (a rail) by the width of the step; e.g. the lead of a resistor that hangs from a rail one
+   * grid step aside. Each straightening is kept only if the connections stay the same. */
+  function straightenJogs(app, sig) {
+    const circuit = app.circuit;
+    const terms = terminals(circuit);
+    const key = (x, y) => x + ',' + y;
+    const isTerm = (x, y) => terms.some(t => t[0] === x && t[1] === y);
+    const rejected = new Set();
+    let done = 0;
+    for (let pass = 0; pass < 40; pass++) {
+      const W = circuit.wires;
+      // how many things meet at each wire end
+      const deg = new Map();
+      for (const w of W) for (const [x, y] of [[w.x1, w.y1], [w.x2, w.y2]]) deg.set(key(x, y), (deg.get(key(x, y)) || 0) + 1);
+      const degree = (x, y) => (deg.get(key(x, y)) || 0) + (isTerm(x, y) ? 1 : 0) + W.filter(o => onInterior(x, y, o)).length * 2;
+      const at = (x, y, not) => W.filter(o => o !== not && ((o.x1 === x && o.y1 === y) || (o.x2 === x && o.y2 === y)));
+      const other = (w, x, y) => (w.x1 === x && w.y1 === y ? [w.x2, w.y2] : [w.x1, w.y1]);
+      let applied = false;
+      for (const b of W) {
+        const horiz = b.y1 === b.y2 && b.x1 !== b.x2, vert = b.x1 === b.x2 && b.y1 !== b.y2;
+        if (!horiz && !vert) continue;
+        const C1 = [b.x1, b.y1], C2 = [b.x2, b.y2];
+        if (degree(C1[0], C1[1]) !== 2 || degree(C2[0], C2[1]) !== 2) continue;
+        const a = at(C1[0], C1[1], b)[0], c = at(C2[0], C2[1], b)[0];
+        if (!a || !c || a === c) continue;
+        const perp = (w) => (horiz ? w.x1 === w.x2 && w.y1 !== w.y2 : w.y1 === w.y2 && w.x1 !== w.x2);
+        if (!perp(a) || !perp(c)) continue;
+        const P = other(a, C1[0], C1[1]), Q = other(c, C2[0], C2[1]);
+        // a Z: the two legs go the same way
+        const s1 = horiz ? Math.sign(C1[1] - P[1]) : Math.sign(C1[0] - P[0]);
+        const s2 = horiz ? Math.sign(Q[1] - C2[1]) : Math.sign(Q[0] - C2[0]);
+        if (!s1 || s1 !== s2) continue;
+        const step = horiz ? [C2[0] - C1[0], 0] : [0, C2[1] - C1[1]];
+        for (const [end, d, keep] of [[P, step, Q], [Q, [-step[0], -step[1]], P]]) {
+          const id = [b.id, end.join(',')].join('|');
+          if (rejected.has(id)) continue;
+          const trial = slideEnd(W, terms, end, d, [a, b, c]);
+          if (!trial) { rejected.add(id); continue; }
+          const E2 = [end[0] + d[0], end[1] + d[1]];
+          const leg = { id: a.id, x1: E2[0], y1: E2[1], x2: keep[0], y2: keep[1] };
+          const wires = trial.filter(w => w !== b && w !== c && w !== a).concat([leg]);
+          const cand = { comps: circuit.comps, wires, nodeNames: circuit.nodeNames };
+          if (signature(cand) !== sig) { rejected.add(id); continue; }
+          circuit.wires = wires;
+          applied = true; done++;
+          break;
+        }
+        if (applied) break;
+      }
+      if (!applied) break;
+    }
+    return done;
+  }
+
+  // copy of the wires with the point E slid by d along its rail, or null if that would change a connection
+  function slideEnd(W, terms, E, d, chain) {
+    const [x, y] = E, E2 = [x + d[0], y + d[1]], alongX = d[0] !== 0;
+    if (terms.some(t => t[0] === x && t[1] === y)) return null;
+    const out = [];
+    for (const w of W) {
+      if (chain.includes(w)) { out.push(w); continue; }
+      const parallel = alongX ? w.y1 === w.y2 : w.x1 === w.x2;
+      const e1 = w.x1 === x && w.y1 === y, e2 = w.x2 === x && w.y2 === y;
+      if (e1 || e2) {
+        if (!parallel) return null;
+        const n = Object.assign({}, w);
+        if (e1) { n.x1 = E2[0]; n.y1 = E2[1]; } else { n.x2 = E2[0]; n.y2 = E2[1]; }
+        if (n.x1 === n.x2 && n.y1 === n.y2) continue;
+        out.push(n);
+        continue;
+      }
+      if (onInterior(x, y, w)) {
+        if (!parallel) return null;
+        const inside = (E2[0] - w.x1) * (E2[0] - w.x2) <= 0 && (E2[1] - w.y1) * (E2[1] - w.y2) <= 0;
+        if (!inside) return null;
+      }
+      out.push(w);
+    }
+    return out;
   }
 
   // after a drag: merge, and trim only the dead ends left at the places the moved items came from
