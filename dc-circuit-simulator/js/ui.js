@@ -1162,24 +1162,33 @@
       const m = app.monitor;
       if (!m) { mon.hidden = true; return; }
       if (!m.ids.every(id => app.circuit.comps.some(c => c.id === id))) { app.monitor = null; mon.hidden = true; return; }
-      let specs = null;
-      try { specs = DCS.iv.build(app, m.ids, { levels: m.levels }); } catch (e) { console.error(e); }
+      // the fixed output curves are traced again around the base current when it has gone far from them
+      const qc = app.circuit.comps.find(c => c.id === m.ids[0]);
+      const rq = qc && qc.type === 'bjt' && app.result && app.result.ok ? app.result.el[qc.id] : null;
+      if (m.levels && rq && rq.ib > 0 && (rq.ib < m.levels[0] * 0.5 || rq.ib > m.levels[3] * 1.5)) { m.levels = null; m.win[1] = null; }
+      // traced over the window shown: if Q left it, the window grows and the curves are traced again
+      const make = () => { try { return DCS.iv.build(app, m.ids, { levels: m.levels, wins: m.win }); } catch (e) { console.error(e); return null; } };
+      let specs = make();
       if (!specs) return;   // no solution right now: keep the last drawing
       specs = Array.isArray(specs) ? specs : [specs];
       // the transistor output curves stay those of the moment the plot was pinned: Q moves among them
       if (!m.levels) { const o = specs.find(s => s.levels); if (o) m.levels = o.levels; }
-      const k = Math.min(m.idx, specs.length - 1), spec = specs[k];
-      mon.hidden = false;
-      mswap.hidden = specs.length < 2;
-      mswap.title = t('mon_swap'); mreset.title = t('mon_reset'); mclose.title = t('close');
-      mtitle.innerHTML = (spec.titleHtml || DCS.iv.subHtml(spec.title));
+      let k = Math.min(m.idx, specs.length - 1), spec = specs[k];
       const q = spec.points.find(p => p.label);
       const w = m.win[k] || (m.win[k] = Object.assign({}, spec.win));
       if (q) {
         const dv = w.v1 - w.v0, di = w.i1 - w.i0;
-        if (q.v < w.v0) w.v0 = q.v - 0.1 * dv; if (q.v > w.v1) w.v1 = q.v + 0.1 * dv;
-        if (q.i < w.i0) w.i0 = q.i - 0.1 * di; if (q.i > w.i1) w.i1 = q.i + 0.1 * di;
+        let grown = false;
+        if (q.v < w.v0) { w.v0 = q.v - 0.1 * dv; grown = true; }
+        if (q.v > w.v1) { w.v1 = q.v + 0.1 * dv; grown = true; }
+        if (q.i < w.i0) { w.i0 = q.i - 0.1 * di; grown = true; }
+        if (q.i > w.i1) { w.i1 = q.i + 0.1 * di; grown = true; }
+        if (grown) { const again = make(); if (again) { specs = Array.isArray(again) ? again : [again]; spec = specs[k]; } }
       }
+      mon.hidden = false;
+      mswap.hidden = specs.length < 2;
+      mswap.title = t('mon_swap'); mreset.title = t('mon_reset'); mclose.title = t('close');
+      mtitle.innerHTML = (spec.titleHtml || DCS.iv.subHtml(spec.title));
       spec.win = w;
       const tr = m.trail[k] || (m.trail[k] = []);
       if (q) {
