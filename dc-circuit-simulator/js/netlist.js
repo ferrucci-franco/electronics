@@ -89,8 +89,17 @@
         case 'resistor': elements.push({ type: 'R', id: c.id, n, R: pr.R }); break;
         case 'vsource': elements.push({ type: 'V', id: c.id, n, V: pr.V }); break;
         case 'isource': elements.push({ type: 'I', id: c.id, n, I: pr.I }); break;
-        case 'ammeter': elements.push({ type: 'AM', id: c.id, n }); break;
-        case 'voltmeter': elements.push({ type: 'VM', id: c.id, n }); break;
+        case 'ammeter': case 'isense': elements.push({ type: 'AM', id: c.id, n }); break;
+        case 'voltmeter': case 'vsense': elements.push({ type: 'VM', id: c.id, n }); break;
+        case 'depv': case 'depi': {
+          // controlled by the current of an ammeter-like sensor or by the voltage across a voltmeter-like one;
+          // without a control the source is zero
+          const s = C.ctrlOf(c, circuit), cur = s && C.meterKind(s) === 'A', k = s ? pr.k : 0;
+          const vt = c.type === 'depv';
+          if (cur) elements.push({ type: vt ? 'H' : 'F', id: c.id, n, ctrl: s.id, k });
+          else elements.push({ type: vt ? 'E' : 'G', id: c.id, n, cn: s ? compNodes.get(s.id) : [0, 0], k });
+          break;
+        }
         // an open switch is an open circuit: a voltmeter gives the voltage across its contacts
         case 'switch': case 'button': if (!C.isClosed(c)) elements.push({ type: 'VM', id: c.id, n }); break;
         case 'pot': {

@@ -10,6 +10,12 @@
  *   { type:'D',  id, n:[a,k], model, Vf, rd, Is, N }   model: 'ideal' | 'cvd' | 'exact'
  *   { type:'OA', id, n:[inp,inn,out], sat, Vpos, Vneg } ideal op-amp, optional output saturation
  *   { type:'Q',  id, n:[b,c,e], pnp, beta, Vbe, Vcesat }  simple BJT (cutoff / active / saturation)
+ *   linear dependent sources (controlled by the voltage between two nodes cn, or by the current of the
+ *   ammeter-like element whose id is ctrl, entering its first terminal):
+ *   { type:'E', id, n:[p,m], cn:[cp,cm], k }   v(p) − v(m) = k·v_x          (VCVS)
+ *   { type:'H', id, n:[p,m], ctrl, k }          v(p) − v(m) = k·i_x          (CCVS)
+ *   { type:'G', id, n:[a,b], cn:[cp,cm], k }   I = k·v_x, from a to b inside (VCCS)
+ *   { type:'F', id, n:[a,b], ctrl, k }          I = k·i_x, from a to b inside (CCCS)
  *
  * Piecewise-linear devices (ideal and constant-drop diodes, op-amp, BJT) have discrete states.
  * The solver looks for a set of states whose linear solution is consistent with every state,
@@ -143,6 +149,27 @@
     VM: {
       stamp() {},
       tc() { return [0, 0]; }
+    },
+    E: {
+      branches: () => 1,
+      stamp(S, el, st, br) { S.vbr(el.n[0], el.n[1], br[0], 0, 0); S.row(br[0], el.cn[0], -el.k); S.row(br[0], el.cn[1], el.k); },
+      tc(el, st, sol, br) { const i = sol.x[br[0]]; return [i, -i]; }
+    },
+    H: {
+      branches: () => 1,
+      stamp(S, el, st, br) { S.vbr(el.n[0], el.n[1], br[0], 0, 0); const kc = S.brOf(el.ctrl); if (kc != null) S.ab(br[0], kc, -el.k); },
+      tc(el, st, sol, br) { const i = sol.x[br[0]]; return [i, -i]; }
+    },
+    G: {
+      stamp(S, el) {
+        const [a, b] = el.n, [cp, cm] = el.cn;
+        S.mat(a, cp, el.k); S.mat(a, cm, -el.k); S.mat(b, cp, -el.k); S.mat(b, cm, el.k);
+      },
+      tc(el, st, sol) { const i = el.k * (sol.v[el.cn[0]] - sol.v[el.cn[1]]); return [i, -i]; }
+    },
+    F: {
+      stamp(S, el) { const kc = S.brOf(el.ctrl); if (kc != null) { S.col(el.n[0], kc, el.k); S.col(el.n[1], kc, -el.k); } },
+      tc(el, st, sol) { const kc = sol.brById && sol.brById.get(el.ctrl); const i = kc != null ? el.k * sol.x[kc] : 0; return [i, -i]; }
     },
     // test source used by the Thevenin / Norton calculation: current source or voltage source
     IT: {
@@ -305,14 +332,17 @@
     return { find, union(a, b) { a = find(a); b = find(b); if (a === b) return false; p[a] = b; return true; } };
   }
 
+  // elements that fix the voltage between their terminals
+  const VTYPE = new Set(['V', 'AM', 'VT', 'E', 'H']);
+
   function analyseTopology(ckt) {
     const N = ckt.nodeCount;
     const issues = [];
     const skip = new Set();          // elements left out of the matrix (shorted ammeters, zero sources)
     // shorted voltage-type elements
     for (const el of ckt.elements) {
-      if ((el.type === 'V' || el.type === 'AM' || el.type === 'VT') && el.n[0] === el.n[1]) {
-        if (el.type === 'V' && el.V !== 0) issues.push({ level: 'error', code: 'vshort', ids: [el.id] });
+      if (VTYPE.has(el.type) && el.n[0] === el.n[1]) {
+        if ((el.type === 'V' && el.V !== 0) || ((el.type === 'E' || el.type === 'H') && el.k !== 0)) issues.push({ level: 'error', code: 'vshort', ids: [el.id] });
         else if (el.type === 'AM') issues.push({ level: 'warn', code: 'amshort', ids: [el.id] });
         skip.add(el);
       }
@@ -321,7 +351,7 @@
     const dsu = makeDSU(N);
     for (const el of ckt.elements) {
       if (skip.has(el)) continue;
-      if (el.type === 'V' || el.type === 'AM' || el.type === 'VT') {
+      if (VTYPE.has(el.type)) {
         if (!dsu.union(el.n[0], el.n[1])) {
           // find the loop through a path search for the message
           issues.push({ level: 'error', code: 'vloop', ids: voltageLoop(ckt, el, skip) });
@@ -334,7 +364,7 @@
       if (skip.has(el)) continue;
       const n = el.n;
       switch (el.type) {
-        case 'R': case 'V': case 'AM': case 'D': case 'VT': con.union(n[0], n[1]); break;
+        case 'R': case 'V': case 'AM': case 'D': case 'VT': case 'E': case 'H': con.union(n[0], n[1]); break;
         case 'Q': con.union(n[0], n[2]); con.union(n[1], n[2]); break;
         case 'OA': con.union(n[2], 0); break;
         default: break;
@@ -357,7 +387,7 @@
     const adj = new Map();
     for (const el of ckt.elements) {
       if (el === closing || skip.has(el)) continue;
-      if (el.type !== 'V' && el.type !== 'AM' && el.type !== 'VT') continue;
+      if (!VTYPE.has(el.type)) continue;
       for (const [a, b] of [[el.n[0], el.n[1]], [el.n[1], el.n[0]]]) {
         if (!adj.has(a)) adj.set(a, []);
         adj.get(a).push([b, el]);
@@ -391,6 +421,9 @@
       brIndex.push(br);
     });
     const n = nv + nb;
+    // branch current of an element, by id (the control of the current-controlled sources)
+    const brById = new Map();
+    ckt.elements.forEach((el, k) => { if (brIndex[k].length) brById.set(el.id, brIndex[k][0]); });
     const A = new Array(n);
     for (let i = 0; i < n; i++) A[i] = new Float64Array(n);
     const b = new Float64Array(n);
@@ -411,6 +444,8 @@
       col(node, k, v) { const i = ni(node); if (i >= 0) A[i][k] += v; },
       row(k, node, v) { const j = ni(node); if (j >= 0) A[k][j] += v; },
       rhs(k, v) { b[k] += v; },
+      ab(r, c, v) { A[r][c] += v; },
+      brOf: (id) => brById.get(id),
       mat(rowNode, colNode, v) { const i = ni(rowNode), j = ni(colNode); if (i >= 0 && j >= 0) A[i][j] += v; },
       inj(node, v) { const i = ni(node); if (i >= 0) b[i] += v; },
       vbr(p, m, k, V, r) {
@@ -426,7 +461,7 @@
       if (ctx.skip.has(el)) return;
       DEV[el.type].stamp(S, el, states[k], brIndex[k], k);
     });
-    return { A, b, brIndex, S };
+    return { A, b, brIndex, S, brById };
   }
 
   function solveFixed(ckt, ctx, states, vinit) {
@@ -440,11 +475,11 @@
         if (!x) return { ok: false, reason: 'singular' };
         const vn = new Float64Array(N);
         for (let i = 1; i < N; i++) vn[i] = x[i - 1];
-        if (!ctx.hasExact) return { ok: true, x, v: vn, brIndex: sys.brIndex, iters: it + 1 };
+        if (!ctx.hasExact) return { ok: true, x, v: vn, brIndex: sys.brIndex, brById: sys.brById, iters: it + 1 };
         let maxd = 0, vmax = 0;
         for (let i = 1; i < N; i++) { maxd = Math.max(maxd, Math.abs(vn[i] - v[i])); vmax = Math.max(vmax, Math.abs(vn[i])); }
         v = vn;
-        if (it > 0 && !sys.S.limited && maxd < 1e-9 + 1e-9 * vmax) return { ok: true, x, v: vn, brIndex: sys.brIndex, iters: it + 1 };
+        if (it > 0 && !sys.S.limited && maxd < 1e-9 + 1e-9 * vmax) return { ok: true, x, v: vn, brIndex: sys.brIndex, brById: sys.brById, iters: it + 1 };
       }
       return { ok: false, reason: 'newton' };
     };
@@ -633,7 +668,7 @@
       if (!probe.ok && probe.reason === 'huge') result.issues.push({ level: 'error', code: 'huge', ids: [] });
       // junctions or op-amp outputs tied straight to a voltage source cannot satisfy their model
       const vs = makeDSU(N);
-      for (const el of ckt.elements) if (!topo.skip.has(el) && (el.type === 'V' || el.type === 'AM' || el.type === 'VT')) vs.union(el.n[0], el.n[1]);
+      for (const el of ckt.elements) if (!topo.skip.has(el) && VTYPE.has(el.type)) vs.union(el.n[0], el.n[1]);
       const tied = [];
       for (const el of ckt.elements) {
         if (el.type === 'D' && vs.find(el.n[0]) === vs.find(el.n[1])) tied.push(el.id);

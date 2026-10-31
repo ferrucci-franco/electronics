@@ -21,6 +21,17 @@
   // (normally open) or opened while held (normally closed). Held buttons live here, never in the saved circuit.
   const pressed = new Set();
   const isSwitch = (c) => c.type === 'switch' || c.type === 'button';
+  // meters and control sensors: 'A' reads a current (0 Ω), 'V' a voltage (open circuit)
+  const meterKind = (c) => (c.type === 'ammeter' || c.type === 'isense' ? 'A' : c.type === 'voltmeter' || c.type === 'vsense' ? 'V' : null);
+  const isDep = (c) => c.type === 'depv' || c.type === 'depi';
+  // the control of a dependent source: the sensor (or meter) named in props.ctrl
+  const ctrlOf = (c, circuit) => (c.props.ctrl ? circuit.comps.find(s => meterKind(s) && s.name === c.props.ctrl) || null : null);
+  // gain symbol and unit by the kind of source: VCVS μ, CCVS r_m, VCCS g_m, CCCS β
+  function depKind(c, circuit) {
+    const s = ctrlOf(c, circuit), cur = s && meterKind(s) === 'A';
+    if (c.type === 'depv') return cur ? { sym: 'r<sub>m</sub>', unit: 'Ω', code: 'ccvs', x: 'i' } : { sym: 'μ', unit: 'V/V', code: 'vcvs', x: 'v' };
+    return cur ? { sym: 'β', unit: 'A/A', code: 'cccs', x: 'i' } : { sym: 'g<sub>m</sub>', unit: 'S', code: 'vccs', x: 'v' };
+  }
   const isClosed = (c) => (c.type === 'switch' ? !!c.props.closed : c.type === 'button' ? (c.props.nc === 'nc') !== pressed.has(c.id) : false);
 
   const TYPES = {
@@ -39,6 +50,20 @@
       props: [{ key: 'I', unit: 'A', def: 1e-3, min: -1e3, max: 1e3 }],
       valueText: (c, f) => f(c.props.I, 'A')
     },
+    // dependent sources: value = k · (control variable); the control is a sensor anywhere in the circuit
+    depv: {
+      prefix: 'E', terms: [[-2, 0], [2, 0]], box: [-2, -1.05, 2, 1.05], defRot: 1,
+      props: [{ key: 'ctrl', type: 'select', def: '' }, { key: 'k', unit: (c, ckt) => depKind(c, ckt).unit, def: 2, min: -1e9, max: 1e9 }],
+      valueText: (c, f) => depText(c)
+    },
+    depi: {
+      prefix: 'G', terms: [[-2, 0], [2, 0]], box: [-2, -1.05, 2, 1.05], defRot: 3,
+      props: [{ key: 'ctrl', type: 'select', def: '' }, { key: 'k', unit: (c, ckt) => depKind(c, ckt).unit, def: 0.01, min: -1e9, max: 1e9 }],
+      valueText: (c, f) => depText(c)
+    },
+    // control sensors: a small ammeter (a wire that measures i_x) and a small voltmeter (open, measures v_x)
+    isense: { prefix: 'ix', terms: [[-1, 0], [1, 0]], box: [-1, -0.75, 1, 0.6], props: [] },
+    vsense: { prefix: 'vx', terms: [[-1, 0], [1, 0]], box: [-1, -0.6, 1, 0.6], defRot: 1, props: [] },
     ammeter: { prefix: 'AM', terms: [[-2, 0], [2, 0]], box: [-2, -1, 2, 1], props: [] },
     voltmeter: { prefix: 'VM', terms: [[-2, 0], [2, 0]], box: [-2, -1, 2, 1], defRot: 1, props: [] },
     switch: {
@@ -131,6 +156,12 @@
     }
   };
 
+  function depText(c) {
+    const k = +c.props.k;
+    const ks = Math.abs(k) >= 1e4 || (Math.abs(k) < 1e-3 && k !== 0) ? k.toExponential(2).replace(/\.?0+e/, 'e') : String(+k.toPrecision(4));
+    return ks + '·' + (c.props.ctrl || '?');
+  }
+
   function defaults(type) {
     const p = {};
     for (const d of TYPES[type].props) p[d.key] = d.def;
@@ -143,11 +174,11 @@
    * Defaults: passive convention, except the sources (generator convention, positive values when they deliver).
    * Meters keep the reference of their own + terminal. */
   function defRef(type) {
-    if (type === 'vsource') return { refV: 0, refI: 1 };
-    if (type === 'isource') return { refV: 1, refI: 0 };
+    if (type === 'vsource' || type === 'depv') return { refV: 0, refI: 1 };
+    if (type === 'isource' || type === 'depi') return { refV: 1, refI: 0 };
     return { refV: 0, refI: 0 };
   }
-  const flippable = (c) => TYPES[c.type].terms.length === 2 && c.type !== 'ground' && c.type !== 'ammeter' && c.type !== 'voltmeter';
+  const flippable = (c) => TYPES[c.type].terms.length === 2 && c.type !== 'ground' && !meterKind(c);
   // passive elements always use the passive convention (the current arrow enters through +): flipping the
   // voltage reference flips the current reference with it. Only the sources can take the generator convention.
   const passiveOnly = (c) => c.type === 'resistor' || isDiode(c) || isSwitch(c);
@@ -245,6 +276,36 @@
       P.line([[-2, 0], [-0.9, 0]]); P.line([[0.9, 0], [2, 0]]);
       P.text(0, 0, 'V', 1.05);
       P.plus(-1.45, -0.6, 0.32);
+    },
+    // dependent sources: a diamond (USA); IEC: the same diamond with the conventions of the independent sources
+    depv(P, c, us) {
+      const d = [[-0.95, 0], [0, -0.95], [0.95, 0], [0, 0.95]];
+      P.poly(d, false);
+      if (us) {
+        P.line([[-2, 0], [-0.95, 0]]); P.line([[0.95, 0], [2, 0]]);
+        P.plus(-0.45, 0, 0.32); P.minus(0.45, 0, 0.32);
+      } else {
+        P.line([[-2, 0], [2, 0]]);
+        P.plus(-1.45, -0.7, 0.36);
+      }
+    },
+    depi(P, c, us) {
+      P.poly([[-0.95, 0], [0, -0.95], [0.95, 0], [0, 0.95]], false);
+      P.line([[-2, 0], [-0.95, 0]]); P.line([[0.95, 0], [2, 0]]);
+      if (us) P.arrow(-0.55, 0, 0.55, 0, 0.3);
+      else { P.line([[0, -0.95], [0, 0.95]]); P.arrow(1.1, 0, 1.75, 0, 0.32); }
+    },
+    isense(P) {
+      P.circle(0, 0, 0.5, false);
+      P.line([[-1, 0], [-0.5, 0]]); P.line([[0.5, 0], [1, 0]]);
+      P.text(0, 0, 'A', 0.62);
+      P.arrow(-0.5, -0.72, 0.5, -0.72, 0.22);
+    },
+    vsense(P) {
+      P.circle(0, 0, 0.5, false);
+      P.line([[-1, 0], [-0.5, 0]]); P.line([[0.5, 0], [1, 0]]);
+      P.text(0, 0, 'V', 0.62);
+      P.plus(-0.8, -0.42, 0.2); P.minus(0.8, -0.42, 0.2);
     },
     diode(P, c, us) {
       P.line([[-2, 0], [-0.6, 0]]); P.line([[0.6, 0], [2, 0]]);
@@ -387,7 +448,7 @@
     }
   };
 
-  const api = { TYPES, LED_COLORS, isDiode, pressed, isSwitch, isClosed, passiveOnly, potX, potFrac, ROT, defaults, defRef, refs, signed, flippable, toWorld, toLocal, terminals, hit, bounds, SYM };
+  const api = { TYPES, LED_COLORS, meterKind, isDep, ctrlOf, depKind, depText, isDiode, pressed, isSwitch, isClosed, passiveOnly, potX, potFrac, ROT, defaults, defRef, refs, signed, flippable, toWorld, toLocal, terminals, hit, bounds, SYM };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else (root.DCS = root.DCS || {}).comp = api;
 })(typeof window !== 'undefined' ? window : globalThis);

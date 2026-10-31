@@ -19,7 +19,7 @@
     const ckt0 = { nodeCount: net.ckt.nodeCount, elements: els.map(el => (el.type === 'V' ? Object.assign({}, el, { V: 0 }) : el.type === 'I' ? Object.assign({}, el, { I: 0 }) : el)) };
     const t0 = S.thevenin(ckt0, r.a, r.b, { tempC: app.settings.tempC });
     const rtest = t0.error ? undefined : t0.rth;
-    if (els.some(el => el.type === 'Q' || el.type === 'OA')) return { kind: 'dep', rtest };
+    if (els.some(el => ['Q', 'OA', 'E', 'H', 'G', 'F'].includes(el.type))) return { kind: 'dep', rtest };
 
     // nodes joined by the shorts (voltage sources set to zero, ammeters)
     const N0 = net.ckt.nodeCount;

@@ -62,6 +62,8 @@
     const net = app.net, ckt = net.ckt;
     const sel = (ids ? ids.map(id => app.circuit.comps.find(c => c.id === id)).filter(Boolean) : app.selectedComps()).filter(c => c.type !== 'ground');
     if (ids ? sel.length !== ids.length : (app.sel.size !== sel.length && sel.length < 2)) return null;
+    // dependent sources and their sensors have no characteristic of their own
+    if (sel.some(c => C.isDep(c) || c.type === 'isense' || c.type === 'vsense')) return null;
     if (sel.length === 1 && sel[0].type === 'bjt') return { kind: 'bjt', c: sel[0], r: res.el[sel[0].id] };
     if (sel.length === 1 && sel[0].type === 'opamp') return { kind: 'opamp', c: sel[0], r: res.el[sel[0].id] };
     const two = sel.filter(c => C.TYPES[c.type].terms.length === 2);

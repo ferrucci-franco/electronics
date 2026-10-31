@@ -125,7 +125,7 @@
   }
 
   /* ---------- label layout ---------- */
-  const HALF = { switch: 1.0, button: 1.1, resistor: 0.4, vsource: 0.9, isource: 0.9, ammeter: 0.9, voltmeter: 0.9, diode: 0.6, schottky: 0.6, led: 0.6 };
+  const HALF = { switch: 1.0, button: 1.1, resistor: 0.4, vsource: 0.9, isource: 0.9, ammeter: 0.9, voltmeter: 0.9, depv: 0.95, depi: 0.95, isense: 0.5, vsense: 0.5, diode: 0.6, schottky: 0.6, led: 0.6 };
 
   function worldDir(comp, dx, dy) {
     const m = localMatrix(comp);
@@ -280,6 +280,24 @@
       if (c.type === 'rgbled' && res && res.el[c.id] && res.el[c.id].ch) lit = res.el[c.id].ch.map(q => Math.max(0, Math.min(1, q.i / c.props.Imax)));
       if (c.type === 'led') lit = [res && res.el[c.id] ? Math.max(0, Math.min(1, res.el[c.id].i / c.props.Imax)) : 0];
       drawSymbol(this, c, view, hl || (onSide && !selected) ? col.port : selected ? col.sel : bad ? col.err : col.fg, st.style, lw, lit);
+    }
+
+    // a dependent source and its sensor: a dashed link while one of them is selected or hovered
+    for (const c of S.circuit.comps) {
+      if (!C.isDep(c)) continue;
+      const m = C.ctrlOf(c, S.circuit);
+      if (!m) continue;
+      const on = (id) => S.sel.has(id) || (S.hover && S.hover.id === id);
+      if (!on(c.id) && !on(m.id)) continue;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const ax = c.x * s + view.ox, ay = c.y * s + view.oy, bx = m.x * s + view.ox, by = m.y * s + view.oy;
+      ctx.strokeStyle = col.sel; ctx.lineWidth = 1.6; ctx.globalAlpha = 0.85; ctx.setLineDash([6, 5]);
+      ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+      ctx.setLineDash([]);
+      const other = on(c.id) ? m : c, b = C.bounds(other);
+      ctx.globalAlpha = 0.14; ctx.fillStyle = col.sel;
+      ctx.fillRect((b[0] - 0.15) * s + view.ox, (b[1] - 0.15) * s + view.oy, (b[2] - b[0] + 0.3) * s, (b[3] - b[1] + 0.3) * s);
+      ctx.globalAlpha = 1;
     }
 
     // junction dots and open terminals
@@ -443,12 +461,12 @@
         if (r) {
           const lines = [];
           let off = hwR + 0.35;
-          const meter = c.type === 'ammeter' || c.type === 'voltmeter';
+          const meter = C.meterKind(c);
           if (meter) {
             // a meter with a loose terminal has nothing to measure
             const open = S.net && S.net.openTerms.some(t => t[2] === c.id);
-            const txt = open ? '—' : c.type === 'ammeter' ? fmt(r.i, 'A') : fmt(r.v, 'V');
-            lines.push({ text: txt, mono: true, box: true, color: c.type === 'ammeter' ? col.cur : col.volt });
+            const txt = open ? '—' : meter === 'A' ? fmt(r.i, 'A') : fmt(r.v, 'V');
+            lines.push({ text: txt, mono: true, box: true, color: meter === 'A' ? col.cur : col.volt });
           } else if (!st.realDir) {
             this.refMarks(S, c, r, rd, hwR, cx, cy, ax, ay, marks, lines, fmt);
           } else {
