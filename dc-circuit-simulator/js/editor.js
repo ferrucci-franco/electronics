@@ -930,9 +930,7 @@
     if (mod && (k === 'v' || k === 'V')) { e.preventDefault(); app.paste(); return; }
     if (mod && (k === 'd' || k === 'D')) { e.preventDefault(); app.duplicateSel(); return; }
     if (mod && (k === 'a' || k === 'A')) { e.preventDefault(); app.select(app.circuit.comps.map(c => c.id).concat(app.circuit.wires.map(w => w.id))); return; }
-    // Ctrl+R / ⌘R rotates and Ctrl+E mirrors (R alone takes a resistor, as in LTspice)
-    if (mod && (k === 'r' || k === 'R')) { e.preventDefault(); if (app.tool === 'place') app.rotatePlace(); else app.rotateSel(); return; }
-    if (mod && (k === 'e' || k === 'E')) { e.preventDefault(); if (app.tool === 'place') app.flipPlace(); else app.flipSel(); return; }
+    // Ctrl+R / Ctrl+Shift+R and the other browser keys are left to the browser (reload, hard reload…)
     if (mod) return;
     if (k === 'Delete' || k === 'Backspace') { e.preventDefault(); app.deleteSel(); return; }
     if (k === 'Escape') {
