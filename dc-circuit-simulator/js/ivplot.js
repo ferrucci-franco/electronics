@@ -155,7 +155,9 @@
     // characteristic(s) of two-terminal elements, oriented from a to b
     const net = app.net;
     const ids = A.items.map(it => it.c.id);
-    const th = S.thevenin(net.ckt, A.a, A.b, { exclude: ids, prevStates: app.prevStates, tempC });
+    // the load line of the rest of the circuit is optional (Settings): by default only the element and Q
+    const showLoad = !!app.settings.ivLoad;
+    const th = showLoad ? S.thevenin(net.ckt, A.a, A.b, { exclude: ids, prevStates: app.prevStates, tempC }) : { error: 'off' };
     const vals = [A.q[0]], ivals = [A.q[1]];
     for (const it of A.items) { vals.push(it.sign * it.r.v); ivals.push(it.sign * it.r.i); }
     // nonlinear rest: the real open-circuit voltage and short-circuit current (not the linearised V_Th, I_N)
@@ -187,7 +189,7 @@
     spec.points.push({ name: 'Q', v: A.q[0], i: A.q[1], label: `Q (${U.format(A.q[0], 'V')}, ${U.format(A.q[1], 'A')})` });
     const names = A.items.map(it => it.c.name).join(multi ? (A.kind === 'series' ? ' + ' : ' ∥ ') : '');
     spec.title = multi ? `${t(A.kind === 'series' ? 'iv_series' : 'iv_parallel')}: ${names}` : `${t('iv_title')} · ${names}`;
-    spec.conv = multi ? t('iv_conv_ab') : t('iv_conv');
+    spec.conv = multi ? t(showLoad ? 'iv_conv_ab' : 'iv_conv_ab_q') : t(showLoad ? 'iv_conv' : 'iv_conv_q');
     if (th.nonlinear) spec.conv = spec.conv.replace(t('iv_load_word'), t('iv_curve_word'));
     return spec;
   }
@@ -277,11 +279,12 @@
       for (let k = 0; k <= 120; k++) { const v = winIn.v0 + (winIn.v1 - winIn.v0) * k / 120; const i = isb * (Math.exp(v / Vt) - 1); if (i > winIn.i1 * 1.5) { pts.push([Vt * Math.log(winIn.i1 * 1.5 / isb + 1), winIn.i1 * 1.5]); break; } pts.push([v, i]); }
       inSpec.series.push({ name: t('iv_bjt_exp'), color: 'muted', pts, width: 1.4, dash: true });
     }
-    if (inLine) inSpec.lines.push({ name: t('iv_load_in'), p1: inLine.p1, p2: inLine.p2 });
+    const showLoad = !!app.settings.ivLoad;
+    if (inLine && showLoad) inSpec.lines.push({ name: t('iv_load_in'), p1: inLine.p1, p2: inLine.p2 });
     inSpec.points.push({ name: 'Q', v: r.vbe, i: r.ib, label: `Q (${U.format(r.vbe, 'V')}, ${U.format(r.ib, 'A')})` });
     inSpec.xlab = pnp ? 'V_EB' : 'V_BE'; inSpec.ylab = 'I_B';
     inSpec.title = t('iv_bjt_in');
-    inSpec.note = app.t(em ? 'iv_bjt_in_note_em' : 'iv_bjt_in_note');
+    inSpec.note = app.t((em ? 'iv_bjt_in_note_em' : 'iv_bjt_in_note') + (showLoad ? '' : '_q'));
 
     /* ----- output ----- */
     let outLine = null;
@@ -322,11 +325,11 @@
       { v0: winOut.v0, v1: p.Vcesat, i0: winOut.i0, i1: winOut.i1, label: t('region_sat'), at: 'top' },
       { v0: p.Vcesat, v1: winOut.v1, i0: winOut.i0, i1: 0.04 * icMax, label: t('region_off'), at: 'right' }
     ];
-    if (outLine) outSpec.lines.push({ name: t('iv_load_out'), p1: outLine.p1, p2: outLine.p2 });
+    if (outLine && showLoad) outSpec.lines.push({ name: t('iv_load_out'), p1: outLine.p1, p2: outLine.p2 });
     outSpec.points.push({ name: 'Q', v: r.vce, i: r.ic, label: `Q (${U.format(r.vce, 'V')}, ${U.format(r.ic, 'A')}) · ${t('region_' + r.state)}` });
     outSpec.xlab = pnp ? 'V_EC' : 'V_CE'; outSpec.ylab = 'I_C';
     outSpec.title = t('iv_bjt');
-    outSpec.note = app.t(em ? 'iv_bjt_note_em' : 'iv_bjt_note');
+    outSpec.note = app.t((em ? 'iv_bjt_note_em' : 'iv_bjt_note') + (showLoad ? '' : '_q'));
     return [inSpec, outSpec];
   }
 
