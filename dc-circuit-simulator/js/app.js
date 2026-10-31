@@ -112,6 +112,14 @@
   app.commit = function () {
     splitWires();
     insertIntoWires();
+    // collinear pieces join; a selected piece hands its selection over to the wire it became part of
+    const selW = app.circuit.wires.filter(w => app.sel.has(w.id)).map(w => [w.x1, w.y1, w.x2, w.y2]);
+    if (DCS.tidy.joinLines(app).changed && selW.length) {
+      const on = (x, y, w) => (x - w.x1) * (w.y2 - w.y1) === (y - w.y1) * (w.x2 - w.x1) && (x - w.x1) * (x - w.x2) <= 0 && (y - w.y1) * (y - w.y2) <= 0;
+      for (const w of app.circuit.wires) if (selW.some(([x1, y1, x2, y2]) => on(x1, y1, w) && on(x2, y2, w))) app.sel.add(w.id);
+      const live = new Set(app.circuit.wires.map(w => w.id).concat(app.circuit.comps.map(c => c.id)));
+      for (const id of Array.from(app.sel)) if (!live.has(id)) app.sel.delete(id);
+    }
     app.circuitChanged(false);
     save();
   };

@@ -306,5 +306,11 @@
     return apply(app, ws, before);
   }
 
-  DCS.tidy = { prettify, afterMove, signature, freeEnds };
+  // straight pieces that continue each other with nothing else at the joint become one wire again
+  function joinLines(app) {
+    const circuit = app.circuit;
+    return apply(app, mergeLines(circuit.wires, terminals(circuit)), signature(circuit));
+  }
+
+  DCS.tidy = { prettify, afterMove, signature, freeEnds, joinLines };
 })(window);
