@@ -57,7 +57,10 @@
   /* ---------- history ---------- */
   const snap = () => JSON.stringify(app.circuit);
   let redoSaved = null;
+  // any change of the circuit drops the Thévenin / R_eq analysis: it belonged to the circuit as it was
+  function dropThevenin() { if (app.thev) { app.thev = null; app.port = null; } }
   app.checkpoint = function () {
+    dropThevenin();
     app.undoStack.push(snap());
     if (app.undoStack.length > 200) app.undoStack.shift();
     redoSaved = app.redoStack.slice();
@@ -72,13 +75,14 @@
   };
   app.undo = function (silent) {
     if (!app.undoStack.length) return;
-    if (!silent) app.redoStack.push(snap());
+    if (!silent) { app.redoStack.push(snap()); dropThevenin(); }
     app.circuit = JSON.parse(app.undoStack.pop());
     afterLoad();
   };
   app.redo = function () {
     if (!app.redoStack.length) return;
     app.undoStack.push(snap());
+    dropThevenin();
     app.circuit = JSON.parse(app.redoStack.pop());
     afterLoad();
   };
