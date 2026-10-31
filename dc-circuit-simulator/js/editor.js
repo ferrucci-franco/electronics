@@ -582,9 +582,20 @@
     g.oldPts = pts;   // where dead ends may be left behind, for the clean-up at the end
     g.stretch = [];
     g.temps = [];
+    // a selection with components moves as one rigid piece: a wire that is not selected and only meets it at the
+    // end of a selected wire (where the selection meets the rest) stays put, and a new wire bridges the gap,
+    // instead of being dragged along (component terminals keep pulling their wires: rubber band)
+    const termPts = new Set();
+    for (const c of comps) for (const [x, y] of C.terminals(c)) termPts.add(x + ',' + y);
+    const bridgeAt = new Set();
     for (const w of app.circuit.wires) {
       if (moving.has(w.id) || (!rubber && !g.vertex)) continue;
-      const e1 = pts.has(w.x1 + ',' + w.y1), e2 = pts.has(w.x2 + ',' + w.y2);
+      const k1 = w.x1 + ',' + w.y1, k2 = w.x2 + ',' + w.y2;
+      let e1 = pts.has(k1), e2 = pts.has(k2);
+      if (comps.length && !g.vertex) {
+        if (e1 && !termPts.has(k1)) { e1 = false; bridgeAt.add(k1); }
+        if (e2 && !termPts.has(k2)) { e2 = false; bridgeAt.add(k2); }
+      }
       if (!e1 && !e2) continue;
       g.orig.push({ obj: w, pos: { x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2 } });
       // fixed end F and moving end M (or both ends moving: the wire is just translated)
@@ -606,7 +617,7 @@
         seen.add(k);
         const touchesTerm = fixedTerms.some(t => t[0] === x && t[1] === y);
         const onWire = app.circuit.wires.some(w => !moving.has(w.id) && distSeg(x, y, w.x1, w.y1, w.x2, w.y2) < 1e-9 && !((w.x1 === x && w.y1 === y) || (w.x2 === x && w.y2 === y)));
-        if (!touchesTerm && !onWire) continue;
+        if (!touchesTerm && !onWire && !bridgeAt.has(k)) continue;
         const w = { id: app.newWireId(), x1: x, y1: y, x2: x, y2: y };
         app.circuit.wires.push(w);
         g.orig.push({ obj: w, pos: { x1: x, y1: y, x2: x, y2: y }, added: true });
