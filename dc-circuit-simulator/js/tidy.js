@@ -133,6 +133,22 @@
     return t;
   }
 
+  // direction in which the lead of the terminal at (x, y) leaves its component (unit grid step), or null
+  function leadDir(circuit, x, y) {
+    for (const c of circuit.comps) {
+      const local = C.TYPES[c.type].terms;
+      for (let j = 0; j < local.length; j++) {
+        const [lx, ly] = local[j], p = C.toWorld(c, lx, ly);
+        if (p[0] !== x || p[1] !== y) continue;
+        const ux = Math.abs(lx) >= Math.abs(ly) ? Math.sign(lx) : 0, uy = ux ? 0 : Math.sign(ly);
+        if (!ux && !uy) return null;
+        const q = C.toWorld(c, lx + ux, ly + uy);
+        return [q[0] - x, q[1] - y];
+      }
+    }
+    return null;
+  }
+
   function prettify(app) {
     const circuit = app.circuit;
     const before = signature(circuit);
@@ -176,6 +192,35 @@
       const at = (x, y, not) => W.filter(o => o !== not && ((o.x1 === x && o.y1 === y) || (o.x2 === x && o.y2 === y)));
       const other = (w, x, y) => (w.x1 === x && w.y1 === y ? [w.x2, w.y2] : [w.x1, w.y1]);
       let applied = false;
+      // an L that comes into a terminal from the side: a leg leaves a rail at P, turns at the corner K and runs
+      // into the terminal T across its lead. Sliding P along the rail in line with T leaves one straight wire
+      // P'–T that comes in along the lead.
+      for (const b of W) {
+        const bh = b.y1 === b.y2 && b.x1 !== b.x2, bv = b.x1 === b.x2 && b.y1 !== b.y2;
+        if (!bh && !bv) continue;
+        for (const [T, K] of [[[b.x1, b.y1], [b.x2, b.y2]], [[b.x2, b.y2], [b.x1, b.y1]]]) {
+          if (!isTerm(T[0], T[1]) || degree(T[0], T[1]) !== 2 || degree(K[0], K[1]) !== 2) continue;
+          const a = at(K[0], K[1], b)[0];
+          if (!a || (bh ? !(a.x1 === a.x2) : !(a.y1 === a.y2))) continue;
+          const P = other(a, K[0], K[1]);
+          const lead = leadDir(circuit, T[0], T[1]);
+          // the lead must point the way the leg goes (from the corner towards the rail)
+          if (!lead || (bh ? lead[1] !== Math.sign(P[1] - K[1]) || lead[0] : lead[0] !== Math.sign(P[0] - K[0]) || lead[1])) continue;
+          const d = bh ? [T[0] - K[0], 0] : [0, T[1] - K[1]];
+          const id = ['L', b.id, P.join(',')].join('|');
+          if (rejected.has(id)) continue;
+          const trial = slideEnd(W, terms, P, d, [a, b]);
+          if (!trial) { rejected.add(id); continue; }
+          const P2 = [P[0] + d[0], P[1] + d[1]];
+          const wires = trial.filter(w => w !== a && w !== b).concat([{ id: a.id, x1: P2[0], y1: P2[1], x2: T[0], y2: T[1] }]);
+          if (signature({ comps: circuit.comps, wires, nodeNames: circuit.nodeNames }) !== sig) { rejected.add(id); continue; }
+          circuit.wires = wires;
+          applied = true; done++;
+          break;
+        }
+        if (applied) break;
+      }
+      if (applied) continue;
       for (const b of W) {
         const horiz = b.y1 === b.y2 && b.x1 !== b.x2, vert = b.x1 === b.x2 && b.y1 !== b.y2;
         if (!horiz && !vert) continue;
@@ -189,9 +234,9 @@
         // a Z: the two legs go the same way
         const s1 = horiz ? Math.sign(C1[1] - P[1]) : Math.sign(C1[0] - P[0]);
         const s2 = horiz ? Math.sign(Q[1] - C2[1]) : Math.sign(Q[0] - C2[0]);
-        if (!s1 || s1 !== s2) continue;
         const step = horiz ? [C2[0] - C1[0], 0] : [0, C2[1] - C1[1]];
         for (const [end, d, keep] of [[P, step, Q], [Q, [-step[0], -step[1]], P]]) {
+          if (!s1 || s1 !== s2) break;
           const id = [b.id, end.join(',')].join('|');
           if (rejected.has(id)) continue;
           const trial = slideEnd(W, terms, end, d, [a, b, c]);
