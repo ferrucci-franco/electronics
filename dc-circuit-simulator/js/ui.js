@@ -1014,8 +1014,24 @@
       if (q.kind === 'nonlinear') return;
       const R_ = (v) => (v === Infinity ? '∞' : v === undefined || !isFinite(v) ? '—' : fmt(v, 'Ω', 4));
       const card = el('div', { class: 'card' });
-      card.appendChild(el('h3', null, `<span>${t('req_title')}</span>`));   // one flex item: the subscript stays in the text
+      const head = el('div', { class: 'ivhead' });
+      head.appendChild(el('h3', null, `<span>${t('req_title')}</span>`));   // one flex item: the subscript stays in the text
+      card.appendChild(head);
       if (q.kind === 'dep') { card.appendChild(el('div', { class: 'hint' }, t('req_dep', { v: R_(q.rtest) }))); pane.appendChild(card); return; }
+      // the result alone by default; the derivation (sources off, drawing, reduction steps) on demand
+      const full = !!app.settings.reqSteps;
+      head.appendChild(button(t(full ? 'req_hide' : 'req_show'), () => { app.settings.reqSteps = !full; app.saveSettings(); renderThev(); }));
+      const result = () => {
+        let res;
+        if (q.zero) res = t('req_zero');
+        else if (q.open) res = t('req_open');
+        else if (q.stuck) res = t('req_stuck');
+        else res = `R<sub>eq</sub> = ${full && q.steps.length ? q.last + ' = ' : ''}<b>${R_(q.req)}</b>`;
+        card.appendChild(el('div', { class: 'req-result' }, res));
+        const same = q.req !== undefined && q.rtest !== undefined && (q.req === q.rtest || (isFinite(q.req) && isFinite(q.rtest) && Math.abs(q.req - q.rtest) <= 1e-6 * Math.max(Math.abs(q.rtest), 1e-9)));
+        card.appendChild(el('div', { class: 'hint' }, (full ? '<b>3.</b> ' : '') + t('req_verify', { v: R_(q.rtest) }) + (same ? ' <b class="ok">✓</b>' : '')));
+      };
+      if (!full) { result(); pane.appendChild(card); return; }
       card.appendChild(el('div', { class: 'hint' }, '<b>1.</b> ' + t('req_passive')));
       const cv = el('canvas', { class: 'req-cv' });
       card.appendChild(cv);
@@ -1042,14 +1058,7 @@
         list.appendChild(li);
       }
       if (q.steps.length) card.appendChild(list);
-      let res;
-      if (q.zero) res = t('req_zero');
-      else if (q.open) res = t('req_open');
-      else if (q.stuck) res = t('req_stuck');
-      else res = `R<sub>eq</sub> = ${q.last} = <b>${R_(q.req)}</b>`;
-      card.appendChild(el('div', { class: 'req-result' }, res));
-      const same = q.req !== undefined && q.rtest !== undefined && (q.req === q.rtest || (isFinite(q.req) && isFinite(q.rtest) && Math.abs(q.req - q.rtest) <= 1e-6 * Math.max(Math.abs(q.rtest), 1e-9)));
-      card.appendChild(el('div', { class: 'hint' }, '<b>3.</b> ' + t('req_verify', { v: R_(q.rtest) }) + (same ? ' <b class="ok">✓</b>' : '')));
+      result();
       pane.appendChild(card);
     }
     function stepHtml(st, R_) {
