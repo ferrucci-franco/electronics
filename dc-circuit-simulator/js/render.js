@@ -237,6 +237,13 @@
     // wires
     ctx.setTransform(dpr * s, 0, 0, dpr * s, dpr * view.ox, dpr * view.oy);
     ctx.lineCap = 'round';
+    // the side of the cut A–B that the Thévenin looks into, tinted with the colour of the port
+    const side = S.port && S.port.side;
+    if (side) {
+      ctx.strokeStyle = col.port; ctx.globalAlpha = 0.22; ctx.lineWidth = (lw + 7) / s;
+      for (const w of side.wires) { ctx.beginPath(); ctx.moveTo(w.x1, w.y1); ctx.lineTo(w.x2, w.y2); ctx.stroke(); }
+      ctx.globalAlpha = 1;
+    }
     for (const w of S.circuit.wires) {
       const selected = S.sel.has(w.id);
       const hov = S.hover && S.hover.id === w.id;
@@ -260,12 +267,13 @@
       const bad = S.badIds && S.badIds.has(c.id);
       // components of the step of the R_eq reduction being looked at
       const hl = S.overlay && S.overlay.hl && S.overlay.hl.has(c.id);
-      if (selected || hov || bad || hl) {
+      const onSide = side && side.comps.has(c.id) && c.type !== 'ground';
+      if (selected || hov || bad || hl || onSide) {
         const b = C.TYPES[c.type].box;
         const m = localMatrix(c);
         ctx.setTransform(dpr * s * m[0], dpr * s * m[1], dpr * s * m[2], dpr * s * m[3], dpr * (s * m[4] + view.ox), dpr * (s * m[5] + view.oy));
-        ctx.fillStyle = bad ? col.err : hl ? col.port : selected ? col.sel : col.hover;
-        ctx.globalAlpha = bad ? 0.16 : hl ? 0.22 : selected ? 0.14 : 0.1;
+        ctx.fillStyle = bad ? col.err : hl ? col.port : selected ? col.sel : hov ? col.hover : col.port;
+        ctx.globalAlpha = bad ? 0.16 : hl ? 0.22 : selected ? 0.14 : hov ? 0.1 : 0.12;
         roundRect(ctx, b[0] - 0.15, b[1] - 0.15, b[2] - b[0] + 0.3, b[3] - b[1] + 0.3, 0.35); ctx.fill();
         ctx.globalAlpha = 1;
       }
