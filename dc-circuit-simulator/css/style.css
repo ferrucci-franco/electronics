@@ -104,6 +104,7 @@ html.layout-mobile #layoutBtn .i-mobile, html.layout-desktop #layoutBtn .i-deskt
 .selbar button{border:0; background:transparent; border-radius:8px; width:38px; height:36px; display:grid; place-items:center; cursor:pointer}
 .selbar button:hover{background:var(--btn-hover)}
 .selbar button.danger{color:var(--c-err)}
+.selbar button.on{color:var(--accent); background:var(--btn-hover)}
 .selbar button[hidden]{display:none}
 .zoombar{position:absolute; right:8px; bottom:8px; display:flex; flex-direction:column; gap:4px}
 .zoombar button{width:38px; height:38px; border:1px solid var(--border); background:var(--btn); border-radius:10px; font-size:20px; line-height:1; cursor:pointer; box-shadow:var(--shadow); display:grid; place-items:center}

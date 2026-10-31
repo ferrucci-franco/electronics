@@ -87,7 +87,7 @@
     },
     switches: {
       t: { en: 'Switch and push button', fr: 'Interrupteur et bouton-poussoir', es: 'Interruptor y pulsador' },
-      d: { en: 'Click S1 to open or close it (it stays). Hold S2 down: LED2 lights only while it is pressed (spring return).', fr: 'Cliquez sur S1 pour l’ouvrir ou le fermer (il reste). Maintenez S2 appuyé : LED2 ne s’allume que pendant l’appui (retour par ressort).', es: 'Haga clic en S1 para abrirlo o cerrarlo (queda así). Mantenga apretado S2: LED2 se enciende solo mientras se pulsa (vuelve por resorte).' },
+      d: { en: 'Select S1 with a click, then each click opens or closes it (it stays). Select S2 and hold it down: LED2 lights only while it is pressed (spring return).', fr: 'Sélectionnez S1 d’un clic, puis chaque clic l’ouvre ou le ferme (il reste). Sélectionnez S2 et maintenez-le appuyé : LED2 ne s’allume que pendant l’appui (retour par ressort).', es: 'Seleccione S1 con un clic; después cada clic lo abre o lo cierra (queda así). Seleccione S2 y manténgalo apretado: LED2 se enciende solo mientras se pulsa (vuelve por resorte).' },
       s: {
         c: [['vsource', 'V1', 0, 8, 1, { V: 5 }],
           ['switch', 'S1', 8, 3, 1, { closed: true }], ['resistor', 'R1', 8, 8, 1, { R: 330 }], ['led', 'LED1', 8, 13, 1, { color: 'red', Vf: 1.8 }],

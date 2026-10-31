@@ -276,6 +276,11 @@
         case 'dup': app.duplicateSel(); break;
         case 'del': app.deleteSel(); break;
         case 'thev': { const c = app.selectedComps()[0]; if (c) app.portFromComp(c); break; }
+        case 'swop': {
+          const c = app.selectedComps()[0];
+          if (c && c.type === 'switch') { app.checkpoint(); c.props.closed = !c.props.closed; app.commit(); }
+          break;
+        }
       }
     });
     function syncSelbar() {
@@ -298,6 +303,27 @@
       bar.querySelector('[data-act=flip]').hidden = !cs.length;
       bar.querySelector('[data-act=edit]').hidden = app.sel.size !== 1;
       bar.querySelector('[data-act=thev]').hidden = !(one && C.TYPES[one.type].terms.length === 2);
+      // a selected switch: open / close it (push button: held while the button is pressed)
+      const sw = bar.querySelector('[data-act=swop]');
+      sw.hidden = !(one && C.isSwitch(one));
+      if (one && C.isSwitch(one)) {
+        const s = app.tp(one.type === 'switch' ? (one.props.closed ? 'sw_do_open' : 'sw_do_close') : 'pb_do_press');
+        sw.title = s; sw.setAttribute('aria-label', s);
+        sw.classList.toggle('on', C.isClosed(one));
+      }
+    }
+    {
+      // the push button stays pressed while the toolbar button is held
+      const b = $('selbar').querySelector('[data-act=swop]');
+      let held = null;
+      const up = () => { if (held) { C.pressed.delete(held); held = null; app.circuitChanged(false); } };
+      b.addEventListener('pointerdown', (e) => {
+        const c = app.selectedComps()[0];
+        if (!c || c.type !== 'button') return;
+        held = c.id; C.pressed.add(c.id); app.circuitChanged(true);
+        try { b.setPointerCapture(e.pointerId); } catch (_) {}
+      });
+      b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('lostpointercapture', up);
     }
 
     /* ---------- hints, tips, toasts ---------- */
