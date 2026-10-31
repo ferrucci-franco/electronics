@@ -217,9 +217,10 @@
     if (n != null) return n;
     for (const w of circuit.wires) {
       const dx = w.x2 - w.x1, dy = w.y2 - w.y1;
+      if (!dx && !dy) continue;   // a zero-length wire is not in the netlist
       if ((p[0] - w.x1) * dy - (p[1] - w.y1) * dx !== 0) continue;
       const t = (p[0] - w.x1) * dx + (p[1] - w.y1) * dy;
-      if (t >= 0 && t <= dx * dx + dy * dy) return net.wireNode.get(w.id);
+      if (t >= 0 && t <= dx * dx + dy * dy && net.wireNode.has(w.id)) return net.wireNode.get(w.id);
     }
     return null;
   }
@@ -227,10 +228,11 @@
   /* ---------- the port A–B cuts the circuit ----------
    * A and B picked on wires: the wires are cut at A and at B. When that splits the circuit in two, the
    * equivalent is the one of the side the user looks into, and the other side is left out. */
-  // the two wire pieces that leave the point X (inside a wire, or the corner of two wires), or null
+  // the two sides of the point X: two wire pieces (inside a wire, or the corner of two wires), or a component
+  // terminal and the one wire that reaches it ({ term: true }: the cut separates the component from the wire)
   function halvesAt(net, wires, X) {
     const pt = net.points.get(N.key(X[0], X[1]));
-    if (pt && pt.terms.length) return null;   // a component terminal: nothing to cut there
+    const terms = pt ? pt.terms : [];
     const out = [];
     for (const w of wires) {
       const dx = w.x2 - w.x1, dy = w.y2 - w.y1;
@@ -247,7 +249,8 @@
       if (before) out.push({ w, a: X, b: before });
       if (after) out.push({ w, a: X, b: after });
     }
-    return out.length === 2 ? out : null;
+    if (!terms.length) return out.length === 2 ? out : null;
+    return terms.length === 1 && out.length === 1 ? [out[0], { term: true, comp: terms[0][0], a: X }] : null;
   }
   // the wires with the given pieces taken out
   function cutWires(wires, pieces) {
@@ -270,27 +273,31 @@
     const net = app.net, wires = app.circuit.wires;
     const hA = halvesAt(net, wires, A), hB = halvesAt(net, wires, B);
     if (!hA || !hB) return null;
-    const c0 = { comps: app.circuit.comps, wires: cutWires(wires, hA.concat(hB)) };
+    const c0 = { comps: app.circuit.comps, wires: cutWires(wires, hA.concat(hB).filter(h => !h.term)) };
     const n0 = N.build(c0);
     // groups of nodes joined through components (the ground symbols already share node 0)
     const par = Array.from({ length: n0.ckt.nodeCount }, (_, i) => i);
     const find = (i) => { while (par[i] !== i) { par[i] = par[par[i]]; i = par[i]; } return i; };
     for (const c of c0.comps) { const ns = n0.compNodes.get(c.id); for (const n of ns) par[find(n)] = find(ns[0]); }
     const grp = (p) => { const n = n0.pointNode.get(N.key(p[0], p[1])); return n == null ? null : find(n); };
-    const [a1, a2] = hA.map(h => grp(h.b)), [b1, b2] = hB.map(h => grp(h.b));
+    // a wire piece belongs to the side of its far end; a terminal to the side of its component
+    const side = (h) => grp(h.term ? h.a : h.b);
+    const [a1, a2] = hA.map(side), [b1, b2] = hB.map(side);
     let pairs;
     if (a1 != null && a2 != null && a1 !== a2 && a1 === b1 && a2 === b2) pairs = [[hA[0], hB[0]], [hA[1], hB[1]]];
     else if (a1 != null && a2 != null && a1 !== a2 && a1 === b2 && a2 === b1) pairs = [[hA[0], hB[1]], [hA[1], hB[0]]];
     else return null;
     const sides = pairs.map(([ha, hb], k) => {
-      const g = grp(ha.b);
+      const g = side(ha);
       const comps = c0.comps.filter(c => find(n0.compNodes.get(c.id)[0]) === g);
       const ws = c0.wires.filter(w => find(n0.wireNode.get(w.id)) === g)
-        .concat([ha, hb].map((h, j) => ({ id: 'cut' + k + j, x1: h.a[0], y1: h.a[1], x2: h.b[0], y2: h.b[1] })));
-      return { comps, wires: ws, names: comps.filter(c => c.type !== 'ground').map(c => c.name || app.tp('c_' + c.type)), cut: pairs[1 - k] };
+        .concat([ha, hb].filter(h => !h.term).map((h, j) => ({ id: 'cut' + k + j, x1: h.a[0], y1: h.a[1], x2: h.b[0], y2: h.b[1] })));
+      return { comps, wires: ws, names: comps.filter(c => c.type !== 'ground').map(c => c.name || app.tp('c_' + c.type)), cut: pairs[1 - k].filter(h => !h.term) };
     });
+    // by default the side that has an equivalent (no diode, transistor or saturating op-amp), else the larger one
+    const lin = sides.map(s => !s.comps.some(c => C.isDiode(c) || c.type === 'rgbled' || c.type === 'bjt' || (c.type === 'opamp' && c.props.sat)));
     const n = sides.map(s => s.names.length);
-    return { sides, def: n[1] > n[0] ? 1 : 0 };
+    return { sides, def: lin[0] !== lin[1] ? (lin[1] ? 1 : 0) : n[1] > n[0] ? 1 : 0 };
   }
 
   function computeThevenin() {
