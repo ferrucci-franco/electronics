@@ -408,3 +408,27 @@ html.layout-mobile .mon2{left:6px; top:auto; bottom:6px}
 .scan-video video{width:100%; height:100%; object-fit:cover; display:block}
 .scan-frame{position:absolute; inset:16%; border:3px solid rgba(255,255,255,.9); border-radius:14px; box-shadow:0 0 0 999px rgba(0,0,0,.25); pointer-events:none}
 .qr-other{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:12px; overflow-wrap:anywhere}
+
+/* ===== phone held sideways (mobile layout, little height): the header becomes a narrow column on the right
+   (⋯ menu, list of circuit tabs, +) and the component strip a column on the left, so that the circuit gets
+   the whole height. Tablets keep the normal layout. ===== */
+@media (orientation:landscape) and (max-height:520px){
+  html.layout-mobile .app{grid-template-columns:auto minmax(0,1fr) auto; grid-template-rows:minmax(0,1fr); grid-template-areas:"pal stage head";
+    padding-left:max(6px, env(safe-area-inset-left)); padding-right:max(6px, env(safe-area-inset-right))}
+  html.layout-mobile .app-header{flex-direction:column; justify-content:flex-start; align-items:center; padding:6px 5px; width:auto}
+  html.layout-mobile .ctabs-wrap{flex:none; min-width:0; flex-direction:column; gap:6px}
+  html.layout-mobile .ctabs{display:none}
+  html.layout-mobile .app-header .ctab-list, html.layout-mobile .app-header .ctab-list[hidden]{display:inline-flex; min-height:42px; width:42px; order:1}
+  html.layout-mobile .app-header .ctab-add{min-height:42px; width:42px; order:2}
+  html.layout-mobile #moreBtn{order:-1; width:42px; min-height:42px; justify-content:center; padding:0}
+  html.layout-mobile .app-header > #moreBtn{order:-1}
+  html.layout-mobile .app-header{display:flex}
+  html.layout-mobile .hdr{top:0; right:calc(100% + 6px); flex-wrap:nowrap; max-height:calc(100dvh - 24px); overflow-y:auto}
+  html.layout-mobile .palette{flex-direction:column; overflow-x:hidden; overflow-y:auto; width:84px; padding:5px; gap:5px; -webkit-mask-image:none; mask-image:none}
+  html.layout-mobile .pal-tools, html.layout-mobile .pal-comps{flex-direction:column}
+  html.layout-mobile .pal-tools{display:grid; grid-template-columns:1fr 1fr; padding:0 0 5px; border-right:0; border-bottom:1px solid var(--border)}
+  html.layout-mobile .palette button.tool{min-width:0; min-height:38px; width:auto; touch-action:pan-y}
+  html.layout-mobile .palette button.tool svg{width:22px; height:22px}
+  html.layout-mobile .palette button.comp{touch-action:pan-y; min-width:0; width:100%; min-height:50px; padding:3px 2px; font-size:10px; overflow:hidden}
+  html.layout-mobile .palette button.comp span{max-width:100%; overflow:hidden; text-overflow:ellipsis}
+}

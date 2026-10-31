@@ -1041,7 +1041,7 @@
         if (Math.hypot(dx, dy) < 10) return;
         // with a finger, a swipe along the list scrolls it (horizontal strip on a phone, vertical column
         // otherwise); only a drag across it, towards the circuit, takes the component
-        const strip = document.documentElement.classList.contains('layout-mobile');
+        const strip = getComputedStyle(btn.closest('.palette') || btn.parentNode).flexDirection === 'row';
         if (st.touch && (strip ? Math.abs(dx) > Math.abs(dy) : Math.abs(dy) > Math.abs(dx))) { st = null; return; }
         st.drag = true;
         try { btn.setPointerCapture(e.pointerId); } catch (_) {}

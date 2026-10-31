@@ -43,7 +43,7 @@
     }
     // faded edges on the phone strip when there is more to scroll
     function syncPalFade() {
-      const p = $('palette'), mob = isMobile();
+      const p = $('palette'), mob = isMobile() && getComputedStyle(p).flexDirection === 'row';
       p.classList.toggle('more-l', mob && p.scrollLeft > 4);
       p.classList.toggle('more-r', mob && p.scrollLeft + p.clientWidth < p.scrollWidth - 4);
     }
@@ -249,8 +249,10 @@
       });
       const r = $('tabList').getBoundingClientRect();
       tabMenu.hidden = false;
-      tabMenu.style.top = (r.bottom + 6) + 'px';
-      tabMenu.style.left = Math.max(8, Math.min(window.innerWidth - tabMenu.offsetWidth - 8, r.right - tabMenu.offsetWidth)) + 'px';
+      // under the ▾ button, or to its left when the header is a column (phone held sideways)
+      const side = getComputedStyle(document.querySelector('.app-header')).flexDirection === 'column';
+      tabMenu.style.top = (side ? r.top : r.bottom + 6) + 'px';
+      tabMenu.style.left = Math.max(8, Math.min(window.innerWidth - tabMenu.offsetWidth - 8, side ? r.left - tabMenu.offsetWidth - 6 : r.right - tabMenu.offsetWidth)) + 'px';
     });
     document.addEventListener('pointerdown', (e) => { if (!tabMenu.hidden && !tabMenu.contains(e.target) && !$('tabList').contains(e.target)) tabMenu.hidden = true; });
 
