@@ -779,7 +779,7 @@
     for (const seg of F.segs) {
       if (!seg.speed) continue;
       const L = seg.len;
-      let ph = seg.phase % spacing; if (ph < 0) ph += spacing;
+      let ph = (seg.phase - (seg.off || 0)) % spacing; if (ph < 0) ph += spacing;
       for (let d = ph; d < L; d += spacing) {
         const u = d / L;
         const x = seg.x1 + (seg.x2 - seg.x1) * u, y = seg.y1 + (seg.y2 - seg.y1) * u;

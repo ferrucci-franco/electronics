@@ -279,8 +279,30 @@
       const ts = C.terminals(c);
       if (ts.length === 2) segs.push({ x1: ts[0][0], y1: ts[0][1], x2: ts[1][0], y2: ts[1][1], i: r.i });
       else if (c.type === 'pot') {
-        const q = c.props.ctl === 'knob' ? C.toWorld(c, 0, 0) : C.toWorld(c, C.potX(c), 0);
-        ts.forEach((t, j) => segs.push({ x1: t[0], y1: t[1], x2: q[0], y2: q[1], i: r.tc[j] }));
+        // the dots follow the real path: along the track from A to the wiper contact and out through the wiper
+        // arrow to W; the rest of the track carries the W–B current to B
+        // the pieces of one path share the dot pattern (off = distance from the start of the path)
+        const seg = (path, i) => {
+          let off = 0;
+          for (let k = 0; k + 1 < path.length; k++) {
+            const a = C.toWorld(c, path[k][0], path[k][1]), b = C.toWorld(c, path[k + 1][0], path[k + 1][1]);
+            segs.push({ x1: a[0], y1: a[1], x2: b[0], y2: b[1], i, off });
+            off += Math.hypot(b[0] - a[0], b[1] - a[1]);
+          }
+        };
+        const iOut = -r.tc[2];   // from the track out through the wiper to W
+        if (c.props.ctl === 'knob') {
+          const R = C.ROT.R, rad = Math.PI / 180, d = C.ROT.a0 + (C.ROT.a1 - C.ROT.a0) * Math.max(0, Math.min(1, c.props.alpha));
+          const arc = (from, to) => { const n = Math.max(1, Math.round(Math.abs(to - from) / 12)), pts = []; for (let k = 0; k <= n; k++) { const t = (from + (to - from) * k / n) * rad; pts.push([Math.cos(t) * R, Math.sin(t) * R]); } return pts; };
+          seg([[-2, 0]].concat(arc(C.ROT.a0, d)), r.aw.i);
+          seg(arc(d, C.ROT.a1).concat([[2, 0]]), r.wb.i);
+          seg([[Math.cos(d * rad) * R, Math.sin(d * rad) * R], [0, 0], [0, -2]], iOut);
+        } else {
+          const x = C.potX(c);
+          seg([[-2, 0], [x, 0]], r.aw.i);
+          seg([[x, 0], [2, 0]], r.wb.i);
+          seg([[x, 0], [x, -1.3], [0, -1.3], [0, -2]], iOut);
+        }
       } else if (inner[c.type]) ts.forEach((t, j) => { const q = C.toWorld(c, inner[c.type][j][0], inner[c.type][j][1]); segs.push({ x1: t[0], y1: t[1], x2: q[0], y2: q[1], i: r.tc[j] }); });
     }
     let imax = 0;
