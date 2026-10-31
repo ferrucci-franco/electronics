@@ -1157,7 +1157,12 @@
       ui.updateMonitor();
     };
     // light refresh while dragging: status and pinned plot only, the panel follows on release
-    ui.updateLive = function () { syncStatus(); ui.updateMonitor(); };
+    let thevRaf = 0;
+    ui.updateLive = function () {
+      syncStatus(); ui.updateMonitor();
+      // the Thévenin / R_eq tab follows a value being dragged (slider, wheel), once per frame
+      if (tab === 'thev' && app.thev && !thevRaf) thevRaf = requestAnimationFrame(() => { thevRaf = 0; renderThev(); });
+    };
 
     /* ---------- pinned plot: a small window over the circuit that follows every change live ----------
      * app.monitor = { ids, idx, win: [] }: the axes stay put while values change (they only grow when Q

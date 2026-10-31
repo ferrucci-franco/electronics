@@ -57,10 +57,10 @@
   /* ---------- history ---------- */
   const snap = () => JSON.stringify(app.circuit);
   let redoSaved = null;
-  // any change of the circuit drops the Thévenin / R_eq analysis: it belonged to the circuit as it was
-  function dropThevenin() { if (app.thev) { app.thev = null; app.port = null; } }
+  // the Thévenin / R_eq analysis follows value changes live, but a change of the shape of the circuit (a component
+  // or a wire added, removed or moved) drops it: the port and its cut belonged to the circuit as it was drawn
+  const shapeKey = () => JSON.stringify([app.circuit.comps.map(c => [c.id, c.type, c.x, c.y, c.rot, !!c.flip]), app.circuit.wires.map(w => [w.x1, w.y1, w.x2, w.y2]).sort()]);
   app.checkpoint = function () {
-    dropThevenin();
     app.undoStack.push(snap());
     if (app.undoStack.length > 200) app.undoStack.shift();
     redoSaved = app.redoStack.slice();
@@ -75,14 +75,13 @@
   };
   app.undo = function (silent) {
     if (!app.undoStack.length) return;
-    if (!silent) { app.redoStack.push(snap()); dropThevenin(); }
+    if (!silent) app.redoStack.push(snap());
     app.circuit = JSON.parse(app.undoStack.pop());
     afterLoad();
   };
   app.redo = function () {
     if (!app.redoStack.length) return;
     app.undoStack.push(snap());
-    dropThevenin();
     app.circuit = JSON.parse(app.redoStack.pop());
     afterLoad();
   };
@@ -104,7 +103,11 @@
     const bad = new Set();
     for (const iss of res.issues) if (iss.level === 'error') for (const id of iss.ids) bad.add(String(id).split('#')[0]);
     app.badIds = bad;
-    if (app.thev) computeThevenin();
+    if (app.thev) {
+      const k = shapeKey();
+      if (app.thev.shape && app.thev.shape !== k) { app.thev = null; app.port = null; }
+      else { app.thev.shape = k; computeThevenin(); }
+    }
     app.wireCur = res.ok ? N.wireCurrents(net, res, S) : new Map();
     // closed switches: 0 V, and the current that the wire graph gives them (indeterminate inside a loop)
     if (res.ok) for (const [id, s] of app.wireCur.sw) res.el[id] = { v: 0, i: s.i, tc: [s.i, -s.i], p: 0, state: null, loop: s.loop };
