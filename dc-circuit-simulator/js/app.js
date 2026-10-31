@@ -746,7 +746,7 @@
   }
   function keepCurrent() {
     const t = app.tabs[app.tabIdx];
-    if (t) { t.circuit = snap(); t.view = Object.assign({}, app.view); t.undo = app.undoStack; t.redo = app.redoStack; }
+    if (t) { t.circuit = snap(); t.view = Object.assign({}, app.view); t.undo = app.undoStack; t.redo = app.redoStack; t.sliders = app.ui && app.ui.quickIds ? app.ui.quickIds() : []; }
   }
   function showTab(k) {
     const t = app.tabs[k];
@@ -759,6 +759,8 @@
     app.undoStack = t.undo || []; app.redoStack = t.redo || [];
     if (t.view) { app.view = Object.assign({}, t.view); app.viewChanged(); } else app.fit();
     app.ui.updateTabs(); app.ui.update(); app.requestRender();
+    // the value sliders that were open in this tab come back
+    for (const id of t.sliders || []) { const c = app.circuit.comps.find(q => q.id === id); if (c) app.ui.showQuick(c); }
     storeTabs();
   }
   function tabName() {

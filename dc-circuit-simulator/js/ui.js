@@ -796,27 +796,29 @@
     // The spring control is a wide strip, not a native range: a finger can press anywhere on it (no thumb to
     // catch) and the value follows the displacement from where it pressed; the knob shows the offset from the
     // centre and comes back to it on release.
+    // c: the component, or a function giving it (it is found again by id after an undo)
     function springSlider(c, d, onValue) {
+      const comp = typeof c === 'function' ? c : () => c;
       const spring = d.key !== 'alpha';
-      let map = sliderMap(d, c.props[d.key]), anim = 0, cp = false;
+      let map = sliderMap(d, comp().props[d.key]), anim = 0, cp = false;
       const lo = d.min != null ? d.min : -Infinity, hi = d.max != null ? d.max : Infinity;
       const setS = (s) => {
         if (!cp) { app.checkpoint(); cp = true; }
-        c.props[d.key] = Math.max(lo, Math.min(hi, map.nice(map.toV(s))));
-        onValue(c.props[d.key]);
+        comp().props[d.key] = Math.max(lo, Math.min(hi, map.nice(map.toV(s))));
+        onValue(comp().props[d.key]);
         app.circuitChanged(true);
       };
       const done = () => {
         if (!cp) return;
         cp = false;
         app.commit();
-        if (spring) map = sliderMap(d, c.props[d.key]);
+        if (spring) map = sliderMap(d, comp().props[d.key]);
       };
       if (!spring) {
         const sl = el('input', { type: 'range', min: '0', max: '1000', step: '1', class: 'live-slider', title: plainText(t('live_tip')) });
-        sl.value = String(Math.max(0, Math.min(1000, map.toS(c.props[d.key]))));
-        sl.addEventListener('input', () => { app.liveMark(c.id, 0); setS(+sl.value); });
-        sl.addEventListener('change', () => { done(); app.liveMark(c.id, 700); });
+        sl.value = String(Math.max(0, Math.min(1000, map.toS(comp().props[d.key]))));
+        sl.addEventListener('input', () => { app.liveMark(comp().id, 0); setS(+sl.value); });
+        sl.addEventListener('change', () => { done(); app.liveMark(comp().id, 700); });
         return sl;
       }
       const w = el('div', { class: 'spring', tabindex: '0', role: 'slider', title: plainText(t('spring_tip')) });
@@ -833,8 +835,9 @@
         e.preventDefault(); e.stopPropagation();
         cancelAnimationFrame(anim); show(0);
         g = { id: e.pointerId, x0: e.clientX, half: Math.max(40, (w.clientWidth - 28) / 2), f: 0 };
+        map = sliderMap(d, comp().props[d.key]);   // centred on the value now (it may have changed meanwhile: undo, wheel)
         try { w.setPointerCapture(e.pointerId); } catch (_) {}
-        app.liveMark(c.id, 0);
+        app.liveMark(comp().id, 0);
       });
       w.addEventListener('pointermove', (e) => {
         if (!g || g.id !== e.pointerId) return;
@@ -846,7 +849,7 @@
         if (!g || g.id !== e.pointerId) return;
         const f0 = g.f; g = null;
         done();
-        app.liveMark(c.id, 700);
+        app.liveMark(comp().id, 700);
         // back to the centre, the new value being the new centre
         const t0 = performance.now();
         const step = (now) => { const k = Math.min(1, (now - t0) / 220); show(f0 * Math.pow(1 - k, 3)); if (k < 1) anim = requestAnimationFrame(step); };
@@ -856,7 +859,8 @@
       w.addEventListener('keydown', (e) => {
         if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
         e.preventDefault();
-        setS(500 + (e.key === 'ArrowRight' ? 50 : -50)); done(); app.liveMark(c.id, 900);
+        map = sliderMap(d, comp().props[d.key]);
+        setS(500 + (e.key === 'ArrowRight' ? 50 : -50)); done(); app.liveMark(comp().id, 900);
       });
       return w;
     }
@@ -1343,8 +1347,10 @@
     ui.hideQuick = function () { qs.hidden = true; qs.innerHTML = ''; qsRows = []; };
     // a tap on the circuit: closes the single slider, not the stacked ones
     ui.quickOutside = function () { if (!stacked()) ui.hideQuick(); };
-    ui.hasQuick = (c) => qsRows.some(r => r.c === c);
-    ui.removeQuick = (c) => { const r = qsRows.find(q => q.c === c); if (r) removeRow(r); };
+    ui.hasQuick = (c) => qsRows.some(r => r.c.id === c.id);
+    ui.removeQuick = (c) => { const r = qsRows.find(q => q.c.id === c.id); if (r) removeRow(r); };
+    // the components that have a slider open (kept with a circuit tab while another one is shown)
+    ui.quickIds = () => qsRows.map(r => r.c.id);
     function removeRow(r) {
       r.row.remove();
       qsRows = qsRows.filter(q => q !== r);
@@ -1353,22 +1359,24 @@
     ui.showQuick = function (c) {
       const key = app.valueKey(c);
       if (!key) return;
-      const old = qsRows.find(r => r.c === c);
+      const old = qsRows.find(r => r.c.id === c.id);
       if (old) { old.row.classList.remove('flash'); void old.row.offsetWidth; old.row.classList.add('flash'); return; }
       const wasOpen = !qs.hidden && qsRows.length;
       if (!stacked()) ui.hideQuick();
       const d = C.TYPES[c.type].props.find(q => q.key === key);
       const row = el('div', { class: 'qs-row' });
+      const id = c.id;
+      const cur = () => app.circuit.comps.find(q => q.id === id) || c;
       const head = el('div', { class: 'qs-head' });
-      const unitOf = () => (typeof d.unit === 'function' ? d.unit(c, app.circuit) : (d.unit || ''));
-      const fmtV = () => { const unit = unitOf(), ratio = unit === 'V/V' || unit === 'A/A'; return key === 'alpha' ? Math.round(c.props.alpha * 100) + ' %' : key === 'beta' ? String(c.props.beta) : U.format(c.props[key], ratio ? '' : unit, { digits: 4, trim: true }).trim() + (ratio ? ' ' + unit : ''); };
+      const unitOf = () => (typeof d.unit === 'function' ? d.unit(cur(), app.circuit) : (d.unit || ''));
+      const fmtV = () => { const unit = unitOf(), ratio = unit === 'V/V' || unit === 'A/A'; const p = cur().props; return key === 'alpha' ? Math.round(p.alpha * 100) + ' %' : key === 'beta' ? String(p.beta) : U.format(p[key], ratio ? '' : unit, { digits: 4, trim: true }).trim() + (ratio ? ' ' + unit : ''); };
       const name = el('span', { class: 'qs-name' });
       const val = el('b', { class: 'qs-val' }, fmtV());
-      const r = { c, row, refresh: () => { name.innerHTML = esc(c.name || '') + ' · ' + (key === 'k' ? C.depKind(c, app.circuit).sym : key === 'alpha' ? 'α' : key === 'beta' ? 'β' : esc(key)); val.innerHTML = fmtV(); } };
+      const r = { c, row, refresh: () => { const c = cur(); r.c = c; name.innerHTML = esc(c.name || '') + ' · ' + (key === 'k' ? C.depKind(c, app.circuit).sym : key === 'alpha' ? 'α' : key === 'beta' ? 'β' : esc(key)); val.innerHTML = fmtV(); } };
       r.refresh();
       const x = button('✕', () => removeRow(r));
       head.appendChild(name); head.appendChild(val); head.appendChild(x);
-      const sl = springSlider(c, d, () => { val.innerHTML = fmtV(); });
+      const sl = springSlider(cur, d, () => { val.innerHTML = fmtV(); });
       row.appendChild(head); row.appendChild(sl);
       qs.appendChild(row);
       qsRows.push(r);
@@ -1405,7 +1413,8 @@
     };
     // a slider goes away with its component (deleted, other tab); the others show the current values
     const qsCheck = () => {
-      for (const r of qsRows.slice()) { if (!app.circuit.comps.includes(r.c)) removeRow(r); else r.refresh(); }
+      // (by id: after an undo the components are new objects, the sliders stay)
+      for (const r of qsRows.slice()) { if (!app.circuit.comps.some(q => q.id === r.c.id)) removeRow(r); else r.refresh(); }
     };
 
     /* ---------- pinned plots: up to two small windows over the circuit that follow every change live ----------
