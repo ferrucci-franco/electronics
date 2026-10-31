@@ -209,8 +209,11 @@
         const c = row(t(lab), check(s[k]));
         c.addEventListener('change', () => { s[k] = c.checked; changed(); });
       }
-      const tmp = row(t('set_temp'), el('input', { type: 'text', value: String(s.tempC) + ' °C', inputmode: 'decimal' }));
-      tmp.addEventListener('change', () => { const v = parseFloat(tmp.value.replace(',', '.')); if (isFinite(v) && v > -100 && v < 300) { s.tempC = v; changed(true); } tmp.value = s.tempC + ' °C'; });
+      // the temperature: a number in the box, the unit fixed beside it
+      const tmp = el('input', { type: 'text', value: String(s.tempC), inputmode: 'decimal' });
+      const tw = el('div', { class: 'unit-in' }); tw.appendChild(tmp); tw.appendChild(el('span', null, '°C'));
+      row(t('set_temp'), tw);
+      tmp.addEventListener('change', () => { const v = parseFloat(tmp.value.replace(',', '.')); if (isFinite(v) && v > -100 && v < 300) { s.tempC = v; changed(true); } tmp.value = String(s.tempC); });
       const dm = row(t('set_defmodel'), select([['ideal', t('model_ideal')], ['cvd', t('model_cvd')], ['exact', t('model_exact')]], s.defModel));
       dm.addEventListener('change', () => { s.defModel = dm.value; app.saveSettings(); });
       const all = el('div', { class: 'btnrow' });
