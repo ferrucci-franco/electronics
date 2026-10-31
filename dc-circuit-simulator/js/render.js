@@ -279,9 +279,12 @@
     // current flow dots
     if (st.animate && res && S.flow) this.drawFlow(S);
 
+
     // labels and results
     const fontPx = S.fontPx || Math.max(10, Math.min(15, s * 0.6));
     this.drawAllLabels(S, res, fmt, fontPx);
+    // current in the wires: the selected / hovered wire, or every wire when asked
+    if (res && S.wireCur && (st.showI || st.showWireI)) this.drawWireCurrents(S, fmt);
 
     // node voltage tags
     if (res && st.showNodes && net) {
@@ -615,10 +618,59 @@
     for (let pass = 0; pass < 2; pass++) {
       for (const it of items) { let b = it.pick, bs = cost(it, it.pick); it.opts.forEach((_, k) => { const sc = cost(it, k); if (sc < bs - 1e-6) { bs = sc; b = k; } }); it.pick = b; }
     }
+    this.placed = [];
+    for (const it of items) for (const r of it.opts[it.pick].rects.concat(it.opts[it.pick].marks2)) this.placed.push(r);
+    this.compBoxes = obst.filter(o => o.w > 10).map(o => o.r);
     for (const it of items) {
       const best = it.opts[it.pick];
       for (const m of best.marks) m();
       for (const b of best.blocks) drawBlock(this, view, b.wx, b.wy, b.dir, b.lines, fontPx);
+    }
+  };
+
+  Renderer.prototype.drawWireCurrents = function (S, fmt) {
+    const st = S.settings, view = S.view, s = view.scale, ctx = this.ctx, dpr = this.dpr;
+    const fontPx = Math.max(10, Math.min(13, s * 0.52));
+    // one label per branch (pieces in series carry the same current), on its longest piece
+    const best = new Map();
+    for (const [id, pieces] of S.wireCur) {
+      const on = st.showWireI || S.sel.has(id) || (S.hover && S.hover.id === id);
+      if (!on) continue;
+      for (const p of pieces) {
+        const L = Math.hypot(p.x2 - p.x1, p.y2 - p.y1);
+        if (L < 0.9 || (Math.abs(p.i) < 1e-12 && !p.loop)) continue;
+        const b = best.get(p.chain);
+        if (!b || L > b.L) best.set(p.chain, { p, L });
+      }
+    }
+    const taken = (this.placed || []).concat(this.compBoxes || []);
+    ctx.font = `500 ${fontPx}px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
+    for (const { p, L } of best.values()) {
+      const ux = (p.x2 - p.x1) / L, uy = (p.y2 - p.y1) / L, d = p.i >= 0 ? 1 : -1;
+      const mx = (p.x1 + p.x2) / 2, my = (p.y1 + p.y2) / 2;
+      const horiz = uy === 0, h = Math.min(0.5, L / 3), off = 0.42;
+      const txt = p.loop ? 'I ?' : fmt(Math.abs(p.i), 'A');
+      const tw = ctx.measureText(txt).width + 4, th = fontPx + 2;
+      // try both sides of the wire, keep the free one
+      let pick = null;
+      for (const sgn of [1, -1]) {
+        const sx = horiz ? 0 : sgn, sy = horiz ? -sgn : 0;
+        const tx = (mx + sx * (off + 0.45)) * s + view.ox, ty = (my + sy * (off + 0.45)) * s + view.oy;
+        const r = horiz ? [tx - tw / 2, sy < 0 ? ty - th : ty, tx + tw / 2, sy < 0 ? ty : ty + th] : (sx > 0 ? [tx, ty - th / 2, tx + tw, ty + th / 2] : [tx - tw, ty - th / 2, tx, ty + th / 2]);
+        const ar = [(mx + sx * off - Math.abs(ux) * h) * s + view.ox - 5, (my + sy * off - Math.abs(uy) * h) * s + view.oy - 5, (mx + sx * off + Math.abs(ux) * h) * s + view.ox + 5, (my + sy * off + Math.abs(uy) * h) * s + view.oy + 5];
+        const hitT = taken.some(q => overlap(r, q) > 4), hitA = taken.some(q => overlap(ar, q) > 4);
+        if (!hitA) { pick = { sx, sy, tx, ty, r, ar, text: !hitT }; if (!hitT) break; }
+      }
+      if (!pick) continue;
+      const { sx, sy, tx, ty } = pick;
+      if (!p.loop) arrowScreen(this, view, mx - ux * h * d + sx * off, my - uy * h * d + sy * off, mx + ux * h * d + sx * off, my + uy * h * d + sy * off, col.cur, 1.6);
+      taken.push(pick.ar);
+      if (!pick.text && !p.loop) continue;
+      taken.push(pick.r);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.textAlign = horiz ? 'center' : (sx > 0 ? 'left' : 'right'); ctx.textBaseline = horiz ? (sy < 0 ? 'bottom' : 'top') : 'middle';
+      ctx.lineWidth = 3; ctx.strokeStyle = col.bg; ctx.lineJoin = 'round';
+      ctx.strokeText(txt, tx, ty); ctx.fillStyle = col.cur; ctx.fillText(txt, tx, ty);
     }
   };
 

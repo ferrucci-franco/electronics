@@ -11,7 +11,7 @@
   const plain = (s) => String(s).replace(/<sub>(.*?)<\/sub>/g, '$1').replace(/<[^>]+>/g, '');
 
   const DEFAULT_SETTINGS = {
-    style: 'us', realDir: false, rubber: true, showV: true, showI: true, showP: false, showNodes: false, animate: false, colorV: false,
+    style: 'us', realDir: false, rubber: true, showWireI: false, showV: true, showI: true, showP: false, showNodes: false, animate: false, colorV: false,
     showNames: true, showValues: true, showState: true, grid: true, digits: 3, tempC: 27, defModel: 'cvd'
   };
 
@@ -99,6 +99,7 @@
     for (const iss of res.issues) if (iss.level === 'error') for (const id of iss.ids) bad.add(id);
     app.badIds = bad;
     if (app.thev) computeThevenin();
+    app.wireCur = res.ok ? N.wireCurrents(net, res, S) : new Map();
     buildFlow();
     if (!live) app.ui && app.ui.update();
     else app.ui && app.ui.updateLive();
@@ -182,8 +183,7 @@
     const res = app.result;
     if (!res || !res.ok || !app.settings.animate) { app.flow = null; return; }
     const segs = [];
-    const wc = N.wireCurrents(app.net, res, S);
-    for (const pieces of wc.values()) for (const p of pieces) segs.push({ x1: p.x1, y1: p.y1, x2: p.x2, y2: p.y2, i: p.i });
+    for (const pieces of app.wireCur.values()) for (const p of pieces) segs.push({ x1: p.x1, y1: p.y1, x2: p.x2, y2: p.y2, i: p.i });
     const inner = { opamp: [[-2, 1], [-2, -1], [2, 0]], bjt: [[-0.45, 0], [1, -1.15], [1, 1.15]] };
     for (const c of app.circuit.comps) {
       const r = res.el[c.id];
@@ -402,7 +402,7 @@
   function stateForRender() {
     return {
       circuit: app.circuit, view: app.view, settings: app.settings, sel: app.sel, hover: app.hover, net: app.net,
-      result: app.result, overlay: app.overlay, port: app.port, flow: app.flow, hiNode: app.hiNode, badIds: app.badIds, tr: app.tp
+      result: app.result, overlay: app.overlay, port: app.port, flow: app.flow, wireCur: app.wireCur, hiNode: app.hiNode, badIds: app.badIds, tr: app.tp
     };
   }
   app.stateForRender = stateForRender;

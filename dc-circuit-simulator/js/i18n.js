@@ -4,6 +4,7 @@
   const T = {
     en: {
       title: 'DC Circuit Simulator',
+      wire_i: 'Current in the wire', wire_i_loop_s: 'indeterminate', wire_i_loop: 'This wire belongs to a loop of ideal wires (or of ground symbols): KCL does not fix the current that circulates in the loop, so its value is indeterminate.', set_wirei: 'Show the current in every wire (otherwise only in the selected wire)',
       set_rubber: 'Wires follow the components you move (rubber band). Alt + drag does the opposite.', rubber_tip: 'Wires follow when moving (rubber band): on / off', rubber_on: 'Rubber band on: the wires follow what you move', rubber_off: 'Rubber band off: components move without their wires (to disconnect them)',
       place_cancel: 'Stop placing (Esc)',
       tip_flip: 'Tap to flip this reference', node_name: 'Node name', node_hint: 'Node voltages are measured from ground (0 V). Give the node a name (A, B, out…) to find it in the tables and the equations.',
@@ -122,6 +123,7 @@
     },
     fr: {
       title: 'Simulateur de circuits en continu',
+      wire_i: 'Courant dans le fil', wire_i_loop_s: 'indéterminé', wire_i_loop: 'Ce fil fait partie d’une boucle de fils idéaux (ou de masses) : la loi des nœuds ne fixe pas le courant qui circule dans la boucle, sa valeur est indéterminée.', set_wirei: 'Afficher le courant dans tous les fils (sinon seulement dans le fil sélectionné)',
       set_rubber: 'Les fils suivent les composants déplacés (élastique). Alt + glisser fait l’inverse.', rubber_tip: 'Les fils suivent le déplacement (élastique) : oui / non', rubber_on: 'Élastique activé : les fils suivent ce que vous déplacez', rubber_off: 'Élastique désactivé : les composants bougent sans leurs fils (pour les déconnecter)',
       place_cancel: 'Arrêter de placer (Échap)',
       tip_flip: 'Touchez pour inverser cette référence', node_name: 'Nom du nœud', node_hint: 'Les potentiels sont mesurés par rapport à la masse (0 V). Donnez un nom au nœud (A, B, s…) pour le retrouver dans les tableaux et les équations.',
@@ -240,6 +242,7 @@
     },
     es: {
       title: 'Simulador de circuitos en continua',
+      wire_i: 'Corriente en el cable', wire_i_loop_s: 'indeterminada', wire_i_loop: 'Este cable forma parte de un lazo de cables ideales (o de masas): la LKC no fija la corriente que circula por el lazo, así que su valor queda indeterminado.', set_wirei: 'Mostrar la corriente en todos los cables (si no, solo en el cable seleccionado)',
       set_rubber: 'Los cables siguen a los componentes que se mueven (rubber band). Alt + arrastrar hace lo contrario.', rubber_tip: 'Los cables siguen al mover (rubber band): sí / no', rubber_on: 'Rubber band activado: los cables siguen lo que se mueve', rubber_off: 'Rubber band desactivado: los componentes se mueven sin sus cables (para desconectarlos)',
       place_cancel: 'Dejar de colocar (Esc)',
       tip_flip: 'Toque para invertir esta referencia', node_name: 'Nombre del nodo', node_hint: 'Las tensiones de nodo se miden respecto de masa (0 V). Póngale un nombre al nodo (A, B, sal…) para encontrarlo en las tablas y las ecuaciones.',
