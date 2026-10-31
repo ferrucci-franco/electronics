@@ -24,7 +24,11 @@
 <div class="app" id="app">
   <header class="panel app-header">
     <h1 id="title" data-i18n="title">DC Circuit Simulator</h1>
-    <div class="ctabs" id="tabbar" role="tablist"></div>
+    <div class="ctabs-wrap">
+      <div class="ctabs" id="tabbar" role="tablist"></div>
+      <button type="button" class="ctab-add" id="tabAdd">+</button>
+      <button type="button" class="ctab-list" id="tabList"><svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z" fill="currentColor"/></svg></button>
+    </div>
     <div class="hdr">
       <div class="hdr-group">
         <button id="undoBtn" class="icon" type="button" data-i18n-title="undo"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
@@ -122,6 +126,7 @@
   </aside>
 </div>
 
+<div class="menu" id="tabMenu" hidden></div>
 <div class="menu" id="fileMenu" hidden>
   <button type="button" data-file="new" data-i18n="file_new">New circuit</button>
   <button type="button" data-file="open" data-i18n="file_open">Open file…</button>

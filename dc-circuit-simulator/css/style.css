@@ -64,8 +64,20 @@ html.layout-mobile .edge-btn{display:none}
 .panel{border:1px solid var(--border); background:var(--panel); border-radius:16px; min-width:0; min-height:0}
 .app-header{grid-area:head; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px 12px; padding:8px 12px}
 .app-header h1{margin:0; font-size:18px; font-weight:700; line-height:1.2}
-/* circuit tabs: pills next to the title, the active one filled; a dashed + adds one */
-.ctabs{display:flex; align-items:center; gap:6px; flex:1 1 auto; min-width:0; overflow-x:auto; scrollbar-width:none; padding:2px}
+/* circuit tabs: pills next to the title, the active one filled, on one line that scrolls (faded edges when
+   there is more); a dashed + adds one, ▾ lists them all */
+html.layout-desktop .app-header{flex-wrap:nowrap}
+.app-header h1{flex:none; white-space:nowrap}
+.ctabs-wrap{flex:1 1 0; min-width:150px; display:flex; align-items:center; gap:6px}
+.ctabs{display:flex; align-items:center; gap:6px; flex:0 1 auto; min-width:0; overflow-x:auto; scrollbar-width:none; padding:2px}
+.ctabs.more-r{-webkit-mask-image:linear-gradient(to right, #000 calc(100% - 48px), transparent); mask-image:linear-gradient(to right, #000 calc(100% - 48px), transparent)}
+.ctabs.more-l{-webkit-mask-image:linear-gradient(to left, #000 calc(100% - 48px), transparent); mask-image:linear-gradient(to left, #000 calc(100% - 48px), transparent)}
+.ctabs.more-l.more-r{-webkit-mask-image:linear-gradient(to right, transparent, #000 48px, #000 calc(100% - 48px), transparent); mask-image:linear-gradient(to right, transparent, #000 48px, #000 calc(100% - 48px), transparent)}
+.app-header .ctab-list{flex:none; min-height:34px; width:34px; padding:0; justify-content:center; color:var(--muted)}
+.app-header .ctab-list svg{width:18px; height:18px}
+.app-header .ctab-list[hidden]{display:none}
+#tabMenu{max-height:60vh; overflow:auto}
+#tabMenu button.on{font-weight:700; color:var(--accent)}
 .ctabs::-webkit-scrollbar{display:none}
 .app-header .ctab{flex:none; display:inline-flex; align-items:center; gap:2px; max-width:190px; min-height:34px; padding:4px 6px 4px 14px; border-radius:10px; border:1px solid var(--border); background:var(--card); color:var(--fg); font-size:14px; font-weight:600; cursor:pointer}
 .app-header .ctab.on{background:var(--accent); border-color:var(--accent); color:#fff}
