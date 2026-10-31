@@ -751,19 +751,23 @@
       }
       if (C.flippable(c) && !app.settings.realDir) {
         const f = C.refs(c);
-        const rr = el('div', { class: 'field' });
+        // its own section: the title with its buttons on one line, the convention in use below it
+        const rr = el('div', { class: 'refbox' });
         const fixed = C.passiveOnly(c);
-        rr.appendChild(el('label', null, `${t('ref_title')}<br><span class="muted" style="font-size:12.5px">${t(fixed ? 'ref_passive_fixed' : f.refV === f.refI ? 'ref_passive_s' : 'ref_active_s')}</span>`));
+        const head = el('div', { class: 'ref-head' });
+        head.appendChild(el('span', { class: 'ref-title' }, t('ref_title')));
         const bw = el('div', { class: 'btnrow' });
         if (fixed) bw.appendChild(button('⇅ ' + t('ref_flip_both'), () => app.flipRef(c.id, 'v')));
         else {
           bw.appendChild(button('⇅ V', () => app.flipRef(c.id, 'v')));
           bw.appendChild(button('⇄ I', () => app.flipRef(c.id, 'i')));
         }
-        rr.appendChild(bw);
+        head.appendChild(bw);
+        rr.appendChild(head);
+        rr.appendChild(el('div', { class: 'hint' }, t(fixed ? 'ref_passive_fixed' : f.refV === f.refI ? 'ref_passive_s' : 'ref_active_s')));
         card.appendChild(rr);
       }
-      const row = el('div', { class: 'btnrow' });
+      const row = el('div', { class: 'btnrow card-actions' });
       if (c.type !== 'ground') row.appendChild(button('⟳ ' + plainText(t('rotate')).replace(/ \(.*\)/, ''), () => app.rotateSel()));
       row.appendChild(button(t('del'), () => app.deleteSel(), 'warn'));
       card.appendChild(row);

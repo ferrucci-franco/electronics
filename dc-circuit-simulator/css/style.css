@@ -440,3 +440,10 @@ html.layout-mobile .mon2{left:6px; top:auto; bottom:6px}
   html.layout-mobile .palette button.comp{touch-action:pan-y; min-width:0; width:100%; min-height:50px; padding:3px 2px; font-size:10px; overflow:hidden}
   html.layout-mobile .palette button.comp span{max-width:100%; overflow:hidden; text-overflow:ellipsis}
 }
+
+/* Element tab: the reference directions as a section of their own, then the actions */
+.refbox{display:flex; flex-direction:column; gap:4px; border-top:1px solid var(--border); padding-top:10px; margin-top:4px}
+.ref-head{display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap}
+.ref-title{font-weight:600}
+.refbox .hint{margin:0}
+.card-actions{border-top:1px solid var(--border); padding-top:10px; margin-top:4px}
