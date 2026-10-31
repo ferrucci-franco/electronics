@@ -688,6 +688,16 @@
         const k = F[0] + ',' + F[1];
         if (!slid.has(k)) slid.set(k, this.slidePoint(g, F, slide, exclude));
         if (slid.get(k)) F = slid.get(k);
+      } else if (vert || horiz) {
+        // a lead in line with the motion that would be pushed past its fixed end (folding back over itself):
+        // the corner there is pushed along instead, carrying the rail that leaves it sideways
+        const ux = Math.sign(s.M[0] - s.F[0]), uy = Math.sign(s.M[1] - s.F[1]);
+        const ov = [M[0] - F[0], M[1] - F[1]];
+        if ((ov[0] * ux + ov[1] * uy) < 0 && (vert ? ov[0] === 0 : ov[1] === 0)) {
+          const k = 'c' + F[0] + ',' + F[1];
+          if (!slid.has(k)) slid.set(k, this.carryCorner(g, F, ov, exclude));
+          if (slid.get(k)) F = slid.get(k);
+        }
       }
       const path = (F[0] === M[0] && F[1] === M[1]) || F[0] === M[0] || F[1] === M[1] ? [F, M] : this.lPath(F, M, horiz);
       s.w.x1 = path[0][0]; s.w.y1 = path[0][1]; s.w.x2 = path[1][0]; s.w.y2 = path[1][1];
@@ -696,6 +706,36 @@
         app.circuit.wires.push(t); g.temps.push(t);
       }
     }
+  };
+
+  // Push the corner F by `ov` (across the wires that leave it): each of those wires is carried along, its far end
+  // sliding on the wire it hangs on (as a rail does when a component between rails moves). Only for a plain
+  // corner: no component terminal there, nothing in line with the push. Returns the new corner, or null.
+  Editor.prototype.carryCorner = function (g, F, ov, exclude) {
+    const app = this.app;
+    const [x, y] = F, F2 = [x + ov[0], y + ov[1]];
+    const alongX = ov[0] !== 0;
+    for (const c of app.circuit.comps) if (!g.comps.includes(c)) for (const t of C.terminals(c)) if (t[0] === x && t[1] === y) return null;
+    const legs = [];
+    for (const w of app.circuit.wires) {
+      if (exclude.has(w) || (w.x1 === w.x2 && w.y1 === w.y2)) continue;
+      const e1 = w.x1 === x && w.y1 === y, e2 = w.x2 === x && w.y2 === y;
+      if (!e1 && !e2) { if (distSeg(x, y, w.x1, w.y1, w.x2, w.y2) < 1e-9) return null; continue; }
+      const across = alongX ? w.x1 === w.x2 : w.y1 === w.y2;
+      if (!across) return null;
+      legs.push([w, e1 ? 1 : 2]);
+    }
+    if (!legs.length) return null;
+    const before = new Set(g.railOrig.keys());
+    const undo = () => { for (const [w, pos] of g.railOrig) if (!before.has(w)) { Object.assign(w, pos); g.railOrig.delete(w); } };
+    for (const [w, end] of legs) {
+      if (!g.railOrig.has(w)) g.railOrig.set(w, { x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2 });
+      const P = end === 1 ? [w.x2, w.y2] : [w.x1, w.y1];
+      const P2 = this.slidePoint(g, P, ov, new Set([...exclude, w]));
+      if (!P2) { undo(); return null; }
+      if (end === 1) { w.x1 = F2[0]; w.y1 = F2[1]; w.x2 = P2[0]; w.y2 = P2[1]; } else { w.x2 = F2[0]; w.y2 = F2[1]; w.x1 = P2[0]; w.y1 = P2[1]; }
+    }
+    return F2;
   };
 
   // Slide the fixed point F by `d` along the wires that hold it, if that keeps every connection:
