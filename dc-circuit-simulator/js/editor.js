@@ -343,7 +343,7 @@
       case 'endpoint': {
         const b = this.endSnap(p, e.pointerType, g.wire);
         // the dragged end is routed from the fixed end with horizontal and vertical pieces
-        if (!g.ep) g.ep = { w: g.wire, F: g.end === 1 ? [g.wire.x2, g.wire.y2] : [g.wire.x1, g.wire.y1], temps: [], oldPts: new Set([(g.end === 1 ? g.wire.x1 : g.wire.x2) + ',' + (g.end === 1 ? g.wire.y1 : g.wire.y2)]) };
+        if (!g.ep) g.ep = { freeBefore: DCS.tidy.freeEnds(app.circuit), w: g.wire, F: g.end === 1 ? [g.wire.x2, g.wire.y2] : [g.wire.x1, g.wire.y1], temps: [], oldPts: new Set([(g.end === 1 ? g.wire.x1 : g.wire.x2) + ',' + (g.end === 1 ? g.wire.y1 : g.wire.y2)]) };
         const E = g.ep, tmp = new Set(E.temps);
         app.circuit.wires = app.circuit.wires.filter(w => !tmp.has(w));
         E.temps = [];
@@ -425,7 +425,7 @@
       case 'maybe-wire':
       case 'endpoint':
         if (!g.moved) { this.tap(g, p, e); break; }
-        if (g.mode === 'endpoint') { app.cleanWires(); if (g.ep) DCS.tidy.afterMove(app, g.ep.oldPts); app.commit(); }
+        if (g.mode === 'endpoint') { app.cleanWires(); if (g.ep) DCS.tidy.afterMove(app, g.ep.oldPts, g.ep.freeBefore); app.commit(); }
         break;
       case 'wire': {
         app.overlay.wirePath = null;
@@ -560,6 +560,7 @@
   /* ---------- moving ---------- */
   Editor.prototype.startMove = function (g) {
     const app = this.app;
+    g.freeBefore = DCS.tidy.freeEnds(app.circuit);
     // a dragged vertex moves alone: no component and no rigid wire, only the wire ends at that point
     const comps = g.vertex ? [] : app.circuit.comps.filter(c => app.sel.has(c.id));
     const wires = g.vertex ? [] : app.circuit.wires.filter(w => app.sel.has(w.id));
@@ -708,7 +709,7 @@
     }
     app.cleanWires();
     // merge the new pieces with their neighbours and trim what was left dangling behind
-    DCS.tidy.afterMove(app, g.oldPts);
+    DCS.tidy.afterMove(app, g.oldPts, g.freeBefore);
     for (const c of g.comps) app.inserted.add(c.id);
     app.commit();
   };
