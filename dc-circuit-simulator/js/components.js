@@ -281,9 +281,9 @@
       const pt = (deg, r) => [Math.cos(deg * rad) * r, Math.sin(deg * rad) * r];
       if (us) {
         // zigzag along the arc (like the straight resistor), straight bits at both ends
-        const n = 10, pts = [pt(a0, R), pt(a0 + (a1 - a0) * 0.06, R)];
-        for (let k = 1; k < n; k++) pts.push(pt(a0 + (a1 - a0) * (0.06 + 0.88 * k / n), R + (k % 2 ? 0.26 : -0.26)));
-        pts.push(pt(a0 + (a1 - a0) * 0.94, R), pt(a1, R));
+        const n = 20, pts = [pt(a0, R), pt(a0 + (a1 - a0) * 0.05, R)];
+        for (let k = 1; k < n; k++) pts.push(pt(a0 + (a1 - a0) * (0.05 + 0.9 * k / n), R + (k % 2 ? 0.2 : -0.2)));
+        pts.push(pt(a0 + (a1 - a0) * 0.95, R), pt(a1, R));
         P.line(pts);
       } else {
         const inner = [], outer = [];
