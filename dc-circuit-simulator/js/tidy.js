@@ -285,13 +285,26 @@
   }
 
   // after a drag: merge, and trim only the dead ends left at the places the moved items came from
-  function afterMove(app, oldPts) {
+  // the wire ends that touch nothing (no terminal, no other wire): a wire left loose on purpose, or a stub
+  function freeEnds(circuit) {
+    const terms = terminals(circuit), W = circuit.wires, out = new Set();
+    for (const w of W) for (const [x, y] of [[w.x1, w.y1], [w.x2, w.y2]]) {
+      const live = terms.some(t => t[0] === x && t[1] === y) || W.some(o => o !== w && ((o.x1 === x && o.y1 === y) || (o.x2 === x && o.y2 === y) || onInterior(x, y, o)));
+      if (!live) out.add(x + ',' + y);
+    }
+    return out;
+  }
+
+  // after a drag: merge, and trim the dead ends left at the places the moved items came from, and any other
+  // loose end that the move created (e.g. a wire that went out and back along the same line): the loose ends
+  // that existed before the move (freeBefore) are kept
+  function afterMove(app, oldPts, freeBefore) {
     const circuit = app.circuit;
     const before = signature(circuit);
     const terms = terminals(circuit);
-    const ws = trimDead(mergeLines(circuit.wires, terms), terms, (x, y) => oldPts.has(x + ',' + y));
+    const ws = trimDead(mergeLines(circuit.wires, terms), terms, (x, y) => oldPts.has(x + ',' + y) || (!!freeBefore && !freeBefore.has(x + ',' + y)));
     return apply(app, ws, before);
   }
 
-  DCS.tidy = { prettify, afterMove, signature };
+  DCS.tidy = { prettify, afterMove, signature, freeEnds };
 })(window);
