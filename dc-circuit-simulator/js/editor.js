@@ -8,7 +8,7 @@
   const EDGE_MODES = new Set(['move', 'wire', 'band', 'endpoint']);
   const LONG_MS = 480;
   // keyboard: a letter takes a component (W is the wire tool, F mirrors)
-  const SHORTCUTS = { g: 'ground', r: 'resistor', v: 'vsource', i: 'isource', a: 'opamp' };
+  const SHORTCUTS = { g: 'ground', r: 'resistor', v: 'vsource', i: 'isource', a: 'opamp', d: 'diode', t: 'bjt', s: 'switch' };
   const DBL_TOUCH_MS = 700;   // background: a second touch this soon after a tap starts a selection window (also slow)
   const DBL_ELEM_MS = { mouse: 380, touch: 420 };   // double click / quick double tap on an element = properties
 
@@ -939,7 +939,10 @@
     // one key takes a component, ready to be dropped where the pointer is
     const take = SHORTCUTS[k.toLowerCase()];
     if (take && !e.altKey) {
-      app.setTool('place', { type: take });
+      // T takes an NPN transistor; T again while placing it switches to PNP and back
+      let props;
+      if (take === 'bjt') props = { pol: app.tool === 'place' && app.place && app.place.type === 'bjt' && app.place.props.pol === 'npn' ? 'pnp' : 'npn' };
+      app.setTool('place', { type: take, props });
       if (this.lastMouse) { this.placeGhost(this.lastMouse); app.requestRender(); }
       return;
     }
