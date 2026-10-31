@@ -681,6 +681,26 @@
     const v = app.fitView(app.circuit, R.w, Math.max(80, R.h - 70), 3.5);
     v.oy += 30;
     app.view = v;
+    // the labels (values, readings) have a fixed size on screen: once drawn, the view is reduced and centred
+    // so that they fit too (a few rounds, as their placement depends on the zoom)
+    const b = app.circuitBounds(app.circuit);
+    for (let k = 0; b && R.w > 0 && k < 4; k++) {
+      try { R.draw(stateForRender()); } catch (e) { break; }
+      let x0 = b[0] * v.scale + v.ox, y0 = b[1] * v.scale + v.oy, x1 = b[2] * v.scale + v.ox, y1 = b[3] * v.scale + v.oy;
+      for (const rs of (R.labelRects ? R.labelRects.values() : [])) for (const r of rs) {
+        x0 = Math.min(x0, r[0]); y0 = Math.min(y0, r[1]); x1 = Math.max(x1, r[2]); y1 = Math.max(y1, r[3]);
+      }
+      // (desktop: clear of the ‹ › tabs on the side edges)
+      const side = document.documentElement.classList.contains('layout-mobile') ? 8 : 30;
+      const left = side, right = R.w - side, top = 52, bottom = R.h - 64;
+      const f = Math.min(1, (right - left) / Math.max(1, x1 - x0), (bottom - top) / Math.max(1, y1 - y0));
+      const wcx = ((x0 + x1) / 2 - v.ox) / v.scale, wcy = ((y0 + y1) / 2 - v.oy) / v.scale;
+      const s2 = Math.max(app.minScale, v.scale * (f < 1 ? f * 0.98 : 1));
+      const ox = (left + right) / 2 - wcx * s2, oy = (top + bottom) / 2 - wcy * s2;
+      const same = Math.abs(s2 - v.scale) < 0.01 && Math.abs(ox - v.ox) < 1 && Math.abs(oy - v.oy) < 1;
+      v.scale = s2; v.ox = ox; v.oy = oy;
+      if (same) break;
+    }
     app.viewChanged();
   };
 
