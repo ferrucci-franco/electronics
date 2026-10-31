@@ -295,8 +295,8 @@ html.layout-mobile .status{bottom:8px; left:100px; max-width:calc(100% - 270px);
 html.layout-mobile .hintbar{bottom:104px}
 html.layout-mobile .sheet-btn{display:inline-flex; align-items:center; gap:6px; position:absolute; right:56px; bottom:8px; height:42px; padding:0 12px; border:1px solid var(--border); background:var(--btn); border-radius:10px; box-shadow:var(--shadow); font-size:14px; font-weight:600; cursor:pointer}
 html.layout-mobile .side{
-  position:fixed; left:0; right:0; bottom:0; z-index:40; height:min(62dvh, 560px); border-radius:18px 18px 0 0;
-  box-shadow:0 -12px 40px rgba(0,0,0,.25); transform:translateY(105%); transition:transform .22s ease; background:var(--panel);
+  position:fixed; left:0; right:0; bottom:0; z-index:40; height:var(--sheet-h, min(62dvh, 560px)); max-height:calc(100dvh - 6px); border-radius:18px 18px 0 0;
+  box-shadow:0 -12px 40px rgba(0,0,0,.25); transform:translateY(105%); transition:transform .22s ease, height .22s ease; background:var(--panel);
   padding-bottom:env(safe-area-inset-bottom)
 }
 html.layout-mobile .side.open{transform:none}
@@ -304,6 +304,9 @@ html.layout-mobile .sheet-grip{display:flex; justify-content:center; align-items
 html.layout-mobile .side .tabs{touch-action:none}
 .sheet-close{display:none}
 html.layout-mobile .sheet-close{display:grid; place-items:center; position:absolute; right:8px; top:4px; width:36px; height:30px; border:1px solid var(--border); border-radius:9px; background:var(--btn); color:var(--fg); cursor:pointer}
+html.layout-mobile .sheet-max{right:52px}
+.sheet-max .i-restore, html.layout-mobile .side.maxed .sheet-max .i-up{display:none}
+html.layout-mobile .side.maxed .sheet-max .i-restore{display:block}
 html.layout-mobile .sheet-close svg{width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round}
 html.layout-mobile .side.dragging{transition:none}
 html.layout-mobile .sheet-grip span{width:44px; height:5px; border-radius:3px; background:var(--muted); opacity:.5}
