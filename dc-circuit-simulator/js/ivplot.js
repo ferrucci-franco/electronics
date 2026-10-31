@@ -116,29 +116,7 @@
     if (!A) return null;
     const t = app.tp, tempC = app.settings.tempC;
     const spec = { kind: A.kind, series: [], lines: [], points: [], xlab: 'V', ylab: 'I', xu: 'V', yu: 'A' };
-    if (A.kind === 'bjt') {
-      const c = A.c, r = A.r, p = c.props;
-      const ibq = Math.max(r.ib, 0);
-      const ib0 = ibq > 0 ? ibq : 10e-6;
-      const levels = [0.5, 1, 1.5, 2].map(f => f * ib0);
-      // load line of the collector circuit: Thévenin seen between collector and emitter, transistor removed
-      const net = app.net, [nb, nc, ne] = net.compNodes.get(c.id);
-      const th = S.thevenin(net.ckt, nc, ne, { exclude: [c.id], tempC });
-      const icMax = p.beta * levels[3];
-      const win = windowFor([r.vce, th.vth, p.Vcesat * 2], [r.ic, icMax, th.rth > 0 && isFinite(th.vth) ? th.vth / th.rth : 0]);
-      win.v0 = Math.min(win.v0, -0.05 * (win.v1)); win.i0 = Math.min(win.i0, -0.05 * win.i1);
-      levels.forEach((ib, k) => {
-        const ic = p.beta * ib;
-        spec.series.push({ name: 'I_B = ' + U.format(ib, 'A'), color: slot(k), pts: [[0, 0], [p.Vcesat, 0], [p.Vcesat, ic], [win.v1, ic]], q: null, width: k === 1 && ibq > 0 ? 2.6 : 1.6 });
-      });
-      if (isFinite(th.vth) && th.rth > 0 && isFinite(th.rth)) spec.lines.push({ name: t('iv_load'), v: th.vth, r: th.rth });
-      spec.points.push({ name: 'Q', v: r.vce, i: r.ic, label: `Q (${U.format(r.vce, 'V')}, ${U.format(r.ic, 'A')}) · ${t('region_' + r.state)}` });
-      spec.win = win;
-      spec.xlab = c.props.pol === 'pnp' ? 'V_EC' : 'V_CE'; spec.ylab = 'I_C';
-      spec.title = t('iv_bjt');
-      spec.note = app.t('iv_bjt_note');
-      return spec;
-    }
+    if (A.kind === 'bjt') return bjtSpecs(app, A, t, tempC);
     if (A.kind === 'opamp') {
       const c = A.c, r = A.r, p = c.props;
       const vp = p.sat ? Math.max(p.Vpos, p.Vneg) : Math.max(15, Math.abs(r.vout) * 1.3), vn = p.sat ? Math.min(p.Vpos, p.Vneg) : -vp;
@@ -184,6 +162,102 @@
     spec.title = multi ? `${t(A.kind === 'series' ? 'iv_series' : 'iv_parallel')}: ${names}` : `${t('iv_title')} · ${names}`;
     spec.conv = multi ? t('iv_conv_ab') : t('iv_conv');
     return spec;
+  }
+
+  /* Transistor: input characteristic I_B(V_BE) and output characteristics I_C(V_CE), each with its operating
+   * point and the load line imposed by the rest of the circuit. The load lines come from solving the real
+   * circuit again with one model parameter moved (V_BE(on) for the input; β, or V_CE(sat) in saturation, for
+   * the output): every solution is a point that the circuit allows, so the line passes exactly through Q. */
+  function bjtSpecs(app, A, t, tempC) {
+    const c = A.c, r = A.r, p = c.props, pnp = p.pol === 'pnp';
+    const net = app.net, [nb, nc, ne] = net.compNodes.get(c.id);
+    const solveWith = (patch) => {
+      const els = net.ckt.elements.map(e => (e.id === c.id ? Object.assign({}, e, patch) : e));
+      const res = S.solve({ nodeCount: net.ckt.nodeCount, elements: els }, { prevStates: Object.assign({}, app.prevStates, { [c.id]: r.state }), tempC });
+      return res.ok && res.states[c.id] === r.state ? res.el[c.id] : null;
+    };
+    const lineFrom = (pts) => {
+      if (pts.length < 2) return null;
+      const [[v1, i1], [v2, i2]] = pts;
+      if (Math.abs(v2 - v1) < 1e-12 && Math.abs(i2 - i1) < 1e-15) return null;
+      return { p1: [v1, i1], p2: [v2, i2] };
+    };
+    const theveninLine = (a, b) => {
+      const th = S.thevenin(net.ckt, a, b, { exclude: [c.id], tempC });
+      if (th.error || !isFinite(th.rth) || th.rth <= 0 || !isFinite(th.vth)) return null;
+      const s = pnp ? -1 : 1;
+      return { p1: [s * th.vth, 0], p2: [0, s * th.vth / th.rth] };
+    };
+    const intercepts = (ln) => {
+      // where the line crosses the axes (for the window)
+      const [v1, i1] = ln.p1, [v2, i2] = ln.p2;
+      const out = { v: undefined, i: undefined };
+      if (Math.abs(i2 - i1) > 1e-18) out.v = v1 - i1 * (v2 - v1) / (i2 - i1);
+      if (Math.abs(v2 - v1) > 1e-15) out.i = i1 - v1 * (i2 - i1) / (v2 - v1);
+      return out;
+    };
+
+    /* ----- input ----- */
+    let inLine = null;
+    if (r.state !== 'off') {
+      const pts = [];
+      for (const dv of [-0.15, 0.15]) { const q = solveWith({ Vbe: p.Vbe + dv }); if (q) pts.push([q.vbe, q.ib]); }
+      inLine = lineFrom(pts);
+    }
+    if (!inLine) inLine = theveninLine(pnp ? ne : nb, pnp ? nb : ne);
+    const ibq = Math.max(r.ib, 0);
+    const iInt = inLine ? intercepts(inLine) : {};
+    const vMax = Math.max(1.6 * p.Vbe, Math.min(isFinite(iInt.v) ? iInt.v : 0, 4 * p.Vbe), r.vbe * 1.3, 0.5);
+    const iMax = Math.max(ibq * 1.8, Math.min(isFinite(iInt.i) ? iInt.i : 0, ibq * 4), ibq > 0 ? 0 : 10e-6);
+    const winIn = { v0: -0.15 * vMax, v1: vMax * 1.05, i0: -0.12 * iMax, i1: iMax * 1.15 };
+    const inSpec = { kind: 'bjt-in', series: [], lines: [], points: [], regions: [], xu: 'V', yu: 'A', win: winIn };
+    inSpec.series.push({ name: t('iv_bjt_model'), color: slot(0), pts: [[winIn.v0, 0], [p.Vbe, 0], [p.Vbe, winIn.i1 * 1.5]], width: 2.6 });
+    if (ibq > 0) {
+      // exponential junction through Q, for comparison with the simple model
+      const Vt = S.thermalVoltage(tempC), isb = ibq / (Math.exp(p.Vbe / Vt) - 1);
+      const pts = [];
+      for (let k = 0; k <= 120; k++) { const v = winIn.v0 + (winIn.v1 - winIn.v0) * k / 120; const i = isb * (Math.exp(v / Vt) - 1); if (i > winIn.i1 * 1.5) { pts.push([Vt * Math.log(winIn.i1 * 1.5 / isb + 1), winIn.i1 * 1.5]); break; } pts.push([v, i]); }
+      inSpec.series.push({ name: t('iv_bjt_exp'), color: 'muted', pts, width: 1.4, dash: true });
+    }
+    if (inLine) inSpec.lines.push({ name: t('iv_load_in'), p1: inLine.p1, p2: inLine.p2 });
+    inSpec.points.push({ name: 'Q', v: r.vbe, i: r.ib, label: `Q (${U.format(r.vbe, 'V')}, ${U.format(r.ib, 'A')})` });
+    inSpec.xlab = pnp ? 'V_EB' : 'V_BE'; inSpec.ylab = 'I_B';
+    inSpec.title = t('iv_bjt_in');
+    inSpec.note = app.t('iv_bjt_in_note');
+
+    /* ----- output ----- */
+    let outLine = null;
+    if (r.state === 'act') {
+      const pts = [];
+      for (const f of [0.6, 1.4]) { const q = solveWith({ beta: p.beta * f }); if (q) pts.push([q.vce, q.ic]); }
+      outLine = lineFrom(pts);
+    } else if (r.state === 'sat') {
+      const pts = [];
+      for (const dv of [0.3, 0.8]) { const q = solveWith({ Vcesat: p.Vcesat + dv }); if (q) pts.push([q.vce, q.ic]); }
+      outLine = lineFrom(pts);
+    }
+    if (!outLine) outLine = theveninLine(pnp ? ne : nc, pnp ? nc : ne);
+    const ib0 = ibq > 0 ? ibq : 10e-6;
+    const levels = [0.5, 1, 1.5, 2].map(f => f * ib0);
+    const oInt = outLine ? intercepts(outLine) : {};
+    const vcMax = Math.max(r.vce * 1.3, isFinite(oInt.v) ? oInt.v : 0, p.Vcesat * 4, 1);
+    const icMax = Math.max(p.beta * levels[3], isFinite(oInt.i) ? oInt.i : 0, r.ic * 1.2);
+    const winOut = { v0: -0.05 * vcMax, v1: vcMax * 1.12, i0: -0.06 * icMax, i1: icMax * 1.12 };
+    const outSpec = { kind: 'bjt-out', series: [], lines: [], points: [], xu: 'V', yu: 'A', win: winOut };
+    levels.forEach((ib, k) => {
+      const ic = p.beta * ib;
+      outSpec.series.push({ name: 'I_B = ' + U.format(ib, 'A'), color: slot(k), pts: [[0, 0], [p.Vcesat, 0], [p.Vcesat, ic], [winOut.v1, ic]], width: k === 1 && ibq > 0 ? 2.6 : 1.6 });
+    });
+    outSpec.regions = [
+      { v0: winOut.v0, v1: p.Vcesat, i0: winOut.i0, i1: winOut.i1, label: t('region_sat'), at: 'top' },
+      { v0: p.Vcesat, v1: winOut.v1, i0: winOut.i0, i1: 0.04 * icMax, label: t('region_off'), at: 'right' }
+    ];
+    if (outLine) outSpec.lines.push({ name: t('iv_load_out'), p1: outLine.p1, p2: outLine.p2 });
+    outSpec.points.push({ name: 'Q', v: r.vce, i: r.ic, label: `Q (${U.format(r.vce, 'V')}, ${U.format(r.ic, 'A')}) · ${t('region_' + r.state)}` });
+    outSpec.xlab = pnp ? 'V_EC' : 'V_CE'; outSpec.ylab = 'I_C';
+    outSpec.title = t('iv_bjt');
+    outSpec.note = app.t('iv_bjt_note');
+    return [inSpec, outSpec];
   }
 
   /* ---------- plot ---------- */
@@ -232,11 +306,24 @@
     // plot area clip
     ctx.save();
     ctx.beginPath(); ctx.rect(L, T, W - L - R, H - T - B); ctx.clip();
+    // regions (transistor output: saturation and cutoff)
+    for (const rg of spec.regions || []) {
+      const x0 = X(rg.v0), x1 = X(rg.v1), y0 = Y(rg.i1), y1 = Y(rg.i0);
+      ctx.fillStyle = col.muted; ctx.globalAlpha = 0.09; ctx.fillRect(x0, y0, x1 - x0, y1 - y0); ctx.globalAlpha = 1;
+      ctx.fillStyle = col.muted; ctx.font = '600 11px ui-sans-serif, system-ui, sans-serif';
+      if (rg.at === 'top') { ctx.save(); ctx.translate((x0 + x1) / 2 + 4, y0 + 6); ctx.rotate(Math.PI / 2); ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(rg.label, 0, 0); ctx.restore(); }
+      else { ctx.textAlign = 'right'; ctx.textBaseline = 'bottom'; ctx.fillText(rg.label, x1 - 4, y0 - 2); }
+    }
     // load lines
     ctx.setLineDash([6, 4]); ctx.strokeStyle = col.muted; ctx.lineWidth = 1.6;
     for (const ln of spec.lines) {
       ctx.beginPath();
-      if (ln.hz !== undefined) { ctx.moveTo(L, Y(ln.hz)); ctx.lineTo(W - R, Y(ln.hz)); }
+      if (ln.p1) {
+        // line through two points, extended across the window
+        const [v1, i1] = ln.p1, [v2, i2] = ln.p2;
+        if (Math.abs(v2 - v1) < 1e-15) { ctx.moveTo(X(v1), T); ctx.lineTo(X(v1), H - B); }
+        else { const m = (i2 - i1) / (v2 - v1); ctx.moveTo(X(w.v0), Y(i1 + m * (w.v0 - v1))); ctx.lineTo(X(w.v1), Y(i1 + m * (w.v1 - v1))); }
+      } else if (ln.hz !== undefined) { ctx.moveTo(L, Y(ln.hz)); ctx.lineTo(W - R, Y(ln.hz)); }
       else if (ln.vt !== undefined) { ctx.moveTo(X(ln.vt), T); ctx.lineTo(X(ln.vt), H - B); }
       else { ctx.moveTo(X(w.v0), Y((ln.v - w.v0) / ln.r)); ctx.lineTo(X(w.v1), Y((ln.v - w.v1) / ln.r)); }
       ctx.stroke();
@@ -246,10 +333,12 @@
     ctx.lineJoin = 'round'; ctx.lineCap = 'round';
     for (const s of spec.series) {
       if (!s.pts || s.pts.length < 2) continue;
-      ctx.strokeStyle = s.color === 'fg' ? col.fg : s.color; ctx.lineWidth = s.width || 2;
+      ctx.strokeStyle = s.color === 'fg' ? col.fg : s.color === 'muted' ? col.muted : s.color; ctx.lineWidth = s.width || 2;
+      ctx.setLineDash(s.dash ? [2, 3] : []);
       ctx.beginPath();
       s.pts.forEach(([v, i], k) => { const x = X(v), y = Y(i); if (k) ctx.lineTo(x, y); else ctx.moveTo(x, y); });
       ctx.stroke();
+      ctx.setLineDash([]);
     }
     // operating points (2px surface ring around each marker)
     for (const p of spec.points) {
@@ -309,7 +398,7 @@
       const col = DCS.render.colors();
       for (const it of legendItems) {
         const e = document.createElement('span');
-        const c = it.color === 'fg' ? col.fg : it.color;
+        const c = it.color === 'fg' ? col.fg : it.color === 'muted' ? col.muted : it.color;
         const sw = it.dot ? `<i class="sw dot" style="background:${col.port}"></i>` : it.dash ? `<i class="sw dash" style="border-color:${col.muted}"></i>` : `<i class="sw" style="background:${c}"></i>`;
         e.innerHTML = sw + '<span></span>';
         e.lastChild.textContent = it.name;
