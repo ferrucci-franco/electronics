@@ -74,14 +74,16 @@
 
     /* ---------- header ---------- */
     $('undoBtn').addEventListener('click', () => app.undo());
+    $('undoBtn2').addEventListener('click', () => app.undo());
+    $('redoBtn2').addEventListener('click', () => app.redo());
     $('tidyBtn').addEventListener('click', () => {
       const r = DCS.tidy.prettify(app);
       app.toast(t(!r.ok ? 'tidy_fail' : r.changed ? 'tidy_done' : 'tidy_none', { a: r.before, b: r.after }));
     });
     $('redoBtn').addEventListener('click', () => app.redo());
     ui.updateHistory = function () {
-      $('undoBtn').disabled = !app.undoStack.length;
-      $('redoBtn').disabled = !app.redoStack.length;
+      $('undoBtn').disabled = $('undoBtn2').disabled = !app.undoStack.length;
+      $('redoBtn').disabled = $('redoBtn2').disabled = !app.redoStack.length;
     };
     document.querySelectorAll('.app-header [data-lang]').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
     function setLang(l) {
@@ -375,12 +377,42 @@
       ui.update();
     };
     $('sheetBtn').addEventListener('click', () => $('side').classList.toggle('open'));
+    // phone: close the bottom sheet (button, tap on the grip, drag it down, tap on the empty circuit)
+    ui.closeSheet = function () {
+      const s = $('side');
+      s.classList.remove('open', 'dragging'); s.style.transform = '';
+    };
+    $('sheetClose').addEventListener('click', (e) => { e.stopPropagation(); ui.closeSheet(); });
     {
-      // drag the grip down to close the sheet
-      const grip = $('sheetGrip');
-      let y0 = null;
-      grip.addEventListener('pointerdown', (e) => { y0 = e.clientY; grip.setPointerCapture(e.pointerId); });
-      grip.addEventListener('pointerup', (e) => { if (y0 != null && (e.clientY - y0 > 40 || Math.abs(e.clientY - y0) < 5)) $('side').classList.remove('open'); y0 = null; });
+      // the sheet follows the finger when its grip or its tab bar is dragged down; a short tap on the grip closes it
+      const side = $('side');
+      let d = null;
+      const start = (e, el, isGrip) => {
+        if (!isMobile() || e.target.closest('.sheet-close')) return;
+        d = { id: e.pointerId, y0: e.clientY, dy: 0, el, isGrip, drag: false };
+      };
+      const move = (e) => {
+        if (!d || d.id !== e.pointerId) return;
+        d.dy = e.clientY - d.y0;
+        if (!d.drag && d.dy > 8) { d.drag = true; side.classList.add('dragging'); try { d.el.setPointerCapture(e.pointerId); } catch (_) {} }
+        if (d.drag) side.style.transform = `translateY(${Math.max(0, d.dy)}px)`;
+      };
+      const end = (e) => {
+        if (!d || d.id !== e.pointerId) return;
+        const close = d.drag ? d.dy > Math.min(90, side.offsetHeight * 0.2) : d.isGrip;
+        const dragged = d.drag;
+        d = null;
+        side.classList.remove('dragging'); side.style.transform = '';
+        if (close) ui.closeSheet();
+        // a drag on the tab bar must not also switch tabs
+        if (dragged) { const stop = (ev) => { ev.stopPropagation(); ev.preventDefault(); }; window.addEventListener('click', stop, { capture: true, once: true }); setTimeout(() => window.removeEventListener('click', stop, true), 50); }
+      };
+      for (const [el, isGrip] of [[$('sheetGrip'), true], [side.querySelector('.tabs'), false]]) {
+        el.addEventListener('pointerdown', (e) => start(e, el, isGrip));
+        el.addEventListener('pointermove', move);
+        el.addEventListener('pointerup', end);
+        el.addEventListener('pointercancel', end);
+      }
     }
     app.openProps = function (focus) {
       ui.showTab('props', true);
