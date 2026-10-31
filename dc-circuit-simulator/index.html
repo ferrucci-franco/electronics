@@ -13,6 +13,7 @@
     try { mode = localStorage.getItem('dcs.layout'); } catch (e) {}
     if (mode !== 'mobile' && mode !== 'desktop') mode = (Math.min(window.innerWidth, 4000) < 900) ? 'mobile' : 'desktop';
     document.documentElement.classList.add('layout-' + mode);
+    try { if (localStorage.getItem('dcs.hidePal') === '1') document.documentElement.classList.add('hide-pal'); if (localStorage.getItem('dcs.hideSide') === '1') document.documentElement.classList.add('hide-side'); } catch (e) {}
   })();
 </script>
 <link rel="stylesheet" href="css/style.css">
@@ -93,6 +94,8 @@
     <button type="button" class="status" id="status"></button>
     <div class="hintbar" id="hintbar" hidden></div>
     <div class="tip" id="tip" hidden></div>
+    <button type="button" class="edge-btn left" id="palToggle"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+    <button type="button" class="edge-btn right" id="sideToggle"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
     <button type="button" class="sheet-btn" id="sheetBtn"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span data-i18n="panel">Panel</span></button>
   </main>
 

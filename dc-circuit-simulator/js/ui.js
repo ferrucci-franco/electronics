@@ -88,6 +88,7 @@
       document.querySelectorAll('[data-i18n]').forEach((e) => { e.innerHTML = t(e.dataset.i18n); });
       document.querySelectorAll('[data-i18n-title]').forEach((e) => { const s = app.tp(e.dataset.i18nTitle); e.title = s; e.setAttribute('aria-label', s); });
       document.querySelectorAll('#palTools .tool').forEach((b) => { b.title = app.tp('tool_' + b.dataset.tool + '_tip'); });
+      syncEdgeBtns();
       document.querySelectorAll('.app-header [data-lang]').forEach((b) => b.classList.toggle('active', b.dataset.lang === l));
       syncLayoutBtn();
       drawPalette();
@@ -330,8 +331,34 @@
 
     /* ---------- side panel / bottom sheet ---------- */
     document.querySelectorAll('.tabs [data-tab]').forEach((b) => b.addEventListener('click', () => ui.showTab(b.dataset.tab, false)));
+    /* desktop: hide or show the palette and the side panel; the circuit stays where it is on screen */
+    function syncEdgeBtns() {
+      const h = document.documentElement;
+      for (const [id, cls, k] of [['palToggle', 'hide-pal', 'pal'], ['sideToggle', 'hide-side', 'side']]) {
+        const s = app.tp((h.classList.contains(cls) ? 'show_' : 'hide_') + k);
+        $(id).title = s; $(id).setAttribute('aria-label', s);
+      }
+    }
+    ui.setPanelHidden = function (which, hide) {
+      const h = document.documentElement, cls = which === 'pal' ? 'hide-pal' : 'hide-side';
+      if (h.classList.contains(cls) === hide) return;
+      const x0 = $('cv').getBoundingClientRect().left;
+      h.classList.toggle(cls, hide);
+      app.LS.set(which === 'pal' ? 'dcs.hidePal' : 'dcs.hideSide', hide ? '1' : '0');
+      const dx = x0 - $('cv').getBoundingClientRect().left;
+      app.view.ox += dx;
+      app.renderer.resize(); app.requestRender();
+      syncEdgeBtns();
+      if (which === 'pal' && !hide) drawPalette();
+      if (which === 'side' && !hide) ui.update();
+    };
+    $('palToggle').addEventListener('click', () => ui.setPanelHidden('pal', !document.documentElement.classList.contains('hide-pal')));
+    $('sideToggle').addEventListener('click', () => ui.setPanelHidden('side', !document.documentElement.classList.contains('hide-side')));
+    syncEdgeBtns();
+
     ui.showTab = function (name, open) {
       tab = name;
+      if (open && !isMobile()) ui.setPanelHidden('side', false);
       document.querySelectorAll('.tabs [data-tab]').forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
       for (const n of ['props', 'results', 'thev']) $('pane-' + n).hidden = n !== name;
       if (open && isMobile()) $('side').classList.add('open');
