@@ -294,7 +294,9 @@
           S.g(b, e, GMIN); S.g(b, c, GMIN);
           return;
         }
-        if (st === 'off') { S.g(b, e, GMIN); S.g(b, c, GMIN); S.g(c, e, GMIN); return; }
+        // cut off: the collector is (almost) open, more so than an off diode, so that the voltage of a branch
+        // that carries no current lies across the transistor (an LED in series reads 0 V, not its V_γ)
+        if (st === 'off') { S.g(b, e, GMIN); S.g(b, c, GMIN * 1e-3); S.g(c, e, GMIN * 1e-3); return; }
         if (!el.pnp) {
           S.vbr(b, e, br[0], el.Vbe, 0);                       // i_br0: base current (into B)
           if (st === 'act') { S.col(c, br[0], el.beta); S.col(e, br[0], -el.beta); }
@@ -701,6 +703,24 @@
       return result;
     }
 
+    // a solution with zero-current elements left in a conducting state (a transistor 'active' with I_B = 0,
+    // a diode 'on' with I = 0, e.g. behind an open switch) is just as valid with them off; the off one is the
+    // one shown, and it puts the voltage of the dead branch across the open element
+    {
+      const s0 = found.sol, st2 = found.states.slice();
+      let changed = false;
+      ckt.elements.forEach((el, k) => {
+        if (topo.skip.has(el) || st2[k] == null) return;
+        const st = st2[k];
+        const tcz = () => DEV[el.type].tc(el, st, s0, s0.brIndex[k], Vt).every(x => Math.abs(x) < ITOL);
+        if (el.type === 'Q' && el.model !== 'em' && st === 'act' && tcz()) { st2[k] = 'off'; changed = true; }
+        if (el.type === 'D' && el.model !== 'exact' && (st === 'on' || st === 'bd') && tcz()) { st2[k] = 'off'; changed = true; }
+      });
+      if (changed) {
+        const r2 = solveFixed(ckt, ctx, st2, s0.v);
+        if (r2.ok && !checkAll(ckt, ctx, st2, r2).length) found = Object.assign({}, found, { states: st2, sol: r2 });
+      }
+    }
     const sol = found.sol;
     result.ok = true;
     result.evals = evals;

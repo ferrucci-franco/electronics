@@ -290,5 +290,15 @@ const Q = (id, b, c, e, pnp) => ({ type: 'Q', id, n: [b, c, e], pnp: !!pnp, beta
   near('plain diode blocks', r.v[2], 12, 1e-6);
 }
 
+// 31. dead branch: LED and RC in series with a transistor whose base is left open -> all off, the voltage
+// across the transistor (the LED does not read its V_gamma with zero current)
+{
+  const r = S.solve({ nodeCount: 6, elements: [V('VCC', 1, 0, 5), D('LED1', 1, 2, 'cvd', { Vf: 1.8 }), R('RC', 2, 3, 249), Q('Q1', 4, 3, 0), R('RB', 4, 5, 4380)] });
+  truthy('open base: solved', r.ok);
+  truthy('open base: Q cut off', r.el.Q1.state === 'off');
+  near('open base: LED ~0 V', r.el.LED1.v, 0, 0.05);
+  near('open base: VCE ~ VCC', r.el.Q1.vce, 5, 0.01);
+}
+
 console.log(`${count - fails}/${count} checks passed`);
 process.exit(fails ? 1 : 0);
