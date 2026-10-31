@@ -336,17 +336,27 @@
       ctx.setLineDash([]); ctx.lineCap = 'round';
     }
     if (S.port) {
-      for (const [p, lab] of [[S.port.a, 'A'], [S.port.b, 'B']]) {
-        if (!p) continue;
+      [[S.port.a, 'A'], [S.port.b, 'B']].forEach(([p, lab], k) => {
+        if (!p) return;
         const sx = p[0] * s + view.ox, sy = p[1] * s + view.oy;
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         const r = Math.max(9, s * 0.45);
+        // the side looked into: an arrow from the mark towards it, beside the wire
+        const d = S.port.look && S.port.look[k];
+        if (d && (d[0] || d[1])) {
+          const nx = -d[1], ny = d[0], off = r * 1.25;   // a little to the side of the wire
+          const x1 = sx + d[0] * r * 1.5 + nx * off, y1 = sy + d[1] * r * 1.5 + ny * off;
+          const x2 = sx + d[0] * r * 3.4 + nx * off, y2 = sy + d[1] * r * 3.4 + ny * off;
+          ctx.strokeStyle = col.port; ctx.fillStyle = col.port; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - d[0] * 6, y2 - d[1] * 6); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(x2, y2); ctx.lineTo(x2 - d[0] * 9 + nx * 5.5, y2 - d[1] * 9 + ny * 5.5); ctx.lineTo(x2 - d[0] * 9 - nx * 5.5, y2 - d[1] * 9 - ny * 5.5); ctx.closePath(); ctx.fill();
+        }
         ctx.fillStyle = col.port; ctx.globalAlpha = 0.18;
         ctx.beginPath(); ctx.arc(sx, sy, r * 1.6, 0, 2 * Math.PI); ctx.fill(); ctx.globalAlpha = 1;
         ctx.fillStyle = col.port; ctx.beginPath(); ctx.arc(sx, sy, r, 0, 2 * Math.PI); ctx.fill();
         ctx.fillStyle = '#fff'; ctx.font = `700 ${r * 1.1}px ui-sans-serif, system-ui, sans-serif`;
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(lab, sx, sy + 1);
-      }
+      });
     }
 
     // overlays: wire preview, ghost, rubber band, snap marker

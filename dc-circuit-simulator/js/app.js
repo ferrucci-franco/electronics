@@ -292,7 +292,12 @@
       const comps = c0.comps.filter(c => find(n0.compNodes.get(c.id)[0]) === g);
       const ws = c0.wires.filter(w => find(n0.wireNode.get(w.id)) === g)
         .concat([ha, hb].filter(h => !h.term).map((h, j) => ({ id: 'cut' + k + j, x1: h.a[0], y1: h.a[1], x2: h.b[0], y2: h.b[1] })));
-      return { comps, wires: ws, names: comps.filter(c => c.type !== 'ground').map(c => c.name || app.tp('c_' + c.type)), cut: pairs[1 - k].filter(h => !h.term) };
+      // which way A and B look into this side: along the kept wire piece, or towards the kept component
+      const look = [ha, hb].map(h => {
+        const to = h.term ? [h.comp.x, h.comp.y] : h.b, dx = to[0] - h.a[0], dy = to[1] - h.a[1];
+        return Math.abs(dx) >= Math.abs(dy) ? [Math.sign(dx), 0] : [0, Math.sign(dy)];
+      });
+      return { comps, wires: ws, names: comps.filter(c => c.type !== 'ground').map(c => c.name || app.tp('c_' + c.type)), cut: pairs[1 - k].filter(h => !h.term), look };
     });
     // by default the side that has an equivalent (no diode, transistor or saturating op-amp), else the larger one
     const lin = sides.map(s => !s.comps.some(c => C.isDiode(c) || c.type === 'rgbled' || c.type === 'bjt' || (c.type === 'opamp' && c.props.sat)));
@@ -328,7 +333,7 @@
       if (na == null || nb == null) { th.err = 'thev_err'; app.port = { a: th.a, b: th.b }; return; }
     }
     const sd = th.cut ? th.cut.sides[th.side] : null;
-    app.port = { a: th.a, b: th.b, cut: sd ? sd.cut : null, side: sd ? { comps: new Set(sd.comps.map(c => c.id)), wires: sd.wires } : null };
+    app.port = { a: th.a, b: th.b, cut: sd ? sd.cut : null, side: sd ? { comps: new Set(sd.comps.map(c => c.id)), wires: sd.wires } : null, look: sd ? sd.look : null };
     if (na === nb) { th.err = 'thev_same'; return; }
     const r = S.thevenin(net.ckt, na, nb, { exclude, prevStates: app.prevStates, tempC: app.settings.tempC });
     if (r.error) { th.err = r.error === 'samenode' ? 'thev_same' : 'thev_err'; return; }
