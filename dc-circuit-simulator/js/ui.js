@@ -754,37 +754,69 @@
       const base = v0 > 0 ? v0 : (d.key === 'R' ? 1000 : 1);
       return { toV: (s) => base * Math.pow(10, (s - 500) / 500), toS: (v) => Math.round(500 + 500 * Math.log10(v / base)), nice };
     }
+    // The spring control is a wide strip, not a native range: a finger can press anywhere on it (no thumb to
+    // catch) and the value follows the displacement from where it pressed; the knob shows the offset from the
+    // centre and comes back to it on release.
     function springSlider(c, d, onValue) {
       const spring = d.key !== 'alpha';
-      let map = sliderMap(d, c.props[d.key]), anim = 0;
-      const sl = el('input', { type: 'range', min: '0', max: '1000', step: '1', class: 'live-slider', title: plainText(t(spring ? 'spring_tip' : 'live_tip')) });
-      sl.value = String(Math.max(0, Math.min(1000, map.toS(c.props[d.key]))));
-      let cp = false;
-      sl.addEventListener('input', () => {
-        cancelAnimationFrame(anim);
+      let map = sliderMap(d, c.props[d.key]), anim = 0, cp = false;
+      const lo = d.min != null ? d.min : -Infinity, hi = d.max != null ? d.max : Infinity;
+      const setS = (s) => {
         if (!cp) { app.checkpoint(); cp = true; }
-        const lo = d.min != null ? d.min : -Infinity, hi = d.max != null ? d.max : Infinity;
-        c.props[d.key] = Math.max(lo, Math.min(hi, map.nice(map.toV(+sl.value))));
+        c.props[d.key] = Math.max(lo, Math.min(hi, map.nice(map.toV(s))));
         onValue(c.props[d.key]);
         app.circuitChanged(true);
-      });
-      sl.addEventListener('change', () => {
+      };
+      const done = () => {
+        if (!cp) return;
         cp = false;
         app.commit();
-        if (!spring) return;
-        // back to the centre, the new value being the new centre
-        map = sliderMap(d, c.props[d.key]);
-        const s0 = +sl.value, t0 = performance.now();
-        const step = (now) => {
-          const k = Math.min(1, (now - t0) / 220), e = 1 - Math.pow(1 - k, 3);
-          sl.value = String(Math.round(s0 + (500 - s0) * e));
-          if (k < 1) anim = requestAnimationFrame(step);
-        };
-        anim = requestAnimationFrame(step);
+        if (spring) map = sliderMap(d, c.props[d.key]);
+      };
+      if (!spring) {
+        const sl = el('input', { type: 'range', min: '0', max: '1000', step: '1', class: 'live-slider', title: plainText(t('live_tip')) });
+        sl.value = String(Math.max(0, Math.min(1000, map.toS(c.props[d.key]))));
+        sl.addEventListener('input', () => setS(+sl.value));
+        sl.addEventListener('change', done);
+        return sl;
+      }
+      const w = el('div', { class: 'spring', tabindex: '0', role: 'slider', title: plainText(t('spring_tip')) });
+      const fill = el('div', { class: 'sp-fill' }), knob = el('div', { class: 'sp-knob' });
+      w.appendChild(el('div', { class: 'sp-trk' })); w.appendChild(el('div', { class: 'sp-mid' })); w.appendChild(fill); w.appendChild(knob);
+      const show = (f) => {   // f: −1 … 1, offset from the centre
+        knob.style.left = `calc(14px + (100% - 28px) * ${(1 + f) / 2})`;
+        fill.style.left = `calc(14px + (100% - 28px) * ${(1 + Math.min(0, f)) / 2})`;
+        fill.style.width = `calc((100% - 28px) * ${Math.abs(f) / 2})`;
+      };
+      show(0);
+      let g = null;
+      w.addEventListener('pointerdown', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        cancelAnimationFrame(anim); show(0);
+        g = { id: e.pointerId, x0: e.clientX, half: Math.max(40, (w.clientWidth - 28) / 2), f: 0 };
+        try { w.setPointerCapture(e.pointerId); } catch (_) {}
       });
-      if (!spring) return sl;
-      const w = el('div', { class: 'spring-wrap' });
-      w.appendChild(sl);
+      w.addEventListener('pointermove', (e) => {
+        if (!g || g.id !== e.pointerId) return;
+        const f = Math.max(-1, Math.min(1, (e.clientX - g.x0) / g.half));
+        if (f === g.f) return;
+        g.f = f; show(f); setS(500 + 500 * f);
+      });
+      const up = (e) => {
+        if (!g || g.id !== e.pointerId) return;
+        const f0 = g.f; g = null;
+        done();
+        // back to the centre, the new value being the new centre
+        const t0 = performance.now();
+        const step = (now) => { const k = Math.min(1, (now - t0) / 220); show(f0 * Math.pow(1 - k, 3)); if (k < 1) anim = requestAnimationFrame(step); };
+        anim = requestAnimationFrame(step);
+      };
+      w.addEventListener('pointerup', up); w.addEventListener('pointercancel', up);
+      w.addEventListener('keydown', (e) => {
+        if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+        e.preventDefault();
+        setS(500 + (e.key === 'ArrowRight' ? 50 : -50)); done();
+      });
       return w;
     }
     function liveSlider(c, d, inp) {

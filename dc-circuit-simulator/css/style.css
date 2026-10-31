@@ -365,10 +365,15 @@ html.layout-mobile .field input[type=text], html.layout-mobile .field select{fon
 .qs-val{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-variant-numeric:tabular-nums}
 .qs-head .btn{padding:2px 8px; min-height:28px}
 .qslider input[type=range]{width:100%; margin:8px 0 0; height:30px}
-/* spring slider: a mark at the centre, where the thumb comes back on release */
-.spring-wrap{position:relative}
-.spring-wrap::after{content:''; position:absolute; left:50%; top:50%; width:2px; height:16px; margin:-8px 0 0 -1px; background:var(--muted); opacity:.55; border-radius:1px; pointer-events:none}
-.qslider .spring-wrap::after{margin-top:-4px}
+/* spring slider: a wide strip pressed anywhere; the knob shows the offset from the centre mark */
+.spring{position:relative; height:40px; touch-action:none; cursor:ew-resize; user-select:none; -webkit-user-select:none; outline:none; border-radius:10px}
+.spring:focus-visible{box-shadow:0 0 0 2px var(--accent)}
+.spring .sp-trk{position:absolute; left:14px; right:14px; top:50%; height:6px; margin-top:-3px; border-radius:3px; background:var(--border)}
+.spring .sp-fill{position:absolute; top:50%; height:6px; margin-top:-3px; border-radius:3px; background:var(--accent)}
+.spring .sp-mid{position:absolute; left:50%; top:50%; width:2px; height:18px; margin:-9px 0 0 -1px; border-radius:1px; background:var(--muted)}
+.spring .sp-knob{position:absolute; top:50%; width:26px; height:26px; margin:-13px 0 0 -13px; border-radius:50%; background:var(--accent); border:2px solid var(--panel); box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.qslider .spring{height:48px; margin-top:4px}
+@media (pointer:coarse){ .spring{height:48px} }
 .mon2{left:calc(min(380px, 100% - 80px) + 16px)}
 .tmon{left:auto; right:28px; bottom:auto; top:52px; width:min(260px, calc(100% - 80px))}
 .tmon .kv{margin:2px 4px 0; font-size:14px}
