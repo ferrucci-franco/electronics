@@ -1,6 +1,6 @@
 # Simulador de circuitos en continua (DC)
 
-Aplicación HTML/CSS/JavaScript autónoma: se abre `index.html` (doble clic o desde GitHub Pages), sin instalación ni servidor. Interfaz en inglés, francés y español; tema claro/oscuro; modo escritorio y modo móvil (botón 📱/🖥 del encabezado; la elección queda guardada). En el modo móvil, deshacer y rehacer están abajo a la izquierda del circuito; el panel es una hoja que sube desde abajo y se guarda con el botón ⌄, arrastrándola hacia abajo (desde la barra o las pestañas) o tocando el fondo del circuito, y se aparta sola al elegir una herramienta o los terminales A y B de Thévenin.
+Aplicación HTML/CSS/JavaScript autónoma: se abre `index.html` (doble clic o desde GitHub Pages), sin instalación ni servidor. Interfaz en inglés, francés y español; tema claro/oscuro; modo escritorio y modo móvil (botón 📱/🖥 del encabezado; la elección queda guardada). En el modo móvil el encabezado es una sola fila (pestañas de circuitos y ⋯; Ordenar, Ejemplos, Archivo, Ajustes, Ayuda, idioma, modo y tema están en el menú ⋯), deshacer y rehacer están abajo a la izquierda del circuito; el panel es una hoja que sube desde abajo y se guarda con el botón ⌄, arrastrándola hacia abajo (desde la barra o las pestañas) o tocando el fondo del circuito, y se aparta sola al elegir una herramienta o los terminales A y B de Thévenin.
 
 Copia pública: https://ferrucci-franco.github.io/electronics/dc-circuit-simulator/
 

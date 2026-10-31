@@ -118,7 +118,13 @@
       const b = $('layoutBtn');
       const s = app.tp(isMobile() ? 'layout_to_desktop' : 'layout_to_mobile');
       b.title = s; b.setAttribute('aria-label', s);
+      $('layoutLabel').textContent = s;
     }
+    /* phone: the header is a single row (circuit tabs + ☰); the actions open in a menu under it */
+    const hdrEl = document.querySelector('.app-header');
+    $('moreBtn').addEventListener('click', () => hdrEl.classList.toggle('menu-open'));
+    hdrEl.querySelector('.hdr').addEventListener('click', (e) => { if (e.target.closest('button')) hdrEl.classList.remove('menu-open'); });
+    document.addEventListener('pointerdown', (e) => { if (hdrEl.classList.contains('menu-open') && !e.target.closest('.hdr') && !e.target.closest('#moreBtn')) hdrEl.classList.remove('menu-open'); });
     $('layoutBtn').addEventListener('click', () => {
       const h = document.documentElement;
       const mob = !isMobile();
