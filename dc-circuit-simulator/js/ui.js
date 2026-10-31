@@ -739,20 +739,23 @@
     /* a slider under the main value of a component: dragging it solves the circuit at every step (the pinned
      * plot and the drawing follow); a logarithmic range ×1/10 … ×10 for positive values, linear ±2× for the
      * signed ones (sources). The range is centred again on the value each time the panel is drawn. */
-    const LIVE_KEYS = new Set(['R', 'V', 'I', 'beta', 'Vf']);
+    const LIVE_KEYS = new Set(['R', 'V', 'I', 'beta', 'Vf', 'k']);
+    // slider scale around the value v0 (0…1000): logarithmic ×1/10…×10 for positive values, linear ±2·|v0| when
+    // the value may be negative, linear 0…1 for the potentiometer position
+    function sliderMap(d, v0) {
+      const nice = (v) => { if (v === 0) return 0; const e = Math.pow(10, Math.floor(Math.log10(Math.abs(v))) - 2); return Math.round(v / e) * e; };
+      if (d.key === 'alpha') return { toV: (s) => s / 1000, toS: (v) => Math.round(v * 1000), nice: (v) => Math.round(v * 100) / 100 };
+      if (d.min < 0) {
+        const span = Math.abs(v0) > 0 ? 2 * Math.abs(v0) : (d.key === 'I' ? 0.01 : 10);
+        return { toV: (s) => -span + 2 * span * s / 1000, toS: (v) => Math.round((v + span) / (2 * span) * 1000), nice };
+      }
+      const base = v0 > 0 ? v0 : (d.key === 'R' ? 1000 : 1);
+      const lo = Math.max(d.min, base / 10), hi = Math.min(d.max, base * 10);
+      return { toV: (s) => lo * Math.pow(hi / lo, s / 1000), toS: (v) => Math.round(Math.log(v / lo) / Math.log(hi / lo) * 1000), nice };
+    }
     function liveSlider(c, d, inp) {
       const v0 = c.props[d.key];
-      const signed = d.min < 0;
-      let toV, toS;
-      if (signed) {
-        const span = Math.abs(v0) > 0 ? 2 * Math.abs(v0) : (d.key === 'I' ? 0.01 : 10);
-        toV = (s) => -span + 2 * span * s / 1000; toS = (v) => Math.round((v + span) / (2 * span) * 1000);
-      } else {
-        const base = v0 > 0 ? v0 : (d.key === 'R' ? 1000 : 1);
-        const lo = Math.max(d.min, base / 10), hi = Math.min(d.max, base * 10);
-        toV = (s) => lo * Math.pow(hi / lo, s / 1000); toS = (v) => Math.round(Math.log(v / lo) / Math.log(hi / lo) * 1000);
-      }
-      const nice = (v) => { if (v === 0) return 0; const e = Math.pow(10, Math.floor(Math.log10(Math.abs(v))) - 2); return Math.round(v / e) * e; };
+      const { toV, toS, nice } = sliderMap(d, v0);
       const sl = el('input', { type: 'range', min: '0', max: '1000', step: '1', class: 'live-slider', title: plainText(t('live_tip')) });
       sl.value = String(Math.max(0, Math.min(1000, toS(v0))));
       let cp = false;
@@ -1228,10 +1231,56 @@
     // light refresh while dragging: status and pinned plot only, the panel follows on release
     let thevRaf = 0;
     ui.updateLive = function () {
-      syncStatus(); ui.updateMonitor(); ui.updateThevMon();
+      syncStatus(); ui.updateMonitor(); ui.updateThevMon(); qsCheck();
       // the Thévenin / R_eq tab follows a value being dragged (slider, wheel), once per frame
       if (tab === 'thev' && app.thev && !thevRaf) thevRaf = requestAnimationFrame(() => { thevRaf = 0; renderThev(); });
     };
+
+    /* ---------- quick slider: a long press on a component with a main value (R, V, I, β, gain, pot position)
+     * opens a small slider over it; the circuit is solved at every step. A tap elsewhere closes it. */
+    const qs = el('div', { class: 'qslider' });
+    qs.hidden = true;
+    $('stage').appendChild(qs);
+    let qsComp = null;
+    ui.hideQuick = function () { if (!qs.hidden) { qs.hidden = true; qsComp = null; } };
+    ui.showQuick = function (c) {
+      const key = app.valueKey(c);
+      if (!key) return;
+      const d = C.TYPES[c.type].props.find(q => q.key === key);
+      qsComp = c;
+      qs.innerHTML = '';
+      const head = el('div', { class: 'qs-head' });
+      const unit = typeof d.unit === 'function' ? d.unit(c, app.circuit) : (d.unit || '');
+      const fmtV = () => (key === 'alpha' ? Math.round(c.props.alpha * 100) + ' %' : key === 'beta' ? String(c.props.beta) : U.format(c.props[key], unit === 'V/V' || unit === 'A/A' ? '' : unit, { digits: 4, trim: true }).trim() + (unit === 'V/V' || unit === 'A/A' ? ' ' + unit : ''));
+      const name = el('span', { class: 'qs-name' }, esc(c.name || '') + ' · ' + (key === 'k' ? C.depKind(c, app.circuit).sym : key === 'alpha' ? 'α' : key === 'beta' ? 'β' : esc(key)));
+      const val = el('b', { class: 'qs-val' }, fmtV());
+      const x = button('✕', () => ui.hideQuick());
+      head.appendChild(name); head.appendChild(val); head.appendChild(x);
+      const map = sliderMap(d, c.props[key]);
+      const sl = el('input', { type: 'range', min: '0', max: '1000', step: '1', class: 'live-slider' });
+      sl.value = String(Math.max(0, Math.min(1000, map.toS(c.props[key]))));
+      let cp = false;
+      sl.addEventListener('input', () => {
+        if (!cp) { app.checkpoint(); cp = true; }
+        c.props[key] = Math.max(d.min != null ? d.min : -Infinity, Math.min(d.max != null ? d.max : Infinity, map.nice(map.toV(+sl.value))));
+        val.innerHTML = fmtV();
+        app.circuitChanged(true);
+      });
+      sl.addEventListener('change', () => { cp = false; app.commit(); });
+      qs.appendChild(head); qs.appendChild(sl);
+      qs.hidden = false;
+      // above the component (below it when there is no room), inside the circuit area
+      const st = $('stage').getBoundingClientRect(), b = C.bounds(c), v = app.view;
+      const cx = (b[0] + b[2]) / 2 * v.scale + v.ox, top = b[1] * v.scale + v.oy, bot = b[3] * v.scale + v.oy;
+      const w = qs.offsetWidth, h = qs.offsetHeight;
+      let y = top - h - 10;
+      if (y < 50) y = bot + 10;
+      y = Math.max(4, Math.min(st.height - h - 4, y));
+      const xl = Math.max(4, Math.min(st.width - w - 4, cx - w / 2));
+      Object.assign(qs.style, { left: xl + 'px', top: y + 'px' });
+    };
+    // the popover goes away with its component (deleted, other tab)
+    const qsCheck = () => { if (qsComp && !app.circuit.comps.includes(qsComp)) ui.hideQuick(); };
 
     /* ---------- pinned plots: up to two small windows over the circuit that follow every change live ----------
      * app.monitors[slot] = { ids, idx, win: [], t } or null; each window keeps its slot. The axes stay put while values change (they only grow when Q

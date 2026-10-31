@@ -185,6 +185,7 @@
     if (this.ptrs.size === 2 && e.pointerType === 'touch') { this.abortGesture(); this.startPinch(); return; }
     if (this.ptrs.size > 1) return;
     app.tip(null);
+    if (app.ui.hideQuick) app.ui.hideQuick();
 
     const g = { id: e.pointerId, type: e.pointerType, button: e.button, start: p, last: p, moved: false, shift: e.shiftKey || e.ctrlKey || e.metaKey, alt: e.altKey };
     this.g = g;
@@ -252,9 +253,8 @@
       g.view0 = Object.assign({}, app.view);
       if (dblBand) app.overlay.band = [p.sx, p.sy, p.sx, p.sy];
     }
-    if (e.pointerType !== 'mouse') {
-      g.longTimer = setTimeout(() => this.longPress(g), LONG_MS);
-    }
+    // a long press: start of a drag (touch), or the value slider of a component (touch and mouse)
+    g.longTimer = setTimeout(() => this.longPress(g), LONG_MS);
     app.requestRender();
   };
 
@@ -271,12 +271,16 @@
     if (this.g !== g || g.moved) return;
     const app = this.app;
     const h = g.hit;
+    const quick = h && h.kind === 'comp' && g.mode === 'move' && app.tool === 'select' && app.valueKey(h.comp);
+    if (g.type === 'mouse' && !quick) return;
     if (h && (h.kind === 'comp' || h.kind === 'wire')) {
       // (terminals keep drawing wires and junctions keep moving their point)
       if (g.mode !== 'move') return;
       g.long = true;
       const id = h.kind === 'comp' ? h.comp.id : h.wire.id;
       if (!app.sel.has(id)) app.select([id]);
+      // a component with a main value: its slider pops up (moving the finger instead drags the component)
+      if (quick) { g.quick = true; app.ui.showQuick(h.comp); }
       if (navigator.vibrate) { try { navigator.vibrate(10); } catch (_) {} }
       app.requestRender();
     } else if (g.mode === 'pan') {
@@ -300,6 +304,7 @@
       if (Math.hypot(p.sx - g.start.sx, p.sy - g.start.sy) < (DRAG_PX[g.type] || 5)) return;
       g.moved = true;
       clearTimeout(g.longTimer);
+      if (g.quick) { app.ui.hideQuick(); g.quick = false; }
       if (g.press) this.release(g, true);
       if (g.mode === 'maybe-wire') g.mode = 'wire';
       if (g.mode === 'toggle') { g.mode = 'move'; app.sel.add(g.toggleId); }
