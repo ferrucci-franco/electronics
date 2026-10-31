@@ -198,7 +198,8 @@
     // select tool: a tap on a reference mark (+ / − of V, arrow of I) flips it
     const mk = app.renderer.markAt(p.sx, p.sy, e.pointerType === 'touch' ? 6 : 1);
     // the component body and its terminals win over a nearby mark
-    if (mk && !g.shift && !this.onBody(h, p)) { g.mode = 'mark'; g.mark = mk; return; }
+    // (only on a selected element, so that a press meant to drag it never flips anything)
+    if (mk && app.sel.has(mk.id) && !g.shift && !this.onBody(h, p)) { g.mode = 'mark'; g.mark = mk; return; }
     // potentiometer: dragging its wiper arrow moves the position, the circuit is solved while it moves
     if (h && h.kind === 'comp' && h.comp.type === 'pot' && !g.shift && this.onKnob(h.comp, p)) {
       g.mode = 'knob'; g.comp = h.comp;
@@ -210,10 +211,11 @@
       if (!app.sel.has(h.comp.id)) app.select([h.comp.id]);
       return;
     }
-    if (h && (h.kind === 'term' || (h.kind === 'wend' && !app.sel.has(h.wire.id)))) {
+    if (h && h.kind === 'term') {
       g.mode = 'maybe-wire'; g.a = h.pt;
     } else if (h && h.kind === 'wend') {
-      g.mode = 'endpoint'; g.wire = h.wire; g.end = h.end;
+      // corner or junction of wires: dragging it moves the point with all its wires
+      g.mode = 'vertex'; g.vpt = h.pt;
     } else if (h && (h.kind === 'comp' || h.kind === 'wire')) {
       const id = h.kind === 'comp' ? h.comp.id : h.wire.id;
       if (g.shift) { g.mode = 'toggle'; g.toggleId = id; }
@@ -266,6 +268,7 @@
       clearTimeout(g.longTimer);
       if (g.mode === 'maybe-wire') g.mode = 'wire';
       if (g.mode === 'toggle') { g.mode = 'move'; app.sel.add(g.toggleId); }
+      if (g.mode === 'vertex') { g.mode = 'move'; g.vertex = true; }
       if (g.mode === 'move') this.startMove(g);
       if (g.mode === 'wire') g.hFirst = Math.abs(p.x - g.start.x) >= Math.abs(p.y - g.start.y);
       if (g.mode === 'endpoint') { app.checkpoint(); g.cp = true; }
@@ -380,6 +383,9 @@
       case 'toggle':
         app.toggleSel(g.toggleId);
         break;
+      case 'vertex':
+        this.tap(g, p, e);
+        break;
       case 'mark':
         if (!g.moved) app.flipRef(g.mark.id, g.mark.kind);
         break;
@@ -431,6 +437,7 @@
     clearTimeout(g.longTimer);
     if (g.mode === 'move' && g.moved) {
       // put everything back
+      for (const [w, pos] of g.railOrig || []) Object.assign(w, pos);
       for (const o of g.orig) Object.assign(o.obj, o.pos);
       const tmp = new Set((g.temps || []).concat(g.orig.filter(o => o.added).map(o => o.obj)));
       app.circuit.wires = app.circuit.wires.filter(w => !tmp.has(w));
@@ -508,8 +515,10 @@
   /* ---------- moving ---------- */
   Editor.prototype.startMove = function (g) {
     const app = this.app;
-    const comps = app.circuit.comps.filter(c => app.sel.has(c.id));
-    const wires = app.circuit.wires.filter(w => app.sel.has(w.id));
+    // a dragged vertex moves alone: no component and no rigid wire, only the wire ends at that point
+    const comps = g.vertex ? [] : app.circuit.comps.filter(c => app.sel.has(c.id));
+    const wires = g.vertex ? [] : app.circuit.wires.filter(w => app.sel.has(w.id));
+    const moving = g.vertex ? new Set() : app.sel;
     g.orig = [];
     for (const c of comps) g.orig.push({ obj: c, pos: { x: c.x, y: c.y } });
     for (const w of wires) g.orig.push({ obj: w, pos: { x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2 } });
@@ -518,11 +527,12 @@
     const pts = new Set();
     for (const c of comps) for (const [x, y] of C.terminals(c)) pts.add(x + ',' + y);
     for (const w of wires) { pts.add(w.x1 + ',' + w.y1); pts.add(w.x2 + ',' + w.y2); }
+    if (g.vertex) pts.add(g.vpt[0] + ',' + g.vpt[1]);
     g.oldPts = pts;   // where dead ends may be left behind, for the clean-up at the end
     g.stretch = [];
     g.temps = [];
     for (const w of app.circuit.wires) {
-      if (app.sel.has(w.id) || !rubber) continue;
+      if (moving.has(w.id) || (!rubber && !g.vertex)) continue;
       const e1 = pts.has(w.x1 + ',' + w.y1), e2 = pts.has(w.x2 + ',' + w.y2);
       if (!e1 && !e2) continue;
       g.orig.push({ obj: w, pos: { x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2 } });
@@ -531,19 +541,20 @@
     }
     // direct contacts with things that stay put (a terminal on a terminal, or on the middle of a wire)
     // get a new wire, so that the connection survives the move
-    if (rubber) {
+    if (rubber || g.vertex) {
       const movingPts = [];
       for (const c of comps) for (const t of C.terminals(c)) movingPts.push(t);
       for (const w of wires) movingPts.push([w.x1, w.y1], [w.x2, w.y2]);
+      if (g.vertex) movingPts.push(g.vpt);
       const fixedTerms = [];
-      for (const c of app.circuit.comps) if (!app.sel.has(c.id)) for (const t of C.terminals(c)) fixedTerms.push(t);
+      for (const c of app.circuit.comps) if (!moving.has(c.id)) for (const t of C.terminals(c)) fixedTerms.push(t);
       const seen = new Set();
       for (const [x, y] of movingPts) {
         const k = x + ',' + y;
         if (seen.has(k)) continue;
         seen.add(k);
         const touchesTerm = fixedTerms.some(t => t[0] === x && t[1] === y);
-        const onWire = app.circuit.wires.some(w => !app.sel.has(w.id) && distSeg(x, y, w.x1, w.y1, w.x2, w.y2) < 1e-9 && !((w.x1 === x && w.y1 === y) || (w.x2 === x && w.y2 === y)));
+        const onWire = app.circuit.wires.some(w => !moving.has(w.id) && distSeg(x, y, w.x1, w.y1, w.x2, w.y2) < 1e-9 && !((w.x1 === x && w.y1 === y) || (w.x2 === x && w.y2 === y)));
         if (!touchesTerm && !onWire) continue;
         const w = { id: app.newWireId(), x1: x, y1: y, x2: x, y2: y };
         app.circuit.wires.push(w);
@@ -553,26 +564,67 @@
     }
     g.comps = comps; g.wires = wires;
     g.delta = [0, 0];
+    g.railOrig = new Map();
   };
 
-  // a stretched wire keeps right angles: it is re-routed from its fixed end to the new position of its
-  // moving end with horizontal and vertical pieces (extra pieces are temporary wires until the drop)
+  // A stretched wire keeps right angles. A wire perpendicular to the motion is carried along with what
+  // moves, its far end sliding along the wire it hangs on (a rail), so that e.g. a resistor between two
+  // rails moves with its two leads. When the far end cannot slide, the wire is re-routed from it with
+  // horizontal and vertical pieces (extra pieces are temporary wires until the drop).
   Editor.prototype.routeStretched = function (g) {
     const app = this.app;
+    for (const [w, pos] of g.railOrig) Object.assign(w, pos);
     const tmp = new Set(g.temps);
     app.circuit.wires = app.circuit.wires.filter(w => !tmp.has(w));
     g.temps = [];
     const one = g.stretch.filter(s => !s.both);
+    const exclude = new Set(g.stretch.map(s => s.w).concat(g.wires));
     for (const s of one) { s.w.x1 = s.F[0]; s.w.y1 = s.F[1]; s.w.x2 = s.F[0]; s.w.y2 = s.F[1]; }
+    const slid = new Map();
+    const [dx, dy] = g.delta;
     for (const s of one) {
-      const M = [s.M[0] + g.delta[0], s.M[1] + g.delta[1]];
-      const path = (s.F[0] === M[0] && s.F[1] === M[1]) ? [s.F, M] : this.lPath(s.F, M, s.y1 === s.y2);
-      s.w.x2 = path[1][0]; s.w.y2 = path[1][1];
+      const M = [s.M[0] + dx, s.M[1] + dy];
+      const vert = s.x1 === s.x2 && s.y1 !== s.y2, horiz = s.y1 === s.y2 && s.x1 !== s.x2;
+      const slide = vert ? [dx, 0] : horiz ? [0, dy] : [0, 0];
+      let F = s.F;
+      if (slide[0] || slide[1]) {
+        const k = F[0] + ',' + F[1];
+        if (!slid.has(k)) slid.set(k, this.slidePoint(g, F, slide, exclude));
+        if (slid.get(k)) F = slid.get(k);
+      }
+      const path = (F[0] === M[0] && F[1] === M[1]) || F[0] === M[0] || F[1] === M[1] ? [F, M] : this.lPath(F, M, horiz);
+      s.w.x1 = path[0][0]; s.w.y1 = path[0][1]; s.w.x2 = path[1][0]; s.w.y2 = path[1][1];
       for (let i = 1; i + 1 < path.length; i++) {
         const t = { id: app.newWireId(), x1: path[i][0], y1: path[i][1], x2: path[i + 1][0], y2: path[i + 1][1] };
         app.circuit.wires.push(t); g.temps.push(t);
       }
     }
+  };
+
+  // Slide the fixed point F by `d` along the wires that hold it, if that keeps every connection:
+  // no component terminal there, no wire across the motion, and a point in the middle of a rail must stay on it.
+  // Returns the new point, or null.
+  Editor.prototype.slidePoint = function (g, F, d, exclude) {
+    const app = this.app;
+    const [x, y] = F, F2 = [x + d[0], y + d[1]];
+    const alongX = d[0] !== 0;
+    for (const c of app.circuit.comps) if (!g.comps.includes(c)) for (const t of C.terminals(c)) if (t[0] === x && t[1] === y) return null;
+    const ends = [];
+    for (const w of app.circuit.wires) {
+      if (exclude.has(w) || (w.x1 === w.x2 && w.y1 === w.y2)) continue;
+      const parallel = alongX ? w.y1 === w.y2 : w.x1 === w.x2;
+      const e1 = w.x1 === x && w.y1 === y, e2 = w.x2 === x && w.y2 === y;
+      if (e1 || e2) { if (!parallel) return null; ends.push([w, e1 ? 1 : 2]); continue; }
+      if (distSeg(x, y, w.x1, w.y1, w.x2, w.y2) < 1e-9) {
+        // F sits in the middle of this wire: it may only slide along it and stay on it
+        if (!parallel || distSeg(F2[0], F2[1], w.x1, w.y1, w.x2, w.y2) > 1e-9) return null;
+      }
+    }
+    for (const [w, end] of ends) {
+      if (!g.railOrig.has(w)) g.railOrig.set(w, { x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2 });
+      if (end === 1) { w.x1 = F2[0]; w.y1 = F2[1]; } else { w.x2 = F2[0]; w.y2 = F2[1]; }
+    }
+    return F2;
   };
 
   Editor.prototype.doMove = function (g, p) {
@@ -598,6 +650,7 @@
   Editor.prototype.endMove = function (g) {
     const app = this.app;
     if (g.delta[0] === 0 && g.delta[1] === 0) {
+      for (const [w, pos] of g.railOrig || []) Object.assign(w, pos);
       for (const o of g.orig) Object.assign(o.obj, o.pos);
       const tmp = new Set(g.temps.concat(g.orig.filter(o => o.added).map(o => o.obj)));
       app.circuit.wires = app.circuit.wires.filter(w => !tmp.has(w));
@@ -668,15 +721,15 @@
       cursor = h ? 'pointer' : 'default';
       if (h && (h.kind === 'term' || h.kind === 'wend')) { app.overlay.snap = h.pt; app.overlay.snapHot = true; }
       else if (h) app.hover = { id: h.comp ? h.comp.id : h.wire.id };
-    } else if (app.renderer.markAt(p.sx, p.sy, 1) && !this.onBody(h, p)) {
+    } else if (app.renderer.markAt(p.sx, p.sy, 1) && app.sel.has(app.renderer.markAt(p.sx, p.sy, 1).id) && !this.onBody(h, p)) {
       cursor = 'pointer';
       app.tip({ kind: 'mark' }, p);
       this.cv.style.cursor = cursor;
       app.requestRender();
       return;
     } else if (h) {
-      if (h.kind === 'term' || (h.kind === 'wend' && !app.sel.has(h.wire.id))) { cursor = 'crosshair'; app.overlay.snap = h.pt; app.overlay.snapHot = true; }
-      else if (h.kind === 'wend') cursor = 'move';
+      if (h.kind === 'term') { cursor = 'crosshair'; app.overlay.snap = h.pt; app.overlay.snapHot = true; }
+      else if (h.kind === 'wend') { cursor = 'move'; app.overlay.snap = h.pt; app.overlay.snapHot = false; }
       else if (h.kind === 'comp' && h.comp.type === 'pot' && this.onKnob(h.comp, p)) { cursor = 'grab'; app.hover = { id: h.comp.id }; }
       else if (h.kind === 'comp' && h.comp.type === 'pot' && this.onWiper(h.comp, p)) { cursor = 'ew-resize'; app.hover = { id: h.comp.id }; }
       else { cursor = 'move'; app.hover = { id: h.comp ? h.comp.id : h.wire.id }; }

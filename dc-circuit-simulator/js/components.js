@@ -131,7 +131,13 @@
   }
   const flippable = (c) => TYPES[c.type].terms.length === 2 && c.type !== 'ground' && c.type !== 'ammeter' && c.type !== 'voltmeter';
   function refs(c) {
-    const d = defRef(c.type);
+    let d = defRef(c.type);
+    if (c.type === 'resistor') {
+      // a resistor has no polarity: by default + is the upper (or left) terminal, passive convention
+      const [t0, t1] = terminals(c);
+      const first = t0[1] < t1[1] || (t0[1] === t1[1] && t0[0] <= t1[0]);
+      d = { refV: first ? 0 : 1, refI: first ? 0 : 1 };
+    }
     if (!flippable(c)) return d;
     return { refV: c.refV === 1 || c.refV === 0 ? c.refV : d.refV, refI: c.refI === 1 || c.refI === 0 ? c.refI : d.refI };
   }
