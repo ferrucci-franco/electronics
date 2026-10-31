@@ -109,6 +109,7 @@
   };
   app.commit = function () {
     splitWires();
+    insertIntoWires();
     app.circuitChanged(false);
     save();
   };
@@ -147,6 +148,24 @@
     if (changed) app.circuit.wires = out;
   }
   app.splitWires = splitWires;
+
+  // A two-terminal component dropped on a wire is inserted in it: the piece of wire that would join its two
+  // terminals (and short it) is removed. Only for the components just placed, moved, pasted or rotated.
+  app.inserted = new Set();
+  function insertIntoWires() {
+    if (!app.inserted.size) return;
+    const ids = app.inserted;
+    app.inserted = new Set();
+    for (const c of app.circuit.comps) {
+      if (!ids.has(c.id) || C.TYPES[c.type].terms.length !== 2 || c.type === 'ground') continue;
+      const [a, b] = C.terminals(c);
+      const short = app.circuit.wires.filter(w => (w.x1 === a[0] && w.y1 === a[1] && w.x2 === b[0] && w.y2 === b[1]) || (w.x1 === b[0] && w.y1 === b[1] && w.x2 === a[0] && w.y2 === a[1]));
+      if (!short.length) continue;
+      const gone = new Set(short.map(w => w.id));
+      app.circuit.wires = app.circuit.wires.filter(w => !gone.has(w.id));
+      for (const id of gone) app.sel.delete(id);
+    }
+  }
 
   // the three junctions of an RGB LED become one result with four terminal currents
   function mergeRGB(res) {
@@ -325,6 +344,7 @@
     app.checkpoint();
     if (cs.length === 1 && !app.circuit.wires.some(w => app.sel.has(w.id))) cs[0].rot = ((cs[0].rot || 0) + 1) % 4;
     else rotateGroup(cs);
+    for (const c of cs) app.inserted.add(c.id);
     app.commit();
   };
   function rotateGroup(cs) {
@@ -405,7 +425,7 @@
   };
   app.nudgeSel = function (dx, dy) {
     app.checkpoint();
-    for (const c of app.selectedComps()) { c.x += dx; c.y += dy; }
+    for (const c of app.selectedComps()) { c.x += dx; c.y += dy; app.inserted.add(c.id); }
     for (const w of app.circuit.wires) if (app.sel.has(w.id)) { w.x1 += dx; w.x2 += dx; w.y1 += dy; w.y2 += dy; }
     app.commit();
   };
@@ -430,6 +450,7 @@
     }
     for (const w of d.wires) { const n = Object.assign({}, w, { id: newId('w'), x1: w.x1 + off, y1: w.y1 + off, x2: w.x2 + off, y2: w.y2 + off }); app.circuit.wires.push(n); ids.push(n.id); }
     app.sel = new Set(ids);
+    for (const id of ids) app.inserted.add(id);
     app.commit();
   };
   app.duplicateSel = function () {
@@ -462,6 +483,7 @@
     app.checkpoint();
     const c = { id: newId('c'), type: gh.type, name: gh.type === 'ground' ? '' : nextName(C.TYPES[gh.type].prefix), x: gh.x, y: gh.y, rot: gh.rot, flip: gh.flip, props: Object.assign({}, app.place.props) };
     app.circuit.comps.push(c);
+    app.inserted.add(c.id);
     if (backToSelect) { app.setTool('select'); app.sel = new Set([c.id]); }
     app.commit();
   };

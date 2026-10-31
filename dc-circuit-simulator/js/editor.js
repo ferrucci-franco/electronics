@@ -669,6 +669,7 @@
     app.cleanWires();
     // merge the new pieces with their neighbours and trim what was left dangling behind
     DCS.tidy.afterMove(app, g.oldPts);
+    for (const c of g.comps) app.inserted.add(c.id);
     app.commit();
   };
 
