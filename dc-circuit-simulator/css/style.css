@@ -342,6 +342,9 @@ html.layout-mobile .field input[type=text], html.layout-mobile .field select{fon
 /* pinned I–V plot over the circuit */
 .monitor{position:absolute; left:8px; bottom:52px; width:min(380px, calc(100% - 80px)); background:var(--panel); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); padding:6px 8px 8px; z-index:6; display:flex; flex-direction:column; gap:4px}
 .monitor[hidden]{display:none}
+.tmon{left:auto; right:28px; bottom:auto; top:52px; width:min(260px, calc(100% - 80px))}
+.tmon .kv{margin:2px 4px 0; font-size:14px}
+html.layout-mobile .tmon{left:auto; right:6px; width:220px; top:48px}
 .mon-head{display:flex; align-items:center; gap:4px; font-size:13px; font-weight:600; cursor:move; touch-action:none}
 .mon-title{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
 .mon-head .btn{padding:2px 8px; min-height:26px; cursor:pointer}

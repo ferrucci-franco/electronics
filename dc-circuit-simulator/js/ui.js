@@ -1017,7 +1017,15 @@
       const r = th.res;
       const load = th.loadId ? app.circuit.comps.find(c => c.id === th.loadId) : null;
       const card = el('div', { class: 'card' });
-      card.appendChild(el('div', { class: 'hint' }, load ? t('thev_load', { name: `<b>${esc(load.name)}</b>`}) : t('thev_port')));
+      {
+        // the port line, with the pin that keeps V_Th, R_Th and I_N over the circuit while values change
+        const top = el('div', { class: 'ivhead' });
+        top.appendChild(el('div', { class: 'hint' }, load ? t('thev_load', { name: `<b>${esc(load.name)}</b>`}) : t('thev_port')));
+        const pin = el('button', { type: 'button', class: 'btn', title: plainText(t('thev_pin')) }, '📌');
+        pin.addEventListener('click', () => { app.thevPinned = true; ui.updateThevMon(); });
+        top.appendChild(pin);
+        card.appendChild(top);
+      }
       // a nonlinear circuit has no Thévenin equivalent: say it first, the numbers below are only a tangent
       const fin = (x) => x !== undefined && isFinite(x);
       if (r.nonlinear) {
@@ -1192,11 +1200,12 @@
       else if (tab === 'results') renderResults();
       else renderThev();
       ui.updateMonitor();
+      ui.updateThevMon();
     };
     // light refresh while dragging: status and pinned plot only, the panel follows on release
     let thevRaf = 0;
     ui.updateLive = function () {
-      syncStatus(); ui.updateMonitor();
+      syncStatus(); ui.updateMonitor(); ui.updateThevMon();
       // the Thévenin / R_eq tab follows a value being dragged (slider, wheel), once per frame
       if (tab === 'thev' && app.thev && !thevRaf) thevRaf = requestAnimationFrame(() => { thevRaf = 0; renderThev(); });
     };
@@ -1232,6 +1241,51 @@
       });
       mhead.addEventListener('pointerup', () => { d = null; });
     }
+    /* pinned Thévenin values: a small window over the circuit with V_Th, R_Th = R_eq and I_N (or V_oc and I_sc
+     * when the circuit is not linear), updated at every change, also while a value is dragged */
+    const tmon = el('div', { class: 'monitor tmon' });
+    tmon.hidden = true;
+    const thead = el('div', { class: 'mon-head' });
+    const ttitle = el('span', { class: 'mon-title' });
+    const tclose = button('✕', () => { app.thevPinned = false; ui.updateThevMon(); });
+    thead.appendChild(ttitle); thead.appendChild(tclose);
+    const tbody = el('dl', { class: 'kv' });
+    tmon.appendChild(thead); tmon.appendChild(tbody);
+    $('stage').appendChild(tmon);
+    {
+      let d = null;
+      thead.addEventListener('pointerdown', (e) => {
+        if (e.target.closest('button')) return;
+        const r = tmon.getBoundingClientRect(), s = $('stage').getBoundingClientRect();
+        d = { id: e.pointerId, dx: e.clientX - r.left, dy: e.clientY - r.top, s };
+        thead.setPointerCapture(e.pointerId);
+      });
+      thead.addEventListener('pointermove', (e) => {
+        if (!d || d.id !== e.pointerId) return;
+        const x = Math.max(0, Math.min(d.s.width - tmon.offsetWidth, e.clientX - d.s.left - d.dx));
+        const y = Math.max(0, Math.min(d.s.height - tmon.offsetHeight, e.clientY - d.s.top - d.dy));
+        Object.assign(tmon.style, { left: x + 'px', top: y + 'px', right: 'auto', bottom: 'auto' });
+      });
+      thead.addEventListener('pointerup', () => { d = null; });
+    }
+    ui.updateThevMon = function () {
+      if (!app.thevPinned || !app.thev) { tmon.hidden = true; if (!app.thev) app.thevPinned = false; return; }
+      const r = app.thev.res;
+      tmon.hidden = false;
+      tclose.title = t('close');
+      const load = app.thev.loadId ? app.circuit.comps.find(c => c.id === app.thev.loadId) : null;
+      ttitle.innerHTML = load ? 'Thévenin · ' + esc(load.name) : 'Thévenin A–B';
+      const fin = (x) => x !== undefined && isFinite(x);
+      const vth = I.getLang() === 'fr' ? 'E<sub>Th</sub>' : 'V<sub>Th</sub>';
+      let kv;
+      if (!r) kv = `<dt>—</dt><dd>${app.thev.err ? t(app.thev.err) : '—'}</dd>`;
+      else if (r.nonlinear) kv = `<dt>${t('thev_voc')}</dt><dd class="v">${fin(r.voc) ? fmt(r.voc, 'V', 4) : '—'}</dd><dt>${t('thev_isc')}</dt><dd class="i">${fin(r.isc) && Math.abs(r.isc) < 1e3 ? fmt(r.isc, 'A', 4) : '∞'}</dd>`;
+      else kv = `<dt>${vth}</dt><dd class="v">${fin(r.vth) ? fmt(r.vth, 'V', 4) : '—'}</dd>` +
+        `<dt>R<sub>Th</sub> = R<sub>eq</sub></dt><dd>${r.rth === Infinity ? '∞' : fmt(r.rth, 'Ω', 4)}</dd>` +
+        `<dt>I<sub>N</sub></dt><dd class="i">${fin(r.in) ? fmt(r.in, 'A', 4) : (r.in === Infinity ? '∞' : '—')}</dd>`;
+      tbody.innerHTML = kv;
+    };
+
     app.pinPlot = function (k) {
       app.monitor = { ids: app.selectedComps().map(c => c.id), idx: k || 0, win: [] };
       ui.updateMonitor();

@@ -57,9 +57,6 @@
   /* ---------- history ---------- */
   const snap = () => JSON.stringify(app.circuit);
   let redoSaved = null;
-  // the Thévenin / R_eq analysis follows value changes live, but a change of the shape of the circuit (a component
-  // or a wire added, removed or moved) drops it: the port and its cut belonged to the circuit as it was drawn
-  const shapeKey = () => JSON.stringify([app.circuit.comps.map(c => [c.id, c.type, c.x, c.y, c.rot, !!c.flip]), app.circuit.wires.map(w => [w.x1, w.y1, w.x2, w.y2]).sort()]);
   app.checkpoint = function () {
     app.undoStack.push(snap());
     if (app.undoStack.length > 200) app.undoStack.shift();
@@ -103,11 +100,9 @@
     const bad = new Set();
     for (const iss of res.issues) if (iss.level === 'error') for (const id of iss.ids) bad.add(String(id).split('#')[0]);
     app.badIds = bad;
-    if (app.thev) {
-      const k = shapeKey();
-      if (app.thev.shape && app.thev.shape !== k) { app.thev = null; app.port = null; }
-      else { app.thev.shape = k; computeThevenin(); }
-    }
+    // A and B stay while the circuit changes: the analysis follows it (it goes only with the wires under A
+    // and B, or with the load element)
+    if (app.thev) computeThevenin();
     app.wireCur = res.ok ? N.wireCurrents(net, res, S) : new Map();
     // closed switches: 0 V, and the current that the wire graph gives them (indeterminate inside a loop)
     if (res.ok) for (const [id, s] of app.wireCur.sw) res.el[id] = { v: 0, i: s.i, tc: [s.i, -s.i], p: 0, state: null, loop: s.loop };
