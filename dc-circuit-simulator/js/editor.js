@@ -229,7 +229,9 @@
       if (h.comp.type === 'switch') g.swToggle = h.comp;
       else { C.pressed.add(h.comp.id); g.press = h.comp; g.operated = true; app.circuitChanged(true); }
     }
-    if (h && h.kind === 'term') {
+    // a terminal, or the loose end of a wire left half finished: dragging draws a new wire from there and the
+    // previous piece stays where it is (a connection drawn piece by piece)
+    if (h && (h.kind === 'term' || (h.kind === 'wend' && this.isLooseEnd(h.pt)))) {
       g.mode = 'maybe-wire'; g.a = h.pt;
     } else if (h && h.kind === 'wend') {
       // corner or junction of wires: dragging it moves the point with all its wires
@@ -258,6 +260,9 @@
 
   // a long press is only the start of a drag: on an element it selects it (the drag then moves it), on the
   // background it starts a selection window; the properties open with a quick double tap
+  Editor.prototype.isLooseEnd = function (pt) {
+    return DCS.tidy.freeEnds(this.app.circuit).has(pt[0] + ',' + pt[1]);
+  };
   Editor.prototype.isSecondTap = function (id, p, type) {
     const lt = this.lastTap, touch = type !== 'mouse';
     return !!lt && lt.id === id && performance.now() - lt.t < DBL_ELEM_MS[touch ? 'touch' : 'mouse'] && Math.hypot(p.sx - lt.sx, p.sy - lt.sy) < (touch ? 36 : 24);
@@ -789,6 +794,7 @@
       return;
     } else if (h) {
       if (h.kind === 'term') { cursor = 'crosshair'; app.overlay.snap = h.pt; app.overlay.snapHot = true; }
+      else if (h.kind === 'wend' && this.isLooseEnd(h.pt)) { cursor = 'crosshair'; app.overlay.snap = h.pt; app.overlay.snapHot = true; }
       else if (h.kind === 'wend') { cursor = 'move'; app.overlay.snap = h.pt; app.overlay.snapHot = false; }
       else if (h.kind === 'comp' && h.comp.type === 'pot' && this.onKnob(h.comp, p)) { cursor = 'grab'; app.hover = { id: h.comp.id }; }
       else if (h.kind === 'comp' && h.comp.type === 'pot' && this.onWiper(h.comp, p)) { cursor = (h.comp.rot || 0) % 2 ? 'ns-resize' : 'ew-resize'; app.hover = { id: h.comp.id }; }
