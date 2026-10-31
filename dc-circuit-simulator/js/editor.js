@@ -272,7 +272,7 @@
       if (g.mode === 'maybe-wire') g.mode = 'wire';
       if (g.mode === 'toggle') { g.mode = 'move'; app.sel.add(g.toggleId); }
       if (g.mode === 'vertex') { g.mode = 'move'; g.vertex = true; }
-      if (g.mode === 'move') this.startMove(g);
+      if (g.mode === 'move') { this.startMove(g); app.overlay.snap = g.vertex ? g.vpt : null; app.tip(null); }
       if (g.mode === 'wire') g.hFirst = Math.abs(p.x - g.start.x) >= Math.abs(p.y - g.start.y);
       if (g.mode === 'endpoint') { app.checkpoint(); g.cp = true; }
     }
@@ -649,6 +649,9 @@
     }
     for (const s of g.stretch) if (s.both) { s.w.x1 = s.x1 + dx; s.w.y1 = s.y1 + dy; s.w.x2 = s.x2 + dx; s.w.y2 = s.y2 + dy; }
     this.routeStretched(g);
+    // the marker of the grabbed point follows it (and is not left behind at the start)
+    this.app.overlay.snap = g.vertex ? [g.vpt[0] + dx, g.vpt[1] + dy] : null;
+    this.app.overlay.snapHot = false;
     this.app.circuitChanged(true);
   };
 
