@@ -337,7 +337,7 @@
           pts.push([vce, S.bjtEM(elQ, vbe, vbe - vce, Vt).ic]);
         }
       }
-      outSpec.series.push({ name: 'I_B = ' + U.format(ib, 'A'), color: slot(k), pts, width: k === 1 && ibq > 0 ? 2.6 : 1.6 });
+      outSpec.series.push({ name: 'I_B = ' + U.format(ib, 'A'), color: slot(k), pts, width: k === 1 && ibq > 0 ? 2.6 : 1.6, inline: true });
     });
     outSpec.regions = em ? [] : [
       { v0: winOut.v0, v1: p.Vcesat, i0: winOut.i0, i1: winOut.i1, label: t('region_sat'), kind: 'sat' },
@@ -437,6 +437,24 @@
       ctx.stroke();
       ctx.setLineDash([]);
     }
+    // curves named on the line itself (transistor output: I_B = …), at their right end, just above the curve
+    let lastY = -1e9;
+    const taken = [];   // boxes of the curve labels, kept clear by the Q label
+    for (const sr of spec.series.filter(x => x.inline && x.pts && x.pts.length > 1).sort((a, b) => a.pts[a.pts.length - 1][1] - b.pts[b.pts.length - 1][1])) {
+      let p = null;
+      for (let k = sr.pts.length - 1; k >= 0 && !p; k--) { const [v, i] = sr.pts[k]; if (v <= w.v1 && i >= w.i0 && i <= w.i1) p = [v, i]; }
+      if (!p) continue;
+      const x = Math.min(X(p[0]), W - R - 3), y = Y(p[1]) - 4;
+      if (Math.abs(y - lastY) < 13 || y < T + 12) continue;   // too close to the previous label, or to the top
+      lastY = y;
+      const c = sr.color === 'fg' ? col.fg : sr.color === 'muted' ? col.muted : sr.color;
+      // a halo of the background colour keeps the text readable over the grid
+      const wd = subText(ctx, sr.name, 0, 0, 'left', 11.5, 600, false);
+      ctx.fillStyle = col.bg; ctx.globalAlpha = 0.85; ctx.fillRect(x - wd - 3, y - 12, wd + 4, 15); ctx.globalAlpha = 1;
+      taken.push([x - wd - 3, y - 12, x + 1, y + 3]);
+      ctx.fillStyle = c;
+      subText(ctx, sr.name, x - 1, y, 'right', 11.5, 600);
+    }
     // where Q has been while a value was changed (pinned plot): faded dots joined by a thin line
     if (spec.trail && spec.trail.length > 1) {
       ctx.strokeStyle = col.port; ctx.globalAlpha = 0.35; ctx.lineWidth = 1.2;
@@ -456,14 +474,26 @@
     const q = spec.points.find(p => p.label);
     if (q) {
       const x = X(q.v), y = Y(q.i);
-      ctx.font = '600 12px ui-sans-serif, system-ui, sans-serif';
-      const tw = ctx.measureText(q.label).width;
-      // centred over the point, kept inside the plot (clear of the axes and of the edges)
-      const lx = Math.max(L + 6, Math.min(W - R - tw - 2, x - tw / 2));
-      let ly = y - 16;
-      if (ly < T + 8) ly = y + 16;
+      // centred over the point, or under it, or beside it, or against the left edge: the first place inside
+      // the plot (clear of the axes and of the edges) that does not cover a curve label; on a narrow plot a
+      // smaller font, then the label without its " · region" part
+      const texts = [[q.label, 12], [q.label, 11]];
+      if (q.label.includes(' · ')) texts.push([q.label.split(' · ')[0], 11]);
+      let pick = null;
+      for (const [txt, px] of texts) {
+        ctx.font = `600 ${px}px ui-sans-serif, system-ui, sans-serif`;
+        const tw = ctx.measureText(txt).width;
+        const clampX = (v) => Math.max(L + 6, Math.min(W - R - tw - 2, v));
+        const cands = [[x - tw / 2, y - 16], [x - tw / 2, y + 16], [x - tw - 12, y - 14], [x + 12, y - 14], [x - tw - 12, y + 14], [x + 12, y + 14], [L + 6, y - 14], [L + 6, y + 14]]
+          .map(([cx, cy]) => [clampX(cx), cy]).filter(([, cy]) => cy > T + 8 && cy < H - B - 8);
+        const free = cands.find(([cx, cy]) => !taken.some(b => cx < b[2] && cx + tw > b[0] && cy - 8 < b[3] && cy + 8 > b[1]));
+        if (free) { pick = [txt, px, free]; break; }
+        if (!pick) pick = [txt, px, cands[0] || [clampX(x - tw / 2), y - 16]];
+      }
+      const [txt, px, [lx, ly]] = pick;
+      ctx.font = `600 ${px}px ui-sans-serif, system-ui, sans-serif`;
       ctx.lineWidth = 3; ctx.strokeStyle = col.bg; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.strokeText(q.label, lx, ly); ctx.fillStyle = col.fg; ctx.fillText(q.label, lx, ly);
+      ctx.strokeText(txt, lx, ly); ctx.fillStyle = col.fg; ctx.fillText(txt, lx, ly);
     }
     // hover crosshair on the nearest curve point
     if (hover) {
@@ -494,7 +524,7 @@
     tip.className = 'ivtip'; tip.hidden = true;
     wrap.appendChild(cv); wrap.appendChild(tip);
     container.appendChild(wrap);
-    const legendItems = spec.series.map(s => ({ name: s.name, color: s.color, line: true }))
+    const legendItems = spec.series.filter(s => !s.inline).map(s => ({ name: s.name, color: s.color, line: true }))
       .concat(spec.lines.map(l => ({ name: l.name, dash: true })))
       .concat((spec.regions || []).map(rg => ({ name: rg.label, region: rg })))
       .concat(spec.points.filter(p => p.label).map(() => ({ name: DCS.app.tp('iv_q'), dot: true })));
