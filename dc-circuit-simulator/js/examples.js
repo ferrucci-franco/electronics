@@ -180,6 +180,16 @@
         w: [[[0, 7], [0, 6], [2, 6]], [[6, 6], [8, 6]], [[11, 0], [16, 0], [16, 4]]]
       }
     },
+    lampswitch: {
+      t: { en: 'Transistor switching a lamp', fr: 'Transistor commandant une lampe', es: 'Transistor que enciende una lámpara' },
+      d: { en: 'S1 closed: I_B ≈ 9 mA, more than enough to saturate Q1 with a 12 V / 5 W lamp (I_C ≈ 0.41 A). Open S1: cut-off, the lamp goes out. Try RB = 2.2 kΩ: I_B is too small, Q1 stays in the active region and the lamp is dim.', fr: 'S1 fermé : I_B ≈ 9 mA, bien assez pour saturer Q1 avec une lampe 12 V / 5 W (I_C ≈ 0,41 A). S1 ouvert : blocage, la lampe s’éteint. Essayez RB = 2,2 kΩ : I_B est trop faible, Q1 reste en régime actif et la lampe éclaire faiblement.', es: 'S1 cerrado: I_B ≈ 9 mA, de sobra para saturar Q1 con una lámpara de 12 V / 5 W (I_C ≈ 0,41 A). S1 abierto: corte, la lámpara se apaga. Pruebe RB = 2,2 kΩ: I_B no alcanza, Q1 queda en activa y la lámpara apenas enciende.' },
+      s: {
+        c: [['vsource', 'Vin', 0, 9, 1, { V: 5 }], ['switch', 'S1', 2, 6, 0, { closed: true }], ['resistor', 'RB', 6, 6, 0, { R: 470 }], ['bjt', 'Q1', 10, 6, 0],
+          ['lamp', 'LP1', 11, 2, 1, { Vn: 12, Pn: 5, look: 'lamp_bulb' }], ['vsource', 'VCC', 16, 6, 1, { V: 12 }],
+          ['ground', '', 0, 11, 0], ['ground', '', 11, 8, 0], ['ground', '', 16, 8, 0]],
+        w: [[[0, 7], [0, 6]], [[11, 0], [16, 0], [16, 4]]]
+      }
+    },
     pnp: {
       t: { en: 'PNP current source', fr: 'Source de courant à PNP', es: 'Fuente de corriente con PNP' },
       d: { en: 'The PNP transistor keeps the load current almost constant: change RL between 100 Ω and 4 kΩ.', fr: 'Le transistor PNP maintient le courant de charge presque constant : faites varier RL entre 100 Ω et 4 kΩ.', es: 'El transistor PNP mantiene casi constante la corriente de carga: varíe RL entre 100 Ω y 4 kΩ.' },

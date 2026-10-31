@@ -215,6 +215,7 @@
       if (!r) continue;
       const imax = c.props.Imax;
       const i = c.type === 'led' ? r.i : c.type === 'rgbled' ? Math.max(...r.ch.map(q => q.i)) : null;
+      if (c.type === 'lamp') { const ls = C.lampState(c, r); if (ls.state === 'hot') out.push({ level: 'warn', text: app.t('iss_lamphot', { ids: c.name, v: U.format(Math.abs(r.v), 'V'), vn: U.format(c.props.Vn, 'V', { trim: true }), p: Math.round(ls.b * 100) }), ids: [c.id] }); }
       if (i != null && i > imax * 1.0001) out.push({ level: 'warn', text: app.t('iss_ledmax', { ids: c.name, i: U.format(i, 'A'), imax: U.format(imax, 'A', { trim: true }) }), ids: [c.id] });
     }
     if (res.ok && res.floating && res.floating.length) out.push({ level: 'warn', text: app.t('iss_floating'), ids: [] });

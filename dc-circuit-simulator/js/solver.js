@@ -724,6 +724,8 @@
         const [b, c, e] = el.n, s = el.pnp ? -1 : 1;
         r.vbe = s * (sol.v[b] - sol.v[e]); r.vce = s * (sol.v[c] - sol.v[e]);
         r.ib = s * tc[0]; r.ic = s * tc[1]; r.ie = -s * tc[2];
+        // a transistor with no base current (base left open) is cut off, whatever state the search ended in
+        if (el.model !== 'em' && st === 'act' && Math.abs(r.ib) < ITOL && Math.abs(r.ic) < ITOL) r.state = 'off';
         if (el.model === 'em') {
           // region of the exponential model: B–C junction forward biased = saturation
           const vbc = r.vbe - r.vce;

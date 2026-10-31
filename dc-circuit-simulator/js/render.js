@@ -78,10 +78,10 @@
         if (fill) { ctx.globalAlpha = fillAlpha == null ? 1 : fillAlpha; ctx.fill(); ctx.globalAlpha = 1; }
         ctx.stroke();
       },
-      circle(x, y, r, fill) {
+      circle(x, y, r, fill, fillAlpha) {
         setLocal(); ctx.strokeStyle = color; ctx.lineWidth = lw;
         ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI);
-        if (fill) { ctx.fillStyle = color; ctx.fill(); }
+        if (fill) { ctx.fillStyle = typeof fill === 'string' ? fill : color; ctx.globalAlpha = fillAlpha == null ? 1 : fillAlpha; ctx.fill(); ctx.globalAlpha = 1; }
         ctx.stroke();
       },
       head(x1, y1, x2, y2, size) { // filled arrow head at (x2, y2) pointing from (x1, y1)
@@ -125,10 +125,10 @@
   }
 
   /* ---------- label layout ---------- */
-  const HALF = { switch: 1.0, button: 1.1, resistor: 0.4, vsource: 0.9, isource: 0.9, ammeter: 0.9, voltmeter: 0.9, depv: 0.95, depi: 0.95, isense: 0.5, vsense: 0.5, diode: 0.6, schottky: 0.6, zener: 0.6, led: 0.6 };
+  const HALF = { switch: 1.0, button: 1.1, resistor: 0.4, vsource: 0.9, isource: 0.9, ammeter: 0.9, voltmeter: 0.9, depv: 0.95, depi: 0.95, isense: 0.5, vsense: 0.5, diode: 0.6, lamp: 0.95, schottky: 0.6, zener: 0.6, led: 0.6 };
 
   // drawn extent of a few symbols beyond HALF, on the local −y (up) and +y (down) sides
-  const SIDE_EXT = { button: [1.6, 0.75], switch: [1.05, 0.3], isense: [0.98, 0.55], vsense: [0.68, 0.55] };
+  const SIDE_EXT = { lamp: (c) => (c.props.look === 'lamp_bulb' ? [1.15, 1.45] : null), button: [1.6, 0.75], switch: [1.05, 0.3], isense: [0.98, 0.55], vsense: [0.68, 0.55] };
   function worldDir(comp, dx, dy) {
     const m = localMatrix(comp);
     return [m[0] * dx + m[2] * dy, m[1] * dx + m[3] * dy];
@@ -292,6 +292,7 @@
       let lit;
       if (c.type === 'rgbled' && res && res.el[c.id] && res.el[c.id].ch) lit = res.el[c.id].ch.map(q => Math.max(0, Math.min(1, q.i / c.props.Imax)));
       if (c.type === 'led') lit = [res && res.el[c.id] ? Math.max(0, Math.min(1, res.el[c.id].i / c.props.Imax)) : 0];
+      if (c.type === 'lamp') { const ls = C.lampState(c, res && res.el[c.id]); lit = ls ? [ls.b, ls.state === 'hot'] : [0, false]; }
       drawSymbol(this, c, view, hl || (onSide && !selected) ? col.port : selected ? col.sel : bad ? col.err : col.fg, st.style, lw, lit);
     }
 
@@ -458,7 +459,7 @@
       // the light arrows of a LED stick out on one side: the labels keep clear of them
       const lightDir = c.type === 'led' ? worldDir(c, 0, -1) : null;
       // symbols that stick out more on one side (push button plunger, sensor arrow): their own extent there
-      const ext = SIDE_EXT[c.type];
+      const ext = typeof SIDE_EXT[c.type] === 'function' ? SIDE_EXT[c.type](c) : SIDE_EXT[c.type];
       const up = ext ? worldDir(c, 0, -1) : null;
       const hwSide = (d) => {
         if (lightDir && d[0] * lightDir[0] + d[1] * lightDir[1] > 0.5) return 1.45;
@@ -510,6 +511,7 @@
             if (showI) lines.push({ text: fmt(Math.abs(r.i), 'A'), color: col.cur, mono: true });
             if (st.showP) lines.push({ text: fmt(r.p, 'W'), color: r.p < -1e-15 ? col.pgen : col.pabs, mono: true });
             if (C.isDiode(c) && c.props.model !== 'exact' && st.showState) lines.push({ text: tr('state_' + r.state), color: col.muted });
+            if (c.type === 'lamp' && st.showState) { const ls = C.lampState(c, r); lines.push({ text: tr('lamp_' + ls.state), color: ls.state === 'hot' ? col.err : col.muted, bold: ls.state === 'hot' }); }
           }
           rb = { wx: cx + rd[0] * ((lines.refOff || off) + gap), wy: cy + rd[1] * ((lines.refOff || off) + gap), dir: rd, lines };
           blocks.push(rb);
@@ -656,6 +658,7 @@
       if (st.showI) lines.push({ text: fmt(sg.i, 'A'), color: col.cur, mono: true });
       if (st.showP) lines.push({ text: fmt(r.p, 'W'), color: r.p < -1e-15 ? col.pgen : col.pabs, mono: true });
       if (C.isDiode(c) && c.props.model !== 'exact' && st.showState) lines.push({ text: S.tr('state_' + r.state), color: col.muted });
+      if (c.type === 'lamp' && st.showState) { const ls = C.lampState(c, r); lines.push({ text: S.tr('lamp_' + ls.state), color: ls.state === 'hot' ? col.err : col.muted, bold: ls.state === 'hot' }); }
     }
     lines.refOff = off;
   };
@@ -679,10 +682,27 @@
   Renderer.prototype.drawGlow = function (S, res) {
     const ctx = this.ctx, dpr = this.dpr, view = S.view, s = view.scale;
     for (const c of S.circuit.comps) {
-      if (c.type !== 'led' && c.type !== 'rgbled') continue;
+      if (c.type !== 'led' && c.type !== 'rgbled' && c.type !== 'lamp') continue;
       const r = res.el[c.id];
       if (!r) continue;
       let rgb, b;
+      if (c.type === 'lamp') {
+        const ls = C.lampState(c, r);
+        b = Math.min(1.5, ls.b);
+        rgb = ls.state === 'hot' ? [255, 80, 30] : [255, 205, 50];
+        if (b < 0.02) continue;
+        const [wx, wy] = C.toWorld(c, 0, c.props.look === 'lamp_bulb' ? -0.25 : 0);
+        const x = wx * s + view.ox, y = wy * s + view.oy, R0 = s * (1.1 + 1.6 * Math.sqrt(b));
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        const g = ctx.createRadialGradient(x, y, 0, x, y, R0);
+        const a = 0.8 * Math.sqrt(Math.min(1, b));
+        g.addColorStop(0, `rgba(${rgb.join(',')},${a})`);
+        g.addColorStop(0.45, `rgba(${rgb.join(',')},${a * 0.45})`);
+        g.addColorStop(1, `rgba(${rgb.join(',')},0)`);
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(x, y, R0, 0, 2 * Math.PI); ctx.fill();
+        continue;
+      }
       if (c.type === 'led') {
         b = Math.max(0, Math.min(1, r.i / c.props.Imax));
         rgb = (C.LED_COLORS[c.props.color] || C.LED_COLORS.red).rgb;
