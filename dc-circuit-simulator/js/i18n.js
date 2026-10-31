@@ -4,6 +4,7 @@
   const T = {
     en: {
       title: 'DC Circuit Simulator',
+      wheel_dir: 'Wheel / two fingers on a selected component', wheel_auto: 'automatic (Mac: natural scrolling)', wheel_normal: 'up = larger (classic wheel)', wheel_inverted: 'up = larger (natural scrolling)',
       tidy: 'Prettify', tidy_tip: 'Tidy the wires without changing any connection (Ctrl+Z to undo)', tidy_done: 'Wires tidied: {a} → {b} pieces (Ctrl+Z to undo)', tidy_none: 'Nothing to tidy', tidy_fail: 'Not tidied: it would have changed a connection', p_ctl: 'Control', slider: 'straight (slider)', knob: 'rotary (round symbol)',
       c_pot: 'Potentiometer', cs_pot: 'Potentiometer', p_alpha: 'Position α (A → B)', p_taper: 'Taper', lin: 'linear', log: 'logarithmic (audio)', wiper: 'wiper',
       c_led: 'LED', cs_led: 'LED', c_rgbled: 'RGB LED', cs_rgbled: 'RGB LED', p_color: 'Colour', p_Imax: 'Maximum current I<sub>max</sub>', p_common: 'Common terminal',
@@ -129,7 +130,7 @@
 <h4>Zoom and pan</h4><ul>
 <li>Mouse: <b>wheel</b> = zoom around the pointer; drag with the <b>right or middle button</b>, or hold <b>Space</b> and drag = pan; drag on the background = box selection (the components inside and every wire it touches).</li>
 <li>Touchpad: <b>two fingers</b> = pan, <b>pinch</b> = zoom.</li><li>Touch screen: <b>one finger</b> on the background = pan, <b>two fingers</b> = pinch zoom and pan; <b>two fingers held still, then moved up or down</b> = zoom; long press on the background = box selection, long press on an element = properties.</li><li>While dragging something to the edge of the drawing, the view scrolls by itself.</li>
-<li>Buttons + / − / ⤢ (fit the circuit) at the bottom right; keys <b>+</b>, <b>−</b>, <b>0</b>.</li></ul><h4>Changing a value quickly</h4><ul><li>Select a component and turn the <b>mouse wheel over it</b> (or scroll with two fingers on a touchpad, or move two fingers up and down on it on a touch screen): resistance along the E12 series, sources in steps of a tenth of their decade, potentiometer position, β of a transistor. One Ctrl+Z undoes the whole series of steps.</li></ul>
+<li>Buttons + / − / ⤢ (fit the circuit) at the bottom right; keys <b>+</b>, <b>−</b>, <b>0</b>; <b>double click or double tap on the background</b> = fit the circuit.</li></ul><h4>Changing a value quickly</h4><ul><li>Select a component and turn the <b>mouse wheel over it</b> (or scroll with two fingers on a touchpad, or move two fingers up and down on it on a touch screen): resistance along the E12 series, sources in steps of a tenth of their decade, potentiometer position, β of a transistor. One Ctrl+Z undoes the whole series of steps.</li></ul>
 <h4>Other keys</h4><ul><li>Del, Ctrl+Z / Ctrl+Y, Ctrl+C / Ctrl+V, Ctrl+D, Ctrl+A, arrows (move the selection), W (wire), Enter (properties), Esc.</li></ul>`,
       ex_title: 'Examples', ex_load: 'Load',
       copy_hint: 'Copied', pasted: 'Pasted',
@@ -138,6 +139,7 @@
     },
     fr: {
       title: 'Simulateur de circuits en continu',
+      wheel_dir: 'Molette / deux doigts sur un composant sélectionné', wheel_auto: 'automatique (Mac : défilement naturel)', wheel_normal: 'vers le haut = plus grand (molette classique)', wheel_inverted: 'vers le haut = plus grand (défilement naturel)',
       tidy: 'Embellir', tidy_tip: 'Ranger les fils sans changer aucune connexion (Ctrl+Z pour annuler)', tidy_done: 'Fils rangés : {a} → {b} segments (Ctrl+Z pour annuler)', tidy_none: 'Rien à ranger', tidy_fail: 'Non rangé : une connexion aurait changé', p_ctl: 'Commande', slider: 'rectiligne (glissière)', knob: 'rotatif (symbole rond)',
       c_pot: 'Potentiomètre', cs_pot: 'Potentiomètre', p_alpha: 'Position α (A → B)', p_taper: 'Loi de variation', lin: 'linéaire', log: 'logarithmique (audio)', wiper: 'curseur',
       c_led: 'LED', cs_led: 'LED', c_rgbled: 'LED RVB', cs_rgbled: 'LED RVB', p_color: 'Couleur', p_Imax: 'Courant maximal I<sub>max</sub>', p_common: 'Borne commune',
@@ -263,7 +265,7 @@
 <h4>Zoom et déplacement</h4><ul>
 <li>Souris : <b>molette</b> = zoom autour du pointeur ; glisser avec le <b>bouton droit ou du milieu</b>, ou maintenir <b>Espace</b> et glisser = déplacer la vue ; glisser sur le fond = sélection par rectangle (les composants à l’intérieur et tous les fils qu’il touche).</li>
 <li>Pavé tactile : <b>deux doigts</b> = déplacer la vue, <b>pincement</b> = zoom.</li><li>Écran tactile : <b>un doigt</b> sur le fond = déplacer la vue, <b>deux doigts</b> = zoom par pincement et déplacement ; <b>deux doigts immobiles, puis vers le haut ou le bas</b> = zoom ; appui long sur le fond = sélection par rectangle, appui long sur un élément = propriétés.</li><li>En faisant glisser quelque chose jusqu’au bord du dessin, la vue défile toute seule.</li>
-<li>Boutons + / − / ⤢ (cadrer le circuit) en bas à droite ; touches <b>+</b>, <b>−</b>, <b>0</b>.</li></ul><h4>Changer une valeur rapidement</h4><ul><li>Sélectionnez un composant et tournez la <b>molette au-dessus de lui</b> (ou faites défiler à deux doigts sur un pavé tactile, ou déplacez deux doigts vers le haut ou le bas sur lui sur un écran tactile) : résistance selon la série E12, sources par pas d’un dixième de leur décade, position du potentiomètre, β d’un transistor. Un seul Ctrl+Z annule toute la série de pas.</li></ul>
+<li>Boutons + / − / ⤢ (cadrer le circuit) en bas à droite ; touches <b>+</b>, <b>−</b>, <b>0</b> ; <b>double-clic ou double toucher sur le fond</b> = cadrer le circuit.</li></ul><h4>Changer une valeur rapidement</h4><ul><li>Sélectionnez un composant et tournez la <b>molette au-dessus de lui</b> (ou faites défiler à deux doigts sur un pavé tactile, ou déplacez deux doigts vers le haut ou le bas sur lui sur un écran tactile) : résistance selon la série E12, sources par pas d’un dixième de leur décade, position du potentiomètre, β d’un transistor. Un seul Ctrl+Z annule toute la série de pas.</li></ul>
 <h4>Autres touches</h4><ul><li>Suppr, Ctrl+Z / Ctrl+Y, Ctrl+C / Ctrl+V, Ctrl+D, Ctrl+A, flèches (déplacer la sélection), W (fil), Entrée (propriétés), Échap.</li></ul>`,
       ex_title: 'Exemples', ex_load: 'Charger',
       copy_hint: 'Copié', pasted: 'Collé',
@@ -272,6 +274,7 @@
     },
     es: {
       title: 'Simulador de circuitos en continua',
+      wheel_dir: 'Rueda / dos dedos sobre un componente seleccionado', wheel_auto: 'automático (Mac: desplazamiento natural)', wheel_normal: 'hacia arriba = mayor (rueda clásica)', wheel_inverted: 'hacia arriba = mayor (desplazamiento natural)',
       tidy: 'Ordenar', tidy_tip: 'Ordenar los cables sin cambiar ninguna conexión (Ctrl+Z para deshacer)', tidy_done: 'Cables ordenados: {a} → {b} tramos (Ctrl+Z para deshacer)', tidy_none: 'No hay nada que ordenar', tidy_fail: 'No se ordenó: habría cambiado una conexión', p_ctl: 'Control', slider: 'recto (deslizante)', knob: 'rotativo (símbolo redondo)',
       c_pot: 'Potenciómetro', cs_pot: 'Potenciómetro', p_alpha: 'Posición α (A → B)', p_taper: 'Curva', lin: 'lineal', log: 'logarítmica (audio)', wiper: 'cursor',
       c_led: 'LED', cs_led: 'LED', c_rgbled: 'LED RGB', cs_rgbled: 'LED RGB', p_color: 'Color', p_Imax: 'Corriente máxima I<sub>max</sub>', p_common: 'Terminal común',
@@ -397,7 +400,7 @@
 <h4>Zoom y desplazamiento</h4><ul>
 <li>Ratón: <b>rueda</b> = zoom alrededor del puntero; arrastrar con el <b>botón derecho o del medio</b>, o mantener <b>Espacio</b> y arrastrar = desplazar; arrastrar sobre el fondo = selección con rectángulo (los componentes que quedan adentro y todos los cables que toca).</li>
 <li>Touchpad: <b>dos dedos</b> = desplazar, <b>pellizco</b> = zoom.</li><li>Pantalla táctil: <b>un dedo</b> sobre el fondo = desplazar, <b>dos dedos</b> = zoom con pellizco y desplazamiento; <b>dos dedos quietos y luego hacia arriba o abajo</b> = zoom; toque largo sobre el fondo = selección con rectángulo, toque largo sobre un elemento = propiedades.</li><li>Al arrastrar algo hasta el borde del dibujo, la vista se desplaza sola.</li>
-<li>Botones + / − / ⤢ (encuadrar el circuito) abajo a la derecha; teclas <b>+</b>, <b>−</b>, <b>0</b>.</li></ul><h4>Cambiar un valor rápido</h4><ul><li>Seleccione un componente y gire la <b>rueda del ratón sobre él</b> (o deslice con dos dedos en el touchpad, o mueva dos dedos hacia arriba o abajo sobre él en una pantalla táctil): resistencia según la serie E12, fuentes en pasos de un décimo de su década, posición del potenciómetro, β de un transistor. Un solo Ctrl+Z deshace toda la serie de pasos.</li></ul>
+<li>Botones + / − / ⤢ (encuadrar el circuito) abajo a la derecha; teclas <b>+</b>, <b>−</b>, <b>0</b>; <b>doble clic o doble toque sobre el fondo</b> = encuadrar el circuito.</li></ul><h4>Cambiar un valor rápido</h4><ul><li>Seleccione un componente y gire la <b>rueda del ratón sobre él</b> (o deslice con dos dedos en el touchpad, o mueva dos dedos hacia arriba o abajo sobre él en una pantalla táctil): resistencia según la serie E12, fuentes en pasos de un décimo de su década, posición del potenciómetro, β de un transistor. Un solo Ctrl+Z deshace toda la serie de pasos.</li></ul>
 <h4>Otras teclas</h4><ul><li>Supr, Ctrl+Z / Ctrl+Y, Ctrl+C / Ctrl+V, Ctrl+D, Ctrl+A, flechas (mover la selección), W (cable), Enter (propiedades), Esc.</li></ul>`,
       ex_title: 'Ejemplos', ex_load: 'Cargar',
       copy_hint: 'Copiado', pasted: 'Pegado',

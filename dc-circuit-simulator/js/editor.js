@@ -467,6 +467,8 @@
     this.lastTap = { t: now, id, sx: p.sx, sy: p.sy };
     if (!h) {
       if (!g.shift) app.select([]);
+      // double click / double tap on the background: fit the circuit
+      if (dbl) { app.fit(); this.lastTap = null; }
       return;
     }
     if (g.shift && id) { app.toggleSel(id); return; }
@@ -781,9 +783,11 @@
     if (e.ctrlKey && G.kind === 'pan') G.kind = 'zoom';
     if (G.kind === 'value') {
       // a mouse notch is one step; a touchpad sends small deltas, one step every 40 px of travel
-      if (Math.abs(dy) >= 40) { G.acc = 0; app.adjustValue(G.c, dy < 0); return; }
+      // fingers (or wheel) up = larger value; with "natural" scrolling (default on a Mac) up gives dy > 0
+      const sgn = app.wheelSign();
+      if (Math.abs(dy) >= 40) { G.acc = 0; app.adjustValue(G.c, sgn * dy < 0); return; }
       G.acc += dy;
-      if (Math.abs(G.acc) >= 40) { app.adjustValue(G.c, G.acc < 0); G.acc = 0; }
+      if (Math.abs(G.acc) >= 40) { app.adjustValue(G.c, sgn * G.acc < 0); G.acc = 0; }
       return;
     }
     if (G.kind === 'pan') {
