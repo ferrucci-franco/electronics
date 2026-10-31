@@ -5,6 +5,7 @@
   const C = DCS.comp;
 
   const DRAG_PX = { mouse: 4, pen: 6, touch: 9 };
+  const EDGE_MODES = new Set(['move', 'wire', 'band', 'endpoint']);
   const LONG_MS = 480;
 
   function distSeg(px, py, x1, y1, x2, y2) {
@@ -284,7 +285,7 @@
         break;
       }
       case 'band':
-        app.overlay.band = [g.start.sx, g.start.sy, p.sx, p.sy];
+        app.overlay.band = [g.start.x * app.view.scale + app.view.ox, g.start.y * app.view.scale + app.view.oy, p.sx, p.sy];
         break;
       case 'move': this.doMove(g, p); break;
       case 'knob': {
@@ -331,6 +332,7 @@
       case 'place': this.placeGhost(p); break;
       default: break;
     }
+    this.edgePan(e);
     app.requestRender();
   };
 
@@ -354,6 +356,7 @@
     const g = this.g;
     if (!g || g.id !== e.pointerId) return;
     clearTimeout(g.longTimer);
+    if (this.panRaf) { cancelAnimationFrame(this.panRaf); this.panRaf = 0; }
     this.g = null;
     app.overlay.snap = null;
     if (g.long && !g.moved && g.mode !== 'band') { app.requestRender(); return; }
@@ -751,33 +754,74 @@
   };
 
   /* ---------- zoom ---------- */
+  // Wheel events: a mouse wheel zooms; a touchpad pans with two fingers and zooms with a pinch (ctrlKey);
+  // a gesture that starts over the selected component steps its value. The kind of a gesture is decided at
+  // its first event, so that a pan passing over a component does not change it.
   Editor.prototype.wheel = function (e) {
     e.preventDefault();
-    const p = this.world(e);
-    let dy = e.deltaY;
-    if (e.deltaMode === 1) dy *= 16;
-    // over the selected component (and not a pinch): the wheel steps its value instead of zooming
-    const app = this.app;
-    if (!e.ctrlKey && app.sel.size === 1 && app.tool === 'select') {
-      const c = app.selectedComps()[0];
-      if (c && app.valueKey(c) && C.hit(c, p.x, p.y, 0.3)) {
-        // a mouse notch is one step; a touchpad sends small deltas, one step every 40 px of travel
-        const now = performance.now();
-        if (!this.wheelT || now - this.wheelT > 300) this.wheelAcc = 0;
-        this.wheelT = now;
-        if (Math.abs(dy) >= 40) { this.wheelAcc = 0; app.adjustValue(c, dy < 0); return; }
-        this.wheelAcc += dy;
-        if (Math.abs(this.wheelAcc) >= 40) { app.adjustValue(c, this.wheelAcc < 0); this.wheelAcc = 0; }
-        return;
-      }
+    const app = this.app, p = this.world(e);
+    let dx = e.deltaX, dy = e.deltaY;
+    if (e.deltaMode === 1) { dx *= 16; dy *= 16; } else if (e.deltaMode === 2) { dx *= 400; dy *= 400; }
+    const now = performance.now();
+    // a touchpad gesture keeps its kind until a pause; each notch of a mouse wheel is decided on its own
+    if (!this.wg || now - this.wg.t > 250 || this.isMouseWheel(e)) {
+      const c = app.sel.size === 1 && app.tool === 'select' ? app.selectedComps()[0] : null;
+      let kind;
+      if (!e.ctrlKey && c && app.valueKey(c) && C.hit(c, p.x, p.y, 0.3)) kind = 'value';
+      else if (e.ctrlKey || this.isMouseWheel(e)) kind = 'zoom';
+      else kind = 'pan';
+      this.wg = { kind, c, acc: 0 };
     }
-    const k = Math.exp(-dy * (e.ctrlKey ? 0.01 : 0.0018));
-    this.app.zoomAt(k, p.sx, p.sy);
+    const G = this.wg;
+    G.t = now;
+    if (e.ctrlKey && G.kind === 'pan') G.kind = 'zoom';
+    if (G.kind === 'value') {
+      // a mouse notch is one step; a touchpad sends small deltas, one step every 40 px of travel
+      if (Math.abs(dy) >= 40) { G.acc = 0; app.adjustValue(G.c, dy < 0); return; }
+      G.acc += dy;
+      if (Math.abs(G.acc) >= 40) { app.adjustValue(G.c, G.acc < 0); G.acc = 0; }
+      return;
+    }
+    if (G.kind === 'pan') {
+      app.view.ox -= dx; app.view.oy -= dy;
+      app.viewChanged();
+      return;
+    }
+    app.zoomAt(Math.exp(-dy * (e.ctrlKey ? 0.01 : 0.0018)), p.sx, p.sy);
+  };
+
+  // a classic mouse wheel: line or page units, or big integer pixel steps with no horizontal part
+  Editor.prototype.isMouseWheel = function (e) {
+    if (e.deltaMode !== 0) return true;
+    if (e.deltaX !== 0) return false;
+    return Math.abs(e.deltaY) >= 50 && Number.isInteger(e.deltaY);
+  };
+
+  // While dragging near (or beyond) an edge of the canvas, the view scrolls that way and the drag goes on.
+  Editor.prototype.edgePan = function (e) {
+    const g = this.g;
+    if (!g || !g.moved || !EDGE_MODES.has(g.mode)) return;
+    this.lastEv = { clientX: e.clientX, clientY: e.clientY, pointerId: e.pointerId, pointerType: e.pointerType };
+    if (!this.panRaf) this.panRaf = requestAnimationFrame(() => this.edgeStep());
+  };
+  Editor.prototype.edgeStep = function () {
+    this.panRaf = 0;
+    const g = this.g, ev = this.lastEv, app = this.app;
+    if (!g || !ev || !g.moved || !EDGE_MODES.has(g.mode)) return;
+    const r = this.cv.getBoundingClientRect(), M = 36;
+    const x = ev.clientX - r.left, y = ev.clientY - r.top;
+    const speed = (d) => (d >= M ? 0 : Math.min(24, 3 + (M - Math.max(d, -60)) / M * 10));
+    const vx = speed(x) - speed(r.width - x), vy = speed(y) - speed(r.height - y);
+    if (!vx && !vy) return;
+    app.view.ox += vx; app.view.oy += vy;
+    this.move(ev);   // the drag continues at the same screen point, now over another place of the circuit
+    app.viewChanged();
+    if (!this.panRaf) this.panRaf = requestAnimationFrame(() => this.edgeStep());
   };
 
   Editor.prototype.startPinch = function () {
     const [a, b] = Array.from(this.ptrs.values());
-    this.pinch = { d0: Math.hypot(a.sx - b.sx, a.sy - b.sy) || 1, m0: [(a.sx + b.sx) / 2, (a.sy + b.sy) / 2], view0: Object.assign({}, this.app.view) };
+    this.pinch = { d0: Math.hypot(a.sx - b.sx, a.sy - b.sy) || 1, m0: [(a.sx + b.sx) / 2, (a.sy + b.sy) / 2], view0: Object.assign({}, this.app.view), t0: performance.now() };
     // two fingers on the selected component: moving them up or down steps its value (no zoom)
     const app = this.app, v = app.view;
     const c = app.sel.size === 1 && app.tool === 'select' ? app.selectedComps()[0] : null;
@@ -792,6 +836,19 @@
     const [a, b] = pts, P = this.pinch, app = this.app;
     const d = Math.hypot(a.sx - b.sx, a.sy - b.sy) || 1;
     const m = [(a.sx + b.sx) / 2, (a.sy + b.sy) / 2];
+    // two fingers held still for a moment, then moved up or down: zoom (up = in); moved at once: pinch and pan
+    if (!P.mode && !P.value) {
+      const moved = Math.hypot(m[0] - P.m0[0], m[1] - P.m0[1]) > 8 || Math.abs(d - P.d0) > 8;
+      if (moved) P.mode = performance.now() - P.t0 > 350 ? 'vzoom' : 'pinch';
+      else return;
+    }
+    if (P.mode === 'vzoom') {
+      const s = Math.max(app.minScale, Math.min(app.maxScale, P.view0.scale * Math.exp(-(m[1] - P.m0[1]) * 0.01)));
+      const wx = (P.m0[0] - P.view0.ox) / P.view0.scale, wy = (P.m0[1] - P.view0.oy) / P.view0.scale;
+      app.view.scale = s; app.view.ox = P.m0[0] - wx * s; app.view.oy = P.m0[1] - wy * s;
+      app.viewChanged();
+      return;
+    }
     if (P.value) {
       // every 22 px of vertical motion is one step (up = larger)
       while (Math.abs(m[1] - P.value.y0) >= 22) {
