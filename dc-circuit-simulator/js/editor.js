@@ -7,6 +7,8 @@
   const DRAG_PX = { mouse: 4, pen: 6, touch: 9 };
   const EDGE_MODES = new Set(['move', 'wire', 'band', 'endpoint']);
   const LONG_MS = 480;
+  // keyboard: a letter takes a component (W is the wire tool, F mirrors)
+  const SHORTCUTS = { g: 'ground', r: 'resistor', v: 'vsource', i: 'isource', a: 'opamp' };
   const DBL_TOUCH_MS = 700;   // background: a second touch this soon after a tap starts a selection window (also slow)
   const DBL_ELEM_MS = { mouse: 380, touch: 420 };   // double click / quick double tap on an element = properties
 
@@ -754,6 +756,7 @@
   /* ---------- hover (mouse) ---------- */
   Editor.prototype.hover = function (p, e) {
     const app = this.app;
+    this.lastMouse = p;
     if (app.tool === 'place') { this.placeGhost(p); app.requestRender(); return; }
     const h = this.hit(p.x, p.y, 'mouse');
     let cursor = 'default';
@@ -921,6 +924,9 @@
     if (mod && (k === 'v' || k === 'V')) { e.preventDefault(); app.paste(); return; }
     if (mod && (k === 'd' || k === 'D')) { e.preventDefault(); app.duplicateSel(); return; }
     if (mod && (k === 'a' || k === 'A')) { e.preventDefault(); app.select(app.circuit.comps.map(c => c.id).concat(app.circuit.wires.map(w => w.id))); return; }
+    // Ctrl+R / ⌘R rotates and Ctrl+E mirrors (R alone takes a resistor, as in LTspice)
+    if (mod && (k === 'r' || k === 'R')) { e.preventDefault(); if (app.tool === 'place') app.rotatePlace(); else app.rotateSel(); return; }
+    if (mod && (k === 'e' || k === 'E')) { e.preventDefault(); if (app.tool === 'place') app.flipPlace(); else app.flipSel(); return; }
     if (mod) return;
     if (k === 'Delete' || k === 'Backspace') { e.preventDefault(); app.deleteSel(); return; }
     if (k === 'Escape') {
@@ -930,7 +936,13 @@
       app.select([]);
       return;
     }
-    if (k === 'r' || k === 'R') { if (app.tool === 'place') app.rotatePlace(); else app.rotateSel(); return; }
+    // one key takes a component, ready to be dropped where the pointer is
+    const take = SHORTCUTS[k.toLowerCase()];
+    if (take && !e.altKey) {
+      app.setTool('place', { type: take });
+      if (this.lastMouse) { this.placeGhost(this.lastMouse); app.requestRender(); }
+      return;
+    }
     if (k === 'f' || k === 'F') { if (app.tool === 'place') app.flipPlace(); else app.flipSel(); return; }
     if (k === 'w' || k === 'W') { app.setTool(app.tool === 'wire' ? 'select' : 'wire'); return; }
     if (k === '+' || k === '=') { app.zoomAt(1.25, app.renderer.w / 2, app.renderer.h / 2); return; }
