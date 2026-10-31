@@ -226,3 +226,6 @@ html.layout-mobile .field input[type=text], html.layout-mobile .field select{fon
   html.layout-desktop .app{grid-template-columns:150px minmax(0,1fr) 260px}
   html.layout-desktop .palette button span{font-size:12.5px}
 }
+.modal .field{grid-template-columns:minmax(0,1fr) minmax(150px, 300px)}
+.modal .field .btnrow{flex-wrap:nowrap}
+.modal .field .btnrow select{flex:1; min-width:0}
