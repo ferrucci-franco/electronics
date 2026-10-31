@@ -160,14 +160,15 @@
         return;
       }
       if (ln.hl) {
-        // the value being changed: an accent highlight behind it
-        ctx.font = `${ln.bold ? 700 : 500} ${fontPx}px ${ln.mono ? 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace' : 'ui-sans-serif, system-ui, sans-serif'}`;
-        const w = ctx.measureText(ln.text).width + 8;
-        const x0 = align === 'left' ? sx - 4 : align === 'right' ? sx - w + 4 : sx - w / 2;
-        ctx.fillStyle = col.accent; ctx.globalAlpha = 0.22;
-        roundRect(ctx, x0, y - lh / 2, w, lh, 5); ctx.fill();
-        ctx.globalAlpha = 1;
-        ctx.textAlign = align; ctx.textBaseline = 'middle';
+        // the value being changed: in the accent colour, bold, underlined
+        ctx.font = `700 ${fontPx}px ${ln.mono ? 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace' : 'ui-sans-serif, system-ui, sans-serif'}`;
+        const w = ctx.measureText(ln.text).width;
+        const x0 = align === 'left' ? sx : align === 'right' ? sx - w : sx - w / 2;
+        ctx.lineWidth = 3; ctx.strokeStyle = col.bg; ctx.lineJoin = 'round';
+        ctx.strokeText(ln.text, sx, y + 0.5);
+        ctx.fillStyle = col.accent; ctx.fillText(ln.text, sx, y + 0.5);
+        ctx.fillRect(x0, y + fontPx * 0.62, w, 1.5);
+        return;
       }
       // halo for legibility over wires
       ctx.lineWidth = 3; ctx.strokeStyle = col.bg; ctx.lineJoin = 'round';
@@ -278,14 +279,13 @@
       const bad = S.badIds && S.badIds.has(c.id);
       // components of the step of the R_eq reduction being looked at
       const hl = S.overlay && S.overlay.hl && S.overlay.hl.has(c.id);
-      const live = S.overlay && S.overlay.live === c.id;
       const onSide = side && side.comps.has(c.id) && c.type !== 'ground';
-      if (selected || hov || bad || hl || live) {
+      if (selected || hov || bad || hl) {
         const b = C.TYPES[c.type].box;
         const m = localMatrix(c);
         ctx.setTransform(dpr * s * m[0], dpr * s * m[1], dpr * s * m[2], dpr * s * m[3], dpr * (s * m[4] + view.ox), dpr * (s * m[5] + view.oy));
-        ctx.fillStyle = bad ? col.err : hl ? col.port : live ? col.accent : selected ? col.sel : col.hover;
-        ctx.globalAlpha = bad ? 0.16 : hl ? 0.22 : live ? 0.2 : selected ? 0.14 : 0.1;
+        ctx.fillStyle = bad ? col.err : hl ? col.port : selected ? col.sel : col.hover;
+        ctx.globalAlpha = bad ? 0.16 : hl ? 0.22 : selected ? 0.14 : 0.1;
         roundRect(ctx, b[0] - 0.15, b[1] - 0.15, b[2] - b[0] + 0.3, b[3] - b[1] + 0.3, 0.35); ctx.fill();
         ctx.globalAlpha = 1;
       }
@@ -784,12 +784,31 @@
       }
       return score;
     };
-    // greedy placement, then two passes where each label moves if another option is better
+    // greedy placement, then two passes where each label moves if another option is better. A label keeps its
+    // previous place unless another one is clearly better (no flickering from side to side as a value changes),
+    // and none moves while a value is being changed (slider, wheel)
+    const prev = this.prevPick || new Map();
+    const frozen = !!(S.overlay && S.overlay.live);
+    const MARGIN = 400;   // (overlap cost units: about 10 px² of text over text)
+    const prevOf = (it) => { const p = prev.get(it.c.id); return p && p.n === it.opts.length ? p.k : -1; };
     for (const it of items) it.pick = -1;
-    for (const it of items) { let b = 0, bs = Infinity; it.opts.forEach((_, k) => { const sc = cost(it, k); if (sc < bs) { bs = sc; b = k; } }); it.pick = b; }
-    for (let pass = 0; pass < 2; pass++) {
-      for (const it of items) { let b = it.pick, bs = cost(it, it.pick); it.opts.forEach((_, k) => { const sc = cost(it, k); if (sc < bs - 1e-6) { bs = sc; b = k; } }); it.pick = b; }
+    for (const it of items) {
+      const pk = prevOf(it);
+      if (frozen && pk >= 0) { it.pick = pk; continue; }
+      let b = 0, bs = Infinity; it.opts.forEach((_, k) => { const sc = cost(it, k); if (sc < bs) { bs = sc; b = k; } });
+      if (pk >= 0 && cost(it, pk) <= bs + MARGIN) b = pk;
+      it.pick = b;
     }
+    for (let pass = 0; pass < 2; pass++) {
+      for (const it of items) {
+        if (frozen && prevOf(it) >= 0) continue;
+        let b = it.pick, bs = cost(it, it.pick);
+        const m = prevOf(it) === it.pick ? MARGIN : 1e-6;
+        it.opts.forEach((_, k) => { const sc = cost(it, k); if (sc < bs - m) { bs = sc; b = k; } });
+        it.pick = b;
+      }
+    }
+    this.prevPick = new Map(items.map(it => [it.c.id, { k: it.pick, n: it.opts.length }]));
     this.placed = [];
     for (const it of items) for (const r of it.opts[it.pick].rects.concat(it.opts[it.pick].marks2)) this.placed.push(r);
     // the labels of each component (screen rectangles), e.g. to keep a popup from covering them
