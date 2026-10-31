@@ -760,7 +760,6 @@
       }
       const row = el('div', { class: 'btnrow' });
       if (c.type !== 'ground') row.appendChild(button('⟳ ' + plainText(t('rotate')).replace(/ \(.*\)/, ''), () => app.rotateSel()));
-      if (T.terms.length === 2 && c.type !== 'ground') row.appendChild(button(t('thev_seen'), () => app.portFromComp(c)));
       row.appendChild(button(t('del'), () => app.deleteSel(), 'warn'));
       card.appendChild(row);
       pane.appendChild(card);
@@ -1104,7 +1103,7 @@
       const row = el('div', { class: 'btnrow' });
       row.appendChild(button(t('thev_pick'), () => app.setTool('port'), 'primary'));
       const one = app.selectedComps().length === 1 ? app.selectedComps()[0] : null;
-      if (one && C.TYPES[one.type].terms.length === 2) row.appendChild(button(t('thev_use_sel'), () => app.portFromComp(one)));
+      if (one && C.TYPES[one.type].terms.length === 2) row.appendChild(button(t('thev_seen_by', { name: esc(one.name || app.tp('c_' + one.type)) }), () => app.portFromComp(one)));
       if (app.thev) row.appendChild(button(t('thev_clear'), () => app.clearThevenin()));
       intro.appendChild(row);
       pane.appendChild(intro);
