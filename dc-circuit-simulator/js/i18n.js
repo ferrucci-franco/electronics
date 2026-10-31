@@ -75,7 +75,7 @@
       model_ideal_short: 'ideal', model_cvd_short: 'V<sub>γ</sub> model', model_exact_short: 'Shockley',
       state_on: 'ON', state_off: 'OFF', region_off: 'cutoff', region_act: 'active', region_sat: 'saturation',
       tab_props: 'Element', tab_results: 'Results', tab_thev: 'Thévenin / Norton',
-      rotate: 'Rotate (Ctrl+R)', flip: 'Mirror (F)', duplicate: 'Duplicate (Ctrl+D)', del: 'Delete (Del)', edit: 'Properties', thev_seen: 'Thévenin seen by this element',
+      rotate: 'Rotate (R)', flip: 'Mirror (F)', duplicate: 'Duplicate (Ctrl+D)', del: 'Delete (Del)', edit: 'Properties', thev_seen: 'Thévenin seen by this element',
       zoom_in: 'Zoom in', zoom_out: 'Zoom out', zoom_fit: 'Fit circuit', panel: 'Panel',
       nothing_selected: 'Nothing selected.',
       quick_help: '<b>Build:</b> pick a component and click (or tap) on the grid; drag a component from the list onto the circuit. <b>Wire:</b> drag from a terminal, or use the Wire tool. <b>Edit:</b> double-click a component. <b>View:</b> wheel or pinch to zoom, drag the background (touch) or right-drag (mouse) to pan.',
@@ -152,7 +152,7 @@
 <li>Switch (no spring): the first click or tap selects it, like any component; once selected, each click opens or closes it, and it stays there (or use the switch button in the bar over the circuit). Push button (spring): select it, then it is closed while you hold it down (normally open, NO) or open while held (normally closed, NC), and it springs back when released. Ideal: closed = a wire (0 V), open = an open circuit (I = 0).</li>
 <li>Transistor (BJT): simple model (cutoff, active with V<sub>BE</sub> = 0.7 V and I<sub>C</sub> = βI<sub>B</sub>, or saturation with V<sub>CE</sub> = V<sub>CE,sat</sub>) or real model (Ebers-Moll with the Early effect: exponential junctions, smooth saturation).</li></ul>
 <h4>Rotate and mirror</h4><ul>
-<li>Keyboard: <b>Ctrl+R</b> (⌘R on a Mac) rotates, <b>F</b> or <b>Ctrl+E</b> mirrors (the selection, or the component being placed).</li></ul><h4>Moving</h4><ul><li>Drag a component (or a selection): the wires attached to it follow (rubber band) and become straight pieces again when you release. Turn it off with <b>🔗</b> in the bar over the circuit or in Settings to move components without their wires, for example to disconnect them; <b>Alt + drag</b> does the opposite of the current setting for one move.</li>
+<li>Keyboard: <b>R</b> (or Ctrl+R) rotates and <b>F</b> (or Ctrl+E) mirrors the selection or the component being placed; with nothing selected, R takes a resistor; while a wire is being drawn, R flips its corner (horizontal first ↔ vertical first).</li></ul><h4>Moving</h4><ul><li>Drag a component (or a selection): the wires attached to it follow (rubber band) and become straight pieces again when you release. Turn it off with <b>🔗</b> in the bar over the circuit or in Settings to move components without their wires, for example to disconnect them; <b>Alt + drag</b> does the opposite of the current setting for one move.</li>
 <li>Touch: select the component and use <b>⟳</b> / <b>⇋</b> in the bar over the circuit. While placing, the same bar rotates the component before you tap the grid.</li></ul>
 <h4>Zoom and pan</h4><ul>
 <li>Mouse: <b>wheel</b> = zoom around the pointer; drag with the <b>right or middle button</b>, or hold <b>Space</b> and drag = pan; drag on the background = box selection (the components inside and every wire it touches).</li>
@@ -237,7 +237,7 @@
       model_ideal_short: 'idéale', model_cvd_short: 'modèle V<sub>γ</sub>', model_exact_short: 'Shockley',
       state_on: 'PASSANTE', state_off: 'BLOQUÉE', region_off: 'bloqué', region_act: 'actif', region_sat: 'saturé',
       tab_props: 'Élément', tab_results: 'Résultats', tab_thev: 'Thévenin / Norton',
-      rotate: 'Tourner (Ctrl+R)', flip: 'Miroir (F)', duplicate: 'Dupliquer (Ctrl+D)', del: 'Supprimer (Suppr)', edit: 'Propriétés', thev_seen: 'Thévenin vu par cet élément',
+      rotate: 'Tourner (R)', flip: 'Miroir (F)', duplicate: 'Dupliquer (Ctrl+D)', del: 'Supprimer (Suppr)', edit: 'Propriétés', thev_seen: 'Thévenin vu par cet élément',
       zoom_in: 'Zoom avant', zoom_out: 'Zoom arrière', zoom_fit: 'Cadrer le circuit', panel: 'Panneau',
       nothing_selected: 'Aucune sélection.',
       quick_help: '<b>Construire :</b> choisissez un composant puis cliquez (ou touchez) sur la grille ; on peut aussi le faire glisser depuis la liste. <b>Fils :</b> glissez depuis une borne, ou utilisez l’outil Fil. <b>Modifier :</b> double-clic sur un composant. <b>Vue :</b> molette ou pincement pour zoomer, glisser le fond (tactile) ou clic droit glissé (souris) pour se déplacer.',
@@ -315,7 +315,7 @@
 <li>Transistor bipolaire : modèle simple (bloqué, actif avec V<sub>BE</sub> = 0,7 V et I<sub>C</sub> = βI<sub>B</sub>, ou saturé avec V<sub>CE</sub> = V<sub>CE,sat</sub>) ou modèle réel (Ebers-Moll avec effet Early : jonctions exponentielles, saturation progressive).</li></ul>
 <h4>Tourner et retourner</h4><ul>
 <li>Souris ou clavier : <b>R</b> = quart de tour, <b>F</b> = miroir (la sélection, ou le composant en cours de placement), ou les boutons <b>⟳</b> / <b>⇋</b> de la barre au-dessus du circuit.</li>
-<li>Clavier : <b>Ctrl+R</b> (⌘R sur Mac) tourne, <b>F</b> ou <b>Ctrl+E</b> retourne (la sélection, ou le composant en cours de placement).</li></ul><h4>Déplacer</h4><ul><li>Faites glisser un composant (ou une sélection) : les fils qui y sont reliés suivent (élastique) et redeviennent des segments droits au lâcher. Désactivez-le avec <b>🔗</b> dans la barre au-dessus du circuit ou dans les réglages pour déplacer les composants sans leurs fils, par exemple pour les déconnecter ; <b>Alt + glisser</b> fait l’inverse du réglage pour un déplacement.</li>
+<li>Clavier : <b>R</b> (ou Ctrl+R) tourne et <b>F</b> (ou Ctrl+E) retourne la sélection ou le composant en cours de placement ; sans sélection, R prend une résistance ; pendant le tracé d’un fil, R inverse son coude (horizontal d’abord ↔ vertical d’abord).</li></ul><h4>Déplacer</h4><ul><li>Faites glisser un composant (ou une sélection) : les fils qui y sont reliés suivent (élastique) et redeviennent des segments droits au lâcher. Désactivez-le avec <b>🔗</b> dans la barre au-dessus du circuit ou dans les réglages pour déplacer les composants sans leurs fils, par exemple pour les déconnecter ; <b>Alt + glisser</b> fait l’inverse du réglage pour un déplacement.</li>
 <li>Tactile : sélectionnez le composant et utilisez <b>⟳</b> / <b>⇋</b> dans la barre au-dessus du circuit. Pendant le placement, la même barre tourne le composant avant de toucher la grille.</li></ul>
 <h4>Zoom et déplacement</h4><ul>
 <li>Souris : <b>molette</b> = zoom autour du pointeur ; glisser avec le <b>bouton droit ou du milieu</b>, ou maintenir <b>Espace</b> et glisser = déplacer la vue ; glisser sur le fond = sélection par rectangle (les composants à l’intérieur et tous les fils qu’il touche).</li>
@@ -400,7 +400,7 @@
       model_ideal_short: 'ideal', model_cvd_short: 'modelo V<sub>γ</sub>', model_exact_short: 'Shockley',
       state_on: 'CONDUCE', state_off: 'CORTADO', region_off: 'corte', region_act: 'activa', region_sat: 'saturación',
       tab_props: 'Elemento', tab_results: 'Resultados', tab_thev: 'Thévenin / Norton',
-      rotate: 'Rotar (Ctrl+R)', flip: 'Espejar (F)', duplicate: 'Duplicar (Ctrl+D)', del: 'Borrar (Supr)', edit: 'Propiedades', thev_seen: 'Thévenin visto por este elemento',
+      rotate: 'Rotar (R)', flip: 'Espejar (F)', duplicate: 'Duplicar (Ctrl+D)', del: 'Borrar (Supr)', edit: 'Propiedades', thev_seen: 'Thévenin visto por este elemento',
       zoom_in: 'Acercar', zoom_out: 'Alejar', zoom_fit: 'Encuadrar el circuito', panel: 'Panel',
       nothing_selected: 'Nada seleccionado.',
       quick_help: '<b>Armar:</b> elija un componente y haga clic (o toque) en la grilla; también puede arrastrarlo desde la lista. <b>Cables:</b> arrastre desde un terminal, o use la herramienta Cable. <b>Editar:</b> doble clic sobre un componente. <b>Vista:</b> rueda o pellizco para el zoom, arrastrar el fondo (táctil) o arrastrar con el botón derecho (ratón) para desplazar.',
@@ -477,7 +477,7 @@
 <li>Interruptor (sin resorte): el primer clic o toque lo selecciona, como a cualquier componente; ya seleccionado, cada clic lo abre o lo cierra, y queda en esa posición (o el botón de interruptor de la barra sobre el circuito). Pulsador (con resorte): se lo selecciona y entonces queda cerrado mientras se lo mantiene apretado (normal abierto, NA) o abierto mientras se aprieta (normal cerrado, NC), y vuelve solo al soltarlo. Ideales: cerrado = un cable (0 V), abierto = circuito abierto (I = 0).</li>
 <li>Transistor (BJT): modelo simple (corte, activa con V<sub>BE</sub> = 0,7 V e I<sub>C</sub> = βI<sub>B</sub>, o saturación con V<sub>CE</sub> = V<sub>CE,sat</sub>) o modelo real (Ebers-Moll con efecto Early: junturas exponenciales, saturación suave).</li></ul>
 <h4>Rotar y espejar</h4><ul>
-<li>Teclado: <b>Ctrl+R</b> (⌘R en Mac) rota, <b>F</b> o <b>Ctrl+E</b> espeja (la selección, o el componente que se está colocando).</li></ul><h4>Mover</h4><ul><li>Arrastre un componente (o una selección): los cables conectados lo siguen (rubber band) y al soltar vuelven a quedar en tramos rectos. Desactívelo con <b>🔗</b> en la barra sobre el circuito o en Ajustes para mover componentes sin sus cables, por ejemplo para desconectarlos; <b>Alt + arrastrar</b> hace lo contrario del ajuste en ese movimiento.</li>
+<li>Teclado: <b>R</b> (o Ctrl+R) rota y <b>F</b> (o Ctrl+E) espeja la selección o el componente que se está colocando; sin nada seleccionado, R toma una resistencia; mientras se dibuja un cable, R invierte su codo (primero horizontal ↔ primero vertical).</li></ul><h4>Mover</h4><ul><li>Arrastre un componente (o una selección): los cables conectados lo siguen (rubber band) y al soltar vuelven a quedar en tramos rectos. Desactívelo con <b>🔗</b> en la barra sobre el circuito o en Ajustes para mover componentes sin sus cables, por ejemplo para desconectarlos; <b>Alt + arrastrar</b> hace lo contrario del ajuste en ese movimiento.</li>
 <li>Táctil: seleccione el componente y use <b>⟳</b> / <b>⇋</b> en la barra sobre el circuito. Mientras coloca, la misma barra rota el componente antes de tocar la grilla.</li></ul>
 <h4>Zoom y desplazamiento</h4><ul>
 <li>Ratón: <b>rueda</b> = zoom alrededor del puntero; arrastrar con el <b>botón derecho o del medio</b>, o mantener <b>Espacio</b> y arrastrar = desplazar; arrastrar sobre el fondo = selección con rectángulo (los componentes que quedan adentro y todos los cables que toca).</li>
