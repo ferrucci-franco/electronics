@@ -51,7 +51,7 @@
       valueText: (c, f) => f(c.props.I, 'A')
     },
     lamp: {
-      prefix: 'LP', terms: [[-2, 0], [2, 0]], box: [-2, -1.15, 2, 1.45],
+      prefix: 'LP', terms: [[-2, 0], [2, 0]], box: [-2, -2.1, 2, 1.0],
       props: [
         { key: 'Vn', unit: 'V', def: 12, min: 0.1, max: 1e4 },
         { key: 'Pn', unit: 'W', def: 5, min: 1e-3, max: 1e5 },
@@ -320,25 +320,23 @@
       const b = P.lit ? P.lit[0] : 0, hot = P.lit && P.lit[1];
       const glow = hot ? '255,90,40' : '255,205,40';
       if (c.props.look === 'lamp_bulb') {
-        const cy = -0.25, R = 0.85;
-        // glass: a globe narrowing into the neck
+        // a bulb standing on its socket: both leads come in straight, in line with the pins, to the two sides
+        // of the base; the glass rises to one side of the line
+        const cy = -1.25, R = 0.8;
         const pts = [];
         for (let k = 0; k <= 28; k++) { const a = Math.PI * (0.75 + 1.5 * k / 28); pts.push([Math.cos(a) * R, cy + Math.sin(a) * R]); }
-        pts.push([0.36, 0.78], [-0.36, 0.78]);
+        pts.push([0.32, -0.3], [-0.32, -0.3]);
         P.poly(pts, b > 0.01 ? `rgb(${glow})` : false, b > 0.01 ? 0.15 + 0.75 * Math.sqrt(Math.min(1, b)) : 1);
-        // socket with its threads, and the contacts: the side of the base and the tip
-        P.poly([[-0.4, 0.78], [0.4, 0.78], [0.4, 1.2], [-0.4, 1.2]], false);
-        P.line([[-0.4, 0.92], [0.4, 0.92]]); P.line([[-0.4, 1.06], [0.4, 1.06]]);
-        P.line([[-0.14, 1.2], [-0.1, 1.3], [0.1, 1.3], [0.14, 1.2]]);
+        // the base with its threads
+        P.poly([[-0.42, -0.3], [0.42, -0.3], [0.42, 0.3], [-0.42, 0.3]], false);
+        P.line([[-0.42, -0.1], [0.42, -0.1]]); P.line([[-0.42, 0.1], [0.42, 0.1]]);
         // filament: two supports and a coil
-        P.line([[-0.18, 0.78], [-0.32, -0.3]]); P.line([[0.18, 0.78], [0.32, -0.3]]);
-        const coil = [[-0.32, -0.3]];
-        for (let k = 1; k < 8; k++) coil.push([-0.32 + 0.64 * k / 8, -0.3 + (k % 2 ? -0.16 : 0)]);
-        coil.push([0.32, -0.3]);
+        P.line([[-0.16, -0.3], [-0.3, -1.3]]); P.line([[0.16, -0.3], [0.3, -1.3]]);
+        const coil = [[-0.3, -1.3]];
+        for (let k = 1; k < 8; k++) coil.push([-0.3 + 0.6 * k / 8, -1.3 + (k % 2 ? -0.15 : 0)]);
+        coil.push([0.3, -1.3]);
         P.line(coil);
-        // leads: to the side of the base and to the tip
-        P.line([[-2, 0], [-1.25, 0], [-1.25, 0.99], [-0.4, 0.99]]);
-        P.line([[2, 0], [1.25, 0], [1.25, 1.3], [0.1, 1.3]]);
+        P.line([[-2, 0], [-0.42, 0]]); P.line([[0.42, 0], [2, 0]]);
         return;
       }
       P.circle(0, 0, 0.9, b > 0.01 ? `rgb(${glow})` : false, b > 0.01 ? 0.15 + 0.75 * Math.sqrt(Math.min(1, b)) : 1);
