@@ -752,6 +752,7 @@
     const t = app.tabs[k];
     app.tabIdx = k;
     app.monitors = [null, null];
+    if (app.ui && app.ui.hideQuick) app.ui.hideQuick();   // the value sliders belong to the circuit left
     let c;
     try { c = JSON.parse(t.circuit || EMPTY); } catch (e) { c = JSON.parse(EMPTY); }
     app.loadCircuit(c);

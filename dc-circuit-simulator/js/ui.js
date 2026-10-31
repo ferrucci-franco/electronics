@@ -1321,6 +1321,7 @@
       else renderThev();
       ui.updateMonitor();
       ui.updateThevMon();
+      qsCheck();
     };
     // light refresh while dragging: status and pinned plot only, the panel follows on release
     let thevRaf = 0;
