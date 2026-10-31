@@ -307,6 +307,8 @@
       exclude = [c.id];
     } else {
       if (!th.a || !th.b) return;
+      // the terminals are gone with their wires (circuit erased, wires deleted): no port any more
+      if (nodeAt(th.a) == null || nodeAt(th.b) == null) { app.thev = null; app.port = null; return; }
       th.cut = portCut(th.a, th.b);
       if (th.cut) {
         // look into one side only: the circuit of that side, with the port at the cut
@@ -318,7 +320,8 @@
       na = nodeAt(th.a, net, th.circuit); nb = nodeAt(th.b, net, th.circuit);
       if (na == null || nb == null) { th.err = 'thev_err'; app.port = { a: th.a, b: th.b }; return; }
     }
-    app.port = { a: th.a, b: th.b, cut: th.cut ? th.cut.sides[th.side].cut : null };
+    const sd = th.cut ? th.cut.sides[th.side] : null;
+    app.port = { a: th.a, b: th.b, cut: sd ? sd.cut : null, side: sd ? { comps: new Set(sd.comps.map(c => c.id)), wires: sd.wires } : null };
     if (na === nb) { th.err = 'thev_same'; return; }
     const r = S.thevenin(net.ckt, na, nb, { exclude, prevStates: app.prevStates, tempC: app.settings.tempC });
     if (r.error) { th.err = r.error === 'samenode' ? 'thev_same' : 'thev_err'; return; }
