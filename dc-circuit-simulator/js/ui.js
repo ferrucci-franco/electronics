@@ -740,35 +740,56 @@
      * plot and the drawing follow); a logarithmic range ×1/10 … ×10 for positive values, linear ±2× for the
      * signed ones (sources). The range is centred again on the value each time the panel is drawn. */
     const LIVE_KEYS = new Set(['R', 'V', 'I', 'beta', 'Vf', 'k']);
-    // slider scale around the value v0 (0…1000): logarithmic ×1/10…×10 for positive values, linear ±2·|v0| when
-    // the value may be negative, linear 0…1 for the potentiometer position
+    // Spring slider (0…1000, centre 500 = the value v0 when the drag starts): logarithmic ×1/10…×10 for positive
+    // values, linear v0 ± |v0| when the value may be negative. On release the thumb springs back to the centre and
+    // the scale is taken again around the new value, so repeated drags reach any value. The potentiometer
+    // position is an absolute slider (0…100 %).
     function sliderMap(d, v0) {
       const nice = (v) => { if (v === 0) return 0; const e = Math.pow(10, Math.floor(Math.log10(Math.abs(v))) - 2); return Math.round(v / e) * e; };
       if (d.key === 'alpha') return { toV: (s) => s / 1000, toS: (v) => Math.round(v * 1000), nice: (v) => Math.round(v * 100) / 100 };
       if (d.min < 0) {
-        const span = Math.abs(v0) > 0 ? 2 * Math.abs(v0) : (d.key === 'I' ? 0.01 : 10);
-        return { toV: (s) => -span + 2 * span * s / 1000, toS: (v) => Math.round((v + span) / (2 * span) * 1000), nice };
+        const span = Math.abs(v0) > 0 ? Math.abs(v0) : ({ I: 1e-3, V: 1 }[d.key] || 1);
+        return { toV: (s) => v0 + (s - 500) / 500 * span, toS: (v) => Math.round(500 + (v - v0) / span * 500), nice };
       }
       const base = v0 > 0 ? v0 : (d.key === 'R' ? 1000 : 1);
-      const lo = Math.max(d.min, base / 10), hi = Math.min(d.max, base * 10);
-      return { toV: (s) => lo * Math.pow(hi / lo, s / 1000), toS: (v) => Math.round(Math.log(v / lo) / Math.log(hi / lo) * 1000), nice };
+      return { toV: (s) => base * Math.pow(10, (s - 500) / 500), toS: (v) => Math.round(500 + 500 * Math.log10(v / base)), nice };
     }
-    function liveSlider(c, d, inp) {
-      const v0 = c.props[d.key];
-      const { toV, toS, nice } = sliderMap(d, v0);
-      const sl = el('input', { type: 'range', min: '0', max: '1000', step: '1', class: 'live-slider', title: plainText(t('live_tip')) });
-      sl.value = String(Math.max(0, Math.min(1000, toS(v0))));
+    function springSlider(c, d, onValue) {
+      const spring = d.key !== 'alpha';
+      let map = sliderMap(d, c.props[d.key]), anim = 0;
+      const sl = el('input', { type: 'range', min: '0', max: '1000', step: '1', class: 'live-slider', title: plainText(t(spring ? 'spring_tip' : 'live_tip')) });
+      sl.value = String(Math.max(0, Math.min(1000, map.toS(c.props[d.key]))));
       let cp = false;
       sl.addEventListener('input', () => {
+        cancelAnimationFrame(anim);
         if (!cp) { app.checkpoint(); cp = true; }
-        const v = Math.max(d.min, Math.min(d.max, nice(toV(+sl.value))));
-        c.props[d.key] = v;
-        inp.value = U.format(v, '', { digits: 6, trim: true, zero: 1e-30 }).trim();
+        const lo = d.min != null ? d.min : -Infinity, hi = d.max != null ? d.max : Infinity;
+        c.props[d.key] = Math.max(lo, Math.min(hi, map.nice(map.toV(+sl.value))));
+        onValue(c.props[d.key]);
         app.circuitChanged(true);
       });
-      sl.addEventListener('change', () => { cp = false; app.commit(); });
+      sl.addEventListener('change', () => {
+        cp = false;
+        app.commit();
+        if (!spring) return;
+        // back to the centre, the new value being the new centre
+        map = sliderMap(d, c.props[d.key]);
+        const s0 = +sl.value, t0 = performance.now();
+        const step = (now) => {
+          const k = Math.min(1, (now - t0) / 220), e = 1 - Math.pow(1 - k, 3);
+          sl.value = String(Math.round(s0 + (500 - s0) * e));
+          if (k < 1) anim = requestAnimationFrame(step);
+        };
+        anim = requestAnimationFrame(step);
+      });
+      if (!spring) return sl;
+      const w = el('div', { class: 'spring-wrap' });
+      w.appendChild(sl);
+      return w;
+    }
+    function liveSlider(c, d, inp) {
       const r = el('div', { class: 'field live-row' });
-      r.appendChild(sl);
+      r.appendChild(springSlider(c, d, (v) => { inp.value = U.format(v, '', { digits: 6, trim: true, zero: 1e-30 }).trim(); }));
       inp.closest('.field').after(r);
     }
     function ivCard(pane) {
@@ -1256,17 +1277,7 @@
       const val = el('b', { class: 'qs-val' }, fmtV());
       const x = button('✕', () => ui.hideQuick());
       head.appendChild(name); head.appendChild(val); head.appendChild(x);
-      const map = sliderMap(d, c.props[key]);
-      const sl = el('input', { type: 'range', min: '0', max: '1000', step: '1', class: 'live-slider' });
-      sl.value = String(Math.max(0, Math.min(1000, map.toS(c.props[key]))));
-      let cp = false;
-      sl.addEventListener('input', () => {
-        if (!cp) { app.checkpoint(); cp = true; }
-        c.props[key] = Math.max(d.min != null ? d.min : -Infinity, Math.min(d.max != null ? d.max : Infinity, map.nice(map.toV(+sl.value))));
-        val.innerHTML = fmtV();
-        app.circuitChanged(true);
-      });
-      sl.addEventListener('change', () => { cp = false; app.commit(); });
+      const sl = springSlider(c, d, () => { val.innerHTML = fmtV(); });
       qs.appendChild(head); qs.appendChild(sl);
       qs.hidden = false;
       // above the component (below it when there is no room), inside the circuit area
