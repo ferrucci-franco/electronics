@@ -40,6 +40,15 @@
       palButtons.push({ b, cv, span, it });
       app.editor.bindPaletteButton(b, it.type, it.props || null);
     }
+    // faded edges on the phone strip when there is more to scroll
+    function syncPalFade() {
+      const p = $('palette'), mob = isMobile();
+      p.classList.toggle('more-l', mob && p.scrollLeft > 4);
+      p.classList.toggle('more-r', mob && p.scrollLeft + p.clientWidth < p.scrollWidth - 4);
+    }
+    $('palette').addEventListener('scroll', syncPalFade, { passive: true });
+    window.addEventListener('resize', syncPalFade);
+    ui.syncPalFade = syncPalFade;
     function drawPalette() {
       const col = R.colors().fg;
       for (const p of palButtons) {
@@ -112,7 +121,7 @@
       app.LS.set('dcs.layout', mob ? 'mobile' : 'desktop');
       $('side').classList.remove('open');
       syncLayoutBtn();
-      requestAnimationFrame(() => { drawPalette(); app.renderer.resize(); app.fit(); });
+      requestAnimationFrame(() => { drawPalette(); syncPalFade(); app.renderer.resize(); app.fit(); });
     });
 
     // file menu
@@ -917,6 +926,7 @@
     ui.updateLive = function () { syncStatus(); };
 
     translate();
+    requestAnimationFrame(syncPalFade);
     ui.syncControls();
     ui.showTab('props', false);
     return ui;
