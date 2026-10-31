@@ -147,18 +147,21 @@
     return trace(rest, th.a, th.b, win, app.settings.tempC, 160).map(([v, i]) => [v, -i]);
   }
 
-  // opts.levels: base currents of the transistor output curves (kept fixed by a pinned plot)
+  // opts.levels: base currents of the transistor output curves; opts.wins: the axis window of each plot.
+  // A pinned plot keeps both, and the curves are always traced over the window that is shown.
   function build(app, only, opts) {
+    opts = opts || {};
+    const winOf = (k, auto) => (opts.wins && opts.wins[k] ? Object.assign({}, opts.wins[k]) : auto);
     const A = analyse(app, only);
     if (!A) return null;
     const t = app.tp, tempC = app.settings.tempC;
     const spec = { kind: A.kind, series: [], lines: [], points: [], xlab: 'V', ylab: 'I', xu: 'V', yu: 'A' };
-    if (A.kind === 'bjt') return bjtSpecs(app, A, t, tempC, opts || {});
+    if (A.kind === 'bjt') return bjtSpecs(app, A, t, tempC, opts, winOf);
     if (A.kind === 'opamp') {
       const c = A.c, r = A.r, p = c.props;
       const vp = p.sat ? Math.max(p.Vpos, p.Vneg) : Math.max(15, Math.abs(r.vout) * 1.3), vn = p.sat ? Math.min(p.Vpos, p.Vneg) : -vp;
       const dw = Math.max(1, Math.abs(r.vd) * 1.5);
-      spec.win = { v0: -dw, v1: dw, i0: vn * 1.2, i1: vp * 1.2 };
+      spec.win = winOf(0, { v0: -dw, v1: dw, i0: vn * 1.2, i1: vp * 1.2 });
       spec.series.push({ name: c.name, color: slot(0), pts: p.sat ? [[-dw, vn], [0, vn], [0, vp], [dw, vp]] : [[0, vn * 1.2], [0, vp * 1.2]], width: 2.4 });
       spec.points.push({ name: 'Q', v: r.vd, i: r.vout, label: `Q (v₊−v₋ = ${U.format(r.vd, 'V')}, vₒ = ${U.format(r.vout, 'V')})` });
       spec.xlab = 'v₊ − v₋'; spec.ylab = 'vₒ'; spec.yu = 'V';
@@ -184,7 +187,7 @@
       if (isFinite(v) && Math.abs(v) < 1e4) vals.push(v);
       if (isFinite(i) && Math.abs(i) < 1e3) ivals.push(i);
     }
-    const win = windowFor(vals, ivals);
+    const win = winOf(0, windowFor(vals, ivals));
     spec.win = win;
     const multi = A.items.length > 1;
     A.items.forEach((it, k) => {
@@ -231,7 +234,7 @@
    * point and the load line imposed by the rest of the circuit. The load lines come from solving the real
    * circuit again with one model parameter moved (V_BE(on) for the input; β, or V_CE(sat) in saturation, for
    * the output): every solution is a point that the circuit allows, so the line passes exactly through Q. */
-  function bjtSpecs(app, A, t, tempC, opts) {
+  function bjtSpecs(app, A, t, tempC, opts, winOf) {
     const c = A.c, r = A.r, p = c.props, pnp = p.pol === 'pnp', em = p.model === 'em';
     const Vt = S.thermalVoltage(tempC);
     const elQ = app.net.ckt.elements.find(e => e.id === c.id);
@@ -276,7 +279,7 @@
     const vOn = em ? Math.max(0.5, r.vbe) : p.Vbe;
     const vMax = Math.max(1.6 * vOn, Math.min(isFinite(iInt.v) ? iInt.v : 0, 4 * vOn), r.vbe * 1.3, 0.5);
     const iMax = Math.max(ibq * 1.8, Math.min(isFinite(iInt.i) ? iInt.i : 0, ibq * 4), ibq > 0 ? 0 : 10e-6);
-    const winIn = { v0: -0.15 * vMax, v1: vMax * 1.05, i0: -0.12 * iMax, i1: iMax * 1.15 };
+    const winIn = winOf(0, { v0: -0.15 * vMax, v1: vMax * 1.05, i0: -0.12 * iMax, i1: iMax * 1.15 });
     const inSpec = { kind: 'bjt-in', series: [], lines: [], points: [], regions: [], xu: 'V', yu: 'A', win: winIn };
     if (em) {
       // I_B(V_BE) of the Ebers-Moll model at the operating V_CE
@@ -321,7 +324,7 @@
     const oInt = outLine ? intercepts(outLine) : {};
     const vcMax = Math.max(r.vce * 1.3, isFinite(oInt.v) ? oInt.v : 0, p.Vcesat * 4, 1);
     const icMax = Math.max(p.beta * levels[3] * (em && p.VA > 0 ? 1 + vcMax / p.VA : 1), isFinite(oInt.i) ? oInt.i : 0, r.ic * 1.2);
-    const winOut = { v0: -0.05 * vcMax, v1: vcMax * 1.12, i0: -0.06 * icMax, i1: icMax * 1.12 };
+    const winOut = winOf(1, { v0: -0.05 * vcMax, v1: vcMax * 1.12, i0: -0.06 * icMax, i1: icMax * 1.12 });
     const outSpec = { kind: 'bjt-out', series: [], lines: [], points: [], xu: 'V', yu: 'A', win: winOut, levels };
     levels.forEach((ib, k) => {
       const ic = p.beta * ib;
@@ -444,12 +447,16 @@
       let p = null;
       for (let k = sr.pts.length - 1; k >= 0 && !p; k--) { const [v, i] = sr.pts[k]; if (v <= w.v1 && i >= w.i0 && i <= w.i1) p = [v, i]; }
       if (!p) continue;
-      const x = Math.min(X(p[0]), W - R - 3), y = Y(p[1]) - 4;
+      let x = Math.min(X(p[0]), W - R - 3);
+      const y = Y(p[1]) - 4;
       if (Math.abs(y - lastY) < 13 || y < T + 12) continue;   // too close to the previous label, or to the top
       lastY = y;
       const c = sr.color === 'fg' ? col.fg : sr.color === 'muted' ? col.muted : sr.color;
       // a halo of the background colour keeps the text readable over the grid
       const wd = subText(ctx, sr.name, 0, 0, 'left', 11.5, 600, false);
+      // the operating point on this end of the curve: the label goes just before it
+      const qp = spec.points.find(pt => pt.label);
+      if (qp) { const qx = X(qp.v), qy = Y(qp.i); if (qx > x - wd - 12 && qx < x + 12 && Math.abs(qy - (y - 4)) < 14) x = Math.max(L + wd + 6, qx - 12); }
       ctx.fillStyle = col.bg; ctx.globalAlpha = 0.85; ctx.fillRect(x - wd - 3, y - 12, wd + 4, 15); ctx.globalAlpha = 1;
       taken.push([x - wd - 3, y - 12, x + 1, y + 3]);
       ctx.fillStyle = c;
