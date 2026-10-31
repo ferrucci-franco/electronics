@@ -7,7 +7,8 @@
   const DRAG_PX = { mouse: 4, pen: 6, touch: 9 };
   const EDGE_MODES = new Set(['move', 'wire', 'band', 'endpoint']);
   const LONG_MS = 480;
-  const DBL_TOUCH_MS = 700;   // two taps of a finger closer than this make a double tap (also a slow one)
+  const DBL_TOUCH_MS = 700;   // background: a second touch this soon after a tap starts a selection window (also slow)
+  const DBL_ELEM_MS = { mouse: 380, touch: 420 };   // double click / quick double tap on an element = properties
 
   function distSeg(px, py, x1, y1, x2, y2) {
     const dx = x2 - x1, dy = y2 - y1, L2 = dx * dx + dy * dy;
@@ -217,7 +218,8 @@
     // switches: the first click selects them, like any component; on a selected switch a click flips it
     // (on release, if it did not move) and the push button is held down while pressed, springing back on
     // release or as soon as it is dragged
-    if (h && h.kind === 'comp' && C.isSwitch(h.comp) && app.sel.has(h.comp.id) && !g.shift && this.onBody(h, p)) {
+    // (the second tap of a quick double tap opens the properties instead, as on any element)
+    if (h && h.kind === 'comp' && C.isSwitch(h.comp) && app.sel.has(h.comp.id) && !g.shift && this.onBody(h, p) && !this.isSecondTap(h.comp.id, p, e.pointerType)) {
       if (h.comp.type === 'switch') g.swToggle = h.comp;
       else { C.pressed.add(h.comp.id); g.press = h.comp; g.operated = true; app.circuitChanged(true); }
     }
@@ -248,21 +250,27 @@
     app.requestRender();
   };
 
+  // a long press is only the start of a drag: on an element it selects it (the drag then moves it), on the
+  // background it starts a selection window; the properties open with a quick double tap
+  Editor.prototype.isSecondTap = function (id, p, type) {
+    const lt = this.lastTap, touch = type !== 'mouse';
+    return !!lt && lt.id === id && performance.now() - lt.t < DBL_ELEM_MS[touch ? 'touch' : 'mouse'] && Math.hypot(p.sx - lt.sx, p.sy - lt.sy) < (touch ? 36 : 24);
+  };
   Editor.prototype.longPress = function (g) {
     if (this.g !== g || g.moved) return;
     const app = this.app;
-    g.long = true;
-    if (navigator.vibrate) { try { navigator.vibrate(15); } catch (_) {} }
     const h = g.hit;
-    if (h && (h.kind === 'comp' || h.kind === 'term')) {
-      app.select([h.comp.id]);
-      app.openProps(true);
-      this.g = null;
-    } else if (h && (h.kind === 'wire' || h.kind === 'wend')) {
-      app.select([h.wire.id]);
-      app.openProps(true);
-      this.g = null;
+    if (h && (h.kind === 'comp' || h.kind === 'wire')) {
+      // (terminals keep drawing wires and junctions keep moving their point)
+      if (g.mode !== 'move') return;
+      g.long = true;
+      const id = h.kind === 'comp' ? h.comp.id : h.wire.id;
+      if (!app.sel.has(id)) app.select([id]);
+      if (navigator.vibrate) { try { navigator.vibrate(10); } catch (_) {} }
+      app.requestRender();
     } else if (g.mode === 'pan') {
+      g.long = true;
+      if (navigator.vibrate) { try { navigator.vibrate(15); } catch (_) {} }
       g.mode = 'band';
       app.overlay.band = [g.start.sx, g.start.sy, g.start.sx, g.start.sy];
       app.requestRender();
@@ -392,8 +400,6 @@
         if (!g.moved) {
           if (g.swToggle) { app.checkpoint(); g.swToggle.props.closed = !g.swToggle.props.closed; app.commit(); }
           this.tap(g, p, e);
-          // operating a switch twice in a row is not a double click (no properties)
-          if (g.swToggle || g.operated) this.lastTap = null;
           break;
         }
         this.endMove(g);
@@ -484,7 +490,8 @@
     const now = performance.now();
     const id = h ? (h.comp ? h.comp.id : h.wire ? h.wire.id : null) : null;
     const touch = g.type !== 'mouse';
-    const dbl = this.lastTap && now - this.lastTap.t < (touch ? DBL_TOUCH_MS : 380) && this.lastTap.id === id && Math.hypot(p.sx - this.lastTap.sx, p.sy - this.lastTap.sy) < (touch ? 36 : 24);
+    const win = id ? DBL_ELEM_MS[touch ? 'touch' : 'mouse'] : (touch ? DBL_TOUCH_MS : 380);
+    const dbl = this.lastTap && now - this.lastTap.t < win && this.lastTap.id === id && Math.hypot(p.sx - this.lastTap.sx, p.sy - this.lastTap.sy) < (touch ? 36 : 24);
     this.lastTap = { t: now, id, sx: p.sx, sy: p.sy };
     if (!h) {
       if (!g.shift) app.select([]);
