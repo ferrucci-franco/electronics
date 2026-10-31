@@ -495,25 +495,49 @@
     };
     $('sheetClose').addEventListener('click', (e) => { e.stopPropagation(); ui.closeSheet(); });
     {
-      // the sheet follows the finger when its grip or its tab bar is dragged down; a short tap on the grip closes it
+      // the height of the sheet: dragging its grip or its tab bar up or down resizes it (kept, as a fraction of
+      // the screen height); dragged very low it closes; ⌃ fills the screen and brings it back; a short tap on
+      // the grip closes it
       const side = $('side');
+      const MINH = 150;
+      const maxH = () => window.innerHeight - 6;
+      let frac = parseFloat(app.LS.get('dcs.sheetFrac')) || 0, before = 0;
+      const setH = (h) => { if (h) side.style.setProperty('--sheet-h', Math.round(h) + 'px'); else side.style.removeProperty('--sheet-h'); side.classList.toggle('maxed', !!h && h >= maxH() - 2); };
+      const applyFrac = () => setH(frac ? Math.max(MINH, Math.min(maxH(), frac * window.innerHeight)) : 0);
+      applyFrac();
+      window.addEventListener('resize', applyFrac);
+      const keep = (h) => { frac = h / window.innerHeight; app.LS.set('dcs.sheetFrac', String(frac)); };
+      $('sheetMax').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (side.classList.contains('maxed')) { setH(before > 0 ? before : 0); if (before > 0) keep(before); else { frac = 0; app.LS.set('dcs.sheetFrac', ''); } }
+        else { before = frac ? side.offsetHeight : 0; setH(maxH()); keep(maxH()); }
+      });
       let d = null;
       const start = (e, el, isGrip) => {
         if (!isMobile() || e.target.closest('.sheet-close')) return;
-        d = { id: e.pointerId, y0: e.clientY, dy: 0, el, isGrip, drag: false };
+        d = { id: e.pointerId, y0: e.clientY, dy: 0, el, isGrip, drag: false, h0: side.offsetHeight };
       };
       const move = (e) => {
         if (!d || d.id !== e.pointerId) return;
         d.dy = e.clientY - d.y0;
-        if (!d.drag && d.dy > 8) { d.drag = true; side.classList.add('dragging'); try { d.el.setPointerCapture(e.pointerId); } catch (_) {} }
-        if (d.drag) side.style.transform = `translateY(${Math.max(0, d.dy)}px)`;
+        if (!d.drag && Math.abs(d.dy) > 8) { d.drag = true; side.classList.add('dragging'); try { d.el.setPointerCapture(e.pointerId); } catch (_) {} }
+        if (!d.drag) return;
+        const h = d.h0 - d.dy;
+        // above the minimum the sheet changes height; below it, it slides down (about to close)
+        if (h >= MINH) { setH(Math.min(maxH(), h)); side.style.transform = ''; }
+        else { setH(MINH); side.style.transform = `translateY(${MINH - h}px)`; }
       };
       const end = (e) => {
         if (!d || d.id !== e.pointerId) return;
-        const close = d.drag ? d.dy > Math.min(90, side.offsetHeight * 0.2) : d.isGrip;
-        const dragged = d.drag;
+        const h = d.h0 - d.dy;
+        const close = d.drag ? h < MINH - 40 : d.isGrip;
+        const dragged = d.drag, h0 = d.h0;
         d = null;
         side.classList.remove('dragging'); side.style.transform = '';
+        if (dragged) {
+          if (close) setH(h0);
+          else { const hh = Math.max(MINH, Math.min(maxH(), h)); setH(hh); keep(hh); }
+        }
         if (close) ui.closeSheet();
         // a drag on the tab bar must not also switch tabs
         if (dragged) { const stop = (ev) => { ev.stopPropagation(); ev.preventDefault(); }; window.addEventListener('click', stop, { capture: true, once: true }); setTimeout(() => window.removeEventListener('click', stop, true), 50); }
