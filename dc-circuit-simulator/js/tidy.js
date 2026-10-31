@@ -275,9 +275,18 @@
         const U = (x, y) => (horiz ? x : y), K = (x, y) => (horiz ? y : x);
         const P = (u, k) => (horiz ? [u, k] : [k, u]);
         const items = [];
-        for (const w of circuit.wires) {
-          if (horiz ? (w.y1 !== w.y2 || w.x1 === w.x2) : (w.x1 !== w.x2 || w.y1 === w.y2)) continue;
-          items.push({ w, k: K(w.x1, w.y1), a: Math.min(U(w.x1, w.y1), U(w.x2, w.y2)), b: Math.max(U(w.x1, w.y1), U(w.x2, w.y2)) });
+        // the wires of this direction, cut where something joins them in the middle (a T junction, a terminal):
+        // those points are ends of a stretch
+        const lineW = circuit.wires.filter(w => !(horiz ? (w.y1 !== w.y2 || w.x1 === w.x2) : (w.x1 !== w.x2 || w.y1 === w.y2)));
+        const joinPts = new Set();
+        for (const w of circuit.wires) for (const [x, y] of [[w.x1, w.y1], [w.x2, w.y2]]) joinPts.add(key(x, y));
+        for (const c of circuit.comps) for (const t of C.terminals(c)) joinPts.add(key(t[0], t[1]));
+        for (const w of lineW) {
+          const k = K(w.x1, w.y1), a = Math.min(U(w.x1, w.y1), U(w.x2, w.y2)), b = Math.max(U(w.x1, w.y1), U(w.x2, w.y2));
+          const cuts = [a];
+          for (let u = a + 1; u < b; u++) { const [x, y] = P(u, k); if (joinPts.has(key(x, y))) cuts.push(u); }
+          cuts.push(b);
+          for (let i = 0; i + 1 < cuts.length; i++) items.push({ w, k, a: cuts[i], b: cuts[i + 1] });
         }
         const inline = new Set();
         for (const c of circuit.comps) {
@@ -292,6 +301,7 @@
         const addExt = (x, y) => ext.set(key(x, y), (ext.get(key(x, y)) || 0) + 1);
         const lineItem = new Set(items.map(it => it.w || it.c));
         for (const w of circuit.wires) if (!lineItem.has(w)) { addExt(w.x1, w.y1); addExt(w.x2, w.y2); }
+        // a wire end on the line that sits inside another wire of the line (overlap) also joins there
         for (const c of circuit.comps) if (!inline.has(c) || !lineItem.has(c)) for (const t of C.terminals(c)) addExt(t[0], t[1]);
         const crossing = (x, y) => circuit.wires.some(w => !lineItem.has(w) && onInterior(x, y, w));
         const byLine = new Map();
@@ -336,9 +346,12 @@
             // try it: move the components, replace the chain's wires
             const old = plan.map(p => [p.it.c, p.it.c.x, p.it.c.y]);
             for (const p of plan) { if (horiz) p.it.c.x += p.d; else p.it.c.y += p.d; }
+            // the wires touched are replaced: their pieces outside the chain stay, the chain gets the new pieces
+            const inChain = new Set(chain);
             const chainW = new Set(chain.filter(it => it.w).map(it => it.w));
+            const keepPieces = items.filter(it => it.w && chainW.has(it.w) && !inChain.has(it)).map(it => { const [x1, y1] = P(it.a, it.k), [x2, y2] = P(it.b, it.k); return { x1, y1, x2, y2 }; });
             const oldW = circuit.wires;
-            circuit.wires = oldW.filter(w => !chainW.has(w)).concat(wires.map(w => Object.assign({ id: app.newWireId() }, w)));
+            circuit.wires = oldW.filter(w => !chainW.has(w)).concat(keepPieces.concat(wires).map(w => Object.assign({ id: app.newWireId() }, w)));
             if (signature(circuit) !== sig) {
               for (const [c, x, y] of old) { c.x = x; c.y = y; }
               circuit.wires = oldW;

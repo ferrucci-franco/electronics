@@ -157,6 +157,16 @@
         ctx.fillText(ln.text, align === 'left' ? sx + 2 : align === 'right' ? sx - 2 : sx, y + 0.5);
         return;
       }
+      if (ln.hl) {
+        // the value being changed: an accent highlight behind it
+        ctx.font = `${ln.bold ? 700 : 500} ${fontPx}px ${ln.mono ? 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace' : 'ui-sans-serif, system-ui, sans-serif'}`;
+        const w = ctx.measureText(ln.text).width + 8;
+        const x0 = align === 'left' ? sx - 4 : align === 'right' ? sx - w + 4 : sx - w / 2;
+        ctx.fillStyle = col.accent; ctx.globalAlpha = 0.22;
+        roundRect(ctx, x0, y - lh / 2, w, lh, 5); ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.textAlign = align; ctx.textBaseline = 'middle';
+      }
       // halo for legibility over wires
       ctx.lineWidth = 3; ctx.strokeStyle = col.bg; ctx.lineJoin = 'round';
       ctx.strokeText(ln.text, sx, y + 0.5);
@@ -266,13 +276,14 @@
       const bad = S.badIds && S.badIds.has(c.id);
       // components of the step of the R_eq reduction being looked at
       const hl = S.overlay && S.overlay.hl && S.overlay.hl.has(c.id);
+      const live = S.overlay && S.overlay.live === c.id;
       const onSide = side && side.comps.has(c.id) && c.type !== 'ground';
-      if (selected || hov || bad || hl) {
+      if (selected || hov || bad || hl || live) {
         const b = C.TYPES[c.type].box;
         const m = localMatrix(c);
         ctx.setTransform(dpr * s * m[0], dpr * s * m[1], dpr * s * m[2], dpr * s * m[3], dpr * (s * m[4] + view.ox), dpr * (s * m[5] + view.oy));
-        ctx.fillStyle = bad ? col.err : hl ? col.port : selected ? col.sel : col.hover;
-        ctx.globalAlpha = bad ? 0.16 : hl ? 0.22 : selected ? 0.14 : 0.1;
+        ctx.fillStyle = bad ? col.err : hl ? col.port : live ? col.accent : selected ? col.sel : col.hover;
+        ctx.globalAlpha = bad ? 0.16 : hl ? 0.22 : live ? 0.2 : selected ? 0.14 : 0.1;
         roundRect(ctx, b[0] - 0.15, b[1] - 0.15, b[2] - b[0] + 0.3, b[3] - b[1] + 0.3, 0.35); ctx.fill();
         ctx.globalAlpha = 1;
       }
@@ -436,7 +447,8 @@
     const r = res ? res.el[c.id] : null;
     const nameLines = [];
     if (st.showNames && c.name) nameLines.push({ text: c.name, bold: true });
-    if (st.showValues && T.valueText) nameLines.push({ text: T.valueText(c, (v, u) => U.format(v, u, { digits: 4, trim: true }), tr), color: col.muted });
+    // the value being changed (slider, wheel) is underlined by a halo
+    if (st.showValues && T.valueText) nameLines.push({ text: T.valueText(c, (v, u) => U.format(v, u, { digits: 4, trim: true }), tr), color: col.muted, hl: !!(S.overlay && S.overlay.live === c.id) });
     const opts = [];
 
     if (T.terms.length === 2) {

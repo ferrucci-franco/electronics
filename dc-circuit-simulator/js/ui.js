@@ -473,6 +473,7 @@
       app.view.ox += dx;
       app.renderer.resize(); app.requestRender();
       syncEdgeBtns();
+      if (ui.clampFloats) ui.clampFloats();
       if (which === 'pal' && !hide) drawPalette();
       if (which === 'side' && !hide) ui.update();
     };
@@ -812,8 +813,8 @@
       if (!spring) {
         const sl = el('input', { type: 'range', min: '0', max: '1000', step: '1', class: 'live-slider', title: plainText(t('live_tip')) });
         sl.value = String(Math.max(0, Math.min(1000, map.toS(c.props[d.key]))));
-        sl.addEventListener('input', () => setS(+sl.value));
-        sl.addEventListener('change', done);
+        sl.addEventListener('input', () => { app.liveMark(c.id, 0); setS(+sl.value); });
+        sl.addEventListener('change', () => { done(); app.liveMark(c.id, 700); });
         return sl;
       }
       const w = el('div', { class: 'spring', tabindex: '0', role: 'slider', title: plainText(t('spring_tip')) });
@@ -831,6 +832,7 @@
         cancelAnimationFrame(anim); show(0);
         g = { id: e.pointerId, x0: e.clientX, half: Math.max(40, (w.clientWidth - 28) / 2), f: 0 };
         try { w.setPointerCapture(e.pointerId); } catch (_) {}
+        app.liveMark(c.id, 0);
       });
       w.addEventListener('pointermove', (e) => {
         if (!g || g.id !== e.pointerId) return;
@@ -842,6 +844,7 @@
         if (!g || g.id !== e.pointerId) return;
         const f0 = g.f; g = null;
         done();
+        app.liveMark(c.id, 700);
         // back to the centre, the new value being the new centre
         const t0 = performance.now();
         const step = (now) => { const k = Math.min(1, (now - t0) / 220); show(f0 * Math.pow(1 - k, 3)); if (k < 1) anim = requestAnimationFrame(step); };
@@ -851,7 +854,7 @@
       w.addEventListener('keydown', (e) => {
         if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
         e.preventDefault();
-        setS(500 + (e.key === 'ArrowRight' ? 50 : -50)); done();
+        setS(500 + (e.key === 'ArrowRight' ? 50 : -50)); done(); app.liveMark(c.id, 900);
       });
       return w;
     }
@@ -1337,6 +1340,8 @@
     ui.hideQuick = function () { qs.hidden = true; qs.innerHTML = ''; qsRows = []; };
     // a tap on the circuit: closes the single slider, not the stacked ones
     ui.quickOutside = function () { if (!stacked()) ui.hideQuick(); };
+    ui.hasQuick = (c) => qsRows.some(r => r.c === c);
+    ui.removeQuick = (c) => { const r = qsRows.find(q => q.c === c); if (r) removeRow(r); };
     function removeRow(r) {
       r.row.remove();
       qsRows = qsRows.filter(q => q !== r);
@@ -1439,6 +1444,21 @@
       head.addEventListener('pointerup', () => { d = null; });
     }
     for (let k = 0; k < MAXMON; k++) monWins.push(makeMonWin(k));
+    // the floating windows stay inside the circuit area when it gets narrower (side panel shown again, window
+    // resized): a window that would be covered slides back in
+    ui.clampFloats = function () {
+      const st = $('stage');
+      const W = st.clientWidth, H = st.clientHeight;
+      let wins;
+      try { wins = [qs, tmon].concat(monWins.map(m => m.mon)); } catch (e) { return; }   // (not all built yet)
+      for (const w of wins) {
+        if (!w || w.hidden) continue;
+        const x = w.offsetLeft, y = w.offsetTop, ww = w.offsetWidth, hh = w.offsetHeight;
+        const nx = Math.max(4, Math.min(W - ww - 4, x)), ny = Math.max(4, Math.min(H - hh - 4, y));
+        if (nx !== x || ny !== y) Object.assign(w.style, { left: nx + 'px', top: ny + 'px', right: 'auto', bottom: 'auto' });
+      }
+    };
+    window.addEventListener('resize', () => requestAnimationFrame(ui.clampFloats));
     /* pinned Thévenin values: a small window over the circuit with V_Th, R_Th = R_eq and I_N (or V_oc and I_sc
      * when the circuit is not linear), updated at every change, also while a value is dragged */
     const tmon = el('div', { class: 'monitor tmon' });

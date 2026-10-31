@@ -54,7 +54,7 @@ html.layout-desktop.hide-pal .palette, html.layout-desktop.hide-side .side{displ
 html.layout-desktop.hide-pal .app{grid-template-columns:minmax(0,1fr) var(--side-w); grid-template-areas:"head head" "stage side"}
 html.layout-desktop.hide-side .app{grid-template-columns:var(--pal-w) minmax(0,1fr); grid-template-areas:"head head" "pal stage"}
 html.layout-desktop.hide-pal.hide-side .app{grid-template-columns:minmax(0,1fr); grid-template-areas:"head" "stage"}
-.edge-btn{position:absolute; top:50%; transform:translateY(-50%); width:16px; height:56px; padding:0; display:flex; align-items:center; justify-content:center; border:1px solid var(--border); background:var(--btn); color:var(--muted); box-shadow:var(--shadow); cursor:pointer; opacity:.75; z-index:5}
+.edge-btn{position:absolute; top:50%; transform:translateY(-50%); width:16px; height:56px; padding:0; display:flex; align-items:center; justify-content:center; border:1px solid var(--border); background:var(--btn); color:var(--muted); box-shadow:var(--shadow); cursor:pointer; opacity:.75; z-index:12}
 .edge-btn:hover{opacity:1; color:var(--fg)}
 .edge-btn svg{width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; transition:transform .15s}
 .edge-btn.left{left:-1px; border-radius:0 9px 9px 0}
@@ -366,17 +366,17 @@ html.layout-mobile .field input[type=text], html.layout-mobile .field select{fon
 /* pinned I–V plot over the circuit */
 .monitor{position:absolute; left:8px; bottom:52px; width:min(380px, calc(100% - 80px)); background:var(--panel); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); padding:6px 8px 8px; z-index:6; display:flex; flex-direction:column; gap:4px}
 .monitor[hidden]{display:none}
-.qslider{position:absolute; z-index:8; width:min(300px, calc(100% - 16px)); background:var(--panel); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); padding:6px 10px 10px}
+.qslider{position:absolute; z-index:8; width:min(300px, calc(100% - 16px)); background:var(--panel); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); padding:5px 10px 4px}
 .qslider[hidden]{display:none}
 .qs-head{display:flex; align-items:center; gap:8px; font-size:14px; cursor:move; touch-action:none}
-.qs-row + .qs-row{border-top:1px solid var(--border); margin-top:4px; padding-top:4px}
+.qs-row + .qs-row{border-top:1px solid var(--border); margin-top:2px; padding-top:3px}
 @keyframes qsflash{from{background:var(--btn-hover)} to{background:transparent}}
 .qs-row.flash{animation:qsflash .6s ease; border-radius:8px}
 .qslider{max-height:calc(100% - 8px); overflow-y:auto; overscroll-behavior:contain}
 .tmon{cursor:move; touch-action:none}
 .qs-name{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600}
 .qs-val{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-variant-numeric:tabular-nums}
-.qs-head .btn{padding:2px 8px; min-height:28px}
+.qs-head .btn{padding:0 8px; min-height:26px}
 .qslider input[type=range]{width:100%; margin:8px 0 0; height:30px}
 /* spring slider: a wide strip pressed anywhere; the knob shows the offset from the centre mark */
 .spring{position:relative; height:40px; touch-action:none; cursor:ew-resize; user-select:none; -webkit-user-select:none; outline:none; border-radius:10px}
@@ -385,7 +385,7 @@ html.layout-mobile .field input[type=text], html.layout-mobile .field select{fon
 .spring .sp-fill{position:absolute; top:50%; height:6px; margin-top:-3px; border-radius:3px; background:var(--accent)}
 .spring .sp-mid{position:absolute; left:50%; top:50%; width:2px; height:18px; margin:-9px 0 0 -1px; border-radius:1px; background:var(--muted)}
 .spring .sp-knob{position:absolute; top:50%; width:26px; height:26px; margin:-13px 0 0 -13px; border-radius:50%; background:var(--accent); border:2px solid var(--panel); box-shadow:0 1px 4px rgba(0,0,0,.3)}
-.qslider .spring{height:48px; margin-top:4px}
+.qslider .spring{height:38px; margin-top:0}
 @media (pointer:coarse){ .spring{height:48px} }
 .mon2{left:calc(min(380px, 100% - 80px) + 16px)}
 .tmon{left:auto; right:28px; bottom:auto; top:52px; width:min(260px, calc(100% - 80px))}

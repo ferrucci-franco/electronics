@@ -539,8 +539,17 @@
     if (now - adjustT > 900) app.checkpoint();
     adjustT = now;
     c.props[key] = Number(n.toPrecision(12));
+    app.liveMark(c.id, 900);
     app.commit();
     return true;
+  };
+  // the component whose value is being changed (slider, wheel) is highlighted, with its value label;
+  // ms: for how long after the last change (0: until called again with null)
+  let liveT = 0;
+  app.liveMark = function (id, ms) {
+    clearTimeout(liveT);
+    if (app.overlay.live !== id) { app.overlay.live = id; app.requestRender(); }
+    if (id && ms) liveT = setTimeout(() => { app.overlay.live = null; app.requestRender(); }, ms);
   };
 
   // flip the reference direction of V ('v') or I ('i') of an element
