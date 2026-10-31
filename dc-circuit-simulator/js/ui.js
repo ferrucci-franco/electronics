@@ -102,6 +102,7 @@
       document.querySelectorAll('[data-i18n-title]').forEach((e) => { const s = app.tp(e.dataset.i18nTitle); e.title = s; e.setAttribute('aria-label', s); });
       document.querySelectorAll('#palTools .tool').forEach((b) => { b.title = app.tp('tool_' + b.dataset.tool + '_tip'); });
       syncEdgeBtns();
+      if (ui.updateTabs) ui.updateTabs();
       document.querySelectorAll('.app-header [data-lang]').forEach((b) => b.classList.toggle('active', b.dataset.lang === l));
       syncLayoutBtn();
       drawPalette();
@@ -144,10 +145,7 @@
       if (!b) return;
       menu.hidden = true;
       switch (b.dataset.file) {
-        case 'new':
-          if (app.circuit.comps.length && !confirm(app.tp('confirm_new'))) return;
-          app.loadCircuit({ comps: [], wires: [] }, { checkpoint: true });
-          break;
+        case 'new': app.newTab(); break;
         case 'open': $('fileInput').click(); break;
         case 'save': app.saveFile(); break;
         case 'png': app.exportPNG(); break;
@@ -177,6 +175,32 @@
     $('modalClose').addEventListener('click', closeModal);
     modal.addEventListener('pointerdown', (e) => { if (e.target === modal) closeModal(); });
 
+    /* ---------- circuit tabs ---------- */
+    ui.updateTabs = function () {
+      const bar = $('tabbar');
+      bar.innerHTML = '';
+      app.tabs.forEach((tb, k) => {
+        const b = el('div', { class: 'ctab' + (k === app.tabIdx ? ' on' : ''), role: 'tab', title: app.tp('tab_tip') });
+        const nm = el('span', { class: 'ctab-name' });
+        nm.textContent = tb.name;
+        const x = el('button', { type: 'button', class: 'ctab-x', title: app.tp('tab_close'), 'aria-label': app.tp('tab_close') }, '×');
+        b.appendChild(nm); b.appendChild(x);
+        b.addEventListener('click', (e) => { if (!x.contains(e.target)) app.switchTab(k); });
+        b.addEventListener('dblclick', (e) => {
+          if (x.contains(e.target)) return;
+          const n = prompt(app.tp('tab_rename'), tb.name);
+          if (n && n.trim()) app.renameTab(k, n.trim().slice(0, 40));
+        });
+        x.addEventListener('click', (e) => { e.stopPropagation(); app.closeTab(k); });
+        bar.appendChild(b);
+      });
+      const add = el('button', { type: 'button', class: 'ctab-add', title: app.tp('tab_new'), 'aria-label': app.tp('tab_new') }, '+');
+      add.addEventListener('click', () => app.newTab());
+      bar.appendChild(add);
+      const on = bar.querySelector('.ctab.on');
+      if (on) on.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    };
+
     $('helpBtn').addEventListener('click', () => openModal(t('help_title'), t('help_html')));
     $('examplesBtn').addEventListener('click', () => {
       const g = el('div', { class: 'ex-grid' });
@@ -184,7 +208,7 @@
         const b = el('button', { type: 'button', class: 'ex-card' }, `<b>${esc(ex.title)}</b><span>${esc(ex.desc)}</span>`);
         b.addEventListener('click', () => {
           closeModal();
-          app.loadCircuit(DCS.examples.get(ex.key), { fit: true, checkpoint: true });
+          app.openInTab(DCS.examples.get(ex.key), ex.title);
           if (app.thev) ui.showTab('thev', false);
         });
         g.appendChild(b);
@@ -947,6 +971,9 @@
         });
         sr.appendChild(br);
         intro.appendChild(sr);
+      } else if (th.a && th.b && !th.loadId && !th.err) {
+        // A and B do not split the circuit: the equivalent is the one of the whole circuit
+        intro.appendChild(el('div', { class: 'hint', style: 'margin-top:8px' }, t('thev_whole')));
       }
       if (th.err) { pane.appendChild(el('div', { class: 'issue error' }, t(th.err))); return; }
       if (!th.res) return;

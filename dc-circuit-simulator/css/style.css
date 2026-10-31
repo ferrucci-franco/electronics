@@ -64,6 +64,15 @@ html.layout-mobile .edge-btn{display:none}
 .panel{border:1px solid var(--border); background:var(--panel); border-radius:16px; min-width:0; min-height:0}
 .app-header{grid-area:head; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px 12px; padding:8px 12px}
 .app-header h1{margin:0; font-size:18px; font-weight:700; line-height:1.2}
+/* circuit tabs: pills next to the title, the active one filled; a dashed + adds one */
+.ctabs{display:flex; align-items:center; gap:6px; flex:1 1 auto; min-width:0; overflow-x:auto; scrollbar-width:none; padding:2px}
+.ctabs::-webkit-scrollbar{display:none}
+.app-header .ctab{flex:none; display:inline-flex; align-items:center; gap:2px; max-width:190px; min-height:34px; padding:4px 6px 4px 14px; border-radius:10px; border:1px solid var(--border); background:var(--card); color:var(--fg); font-size:14px; font-weight:600; cursor:pointer}
+.app-header .ctab.on{background:var(--accent); border-color:var(--accent); color:#fff}
+.ctab-name{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.app-header .ctab-x{border:0; background:transparent; color:inherit; padding:0; min-height:0; width:20px; height:20px; border-radius:6px; font-size:15px; line-height:1; opacity:.6; display:grid; place-items:center}
+.app-header .ctab-x:hover{opacity:1; background:rgba(127,127,127,.25); filter:none}
+.app-header .ctab-add{flex:none; min-height:34px; width:36px; justify-content:center; padding:0; border:1.5px dashed var(--border); background:transparent; color:var(--muted); font-size:20px; font-weight:400}
 .hdr{display:flex; flex-wrap:wrap; gap:8px; align-items:center}
 .hdr-group{display:flex; gap:6px; align-items:center}
 .app-header button{display:inline-flex; align-items:center; gap:6px; border:1px solid var(--border); background:var(--card); border-radius:10px; padding:6px 10px; font-size:14px; cursor:pointer; min-height:34px}
@@ -217,7 +226,8 @@ html.layout-mobile .app{
   grid-template-areas:"head" "stage" "pal";
 }
 html.layout-mobile .app-header{padding:6px 8px; gap:6px}
-html.layout-mobile .app-header h1{font-size:15px; flex:1 1 auto; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+html.layout-mobile .app-header h1{font-size:15px; flex:0 1 auto; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+html.layout-mobile .app-header .ctab{min-height:34px; font-size:13px; padding-left:10px}
 html.layout-mobile .hdr{gap:5px}
 html.layout-mobile .hdr-group{gap:4px}
 html.layout-mobile .app-header button span{display:none}

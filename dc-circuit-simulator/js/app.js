@@ -690,9 +690,80 @@
   }
   app.stateForRender = stateForRender;
 
+  /* ---------- tabs: several circuits open at once ----------
+   * app.tabs[k] = { name, circuit (JSON), view, undo, redo }: the active one lives in app.circuit; the others
+   * keep their circuit, view and history. The circuits and names are saved in the browser. */
+  app.tabs = [];
+  app.tabIdx = 0;
+  const EMPTY = '{"comps":[],"wires":[]}';
+  function storeTabs() {
+    LS.set('dcs.tabs', JSON.stringify({ active: app.tabIdx, tabs: app.tabs.map(t => ({ name: t.name, circuit: t.circuit })) }));
+  }
+  function keepCurrent() {
+    const t = app.tabs[app.tabIdx];
+    if (t) { t.circuit = snap(); t.view = Object.assign({}, app.view); t.undo = app.undoStack; t.redo = app.redoStack; }
+  }
+  function showTab(k) {
+    const t = app.tabs[k];
+    app.tabIdx = k;
+    app.monitor = null;
+    let c;
+    try { c = JSON.parse(t.circuit || EMPTY); } catch (e) { c = JSON.parse(EMPTY); }
+    app.loadCircuit(c);
+    app.undoStack = t.undo || []; app.redoStack = t.redo || [];
+    if (t.view) { app.view = Object.assign({}, t.view); app.viewChanged(); } else app.fit();
+    app.ui.updateTabs(); app.ui.update(); app.requestRender();
+    storeTabs();
+  }
+  function tabName() {
+    const names = new Set(app.tabs.map(t => t.name));
+    let n = app.tabs.length + 1;
+    while (names.has(app.tp('tab_name', { n }))) n++;
+    return app.tp('tab_name', { n });
+  }
+  app.switchTab = function (k) {
+    if (k === app.tabIdx || !app.tabs[k]) return;
+    keepCurrent();
+    showTab(k);
+  };
+  app.newTab = function (circuit, name) {
+    keepCurrent();
+    app.tabs.push({ name: name || tabName(), circuit: JSON.stringify(circuit || JSON.parse(EMPTY)) });
+    showTab(app.tabs.length - 1);
+  };
+  app.closeTab = function (k) {
+    const t = app.tabs[k];
+    let c = null;
+    try { c = k === app.tabIdx ? app.circuit : JSON.parse(t.circuit || EMPTY); } catch (e) { /* ignore */ }
+    if (c && c.comps && c.comps.length && !confirm(app.tp('tab_close_confirm', { name: t.name }))) return;
+    keepCurrent();
+    app.tabs.splice(k, 1);
+    if (!app.tabs.length) app.tabs.push({ name: tabName(), circuit: EMPTY });
+    let i = app.tabIdx;
+    if (k < i) i--; else if (k === i) i = Math.min(k, app.tabs.length - 1);
+    showTab(i);
+  };
+  app.renameTab = function (k, name) {
+    if (!app.tabs[k] || !name) return;
+    app.tabs[k].name = name;
+    app.ui.updateTabs();
+    storeTabs();
+  };
+  // a circuit from the examples, a file or a link: in the current tab when it is empty, else in a new one
+  app.openInTab = function (circuit, name) {
+    if (!app.circuit.comps.length && !app.circuit.wires.length) {
+      app.loadCircuit(circuit, { fit: true, checkpoint: true });
+      if (name) app.renameTab(app.tabIdx, name);
+    } else {
+      app.newTab(circuit, name);
+      app.fit();
+    }
+  };
+
   /* ---------- persistence ---------- */
   function save() {
-    LS.set('dcs.circuit', snap());
+    const t = app.tabs[app.tabIdx];
+    if (t) { t.circuit = snap(); storeTabs(); }
   }
   app.saveSettings = function () { LS.set('dcs.settings', JSON.stringify(app.settings)); };
   app.loadCircuit = function (circuit, opts) {
@@ -753,7 +824,7 @@
     try {
       let bytes = b64u.dec(m[2]);
       if (m[1] === 'z') bytes = await streamBytes(bytes, new DecompressionStream('deflate-raw'));
-      app.loadCircuit(expand(JSON.parse(new TextDecoder().decode(bytes))), { fit: true, checkpoint: !!keepPrevious });
+      app.openInTab(expand(JSON.parse(new TextDecoder().decode(bytes))), app.tp('tab_shared'));
       history.replaceState(null, '', location.href.split('#')[0]);
       return true;
     } catch (e) { return false; }
@@ -789,7 +860,9 @@
     rd.onload = () => {
       try {
         const o = JSON.parse(rd.result);
-        app.loadCircuit(o.circuit || o, { fit: true, checkpoint: true });
+        const c = o.circuit || o;
+        if (!c || !Array.isArray(c.comps) || !Array.isArray(c.wires)) throw new Error('bad');
+        app.openInTab(c, String(file.name || '').replace(/\.json$/i, '').slice(0, 40));
         app.toast(app.t('loaded'));
       } catch (e) { app.toast(app.t('load_err')); }
     };
@@ -813,12 +886,23 @@
     app.ui = DCS.UI(app);
     app.renderer.resize();
 
-    let loaded = false;
-    const c = LS.get('dcs.circuit');
-    if (c) { try { const o = JSON.parse(c); if (o.comps && o.comps.length) { app.loadCircuit(o); loaded = true; } } catch (e) { /* ignore */ } }
-    // a shared circuit replaces the saved one, which stays one undo away
-    if (await loadFromHash(loaded)) loaded = true;
-    if (!loaded) app.loadCircuit(DCS.examples.get('divider'));
+    // the saved tabs (or the single circuit saved by earlier versions, or the first example)
+    let active = 0;
+    try {
+      const o = JSON.parse(LS.get('dcs.tabs') || 'null');
+      if (o && Array.isArray(o.tabs)) {
+        app.tabs = o.tabs.filter(t => t && typeof t.circuit === 'string').map(t => ({ name: String(t.name || '').slice(0, 40) || '?', circuit: t.circuit }));
+        active = Math.max(0, Math.min(app.tabs.length - 1, +o.active || 0));
+      }
+    } catch (e) { app.tabs = []; }
+    if (!app.tabs.length) {
+      let c = LS.get('dcs.circuit');
+      try { const o = JSON.parse(c || 'null'); if (!o || !o.comps || !o.comps.length) c = null; } catch (e) { c = null; }
+      app.tabs = [{ name: app.tp('tab_name', { n: 1 }), circuit: c || JSON.stringify(DCS.examples.get('divider')) }];
+    }
+    showTab(active);
+    // a shared circuit opens in its own tab
+    await loadFromHash();
     app.fit();
     new ResizeObserver(() => { const w = app.renderer.w, h = app.renderer.h; app.renderer.resize(); if (!w || !h) app.fit(); app.requestRender(); }).observe(cv);
   }

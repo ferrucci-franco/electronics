@@ -51,7 +51,8 @@ Símbolos USA (por defecto) o IEC/europeos.
 - Botón **Ordenar**: endereza los escalones (un cable que baja de un riel, se corre y sigue bajando queda recto, deslizando su unión sobre el riel), une tramos de cable colineales, quita duplicados y puntas sueltas, y convierte cables en diagonal en tramos en L que rodean los componentes; solo se aplica si todas las conexiones quedan iguales (se deshace con Ctrl+Z).
 - Las etiquetas (nombre, valor y resultados) se ubican solas del lado que no tapa símbolos, cables ni otras etiquetas.
 - Los valores aceptan prefijos: 4k7, 2.2M, 10m, 100u, 1n… (M = mega, m = mili).
-- Archivo: guardar / abrir JSON, copiar un enlace que contiene el circuito, exportar PNG. El circuito actual se guarda en el navegador.
+- **Pestañas**: varios circuitos abiertos a la vez, como píldoras junto al título (la activa resaltada). «+» (o Archivo → Nuevo) abre una pestaña vacía, × la cierra (pide confirmación si tiene componentes), doble clic le cambia el nombre. Cada pestaña guarda su circuito, su vista y su historial de deshacer. Un ejemplo, un archivo o un enlace compartido se abren en la pestaña actual si está vacía, o en una nueva con su nombre. Las pestañas se guardan en el navegador.
+- Archivo: guardar / abrir JSON, copiar un enlace que contiene el circuito, exportar PNG.
 
 ## Cálculo
 
