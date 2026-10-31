@@ -109,7 +109,7 @@
 <li>Choose a component in the list, then click / tap on the grid to place it. You can also drag it from the list onto the circuit.</li>
 <li><b>R</b> rotates, <b>F</b> mirrors (also with the buttons over the circuit when an element is selected).</li><li>Potentiometer: drag its wiper arrow along the resistor (mouse or finger), use the slider in its panel, or the keys <b>[</b> and <b>]</b>; the circuit is solved while it moves.</li>
 <li>Wires: drag from a component terminal, or use the <b>Wire</b> tool (drag, or tap point after point; tap the last point again or press Esc to finish). Dragging a wire corner or a junction dot moves that point with its wires.</li>
-<li>Wires connect at their ends and where an end touches another wire (a dot is drawn). Crossing wires are not connected.</li>
+<li>Wires connect at their ends and where an end touches another wire (a dot is drawn). Crossing wires are not connected. A wire with a branch on it is cut in two at the branch, so that each piece can be moved or deleted on its own.</li>
 <li>Edit values with a double-click / double-tap. Values accept prefixes: 4k7, 2.2M, 10m, 100u, 1n…</li>
 <li>Every circuit needs a ground (⏚): node voltages are measured from it.</li></ul>
 <h4>Results</h4><ul>
@@ -243,7 +243,7 @@
 <li>Choisissez un composant dans la liste, puis cliquez / touchez la grille pour le poser. On peut aussi le faire glisser depuis la liste.</li>
 <li><b>R</b> tourne, <b>F</b> retourne en miroir (aussi avec les boutons au-dessus du circuit quand un élément est sélectionné).</li><li>Potentiomètre : faites glisser la flèche du curseur le long de la résistance (souris ou doigt), utilisez le curseur de son panneau, ou les touches <b>[</b> et <b>]</b> ; le circuit est résolu pendant le mouvement.</li>
 <li>Fils : glissez depuis une borne de composant, ou utilisez l’outil <b>Fil</b> (glisser, ou toucher point après point ; touchez à nouveau le dernier point ou appuyez sur Échap pour terminer). Faire glisser un coin de fil ou un point de jonction déplace ce point avec ses fils.</li>
-<li>Les fils se connectent à leurs extrémités et là où une extrémité touche un autre fil (un point est dessiné). Des fils qui se croisent ne sont pas connectés.</li>
+<li>Les fils se connectent à leurs extrémités et là où une extrémité touche un autre fil (un point est dessiné). Des fils qui se croisent ne sont pas connectés. Un fil qui porte une dérivation est coupé en deux à cet endroit, pour pouvoir déplacer ou supprimer chaque morceau séparément.</li>
 <li>Modifiez les valeurs par double-clic / double toucher. Les préfixes sont acceptés : 4k7, 2.2M, 10m, 100u, 1n…</li>
 <li>Tout circuit a besoin d’une masse (⏚) : les potentiels sont mesurés par rapport à elle.</li></ul>
 <h4>Résultats</h4><ul>
@@ -377,7 +377,7 @@
 <li>Elija un componente en la lista y haga clic / toque en la grilla para colocarlo. También puede arrastrarlo desde la lista.</li>
 <li><b>R</b> rota, <b>F</b> espeja (también con los botones sobre el circuito cuando hay un elemento seleccionado).</li><li>Potenciómetro: arrastre la flecha del cursor a lo largo de la resistencia (ratón o dedo), use el deslizador de su panel o las teclas <b>[</b> y <b>]</b>; el circuito se resuelve mientras se mueve.</li>
 <li>Cables: arrastre desde un terminal de un componente, o use la herramienta <b>Cable</b> (arrastrar, o tocar punto tras punto; toque de nuevo el último punto o pulse Esc para terminar). Arrastrar una esquina de cable o un punto de unión mueve ese punto con sus cables.</li>
-<li>Los cables se conectan en sus extremos y donde un extremo toca otro cable (se dibuja un punto). Los cables que se cruzan no están conectados.</li>
+<li>Los cables se conectan en sus extremos y donde un extremo toca otro cable (se dibuja un punto). Los cables que se cruzan no están conectados. Un cable con una bifurcación se parte en dos en ese punto, para poder mover o borrar cada tramo por separado.</li>
 <li>Edite los valores con doble clic / doble toque. Se aceptan prefijos: 4k7, 2.2M, 10m, 100u, 1n…</li>
 <li>Todo circuito necesita una masa (⏚): las tensiones de nodo se miden respecto de ella.</li></ul>
 <h4>Resultados</h4><ul>
