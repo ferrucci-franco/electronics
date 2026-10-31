@@ -80,12 +80,14 @@
     return !!h && (h.kind === 'term' || (h.kind === 'comp' && C.hit(h.comp, p.x, p.y, -0.25)));
   };
 
+  // rotary potentiometer: anywhere on the round symbol turns the wiper
   Editor.prototype.onKnob = function (c, p) {
     if (c.props.ctl !== 'knob') return false;
     const [lx, ly] = C.toLocal(c, p.x, p.y);
-    return Math.hypot(lx - C.KNOB[0], ly - C.KNOB[1]) < 0.95;
+    return Math.hypot(lx, ly) < C.ROT.R + 0.5;
   };
   Editor.prototype.onWiper = function (c, p) {
+    if (c.props.ctl === 'knob') return false;
     const [lx, ly] = C.toLocal(c, p.x, p.y);
     return ly < -0.2 && ly > -1.75 && Math.abs(lx - C.potX(c)) < 0.75;
   };
@@ -286,14 +288,14 @@
         break;
       case 'move': this.doMove(g, p); break;
       case 'knob': {
-        // angle of the pointer around the knob centre, 0 at the top, clockwise; 270° of travel
+        // angle of the pointer around the centre of the round symbol, in its own frame; in the gap at the
+        // top the wiper stays at the nearest end
         if (!g.cp) { app.checkpoint(); g.cp = true; }
-        const [kx, ky] = C.toWorld(g.comp, C.KNOB[0], C.KNOB[1]);
-        const ang = Math.atan2(p.x - kx, -(p.y - ky)) * 180 / Math.PI;
-        const a = Math.max(0, Math.min(1, (ang + 135) / 270));
-        // past the bottom gap, stay at the nearest end instead of jumping
-        if (Math.abs(ang) > 135) g.comp.props.alpha = g.comp.props.alpha > 0.5 ? 1 : 0;
-        else g.comp.props.alpha = Math.round(a * 100) / 100;
+        const [lx, ly] = C.toLocal(g.comp, p.x, p.y);
+        let ang = Math.atan2(ly, lx) * 180 / Math.PI;
+        if (ang < -90) ang += 360;
+        const a = (C.ROT.a0 - ang) / (C.ROT.a0 - C.ROT.a1);
+        g.comp.props.alpha = Math.round(100 * Math.max(0, Math.min(1, a))) / 100;
         app.circuitChanged(true);
         break;
       }
@@ -740,7 +742,7 @@
       if (h.kind === 'term') { cursor = 'crosshair'; app.overlay.snap = h.pt; app.overlay.snapHot = true; }
       else if (h.kind === 'wend') { cursor = 'move'; app.overlay.snap = h.pt; app.overlay.snapHot = false; }
       else if (h.kind === 'comp' && h.comp.type === 'pot' && this.onKnob(h.comp, p)) { cursor = 'grab'; app.hover = { id: h.comp.id }; }
-      else if (h.kind === 'comp' && h.comp.type === 'pot' && this.onWiper(h.comp, p)) { cursor = 'ew-resize'; app.hover = { id: h.comp.id }; }
+      else if (h.kind === 'comp' && h.comp.type === 'pot' && this.onWiper(h.comp, p)) { cursor = (h.comp.rot || 0) % 2 ? 'ns-resize' : 'ew-resize'; app.hover = { id: h.comp.id }; }
       else { cursor = 'move'; app.hover = { id: h.comp ? h.comp.id : h.wire.id }; }
     }
     this.cv.style.cursor = cursor;

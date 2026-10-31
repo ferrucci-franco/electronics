@@ -9,7 +9,10 @@
     red: { vf: 1.8, rgb: [255, 45, 45] }, orange: { vf: 2.0, rgb: [255, 140, 20] }, yellow: { vf: 2.1, rgb: [255, 215, 0] },
     green: { vf: 2.2, rgb: [40, 220, 70] }, blue: { vf: 3.0, rgb: [50, 120, 255] }, white: { vf: 3.1, rgb: [255, 255, 255] }
   };
-  const KNOB = [1.9, -2.25];
+  // rotary track: radius and angles (degrees, y downwards) of the ends A (α = 0) and B (α = 1): a half circle
+  // below the pivot, so that the leads come in straight and the wiper lead comes from the top
+  const ROT = { R: 1.3, a0: 180, a1: 0 };
+  const potAngle = (c) => ROT.a0 + (ROT.a1 - ROT.a0) * Math.max(0, Math.min(1, c.props.alpha));
   const potX = (c) => -1.2 + 2.4 * Math.max(0, Math.min(1, c.props.alpha));
   // fraction of the resistance between A and the wiper: linear, or logarithmic (audio) taper
   const potFrac = (c) => { const a = Math.max(0, Math.min(1, c.props.alpha)); return c.props.taper === 'log' ? (Math.pow(10, 2 * a) - 1) / 99 : a; };
@@ -79,7 +82,7 @@
       valueText: (c, f, t) => 'RGB · ' + t(c.props.common)
     },
     pot: {
-      prefix: 'P', terms: [[-2, 0], [2, 0], [0, -2]], termNames: ['A', 'B', 'W'], box: [-2, -3.05, 2.65, 0.75],
+      prefix: 'P', terms: [[-2, 0], [2, 0], [0, -2]], termNames: ['A', 'B', 'W'], box: [-2, -2, 2, 1.65],
       props: [
         { key: 'R', unit: 'Ω', def: 10000, min: 1, max: 1e10 },
         { key: 'alpha', type: 'slider', def: 0.5 },
@@ -264,22 +267,38 @@
       P.line([[0.95, 0], [3, 0]]);
     },
     pot(P, c, us) {
+      if (c.props.ctl === 'knob') { SYM.potRotary(P, c, us); return; }
       SYM.resistor(P, c, us);
       // the wiper arrow sits at the position α along the resistor (A at α = 0, B at α = 1)
       const x = potX(c);
       P.line([[0, -2], [0, -1.3], [x, -1.3], [x, -0.85]]);
       P.head(x, -1.3, x, -0.45, 0.4);
-      if (c.props.ctl === 'knob') {
-        // rotary knob: 270° travel, pointer at −135° + 270°·α from the top
-        // the dial stays upright on screen whatever the rotation of the component
-        const [kx, ky] = KNOB, r = 0.62;
-        const [wx, wy] = toWorld(c, kx, ky);
-        const at = (deg, d) => { const t = deg * Math.PI / 180; return toLocal(c, wx + Math.sin(t) * d, wy - Math.cos(t) * d); };
-        P.circle(kx, ky, r, false);
-        for (const a of [-135, 135]) P.line([at(a, r + 0.08), at(a, r + 0.25)]);
-        const deg = -135 + 270 * Math.max(0, Math.min(1, c.props.alpha));
-        P.thick([at(deg, 0.12), at(deg, r - 0.06)]);
+    },
+    // rotary potentiometer: the resistance is a circular track (zigzag in USA style, a band in IEC style)
+    // and the wiper turns around the centre; same terminals as the straight one (A left, B right, W top)
+    potRotary(P, c, us) {
+      const R = ROT.R, a0 = ROT.a0, a1 = ROT.a1, rad = Math.PI / 180;
+      const pt = (deg, r) => [Math.cos(deg * rad) * r, Math.sin(deg * rad) * r];
+      if (us) {
+        // zigzag along the arc (like the straight resistor), straight bits at both ends
+        const n = 10, pts = [pt(a0, R), pt(a0 + (a1 - a0) * 0.06, R)];
+        for (let k = 1; k < n; k++) pts.push(pt(a0 + (a1 - a0) * (0.06 + 0.88 * k / n), R + (k % 2 ? 0.26 : -0.26)));
+        pts.push(pt(a0 + (a1 - a0) * 0.94, R), pt(a1, R));
+        P.line(pts);
+      } else {
+        const inner = [], outer = [];
+        for (let k = 0; k <= 24; k++) { const d = a0 + (a1 - a0) * k / 24; inner.push(pt(d, R - 0.2)); outer.push(pt(d, R + 0.2)); }
+        P.poly(inner.concat(outer.reverse()), false);
       }
+      // leads from the terminals to the ends of the track
+      P.line([[-2, 0], pt(a0, R)]);
+      P.line([[2, 0], pt(a1, R)]);
+      // wiper: from the W terminal down to the pivot, then the arrow towards the track
+      P.line([[0, -2], [0, 0]]);
+      P.circle(0, 0, 0.13, true);
+      const d = potAngle(c), tip = pt(d, R - 0.3), base = pt(d, 0.15);
+      P.line([base, pt(d, R - 0.62)]);
+      P.head(base[0], base[1], tip[0], tip[1], 0.38);
     },
     ground(P) {
       P.line([[0, 0], [0, 0.8]]);
@@ -304,7 +323,7 @@
     }
   };
 
-  const api = { TYPES, LED_COLORS, isDiode, potX, potFrac, KNOB, defaults, defRef, refs, signed, flippable, toWorld, toLocal, terminals, hit, bounds, SYM };
+  const api = { TYPES, LED_COLORS, isDiode, potX, potFrac, ROT, defaults, defRef, refs, signed, flippable, toWorld, toLocal, terminals, hit, bounds, SYM };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else (root.DCS = root.DCS || {}).comp = api;
 })(typeof window !== 'undefined' ? window : globalThis);

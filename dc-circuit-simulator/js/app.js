@@ -221,7 +221,7 @@
       const ts = C.terminals(c);
       if (ts.length === 2) segs.push({ x1: ts[0][0], y1: ts[0][1], x2: ts[1][0], y2: ts[1][1], i: r.i });
       else if (c.type === 'pot') {
-        const q = C.toWorld(c, C.potX(c), 0);
+        const q = c.props.ctl === 'knob' ? C.toWorld(c, 0, 0) : C.toWorld(c, C.potX(c), 0);
         ts.forEach((t, j) => segs.push({ x1: t[0], y1: t[1], x2: q[0], y2: q[1], i: r.tc[j] }));
       } else if (inner[c.type]) ts.forEach((t, j) => { const q = C.toWorld(c, inner[c.type][j][0], inner[c.type][j][1]); segs.push({ x1: t[0], y1: t[1], x2: q[0], y2: q[1], i: r.tc[j] }); });
     }
