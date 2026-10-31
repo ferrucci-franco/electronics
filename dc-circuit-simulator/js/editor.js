@@ -7,6 +7,7 @@
   const DRAG_PX = { mouse: 4, pen: 6, touch: 9 };
   const EDGE_MODES = new Set(['move', 'wire', 'band', 'endpoint']);
   const LONG_MS = 480;
+  const DBL_TOUCH_MS = 700;   // two taps of a finger closer than this make a double tap (also a slow one)
 
   function distSeg(px, py, x1, y1, x2, y2) {
     const dx = x2 - x1, dy = y2 - y1, L2 = dx * dx + dy * dy;
@@ -232,8 +233,13 @@
         g.mode = 'move';
       }
     } else {
-      g.mode = e.pointerType === 'mouse' ? 'band' : 'pan';
+      // finger: touching the background again right after a tap there (a double tap, even a slow one) and
+      // dragging draws a selection window; one finger otherwise pans
+      const lt = this.lastTap;
+      const dblBand = e.pointerType !== 'mouse' && lt && !lt.id && performance.now() - lt.t < DBL_TOUCH_MS && Math.hypot(p.sx - lt.sx, p.sy - lt.sy) < 48;
+      g.mode = e.pointerType === 'mouse' || dblBand ? 'band' : 'pan';
       g.view0 = Object.assign({}, app.view);
+      if (dblBand) app.overlay.band = [p.sx, p.sy, p.sx, p.sy];
     }
     if (e.pointerType !== 'mouse') {
       g.longTimer = setTimeout(() => this.longPress(g), LONG_MS);
@@ -475,7 +481,7 @@
     const now = performance.now();
     const id = h ? (h.comp ? h.comp.id : h.wire ? h.wire.id : null) : null;
     const touch = g.type !== 'mouse';
-    const dbl = this.lastTap && now - this.lastTap.t < (touch ? 550 : 380) && this.lastTap.id === id && Math.hypot(p.sx - this.lastTap.sx, p.sy - this.lastTap.sy) < (touch ? 36 : 24);
+    const dbl = this.lastTap && now - this.lastTap.t < (touch ? DBL_TOUCH_MS : 380) && this.lastTap.id === id && Math.hypot(p.sx - this.lastTap.sx, p.sy - this.lastTap.sy) < (touch ? 36 : 24);
     this.lastTap = { t: now, id, sx: p.sx, sy: p.sy };
     if (!h) {
       if (!g.shift) app.select([]);
