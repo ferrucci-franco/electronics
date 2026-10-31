@@ -309,7 +309,15 @@
       }
       case 'endpoint': {
         const b = this.endSnap(p, e.pointerType, g.wire);
-        if (g.end === 1) { g.wire.x1 = b[0]; g.wire.y1 = b[1]; } else { g.wire.x2 = b[0]; g.wire.y2 = b[1]; }
+        // the dragged end is routed from the fixed end with horizontal and vertical pieces
+        if (!g.ep) g.ep = { w: g.wire, F: g.end === 1 ? [g.wire.x2, g.wire.y2] : [g.wire.x1, g.wire.y1], temps: [], oldPts: new Set([(g.end === 1 ? g.wire.x1 : g.wire.x2) + ',' + (g.end === 1 ? g.wire.y1 : g.wire.y2)]) };
+        const E = g.ep, tmp = new Set(E.temps);
+        app.circuit.wires = app.circuit.wires.filter(w => !tmp.has(w));
+        E.temps = [];
+        E.w.x1 = E.F[0]; E.w.y1 = E.F[1]; E.w.x2 = E.F[0]; E.w.y2 = E.F[1];
+        const path = (E.F[0] === b[0] && E.F[1] === b[1]) ? [E.F, b] : this.lPath(E.F, b, Math.abs(b[0] - E.F[0]) >= Math.abs(b[1] - E.F[1]));
+        E.w.x2 = path[1][0]; E.w.y2 = path[1][1];
+        for (let i = 1; i + 1 < path.length; i++) { const t = { id: app.newWireId(), x1: path[i][0], y1: path[i][1], x2: path[i + 1][0], y2: path[i + 1][1] }; app.circuit.wires.push(t); E.temps.push(t); }
         app.overlay.snap = b; app.overlay.snapHot = this.isConn(b[0], b[1]);
         app.circuitChanged(true);
         break;
@@ -381,7 +389,7 @@
       case 'maybe-wire':
       case 'endpoint':
         if (!g.moved) { this.tap(g, p, e); break; }
-        if (g.mode === 'endpoint') { app.cleanWires(); app.commit(); }
+        if (g.mode === 'endpoint') { app.cleanWires(); if (g.ep) DCS.tidy.afterMove(app, g.ep.oldPts); app.commit(); }
         break;
       case 'wire': {
         app.overlay.wirePath = null;
@@ -424,6 +432,8 @@
     if (g.mode === 'move' && g.moved) {
       // put everything back
       for (const o of g.orig) Object.assign(o.obj, o.pos);
+      const tmp = new Set((g.temps || []).concat(g.orig.filter(o => o.added).map(o => o.obj)));
+      app.circuit.wires = app.circuit.wires.filter(w => !tmp.has(w));
       if (g.cp) app.dropCheckpoint();
       app.circuitChanged();
     }
@@ -440,7 +450,8 @@
     const h = g.hit;
     const now = performance.now();
     const id = h ? (h.comp ? h.comp.id : h.wire ? h.wire.id : null) : null;
-    const dbl = this.lastTap && now - this.lastTap.t < 380 && this.lastTap.id === id && Math.hypot(p.sx - this.lastTap.sx, p.sy - this.lastTap.sy) < 24;
+    const touch = g.type !== 'mouse';
+    const dbl = this.lastTap && now - this.lastTap.t < (touch ? 550 : 380) && this.lastTap.id === id && Math.hypot(p.sx - this.lastTap.sx, p.sy - this.lastTap.sy) < (touch ? 36 : 24);
     this.lastTap = { t: now, id, sx: p.sx, sy: p.sy };
     if (!h) {
       if (!g.shift) app.select([]);
@@ -502,26 +513,73 @@
     g.orig = [];
     for (const c of comps) g.orig.push({ obj: c, pos: { x: c.x, y: c.y } });
     for (const w of wires) g.orig.push({ obj: w, pos: { x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2 } });
-    // rubber band: wires attached to what moves get stretched (Alt + drag does the opposite of the setting)
+    // rubber band: wires attached to what moves follow it (Alt + drag does the opposite of the setting)
     const rubber = !!app.settings.rubber !== !!g.alt;
     const pts = new Set();
     for (const c of comps) for (const [x, y] of C.terminals(c)) pts.add(x + ',' + y);
     for (const w of wires) { pts.add(w.x1 + ',' + w.y1); pts.add(w.x2 + ',' + w.y2); }
+    g.oldPts = pts;   // where dead ends may be left behind, for the clean-up at the end
     g.stretch = [];
+    g.temps = [];
     for (const w of app.circuit.wires) {
       if (app.sel.has(w.id) || !rubber) continue;
       const e1 = pts.has(w.x1 + ',' + w.y1), e2 = pts.has(w.x2 + ',' + w.y2);
-      if (e1 || e2) {
-        g.orig.push({ obj: w, pos: { x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2 } });
-        g.stretch.push({ w, e1, e2, x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2 });
+      if (!e1 && !e2) continue;
+      g.orig.push({ obj: w, pos: { x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2 } });
+      // fixed end F and moving end M (or both ends moving: the wire is just translated)
+      g.stretch.push({ w, both: e1 && e2, F: e1 ? [w.x2, w.y2] : [w.x1, w.y1], M: e1 ? [w.x1, w.y1] : [w.x2, w.y2], x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2 });
+    }
+    // direct contacts with things that stay put (a terminal on a terminal, or on the middle of a wire)
+    // get a new wire, so that the connection survives the move
+    if (rubber) {
+      const movingPts = [];
+      for (const c of comps) for (const t of C.terminals(c)) movingPts.push(t);
+      for (const w of wires) movingPts.push([w.x1, w.y1], [w.x2, w.y2]);
+      const fixedTerms = [];
+      for (const c of app.circuit.comps) if (!app.sel.has(c.id)) for (const t of C.terminals(c)) fixedTerms.push(t);
+      const seen = new Set();
+      for (const [x, y] of movingPts) {
+        const k = x + ',' + y;
+        if (seen.has(k)) continue;
+        seen.add(k);
+        const touchesTerm = fixedTerms.some(t => t[0] === x && t[1] === y);
+        const onWire = app.circuit.wires.some(w => !app.sel.has(w.id) && distSeg(x, y, w.x1, w.y1, w.x2, w.y2) < 1e-9 && !((w.x1 === x && w.y1 === y) || (w.x2 === x && w.y2 === y)));
+        if (!touchesTerm && !onWire) continue;
+        const w = { id: app.newWireId(), x1: x, y1: y, x2: x, y2: y };
+        app.circuit.wires.push(w);
+        g.orig.push({ obj: w, pos: { x1: x, y1: y, x2: x, y2: y }, added: true });
+        g.stretch.push({ w, both: false, F: [x, y], M: [x, y], x1: x, y1: y, x2: x, y2: y });
       }
     }
     g.comps = comps; g.wires = wires;
     g.delta = [0, 0];
   };
 
+  // a stretched wire keeps right angles: it is re-routed from its fixed end to the new position of its
+  // moving end with horizontal and vertical pieces (extra pieces are temporary wires until the drop)
+  Editor.prototype.routeStretched = function (g) {
+    const app = this.app;
+    const tmp = new Set(g.temps);
+    app.circuit.wires = app.circuit.wires.filter(w => !tmp.has(w));
+    g.temps = [];
+    const one = g.stretch.filter(s => !s.both);
+    for (const s of one) { s.w.x1 = s.F[0]; s.w.y1 = s.F[1]; s.w.x2 = s.F[0]; s.w.y2 = s.F[1]; }
+    for (const s of one) {
+      const M = [s.M[0] + g.delta[0], s.M[1] + g.delta[1]];
+      const path = (s.F[0] === M[0] && s.F[1] === M[1]) ? [s.F, M] : this.lPath(s.F, M, s.y1 === s.y2);
+      s.w.x2 = path[1][0]; s.w.y2 = path[1][1];
+      for (let i = 1; i + 1 < path.length; i++) {
+        const t = { id: app.newWireId(), x1: path[i][0], y1: path[i][1], x2: path[i + 1][0], y2: path[i + 1][1] };
+        app.circuit.wires.push(t); g.temps.push(t);
+      }
+    }
+  };
+
   Editor.prototype.doMove = function (g, p) {
-    const dx = Math.round(p.x - g.start.x), dy = Math.round(p.y - g.start.y);
+    // dead zone: a slow double tap or a trembling finger must not shift anything by one grid step
+    const dz = g.type === 'touch' ? 0.8 : g.type === 'pen' ? 0.65 : 0.5;
+    const fx = p.x - g.start.x, fy = p.y - g.start.y;
+    const dx = Math.abs(fx) < dz ? 0 : Math.round(fx), dy = Math.abs(fy) < dz ? 0 : Math.round(fy);
     if (dx === g.delta[0] && dy === g.delta[1]) return;
     if (!g.cp) { this.app.checkpoint(); g.cp = true; }
     g.delta = [dx, dy];
@@ -532,28 +590,24 @@
       const o = g.orig.find(q => q.obj === w).pos;
       w.x1 = o.x1 + dx; w.y1 = o.y1 + dy; w.x2 = o.x2 + dx; w.y2 = o.y2 + dy;
     }
-    for (const s of g.stretch) {
-      if (s.e1) { s.w.x1 = s.x1 + dx; s.w.y1 = s.y1 + dy; }
-      if (s.e2) { s.w.x2 = s.x2 + dx; s.w.y2 = s.y2 + dy; }
-    }
+    for (const s of g.stretch) if (s.both) { s.w.x1 = s.x1 + dx; s.w.y1 = s.y1 + dy; s.w.x2 = s.x2 + dx; s.w.y2 = s.y2 + dy; }
+    this.routeStretched(g);
     this.app.circuitChanged(true);
   };
 
   Editor.prototype.endMove = function (g) {
     const app = this.app;
-    if (g.delta[0] === 0 && g.delta[1] === 0) { if (g.cp) app.dropCheckpoint(); app.circuitChanged(); return; }
-    // a stretched wire that became diagonal is bent into two axis-aligned pieces
-    for (const s of g.stretch) {
-      const w = s.w;
-      if ((s.e1 && s.e2) || w.x1 === w.x2 || w.y1 === w.y2) continue;
-      const wasH = s.y1 === s.y2;
-      const fixed = s.e1 ? [w.x2, w.y2] : [w.x1, w.y1];
-      const moving = s.e1 ? [w.x1, w.y1] : [w.x2, w.y2];
-      const c = wasH ? [moving[0], fixed[1]] : [fixed[0], moving[1]];
-      w.x1 = fixed[0]; w.y1 = fixed[1]; w.x2 = c[0]; w.y2 = c[1];
-      app.addWirePath([c, moving]);
+    if (g.delta[0] === 0 && g.delta[1] === 0) {
+      for (const o of g.orig) Object.assign(o.obj, o.pos);
+      const tmp = new Set(g.temps.concat(g.orig.filter(o => o.added).map(o => o.obj)));
+      app.circuit.wires = app.circuit.wires.filter(w => !tmp.has(w));
+      if (g.cp) app.dropCheckpoint();
+      app.circuitChanged();
+      return;
     }
     app.cleanWires();
+    // merge the new pieces with their neighbours and trim what was left dangling behind
+    DCS.tidy.afterMove(app, g.oldPts);
     app.commit();
   };
 

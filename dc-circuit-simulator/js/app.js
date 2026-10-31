@@ -46,6 +46,7 @@
     idCounter = m + 1;
   }
   const newId = (p) => p + (idCounter++);
+  app.newWireId = () => newId('w');
   function nextName(prefix) {
     let m = 0;
     const re = new RegExp('^' + prefix + '(\\d+)$');
