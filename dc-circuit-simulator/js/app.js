@@ -157,7 +157,8 @@
     const ids = app.inserted;
     app.inserted = new Set();
     for (const c of app.circuit.comps) {
-      if (!ids.has(c.id) || C.TYPES[c.type].terms.length !== 2 || c.type === 'ground') continue;
+      // two-terminal components, and the potentiometer between its ends A and B (the wiper stays free)
+      if (!ids.has(c.id) || c.type === 'ground' || (C.TYPES[c.type].terms.length !== 2 && c.type !== 'pot')) continue;
       const [a, b] = C.terminals(c);
       const short = app.circuit.wires.filter(w => (w.x1 === a[0] && w.y1 === a[1] && w.x2 === b[0] && w.y2 === b[1]) || (w.x1 === b[0] && w.y1 === b[1] && w.x2 === a[0] && w.y2 === a[1]));
       if (!short.length) continue;
