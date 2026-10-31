@@ -1321,14 +1321,24 @@
       const sl = springSlider(c, d, () => { val.innerHTML = fmtV(); });
       qs.appendChild(head); qs.appendChild(sl);
       qs.hidden = false;
-      // above the component (below it when there is no room), inside the circuit area
+      // next to the component without covering it nor its labels (value, V, I, + / −): above, else below,
+      // else on the side with more room; inside the circuit area
       const st = $('stage').getBoundingClientRect(), b = C.bounds(c), v = app.view;
-      const cx = (b[0] + b[2]) / 2 * v.scale + v.ox, top = b[1] * v.scale + v.oy, bot = b[3] * v.scale + v.oy;
-      const w = qs.offsetWidth, h = qs.offsetHeight;
-      let y = top - h - 10;
-      if (y < 50) y = bot + 10;
+      let x0 = b[0] * v.scale + v.ox, y0 = b[1] * v.scale + v.oy, x1 = b[2] * v.scale + v.ox, y1 = b[3] * v.scale + v.oy;
+      for (const r of (app.renderer.labelRects && app.renderer.labelRects.get(c.id)) || []) {
+        x0 = Math.min(x0, r[0]); y0 = Math.min(y0, r[1]); x1 = Math.max(x1, r[2]); y1 = Math.max(y1, r[3]);
+      }
+      const w = qs.offsetWidth, h = qs.offsetHeight, gap = 8, topMin = 50, cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+      let xl = cx - w / 2, y;
+      if (y0 - gap - h >= topMin) y = y0 - gap - h;
+      else if (y1 + gap + h <= st.height - 4) y = y1 + gap;
+      else {
+        const left = x0 - gap - w, right = x1 + gap;
+        if (left >= 4 || right + w <= st.width - 4) { xl = left >= 4 && (x0 > st.width - x1 || right + w > st.width - 4) ? left : right; y = cy - h / 2; }
+        else y = y0 - gap - h;
+      }
       y = Math.max(4, Math.min(st.height - h - 4, y));
-      const xl = Math.max(4, Math.min(st.width - w - 4, cx - w / 2));
+      xl = Math.max(4, Math.min(st.width - w - 4, xl));
       Object.assign(qs.style, { left: xl + 'px', top: y + 'px' });
     };
     // the popover goes away with its component (deleted, other tab)

@@ -763,6 +763,8 @@
     }
     this.placed = [];
     for (const it of items) for (const r of it.opts[it.pick].rects.concat(it.opts[it.pick].marks2)) this.placed.push(r);
+    // the labels of each component (screen rectangles), e.g. to keep a popup from covering them
+    this.labelRects = new Map(items.map(it => [it.c.id, it.opts[it.pick].rects.concat(it.opts[it.pick].marks2).filter(Boolean)]));
     this.compBoxes = obst.filter(o => o.w > 10).map(o => o.r);
     for (const it of items) {
       const best = it.opts[it.pick];
