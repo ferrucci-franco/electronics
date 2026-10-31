@@ -3,6 +3,22 @@
   'use strict';
   const DCS = root.DCS;
   const S = DCS.solver, U = DCS.units, C = DCS.comp;
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  // "I_C", "V_CE", "I_B = 10 µA": the letters after _ are a subscript
+  const subHtml = (s) => esc(s).replace(/_([A-Za-z0-9]+)/g, '<sub>$1</sub>');
+  // the same on the canvas, from the alphabetic baseline yb; returns the width (draw = false only measures)
+  function subText(ctx, s, x, yb, align, px, weight, draw) {
+    const m = /^([^_]*)_([A-Za-z0-9]+)(.*)$/.exec(s);
+    const parts = m ? [[m[1], px, 0], [m[2], Math.round(px * 0.74), Math.round(px * 0.3)], [m[3], px, 0]] : [[s, px, 0]];
+    const font = (sz) => `${weight} ${sz}px ui-sans-serif, system-ui, sans-serif`;
+    let wd = 0;
+    for (const [t, sz] of parts) { ctx.font = font(sz); wd += ctx.measureText(t).width; }
+    if (draw === false) return wd;
+    let x0 = align === 'right' ? x - wd : align === 'center' ? x - wd / 2 : x;
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    for (const [t, sz, dy] of parts) { ctx.font = font(sz); ctx.fillText(t, x0, yb + dy); x0 += ctx.measureText(t).width; }
+    return wd;
+  }
 
   // categorical slots (reference palette), light and dark steps
   const SLOTS = {
@@ -322,18 +338,20 @@
       outSpec.series.push({ name: 'I_B = ' + U.format(ib, 'A'), color: slot(k), pts, width: k === 1 && ibq > 0 ? 2.6 : 1.6 });
     });
     outSpec.regions = em ? [] : [
-      { v0: winOut.v0, v1: p.Vcesat, i0: winOut.i0, i1: winOut.i1, label: t('region_sat'), at: 'top' },
-      { v0: p.Vcesat, v1: winOut.v1, i0: winOut.i0, i1: 0.04 * icMax, label: t('region_off'), at: 'right' }
+      { v0: winOut.v0, v1: p.Vcesat, i0: winOut.i0, i1: winOut.i1, label: t('region_sat'), kind: 'sat' },
+      { v0: p.Vcesat, v1: winOut.v1, i0: winOut.i0, i1: 0.04 * icMax, label: t('region_off'), kind: 'off' }
     ];
     if (outLine && showLoad) outSpec.lines.push({ name: t('iv_load_out'), p1: outLine.p1, p2: outLine.p2 });
     outSpec.points.push({ name: 'Q', v: r.vce, i: r.ic, label: `Q (${U.format(r.vce, 'V')}, ${U.format(r.ic, 'A')}) · ${t('region_' + r.state)}` });
     outSpec.xlab = pnp ? 'V_EC' : 'V_CE'; outSpec.ylab = 'I_C';
     outSpec.title = t('iv_bjt');
+    outSpec.titleHtml = app.t('iv_bjt');   // already written with <sub>
     outSpec.note = app.t((em ? 'iv_bjt_note_em' : 'iv_bjt_note') + (showLoad ? '' : '_q'));
     return [inSpec, outSpec];
   }
 
   /* ---------- plot ---------- */
+  const regionColor = (rg, col) => (rg.kind === 'sat' ? col.err : col.accent);
   function niceStep(span, n) {
     const raw = span / n, e = Math.pow(10, Math.floor(Math.log10(raw))), m = raw / e;
     return (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10) * e;
@@ -359,8 +377,7 @@
     const sx = niceStep(w.v1 - w.v0, Math.max(3, Math.floor((W - L) / 70))), sy = niceStep(w.i1 - w.i0, Math.max(3, Math.floor((H - B) / 40)));
     // the name of the x axis sits at the right end of the row of tick values: the values that would touch
     // it, or run out of the canvas, are left out (their grid lines stay)
-    ctx.font = '600 12px ui-sans-serif, system-ui, sans-serif';
-    const xlabLeft = W - R - ctx.measureText(spec.xlab).width - 8;
+    const xlabLeft = W - R - subText(ctx, spec.xlab, 0, 0, 'left', 12, 600, false) - 8;
     ctx.font = '11px ui-sans-serif, system-ui, sans-serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'top';
     for (let v = Math.ceil(w.v0 / sx) * sx; v <= w.v1 + 1e-12; v += sx) {
@@ -380,19 +397,16 @@
     ctx.strokeStyle = col.muted; ctx.lineWidth = 1.2;
     if (w.v0 < 0 && w.v1 > 0) { const x = Math.round(X(0)) + 0.5; ctx.beginPath(); ctx.moveTo(x, T); ctx.lineTo(x, H - B); ctx.stroke(); }
     if (w.i0 < 0 && w.i1 > 0) { const y = Math.round(Y(0)) + 0.5; ctx.beginPath(); ctx.moveTo(L, y); ctx.lineTo(W - R, y); ctx.stroke(); }
-    ctx.fillStyle = col.fg; ctx.font = '600 12px ui-sans-serif, system-ui, sans-serif';
-    ctx.textAlign = 'right'; ctx.textBaseline = 'top'; ctx.fillText(spec.xlab, W - R, H - B + 4);
-    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillText(spec.ylab, w.v0 < 0 && w.v1 > 0 ? X(0) : L, T - 5);
+    ctx.fillStyle = col.fg;
+    subText(ctx, spec.xlab, W - R, H - B + 15, 'right', 12, 600);
+    subText(ctx, spec.ylab, w.v0 < 0 && w.v1 > 0 ? X(0) : L, T - 9, 'center', 12, 600);
     // plot area clip
     ctx.save();
     ctx.beginPath(); ctx.rect(L, T, W - L - R, H - T - B); ctx.clip();
-    // regions (transistor output: saturation and cutoff)
+    // regions (transistor output: saturation and cutoff), shaded; their names are in the legend
     for (const rg of spec.regions || []) {
       const x0 = X(rg.v0), x1 = X(rg.v1), y0 = Y(rg.i1), y1 = Y(rg.i0);
-      ctx.fillStyle = col.muted; ctx.globalAlpha = 0.09; ctx.fillRect(x0, y0, x1 - x0, y1 - y0); ctx.globalAlpha = 1;
-      ctx.fillStyle = col.muted; ctx.font = '600 11px ui-sans-serif, system-ui, sans-serif';
-      if (rg.at === 'top') { ctx.save(); ctx.translate((x0 + x1) / 2 + 4, y0 + 6); ctx.rotate(Math.PI / 2); ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(rg.label, 0, 0); ctx.restore(); }
-      else { ctx.textAlign = 'right'; ctx.textBaseline = 'bottom'; ctx.fillText(rg.label, x1 - 4, y0 - 2); }
+      ctx.fillStyle = regionColor(rg, col); ctx.globalAlpha = 0.1; ctx.fillRect(x0, y0, x1 - x0, y1 - y0); ctx.globalAlpha = 1;
     }
     // load lines
     ctx.setLineDash([6, 4]); ctx.strokeStyle = col.muted; ctx.lineWidth = 1.6;
@@ -434,10 +448,10 @@
       const x = X(q.v), y = Y(q.i);
       ctx.font = '600 12px ui-sans-serif, system-ui, sans-serif';
       const tw = ctx.measureText(q.label).width;
-      let lx = x + 10, ly = y - 12;
-      if (lx + tw > W - R) lx = x - 10 - tw;
-      if (lx < L + 2) lx = L + 2;
-      if (ly < T + 8) ly = y + 14;
+      // centred over the point, kept inside the plot (clear of the axes and of the edges)
+      const lx = Math.max(L + 6, Math.min(W - R - tw - 2, x - tw / 2));
+      let ly = y - 16;
+      if (ly < T + 8) ly = y + 16;
       ctx.lineWidth = 3; ctx.strokeStyle = col.bg; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
       ctx.strokeText(q.label, lx, ly); ctx.fillStyle = col.fg; ctx.fillText(q.label, lx, ly);
     }
@@ -472,6 +486,7 @@
     container.appendChild(wrap);
     const legendItems = spec.series.map(s => ({ name: s.name, color: s.color, line: true }))
       .concat(spec.lines.map(l => ({ name: l.name, dash: true })))
+      .concat((spec.regions || []).map(rg => ({ name: rg.label, region: rg })))
       .concat(spec.points.filter(p => p.label).map(() => ({ name: DCS.app.tp('iv_q'), dot: true })));
     if (legendItems.length >= 2) {
       const lg = document.createElement('div');
@@ -480,16 +495,16 @@
       for (const it of legendItems) {
         const e = document.createElement('span');
         const c = it.color === 'fg' ? col.fg : it.color === 'muted' ? col.muted : it.color;
-        const sw = it.dot ? `<i class="sw dot" style="background:${col.port}"></i>` : it.dash ? `<i class="sw dash" style="border-color:${col.muted}"></i>` : `<i class="sw" style="background:${c}"></i>`;
+        const sw = it.region ? `<i class="sw reg" style="background:${regionColor(it.region, col)}"></i>` : it.dot ? `<i class="sw dot" style="background:${col.port}"></i>` : it.dash ? `<i class="sw dash" style="border-color:${col.muted}"></i>` : `<i class="sw" style="background:${c}"></i>`;
         e.innerHTML = sw + '<span></span>';
-        e.lastChild.textContent = it.name;
+        e.lastChild.innerHTML = subHtml(it.name);
         lg.appendChild(e);
       }
       container.appendChild(lg);
     }
     const redraw = (h) => {
       const r = draw(cv, spec, h);
-      if (r) { tip.hidden = false; tip.textContent = r.text; tip.style.left = Math.min(cv.clientWidth - tip.offsetWidth - 4, r.x + 10) + 'px'; tip.style.top = Math.max(0, r.y - 30) + 'px'; }
+      if (r) { tip.hidden = false; tip.innerHTML = subHtml(r.text); tip.style.left = Math.min(cv.clientWidth - tip.offsetWidth - 4, r.x + 10) + 'px'; tip.style.top = Math.max(0, r.y - 30) + 'px'; }
       else tip.hidden = true;
     };
     requestAnimationFrame(() => redraw(null));
@@ -500,5 +515,5 @@
     return { redraw };
   }
 
-  DCS.iv = { build, mount, analyse, trace, portSpec, nlNames };
+  DCS.iv = { build, mount, analyse, trace, portSpec, nlNames, subHtml };
 })(window);

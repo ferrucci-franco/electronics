@@ -659,13 +659,14 @@
     function ivCardOne(pane, spec) {
       const card = el('div', { class: 'card' });
       const head = el('div', { class: 'ivhead' });
-      head.appendChild(el('h3', null, esc(spec.title)));
+      const title = spec.titleHtml || DCS.iv.subHtml(spec.title);
+      head.appendChild(el('h3', null, `<span>${title}</span>`));   // one flex item: the subscripts stay in the text
       card.appendChild(head);
       if (spec.series.length) {
         const big = el('button', { type: 'button', class: 'btn', title: plainText(t('iv_expand')) }, '⤢');
         big.addEventListener('click', () => {
           const box = el('div', { class: 'card' });
-          openModal(esc(spec.title), box);
+          openModal(title, box);
           DCS.iv.mount(box, spec, { big: true });
           if (spec.note) box.appendChild(el('div', { class: 'hint' }, spec.note));
           if (spec.conv) box.appendChild(el('div', { class: 'hint' }, spec.conv));

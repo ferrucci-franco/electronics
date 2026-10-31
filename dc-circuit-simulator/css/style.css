@@ -288,6 +288,7 @@ html.layout-mobile .field input[type=text], html.layout-mobile .field select{fon
 .ivlegend .sw{display:inline-block; width:16px; height:3px; border-radius:2px; margin-right:6px}
 .ivlegend .sw.dash{height:0; background:none; border-top:2px dashed}
 .ivlegend .sw.dot{width:10px; height:10px; border-radius:50%}
+.ivlegend .sw.reg{width:14px; height:10px; border-radius:2px; opacity:.35}
 
 /* Kirchhoff checks */
 .card .kq{display:flex; flex-direction:column; gap:1px; font-size:13px; padding:4px 0; border-bottom:1px solid var(--border)}
