@@ -68,12 +68,14 @@
         setLocal(); ctx.strokeStyle = color; ctx.lineWidth = lw * 2.2; ctx.lineCap = 'butt';
         ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); ctx.lineTo(pts[1][0], pts[1][1]); ctx.stroke();
       },
-      poly(pts, fill) {
-        setLocal(); ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = lw; ctx.lineJoin = 'round';
+      // fill: true (pen colour) or a CSS colour; fillAlpha: opacity of the fill only
+      poly(pts, fill, fillAlpha) {
+        setLocal(); ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.lineJoin = 'round';
+        ctx.fillStyle = typeof fill === 'string' ? fill : color;
         ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
         for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
         ctx.closePath();
-        if (fill) ctx.fill();
+        if (fill) { ctx.globalAlpha = fillAlpha == null ? 1 : fillAlpha; ctx.fill(); ctx.globalAlpha = 1; }
         ctx.stroke();
       },
       circle(x, y, r, fill) {
@@ -116,8 +118,9 @@
     return P;
   }
 
-  function drawSymbol(R, comp, view, color, style, lwPx) {
+  function drawSymbol(R, comp, view, color, style, lwPx, lit) {
     const P = makePen(R, comp, view, color, lwPx);
+    P.lit = lit;   // brightness of the RGB LED channels (0..1), when solved
     C.SYM[comp.type](P, comp, style !== 'iec');
   }
 
@@ -264,7 +267,9 @@
         roundRect(ctx, b[0] - 0.15, b[1] - 0.15, b[2] - b[0] + 0.3, b[3] - b[1] + 0.3, 0.35); ctx.fill();
         ctx.globalAlpha = 1;
       }
-      drawSymbol(this, c, view, selected ? col.sel : bad ? col.err : col.fg, st.style, lw);
+      let lit;
+      if (c.type === 'rgbled' && res && res.el[c.id] && res.el[c.id].ch) lit = res.el[c.id].ch.map(q => Math.max(0, Math.min(1, q.i / c.props.Imax)));
+      drawSymbol(this, c, view, selected ? col.sel : bad ? col.err : col.fg, st.style, lw, lit);
     }
 
     // junction dots and open terminals

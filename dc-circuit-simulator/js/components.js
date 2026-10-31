@@ -233,9 +233,10 @@
         P.line([[-3, yt], [-1.6, yt], [-1.25, y], [-0.75, y]]);
         // small diode, anode on the channel side (common cathode) or on the common side (common anode)
         const a = ca ? 0.25 : -0.75, b = ca ? -0.75 : 0.25;
-        P.tint(`rgb(${cols[k].join(',')})`, true);
-        P.poly([[a, y - 0.32], [a, y + 0.32], [b, y]], true);
-        P.tint(null);
+        // outlined like the rest of the symbol, filled with the channel colour as it lights up
+        // (a faint tint when off, or when there is no solution yet, e.g. in the palette)
+        const lit = P.lit ? P.lit[k] : 0.35;
+        P.poly([[a, y - 0.32], [a, y + 0.32], [b, y]], `rgb(${cols[k].join(',')})`, 0.15 + 0.85 * Math.sqrt(lit));
         P.line([[b, y - 0.32], [b, y + 0.32]]);
         P.line([[0.25, y], [0.95, y]]);
       });
