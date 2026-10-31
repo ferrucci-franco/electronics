@@ -275,8 +275,13 @@ html.layout-mobile .palette.more-l{-webkit-mask-image:linear-gradient(to left, #
 html.layout-mobile .palette.more-l.more-r{-webkit-mask-image:linear-gradient(to right, rgba(0,0,0,.12), #000 44px, #000 calc(100% - 44px), rgba(0,0,0,.12)); mask-image:linear-gradient(to right, rgba(0,0,0,.12), #000 44px, #000 calc(100% - 44px), rgba(0,0,0,.12))}
 html.layout-mobile .palette button canvas{width:44px; height:24px}
 html.layout-mobile .viewbar .chip{padding:5px 9px; min-height:34px}
-html.layout-mobile .selbar{top:auto; bottom:56px}
-html.layout-mobile .selbar button{width:44px; height:42px}
+/* phone: the selection bar stays clear of the zoom buttons on the right; centred in the space left, it
+   scrolls sideways if its buttons do not fit */
+html.layout-mobile .selbar{top:auto; bottom:56px; left:6px; right:56px; transform:none; width:max-content; max-width:calc(100% - 62px); margin-inline:auto;
+  overflow-x:auto; scrollbar-width:none; overscroll-behavior:contain}
+html.layout-mobile .selbar::-webkit-scrollbar{display:none}
+html.layout-mobile .selbar button{flex:none; width:40px; height:42px}
+@media (max-width:380px){ html.layout-mobile .selbar{gap:0; padding:3px} html.layout-mobile .selbar button{width:37px} }
 html.layout-mobile .zoombar{bottom:8px}
 html.layout-mobile .zoombar button{width:42px; height:42px}
 /* phone: undo / redo within reach of the thumb, at the bottom left of the circuit */
