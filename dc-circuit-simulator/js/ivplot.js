@@ -462,14 +462,6 @@
       ctx.fillStyle = c;
       subText(ctx, sr.name, x - 1, y, 'right', 11.5, 600);
     }
-    // where Q has been while a value was changed (pinned plot): faded dots joined by a thin line
-    if (spec.trail && spec.trail.length > 1) {
-      ctx.strokeStyle = col.port; ctx.globalAlpha = 0.35; ctx.lineWidth = 1.2;
-      ctx.beginPath(); spec.trail.forEach(([v, i], k) => { if (k) ctx.lineTo(X(v), Y(i)); else ctx.moveTo(X(v), Y(i)); }); ctx.stroke();
-      ctx.fillStyle = col.port;
-      for (const [v, i] of spec.trail) { ctx.beginPath(); ctx.arc(X(v), Y(i), 2.6, 0, 2 * Math.PI); ctx.fill(); }
-      ctx.globalAlpha = 1;
-    }
     // operating points (2px surface ring around each marker)
     for (const p of spec.points) {
       const x = X(p.v), y = Y(p.i), r = p.small ? 4.5 : 6.5;
