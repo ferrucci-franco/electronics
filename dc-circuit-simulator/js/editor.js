@@ -289,6 +289,9 @@
       // a component with a main value: its slider pops up when the finger is lifted without moving
       // (moving it instead drags the component, with no slider flashing in between)
       if (quick) g.quick = h.comp;
+      // with a mouse it shows at once (a mouse does not hide what is under it); moving then drags the
+      // component and takes the slider away again
+      if (quick && g.type === 'mouse') { g.quickShown = !app.ui.hasQuick(h.comp); app.ui.showQuick(h.comp); }
       if (navigator.vibrate) { try { navigator.vibrate(10); } catch (_) {} }
       app.requestRender();
     } else if (g.mode === 'pan') {
@@ -312,7 +315,8 @@
       if (Math.hypot(p.sx - g.start.sx, p.sy - g.start.sy) < (DRAG_PX[g.type] || 5)) return;
       g.moved = true;
       clearTimeout(g.longTimer);
-      g.quick = null;
+      if (g.quickShown) app.ui.removeQuick(g.quick);
+      g.quick = null; g.quickShown = false;
       // touch screen: a finger that drags at once pans the view, even over a component or a wire; moving
       // things needs a long press first (wires are still drawn at once from a terminal, and the wiper of a
       // potentiometer follows the finger)
@@ -412,7 +416,7 @@
     app.overlay.snap = null;
     if (g.press) this.release(g, false);
     if (g.long && !g.moved && g.mode !== 'band') {
-      if (g.quick) app.ui.showQuick(g.quick);
+      if (g.quick && g.type !== 'mouse') app.ui.showQuick(g.quick);
       app.requestRender();
       return;
     }
