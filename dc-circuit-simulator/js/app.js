@@ -341,7 +341,11 @@
       if (na == null || nb == null) { th.err = 'thev_err'; app.port = { a: th.a, b: th.b }; return; }
     }
     const sd = th.cut ? th.cut.sides[th.side] : null;
-    app.port = { a: th.a, b: th.b, cut: sd ? sd.cut : null, side: sd ? { comps: new Set(sd.comps.map(c => c.id)), wires: sd.wires } : null, look: sd ? sd.look : null };
+    // what the equivalent replaces, drawn in the port colour: the side looked into, or (no cut) the whole
+    // circuit seen from the two nodes, without the load
+    const side = sd ? { comps: new Set(sd.comps.map(c => c.id)), wires: sd.wires }
+      : { comps: new Set(app.circuit.comps.filter(c => c.id !== th.loadId).map(c => c.id)), wires: app.circuit.wires.slice() };
+    app.port = { a: th.a, b: th.b, cut: sd ? sd.cut : null, side, look: sd ? sd.look : null };
     if (na === nb) { th.err = 'thev_same'; return; }
     const r = S.thevenin(net.ckt, na, nb, { exclude, prevStates: app.prevStates, tempC: app.settings.tempC });
     if (r.error) { th.err = r.error === 'samenode' ? 'thev_same' : 'thev_err'; return; }
