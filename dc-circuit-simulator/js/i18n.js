@@ -6,6 +6,7 @@
       title: 'DC Circuit Simulator',
       wheel_dir: 'Wheel / two fingers on a selected component', wheel_auto: 'automatic (Mac: natural scrolling)', wheel_normal: 'up = larger (classic wheel)', wheel_inverted: 'up = larger (natural scrolling)',
       tidy: 'Prettify', tidy_tip: 'Tidy the wires without changing any connection (Ctrl+Z to undo)', tidy_done: 'Wires tidied: {a} → {b} pieces (Ctrl+Z to undo)', tidy_none: 'Nothing to tidy', tidy_fail: 'Not tidied: it would have changed a connection', p_ctl: 'Control', slider: 'straight (slider)', knob: 'rotary (round symbol)',
+      c_switch: 'Switch', cs_switch: 'Switch', c_button: 'Push button', cs_button: 'Push button', p_closed: 'Closed', p_nc: 'Contact', sw_closed: 'closed', sw_open: 'open', pb_no: 'NO', pb_nc: 'NC', no: 'Normally open (NO): closes while pressed', nc: 'Normally closed (NC): opens while pressed',
       c_pot: 'Potentiometer', cs_pot: 'Potentiometer', p_alpha: 'Position α (A → B)', p_taper: 'Taper', lin: 'linear', log: 'logarithmic (audio)', wiper: 'wiper',
       c_led: 'LED', cs_led: 'LED', c_rgbled: 'RGB LED', cs_rgbled: 'RGB LED', p_color: 'Colour', p_Imax: 'Maximum current I<sub>max</sub>', p_common: 'Common terminal',
       p_VfR: 'V<sub>γ</sub> red', p_VfG: 'V<sub>γ</sub> green', p_VfB: 'V<sub>γ</sub> blue', cc: 'common cathode', ca: 'common anode',
@@ -133,6 +134,7 @@
 <h4>Models</h4><ul>
 <li>Diode: ideal (0 V when on), constant drop V<sub>γ</sub> with optional r<sub>d</sub>, or exact (Shockley: I = I<sub>S</sub>(e^{V/nV<sub>T</sub>} − 1)). Schottky: same models with lower V<sub>γ</sub> and higher I<sub>S</sub>.</li>
 <li>Op-amp: ideal (infinite gain, no input current, zero output resistance), with optional saturation at ±Vsat.</li>
+<li>Switch (no spring): a click or tap on it opens or closes it, and it stays there. Push button (spring): closed while you hold it down (normally open, NO) or open while held (normally closed, NC), and it springs back when released. Ideal: closed = a wire (0 V), open = an open circuit (I = 0).</li>
 <li>Transistor (BJT): simple model (cutoff, active with V<sub>BE</sub> = 0.7 V and I<sub>C</sub> = βI<sub>B</sub>, or saturation with V<sub>CE</sub> = V<sub>CE,sat</sub>) or real model (Ebers-Moll with the Early effect: exponential junctions, smooth saturation).</li></ul>
 <h4>Rotate and mirror</h4><ul>
 <li>Keyboard: <b>R</b> rotates, <b>F</b> mirrors (the selection, or the component being placed).</li></ul><h4>Moving</h4><ul><li>Drag a component (or a selection): the wires attached to it follow (rubber band) and become straight pieces again when you release. Turn it off with <b>🔗</b> in the bar over the circuit or in Settings to move components without their wires, for example to disconnect them; <b>Alt + drag</b> does the opposite of the current setting for one move.</li>
@@ -151,6 +153,7 @@
       title: 'Simulateur de circuits en continu',
       wheel_dir: 'Molette / deux doigts sur un composant sélectionné', wheel_auto: 'automatique (Mac : défilement naturel)', wheel_normal: 'vers le haut = plus grand (molette classique)', wheel_inverted: 'vers le haut = plus grand (défilement naturel)',
       tidy: 'Embellir', tidy_tip: 'Ranger les fils sans changer aucune connexion (Ctrl+Z pour annuler)', tidy_done: 'Fils rangés : {a} → {b} segments (Ctrl+Z pour annuler)', tidy_none: 'Rien à ranger', tidy_fail: 'Non rangé : une connexion aurait changé', p_ctl: 'Commande', slider: 'rectiligne (glissière)', knob: 'rotatif (symbole rond)',
+      c_switch: 'Interrupteur', cs_switch: 'Interrupteur', c_button: 'Bouton-poussoir', cs_button: 'Poussoir', p_closed: 'Fermé', p_nc: 'Contact', sw_closed: 'fermé', sw_open: 'ouvert', pb_no: 'NO', pb_nc: 'NF', no: 'Normalement ouvert (NO) : se ferme quand on appuie', nc: 'Normalement fermé (NF) : s’ouvre quand on appuie',
       c_pot: 'Potentiomètre', cs_pot: 'Potentiomètre', p_alpha: 'Position α (A → B)', p_taper: 'Loi de variation', lin: 'linéaire', log: 'logarithmique (audio)', wiper: 'curseur',
       c_led: 'LED', cs_led: 'LED', c_rgbled: 'LED RVB', cs_rgbled: 'LED RVB', p_color: 'Couleur', p_Imax: 'Courant maximal I<sub>max</sub>', p_common: 'Borne commune',
       p_VfR: 'V<sub>γ</sub> rouge', p_VfG: 'V<sub>γ</sub> vert', p_VfB: 'V<sub>γ</sub> bleu', cc: 'cathode commune', ca: 'anode commune',
@@ -278,6 +281,7 @@
 <h4>Modèles</h4><ul>
 <li>Diode : idéale (0 V passante), seuil constant V<sub>γ</sub> avec r<sub>d</sub> optionnelle, ou exacte (Shockley : I = I<sub>S</sub>(e^{V/nV<sub>T</sub>} − 1)). Schottky : mêmes modèles avec V<sub>γ</sub> plus faible et I<sub>S</sub> plus grand.</li>
 <li>AOP : idéal (gain infini, courants d’entrée nuls, résistance de sortie nulle), avec saturation optionnelle à ±Vsat.</li>
+<li>Interrupteur (sans ressort) : un clic ou une touche l’ouvre ou le ferme, et il reste dans cette position. Bouton-poussoir (à ressort) : fermé tant qu’on appuie (normalement ouvert, NO) ou ouvert tant qu’on appuie (normalement fermé, NF), il revient quand on relâche. Idéaux : fermé = un fil (0 V), ouvert = circuit ouvert (I = 0).</li>
 <li>Transistor bipolaire : modèle simple (bloqué, actif avec V<sub>BE</sub> = 0,7 V et I<sub>C</sub> = βI<sub>B</sub>, ou saturé avec V<sub>CE</sub> = V<sub>CE,sat</sub>) ou modèle réel (Ebers-Moll avec effet Early : jonctions exponentielles, saturation progressive).</li></ul>
 <h4>Tourner et retourner</h4><ul>
 <li>Souris ou clavier : <b>R</b> = quart de tour, <b>F</b> = miroir (la sélection, ou le composant en cours de placement), ou les boutons <b>⟳</b> / <b>⇋</b> de la barre au-dessus du circuit.</li>
@@ -297,6 +301,7 @@
       title: 'Simulador de circuitos en continua',
       wheel_dir: 'Rueda / dos dedos sobre un componente seleccionado', wheel_auto: 'automático (Mac: desplazamiento natural)', wheel_normal: 'hacia arriba = mayor (rueda clásica)', wheel_inverted: 'hacia arriba = mayor (desplazamiento natural)',
       tidy: 'Ordenar', tidy_tip: 'Ordenar los cables sin cambiar ninguna conexión (Ctrl+Z para deshacer)', tidy_done: 'Cables ordenados: {a} → {b} tramos (Ctrl+Z para deshacer)', tidy_none: 'No hay nada que ordenar', tidy_fail: 'No se ordenó: habría cambiado una conexión', p_ctl: 'Control', slider: 'recto (deslizante)', knob: 'rotativo (símbolo redondo)',
+      c_switch: 'Interruptor', cs_switch: 'Interruptor', c_button: 'Pulsador', cs_button: 'Pulsador', p_closed: 'Cerrado', p_nc: 'Contacto', sw_closed: 'cerrado', sw_open: 'abierto', pb_no: 'NA', pb_nc: 'NC', no: 'Normal abierto (NA): se cierra mientras se pulsa', nc: 'Normal cerrado (NC): se abre mientras se pulsa',
       c_pot: 'Potenciómetro', cs_pot: 'Potenciómetro', p_alpha: 'Posición α (A → B)', p_taper: 'Curva', lin: 'lineal', log: 'logarítmica (audio)', wiper: 'cursor',
       c_led: 'LED', cs_led: 'LED', c_rgbled: 'LED RGB', cs_rgbled: 'LED RGB', p_color: 'Color', p_Imax: 'Corriente máxima I<sub>max</sub>', p_common: 'Terminal común',
       p_VfR: 'V<sub>γ</sub> rojo', p_VfG: 'V<sub>γ</sub> verde', p_VfB: 'V<sub>γ</sub> azul', cc: 'cátodo común', ca: 'ánodo común',
@@ -424,6 +429,7 @@
 <h4>Modelos</h4><ul>
 <li>Diodo: ideal (0 V al conducir), caída constante V<sub>γ</sub> con r<sub>d</sub> opcional, o exacto (Shockley: I = I<sub>S</sub>(e^{V/nV<sub>T</sub>} − 1)). Schottky: los mismos modelos con V<sub>γ</sub> menor e I<sub>S</sub> mayor.</li>
 <li>AO: ideal (ganancia infinita, corrientes de entrada nulas, resistencia de salida nula), con saturación opcional en ±Vsat.</li>
+<li>Interruptor (sin resorte): un clic o un toque lo abre o lo cierra, y queda en esa posición. Pulsador (con resorte): cerrado mientras se lo mantiene apretado (normal abierto, NA) o abierto mientras se aprieta (normal cerrado, NC), y vuelve solo al soltarlo. Ideales: cerrado = un cable (0 V), abierto = circuito abierto (I = 0).</li>
 <li>Transistor (BJT): modelo simple (corte, activa con V<sub>BE</sub> = 0,7 V e I<sub>C</sub> = βI<sub>B</sub>, o saturación con V<sub>CE</sub> = V<sub>CE,sat</sub>) o modelo real (Ebers-Moll con efecto Early: junturas exponenciales, saturación suave).</li></ul>
 <h4>Rotar y espejar</h4><ul>
 <li>Teclado: <b>R</b> rota, <b>F</b> espeja (la selección, o el componente que se está colocando).</li></ul><h4>Mover</h4><ul><li>Arrastre un componente (o una selección): los cables conectados lo siguen (rubber band) y al soltar vuelven a quedar en tramos rectos. Desactívelo con <b>🔗</b> en la barra sobre el circuito o en Ajustes para mover componentes sin sus cables, por ejemplo para desconectarlos; <b>Alt + arrastrar</b> hace lo contrario del ajuste en ese movimiento.</li>

@@ -17,6 +17,11 @@
   // fraction of the resistance between A and the wiper: linear, or logarithmic (audio) taper
   const potFrac = (c) => { const a = Math.max(0, Math.min(1, c.props.alpha)); return c.props.taper === 'log' ? (Math.pow(10, 2 * a) - 1) / 99 : a; };
   const isDiode = (c) => c.type === 'diode' || c.type === 'schottky' || c.type === 'led';
+  // switches: the toggle switch keeps its position; the push button is closed only while it is held down
+  // (normally open) or opened while held (normally closed). Held buttons live here, never in the saved circuit.
+  const pressed = new Set();
+  const isSwitch = (c) => c.type === 'switch' || c.type === 'button';
+  const isClosed = (c) => (c.type === 'switch' ? !!c.props.closed : c.type === 'button' ? (c.props.nc === 'nc') !== pressed.has(c.id) : false);
 
   const TYPES = {
     resistor: {
@@ -36,6 +41,16 @@
     },
     ammeter: { prefix: 'AM', terms: [[-2, 0], [2, 0]], box: [-2, -1, 2, 1], props: [] },
     voltmeter: { prefix: 'VM', terms: [[-2, 0], [2, 0]], box: [-2, -1, 2, 1], defRot: 1, props: [] },
+    switch: {
+      prefix: 'S', terms: [[-2, 0], [2, 0]], box: [-2, -1.15, 2, 0.45],
+      props: [{ key: 'closed', type: 'bool', def: false }],
+      valueText: (c, f, t) => t(c.props.closed ? 'sw_closed' : 'sw_open')
+    },
+    button: {
+      prefix: 'S', terms: [[-2, 0], [2, 0]], box: [-2, -1.6, 2, 0.75],
+      props: [{ key: 'nc', type: 'select', options: ['no', 'nc'], def: 'no' }],
+      valueText: (c, f, t) => t('pb_' + c.props.nc)
+    },
     diode: {
       prefix: 'D', terms: [[-2, 0], [2, 0]], box: [-2, -0.8, 2, 0.8],
       props: [
@@ -308,6 +323,24 @@
       P.line([base, pt(d, R - 0.62)]);
       P.head(base[0], base[1], tip[0], tip[1], 0.38);
     },
+    // toggle switch: the blade pivots on the left contact
+    switch(P, c) {
+      P.line([[-2, 0], [-1, 0]]); P.line([[1, 0], [2, 0]]);
+      P.circle(-1, 0, 0.14, true); P.circle(1, 0, 0.14, true);
+      P.line(c.props.closed ? [[-1, 0], [1.05, -0.2]] : [[-1, 0], [0.75, -0.95]]);
+    },
+    // push button with its return spring: a bar on a plunger; normally open = bar above the contacts,
+    // normally closed = bar under them; pressing pushes the bar down
+    button(P, c) {
+      const nc = c.props.nc === 'nc', down = pressed.has(c.id);
+      P.line([[-2, 0], [-1, 0]]); P.line([[1, 0], [2, 0]]);
+      P.circle(-1, 0, 0.14, true); P.circle(1, 0, 0.14, true);
+      const y = nc ? (down ? 0.6 : 0.2) : (down ? -0.2 : -0.6);
+      P.line([[-1.2, y], [1.2, y]]);
+      const top = y - (nc ? 1.55 : 0.75);
+      P.line([[0, y], [0, top]]);
+      P.line([[-0.45, top], [0.45, top]]);
+    },
     ground(P) {
       P.line([[0, 0], [0, 0.8]]);
       P.line([[-0.8, 0.8], [0.8, 0.8]]);
@@ -331,7 +364,7 @@
     }
   };
 
-  const api = { TYPES, LED_COLORS, isDiode, potX, potFrac, ROT, defaults, defRef, refs, signed, flippable, toWorld, toLocal, terminals, hit, bounds, SYM };
+  const api = { TYPES, LED_COLORS, isDiode, pressed, isSwitch, isClosed, potX, potFrac, ROT, defaults, defRef, refs, signed, flippable, toWorld, toLocal, terminals, hit, bounds, SYM };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else (root.DCS = root.DCS || {}).comp = api;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -213,6 +213,12 @@
       if (!app.sel.has(h.comp.id)) app.select([h.comp.id]);
       return;
     }
+    // switches: a click on the toggle switch flips it (on release, if it did not move); the push button
+    // is held down while pressed, and springs back on release or as soon as it is dragged
+    if (h && h.kind === 'comp' && C.isSwitch(h.comp) && !g.shift && this.onBody(h, p)) {
+      if (h.comp.type === 'switch') g.swToggle = h.comp;
+      else { C.pressed.add(h.comp.id); g.press = h.comp; app.circuitChanged(true); }
+    }
     if (h && h.kind === 'term') {
       g.mode = 'maybe-wire'; g.a = h.pt;
     } else if (h && h.kind === 'wend') {
@@ -268,6 +274,7 @@
       if (Math.hypot(p.sx - g.start.sx, p.sy - g.start.sy) < (DRAG_PX[g.type] || 5)) return;
       g.moved = true;
       clearTimeout(g.longTimer);
+      if (g.press) this.release(g, true);
       if (g.mode === 'maybe-wire') g.mode = 'wire';
       if (g.mode === 'toggle') { g.mode = 'move'; app.sel.add(g.toggleId); }
       if (g.mode === 'vertex') { g.mode = 'move'; g.vertex = true; }
@@ -358,6 +365,7 @@
     if (this.panRaf) { cancelAnimationFrame(this.panRaf); this.panRaf = 0; }
     this.g = null;
     app.overlay.snap = null;
+    if (g.press) this.release(g, false);
     if (g.long && !g.moved && g.mode !== 'band') { app.requestRender(); return; }
 
     switch (g.mode) {
@@ -374,7 +382,11 @@
         break;
       }
       case 'move':
-        if (!g.moved) { this.tap(g, p, e); break; }
+        if (!g.moved) {
+          if (g.swToggle) { app.checkpoint(); g.swToggle.props.closed = !g.swToggle.props.closed; app.commit(); }
+          this.tap(g, p, e);
+          break;
+        }
         this.endMove(g);
         break;
       case 'toggle':
@@ -428,10 +440,18 @@
     if (this.g && this.g.id === e.pointerId) this.abortGesture();
   };
 
+  // a held push button springs back
+  Editor.prototype.release = function (g, live) {
+    C.pressed.delete(g.press.id);
+    g.press = null;
+    this.app.circuitChanged(live);
+  };
+
   Editor.prototype.abortGesture = function () {
     const g = this.g, app = this.app;
     if (!g) return;
     clearTimeout(g.longTimer);
+    if (g.press) this.release(g, false);
     if (g.mode === 'move' && g.moved) {
       // put everything back
       for (const [w, pos] of g.railOrig || []) Object.assign(w, pos);

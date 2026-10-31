@@ -85,6 +85,18 @@
         w: [[[0, 4], [0, 0], [2, 0]], [[6, 0], [14, 0], [14, 4]], [[6, 6], [6, 4], [8, 4]], [[12, 4], [14, 4]]]
       }
     },
+    switches: {
+      t: { en: 'Switch and push button', fr: 'Interrupteur et bouton-poussoir', es: 'Interruptor y pulsador' },
+      d: { en: 'Click S1 to open or close it (it stays). Hold S2 down: LED2 lights only while it is pressed (spring return).', fr: 'Cliquez sur S1 pour l’ouvrir ou le fermer (il reste). Maintenez S2 appuyé : LED2 ne s’allume que pendant l’appui (retour par ressort).', es: 'Haga clic en S1 para abrirlo o cerrarlo (queda así). Mantenga apretado S2: LED2 se enciende solo mientras se pulsa (vuelve por resorte).' },
+      s: {
+        c: [['vsource', 'V1', 0, 8, 1, { V: 5 }],
+          ['switch', 'S1', 8, 3, 1, { closed: true }], ['resistor', 'R1', 8, 8, 1, { R: 330 }], ['led', 'LED1', 8, 13, 1, { color: 'red', Vf: 1.8 }],
+          ['button', 'S2', 16, 3, 1], ['resistor', 'R2', 16, 8, 1, { R: 330 }], ['led', 'LED2', 16, 13, 1, { color: 'green', Vf: 2.2 }],
+          ['ground', '', 4, 17, 0]],
+        w: [[[0, 6], [0, 0], [16, 0], [16, 1]], [[8, 0], [8, 1]], [[8, 5], [8, 6]], [[8, 10], [8, 11]], [[16, 5], [16, 6]], [[16, 10], [16, 11]],
+          [[0, 10], [0, 17], [16, 17], [16, 15]], [[8, 15], [8, 17]]]
+      }
+    },
     pot: {
       t: { en: 'Potentiometer as a voltage divider', fr: 'Potentiomètre en diviseur de tension', es: 'Potenciómetro como divisor de tensión' },
       d: { en: 'Drag the wiper arrow of P1: with RL = 10 kΩ the output is not proportional to α (loading effect). Try RL = 1 MΩ (almost no load) and RL = 1 kΩ.', fr: 'Faites glisser la flèche du curseur de P1 : avec RL = 10 kΩ la sortie n’est pas proportionnelle à α (effet de charge). Essayez RL = 1 MΩ (presque à vide) et RL = 1 kΩ.', es: 'Arrastre la flecha del cursor de P1: con RL = 10 kΩ la salida no es proporcional a α (efecto de carga). Pruebe RL = 1 MΩ (casi sin carga) y RL = 1 kΩ.' },

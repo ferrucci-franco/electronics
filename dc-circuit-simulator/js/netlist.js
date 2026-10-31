@@ -52,6 +52,10 @@
       inner.set(w.id, ins);
     }
 
+    // a closed switch is an ideal wire between its terminals
+    const closedSw = circuit.comps.filter(c => C.isSwitch(c) && C.isClosed(c));
+    for (const c of closedSw) { const [a, b] = compTerms.get(c.id); union(a.idx, b.idx); }
+
     // node numbering: ground first (0), then by first appearance
     const rootNode = new Map();
     let groundRoot = null;
@@ -87,6 +91,8 @@
         case 'isource': elements.push({ type: 'I', id: c.id, n, I: pr.I }); break;
         case 'ammeter': elements.push({ type: 'AM', id: c.id, n }); break;
         case 'voltmeter': elements.push({ type: 'VM', id: c.id, n }); break;
+        // an open switch is an open circuit: a voltmeter gives the voltage across its contacts
+        case 'switch': case 'button': if (!C.isClosed(c)) elements.push({ type: 'VM', id: c.id, n }); break;
         case 'pot': {
           // two resistors A–W and W–B; a tiny minimum keeps the end positions solvable
           const f = C.potFrac(c), rmin = Math.max(1e-3, pr.R * 1e-6);
@@ -151,7 +157,7 @@
 
     return {
       ckt: { nodeCount, elements }, compNodes, compTerms, pointNode, wireNode, nodes, junctions, openTerms,
-      noGround, wires, inner, points: P, nodeOf
+      noGround, wires, inner, points: P, nodeOf, closedSw
     };
   }
 
@@ -162,8 +168,18 @@
    * The ground symbols of the reference node are joined through a hidden "earth" vertex. */
   function wireCurrents(net, res, solver) {
     const out = new Map(); // wire id -> array of {x1, y1, x2, y2, i, loop}; i > 0 from (x1, y1) to (x2, y2)
+    out.sw = new Map();    // closed switch id -> its piece (a wire from terminal 1 to terminal 2)
     if (!res || !res.ok) return out;
     const byNode = new Map();
+    const closed = new Set((net.closedSw || []).map(c => c.id));
+    for (const c of net.closedSw || []) {
+      const [a, b] = net.compTerms.get(c.id);
+      const piece = { sw: c, x1: a.x, y1: a.y, x2: b.x, y2: b.y, i: 0, loop: false };
+      out.sw.set(c.id, piece);
+      const nd = net.pointNode.get(a.k);
+      if (!byNode.has(nd)) byNode.set(nd, []);
+      byNode.get(nd).push(piece);
+    }
     for (const w of net.wires) {
       const pts = [[w.x1, w.y1]].concat(net.inner.get(w.id).map(p => [p.x, p.y]), [[w.x2, w.y2]]);
       const pieces = [];
@@ -183,6 +199,7 @@
         const p = net.points.get(k);
         if (!p) continue;
         for (const [c, j] of p.terms) {
+          if (closed.has(c.id)) continue;
           if (c.type === 'ground') {
             if (earth < 0) earth = vid('earth');
             edges.push({ a: v, b: earth, g: 1 });

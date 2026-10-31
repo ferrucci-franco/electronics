@@ -7,6 +7,7 @@
   const PALETTE = [
     { type: 'resistor', key: 'resistor' }, { type: 'pot', key: 'pot' }, { type: 'vsource', key: 'vsource' }, { type: 'isource', key: 'isource' },
     { type: 'ground', key: 'ground' }, { type: 'ammeter', key: 'ammeter' }, { type: 'voltmeter', key: 'voltmeter' },
+    { type: 'switch', key: 'switch' }, { type: 'button', key: 'button' },
     { type: 'diode', key: 'diode' }, { type: 'schottky', key: 'schottky' }, { type: 'led', key: 'led' }, { type: 'rgbled', key: 'rgbled' }, { type: 'opamp', key: 'opamp' },
     { type: 'bjt', key: 'npn', props: { pol: 'npn' } }, { type: 'bjt', key: 'pnp', props: { pol: 'pnp' } }
   ];
