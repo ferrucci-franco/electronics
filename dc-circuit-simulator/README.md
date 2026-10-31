@@ -9,7 +9,7 @@ Copia pública: https://ferrucci-franco.github.io/electronics/dc-circuit-simulat
 | Componente | Modelo |
 |---|---|
 | Resistencia | lineal |
-| Potenciómetro | dos resistencias A–cursor y cursor–B según la posición α, curva lineal o logarítmica (audio); la flecha del cursor se arrastra sobre el circuito (o deslizador del panel, teclas [ y ]) y el circuito se resuelve en vivo |
+| Potenciómetro | dos resistencias A–cursor y cursor–B según la posición α, curva lineal o logarítmica (audio); la flecha del cursor se arrastra sobre el circuito (o deslizador del panel, teclas [ y ]) y el circuito se resuelve en vivo; control opcional tipo perilla (rotativo, 270°) que se gira arrastrando |
 | Fuente de tensión / de corriente | ideales, continuas |
 | Amperímetro / voltímetro | ideales (0 V / circuito abierto) |
 | Diodo y diodo Schottky | ideal (0 V al conducir), caída constante Vγ con r_d opcional, o exacto (Shockley, I = I_S(e^{V/nV_T} − 1)) |
@@ -38,6 +38,7 @@ Símbolos USA (por defecto) o IEC/europeos.
 - Rotar y espejar: clic derecho sobre un componente (Mayús + clic derecho = espejo), teclas R / F, o los botones ⟳ / ⇋ de la barra sobre el circuito (también mientras se coloca, para el uso con el dedo).
 - Zoom y desplazamiento: rueda (o pellizco en el touchpad) = zoom alrededor del puntero; arrastrar con el botón derecho o del medio, o Espacio + arrastrar = desplazar; con el dedo, un dedo sobre el fondo desplaza y dos dedos hacen zoom; botones + / − / ⤢ y teclas +, −, 0. Arrastrar sobre el fondo con el ratón (o toque largo y arrastrar con el dedo) = selección por rectángulo.
 - Teclado: Supr, Ctrl+Z / Ctrl+Y, Ctrl+C / Ctrl+V, Ctrl+D, Ctrl+A, flechas, W (cable), Enter (propiedades), Esc.
+- Botón **Ordenar**: une tramos de cable colineales, quita duplicados y puntas sueltas, y convierte cables en diagonal en tramos en L que rodean los componentes; solo se aplica si todas las conexiones quedan iguales (se deshace con Ctrl+Z).
 - Las etiquetas (nombre, valor y resultados) se ubican solas del lado que no tapa símbolos, cables ni otras etiquetas.
 - Los valores aceptan prefijos: 4k7, 2.2M, 10m, 100u, 1n… (M = mega, m = mili).
 - Archivo: guardar / abrir JSON, copiar un enlace que contiene el circuito, exportar PNG. El circuito actual se guarda en el navegador.

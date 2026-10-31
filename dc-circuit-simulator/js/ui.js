@@ -64,6 +64,10 @@
 
     /* ---------- header ---------- */
     $('undoBtn').addEventListener('click', () => app.undo());
+    $('tidyBtn').addEventListener('click', () => {
+      const r = DCS.tidy.prettify(app);
+      app.toast(t(!r.ok ? 'tidy_fail' : r.changed ? 'tidy_done' : 'tidy_none', { a: r.before, b: r.after }));
+    });
     $('redoBtn').addEventListener('click', () => app.redo());
     ui.updateHistory = function () {
       $('undoBtn').disabled = !app.undoStack.length;

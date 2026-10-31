@@ -80,6 +80,11 @@
     return !!h && (h.kind === 'term' || (h.kind === 'comp' && C.hit(h.comp, p.x, p.y, -0.25)));
   };
 
+  Editor.prototype.onKnob = function (c, p) {
+    if (c.props.ctl !== 'knob') return false;
+    const [lx, ly] = C.toLocal(c, p.x, p.y);
+    return Math.hypot(lx - C.KNOB[0], ly - C.KNOB[1]) < 0.95;
+  };
   Editor.prototype.onWiper = function (c, p) {
     const [lx, ly] = C.toLocal(c, p.x, p.y);
     return ly < -0.2 && ly > -1.75 && Math.abs(lx - C.potX(c)) < 0.75;
@@ -195,6 +200,11 @@
     // the component body and its terminals win over a nearby mark
     if (mk && !g.shift && !this.onBody(h, p)) { g.mode = 'mark'; g.mark = mk; return; }
     // potentiometer: dragging its wiper arrow moves the position, the circuit is solved while it moves
+    if (h && h.kind === 'comp' && h.comp.type === 'pot' && !g.shift && this.onKnob(h.comp, p)) {
+      g.mode = 'knob'; g.comp = h.comp;
+      if (!app.sel.has(h.comp.id)) app.select([h.comp.id]);
+      return;
+    }
     if (h && h.kind === 'comp' && h.comp.type === 'pot' && !g.shift && this.onWiper(h.comp, p)) {
       g.mode = 'wiper'; g.comp = h.comp;
       if (!app.sel.has(h.comp.id)) app.select([h.comp.id]);
@@ -272,6 +282,18 @@
         app.overlay.band = [g.start.sx, g.start.sy, p.sx, p.sy];
         break;
       case 'move': this.doMove(g, p); break;
+      case 'knob': {
+        // angle of the pointer around the knob centre, 0 at the top, clockwise; 270° of travel
+        if (!g.cp) { app.checkpoint(); g.cp = true; }
+        const [kx, ky] = C.toWorld(g.comp, C.KNOB[0], C.KNOB[1]);
+        const ang = Math.atan2(p.x - kx, -(p.y - ky)) * 180 / Math.PI;
+        const a = Math.max(0, Math.min(1, (ang + 135) / 270));
+        // past the bottom gap, stay at the nearest end instead of jumping
+        if (Math.abs(ang) > 135) g.comp.props.alpha = g.comp.props.alpha > 0.5 ? 1 : 0;
+        else g.comp.props.alpha = Math.round(a * 100) / 100;
+        app.circuitChanged(true);
+        break;
+      }
       case 'wiper': {
         if (!g.cp) { app.checkpoint(); g.cp = true; }
         const [lx] = C.toLocal(g.comp, p.x, p.y);
@@ -353,7 +375,7 @@
       case 'mark':
         if (!g.moved) app.flipRef(g.mark.id, g.mark.kind);
         break;
-      case 'wiper':
+      case 'wiper': case 'knob':
         if (g.moved) app.commit(); else this.tap(g, p, e);
         break;
       case 'maybe-wire':
@@ -601,6 +623,7 @@
     } else if (h) {
       if (h.kind === 'term' || (h.kind === 'wend' && !app.sel.has(h.wire.id))) { cursor = 'crosshair'; app.overlay.snap = h.pt; app.overlay.snapHot = true; }
       else if (h.kind === 'wend') cursor = 'move';
+      else if (h.kind === 'comp' && h.comp.type === 'pot' && this.onKnob(h.comp, p)) { cursor = 'grab'; app.hover = { id: h.comp.id }; }
       else if (h.kind === 'comp' && h.comp.type === 'pot' && this.onWiper(h.comp, p)) { cursor = 'ew-resize'; app.hover = { id: h.comp.id }; }
       else { cursor = 'move'; app.hover = { id: h.comp ? h.comp.id : h.wire.id }; }
     }
