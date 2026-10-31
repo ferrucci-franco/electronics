@@ -11,7 +11,7 @@
   const plain = (s) => String(s).replace(/<sub>(.*?)<\/sub>/g, '$1').replace(/<[^>]+>/g, '');
 
   const DEFAULT_SETTINGS = {
-    style: 'us', flowScale: 'lin', realDir: false, rubber: true, showWireI: false, showV: true, showI: true, showP: false, showNodes: false, animate: false, colorV: false,
+    style: 'us', wheelDir: 'auto', flowScale: 'lin', realDir: false, rubber: true, showWireI: false, showV: true, showI: true, showP: false, showNodes: false, animate: false, colorV: false,
     showNames: true, showValues: true, showState: true, grid: true, digits: 3, tempC: 27, defModel: 'cvd'
   };
 
@@ -367,6 +367,9 @@
     return 8.2 * Math.pow(10, e - 1);
   }
   const decStep = (v) => Math.pow(10, Math.floor(Math.log10(Math.max(Math.abs(v), 1e-12)) + 1e-9) - 1);
+  // direction of the wheel for values: +1 classic (wheel up = dy < 0), −1 "natural" scrolling (macOS default)
+  const isMac = /Mac|iPhone|iPad/.test(navigator.platform || '') || /Mac OS X/.test(navigator.userAgent || '');
+  app.wheelSign = () => (app.settings.wheelDir === 'normal' ? 1 : app.settings.wheelDir === 'inverted' ? -1 : (isMac ? -1 : 1));
   app.valueKey = (c) => ({ resistor: 'R', vsource: 'V', isource: 'I', pot: 'alpha', bjt: 'beta' })[c.type] || null;
   let adjustT = 0;
   app.adjustValue = function (c, up) {

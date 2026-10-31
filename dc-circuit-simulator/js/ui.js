@@ -186,6 +186,8 @@
       const check = (val) => { const e = el('input', { type: 'checkbox' }); e.checked = !!val; return e; };
       const sym = row(t('symbols'), select([['us', t('sym_us')], ['iec', t('sym_iec')]], s.style));
       sym.addEventListener('change', () => { s.style = sym.value; changed(); });
+      const wd = row(t('wheel_dir'), select([['auto', t('wheel_auto')], ['normal', t('wheel_normal')], ['inverted', t('wheel_inverted')]], s.wheelDir || 'auto'));
+      wd.addEventListener('change', () => { s.wheelDir = wd.value; app.saveSettings(); });
       const fs = row(t('flow_scale'), select([['lin', t('flow_lin')], ['log', t('flow_log')]], s.flowScale));
       fs.addEventListener('change', () => { s.flowScale = fs.value; changed(true); });
       const dg = row(t('set_digits'), select([[3, '3'], [4, '4'], [5, '5']], s.digits));
