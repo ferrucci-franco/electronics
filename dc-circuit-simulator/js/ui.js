@@ -925,7 +925,7 @@
       const pane = $('pane-thev');
       pane.innerHTML = '';
       if (app.overlay.hl) { app.overlay.hl = null; app.requestRender(); }
-      const intro = el('div', { class: 'card' }, `<div class="hint">${t('thev_intro')}</div>`);
+      const intro = el('div', { class: 'card' });
       const row = el('div', { class: 'btnrow' });
       row.appendChild(button(t('thev_pick'), () => app.setTool('port'), 'primary'));
       const one = app.selectedComps().length === 1 ? app.selectedComps()[0] : null;
@@ -958,7 +958,7 @@
       const fin = (x) => x !== undefined && isFinite(x);
       if (r.nonlinear) {
         // only the open-circuit voltage, the short-circuit current and the real curve make sense
-        card.appendChild(el('div', { class: 'issue warn' }, t('thev_nonlinear', { ids: esc(DCS.iv.nlNames(app, r)) }) + (r.pwl ? ' ' + t('thev_pwl') : '')));
+        card.appendChild(el('div', { class: 'issue warn' }, t('thev_nonlinear', { ids: esc(DCS.iv.nlNames(app, r)) })));
         const big = (x) => !fin(x) || Math.abs(x) > 1e3;
         let kv = `<dt>${t('thev_voc')}</dt><dd class="v">${fin(r.voc) ? fmt(r.voc, 'V', 4) : '—'}</dd>`;
         kv += `<dt>${t('thev_isc')}</dt><dd class="i">${big(r.isc) ? '∞' : fmt(r.isc, 'A', 4)}</dd>`;
@@ -992,7 +992,6 @@
       kv += `<dt>R<sub>Th</sub> = R<sub>N</sub></dt><dd>${fmt(r.rth, 'Ω', 4)}</dd>`;
       kv += `<dt>I<sub>N</sub></dt><dd class="i">${fin(r.in) ? fmt(r.in, 'A', 4) : (r.in === Infinity ? '∞' : '—')}</dd>`;
       card.appendChild(el('dl', { class: 'kv' }, kv));
-      card.appendChild(el('div', { class: 'hint' }, t('thev_method')));
       if (r.rth < 0) card.appendChild(el('div', { class: 'issue warn' }, t('thev_negr')));
       // the equivalent resistance, step by step, comes first (right under the choice of A–B), then the equivalents
       try { reqCard(pane, th); } catch (e) { console.error(e); }
@@ -1015,7 +1014,7 @@
       if (q.kind === 'nonlinear') return;
       const R_ = (v) => (v === Infinity ? '∞' : v === undefined || !isFinite(v) ? '—' : fmt(v, 'Ω', 4));
       const card = el('div', { class: 'card' });
-      card.appendChild(el('h3', null, t('req_title')));
+      card.appendChild(el('h3', null, `<span>${t('req_title')}</span>`));   // one flex item: the subscript stays in the text
       if (q.kind === 'dep') { card.appendChild(el('div', { class: 'hint' }, t('req_dep', { v: R_(q.rtest) }))); pane.appendChild(card); return; }
       card.appendChild(el('div', { class: 'hint' }, '<b>1.</b> ' + t('req_passive')));
       const cv = el('canvas', { class: 'req-cv' });
