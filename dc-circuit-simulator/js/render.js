@@ -746,12 +746,23 @@
   Renderer.prototype.drawWireCurrents = function (S, fmt) {
     const st = S.settings, view = S.view, s = view.scale, ctx = this.ctx, dpr = this.dpr;
     const fontPx = Math.max(10, Math.min(13, s * 0.52));
+    // a wire branch whose current is not the current of any component (e.g. a wire between two nodes that
+    // carries the difference of two branch currents) is labelled even when not selected: it cannot be read
+    // anywhere else
+    const res = S.result, known = [];
+    let imax = 0;
+    if (res && res.ok) for (const c of S.circuit.comps) {
+      const r = res.el[c.id];
+      if (!r || !r.tc) continue;
+      for (const i of r.tc) { known.push(Math.abs(i)); imax = Math.max(imax, Math.abs(i)); }
+    }
+    const unseen = (p) => !p.loop && Math.abs(p.i) > Math.max(1e-9, 1e-3 * imax) && !known.some(k => Math.abs(k - Math.abs(p.i)) <= 5e-3 * Math.max(k, Math.abs(p.i)));
     // one label per branch (pieces in series carry the same current), on its longest piece
     const best = new Map();
     for (const [id, pieces] of S.wireCur) {
       const on = st.showWireI || S.sel.has(id) || (S.hover && S.hover.id === id);
-      if (!on) continue;
       for (const p of pieces) {
+        if (!on && !unseen(p)) continue;
         const L = Math.hypot(p.x2 - p.x1, p.y2 - p.y1);
         if (L < 0.9 || (Math.abs(p.i) < 1e-12 && !p.loop)) continue;
         const b = best.get(p.chain);
