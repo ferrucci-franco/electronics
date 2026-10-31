@@ -127,7 +127,7 @@
 <li>Keyboard: <b>R</b> rotates, <b>F</b> mirrors (the selection, or the component being placed).</li></ul><h4>Moving</h4><ul><li>Drag a component (or a selection): the wires attached to it follow (rubber band) and become straight pieces again when you release. Turn it off with <b>🔗</b> in the bar over the circuit or in Settings to move components without their wires, for example to disconnect them; <b>Alt + drag</b> does the opposite of the current setting for one move.</li>
 <li>Touch: select the component and use <b>⟳</b> / <b>⇋</b> in the bar over the circuit. While placing, the same bar rotates the component before you tap the grid.</li></ul>
 <h4>Zoom and pan</h4><ul>
-<li>Mouse: <b>wheel</b> = zoom around the pointer (pinch on a touchpad too); drag with the <b>right or middle button</b>, or hold <b>Space</b> and drag = pan; drag on the background = box selection.</li>
+<li>Mouse: <b>wheel</b> = zoom around the pointer (pinch on a touchpad too); drag with the <b>right or middle button</b>, or hold <b>Space</b> and drag = pan; drag on the background = box selection (the components inside and every wire it touches).</li>
 <li>Touch: <b>one finger</b> on the background = pan, <b>two fingers</b> = zoom and pan; long press on the background = box selection, long press on an element = properties.</li>
 <li>Buttons + / − / ⤢ (fit the circuit) at the bottom right; keys <b>+</b>, <b>−</b>, <b>0</b>.</li></ul>
 <h4>Other keys</h4><ul><li>Del, Ctrl+Z / Ctrl+Y, Ctrl+C / Ctrl+V, Ctrl+D, Ctrl+A, arrows (move the selection), W (wire), Enter (properties), Esc.</li></ul>`,
@@ -261,7 +261,7 @@
 <li>Clavier : <b>R</b> tourne, <b>F</b> retourne (la sélection, ou le composant en cours de placement).</li></ul><h4>Déplacer</h4><ul><li>Faites glisser un composant (ou une sélection) : les fils qui y sont reliés suivent (élastique) et redeviennent des segments droits au lâcher. Désactivez-le avec <b>🔗</b> dans la barre au-dessus du circuit ou dans les réglages pour déplacer les composants sans leurs fils, par exemple pour les déconnecter ; <b>Alt + glisser</b> fait l’inverse du réglage pour un déplacement.</li>
 <li>Tactile : sélectionnez le composant et utilisez <b>⟳</b> / <b>⇋</b> dans la barre au-dessus du circuit. Pendant le placement, la même barre tourne le composant avant de toucher la grille.</li></ul>
 <h4>Zoom et déplacement</h4><ul>
-<li>Souris : <b>molette</b> = zoom autour du pointeur (pincement sur un pavé tactile aussi) ; glisser avec le <b>bouton droit ou du milieu</b>, ou maintenir <b>Espace</b> et glisser = déplacer la vue ; glisser sur le fond = sélection par rectangle.</li>
+<li>Souris : <b>molette</b> = zoom autour du pointeur (pincement sur un pavé tactile aussi) ; glisser avec le <b>bouton droit ou du milieu</b>, ou maintenir <b>Espace</b> et glisser = déplacer la vue ; glisser sur le fond = sélection par rectangle (les composants à l’intérieur et tous les fils qu’il touche).</li>
 <li>Tactile : <b>un doigt</b> sur le fond = déplacer la vue, <b>deux doigts</b> = zoom et déplacement ; appui long sur le fond = sélection par rectangle, appui long sur un élément = propriétés.</li>
 <li>Boutons + / − / ⤢ (cadrer le circuit) en bas à droite ; touches <b>+</b>, <b>−</b>, <b>0</b>.</li></ul>
 <h4>Autres touches</h4><ul><li>Suppr, Ctrl+Z / Ctrl+Y, Ctrl+C / Ctrl+V, Ctrl+D, Ctrl+A, flèches (déplacer la sélection), W (fil), Entrée (propriétés), Échap.</li></ul>`,
@@ -395,7 +395,7 @@
 <li>Teclado: <b>R</b> rota, <b>F</b> espeja (la selección, o el componente que se está colocando).</li></ul><h4>Mover</h4><ul><li>Arrastre un componente (o una selección): los cables conectados lo siguen (rubber band) y al soltar vuelven a quedar en tramos rectos. Desactívelo con <b>🔗</b> en la barra sobre el circuito o en Ajustes para mover componentes sin sus cables, por ejemplo para desconectarlos; <b>Alt + arrastrar</b> hace lo contrario del ajuste en ese movimiento.</li>
 <li>Táctil: seleccione el componente y use <b>⟳</b> / <b>⇋</b> en la barra sobre el circuito. Mientras coloca, la misma barra rota el componente antes de tocar la grilla.</li></ul>
 <h4>Zoom y desplazamiento</h4><ul>
-<li>Ratón: <b>rueda</b> = zoom alrededor del puntero (también pellizco en el touchpad); arrastrar con el <b>botón derecho o del medio</b>, o mantener <b>Espacio</b> y arrastrar = desplazar; arrastrar sobre el fondo = selección con rectángulo.</li>
+<li>Ratón: <b>rueda</b> = zoom alrededor del puntero (también pellizco en el touchpad); arrastrar con el <b>botón derecho o del medio</b>, o mantener <b>Espacio</b> y arrastrar = desplazar; arrastrar sobre el fondo = selección con rectángulo (los componentes que quedan adentro y todos los cables que toca).</li>
 <li>Táctil: <b>un dedo</b> sobre el fondo = desplazar, <b>dos dedos</b> = zoom y desplazamiento; toque largo sobre el fondo = selección con rectángulo, toque largo sobre un elemento = propiedades.</li>
 <li>Botones + / − / ⤢ (encuadrar el circuito) abajo a la derecha; teclas <b>+</b>, <b>−</b>, <b>0</b>.</li></ul>
 <h4>Otras teclas</h4><ul><li>Supr, Ctrl+Z / Ctrl+Y, Ctrl+C / Ctrl+V, Ctrl+D, Ctrl+A, flechas (mover la selección), W (cable), Enter (propiedades), Esc.</li></ul>`,

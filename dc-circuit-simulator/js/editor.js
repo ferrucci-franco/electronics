@@ -674,9 +674,18 @@
       if (b[0] >= x0 - 0.3 && b[2] <= x1 + 0.3 && b[1] >= y0 - 0.3 && b[3] <= y1 + 0.3) ids.add(c.id);
       else if (c.x >= x0 && c.x <= x1 && c.y >= y0 && c.y <= y1) ids.add(c.id);
     }
-    for (const w of app.circuit.wires) {
-      if (Math.min(w.x1, w.x2) >= x0 && Math.max(w.x1, w.x2) <= x1 && Math.min(w.y1, w.y2) >= y0 && Math.max(w.y1, w.y2) <= y1) ids.add(w.id);
-    }
+    // every wire the rectangle touches (Liang–Barsky clipping of the segment against the rectangle)
+    const touches = (w) => {
+      const dx = w.x2 - w.x1, dy = w.y2 - w.y1;
+      let t0 = 0, t1 = 1;
+      for (const [p, q] of [[-dx, w.x1 - x0], [dx, x1 - w.x1], [-dy, w.y1 - y0], [dy, y1 - w.y1]]) {
+        if (p === 0) { if (q < 0) return false; continue; }
+        const r = q / p;
+        if (p < 0) { if (r > t1) return false; if (r > t0) t0 = r; } else { if (r < t0) return false; if (r < t1) t1 = r; }
+      }
+      return true;
+    };
+    for (const w of app.circuit.wires) if (touches(w)) ids.add(w.id);
     app.select(Array.from(ids));
   };
 
