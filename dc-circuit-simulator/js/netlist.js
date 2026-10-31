@@ -1,0 +1,184 @@
+/* From the drawn schematic (components + wires on a grid) to the solver netlist.
+ * Wires connect at their end points and wherever an end point or a terminal lies on another wire. */
+(function (root) {
+  'use strict';
+  const C = root.DCS ? root.DCS.comp : require('./components.js');
+  const key = (x, y) => x + ',' + y;
+
+  function onSegment(px, py, w) {
+    // strictly inside the segment (end points excluded), integer grid coordinates
+    const dx = w.x2 - w.x1, dy = w.y2 - w.y1;
+    if ((px - w.x1) * dy - (py - w.y1) * dx !== 0) return false;
+    const t = (px - w.x1) * dx + (py - w.y1) * dy;
+    return t > 0 && t < dx * dx + dy * dy;
+  }
+
+  function build(circuit) {
+    const P = new Map();
+    const point = (x, y) => {
+      const k = key(x, y);
+      let p = P.get(k);
+      if (!p) { p = { x, y, k, idx: P.size, ends: 0, through: 0, terms: [] }; P.set(k, p); }
+      return p;
+    };
+    const wires = circuit.wires.filter(w => w.x1 !== w.x2 || w.y1 !== w.y2);
+    for (const w of wires) { point(w.x1, w.y1).ends++; point(w.x2, w.y2).ends++; }
+    const compTerms = new Map();
+    for (const c of circuit.comps) {
+      const ts = C.terminals(c).map(([x, y], j) => { const p = point(x, y); p.terms.push([c, j]); return p; });
+      compTerms.set(c.id, ts);
+    }
+    const pts = Array.from(P.values());
+    const parent = pts.map((_, i) => i);
+    const find = (a) => { while (parent[a] !== a) { parent[a] = parent[parent[a]]; a = parent[a]; } return a; };
+    const union = (a, b) => { a = find(a); b = find(b); if (a !== b) parent[a] = b; };
+
+    // index the points by row and column for the axis-aligned wires
+    const byX = new Map(), byY = new Map();
+    for (const p of pts) {
+      if (!byX.has(p.x)) byX.set(p.x, []);
+      if (!byY.has(p.y)) byY.set(p.y, []);
+      byX.get(p.x).push(p); byY.get(p.y).push(p);
+    }
+    const inner = new Map(); // wire id -> points strictly inside, sorted along the wire
+    for (const w of wires) {
+      const a = P.get(key(w.x1, w.y1)), b = P.get(key(w.x2, w.y2));
+      union(a.idx, b.idx);
+      let cand = w.x1 === w.x2 ? byX.get(w.x1) : w.y1 === w.y2 ? byY.get(w.y1) : pts;
+      const ins = [];
+      for (const p of cand) if (onSegment(p.x, p.y, w)) { ins.push(p); union(p.idx, a.idx); p.through++; }
+      const len2 = (p) => (p.x - w.x1) ** 2 + (p.y - w.y1) ** 2;
+      ins.sort((p, q) => len2(p) - len2(q));
+      inner.set(w.id, ins);
+    }
+
+    // node numbering: ground first (0), then by first appearance
+    const rootNode = new Map();
+    let groundRoot = null;
+    for (const c of circuit.comps) if (c.type === 'ground') { const r = find(compTerms.get(c.id)[0].idx); if (groundRoot === null) groundRoot = r; else union(r, groundRoot); }
+    if (groundRoot !== null) groundRoot = find(groundRoot);
+    let noGround = false;
+    if (groundRoot === null) {
+      // no ground symbol: take the negative terminal of the first voltage source, else any terminal
+      noGround = circuit.comps.some(c => c.type !== 'ground');
+      const vs = circuit.comps.find(c => c.type === 'vsource');
+      const any = circuit.comps.find(c => c.type !== 'ground');
+      if (vs) groundRoot = find(compTerms.get(vs.id)[1].idx);
+      else if (any) groundRoot = find(compTerms.get(any.id)[compTerms.get(any.id).length - 1].idx);
+    }
+    if (groundRoot !== null) rootNode.set(groundRoot, 0);
+    let nodeCount = 1;
+    const nodeOfPoint = (p) => {
+      const r = find(p.idx);
+      if (!rootNode.has(r)) rootNode.set(r, nodeCount++);
+      return rootNode.get(r);
+    };
+    const compNodes = new Map();
+    for (const c of circuit.comps) compNodes.set(c.id, compTerms.get(c.id).map(nodeOfPoint));
+    const pointNode = new Map();
+    for (const p of pts) pointNode.set(p.k, nodeOfPoint(p));
+
+    const elements = [];
+    for (const c of circuit.comps) {
+      const n = compNodes.get(c.id), pr = c.props;
+      switch (c.type) {
+        case 'resistor': elements.push({ type: 'R', id: c.id, n, R: pr.R }); break;
+        case 'vsource': elements.push({ type: 'V', id: c.id, n, V: pr.V }); break;
+        case 'isource': elements.push({ type: 'I', id: c.id, n, I: pr.I }); break;
+        case 'ammeter': elements.push({ type: 'AM', id: c.id, n }); break;
+        case 'voltmeter': elements.push({ type: 'VM', id: c.id, n }); break;
+        case 'diode': case 'schottky':
+          elements.push({ type: 'D', id: c.id, n, model: pr.model, Vf: pr.Vf, rd: pr.rd, Is: pr.Is, N: pr.N }); break;
+        case 'opamp': elements.push({ type: 'OA', id: c.id, n, sat: !!pr.sat, Vpos: Math.max(pr.Vpos, pr.Vneg), Vneg: Math.min(pr.Vpos, pr.Vneg) }); break;
+        case 'bjt': elements.push({ type: 'Q', id: c.id, n, pnp: pr.pol === 'pnp', beta: pr.beta, Vbe: pr.Vbe, Vcesat: pr.Vcesat }); break;
+        default: break;
+      }
+    }
+
+    // drawing aids: junction dots, open terminals, a label point per node
+    const junctions = [], openTerms = [];
+    for (const p of pts) {
+      const deg = p.ends + 2 * p.through + p.terms.length;
+      if (deg >= 3 && (p.ends + p.through > 0)) junctions.push([p.x, p.y]);
+      if (p.terms.length === 1 && p.ends === 0 && p.through === 0) openTerms.push([p.x, p.y, p.terms[0][0].id]);
+    }
+    const nodes = [];
+    for (let i = 0; i < nodeCount; i++) nodes.push({ id: i, points: [], best: null, score: -1 });
+    for (const p of pts) {
+      const nd = nodes[pointNode.get(p.k)];
+      nd.points.push(p);
+      // prefer a wire corner or junction for the label, then a terminal
+      const score = (p.ends + p.through) * 2 + (p.terms.length ? 1 : 0) - (p.terms.some(t => t[0].type === 'ground') ? 10 : 0);
+      if (score > nd.score || (score === nd.score && (p.y < nd.best.y || (p.y === nd.best.y && p.x < nd.best.x)))) { nd.score = score; nd.best = p; }
+    }
+    const wireNode = new Map();
+    for (const w of wires) wireNode.set(w.id, pointNode.get(key(w.x1, w.y1)));
+
+    return {
+      ckt: { nodeCount, elements }, compNodes, compTerms, pointNode, wireNode, nodes, junctions, openTerms,
+      noGround, wires, inner, points: P
+    };
+  }
+
+  /* Current in every wire piece, for the flow animation: inside each node the terminal currents are
+   * spread over the wire graph as if every wire had a resistance proportional to its length. */
+  function wireCurrents(net, res, solver) {
+    const out = new Map(); // wire id -> array of {x1,y1,x2,y2,i} pieces, i > 0 from (x1,y1) to (x2,y2)
+    if (!res || !res.ok) return out;
+    const byNode = new Map();
+    for (const w of net.wires) {
+      const pts = [[w.x1, w.y1]].concat(net.inner.get(w.id).map(p => [p.x, p.y]), [[w.x2, w.y2]]);
+      const pieces = [];
+      for (let i = 0; i + 1 < pts.length; i++) pieces.push({ w, x1: pts[i][0], y1: pts[i][1], x2: pts[i + 1][0], y2: pts[i + 1][1], i: 0 });
+      out.set(w.id, pieces);
+      const nd = net.wireNode.get(w.id);
+      if (!byNode.has(nd)) byNode.set(nd, []);
+      byNode.get(nd).push(...pieces);
+    }
+    for (const [nd, pieces] of byNode) {
+      const idx = new Map();
+      const vid = (x, y) => { const k = key(x, y); if (!idx.has(k)) idx.set(k, idx.size); return idx.get(k); };
+      for (const s of pieces) { s.a = vid(s.x1, s.y1); s.b = vid(s.x2, s.y2); }
+      const n = idx.size;
+      if (n < 2) continue;
+      const inj = new Float64Array(n);
+      const fixed = new Array(n).fill(false);
+      for (const [k, v] of idx) {
+        const p = net.points.get(k);
+        if (!p) continue;
+        for (const [c, j] of p.terms) {
+          if (c.type === 'ground') { fixed[v] = true; continue; }
+          const r = res.el[c.id];
+          if (r) inj[v] -= r.tc[j]; // tc is the current entering the component, i.e. leaving the node
+        }
+      }
+      if (!fixed.some(Boolean)) fixed[0] = true;
+      // Laplacian on the free vertices
+      const free = [];
+      const map = new Int32Array(n).fill(-1);
+      for (let v = 0; v < n; v++) if (!fixed[v]) { map[v] = free.length; free.push(v); }
+      const m = free.length;
+      if (m === 0) continue;
+      const A = []; for (let i = 0; i < m; i++) A.push(new Float64Array(m));
+      const b = new Float64Array(m);
+      for (const s of pieces) {
+        const g = 1 / Math.max(1e-9, Math.hypot(s.x2 - s.x1, s.y2 - s.y1));
+        const ia = map[s.a], ib = map[s.b];
+        if (ia >= 0) A[ia][ia] += g;
+        if (ib >= 0) A[ib][ib] += g;
+        if (ia >= 0 && ib >= 0) { A[ia][ib] -= g; A[ib][ia] -= g; }
+      }
+      for (let i = 0; i < m; i++) b[i] = inj[free[i]];
+      for (let i = 0; i < m; i++) A[i][i] += 1e-12;
+      const x = solver.luSolve(A, b);
+      if (!x) continue;
+      const pot = (v) => (map[v] >= 0 ? x[map[v]] : 0);
+      for (const s of pieces) s.i = (pot(s.a) - pot(s.b)) / Math.max(1e-9, Math.hypot(s.x2 - s.x1, s.y2 - s.y1));
+    }
+    return out;
+  }
+
+  const api = { build, wireCurrents, key };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else (root.DCS = root.DCS || {}).netlist = api;
+})(typeof window !== 'undefined' ? window : globalThis);
