@@ -239,9 +239,17 @@
       P.line([[0.35, -0.42], [0.35, -0.6], [0.6, -0.6], [0.6, 0.6], [0.85, 0.6], [0.85, 0.42]]);
     },
     led(P, c, us) {
-      SYM.diode(P, c, us);
-      // light arrows in the colour of the LED
+      // the body has the colour of the LED: dull when it is off, brighter with the current (P.lit = I/I_max);
+      // without a solution (palette, placing) a middle brightness
       const rgb = (LED_COLORS[c.props.color] || LED_COLORS.red).rgb;
+      const b = P.lit ? P.lit[0] : 0.5;
+      const k = 0.3 + 0.7 * Math.sqrt(b);
+      const body = `rgb(${rgb.map(v => Math.round(v * k)).join(',')})`;
+      P.line([[-2, 0], [-0.6, 0]]); P.line([[0.6, 0], [2, 0]]);
+      P.poly([[-0.6, -0.6], [-0.6, 0.6], [0.6, 0]], body, 1);
+      if (!us) P.line([[-0.6, 0], [0.6, 0]]);
+      P.line([[0.6, -0.6], [0.6, 0.6]]);
+      // light arrows in the colour of the LED
       P.tint(`rgb(${rgb.join(',')})`, true);
       P.arrow(-0.05, -0.75, 0.55, -1.3, 0.28);
       P.arrow(0.45, -0.6, 1.05, -1.15, 0.28);

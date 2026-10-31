@@ -492,6 +492,12 @@
     const evaluate = (states, v0) => {
       evals++;
       const sol = solveFixed(ckt, ctx, states, v0);
+      // an unphysical solution (e.g. a current source pushing into a diode that is still off) is not an
+      // answer, but its violations say which states to flip
+      if (!sol.ok && sol.reason === 'huge' && sol.x) {
+        const viol = checkAll(ckt, ctx, states, sol);
+        return { sol, viol: viol.length ? viol : null, huge: true };
+      }
       if (!sol.ok) return { sol, viol: null };
       return { sol, viol: checkAll(ckt, ctx, states, sol) };
     };
@@ -507,7 +513,7 @@
         const r = evaluate(states, v0);
         if (!r.viol) break;
         if (!r.viol.length) return { ok: true, states, sol: r.sol, evals };
-        v0 = r.sol.v;
+        if (!r.huge) v0 = r.sol.v;
         for (const vi of r.viol) states[vi.k] = fix(vi.k, vi.next, vi.alt);
       }
     }
@@ -522,7 +528,7 @@
         const r = evaluate(states, v0);
         if (!r.viol) break;
         if (!r.viol.length) return { ok: true, states, sol: r.sol, evals };
-        v0 = r.sol.v;
+        if (!r.huge) v0 = r.sol.v;
         r.viol.sort((a, b) => b.mag - a.mag);
         let flipped = false;
         for (const vi of r.viol) {
@@ -550,7 +556,7 @@
       for (const states of combos) {
         if (Date.now() - t0 > budget) break;
         const r = evaluate(states, vinit);
-        if (r.viol && !r.viol.length) return { ok: true, states, sol: r.sol, evals };
+        if (r.viol && !r.viol.length && !r.huge) return { ok: true, states, sol: r.sol, evals };
       }
     }
     return { ok: false, evals };
