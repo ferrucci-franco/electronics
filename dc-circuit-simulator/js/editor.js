@@ -214,11 +214,12 @@
       if (!app.sel.has(h.comp.id)) app.select([h.comp.id]);
       return;
     }
-    // switches: a click on the toggle switch flips it (on release, if it did not move); the push button
-    // is held down while pressed, and springs back on release or as soon as it is dragged
-    if (h && h.kind === 'comp' && C.isSwitch(h.comp) && !g.shift && this.onBody(h, p)) {
+    // switches: the first click selects them, like any component; on a selected switch a click flips it
+    // (on release, if it did not move) and the push button is held down while pressed, springing back on
+    // release or as soon as it is dragged
+    if (h && h.kind === 'comp' && C.isSwitch(h.comp) && app.sel.has(h.comp.id) && !g.shift && this.onBody(h, p)) {
       if (h.comp.type === 'switch') g.swToggle = h.comp;
-      else { C.pressed.add(h.comp.id); g.press = h.comp; app.circuitChanged(true); }
+      else { C.pressed.add(h.comp.id); g.press = h.comp; g.operated = true; app.circuitChanged(true); }
     }
     if (h && h.kind === 'term') {
       g.mode = 'maybe-wire'; g.a = h.pt;
@@ -391,6 +392,8 @@
         if (!g.moved) {
           if (g.swToggle) { app.checkpoint(); g.swToggle.props.closed = !g.swToggle.props.closed; app.commit(); }
           this.tap(g, p, e);
+          // operating a switch twice in a row is not a double click (no properties)
+          if (g.swToggle || g.operated) this.lastTap = null;
           break;
         }
         this.endMove(g);
