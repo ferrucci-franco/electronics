@@ -313,9 +313,11 @@
       const a = Math.abs(s.i);
       // proportional: the dot speed follows the current, so a junction shows KCL (what comes in fast leaves
       // through slower branches); logarithmic: currents down to 1/10000 of the largest one still move
-      if (imax <= 0 || a < 1e-12) s.speed = 0;
+      // no dots where there is practically no current: an open branch (diode off, open switch) keeps only the
+      // solver's leakage (picoamperes), which must not leave frozen dots behind
+      if (imax <= 0 || a < 1e-10) s.speed = 0;
       else if (app.settings.flowScale === 'log') s.speed = a < imax * 1e-4 ? 0 : Math.sign(s.i) * (1.2 + 4.8 * (Math.log10(a / imax) + 4) / 4);
-      else s.speed = Math.sign(s.i) * 6 * a / imax;
+      else s.speed = a < imax * 1e-3 ? 0 : Math.sign(s.i) * 6 * a / imax;
       s.phase = old[k] ? old[k].phase : 0;
     });
     app.flow = { segs };
