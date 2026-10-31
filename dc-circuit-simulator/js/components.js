@@ -71,6 +71,28 @@
     return p;
   }
 
+  /* ---------- reference directions chosen by the user ----------
+   * refV: terminal marked + for the voltage (0 = terminal 1, 1 = terminal 2)
+   * refI: reference arrow of the current (0 = from terminal 1 to terminal 2 through the element, 1 = reverse)
+   * Defaults: passive convention, except the sources (generator convention, positive values when they deliver).
+   * Meters keep the reference of their own + terminal. */
+  function defRef(type) {
+    if (type === 'vsource') return { refV: 0, refI: 1 };
+    if (type === 'isource') return { refV: 1, refI: 0 };
+    return { refV: 0, refI: 0 };
+  }
+  const flippable = (c) => TYPES[c.type].terms.length === 2 && c.type !== 'ground' && c.type !== 'ammeter' && c.type !== 'voltmeter';
+  function refs(c) {
+    const d = defRef(c.type);
+    if (!flippable(c)) return d;
+    return { refV: c.refV === 1 || c.refV === 0 ? c.refV : d.refV, refI: c.refI === 1 || c.refI === 0 ? c.refI : d.refI };
+  }
+  // values in the user's reference directions (passive convention values r.v, r.i come from the solver)
+  function signed(c, r) {
+    const f = refs(c);
+    return { v: (f.refV ? -1 : 1) * r.v, i: (f.refI ? -1 : 1) * r.i, passive: f.refV === f.refI };
+  }
+
   /* ---------- frame transform ---------- */
   function toWorld(c, lx, ly) {
     if (c.flip) ly = -ly;
@@ -182,7 +204,7 @@
     }
   };
 
-  const api = { TYPES, defaults, toWorld, toLocal, terminals, hit, bounds, SYM };
+  const api = { TYPES, defaults, defRef, refs, signed, flippable, toWorld, toLocal, terminals, hit, bounds, SYM };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else (root.DCS = root.DCS || {}).comp = api;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -20,8 +20,11 @@ Símbolos USA (por defecto) o IEC/europeos.
 
 ## Resultados
 
-- Se resuelve después de cada cambio. Sobre el circuito: V (con signos + y − en la polaridad real), I (la flecha indica el sentido real), P (positiva = absorbida, negativa en verde = entregada), tensiones de nodo y animación del sentido de la corriente.
-- Pestaña **Resultados**: tabla de todos los elementos, balance de potencia y tensiones de nodo.
+- **Sentidos de referencia elegidos por el usuario.** Cada elemento de dos terminales muestra el + y − de su tensión y la flecha de su corriente; se invierten tocándolos (o con los botones ⇅ V / ⇄ I del panel). Los valores llevan signo según esas referencias, como en un ejercicio resuelto a mano. Por defecto: convención pasiva, salvo las fuentes (convención generador). En Ajustes se puede pasar a "sentido real" (magnitudes con la polaridad y el sentido reales).
+- **Tensiones de nodo respecto de masa** (las incógnitas del método de nodos): botón Nodos sobre el circuito y tabla en la pestaña Resultados. Un nodo se nombra (A, B, sal…) seleccionando uno de sus cables.
+- **Verificación de Kirchhoff** en la pestaña Resultados: LKC en cada nodo (suma de corrientes salientes según las flechas de referencia) y LKT en cada lazo independiente (lazos fundamentales de un árbol generador), con los valores sustituidos y ✓.
+- Tabla de todos los elementos, balance de potencia (P > 0 absorbida, P < 0 entregada) y animación del sentido de la corriente.
+- **Característica I–V** del elemento seleccionado con el punto de operación Q y la recta de carga (Thévenin del resto). Con varios elementos en serie o en paralelo se superponen sus curvas y la combinada; para el transistor, curvas I_C(V_CE); para el AO, la transferencia.
 - Pestaña **Thévenin / Norton**: equivalente visto por un elemento (la carga se retira) o entre dos nodos A y B elegidos en el circuito. V_Th es la tensión a circuito abierto, I_N la corriente de cortocircuito, R_Th la pendiente de v_AB al inyectar una corriente de prueba (las fuentes dependientes —AO, transistor— siguen activas, por eso R_Th puede salir negativa). Si el circuito tiene elementos no lineales, el equivalente se linealiza alrededor del punto a circuito abierto. Con una resistencia de carga se muestran I, V, P y la máxima transferencia de potencia.
 
 ## Uso

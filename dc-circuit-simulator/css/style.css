@@ -243,3 +243,11 @@ html.layout-mobile .field input[type=text], html.layout-mobile .field select{fon
 .ivlegend .sw{display:inline-block; width:16px; height:3px; border-radius:2px; margin-right:6px}
 .ivlegend .sw.dash{height:0; background:none; border-top:2px dashed}
 .ivlegend .sw.dot{width:10px; height:10px; border-radius:50%}
+
+/* Kirchhoff checks */
+.card .kq{display:flex; flex-direction:column; gap:1px; font-size:13px; padding:4px 0; border-bottom:1px solid var(--border)}
+.card .kq b{font-size:12.5px}
+.eq-line{display:flex; flex-direction:column; gap:1px}
+.eq-sym{font-family:ui-serif, Georgia, "Times New Roman", serif; font-size:14.5px}
+.eq-num{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:12px; color:var(--muted); overflow-wrap:anywhere}
+.eq-num .ok{color:var(--c-pgen)} .eq-num .bad{color:var(--c-err)}

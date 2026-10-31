@@ -4,6 +4,16 @@
   const T = {
     en: {
       title: 'DC Circuit Simulator',
+      tip_flip: 'Tap to flip this reference', node_name: 'Node name', node_hint: 'Node voltages are measured from ground (0 V). Give the node a name (A, B, out…) to find it in the tables and the equations.',
+      nodes_hint: 'Unknowns of the nodal method: the voltage of each node with respect to ground. Hover or tap a row to find the node on the circuit.',
+      ref_title: 'Reference directions', ref_passive_s: 'passive convention', ref_active_s: 'generator convention',
+      ref_passive: 'Passive convention (I enters through the + of V): P = V·I is the power absorbed. Tap the + / − marks or the arrow on the circuit to change the references.',
+      ref_active: 'Generator convention (I leaves through the + of V): P = V·I is the power delivered. Tap the + / − marks or the arrow on the circuit to change the references.',
+      tbl_refs: 'V and I with the reference directions drawn on the circuit (+/− and arrows)',
+      eq_title: 'Kirchhoff’s laws (check)', eq_kcl: 'KCL at each node: sum of the currents leaving the node (reference arrows) = 0',
+      eq_kvl: 'KVL around each independent loop: sum of the voltage drops (+ → −) along the loop = 0', eq_none: 'No loops.', loop: 'Loop',
+      eq_skip: 'Loops through op-amps or transistors are not listed (their terminal currents are in KCL).',
+      set_realdir: 'Show magnitudes in the real direction instead of the reference directions',
       iv_title: 'I–V characteristic', iv_series: 'In series', iv_parallel: 'In parallel', iv_comb_series: 'Series combination (V add up)', iv_comb_parallel: 'Parallel combination (I add up)',
       iv_none: 'Select two-terminal elements that are in series or in parallel to see their characteristics and the combined one.',
       iv_load: 'Load line (Thévenin of the rest)', iv_q: 'Operating point Q', iv_expand: 'Enlarge',
@@ -86,7 +96,7 @@
 <li>Every circuit needs a ground (⏚): node voltages are measured from it.</li></ul>
 <h4>Results</h4><ul>
 <li>The circuit is solved after every change. Choose what to show with V, I, P and Nodes over the circuit.</li>
-<li>Voltages: magnitude with + and − marks at the real polarity. Currents: the arrow points in the real direction. Power: positive = absorbed, negative (green) = delivered.</li>
+<li>Every element shows its <b>reference directions</b>: + and − for V and an arrow for I. Tap them to choose your own; the values carry the sign (a negative value means the real polarity or direction is the opposite). Power: positive = absorbed, negative (green) = delivered.</li><li>Node voltages are measured from ground; name a node by selecting one of its wires. The <b>Results</b> tab checks KCL at each node and KVL around each loop with your references.</li>
 <li>The <b>Results</b> tab lists every element and the power balance.</li></ul>
 <h4>Thévenin / Norton</h4><ul>
 <li>Select a two-terminal element and choose “Thévenin seen by this element”, or use the <b>Thévenin A–B</b> tool and tap two nodes.</li></ul>
@@ -105,6 +115,16 @@
     },
     fr: {
       title: 'Simulateur de circuits en continu',
+      tip_flip: 'Touchez pour inverser cette référence', node_name: 'Nom du nœud', node_hint: 'Les potentiels sont mesurés par rapport à la masse (0 V). Donnez un nom au nœud (A, B, s…) pour le retrouver dans les tableaux et les équations.',
+      nodes_hint: 'Inconnues de la méthode des nœuds : le potentiel de chaque nœud par rapport à la masse. Survolez ou touchez une ligne pour repérer le nœud sur le circuit.',
+      ref_title: 'Sens de référence', ref_passive_s: 'convention récepteur', ref_active_s: 'convention générateur',
+      ref_passive: 'Convention récepteur (I entre par le + de V) : P = V·I est la puissance absorbée. Touchez les signes + / − ou la flèche sur le circuit pour changer les références.',
+      ref_active: 'Convention générateur (I sort par le + de V) : P = V·I est la puissance fournie. Touchez les signes + / − ou la flèche sur le circuit pour changer les références.',
+      tbl_refs: 'V et I avec les sens de référence dessinés sur le circuit (+/− et flèches)',
+      eq_title: 'Lois de Kirchhoff (vérification)', eq_kcl: 'Loi des nœuds : somme des courants qui sortent du nœud (flèches de référence) = 0',
+      eq_kvl: 'Loi des mailles pour chaque maille indépendante : somme des tensions (+ → −) le long de la maille = 0', eq_none: 'Pas de maille.', loop: 'Maille',
+      eq_skip: 'Les mailles qui passent par un AOP ou un transistor ne sont pas listées (leurs courants de borne figurent dans la loi des nœuds).',
+      set_realdir: 'Afficher les valeurs dans le sens réel au lieu des sens de référence',
       iv_title: 'Caractéristique I–V', iv_series: 'En série', iv_parallel: 'En parallèle', iv_comb_series: 'Association série (les V s’additionnent)', iv_comb_parallel: 'Association parallèle (les I s’additionnent)',
       iv_none: 'Sélectionnez des dipôles en série ou en parallèle pour voir leurs caractéristiques et la caractéristique équivalente.',
       iv_load: 'Droite de charge (Thévenin du reste)', iv_q: 'Point de fonctionnement Q', iv_expand: 'Agrandir',
@@ -187,7 +207,7 @@
 <li>Tout circuit a besoin d’une masse (⏚) : les potentiels sont mesurés par rapport à elle.</li></ul>
 <h4>Résultats</h4><ul>
 <li>Le circuit est résolu après chaque modification. Choisissez l’affichage avec V, I, P et Nœuds au-dessus du circuit.</li>
-<li>Tensions : valeur avec les signes + et − à la polarité réelle. Courants : la flèche indique le sens réel. Puissance : positive = absorbée, négative (vert) = fournie.</li>
+<li>Chaque élément montre ses <b>sens de référence</b> : + et − pour V, une flèche pour I. Touchez-les pour choisir les vôtres ; les valeurs portent le signe (une valeur négative signifie que la polarité ou le sens réel est l’opposé). Puissance : positive = absorbée, négative (vert) = fournie.</li><li>Les potentiels des nœuds sont mesurés par rapport à la masse ; nommez un nœud en sélectionnant un de ses fils. L’onglet <b>Résultats</b> vérifie la loi des nœuds et la loi des mailles avec vos références.</li>
 <li>L’onglet <b>Résultats</b> liste tous les éléments et le bilan de puissance.</li></ul>
 <h4>Thévenin / Norton</h4><ul>
 <li>Sélectionnez un dipôle et choisissez « Thévenin vu par cet élément », ou utilisez l’outil <b>Thévenin A–B</b> et touchez deux nœuds.</li></ul>
@@ -206,6 +226,16 @@
     },
     es: {
       title: 'Simulador de circuitos en continua',
+      tip_flip: 'Toque para invertir esta referencia', node_name: 'Nombre del nodo', node_hint: 'Las tensiones de nodo se miden respecto de masa (0 V). Póngale un nombre al nodo (A, B, sal…) para encontrarlo en las tablas y las ecuaciones.',
+      nodes_hint: 'Incógnitas del método de nodos: la tensión de cada nodo respecto de masa. Pase el ratón o toque una fila para ubicar el nodo en el circuito.',
+      ref_title: 'Sentidos de referencia', ref_passive_s: 'convención pasiva', ref_active_s: 'convención generador',
+      ref_passive: 'Convención pasiva (I entra por el + de V): P = V·I es la potencia absorbida. Toque los signos + / − o la flecha en el circuito para cambiar las referencias.',
+      ref_active: 'Convención generador (I sale por el + de V): P = V·I es la potencia entregada. Toque los signos + / − o la flecha en el circuito para cambiar las referencias.',
+      tbl_refs: 'V e I con los sentidos de referencia dibujados en el circuito (+/− y flechas)',
+      eq_title: 'Leyes de Kirchhoff (verificación)', eq_kcl: 'LKC en cada nodo: suma de las corrientes que salen del nodo (flechas de referencia) = 0',
+      eq_kvl: 'LKT en cada lazo independiente: suma de las caídas de tensión (+ → −) a lo largo del lazo = 0', eq_none: 'No hay lazos.', loop: 'Lazo',
+      eq_skip: 'No se listan los lazos que pasan por AO o transistores (sus corrientes de terminal están en la LKC).',
+      set_realdir: 'Mostrar los valores en el sentido real en lugar de los sentidos de referencia',
       iv_title: 'Característica I–V', iv_series: 'En serie', iv_parallel: 'En paralelo', iv_comb_series: 'Combinación serie (se suman las V)', iv_comb_parallel: 'Combinación paralelo (se suman las I)',
       iv_none: 'Seleccione elementos de dos terminales que estén en serie o en paralelo para ver sus características y la combinada.',
       iv_load: 'Recta de carga (Thévenin del resto)', iv_q: 'Punto de operación Q', iv_expand: 'Agrandar',
@@ -288,7 +318,7 @@
 <li>Todo circuito necesita una masa (⏚): las tensiones de nodo se miden respecto de ella.</li></ul>
 <h4>Resultados</h4><ul>
 <li>El circuito se resuelve después de cada cambio. Elija qué mostrar con V, I, P y Nodos sobre el circuito.</li>
-<li>Tensiones: valor con las marcas + y − en la polaridad real. Corrientes: la flecha indica el sentido real. Potencia: positiva = absorbida, negativa (verde) = entregada.</li>
+<li>Cada elemento muestra sus <b>sentidos de referencia</b>: + y − para V y una flecha para I. Tóquelos para elegir los suyos; los valores llevan signo (un valor negativo indica que la polaridad o el sentido real es el opuesto). Potencia: positiva = absorbida, negativa (verde) = entregada.</li><li>Las tensiones de nodo se miden respecto de masa; para nombrar un nodo seleccione uno de sus cables. La pestaña <b>Resultados</b> verifica la LKC en cada nodo y la LKT en cada lazo con sus referencias.</li>
 <li>La pestaña <b>Resultados</b> lista todos los elementos y el balance de potencia.</li></ul>
 <h4>Thévenin / Norton</h4><ul>
 <li>Seleccione un elemento de dos terminales y elija «Thévenin visto por este elemento», o use la herramienta <b>Thévenin A–B</b> y toque dos nodos.</li></ul>

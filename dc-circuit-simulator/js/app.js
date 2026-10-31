@@ -11,7 +11,7 @@
   const plain = (s) => String(s).replace(/<sub>(.*?)<\/sub>/g, '$1').replace(/<[^>]+>/g, '');
 
   const DEFAULT_SETTINGS = {
-    style: 'us', showV: true, showI: true, showP: false, showNodes: false, animate: false, colorV: false,
+    style: 'us', realDir: false, showV: true, showI: true, showP: false, showNodes: false, animate: false, colorV: false,
     showNames: true, showValues: true, showState: true, grid: true, digits: 3, tempC: 27, defModel: 'cvd'
   };
 
@@ -265,6 +265,26 @@
     for (const c of cs) { [c.x, c.y] = r(c.x, c.y); c.rot = ((c.rot || 0) + 1) % 4; }
     for (const w of ws) { [w.x1, w.y1] = r(w.x1, w.y1); [w.x2, w.y2] = r(w.x2, w.y2); }
   }
+  // flip the reference direction of V ('v') or I ('i') of an element
+  app.flipRef = function (id, kind) {
+    const c = app.circuit.comps.find(x => x.id === id);
+    if (!c || !C.flippable(c)) return;
+    const f = C.refs(c);
+    app.checkpoint();
+    c.refV = f.refV; c.refI = f.refI;
+    if (kind === 'v') c.refV = 1 - f.refV; else c.refI = 1 - f.refI;
+    app.commit();
+  };
+  app.setNodeName = function (pt, name) {
+    const nd = nodeAt(pt);
+    if (nd == null || nd === 0) return;
+    app.checkpoint();
+    app.circuit.nodeNames = (app.circuit.nodeNames || []).filter(nn => nodeAt([nn.x, nn.y]) !== nd);
+    name = String(name || '').trim().slice(0, 12);
+    if (name) app.circuit.nodeNames.push({ x: pt[0], y: pt[1], name });
+    app.commit();
+  };
+  app.nodeAt = (p) => nodeAt(p);
   app.flipSel = function () {
     const cs = app.selectedComps();
     if (!cs.length) return;
@@ -399,8 +419,12 @@
     const clean = { comps: [], wires: [] };
     for (const c of circuit.comps) {
       if (!C.TYPES[c.type]) continue;
-      clean.comps.push({ id: String(c.id), type: c.type, name: String(c.name || ''), x: Math.round(+c.x || 0), y: Math.round(+c.y || 0), rot: ((+c.rot || 0) % 4 + 4) % 4, flip: !!c.flip, props: Object.assign(C.defaults(c.type), c.props || {}) });
+      const n = { id: String(c.id), type: c.type, name: String(c.name || ''), x: Math.round(+c.x || 0), y: Math.round(+c.y || 0), rot: ((+c.rot || 0) % 4 + 4) % 4, flip: !!c.flip, props: Object.assign(C.defaults(c.type), c.props || {}) };
+      if (c.refV === 0 || c.refV === 1) n.refV = c.refV;
+      if (c.refI === 0 || c.refI === 1) n.refI = c.refI;
+      clean.comps.push(n);
     }
+    clean.nodeNames = (circuit.nodeNames || []).filter(nn => nn && isFinite(nn.x) && isFinite(nn.y) && nn.name).map(nn => ({ x: Math.round(nn.x), y: Math.round(nn.y), name: String(nn.name).slice(0, 12) }));
     for (const w of circuit.wires) clean.wires.push({ id: String(w.id), x1: Math.round(+w.x1), y1: Math.round(+w.y1), x2: Math.round(+w.x2), y2: Math.round(+w.y2) });
     app.circuit = clean;
     app.sel.clear();
@@ -423,11 +447,11 @@
   };
   function compact() {
     // short form: comps as arrays, wires as flat arrays
-    return JSON.stringify({ v: 1, c: app.circuit.comps.map(c => [c.type, c.name, c.x, c.y, c.rot, c.flip ? 1 : 0, c.props]), w: app.circuit.wires.map(w => [w.x1, w.y1, w.x2, w.y2]) });
+    return JSON.stringify({ v: 1, c: app.circuit.comps.map(c => [c.type, c.name, c.x, c.y, c.rot, c.flip ? 1 : 0, c.props, c.refV, c.refI]), w: app.circuit.wires.map(w => [w.x1, w.y1, w.x2, w.y2]), n: (app.circuit.nodeNames || []).map(nn => [nn.x, nn.y, nn.name]) });
   }
   function expand(o) {
     let k = 0;
-    return { comps: o.c.map(a => ({ id: 'c' + (++k), type: a[0], name: a[1], x: a[2], y: a[3], rot: a[4], flip: !!a[5], props: a[6] })), wires: o.w.map(a => ({ id: 'w' + (++k), x1: a[0], y1: a[1], x2: a[2], y2: a[3] })) };
+    return { comps: o.c.map(a => ({ id: 'c' + (++k), type: a[0], name: a[1], x: a[2], y: a[3], rot: a[4], flip: !!a[5], props: a[6], refV: a[7], refI: a[8] })), wires: o.w.map(a => ({ id: 'w' + (++k), x1: a[0], y1: a[1], x2: a[2], y2: a[3] })), nodeNames: (o.n || []).map(a => ({ x: a[0], y: a[1], name: a[2] })) };
   }
   async function streamBytes(bytes, stream) {
     const s = new Blob([bytes]).stream().pipeThrough(stream);

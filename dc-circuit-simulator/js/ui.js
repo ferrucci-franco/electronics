@@ -184,7 +184,7 @@
       sym.addEventListener('change', () => { s.style = sym.value; changed(); });
       const dg = row(t('set_digits'), select([[3, '3'], [4, '4'], [5, '5']], s.digits));
       dg.addEventListener('change', () => { s.digits = +dg.value; changed(); });
-      for (const [k, lab] of [['showNames', 'set_names'], ['showValues', 'set_values'], ['showState', 'set_state'], ['grid', 'set_grid'], ['colorV', 'colorV']]) {
+      for (const [k, lab] of [['realDir', 'set_realdir'], ['showNames', 'set_names'], ['showValues', 'set_values'], ['showState', 'set_state'], ['grid', 'set_grid'], ['colorV', 'colorV']]) {
         const c = row(t(lab), check(s[k]));
         c.addEventListener('change', () => { s[k] = c.checked; changed(); });
       }
@@ -270,9 +270,10 @@
     app.tip = function (h, p) {
       const tip = $('tip');
       const res = app.result && app.result.ok ? app.result : null;
-      if (!h || !p || !res || isMobile()) { tip.hidden = true; return; }
+      if (!h || !p || (!res && h.kind !== 'mark') || isMobile()) { tip.hidden = true; return; }
       let html = '';
-      if (h.kind === 'wire' || h.kind === 'wend') {
+      if (h.kind === 'mark') html = esc(app.tp('tip_flip'));
+      else if (h.kind === 'wire' || h.kind === 'wend') {
         const nd = app.net.wireNode.get(h.wire.id);
         html = `${t('node_voltage')}: <b>${fmt(res.v[nd], 'V')}</b>`;
       } else if (h.kind === 'term') {
@@ -371,8 +372,19 @@
       if (ws.length) {
         const w = ws[0];
         const nd = app.net.wireNode.get(w.id);
-        const card = el('div', { class: 'card' }, `<h3>${t('wire_sel')}</h3>`);
-        if (res) card.appendChild(el('dl', { class: 'kv' }, `<dt>${t('node_voltage')}</dt><dd class="v">${fmt(res.v[nd], 'V')}</dd><dt>${t('node')}</dt><dd>${nd === 0 ? '0 (⏚)' : 'N' + nd}</dd>`));
+        const node = app.net.nodes[nd];
+        const card = el('div', { class: 'card' }, `<h3>${t('wire_sel')} · ${t('node')} ${esc(node.name)}</h3>`);
+        if (nd !== 0) {
+          const r = el('div', { class: 'field' });
+          r.appendChild(el('label', null, t('node_name')));
+          const inp = el('input', { type: 'text', value: node.name, 'data-prop': 'nodename', autocomplete: 'off', spellcheck: 'false' });
+          inp.addEventListener('change', () => app.setNodeName([w.x1, w.y1], inp.value === 'N' + nd ? '' : inp.value));
+          inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') inp.blur(); });
+          r.appendChild(inp);
+          card.appendChild(r);
+        }
+        if (res) card.appendChild(el('dl', { class: 'kv' }, `<dt>${t('node_voltage')} V<sub>${esc(node.name)}</sub></dt><dd class="v">${fmt(res.v[nd], 'V')}</dd>`));
+        card.appendChild(el('div', { class: 'hint' }, t('node_hint')));
         const row = el('div', { class: 'btnrow' });
         row.appendChild(button(t('del'), () => app.deleteSel(), 'warn'));
         card.appendChild(row);
@@ -454,6 +466,16 @@
           field(propLabel(c, d), inp, d.unit);
         }
       }
+      if (C.flippable(c) && !app.settings.realDir) {
+        const f = C.refs(c);
+        const rr = el('div', { class: 'field' });
+        rr.appendChild(el('label', null, `${t('ref_title')}<br><span class="muted" style="font-size:12.5px">${t(f.refV === f.refI ? 'ref_passive_s' : 'ref_active_s')}</span>`));
+        const bw = el('div', { class: 'btnrow' });
+        bw.appendChild(button('⇅ V', () => app.flipRef(c.id, 'v')));
+        bw.appendChild(button('⇄ I', () => app.flipRef(c.id, 'i')));
+        rr.appendChild(bw);
+        card.appendChild(rr);
+      }
       const row = el('div', { class: 'btnrow' });
       if (c.type !== 'ground') row.appendChild(button('⟳ ' + plainText(t('rotate')).replace(/ \(.*\)/, ''), () => app.rotateSel()));
       if (T.terms.length === 2 && c.type !== 'ground') row.appendChild(button(t('thev_seen'), () => app.portFromComp(c)));
@@ -521,12 +543,14 @@
           `<dt>${t(pnp ? 'veb' : 'vbe')}</dt><dd class="v">${fmt(r.vbe, 'V')}</dd><dt>${t(pnp ? 'vec' : 'vce')}</dt><dd class="v">${fmt(r.vce, 'V')}</dd>` +
           (r.state === 'act' && r.ib > 0 ? `<dt>I<sub>C</sub>/I<sub>B</sub></dt><dd>${(r.ic / r.ib).toFixed(1)}</dd>` : '') + pRow(r.p);
       } else {
-        html = `<dt>${t('res_v')}</dt><dd class="v">${fmt(r.v, 'V')}</dd><dt>${t('res_i')}</dt><dd class="i">${fmt(r.i, 'A')}</dd>` + pRow(r.p);
+        const sg = app.settings.realDir ? { v: r.v, i: r.i } : C.signed(c, r);
+        const nm = esc(c.name || '');
+        html = `<dt>V<sub>${nm}</sub></dt><dd class="v">${fmt(sg.v, 'V')}</dd><dt>I<sub>${nm}</sub></dt><dd class="i">${fmt(sg.i, 'A')}</dd>` + pRow(r.p);
         if ((c.type === 'diode' || c.type === 'schottky') && r.state) html += `<dt>${t('res_state')}</dt><dd>${t('state_' + r.state)}</dd>`;
         if (c.type === 'resistor') html += `<dt>V/R</dt><dd>${fmt(r.v / c.props.R, 'A')}</dd>`;
       }
       card.appendChild(el('dl', { class: 'kv' }, html));
-      if (C.TYPES[c.type].terms.length === 2 && c.type !== 'ammeter' && c.type !== 'voltmeter') card.appendChild(el('div', { class: 'hint' }, t('conv')));
+      if (C.flippable(c)) card.appendChild(el('div', { class: 'hint' }, app.settings.realDir ? t('conv') : t(C.signed(c, r).passive ? 'ref_passive' : 'ref_active')));
       // terminal voltages
       const nodes = app.net.compNodes.get(c.id);
       const names = C.TYPES[c.type].termNames || (c.type === 'diode' || c.type === 'schottky' ? ['A', 'K'] : ['1', '2']);
@@ -549,6 +573,23 @@
       issuesInto(pane);
       const res = app.result && app.result.ok ? app.result : null;
       if (!res) return;
+      // node voltages
+      const nd = el('div', { class: 'card' }, `<h3>${t('nodes_title')}</h3>`);
+      const nt = el('table', { class: 'res' });
+      let nr = `<tr><th>${t('node')}</th><th>V</th></tr>`;
+      for (const n of app.net.nodes) {
+        if (n.id === 0 || !n.points.length) continue;
+        const names = [];
+        for (const p of n.points) for (const [cc, j] of p.terms) if (cc.type !== 'ground') names.push((cc.name || '') + (C.TYPES[cc.type].termNames ? '.' + C.TYPES[cc.type].termNames[j] : ''));
+        nr += `<tr data-node="${n.id}"><td>${esc(n.name)} <span class="muted" style="font-weight:400">${esc(Array.from(new Set(names)).slice(0, 4).join(', '))}</span></td><td class="v">${fmt(res.v[n.id], 'V')}</td></tr>`;
+      }
+      nt.innerHTML = nr;
+      nt.addEventListener('pointerover', (e) => { const tr = e.target.closest('tr[data-node]'); app.hiNode = tr ? +tr.dataset.node : null; app.requestRender(); });
+      nt.addEventListener('pointerleave', () => { app.hiNode = null; app.requestRender(); });
+      nt.addEventListener('click', (e) => { const tr = e.target.closest('tr[data-node]'); if (tr) { app.hiNode = +tr.dataset.node; app.requestRender(); } });
+      nd.appendChild(el('div', { class: 'hint' }, t('nodes_hint')));
+      nd.appendChild(nt);
+      pane.appendChild(nd);
       const order = ['vsource', 'isource', 'resistor', 'diode', 'schottky', 'bjt', 'opamp', 'ammeter', 'voltmeter'];
       const comps = app.circuit.comps.filter(c => c.type !== 'ground').sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type) || String(a.name).localeCompare(String(b.name), undefined, { numeric: true }));
       const tbl = el('table', { class: 'res' });
@@ -558,6 +599,7 @@
         const r = res.el[c.id];
         if (!r) continue;
         let v = r.v, i = r.i, p = r.p;
+        if (!app.settings.realDir && C.flippable(c)) { const sg = C.signed(c, r); v = sg.v; i = sg.i; }
         if (c.type === 'opamp') { v = r.vout; i = r.iout; p = r.p; }
         if (c.type === 'bjt') { v = r.vce; i = r.ic; }
         if (c.type === 'opamp') { if (p > 0) pAbs += p; else pGen -= p; }
@@ -569,27 +611,92 @@
       tbl.innerHTML = rows;
       tbl.addEventListener('click', (e) => { const tr = e.target.closest('tr[data-id]'); if (tr) { app.select([tr.dataset.id]); ui.showTab('props', false); } });
       const card = el('div', { class: 'card' });
-      card.appendChild(el('div', { class: 'hint' }, `V: ${t('v_ref')} · I: ${t('i_ref')} · P &gt; 0: ${t('absorbs')}, P &lt; 0: ${t('delivers')}`));
+      card.appendChild(el('div', { class: 'hint' }, (app.settings.realDir ? `V: ${t('v_ref')} · I: ${t('i_ref')}` : t('tbl_refs')) + ` · P &gt; 0: ${t('absorbs')}, P &lt; 0: ${t('delivers')}`));
       card.appendChild(tbl);
       pane.appendChild(card);
+      pane.appendChild(kirchhoffCard(res));
       const bal = el('div', { class: 'card' }, `<h3>${t('balance')}</h3><dl class="kv"><dt>${t('p_gen')}</dt><dd class="pg">${fmt(pGen, 'W')}</dd><dt>${t('p_abs')}</dt><dd class="pa">${fmt(pAbs, 'W')}</dd><dt>${t('p_sum')}</dt><dd>${fmt(res.pSum, 'W')}</dd></dl>`);
       pane.appendChild(bal);
-      // node voltages
-      const nd = el('div', { class: 'card' }, `<h3>${t('nodes_title')}</h3>`);
-      const nt = el('table', { class: 'res' });
-      let nr = `<tr><th>${t('node')}</th><th>V</th></tr>`;
-      for (const n of app.net.nodes) {
-        if (n.id === 0 || !n.points.length) continue;
-        const names = [];
-        for (const p of n.points) for (const [cc, j] of p.terms) if (cc.type !== 'ground') names.push((cc.name || '') + (C.TYPES[cc.type].termNames ? '.' + C.TYPES[cc.type].termNames[j] : ''));
-        nr += `<tr data-node="${n.id}"><td>N${n.id} <span class="muted" style="font-weight:400">${esc(Array.from(new Set(names)).slice(0, 4).join(', '))}</span></td><td class="v">${fmt(res.v[n.id], 'V')}</td></tr>`;
+    }
+
+    /* KCL at every node and KVL around every independent loop, written with the reference directions */
+    function kirchhoffCard(res) {
+      const card = el('div', { class: 'card' }, `<h3>${t('eq_title')}</h3>`);
+      const net = app.net;
+      const nodeName = (n) => esc(net.nodes[n].name);
+      const sub = (s, name) => `${s}<sub>${esc(name)}</sub>`;
+      const tolOk = (sum, terms) => Math.abs(sum) <= 1e-9 * Math.max(1e-6, ...terms.map(x => Math.abs(x.val))) + 1e-12;
+      const fmtEq = (terms, unit) => {
+        if (!terms.length) return '';
+        const sym = terms.map((x, k) => (x.sign < 0 ? ' − ' : k ? ' + ' : '') + x.sym).join('');
+        const num = terms.map((x, k) => { const v = x.sign * x.val; return (k ? (v < 0 ? ' − ' : ' + ') : (v < 0 ? '−' : '')) + U.format(Math.abs(v), unit, { digits: app.settings.digits }); }).join('');
+        const sum = terms.reduce((s, x) => s + x.sign * x.val, 0);
+        return `<div class="eq-line"><span class="eq-sym">${sym} = 0</span><span class="eq-num">${num} = ${U.format(sum, unit, { digits: 2, zero: 1e-9, trim: true })} ${tolOk(sum, terms) ? '<b class="ok">✓</b>' : '<b class="bad">✗</b>'}</span></div>`;
+      };
+      // KCL: currents leaving each node through the elements, with their reference arrows
+      const kcl = new Map();
+      const addI = (node, sign, sym, val) => { if (node === 0) return; if (!kcl.has(node)) kcl.set(node, []); kcl.get(node).push({ sign, sym, val }); };
+      let multi = false;
+      const branches = [];
+      for (const c of app.circuit.comps) {
+        const r = res.el[c.id];
+        if (!r || c.type === 'ground') continue;
+        const n = net.compNodes.get(c.id);
+        if (C.TYPES[c.type].terms.length === 2) {
+          if (n[0] === n[1]) continue;
+          const f = C.refs(c);
+          const sg = C.signed(c, r);
+          const from = f.refI ? n[1] : n[0], to = f.refI ? n[0] : n[1];
+          if (c.type !== 'voltmeter') { addI(from, 1, sub('I', c.name), sg.i); addI(to, -1, sub('I', c.name), sg.i); }
+          branches.push({ c, plus: f.refV ? n[1] : n[0], minus: f.refV ? n[0] : n[1], v: sg.v });
+        } else if (c.type === 'bjt') {
+          multi = true;
+          const s = c.props.pol === 'pnp' ? -1 : 1;
+          addI(n[0], s, sub('I', 'B,' + c.name), r.ib); addI(n[1], s, sub('I', 'C,' + c.name), r.ic); addI(n[2], -s, sub('I', 'E,' + c.name), r.ie);
+        } else if (c.type === 'opamp') {
+          multi = true;
+          addI(n[2], -1, sub('I', 'o,' + c.name), r.iout);
+        }
       }
-      nt.innerHTML = nr;
-      nt.addEventListener('pointerover', (e) => { const tr = e.target.closest('tr[data-node]'); app.hiNode = tr ? +tr.dataset.node : null; app.requestRender(); });
-      nt.addEventListener('pointerleave', () => { app.hiNode = null; app.requestRender(); });
-      nt.addEventListener('click', (e) => { const tr = e.target.closest('tr[data-node]'); if (tr) { app.hiNode = +tr.dataset.node; app.requestRender(); } });
-      nd.appendChild(nt);
-      pane.appendChild(nd);
+      let html = `<div class="hint">${t('eq_kcl')}</div>`;
+      for (const nd of net.nodes) {
+        const terms = kcl.get(nd.id);
+        if (!terms || nd.id === 0) continue;
+        html += `<div class="kq"><b>${t('node')} ${nodeName(nd.id)}</b>${fmtEq(terms, 'A')}</div>`;
+      }
+      // KVL: fundamental loops of a spanning tree over the two-terminal elements
+      const adj = new Map();
+      for (const b of branches) for (const [p, q] of [[b.plus, b.minus], [b.minus, b.plus]]) { if (!adj.has(p)) adj.set(p, []); adj.get(p).push([q, b]); }
+      const parent = new Map(), depth = new Map(), used = new Set();
+      for (const root of [0].concat(Array.from(adj.keys()))) {
+        if (parent.has(root) || !adj.has(root)) continue;
+        parent.set(root, null); depth.set(root, 0);
+        const q = [root];
+        while (q.length) {
+          const u = q.shift();
+          for (const [v, b] of adj.get(u) || []) if (!parent.has(v)) { parent.set(v, [u, b]); depth.set(v, depth.get(u) + 1); used.add(b); q.push(v); }
+        }
+      }
+      const drop = (b, from) => ({ sign: from === b.plus ? 1 : -1, sym: sub('V', b.c.name), val: b.v });
+      const loops = [];
+      for (const b of branches) {
+        if (used.has(b)) continue;
+        // loop: through b from plus to minus, then back along the tree from minus to plus
+        const terms = [drop(b, b.plus)];
+        let x = b.minus, y = b.plus;
+        const up = [], down = [];
+        while (x !== y) {
+          if (depth.get(x) >= depth.get(y)) { const [px, bx] = parent.get(x); up.push(drop(bx, x)); x = px; }
+          else { const [py, by] = parent.get(y); down.unshift(drop(by, py)); y = py; }
+        }
+        loops.push(terms.concat(up, down));
+      }
+      html += `<div class="hint" style="margin-top:6px">${t('eq_kvl')}</div>`;
+      loops.forEach((terms, k) => { html += `<div class="kq"><b>${t('loop')} ${k + 1}</b>${fmtEq(terms, 'V')}</div>`; });
+      if (!loops.length) html += `<div class="hint">${t('eq_none')}</div>`;
+      if (multi) html += `<div class="hint">${t('eq_skip')}</div>`;
+      card.insertAdjacentHTML('beforeend', html);
+      return card;
     }
 
     /* ---------- Thévenin pane ---------- */

@@ -53,9 +53,11 @@
     const items = two.map(c => ({ c, el: elOf.get(c.id), n: net.compNodes.get(c.id), r: res.el[c.id] }));
     if (items.some(it => !it.el || !it.r || it.n[0] === it.n[1])) return { kind: 'none', items };
     if (items.length === 1) {
+      // oriented with the user's voltage reference: V from its + to its −, I entering through its +
       const it = items[0];
-      it.sign = 1;
-      return { kind: 'single', items, a: it.n[0], b: it.n[1], q: [it.r.v, it.r.i] };
+      it.sign = C.refs(it.c).refV ? -1 : 1;
+      const [a1, b1] = it.sign > 0 ? [it.n[0], it.n[1]] : [it.n[1], it.n[0]];
+      return { kind: 'single', items, a: a1, b: b1, q: [it.sign * it.r.v, it.sign * it.r.i] };
     }
     // parallel: every element on the same pair of nodes
     const a = items[0].n[0], b = items[0].n[1];

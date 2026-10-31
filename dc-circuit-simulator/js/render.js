@@ -196,7 +196,7 @@
     const ctx = this.ctx, dpr = this.dpr, view = S.view, s = view.scale;
     const st = S.settings, res = S.result && S.result.ok ? S.result : null;
     const fmt = (v, u) => U.format(v, u, { digits: st.digits });
-    const t = S.t;
+    this.hits = [];
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.fillStyle = col.bg;
     ctx.fillRect(0, 0, this.w, this.h);
@@ -290,7 +290,7 @@
       ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
       for (const nd of net.nodes) {
         if (!nd.best || nd.id === 0) continue;
-        const txt = fmt(res.v[nd.id], 'V');
+        const txt = nd.name + ' = ' + fmt(res.v[nd.id], 'V');
         const sx = nd.best.x * s + view.ox + 5, sy = nd.best.y * s + view.oy - 5 - fontPx * 0.6;
         const w = ctx.measureText(txt).width + 8, h = fontPx + 4;
         ctx.fillStyle = col.tagBg; ctx.strokeStyle = voltColorTag(res.v[nd.id], vmax); ctx.lineWidth = 1.2;
@@ -396,6 +396,8 @@
             const open = S.net && S.net.openTerms.some(t => t[2] === c.id);
             const txt = open ? '—' : c.type === 'ammeter' ? fmt(r.i, 'A') : fmt(r.v, 'V');
             lines.push({ text: txt, mono: true, box: true, color: c.type === 'ammeter' ? col.cur : col.volt });
+          } else if (!st.realDir) {
+            this.refMarks(S, c, r, rd, hw, cx, cy, ax, ay, marks, lines, fmt);
           } else {
             const showI = st.showI && c.type !== 'isource', showV = st.showV && c.type !== 'vsource';
             if (showI) {
@@ -416,7 +418,11 @@
             if (st.showP) lines.push({ text: fmt(r.p, 'W'), color: r.p < -1e-15 ? col.pgen : col.pabs, mono: true });
             if ((c.type === 'diode' || c.type === 'schottky') && c.props.model !== 'exact' && st.showState) lines.push({ text: tr('state_' + r.state), color: col.muted });
           }
-          blocks.push({ wx: cx + rd[0] * off, wy: cy + rd[1] * off, dir: rd, lines });
+          blocks.push({ wx: cx + rd[0] * (lines.refOff || off), wy: cy + rd[1] * (lines.refOff || off), dir: rd, lines });
+        } else if (!st.realDir && C.flippable(c)) {
+          const lines = [];
+          this.refMarks(S, c, null, rd, hw, cx, cy, ax, ay, marks, lines, fmt);
+          blocks.push({ wx: cx + rd[0] * lines.refOff, wy: cy + rd[1] * lines.refOff, dir: rd, lines });
         }
         opts.push({ blocks, marks });
       }
@@ -432,9 +438,9 @@
         if (r.state && r.state !== 'lin') lines.push({ text: r.state === 'sp' ? 'SAT +' : 'SAT −', color: col.err, bold: true });
       }
       const marks = [];
-      if (r && st.showI && Math.abs(r.iout) > 1e-12) marks.push(() => {
+      if (r && st.showI && (!st.realDir || Math.abs(r.iout) > 1e-12)) marks.push(() => {
         const a = C.toWorld(c, 2.05, 0.45), b = C.toWorld(c, 2.95, 0.45);
-        if (r.iout > 0) arrowScreen(this, S.view, a[0], a[1], b[0], b[1], col.cur, 1.8);
+        if (!st.realDir || r.iout > 0) arrowScreen(this, S.view, a[0], a[1], b[0], b[1], col.cur, 1.8);
         else arrowScreen(this, S.view, b[0], b[1], a[0], a[1], col.cur, 1.8);
       });
       const blk = (lx, ly, dx, dy, lines) => { const p = C.toWorld(c, lx, ly); return { wx: p[0], wy: p[1], dir: worldDir(c, dx, dy), lines }; };
@@ -464,9 +470,11 @@
           if (positive) arrowScreen(this, S.view, a[0], a[1], b[0], b[1], col.cur, 1.6);
           else arrowScreen(this, S.view, b[0], b[1], a[0], a[1], col.cur, 1.6);
         };
-        if (Math.abs(r.ib) > 1e-12) arr([-1.85, -0.35], [-1.05, -0.35], (r.ib > 0) !== pnp);
-        if (Math.abs(r.ic) > 1e-12) arr([1.35, -1.95], [1.35, -1.25], (r.ic > 0) !== pnp);
-        if (Math.abs(r.ie) > 1e-12) arr([1.35, 1.25], [1.35, 1.95], (r.ie > 0) !== pnp);
+        // reference mode: arrows in the normal directions of the device, the values carry the sign
+        const real = !!st.realDir;
+        if (!real || Math.abs(r.ib) > 1e-12) arr([-1.85, -0.35], [-1.05, -0.35], real ? (r.ib > 0) !== pnp : !pnp);
+        if (!real || Math.abs(r.ic) > 1e-12) arr([1.35, -1.95], [1.35, -1.25], real ? (r.ic > 0) !== pnp : !pnp);
+        if (!real || Math.abs(r.ie) > 1e-12) arr([1.35, 1.25], [1.35, 1.95], real ? (r.ie > 0) !== pnp : !pnp);
       });
       for (const [lx, ly, dx, dy] of [[2.0, 0, 1, 0], [-1.2, -1.0, -1, 0], [-1.2, 1.0, -1, 0]]) {
         const p = C.toWorld(c, lx, ly);
@@ -475,6 +483,57 @@
       return opts;
     }
     return opts;
+  };
+
+  /* reference marks of a two-terminal element: + and − of V at the chosen terminals, the arrow of I in the
+   * chosen direction (both can be tapped to flip them), and the values with their sign */
+  Renderer.prototype.refMarks = function (S, c, r, rd, hw, cx, cy, ax, ay, marks, lines, fmt) {
+    const st = S.settings;
+    const f = C.refs(c), sV = f.refV ? -1 : 1, sI = f.refI ? -1 : 1;
+    let off = hw + 0.35;
+    if (st.showI) {
+      const o = off;
+      marks.push(() => {
+        const x1 = cx + rd[0] * o - ax * 0.65 * sI, y1 = cy + rd[1] * o - ay * 0.65 * sI, x2 = cx + rd[0] * o + ax * 0.65 * sI, y2 = cy + rd[1] * o + ay * 0.65 * sI;
+        arrowScreen(this, S.view, x1, y1, x2, y2, col.cur, 1.8);
+        this.addHit(S, c.id, 'i', (x1 + x2) / 2, (y1 + y2) / 2, 0.85);
+      });
+      off += 0.5;
+    }
+    if (st.showV) {
+      const o2 = hw + 0.35;
+      marks.push(() => {
+        const px = Math.max(8, Math.min(12, S.view.scale * 0.45));
+        const p0 = [cx - ax * 1.55 * sV + rd[0] * o2, cy - ay * 1.55 * sV + rd[1] * o2], p1 = [cx + ax * 1.55 * sV + rd[0] * o2, cy + ay * 1.55 * sV + rd[1] * o2];
+        signGlyph(this, S.view, p0[0], p0[1], true, col.volt, px);
+        signGlyph(this, S.view, p1[0], p1[1], false, col.volt, px);
+        this.addHit(S, c.id, 'v', p0[0], p0[1], 0.5);
+        this.addHit(S, c.id, 'v', p1[0], p1[1], 0.5);
+      });
+    }
+    if (r) {
+      const sg = C.signed(c, r);
+      if (st.showV) lines.push({ text: fmt(sg.v, 'V'), color: col.volt, mono: true });
+      if (st.showI) lines.push({ text: fmt(sg.i, 'A'), color: col.cur, mono: true });
+      if (st.showP) lines.push({ text: fmt(r.p, 'W'), color: r.p < -1e-15 ? col.pgen : col.pabs, mono: true });
+      if ((c.type === 'diode' || c.type === 'schottky') && c.props.model !== 'exact' && st.showState) lines.push({ text: S.tr('state_' + r.state), color: col.muted });
+    }
+    lines.refOff = off;
+  };
+  // tappable areas (screen rectangles) of the reference marks
+  Renderer.prototype.addHit = function (S, id, kind, wx, wy, half) {
+    const s = S.view.scale, h = Math.max(10, half * s);
+    const x = wx * s + S.view.ox, y = wy * s + S.view.oy;
+    this.hits.push({ id, kind, r: [x - h, y - h, x + h, y + h] });
+  };
+  Renderer.prototype.markAt = function (sx, sy, pad) {
+    let best = null, bd = Infinity;
+    for (const h of this.hits || []) {
+      if (sx < h.r[0] - pad || sx > h.r[2] + pad || sy < h.r[1] - pad || sy > h.r[3] + pad) continue;
+      const d = Math.hypot(sx - (h.r[0] + h.r[2]) / 2, sy - (h.r[1] + h.r[3]) / 2);
+      if (d < bd) { bd = d; best = h; }
+    }
+    return best;
   };
 
   function blockRect(R, view, b, fontPx) {

@@ -178,7 +178,9 @@
     if (tool === 'erase') { g.mode = 'erase'; g.erased = false; if (e.pointerType === 'mouse') this.eraseAt(p, g); return; }
     if (tool === 'port') { g.mode = 'port'; return; }
 
-    // select tool
+    // select tool: a tap on a reference mark (+ / − of V, arrow of I) flips it
+    const mk = app.renderer.markAt(p.sx, p.sy, e.pointerType === 'touch' ? 6 : 1);
+    if (mk && !g.shift) { g.mode = 'mark'; g.mark = mk; return; }
     if (h && (h.kind === 'term' || (h.kind === 'wend' && !app.sel.has(h.wire.id)))) {
       g.mode = 'maybe-wire'; g.a = h.pt;
     } else if (h && h.kind === 'wend') {
@@ -312,6 +314,9 @@
         break;
       case 'toggle':
         app.toggleSel(g.toggleId);
+        break;
+      case 'mark':
+        if (!g.moved) app.flipRef(g.mark.id, g.mark.kind);
         break;
       case 'maybe-wire':
       case 'endpoint':
@@ -548,6 +553,12 @@
       cursor = h ? 'pointer' : 'default';
       if (h && (h.kind === 'term' || h.kind === 'wend')) { app.overlay.snap = h.pt; app.overlay.snapHot = true; }
       else if (h) app.hover = { id: h.comp ? h.comp.id : h.wire.id };
+    } else if (app.renderer.markAt(p.sx, p.sy, 1)) {
+      cursor = 'pointer';
+      app.tip({ kind: 'mark' }, p);
+      this.cv.style.cursor = cursor;
+      app.requestRender();
+      return;
     } else if (h) {
       if (h.kind === 'term' || (h.kind === 'wend' && !app.sel.has(h.wire.id))) { cursor = 'crosshair'; app.overlay.snap = h.pt; app.overlay.snapHot = true; }
       else if (h.kind === 'wend') cursor = 'move';

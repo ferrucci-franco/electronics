@@ -113,10 +113,23 @@
     }
     const wireNode = new Map();
     for (const w of wires) wireNode.set(w.id, pointNode.get(key(w.x1, w.y1)));
+    // node names given by the user (a point of the node and a name), N1, N2... otherwise
+    const nodeOf = (x, y) => {
+      const n = pointNode.get(key(x, y));
+      if (n != null) return n;
+      for (const w of wires) if (onSegment(x, y, w)) return wireNode.get(w.id);
+      return null;
+    };
+    const given = new Array(nodeCount).fill(null);
+    for (const nn of circuit.nodeNames || []) {
+      const n = nodeOf(nn.x, nn.y);
+      if (n != null && n !== 0 && !given[n] && nn.name) given[n] = String(nn.name);
+    }
+    for (const nd of nodes) nd.name = nd.id === 0 ? '0' : (given[nd.id] || 'N' + nd.id);
 
     return {
       ckt: { nodeCount, elements }, compNodes, compTerms, pointNode, wireNode, nodes, junctions, openTerms,
-      noGround, wires, inner, points: P
+      noGround, wires, inner, points: P, nodeOf
     };
   }
 
