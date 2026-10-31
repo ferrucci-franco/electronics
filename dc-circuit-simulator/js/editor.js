@@ -185,7 +185,7 @@
     if (this.ptrs.size === 2 && e.pointerType === 'touch') { this.abortGesture(); this.startPinch(); return; }
     if (this.ptrs.size > 1) return;
     app.tip(null);
-    if (app.ui.hideQuick) app.ui.hideQuick();
+    if (app.ui.quickOutside) app.ui.quickOutside();
 
     const g = { id: e.pointerId, type: e.pointerType, button: e.button, start: p, last: p, moved: false, shift: e.shiftKey || e.ctrlKey || e.metaKey, alt: e.altKey };
     this.g = g;

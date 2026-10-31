@@ -295,6 +295,8 @@
       const tw = el('div', { class: 'unit-in' }); tw.appendChild(tmp); tw.appendChild(el('span', null, '°C'));
       row(t('set_temp'), tw);
       tmp.addEventListener('change', () => { const v = parseFloat(tmp.value.replace(',', '.')); if (isFinite(v) && v > -100 && v < 300) { s.tempC = v; changed(true); } tmp.value = String(s.tempC); });
+      const qsm = row(t('set_qs'), select([['stack', t('set_qs_stack')], ['one', t('set_qs_one')]], s.qsStack === false ? 'one' : 'stack'));
+      qsm.addEventListener('change', () => { s.qsStack = qsm.value === 'stack'; app.saveSettings(); ui.hideQuick(); });
       const dm = row(t('set_defmodel'), select([['ideal', t('model_ideal')], ['cvd', t('model_cvd')], ['exact', t('model_exact')]], s.defModel));
       dm.addEventListener('change', () => { s.defModel = dm.value; app.saveSettings(); });
       const all = el('div', { class: 'btnrow' });
@@ -1323,39 +1325,64 @@
       if (tab === 'thev' && app.thev && !thevRaf) thevRaf = requestAnimationFrame(() => { thevRaf = 0; renderThev(); });
     };
 
-    /* ---------- quick slider: a long press on a component with a main value (R, V, I, β, gain, pot position)
-     * opens a small slider over it; the circuit is solved at every step. A tap elsewhere closes it. */
+    /* ---------- quick sliders: a long press on a component with a main value (R, V, I, β, gain, pot position)
+     * opens a small slider over it; the circuit is solved at every step. By default (Settings) the sliders stack
+     * up in the same box, each one with its ✕, and stay until closed; otherwise a single slider that a tap
+     * elsewhere closes. */
     const qs = el('div', { class: 'qslider' });
     qs.hidden = true;
     $('stage').appendChild(qs);
-    let qsComp = null;
-    ui.hideQuick = function () { if (!qs.hidden) { qs.hidden = true; qsComp = null; } };
+    let qsRows = [];   // { c, row, refresh }
+    const stacked = () => app.settings.qsStack !== false;
+    ui.hideQuick = function () { qs.hidden = true; qs.innerHTML = ''; qsRows = []; };
+    // a tap on the circuit: closes the single slider, not the stacked ones
+    ui.quickOutside = function () { if (!stacked()) ui.hideQuick(); };
+    function removeRow(r) {
+      r.row.remove();
+      qsRows = qsRows.filter(q => q !== r);
+      if (!qsRows.length) ui.hideQuick();
+    }
     ui.showQuick = function (c) {
       const key = app.valueKey(c);
       if (!key) return;
+      const old = qsRows.find(r => r.c === c);
+      if (old) { old.row.classList.remove('flash'); void old.row.offsetWidth; old.row.classList.add('flash'); return; }
+      const wasOpen = !qs.hidden && qsRows.length;
+      if (!stacked()) ui.hideQuick();
       const d = C.TYPES[c.type].props.find(q => q.key === key);
-      qsComp = c;
-      qs.innerHTML = '';
+      const row = el('div', { class: 'qs-row' });
       const head = el('div', { class: 'qs-head' });
-      const unit = typeof d.unit === 'function' ? d.unit(c, app.circuit) : (d.unit || '');
-      const fmtV = () => (key === 'alpha' ? Math.round(c.props.alpha * 100) + ' %' : key === 'beta' ? String(c.props.beta) : U.format(c.props[key], unit === 'V/V' || unit === 'A/A' ? '' : unit, { digits: 4, trim: true }).trim() + (unit === 'V/V' || unit === 'A/A' ? ' ' + unit : ''));
-      const name = el('span', { class: 'qs-name' }, esc(c.name || '') + ' · ' + (key === 'k' ? C.depKind(c, app.circuit).sym : key === 'alpha' ? 'α' : key === 'beta' ? 'β' : esc(key)));
+      const unitOf = () => (typeof d.unit === 'function' ? d.unit(c, app.circuit) : (d.unit || ''));
+      const fmtV = () => { const unit = unitOf(), ratio = unit === 'V/V' || unit === 'A/A'; return key === 'alpha' ? Math.round(c.props.alpha * 100) + ' %' : key === 'beta' ? String(c.props.beta) : U.format(c.props[key], ratio ? '' : unit, { digits: 4, trim: true }).trim() + (ratio ? ' ' + unit : ''); };
+      const name = el('span', { class: 'qs-name' });
       const val = el('b', { class: 'qs-val' }, fmtV());
-      const x = button('✕', () => ui.hideQuick());
+      const r = { c, row, refresh: () => { name.innerHTML = esc(c.name || '') + ' · ' + (key === 'k' ? C.depKind(c, app.circuit).sym : key === 'alpha' ? 'α' : key === 'beta' ? 'β' : esc(key)); val.innerHTML = fmtV(); } };
+      r.refresh();
+      const x = button('✕', () => removeRow(r));
       head.appendChild(name); head.appendChild(val); head.appendChild(x);
       const sl = springSlider(c, d, () => { val.innerHTML = fmtV(); });
-      qs.appendChild(head); qs.appendChild(sl);
-      // it can be moved by its title, like the pinned plots
+      row.appendChild(head); row.appendChild(sl);
+      qs.appendChild(row);
+      qsRows.push(r);
+      // the box can be moved by any of its titles, like the pinned plots
       dragByHead(qs, head);
       qs.hidden = false;
+      const st = $('stage').getBoundingClientRect();
+      const w = qs.offsetWidth, h = qs.offsetHeight;
+      if (wasOpen) {
+        // a new row under the others: the box stays where it is, inside the circuit area
+        const top = Math.max(4, Math.min(st.height - h - 4, qs.offsetTop));
+        qs.style.top = top + 'px';
+        return;
+      }
       // next to the component without covering it nor its labels (value, V, I, + / −): above, else below,
       // else on the side with more room; inside the circuit area
-      const st = $('stage').getBoundingClientRect(), b = C.bounds(c), v = app.view;
+      const b = C.bounds(c), v = app.view;
       let x0 = b[0] * v.scale + v.ox, y0 = b[1] * v.scale + v.oy, x1 = b[2] * v.scale + v.ox, y1 = b[3] * v.scale + v.oy;
-      for (const r of (app.renderer.labelRects && app.renderer.labelRects.get(c.id)) || []) {
-        x0 = Math.min(x0, r[0]); y0 = Math.min(y0, r[1]); x1 = Math.max(x1, r[2]); y1 = Math.max(y1, r[3]);
+      for (const rr of (app.renderer.labelRects && app.renderer.labelRects.get(c.id)) || []) {
+        x0 = Math.min(x0, rr[0]); y0 = Math.min(y0, rr[1]); x1 = Math.max(x1, rr[2]); y1 = Math.max(y1, rr[3]);
       }
-      const w = qs.offsetWidth, h = qs.offsetHeight, gap = 8, topMin = 50, cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+      const gap = 8, topMin = 50, cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
       let xl = cx - w / 2, y;
       if (y0 - gap - h >= topMin) y = y0 - gap - h;
       else if (y1 + gap + h <= st.height - 4) y = y1 + gap;
@@ -1366,10 +1393,12 @@
       }
       y = Math.max(4, Math.min(st.height - h - 4, y));
       xl = Math.max(4, Math.min(st.width - w - 4, xl));
-      Object.assign(qs.style, { left: xl + 'px', top: y + 'px' });
+      Object.assign(qs.style, { left: xl + 'px', top: y + 'px', right: 'auto', bottom: 'auto' });
     };
-    // the popover goes away with its component (deleted, other tab)
-    const qsCheck = () => { if (qsComp && !app.circuit.comps.includes(qsComp)) ui.hideQuick(); };
+    // a slider goes away with its component (deleted, other tab); the others show the current values
+    const qsCheck = () => {
+      for (const r of qsRows.slice()) { if (!app.circuit.comps.includes(r.c)) removeRow(r); else r.refresh(); }
+    };
 
     /* ---------- pinned plots: up to two small windows over the circuit that follow every change live ----------
      * app.monitors[slot] = { ids, idx, win: [], t } or null; each window keeps its slot. The axes stay put while values change (they only grow when Q
@@ -1421,7 +1450,8 @@
     const tbody = el('dl', { class: 'kv' });
     tmon.appendChild(thead); tmon.appendChild(tbody);
     $('stage').appendChild(tmon);
-    dragByHead(tmon, thead);
+    // the whole window moves it (not only its title); ✕ closes it
+    dragByHead(tmon, tmon);
     ui.updateThevMon = function () {
       if (!app.thevPinned || !app.thev) { tmon.hidden = true; if (!app.thev) app.thevPinned = false; return; }
       const r = app.thev.res;
