@@ -133,16 +133,19 @@
     };
   }
 
-  /* Current in every wire piece, for the flow animation: inside each node the terminal currents are
-   * spread over the wire graph as if every wire had a resistance proportional to its length. */
+  /* Current in every wire piece. Inside a node the terminal currents must spread over the wire graph:
+   * where the wires form a tree, KCL alone fixes the current of every piece (exact result); a piece that
+   * belongs to a loop of ideal wires carries an indeterminate circulating current, marked `loop` (the value
+   * given then is the share of a resistance proportional to the length, used only by the animation).
+   * The ground symbols of the reference node are joined through a hidden "earth" vertex. */
   function wireCurrents(net, res, solver) {
-    const out = new Map(); // wire id -> array of {x1,y1,x2,y2,i} pieces, i > 0 from (x1,y1) to (x2,y2)
+    const out = new Map(); // wire id -> array of {x1, y1, x2, y2, i, loop}; i > 0 from (x1, y1) to (x2, y2)
     if (!res || !res.ok) return out;
     const byNode = new Map();
     for (const w of net.wires) {
       const pts = [[w.x1, w.y1]].concat(net.inner.get(w.id).map(p => [p.x, p.y]), [[w.x2, w.y2]]);
       const pieces = [];
-      for (let i = 0; i + 1 < pts.length; i++) pieces.push({ w, x1: pts[i][0], y1: pts[i][1], x2: pts[i + 1][0], y2: pts[i + 1][1], i: 0 });
+      for (let i = 0; i + 1 < pts.length; i++) pieces.push({ w, x1: pts[i][0], y1: pts[i][1], x2: pts[i + 1][0], y2: pts[i + 1][1], i: 0, loop: false });
       out.set(w.id, pieces);
       const nd = net.wireNode.get(w.id);
       if (!byNode.has(nd)) byNode.set(nd, []);
@@ -150,43 +153,70 @@
     }
     for (const [nd, pieces] of byNode) {
       const idx = new Map();
-      const vid = (x, y) => { const k = key(x, y); if (!idx.has(k)) idx.set(k, idx.size); return idx.get(k); };
-      for (const s of pieces) { s.a = vid(s.x1, s.y1); s.b = vid(s.x2, s.y2); }
-      const n = idx.size;
-      if (n < 2) continue;
-      const inj = new Float64Array(n);
-      const fixed = new Array(n).fill(false);
-      for (const [k, v] of idx) {
+      const vid = (k) => { if (!idx.has(k)) idx.set(k, idx.size); return idx.get(k); };
+      const edges = pieces.map(s => ({ a: vid(key(s.x1, s.y1)), b: vid(key(s.x2, s.y2)), g: 1 / Math.max(1e-9, Math.hypot(s.x2 - s.x1, s.y2 - s.y1)), piece: s }));
+      const inj = new Map();
+      let earth = -1;
+      for (const [k, v] of Array.from(idx.entries())) {
         const p = net.points.get(k);
         if (!p) continue;
         for (const [c, j] of p.terms) {
-          if (c.type === 'ground') { fixed[v] = true; continue; }
+          if (c.type === 'ground') {
+            if (earth < 0) earth = vid('earth');
+            edges.push({ a: v, b: earth, g: 1 });
+            continue;
+          }
           const r = res.el[c.id];
-          if (r) inj[v] -= r.tc[j]; // tc is the current entering the component, i.e. leaving the node
+          if (r) inj.set(v, (inj.get(v) || 0) - r.tc[j]); // tc enters the component, so it leaves the node
         }
       }
-      if (!fixed.some(Boolean)) fixed[0] = true;
-      // Laplacian on the free vertices
-      const free = [];
-      const map = new Int32Array(n).fill(-1);
-      for (let v = 0; v < n; v++) if (!fixed[v]) { map[v] = free.length; free.push(v); }
+      const n = idx.size;
+      if (n < 2) continue;
+      // branches: pieces joined at corners where nothing else connects carry the same current
+      const deg = new Int32Array(n), hasTerm = new Uint8Array(n);
+      for (const e of edges) { deg[e.a]++; deg[e.b]++; if (!e.piece) { hasTerm[e.a] = 1; hasTerm[e.b] = 1; } }
+      for (const v of inj.keys()) hasTerm[v] = 1;
+      for (const [k, v] of idx) { const p = net.points.get(k); if (p && p.terms.length) hasTerm[v] = 1; }
+      const pe = edges.filter(e => e.piece);
+      const par = pe.map((_, i) => i);
+      const find = (i) => { while (par[i] !== i) { par[i] = par[par[i]]; i = par[i]; } return i; };
+      const atV = new Map();
+      pe.forEach((e, i) => { for (const v of [e.a, e.b]) { if (!atV.has(v)) atV.set(v, []); atV.get(v).push(i); } });
+      for (const [v, list] of atV) if (list.length === 2 && deg[v] === 2 && !hasTerm[v]) { const a = find(list[0]), b = find(list[1]); if (a !== b) par[a] = b; }
+      pe.forEach((e, i) => { e.piece.chain = nd + ':' + find(i); });
+      // pieces in a cycle (not a bridge of the node graph) carry an indeterminate current
+      const adj = Array.from({ length: n }, () => []);
+      edges.forEach((e, k) => { adj[e.a].push([e.b, k]); adj[e.b].push([e.a, k]); });
+      for (let k = 0; k < edges.length; k++) {
+        const e = edges[k];
+        if (!e.piece) continue;
+        const seen = new Uint8Array(n); seen[e.a] = 1;
+        const q = [e.a];
+        let found = false;
+        while (q.length && !found) {
+          const u = q.pop();
+          for (const [v, kk] of adj[u]) { if (kk === k || seen[v]) continue; if (v === e.b) { found = true; break; } seen[v] = 1; q.push(v); }
+        }
+        e.piece.loop = found;
+      }
+      // potentials of a resistive network with the injections; the earth (or one vertex) is the reference
+      const ref = earth >= 0 ? earth : 0;
+      const map = new Int32Array(n).fill(-1), free = [];
+      for (let v = 0; v < n; v++) if (v !== ref) { map[v] = free.length; free.push(v); }
       const m = free.length;
-      if (m === 0) continue;
       const A = []; for (let i = 0; i < m; i++) A.push(new Float64Array(m));
       const b = new Float64Array(m);
-      for (const s of pieces) {
-        const g = 1 / Math.max(1e-9, Math.hypot(s.x2 - s.x1, s.y2 - s.y1));
-        const ia = map[s.a], ib = map[s.b];
-        if (ia >= 0) A[ia][ia] += g;
-        if (ib >= 0) A[ib][ib] += g;
-        if (ia >= 0 && ib >= 0) { A[ia][ib] -= g; A[ib][ia] -= g; }
+      for (const e of edges) {
+        const ia = map[e.a], ib = map[e.b];
+        if (ia >= 0) A[ia][ia] += e.g;
+        if (ib >= 0) A[ib][ib] += e.g;
+        if (ia >= 0 && ib >= 0) { A[ia][ib] -= e.g; A[ib][ia] -= e.g; }
       }
-      for (let i = 0; i < m; i++) b[i] = inj[free[i]];
-      for (let i = 0; i < m; i++) A[i][i] += 1e-12;
+      for (let i = 0; i < m; i++) { b[i] = inj.get(free[i]) || 0; A[i][i] += 1e-12; }
       const x = solver.luSolve(A, b);
       if (!x) continue;
       const pot = (v) => (map[v] >= 0 ? x[map[v]] : 0);
-      for (const s of pieces) s.i = (pot(s.a) - pot(s.b)) / Math.max(1e-9, Math.hypot(s.x2 - s.x1, s.y2 - s.y1));
+      for (const e of edges) if (e.piece) e.piece.i = (pot(e.a) - pot(e.b)) * e.g;
     }
     return out;
   }

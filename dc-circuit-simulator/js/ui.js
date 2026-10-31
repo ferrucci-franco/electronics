@@ -184,7 +184,7 @@
       sym.addEventListener('change', () => { s.style = sym.value; changed(); });
       const dg = row(t('set_digits'), select([[3, '3'], [4, '4'], [5, '5']], s.digits));
       dg.addEventListener('change', () => { s.digits = +dg.value; changed(); });
-      for (const [k, lab] of [['rubber', 'set_rubber'], ['realDir', 'set_realdir'], ['showNames', 'set_names'], ['showValues', 'set_values'], ['showState', 'set_state'], ['grid', 'set_grid'], ['colorV', 'colorV']]) {
+      for (const [k, lab] of [['showWireI', 'set_wirei'], ['rubber', 'set_rubber'], ['realDir', 'set_realdir'], ['showNames', 'set_names'], ['showValues', 'set_values'], ['showState', 'set_state'], ['grid', 'set_grid'], ['colorV', 'colorV']]) {
         const c = row(t(lab), check(s[k]));
         c.addEventListener('change', () => { s[k] = c.checked; changed(); });
       }
@@ -293,7 +293,9 @@
       if (h.kind === 'mark') html = esc(app.tp('tip_flip'));
       else if (h.kind === 'wire' || h.kind === 'wend') {
         const nd = app.net.wireNode.get(h.wire.id);
-        html = `${t('node_voltage')}: <b>${fmt(res.v[nd], 'V')}</b>`;
+        html = `${t('node')} ${esc(app.net.nodes[nd].name)}: <b>${fmt(res.v[nd], 'V')}</b>`;
+        const pieces = (app.wireCur && app.wireCur.get(h.wire.id)) || [];
+        if (pieces.length === 1) html += ` · I ${pieces[0].loop ? '?' : fmt(Math.abs(pieces[0].i), 'A')}`;
       } else if (h.kind === 'term') {
         const nd = app.net.compNodes.get(h.comp.id)[h.idx];
         html = `${esc(h.comp.name || '')} ${C.TYPES[h.comp.type].termNames ? C.TYPES[h.comp.type].termNames[h.idx] : ''} : <b>${fmt(res.v[nd], 'V')}</b>`;
@@ -401,7 +403,16 @@
           r.appendChild(inp);
           card.appendChild(r);
         }
-        if (res) card.appendChild(el('dl', { class: 'kv' }, `<dt>${t('node_voltage')} V<sub>${esc(node.name)}</sub></dt><dd class="v">${fmt(res.v[nd], 'V')}</dd>`));
+        if (res) {
+          const pieces = (app.wireCur && app.wireCur.get(w.id)) || [];
+          let kv = `<dt>${t('node_voltage')} V<sub>${esc(node.name)}</sub></dt><dd class="v">${fmt(res.v[nd], 'V')}</dd>`;
+          pieces.forEach((p, k) => {
+            const dir = Math.abs(p.i) < 1e-12 ? '' : arrowOf(p.i >= 0 ? p.x2 - p.x1 : p.x1 - p.x2, p.i >= 0 ? p.y2 - p.y1 : p.y1 - p.y2);
+            kv += `<dt>${t('wire_i')}${pieces.length > 1 ? ' (' + (k + 1) + ')' : ''}</dt><dd class="i">${p.loop ? t('wire_i_loop_s') : fmt(Math.abs(p.i), 'A') + ' ' + dir}</dd>`;
+          });
+          card.appendChild(el('dl', { class: 'kv' }, kv));
+          if (pieces.some(p => p.loop)) card.appendChild(el('div', { class: 'hint' }, t('wire_i_loop')));
+        }
         card.appendChild(el('div', { class: 'hint' }, t('node_hint')));
         const row = el('div', { class: 'btnrow' });
         row.appendChild(button(t('del'), () => app.deleteSel(), 'warn'));
@@ -531,6 +542,7 @@
       if (spec.conv) card.appendChild(el('div', { class: 'hint' }, spec.conv));
       pane.appendChild(card);
     }
+    const arrowOf = (dx, dy) => (Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? '→' : '←') : (dy > 0 ? '↓' : '↑'));
     function step125(v, up) {
       const e = Math.floor(Math.log10(v) + 1e-9), m = v / Math.pow(10, e);
       const seq = [1, 2.2, 4.7, 10];
