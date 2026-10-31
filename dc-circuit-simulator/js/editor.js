@@ -228,7 +228,7 @@
     // (the second tap of a quick double tap opens the properties instead, as on any element)
     if (h && h.kind === 'comp' && C.isSwitch(h.comp) && app.sel.has(h.comp.id) && !g.shift && this.onBody(h, p) && !this.isSecondTap(h.comp.id, p, e.pointerType)) {
       if (h.comp.type === 'switch') g.swToggle = h.comp;
-      else { C.pressed.add(h.comp.id); g.press = h.comp; g.operated = true; app.circuitChanged(true); }
+      else { C.pressed.add(h.comp.id); g.press = h.comp; g.operated = true; app.selbarQuiet = h.comp.id; app.ui.update(); app.circuitChanged(true); }
     }
     // a terminal, or the loose end of a wire left half finished: dragging draws a new wire from there and the
     // previous piece stays where it is (a connection drawn piece by piece)
@@ -273,6 +273,12 @@
     const app = this.app;
     const h = g.hit;
     const quick = h && h.kind === 'comp' && g.mode === 'move' && app.tool === 'select' && app.valueKey(h.comp);
+    // a long press on a switch that is being operated, also with a mouse: no toggle, its toolbar comes back
+    if (g.swToggle && h && h.comp === g.swToggle) {
+      g.long = true; g.swToggle = null;
+      if (app.selbarQuiet === h.comp.id) { app.selbarQuiet = null; app.ui.update(); }
+      return;
+    }
     if (g.type === 'mouse' && !quick) return;
     if (h && h.kind === 'wend' && g.mode === 'vertex') {
       // a wire corner or junction: after the long press the drag moves the point
@@ -286,6 +292,8 @@
       g.long = true;
       const id = h.kind === 'comp' ? h.comp.id : h.wire.id;
       if (!app.sel.has(id)) app.select([id]);
+      // (the selection toolbar of a switch that was being operated comes back)
+      if (app.selbarQuiet === id) { app.selbarQuiet = null; app.ui.update(); }
       // a component with a main value: its slider pops up when the finger is lifted without moving
       // (moving it instead drags the component, with no slider flashing in between)
       if (quick) g.quick = h.comp;
@@ -436,7 +444,7 @@
       }
       case 'move':
         if (!g.moved) {
-          if (g.swToggle) { app.checkpoint(); g.swToggle.props.closed = !g.swToggle.props.closed; app.commit(); }
+          if (g.swToggle) { app.checkpoint(); g.swToggle.props.closed = !g.swToggle.props.closed; app.selbarQuiet = g.swToggle.id; app.commit(); }
           this.tap(g, p, e);
           break;
         }

@@ -235,6 +235,18 @@
       pe.forEach((e, i) => { for (const v of [e.a, e.b]) { if (!atV.has(v)) atV.set(v, []); atV.get(v).push(i); } });
       for (const [v, list] of atV) if (list.length === 2 && deg[v] === 2 && !hasTerm[v]) { const a = find(list[0]), b = find(list[1]); if (a !== b) par[a] = b; }
       pe.forEach((e, i) => { e.piece.chain = nd + ':' + find(i); });
+      // a branch that ends on the lead of a single component (nothing else there) carries that component's
+      // current: it is a "lead"; a branch between two junctions carries a current that is read nowhere else
+      const keyOf = [];
+      for (const [k, v] of idx) keyOf[v] = k;
+      const leadChains = new Set();
+      for (const [v, list] of atV) {
+        if (list.length !== 1) continue;
+        const p = net.points.get(keyOf[v]);
+        const terms = p ? p.terms.filter(([c]) => !closed.has(c.id)) : [];
+        if (terms.length === 1 && terms[0][0].type !== 'ground') leadChains.add(find(list[0]));
+      }
+      pe.forEach((e, i) => { e.piece.lead = leadChains.has(find(i)); });
       // pieces in a cycle (not a bridge of the node graph) carry an indeterminate current
       const adj = Array.from({ length: n }, () => []);
       edges.forEach((e, k) => { adj[e.a].push([e.b, k]); adj[e.b].push([e.a, k]); });
