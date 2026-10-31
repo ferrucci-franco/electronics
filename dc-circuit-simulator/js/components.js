@@ -16,7 +16,7 @@
   const potX = (c) => -1.2 + 2.4 * Math.max(0, Math.min(1, c.props.alpha));
   // fraction of the resistance between A and the wiper: linear, or logarithmic (audio) taper
   const potFrac = (c) => { const a = Math.max(0, Math.min(1, c.props.alpha)); return c.props.taper === 'log' ? (Math.pow(10, 2 * a) - 1) / 99 : a; };
-  const isDiode = (c) => c.type === 'diode' || c.type === 'schottky' || c.type === 'led';
+  const isDiode = (c) => c.type === 'diode' || c.type === 'schottky' || c.type === 'led' || c.type === 'zener';
   // switches: the toggle switch keeps its position; the push button is closed only while it is held down
   // (normally open) or opened while held (normally closed). Held buttons live here, never in the saved circuit.
   const pressed = new Set();
@@ -83,7 +83,9 @@
         { key: 'Vf', unit: 'V', def: 0.7, min: 0, max: 10, show: c => c.props.model === 'cvd' },
         { key: 'rd', unit: 'Ω', def: 0, min: 0, max: 1e6, show: c => c.props.model === 'cvd' },
         { key: 'Is', unit: 'A', def: 1e-14, min: 1e-20, max: 1e-3, show: c => c.props.model === 'exact' },
-        { key: 'N', unit: '', def: 1, min: 0.5, max: 5, show: c => c.props.model === 'exact' }
+        { key: 'N', unit: '', def: 1, min: 0.5, max: 5, show: c => c.props.model === 'exact' },
+        { key: 'bd', type: 'bool', def: false },
+        { key: 'Vbr', unit: 'V', def: 100, min: 0.1, max: 1e5, show: c => c.props.bd }
       ],
       valueText: (c, f, t) => t('model_' + c.props.model + '_short')
     },
@@ -94,9 +96,25 @@
         { key: 'Vf', unit: 'V', def: 0.3, min: 0, max: 10, show: c => c.props.model === 'cvd' },
         { key: 'rd', unit: 'Ω', def: 0, min: 0, max: 1e6, show: c => c.props.model === 'cvd' },
         { key: 'Is', unit: 'A', def: 1e-8, min: 1e-20, max: 1e-3, show: c => c.props.model === 'exact' },
-        { key: 'N', unit: '', def: 1.05, min: 0.5, max: 5, show: c => c.props.model === 'exact' }
+        { key: 'N', unit: '', def: 1.05, min: 0.5, max: 5, show: c => c.props.model === 'exact' },
+        { key: 'bd', type: 'bool', def: false },
+        { key: 'Vbr', unit: 'V', def: 40, min: 0.1, max: 1e5, show: c => c.props.bd }
       ],
       valueText: (c, f, t) => t('model_' + c.props.model + '_short')
+    },
+    // Zener diode: conducts forward like a diode and, reverse biased, holds −V_Z (breakdown), with r_z
+    zener: {
+      prefix: 'DZ', terms: [[-2, 0], [2, 0]], box: [-2, -0.8, 2, 0.8],
+      props: [
+        { key: 'model', type: 'select', options: ['ideal', 'cvd', 'exact'], def: 'cvd' },
+        { key: 'Vz', unit: 'V', def: 5.1, min: 0.1, max: 1e4 },
+        { key: 'rz', unit: 'Ω', def: 0, min: 0, max: 1e6, show: c => c.props.model === 'cvd' },
+        { key: 'Vf', unit: 'V', def: 0.7, min: 0, max: 10, show: c => c.props.model === 'cvd' },
+        { key: 'rd', unit: 'Ω', def: 0, min: 0, max: 1e6, show: c => c.props.model === 'cvd' },
+        { key: 'Is', unit: 'A', def: 1e-14, min: 1e-20, max: 1e-3, show: c => c.props.model === 'exact' },
+        { key: 'N', unit: '', def: 1, min: 0.5, max: 5, show: c => c.props.model === 'exact' }
+      ],
+      valueText: (c, f) => 'Vz = ' + f(c.props.Vz, 'V')
     },
     led: {
       prefix: 'LED', terms: [[-2, 0], [2, 0]], box: [-2, -1.25, 2, 0.8],
@@ -105,7 +123,9 @@
         { key: 'model', type: 'select', options: ['cvd', 'exact'], def: 'cvd' },
         { key: 'Vf', unit: 'V', def: 1.8, min: 0.5, max: 6 },
         { key: 'rd', unit: 'Ω', def: 0, min: 0, max: 1e6, show: c => c.props.model === 'cvd' },
-        { key: 'Imax', unit: 'A', def: 0.02, min: 1e-4, max: 10 }
+        { key: 'Imax', unit: 'A', def: 0.02, min: 1e-4, max: 10 },
+        { key: 'bd', type: 'bool', def: false },
+        { key: 'Vbr', unit: 'V', def: 5, min: 0.1, max: 1e3, show: c => c.props.bd }
       ],
       valueText: (c, f, t) => t(c.props.color) + ' · ' + f(c.props.Vf, 'V')
     },
@@ -176,6 +196,8 @@
   function defRef(type) {
     if (type === 'vsource' || type === 'depv') return { refV: 0, refI: 1 };
     if (type === 'isource' || type === 'depi') return { refV: 1, refI: 0 };
+    // a Zener works reverse biased: + on the cathode, so that V_Z and the current read positive
+    if (type === 'zener') return { refV: 1, refI: 1 };
     return { refV: 0, refI: 0 };
   }
   const flippable = (c) => TYPES[c.type].terms.length === 2 && c.type !== 'ground' && !meterKind(c);
@@ -312,6 +334,14 @@
       P.poly([[-0.6, -0.6], [-0.6, 0.6], [0.6, 0]], us);
       if (!us) P.line([[-0.6, 0], [0.6, 0]]);
       P.line([[0.6, -0.6], [0.6, 0.6]]);
+    },
+    zener(P, c, us) {
+      P.line([[-2, 0], [-0.6, 0]]); P.line([[0.6, 0], [2, 0]]);
+      P.poly([[-0.6, -0.6], [-0.6, 0.6], [0.6, 0]], us);
+      if (!us) P.line([[-0.6, 0], [0.6, 0]]);
+      // cathode bar with bent ends (a Z); IEC: a single bent end
+      if (us) P.line([[0.32, -0.78], [0.6, -0.6], [0.6, 0.6], [0.88, 0.78]]);
+      else P.line([[0.6, 0.6], [0.6, -0.6], [0.88, -0.78]]);
     },
     schottky(P, c, us) {
       P.line([[-2, 0], [-0.6, 0]]); P.line([[0.6, 0], [2, 0]]);

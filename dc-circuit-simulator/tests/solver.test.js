@@ -267,5 +267,28 @@ const Q = (id, b, c, e, pnp) => ({ type: 'Q', id, n: [b, c, e], pnp: !!pnp, beta
   truthy('VCVS parallel to a source: vloop', !r.ok && r.issues.some(i => i.code === 'vloop'));
 }
 
+// 30. reverse breakdown (Zener): cathode on node 2, anode on ground
+{
+  const Z = (model, extra) => D('Z1', 0, 2, model, Object.assign({ bv: 5.1, rz: 0 }, extra || {}));
+  let r = S.solve({ nodeCount: 3, elements: [V('V1', 1, 0, 12), R('R1', 1, 2, 1000), Z('cvd')] });
+  near('zener cvd Vz', r.v[2], 5.1); near('zener cvd I', r.el.Z1.i, -6.9e-3); truthy('zener state bd', r.states.Z1 === 'bd');
+  r = S.solve({ nodeCount: 3, elements: [V('V1', 1, 0, 12), R('R1', 1, 2, 1000), Z('cvd', { rz: 10 })] });
+  near('zener rz', r.v[2], 5.1 + 10 * 6.9 / 1010, 1e-6);
+  r = S.solve({ nodeCount: 3, elements: [V('V1', 1, 0, 3), R('R1', 1, 2, 1000), Z('cvd')] });
+  near('zener below Vz', r.v[2], 3, 1e-6); truthy('zener off below Vz', r.states.Z1 === 'off');
+  r = S.solve({ nodeCount: 3, elements: [V('V1', 1, 0, -12), R('R1', 1, 2, 1000), Z('cvd')] });
+  near('zener forward', r.v[2], -0.7); truthy('zener on forward', r.states.Z1 === 'on');
+  r = S.solve({ nodeCount: 3, elements: [V('V1', 1, 0, 12), R('R1', 1, 2, 1000), Z('ideal')] });
+  near('zener ideal', r.v[2], 5.1);
+  r = S.solve({ nodeCount: 3, elements: [V('V1', 1, 0, 12), R('R1', 1, 2, 1000), Z('exact')] });
+  truthy('zener exact solves', r.ok); near('zener exact ~Vz', r.v[2], 5.1 + 0.02585 * Math.log(6.9), 2e-3);
+  // two Zeners back to back clip at ±(Vz + Vf)
+  r = S.solve({ nodeCount: 4, elements: [V('V1', 1, 0, 20), R('R1', 1, 2, 1000), D('Z1', 3, 2, 'cvd', { bv: 5.1 }), D('Z2', 3, 0, 'cvd', { bv: 5.1 })] });
+  near('back-to-back clip', r.v[2], 5.8);
+  // no breakdown when bv is not given
+  r = S.solve({ nodeCount: 3, elements: [V('V1', 1, 0, 12), R('R1', 1, 2, 1000), D('D1', 0, 2, 'cvd')] });
+  near('plain diode blocks', r.v[2], 12, 1e-6);
+}
+
 console.log(`${count - fails}/${count} checks passed`);
 process.exit(fails ? 1 : 0);

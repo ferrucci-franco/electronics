@@ -112,7 +112,7 @@
         case 'led': {
           // exact model: emission coefficient 2 and I_S chosen so that V = Vf at 10 mA
           const N = 2, Is = 0.01 / (Math.exp(pr.Vf / (N * 0.025865)) - 1);
-          elements.push({ type: 'D', id: c.id, n, model: pr.model === 'exact' ? 'exact' : 'cvd', Vf: pr.Vf, rd: pr.rd, Is, N });
+          elements.push({ type: 'D', id: c.id, n, model: pr.model === 'exact' ? 'exact' : 'cvd', Vf: pr.Vf, rd: pr.rd, Is, N, bv: pr.bd ? pr.Vbr : 0, rz: pr.rd });
           break;
         }
         case 'rgbled': {
@@ -125,7 +125,10 @@
           break;
         }
         case 'diode': case 'schottky':
-          elements.push({ type: 'D', id: c.id, n, model: pr.model, Vf: pr.Vf, rd: pr.rd, Is: pr.Is, N: pr.N }); break;
+          // reverse breakdown (avalanche) only when asked for, with the same series resistance
+          elements.push({ type: 'D', id: c.id, n, model: pr.model, Vf: pr.Vf, rd: pr.rd, Is: pr.Is, N: pr.N, bv: pr.bd ? pr.Vbr : 0, rz: pr.rd }); break;
+        case 'zener':
+          elements.push({ type: 'D', id: c.id, n, model: pr.model, Vf: pr.Vf, rd: pr.rd, Is: pr.Is, N: pr.N, bv: pr.Vz, rz: pr.rz }); break;
         case 'opamp': elements.push({ type: 'OA', id: c.id, n, sat: !!pr.sat, Vpos: Math.max(pr.Vpos, pr.Vneg), Vneg: Math.min(pr.Vpos, pr.Vneg) }); break;
         case 'bjt': elements.push({ type: 'Q', id: c.id, n, pnp: pr.pol === 'pnp', model: pr.model === 'em' ? 'em' : 'simple', beta: pr.beta, Vbe: pr.Vbe, Vcesat: pr.Vcesat, Is: pr.Is, betaR: pr.betaR, VA: pr.VA }); break;
         default: break;

@@ -9,7 +9,7 @@
     { type: 'ground', key: 'ground' }, { type: 'ammeter', key: 'ammeter' }, { type: 'voltmeter', key: 'voltmeter' },
     { type: 'switch', key: 'switch' }, { type: 'button', key: 'button' },
     { type: 'depv', key: 'depv' }, { type: 'depi', key: 'depi' }, { type: 'isense', key: 'isense' }, { type: 'vsense', key: 'vsense' },
-    { type: 'diode', key: 'diode' }, { type: 'schottky', key: 'schottky' }, { type: 'led', key: 'led' }, { type: 'rgbled', key: 'rgbled' }, { type: 'opamp', key: 'opamp' },
+    { type: 'diode', key: 'diode' }, { type: 'zener', key: 'zener' }, { type: 'schottky', key: 'schottky' }, { type: 'led', key: 'led' }, { type: 'rgbled', key: 'rgbled' }, { type: 'opamp', key: 'opamp' },
     { type: 'bjt', key: 'npn', props: { pol: 'npn' } }, { type: 'bjt', key: 'pnp', props: { pol: 'pnp' } }
   ];
 
@@ -54,7 +54,7 @@
       const col = R.colors().fg;
       for (const p of palButtons) {
         p.span.innerHTML = t('cs_' + p.it.key);
-        const sc = { ground: 'G', resistor: 'R', vsource: 'V', isource: 'I', opamp: 'A', diode: 'D', npn: 'T', pnp: 'T T', switch: 'S' }[p.it.key];
+        const sc = { ground: 'G', resistor: 'R', vsource: 'V', isource: 'I', opamp: 'A', diode: 'D', zener: 'Z', npn: 'T', pnp: 'T T', switch: 'S' }[p.it.key];
         p.b.title = app.tp('c_' + p.it.key) + (sc ? ` (${sc})` : '');
         const props = Object.assign(C.defaults(p.it.type), p.it.props || {});
         R.drawIcon(p.cv, p.it.type, props, app.settings.style, col);
@@ -301,7 +301,7 @@
       ap.addEventListener('click', () => {
         app.checkpoint();
         for (const c of app.circuit.comps) {
-          if (c.type === 'diode' || c.type === 'schottky') c.props.model = sel.value;
+          if (c.type === 'diode' || c.type === 'schottky' || c.type === 'zener') c.props.model = sel.value;
           else if ((c.type === 'led' || c.type === 'rgbled') && sel.value !== 'ideal') c.props.model = sel.value;
         }
         app.commit();
@@ -949,7 +949,7 @@
       nd.appendChild(el('div', { class: 'hint' }, t('nodes_hint')));
       nd.appendChild(nt);
       pane.appendChild(nd);
-      const order = ['vsource', 'isource', 'resistor', 'pot', 'diode', 'schottky', 'led', 'rgbled', 'bjt', 'opamp', 'depv', 'depi', 'ammeter', 'voltmeter', 'isense', 'vsense'];
+      const order = ['vsource', 'isource', 'resistor', 'pot', 'diode', 'zener', 'schottky', 'led', 'rgbled', 'bjt', 'opamp', 'depv', 'depi', 'ammeter', 'voltmeter', 'isense', 'vsense'];
       const comps = app.circuit.comps.filter(c => c.type !== 'ground').sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type) || String(a.name).localeCompare(String(b.name), undefined, { numeric: true }));
       const tbl = el('table', { class: 'res' });
       let rows = `<tr><th>${t('tbl_comp')}</th><th>${t('tbl_v')}</th><th>${t('tbl_i')}</th><th>${t('tbl_p')}</th></tr>`;

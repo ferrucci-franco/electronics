@@ -105,6 +105,15 @@
         w: [[[0, 4], [0, 2], [8, 2], [8, 4]], [[0, 8], [0, 12], [22, 12], [22, 10]], [[8, 8], [8, 12]], [[10, 6], [22, 6]], [[15, 10], [15, 12]]]
       }
     },
+    zener: {
+      t: { en: 'Zener regulator', fr: 'Régulateur à diode Zener', es: 'Regulador con diodo Zener' },
+      d: { en: 'The Zener diode holds V_Z on the load while it is in breakdown. Lower RL (or V1) until it leaves breakdown and the output falls.', fr: 'La diode Zener maintient V_Z sur la charge tant qu’elle est en claquage. Diminuez RL (ou V1) jusqu’à ce qu’elle en sorte et que la sortie chute.', es: 'El diodo Zener mantiene V_Z sobre la carga mientras está en ruptura. Baje RL (o V1) hasta que salga de ruptura y la salida caiga.' },
+      s: {
+        c: [['vsource', 'V1', 0, 4, 1, { V: 12 }], ['resistor', 'RS', 4, 0, 0, { R: 470 }], ['zener', 'DZ1', 8, 4, 3, { Vz: 5.1 }],
+          ['resistor', 'RL', 13, 4, 1, { R: 1000 }], ['ground', '', 4, 8, 0]],
+        w: [[[0, 2], [0, 0], [2, 0]], [[6, 0], [13, 0], [13, 2]], [[8, 0], [8, 2]], [[0, 6], [0, 8], [13, 8], [13, 6]], [[8, 6], [8, 8]]]
+      }
+    },
     leds: {
       t: { en: 'LEDs and an RGB LED', fr: 'LED et LED RVB', es: 'LEDs y un LED RGB' },
       d: { en: 'Each LED needs a series resistor: I = (V − Vγ)/R. LED4 has too small a resistor (warning). The RGB LED mixes its three colours according to the channel currents: change RR, RG, RB.', fr: 'Chaque LED a besoin d’une résistance série : I = (V − Vγ)/R. LED4 a une résistance trop faible (avertissement). La LED RVB mélange ses trois couleurs selon les courants : changez RR, RG, RB.', es: 'Cada LED necesita una resistencia en serie: I = (V − Vγ)/R. LED4 tiene una resistencia demasiado chica (aviso). El LED RGB mezcla sus tres colores según las corrientes de cada canal: cambie RR, RG, RB.' },

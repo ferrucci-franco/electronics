@@ -183,6 +183,8 @@
     const th = showLoad ? S.thevenin(net.ckt, A.a, A.b, { exclude: ids, prevStates: app.prevStates, tempC }) : { error: 'off' };
     const vals = [A.q[0]], ivals = [A.q[1]];
     for (const it of A.items) { vals.push(it.sign * it.r.v); ivals.push(it.sign * it.r.i); }
+    // a diode with reverse breakdown (Zener): the knee at −V_BR is in view
+    if (A.items.length === 1 && A.items[0].el.type === 'D' && A.items[0].el.bv > 0 && A.items[0].el.bv < 1e3) vals.push(-A.items[0].sign * A.items[0].el.bv * 1.15);
     // nonlinear rest: the real open-circuit voltage and short-circuit current (not the linearised V_Th, I_N)
     if (!th.error) {
       const v = th.nonlinear ? th.voc : th.vth, i = th.nonlinear ? th.isc : th.in;
