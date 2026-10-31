@@ -11,7 +11,7 @@
   const plain = (s) => String(s).replace(/<sub>(.*?)<\/sub>/g, '$1').replace(/<[^>]+>/g, '');
 
   const DEFAULT_SETTINGS = {
-    style: 'us', realDir: false, rubber: true, showWireI: false, showV: true, showI: true, showP: false, showNodes: false, animate: false, colorV: false,
+    style: 'us', flowScale: 'lin', realDir: false, rubber: true, showWireI: false, showV: true, showI: true, showP: false, showNodes: false, animate: false, colorV: false,
     showNames: true, showValues: true, showState: true, grid: true, digits: 3, tempC: 27, defModel: 'cvd'
   };
 
@@ -198,8 +198,11 @@
     segs.forEach((s, k) => {
       s.len = Math.hypot(s.x2 - s.x1, s.y2 - s.y1);
       const a = Math.abs(s.i);
-      if (imax <= 0 || a < imax * 1e-4 || a < 1e-12) s.speed = 0;
-      else s.speed = Math.sign(s.i) * (1.2 + 4.8 * (Math.log10(a / imax) + 4) / 4);
+      // proportional: the dot speed follows the current, so a junction shows KCL (what comes in fast leaves
+      // through slower branches); logarithmic: currents down to 1/10000 of the largest one still move
+      if (imax <= 0 || a < 1e-12) s.speed = 0;
+      else if (app.settings.flowScale === 'log') s.speed = a < imax * 1e-4 ? 0 : Math.sign(s.i) * (1.2 + 4.8 * (Math.log10(a / imax) + 4) / 4);
+      else s.speed = Math.sign(s.i) * 6 * a / imax;
       s.phase = old[k] ? old[k].phase : 0;
     });
     app.flow = { segs };
