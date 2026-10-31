@@ -14,7 +14,7 @@
   /* Curve tracer: the elements, seen between nodes a and b, are driven by a swept voltage source in series
    * with a resistance Rs matched to the plot window, so any monotone characteristic (vertical and horizontal
    * pieces included: ideal diode, sources, meters) is followed point by point. */
-  function trace(elements, a, b, win, tempC) {
+  function trace(elements, a, b, win, tempC, N) {
     const map = new Map([[b, 0]]);
     const id = (n) => { if (!map.has(n)) map.set(n, map.size); return map.get(n); };
     id(a);
@@ -26,7 +26,7 @@
     const span = vt1 - vt0;
     const pts = [];
     let prevStates = {}, prevV = null;
-    const N = 260;
+    N = N || 260;
     for (let k = 0; k <= N; k++) {
       const vt = vt0 - 0.05 * span + 1.1 * span * k / N;
       const ckt = { nodeCount, elements: els.concat([{ type: 'VT', id: '__vt', n: [X, 0], V: vt }, { type: 'R', id: '__rs', n: [X, A], R: Rs }]) };
@@ -111,6 +111,25 @@
     return { v0, v1, i0, i1 };
   }
 
+  /* names of the nonlinear elements reported by S.thevenin (an RGB LED channel 'id#k' counts as its LED) */
+  function nlNames(app, th) {
+    const names = [];
+    for (const id of th.nonlinearIds || []) {
+      const c = app.circuit.comps.find(c => c.id === id.split('#')[0]);
+      const n = c ? c.name : id;
+      if (!names.includes(n)) names.push(n);
+    }
+    return names.join(', ');
+  }
+
+  /* What the rest of the circuit imposes on the port a–b, seen as a load: V = v_a − v_b, I = current that leaves
+   * the rest through a (and enters the element). When the rest is nonlinear there is no Thévenin equivalent, so
+   * this is the true curve, traced point by point with the solver; it passes through V_oc and I_sc. */
+  function loadCurve(app, th, exclude, win) {
+    const rest = app.net.ckt.elements.filter(el => !exclude.has(el.id));
+    return trace(rest, th.a, th.b, win, app.settings.tempC, 160).map(([v, i]) => [v, -i]);
+  }
+
   function build(app) {
     const A = analyse(app);
     if (!A) return null;
@@ -139,7 +158,12 @@
     const th = S.thevenin(net.ckt, A.a, A.b, { exclude: ids, prevStates: app.prevStates, tempC });
     const vals = [A.q[0]], ivals = [A.q[1]];
     for (const it of A.items) { vals.push(it.sign * it.r.v); ivals.push(it.sign * it.r.i); }
-    if (!th.error) { if (isFinite(th.vth)) vals.push(th.vth); if (isFinite(th.in)) ivals.push(th.in); }
+    // nonlinear rest: the real open-circuit voltage and short-circuit current (not the linearised V_Th, I_N)
+    if (!th.error) {
+      const v = th.nonlinear ? th.voc : th.vth, i = th.nonlinear ? th.isc : th.in;
+      if (isFinite(v) && Math.abs(v) < 1e4) vals.push(v);
+      if (isFinite(i) && Math.abs(i) < 1e3) ivals.push(i);
+    }
     const win = windowFor(vals, ivals);
     spec.win = win;
     const multi = A.items.length > 1;
@@ -151,16 +175,35 @@
     if (multi) {
       spec.series.push({ name: t(A.kind === 'series' ? 'iv_comb_series' : 'iv_comb_parallel'), color: 'fg', pts: trace(A.items.map(it => it.el), A.a, A.b, win, tempC), width: 3 });
     }
-    if (!th.error && th.rth !== undefined) {
+    if (!th.error && th.nonlinear) {
+      const pts = loadCurve(app, th, new Set(ids), win);
+      if (pts.length > 1) spec.lines.push({ name: t('iv_load_curve'), pts });
+      spec.note = t('iv_load_nl', { ids: nlNames(app, th) }) + (th.pwl ? ' ' + t('iv_load_pwl') : '');
+    } else if (!th.error && th.rth !== undefined) {
       if (th.rth === Infinity && isFinite(th.in)) spec.lines.push({ name: t('iv_load'), hz: th.in });
       else if (th.rth === 0 && isFinite(th.vth)) spec.lines.push({ name: t('iv_load'), vt: th.vth });
       else if (isFinite(th.vth) && isFinite(th.rth)) spec.lines.push({ name: t('iv_load'), v: th.vth, r: th.rth });
-      if (th.nonlinear) spec.note = app.t('iv_load_lin');
     }
     spec.points.push({ name: 'Q', v: A.q[0], i: A.q[1], label: `Q (${U.format(A.q[0], 'V')}, ${U.format(A.q[1], 'A')})` });
     const names = A.items.map(it => it.c.name).join(multi ? (A.kind === 'series' ? ' + ' : ' ∥ ') : '');
     spec.title = multi ? `${t(A.kind === 'series' ? 'iv_series' : 'iv_parallel')}: ${names}` : `${t('iv_title')} · ${names}`;
     spec.conv = multi ? t('iv_conv_ab') : t('iv_conv');
+    if (th.nonlinear) spec.conv = spec.conv.replace(t('iv_load_word'), t('iv_curve_word'));
+    return spec;
+  }
+
+  /* Thévenin pane, nonlinear circuit: the real characteristic of the port A–B (the load removed). */
+  function portSpec(app, th, loadId) {
+    const t = app.tp;
+    const vals = [th.voc, 0], ivals = [th.isc, 0];
+    const win = windowFor(vals.filter(x => isFinite(x) && Math.abs(x) < 1e4), ivals.filter(x => isFinite(x) && Math.abs(x) < 1e3));
+    const exclude = new Set(app.net.ckt.elements.filter(el => loadId && el.id.split('#')[0] === loadId).map(el => el.id));
+    const spec = { kind: 'port', series: [], lines: [], points: [], xlab: 'v_AB', ylab: 'i', xu: 'V', yu: 'A', win };
+    spec.series.push({ name: t('thev_curve'), color: slot(0), pts: loadCurve(app, th, exclude, win), width: 2.6 });
+    if (isFinite(th.voc) && Math.abs(th.voc) < 1e4) spec.points.push({ v: th.voc, i: 0, color: slot(1), small: true });
+    if (isFinite(th.isc) && Math.abs(th.isc) < 1e3) spec.points.push({ v: 0, i: th.isc, color: slot(1), small: true });
+    spec.title = t('thev_curve_title');
+    spec.conv = t('thev_curve_conv');
     return spec;
   }
 
@@ -345,7 +388,8 @@
     ctx.setLineDash([6, 4]); ctx.strokeStyle = col.muted; ctx.lineWidth = 1.6;
     for (const ln of spec.lines) {
       ctx.beginPath();
-      if (ln.p1) {
+      if (ln.pts) ln.pts.forEach(([v, i], k) => { if (k) ctx.lineTo(X(v), Y(i)); else ctx.moveTo(X(v), Y(i)); });
+      else if (ln.p1) {
         // line through two points, extended across the window
         const [v1, i1] = ln.p1, [v2, i2] = ln.p2;
         if (Math.abs(v2 - v1) < 1e-15) { ctx.moveTo(X(v1), T); ctx.lineTo(X(v1), H - B); }
@@ -446,5 +490,5 @@
     return { redraw };
   }
 
-  DCS.iv = { build, mount, analyse, trace };
+  DCS.iv = { build, mount, analyse, trace, portSpec, nlNames };
 })(window);

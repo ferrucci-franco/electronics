@@ -800,8 +800,20 @@
       const load = th.loadId ? app.circuit.comps.find(c => c.id === th.loadId) : null;
       const card = el('div', { class: 'card' });
       card.appendChild(el('div', { class: 'hint' }, load ? t('thev_load', { name: `<b>${esc(load.name)}</b>`}) : t('thev_port')));
-      const eq = el('div', { class: 'eq' });
+      // a nonlinear circuit has no Thévenin equivalent: say it first, the numbers below are only a tangent
       const fin = (x) => x !== undefined && isFinite(x);
+      if (r.nonlinear) {
+        // only the open-circuit voltage, the short-circuit current and the real curve make sense
+        card.appendChild(el('div', { class: 'issue warn' }, t('thev_nonlinear', { ids: esc(DCS.iv.nlNames(app, r)) }) + (r.pwl ? ' ' + t('thev_pwl') : '')));
+        const big = (x) => !fin(x) || Math.abs(x) > 1e3;
+        let kv = `<dt>${t('thev_voc')}</dt><dd class="v">${fin(r.voc) ? fmt(r.voc, 'V', 4) : '—'}</dd>`;
+        kv += `<dt>${t('thev_isc')}</dt><dd class="i">${big(r.isc) ? '∞' : fmt(r.isc, 'A', 4)}</dd>`;
+        card.appendChild(el('dl', { class: 'kv' }, kv));
+        pane.appendChild(card);
+        try { ivCardOne(pane, DCS.iv.portSpec(app, r, th.loadId)); } catch (e) { console.error(e); }
+        return;
+      }
+      const eq = el('div', { class: 'eq' });
       const isFr = I.getLang() === 'fr';
       const lab = { vth: isFr ? 'Eₜₕ' : 'Vₜₕ', rth: 'Rₜₕ', in: 'Iₙ', rn: 'Rₙ' };
       // Thévenin drawing
@@ -828,12 +840,6 @@
       card.appendChild(el('dl', { class: 'kv' }, kv));
       card.appendChild(el('div', { class: 'hint' }, t('thev_method')));
       if (r.rth < 0) card.appendChild(el('div', { class: 'issue warn' }, t('thev_negr')));
-      if (r.nonlinear) {
-        card.appendChild(el('div', { class: 'issue warn' }, t('thev_nonlinear')));
-        if (fin(r.isc) && fin(r.in) && Math.abs(r.isc - r.in) > 0.01 * Math.max(Math.abs(r.in), 1e-12)) {
-          card.appendChild(el('div', { class: 'hint' }, t('thev_isc_check', { isc: fmt(r.isc, 'A'), calc: fmt(r.in, 'A') })));
-        }
-      }
       pane.appendChild(card);
       // with the load
       if (load && load.type === 'resistor' && fin(r.vth) && fin(r.rth) && r.rth > 0) {

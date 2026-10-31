@@ -691,8 +691,12 @@
     const base = ckt.elements.filter(el => !exclude.has(el.id));
     const out = { a, b };
     if (a === b) { out.error = 'samenode'; return out; }
-    const nonlinear = base.some(el => el.type === 'D' || el.type === 'Q' || (el.type === 'OA' && el.sat));
+    const nl = base.filter(el => el.type === 'D' || el.type === 'Q' || (el.type === 'OA' && el.sat));
+    const nonlinear = nl.length > 0;
     out.nonlinear = nonlinear;
+    out.nonlinearIds = nl.map(el => el.id);
+    // piecewise-linear only (ideal / constant-drop diodes, simple transistor, saturating op-amp): linear between breakpoints
+    out.pwl = nonlinear && nl.every(el => (el.type === 'D' && el.model !== 'exact') || (el.type === 'Q' && el.model !== 'em') || el.type === 'OA');
     const prevStates = opts.prevStates;
     // test solves may legitimately reach large voltages (a test current into a large resistance)
     const sopts = { prevStates, tempC: opts.tempC, prevV: opts.prevV, noHuge: !nonlinear };
