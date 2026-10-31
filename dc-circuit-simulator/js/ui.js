@@ -8,6 +8,7 @@
     { type: 'resistor', key: 'resistor' }, { type: 'pot', key: 'pot' }, { type: 'vsource', key: 'vsource' }, { type: 'isource', key: 'isource' },
     { type: 'ground', key: 'ground' }, { type: 'ammeter', key: 'ammeter' }, { type: 'voltmeter', key: 'voltmeter' },
     { type: 'switch', key: 'switch' }, { type: 'button', key: 'button' },
+    { type: 'depv', key: 'depv' }, { type: 'depi', key: 'depi' }, { type: 'isense', key: 'isense' }, { type: 'vsense', key: 'vsense' },
     { type: 'diode', key: 'diode' }, { type: 'schottky', key: 'schottky' }, { type: 'led', key: 'led' }, { type: 'rgbled', key: 'rgbled' }, { type: 'opamp', key: 'opamp' },
     { type: 'bjt', key: 'npn', props: { pol: 'npn' } }, { type: 'bjt', key: 'pnp', props: { pol: 'pnp' } }
   ];
@@ -52,7 +53,7 @@
     function drawPalette() {
       const col = R.colors().fg;
       for (const p of palButtons) {
-        p.span.textContent = t('cs_' + p.it.key);
+        p.span.innerHTML = t('cs_' + p.it.key);
         const sc = { ground: 'G', resistor: 'R', vsource: 'V', isource: 'I', opamp: 'A', diode: 'D', npn: 'T', pnp: 'T T', switch: 'S' }[p.it.key];
         p.b.title = app.tp('c_' + p.it.key) + (sc ? ` (${sc})` : '');
         const props = Object.assign(C.defaults(p.it.type), p.it.props || {});
@@ -537,6 +538,7 @@
 
     /* ---------- properties pane ---------- */
     function propLabel(c, d) {
+      if (d.key === 'k') { const k = C.depKind(c, app.circuit); return t('p_gain') + ' ' + k.sym; }
       if (d.key === 'model' || d.key === 'pol' || d.key === 'sat') return t('p_' + d.key);
       return t('p_' + d.key);
     }
@@ -613,7 +615,7 @@
       };
       if (c.type !== 'ground') {
         const nm = el('input', { type: 'text', value: c.name || '', 'data-prop': 'name', autocomplete: 'off', spellcheck: 'false' });
-        nm.addEventListener('change', () => { const v = nm.value.trim().slice(0, 16); if (v && v !== c.name) { app.checkpoint(); c.name = v; app.commit(); } else nm.value = c.name; });
+        nm.addEventListener('change', () => { const v = nm.value.trim().slice(0, 16); if (v && v !== c.name) { app.checkpoint(); app.renameComp(c, v); app.commit(); } else nm.value = c.name; });
         nm.addEventListener('keydown', (e) => { if (e.key === 'Enter') nm.blur(); });
         field(t('p_name'), nm);
       }
@@ -621,7 +623,16 @@
         if (d.show && !d.show(c)) continue;
         if (d.type === 'select') {
           const s = el('select', { 'data-prop': d.key });
-          for (const o of d.options) {
+          if (d.key === 'ctrl') {
+            // the control of a dependent source: any sensor or meter of the circuit, by name
+            const ms = app.circuit.comps.filter(m => C.meterKind(m) && m.name);
+            if (!C.ctrlOf(c, app.circuit)) s.appendChild(el('option', { value: '' }, esc(t('ctrl_none'))));
+            for (const m of ms) {
+              const opt = el('option', { value: m.name }, esc((C.meterKind(m) === 'A' ? 'i' : 'v') + ' · ' + m.name));
+              if (c.props.ctrl === m.name) opt.selected = true;
+              s.appendChild(opt);
+            }
+          } else for (const o of d.options) {
             const opt = el('option', { value: o }, d.key === 'model' ? plainText(t('model_' + o)) : t(o));
             if (c.props[d.key] === o) opt.selected = true;
             s.appendChild(opt);
@@ -682,9 +693,15 @@
               requestAnimationFrame(() => { const i2 = $('pane-props').querySelector(`input[data-prop="${d.key}"]`); if (i2) { i2.focus(); i2.setSelectionRange(i2.value.length, i2.value.length); } });
             }
           });
-          field(propLabel(c, d), inp, d.unit);
+          field(propLabel(c, d), inp, typeof d.unit === 'function' ? d.unit(c, app.circuit) : d.unit);
           if (LIVE_KEYS.has(d.key)) liveSlider(c, d, inp);
         }
+      }
+      if (C.isDep(c)) {
+        // control variable: i_x1 for a sensor named ix1, i_AM1 for an ammeter AM1
+        const k = C.depKind(c, app.circuit), nm = String(c.props.ctrl || 'x');
+        const x = nm[0].toLowerCase() === k.x && nm.length > 1 ? k.x + '<sub>' + esc(nm.slice(1)) + '</sub>' : k.x + '<sub>' + esc(nm) + '</sub>';
+        card.appendChild(el('div', { class: 'hint' }, `${t('dep_' + k.code)}: ${c.type === 'depv' ? 'v' : 'i'} = ${k.sym} · ${x}`));
       }
       if (C.flippable(c) && !app.settings.realDir) {
         const f = C.refs(c);
@@ -797,8 +814,8 @@
         const del = p < -1e-15;
         return `<dt>${label || t('res_p')}</dt><dd class="${del ? 'pg' : 'pa'}">${fmt(Math.abs(p), 'W')} ${del ? t('delivers') : t('absorbs')}</dd>`;
       };
-      if (c.type === 'ammeter') html = `<dt>${t('reading')}</dt><dd class="i big">${fmt(r.i, 'A', 4)}</dd>`;
-      else if (c.type === 'voltmeter') html = `<dt>${t('reading')}</dt><dd class="v big">${fmt(r.v, 'V', 4)}</dd>`;
+      if (C.meterKind(c) === 'A') html = `<dt>${t('reading')}</dt><dd class="i big">${fmt(r.i, 'A', 4)}</dd>`;
+      else if (C.meterKind(c) === 'V') html = `<dt>${t('reading')}</dt><dd class="v big">${fmt(r.v, 'V', 4)}</dd>`;
       else if (c.type === 'opamp') {
         html = `<dt>${t('vout')}</dt><dd class="v">${fmt(r.vout, 'V')}</dd><dt>${t('iout')}</dt><dd class="i">${fmt(r.iout, 'A')}</dd>` +
           `<dt>${t('vdiff')}</dt><dd>${fmt(r.vd, 'V')}</dd><dt>${t('res_state')}</dt><dd>${r.state === 'lin' ? 'linear' : r.state === 'sp' ? 'SAT +' : 'SAT −'}</dd>` +
@@ -861,7 +878,7 @@
       nd.appendChild(el('div', { class: 'hint' }, t('nodes_hint')));
       nd.appendChild(nt);
       pane.appendChild(nd);
-      const order = ['vsource', 'isource', 'resistor', 'pot', 'diode', 'schottky', 'led', 'rgbled', 'bjt', 'opamp', 'ammeter', 'voltmeter'];
+      const order = ['vsource', 'isource', 'resistor', 'pot', 'diode', 'schottky', 'led', 'rgbled', 'bjt', 'opamp', 'depv', 'depi', 'ammeter', 'voltmeter', 'isense', 'vsense'];
       const comps = app.circuit.comps.filter(c => c.type !== 'ground').sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type) || String(a.name).localeCompare(String(b.name), undefined, { numeric: true }));
       const tbl = el('table', { class: 'res' });
       let rows = `<tr><th>${t('tbl_comp')}</th><th>${t('tbl_v')}</th><th>${t('tbl_i')}</th><th>${t('tbl_p')}</th></tr>`;
@@ -877,8 +894,8 @@
         if (c.type === 'pot') { v = r.aw.v + r.wb.v; i = r.tc[0]; }
         if (c.type === 'opamp') { if (p > 0) pAbs += p; else pGen -= p; }
         else if (p >= 0) pAbs += p; else pGen -= p;
-        const meter = c.type === 'ammeter' || c.type === 'voltmeter';
-        rows += `<tr data-id="${esc(c.id)}"><td>${esc(c.name || '')}</td><td class="v">${c.type === 'ammeter' ? '' : fmt(v, 'V')}</td><td class="i">${c.type === 'voltmeter' ? '' : fmt(i, 'A')}</td>` +
+        const meter = C.meterKind(c);
+        rows += `<tr data-id="${esc(c.id)}"><td>${esc(c.name || '')}</td><td class="v">${meter === 'A' ? '' : fmt(v, 'V')}</td><td class="i">${meter === 'V' ? '' : fmt(i, 'A')}</td>` +
           `<td class="${p < -1e-15 ? 'pg' : 'pa'}">${meter ? '' : fmt(p, 'W')}</td></tr>`;
       }
       tbl.innerHTML = rows;
@@ -920,7 +937,7 @@
           const f = C.refs(c);
           const sg = C.signed(c, r);
           const from = f.refI ? n[1] : n[0], to = f.refI ? n[0] : n[1];
-          if (c.type !== 'voltmeter') { addI(from, 1, sub('I', c.name), sg.i); addI(to, -1, sub('I', c.name), sg.i); }
+          if (C.meterKind(c) !== 'V') { addI(from, 1, sub('I', c.name), sg.i); addI(to, -1, sub('I', c.name), sg.i); }
           branches.push({ c, plus: f.refV ? n[1] : n[0], minus: f.refV ? n[0] : n[1], v: sg.v });
         } else if (c.type === 'bjt') {
           multi = true;
@@ -1147,8 +1164,8 @@
       for (const c of src.comps) {
         if (c.id === th.loadId) continue;
         const ts = C.terminals(c);
-        if (c.type === 'vsource' || c.type === 'ammeter' || (C.isSwitch(c) && C.isClosed(c))) { wires.push({ id: 'p' + c.id, x1: ts[0][0], y1: ts[0][1], x2: ts[1][0], y2: ts[1][1] }); continue; }
-        if (c.type === 'isource' || c.type === 'voltmeter' || C.isSwitch(c)) continue;
+        if (c.type === 'vsource' || C.meterKind(c) === 'A' || (C.isSwitch(c) && C.isClosed(c))) { wires.push({ id: 'p' + c.id, x1: ts[0][0], y1: ts[0][1], x2: ts[1][0], y2: ts[1][1] }); continue; }
+        if (c.type === 'isource' || C.meterKind(c) === 'V' || C.isSwitch(c)) continue;
         comps.push(c);
       }
       const circuit = { comps, wires };
@@ -1210,37 +1227,45 @@
       if (tab === 'thev' && app.thev && !thevRaf) thevRaf = requestAnimationFrame(() => { thevRaf = 0; renderThev(); });
     };
 
-    /* ---------- pinned plot: a small window over the circuit that follows every change live ----------
-     * app.monitor = { ids, idx, win: [] }: the axes stay put while values change (they only grow when Q
+    /* ---------- pinned plots: up to two small windows over the circuit that follow every change live ----------
+     * app.monitors[slot] = { ids, idx, win: [], t } or null; each window keeps its slot. The axes stay put while values change (they only grow when Q
      * leaves them), so the motion of Q can be seen. */
-    const mon = el('div', { class: 'monitor' });
-    mon.hidden = true;
-    const mhead = el('div', { class: 'mon-head' });
-    const mtitle = el('span', { class: 'mon-title' });
-    const mswap = button('⇄', () => { const m = app.monitor; if (m) { m.idx = m.idx ? 0 : 1; ui.updateMonitor(); } });
-    const mreset = button('⟲', () => { const m = app.monitor; if (m) { m.win = []; m.levels = null; ui.updateMonitor(); } });
-    const mclose = button('✕', () => { app.monitor = null; ui.updateMonitor(); });
-    mhead.appendChild(mtitle); mhead.appendChild(mswap); mhead.appendChild(mreset); mhead.appendChild(mclose);
-    const mcv = el('canvas', { class: 'mon-cv' });
-    mon.appendChild(mhead); mon.appendChild(mcv);
-    $('stage').appendChild(mon);
-    {
-      // the window can be moved by its title bar
-      let d = null;
-      mhead.addEventListener('pointerdown', (e) => {
-        if (e.target.closest('button')) return;
-        const r = mon.getBoundingClientRect(), s = $('stage').getBoundingClientRect();
-        d = { id: e.pointerId, dx: e.clientX - r.left, dy: e.clientY - r.top, s };
-        mhead.setPointerCapture(e.pointerId);
-      });
-      mhead.addEventListener('pointermove', (e) => {
-        if (!d || d.id !== e.pointerId) return;
-        const x = Math.max(0, Math.min(d.s.width - mon.offsetWidth, e.clientX - d.s.left - d.dx));
-        const y = Math.max(0, Math.min(d.s.height - mon.offsetHeight, e.clientY - d.s.top - d.dy));
-        Object.assign(mon.style, { left: x + 'px', top: y + 'px', right: 'auto', bottom: 'auto' });
-      });
-      mhead.addEventListener('pointerup', () => { d = null; });
+    const MAXMON = 2;
+    const monWins = [];
+    function makeMonWin(slot) {
+      const mon = el('div', { class: 'monitor' + (slot ? ' mon2' : '') });
+      mon.hidden = true;
+      const mhead = el('div', { class: 'mon-head' });
+      const mtitle = el('span', { class: 'mon-title' });
+      const cur = () => app.monitors[slot];
+      const mswap = button('⇄', () => { const m = cur(); if (m) { m.idx = m.idx ? 0 : 1; ui.updateMonitor(); } });
+      const mreset = button('⟲', () => { const m = cur(); if (m) { m.win = []; m.levels = null; ui.updateMonitor(); } });
+      const mclose = button('✕', () => { app.monitors[slot] = null; ui.updateMonitor(); });
+      mhead.appendChild(mtitle); mhead.appendChild(mswap); mhead.appendChild(mreset); mhead.appendChild(mclose);
+      const mcv = el('canvas', { class: 'mon-cv' });
+      mon.appendChild(mhead); mon.appendChild(mcv);
+      $('stage').appendChild(mon);
+      dragByHead(mon, mhead);
+      return { mon, mtitle, mswap, mreset, mclose, mcv };
     }
+    // a floating window can be moved by its title bar
+    function dragByHead(win, head) {
+      let d = null;
+      head.addEventListener('pointerdown', (e) => {
+        if (e.target.closest('button')) return;
+        const r = win.getBoundingClientRect(), s = $('stage').getBoundingClientRect();
+        d = { id: e.pointerId, dx: e.clientX - r.left, dy: e.clientY - r.top, s };
+        head.setPointerCapture(e.pointerId);
+      });
+      head.addEventListener('pointermove', (e) => {
+        if (!d || d.id !== e.pointerId) return;
+        const x = Math.max(0, Math.min(d.s.width - win.offsetWidth, e.clientX - d.s.left - d.dx));
+        const y = Math.max(0, Math.min(d.s.height - win.offsetHeight, e.clientY - d.s.top - d.dy));
+        Object.assign(win.style, { left: x + 'px', top: y + 'px', right: 'auto', bottom: 'auto' });
+      });
+      head.addEventListener('pointerup', () => { d = null; });
+    }
+    for (let k = 0; k < MAXMON; k++) monWins.push(makeMonWin(k));
     /* pinned Thévenin values: a small window over the circuit with V_Th, R_Th = R_eq and I_N (or V_oc and I_sc
      * when the circuit is not linear), updated at every change, also while a value is dragged */
     const tmon = el('div', { class: 'monitor tmon' });
@@ -1252,22 +1277,7 @@
     const tbody = el('dl', { class: 'kv' });
     tmon.appendChild(thead); tmon.appendChild(tbody);
     $('stage').appendChild(tmon);
-    {
-      let d = null;
-      thead.addEventListener('pointerdown', (e) => {
-        if (e.target.closest('button')) return;
-        const r = tmon.getBoundingClientRect(), s = $('stage').getBoundingClientRect();
-        d = { id: e.pointerId, dx: e.clientX - r.left, dy: e.clientY - r.top, s };
-        thead.setPointerCapture(e.pointerId);
-      });
-      thead.addEventListener('pointermove', (e) => {
-        if (!d || d.id !== e.pointerId) return;
-        const x = Math.max(0, Math.min(d.s.width - tmon.offsetWidth, e.clientX - d.s.left - d.dx));
-        const y = Math.max(0, Math.min(d.s.height - tmon.offsetHeight, e.clientY - d.s.top - d.dy));
-        Object.assign(tmon.style, { left: x + 'px', top: y + 'px', right: 'auto', bottom: 'auto' });
-      });
-      thead.addEventListener('pointerup', () => { d = null; });
-    }
+    dragByHead(tmon, thead);
     ui.updateThevMon = function () {
       if (!app.thevPinned || !app.thev) { tmon.hidden = true; if (!app.thev) app.thevPinned = false; return; }
       const r = app.thev.res;
@@ -1287,13 +1297,24 @@
     };
 
     app.pinPlot = function (k) {
-      app.monitor = { ids: app.selectedComps().map(c => c.id), idx: k || 0, win: [] };
+      const ids = app.selectedComps().map(c => c.id), key = ids.slice().sort().join(','), idx = k || 0;
+      // the same plot again: nothing new; otherwise a free window, or the oldest one is reused
+      // (so the input and the output curves of a transistor can be watched side by side)
+      const ms = app.monitors;
+      if (ms.some(m => m && m.idx === idx && m.ids.slice().sort().join(',') === key)) return;
+      let slot = ms.findIndex(m => !m);
+      if (slot < 0) slot = ms[0].t <= ms[1].t ? 0 : 1;
+      ms[slot] = { ids, idx, win: [], t: Date.now() };
       ui.updateMonitor();
     };
     ui.updateMonitor = function () {
-      const m = app.monitor;
+      const ms = app.monitors;
+      for (let k = 0; k < MAXMON; k++) if (ms[k] && !ms[k].ids.every(id => app.circuit.comps.some(c => c.id === id))) ms[k] = null;
+      monWins.forEach((w, k) => updateMonWin(w, app.monitors[k]));
+    };
+    function updateMonWin(W, m) {
+      const { mon, mtitle, mswap, mreset, mclose, mcv } = W;
       if (!m) { mon.hidden = true; return; }
-      if (!m.ids.every(id => app.circuit.comps.some(c => c.id === id))) { app.monitor = null; mon.hidden = true; return; }
       // the fixed output curves are traced again around the base current when it has gone far from them, in the
       // active region only (in saturation the base current says nothing about I_C); the axes stay as they are
       const qc = app.circuit.comps.find(c => c.id === m.ids[0]);
@@ -1324,7 +1345,7 @@
       mtitle.innerHTML = (spec.titleHtml || DCS.iv.subHtml(spec.title));
       spec.win = w;
       DCS.iv.draw(mcv, spec, null);
-    };
+    }
 
     translate();
     requestAnimationFrame(syncPalFade);

@@ -181,6 +181,18 @@
         w: [[[0, 4], [0, 0], [11, 0], [11, 1]], [[6, 0], [6, 1]], [[6, 5], [6, 8]], [[6, 7], [8, 7]],
           [[0, 8], [0, 14], [11, 14], [11, 13]], [[6, 12], [6, 14]]]
       }
+    },
+    depsrc: {
+      t: { en: 'Dependent source and Thévenin', fr: 'Source commandée et Thévenin', es: 'Fuente dependiente y Thévenin' },
+      d: { en: 'E1 = μ·vx depends on the voltage across the load. The dependent source is not set to zero: R_Th comes from a test source. Try μ = 3: R_Th becomes negative.', fr: 'E1 = μ·vx dépend de la tension aux bornes de la charge. La source commandée n’est pas annulée : R_Th s’obtient avec une source de test. Essayez μ = 3 : R_Th devient négative.', es: 'E1 = μ·vx depende de la tensión sobre la carga. La fuente dependiente no se pasiva: R_Th se obtiene con una fuente de prueba. Pruebe μ = 3: R_Th se vuelve negativa.' },
+      s: {
+        load: 'RL',
+        c: [['vsource', 'V1', 0, 4, 1, { V: 10 }], ['resistor', 'R1', 4, 0, 0, { R: 1000 }], ['vsense', 'vx', 8, 4, 1],
+          ['resistor', 'RL', 11, 5, 1, { R: 1000 }], ['resistor', 'R2', 14, 0, 0, { R: 1000 }],
+          ['depv', 'E1', 18, 4, 1, { ctrl: 'vx', k: 0.5 }], ['ground', '', 4, 8, 0]],
+        w: [[[0, 2], [0, 0], [2, 0]], [[6, 0], [12, 0]], [[8, 0], [8, 3]], [[11, 0], [11, 3]], [[16, 0], [18, 0], [18, 2]],
+          [[0, 6], [0, 8], [18, 8], [18, 6]], [[8, 5], [8, 8]], [[11, 7], [11, 8]]]
+      }
     }
   };
 

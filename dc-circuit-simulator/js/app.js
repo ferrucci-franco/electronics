@@ -161,6 +161,8 @@
   }
   app.splitWires = splitWires;
 
+  app.monitors = [null, null];   // pinned I–V plots (two floating windows)
+
   // A two-terminal component dropped on a wire is inserted in it: the piece of wire that would join its two
   // terminals (and short it) is removed. Only for the components just placed, moved, pasted or rotated.
   app.inserted = new Set();
@@ -207,6 +209,7 @@
     const name = (id) => { const base = String(id).split('#')[0]; const c = app.circuit.comps.find(x => x.id === base); return c ? (c.name || app.tp('c_' + c.type)) : id; };
     for (const iss of res.issues) out.push({ level: iss.level, text: app.t('iss_' + iss.code, { ids: iss.ids.map(name).join(', ') }), ids: iss.ids });
     if (app.net && app.net.noGround) out.push({ level: 'warn', text: app.t('iss_noground'), ids: [] });
+    for (const c of app.circuit.comps) if (C.isDep(c) && !C.ctrlOf(c, app.circuit)) out.push({ level: 'warn', text: app.t('iss_noctrl', { ids: c.name }), ids: [c.id] });
     if (res.ok) for (const c of app.circuit.comps) {
       const r = res.el[c.id];
       if (!r) continue;
@@ -587,12 +590,14 @@
     const d = JSON.parse(data);
     const off = offset || 3;
     app.checkpoint();
-    const ids = [];
+    const ids = [], renamed = new Map(), added = [];
     for (const c of d.comps) {
       const n = Object.assign({}, c, { id: newId('c'), x: c.x + off, y: c.y + off, props: Object.assign({}, c.props) });
-      if (c.type !== 'ground') n.name = nextName(C.TYPES[c.type].prefix);
-      app.circuit.comps.push(n); ids.push(n.id);
+      if (c.type !== 'ground') { n.name = nextName(C.TYPES[c.type].prefix); renamed.set(c.name, n.name); }
+      app.circuit.comps.push(n); ids.push(n.id); added.push(n);
     }
+    // a dependent source copied together with its sensor follows the copy of the sensor
+    for (const n of added) if (C.isDep(n) && n.props.ctrl && d.comps.some(c => C.meterKind(c) && c.name === n.props.ctrl)) n.props.ctrl = renamed.get(n.props.ctrl);
     for (const w of d.wires) { const n = Object.assign({}, w, { id: newId('w'), x1: w.x1 + off, y1: w.y1 + off, x2: w.x2 + off, y2: w.y2 + off }); app.circuit.wires.push(n); ids.push(n.id); }
     app.sel = new Set(ids);
     for (const id of ids) app.inserted.add(id);
@@ -604,6 +609,11 @@
   };
 
   /* ---------- tools and placing ---------- */
+  // renaming a sensor keeps the dependent sources that read it
+  app.renameComp = function (c, name) {
+    if (C.meterKind(c)) for (const d of app.circuit.comps) if (C.isDep(d) && d.props.ctrl === c.name) d.props.ctrl = name;
+    c.name = name;
+  };
   app.setTool = function (tool, opts) {
     app.tool = tool;
     app.overlay.ghost = null; app.overlay.wirePath = null; app.overlay.snap = null;
@@ -629,6 +639,12 @@
     if (!gh || !app.place) return;
     app.checkpoint();
     const c = { id: newId('c'), type: gh.type, name: gh.type === 'ground' ? '' : nextName(C.TYPES[gh.type].prefix), x: gh.x, y: gh.y, rot: gh.rot, flip: gh.flip, props: Object.assign({}, app.place.props) };
+    // a new dependent source takes the last sensor placed (or the last meter) as its control
+    if (C.isDep(c) && !c.props.ctrl) {
+      const ms = app.circuit.comps.filter(s => C.meterKind(s) && s.name);
+      const s = ms.filter(s => s.type === 'isense' || s.type === 'vsense').pop() || ms.pop();
+      if (s) c.props.ctrl = s.name;
+    }
     app.circuit.comps.push(c);
     app.inserted.add(c.id);
     if (backToSelect) { app.setTool('select'); app.sel = new Set([c.id]); }
@@ -704,7 +720,7 @@
   function showTab(k) {
     const t = app.tabs[k];
     app.tabIdx = k;
-    app.monitor = null;
+    app.monitors = [null, null];
     let c;
     try { c = JSON.parse(t.circuit || EMPTY); } catch (e) { c = JSON.parse(EMPTY); }
     app.loadCircuit(c);

@@ -240,5 +240,32 @@ const Q = (id, b, c, e, pnp) => ({ type: 'Q', id, n: [b, c, e], pnp: !!pnp, beta
   near('LED off at 0 A', r.el.D0.i, 0, 1e-9);
 }
 
+// 25–29. linear dependent sources
+{
+  const VM = (id, p, m) => ({ type: 'VM', id, n: [p, m] });
+  const AM = (id, p, m) => ({ type: 'AM', id, n: [p, m] });
+  // VCVS: v2 = 10 · v1
+  let r = S.solve({ nodeCount: 3, elements: [V('V1', 1, 0, 1), VM('vx', 1, 0), { type: 'E', id: 'E1', n: [2, 0], cn: [1, 0], k: 10 }, R('RL', 2, 0, 1000)] });
+  near('VCVS v2', r.v[2], 10); near('VCVS current', r.el.E1.i, -10e-3); near('VCVS power balance', r.pSum, 0, 1e-9);
+  // CCVS: v3 = 100 Ω · i_x, i_x = 10 mA
+  r = S.solve({ nodeCount: 4, elements: [V('V1', 1, 0, 10), AM('ix', 1, 2), R('R1', 2, 0, 1000), { type: 'H', id: 'H1', n: [3, 0], ctrl: 'ix', k: 100 }, R('RL', 3, 0, 1000)] });
+  near('CCVS v3', r.v[3], 1);
+  // VCCS: 1 mS · 2 V = 2 mA pushed into node 3
+  r = S.solve({ nodeCount: 4, elements: [V('V1', 1, 0, 2), VM('vx', 1, 0), { type: 'G', id: 'G1', n: [0, 3], cn: [1, 0], k: 1e-3 }, R('RL', 3, 0, 1000)] });
+  near('VCCS v3', r.v[3], 2); near('VCCS i', r.el.G1.i, 2e-3);
+  // CCCS: β = 50, i_x = 10 mA -> 0.5 A into 10 Ω
+  r = S.solve({ nodeCount: 4, elements: [V('V1', 1, 0, 10), R('R1', 1, 2, 1000), AM('ix', 2, 0), { type: 'F', id: 'F1', n: [0, 3], ctrl: 'ix', k: 50 }, R('RL', 3, 0, 10)] });
+  near('CCCS v3', r.v[3], 5); near('CCCS power balance', r.pSum, 0, 1e-9);
+  // Thévenin with a VCVS in feedback: R_th = 1 kΩ / (2 − k)
+  const ck = (k) => ({ nodeCount: 4, elements: [V('V1', 1, 0, 10), R('R1', 1, 2, 1000), { type: 'E', id: 'E1', n: [3, 0], cn: [2, 0], k }, R('R2', 3, 2, 1000)] });
+  let th = S.thevenin(ck(0.5), 2, 0);
+  near('dep Thevenin Vth', th.vth, 10 / 1.5); near('dep Thevenin Rth', th.rth, 1000 / 1.5);
+  th = S.thevenin(ck(3), 2, 0);
+  near('dep Thevenin negative Rth', th.rth, -1000); near('dep Thevenin Vth (neg R)', th.vth, -10);
+  // a dependent voltage source in a loop with a voltage source is rejected
+  r = S.solve({ nodeCount: 3, elements: [V('V1', 1, 0, 1), R('R1', 1, 2, 1000), VM('vx', 2, 0), { type: 'E', id: 'E1', n: [1, 0], cn: [2, 0], k: 2 }] });
+  truthy('VCVS parallel to a source: vloop', !r.ok && r.issues.some(i => i.code === 'vloop'));
+}
+
 console.log(`${count - fails}/${count} checks passed`);
 process.exit(fails ? 1 : 0);
