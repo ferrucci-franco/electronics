@@ -391,6 +391,9 @@
 
     if (T.terms.length === 2) {
       const hw = HALF[c.type] || 0.6;
+      // the light arrows of a LED stick out on one side: the labels keep clear of them
+      const lightDir = c.type === 'led' ? worldDir(c, 0, -1) : null;
+      const hwSide = (d) => (lightDir && d[0] * lightDir[0] + d[1] * lightDir[1] > 0.5 ? 1.45 : hw);
       const [t0, t1] = C.terminals(c);
       const cx = (t0[0] + t1[0]) / 2, cy = (t0[1] + t1[1]) / 2;
       const horiz = t0[1] === t1[1];
@@ -398,15 +401,16 @@
       const sides = horiz ? [[0, -1], [0, 1]] : [[1, 0], [-1, 0]];
       for (const [nd, gap] of [[sides[0], 0], [sides[1], 0], [sides[0], 0.9], [sides[1], 0.9]]) {
         const rd = [-nd[0], -nd[1]];
-        const blocks = [{ wx: cx + nd[0] * (hw + 0.35 + gap), wy: cy + nd[1] * (hw + 0.35 + gap), dir: nd, lines: nameLines }];
+        const hwN = hwSide(nd), hwR = hwSide(rd);
+        const blocks = [{ wx: cx + nd[0] * (hwN + 0.35 + gap), wy: cy + nd[1] * (hwN + 0.35 + gap), dir: nd, lines: nameLines }];
         // the strip next to the body where the reference marks and arrows go
-        const ex = Math.abs(ax) * 1.9 + Math.abs(rd[0]) * (hw + 0.95), ey = Math.abs(ay) * 1.9 + Math.abs(rd[1]) * (hw + 0.95);
-        const mx = cx + rd[0] * (hw + 0.95) / 2, my = cy + rd[1] * (hw + 0.95) / 2;
+        const ex = Math.abs(ax) * 1.9 + Math.abs(rd[0]) * (hwR + 0.95), ey = Math.abs(ay) * 1.9 + Math.abs(rd[1]) * (hwR + 0.95);
+        const mx = cx + rd[0] * (hwR + 0.95) / 2, my = cy + rd[1] * (hwR + 0.95) / 2;
         const extra = [[mx - ex / 2 - (rd[0] ? 0 : 0), my - ey / 2, mx + ex / 2, my + ey / 2]];
         const marks = [];
         if (r) {
           const lines = [];
-          let off = hw + 0.35;
+          let off = hwR + 0.35;
           const meter = c.type === 'ammeter' || c.type === 'voltmeter';
           if (meter) {
             // a meter with a loose terminal has nothing to measure
@@ -414,7 +418,7 @@
             const txt = open ? '—' : c.type === 'ammeter' ? fmt(r.i, 'A') : fmt(r.v, 'V');
             lines.push({ text: txt, mono: true, box: true, color: c.type === 'ammeter' ? col.cur : col.volt });
           } else if (!st.realDir) {
-            this.refMarks(S, c, r, rd, hw, cx, cy, ax, ay, marks, lines, fmt);
+            this.refMarks(S, c, r, rd, hwR, cx, cy, ax, ay, marks, lines, fmt);
           } else {
             const showI = st.showI && c.type !== 'isource', showV = st.showV && c.type !== 'vsource';
             if (showI) {
@@ -423,7 +427,7 @@
               off += 0.5;
             }
             if (showV) {
-              const v = r.v, o2 = hw + 0.35;
+              const v = r.v, o2 = hwR + 0.35;
               if (Math.abs(v) > 1e-9) marks.push(() => {
                 const px = Math.max(7, Math.min(11, S.view.scale * 0.42));
                 signGlyph(this, S.view, cx - ax * 1.55 + rd[0] * o2, cy - ay * 1.55 + rd[1] * o2, v > 0, col.volt, px);
@@ -438,7 +442,7 @@
           blocks.push({ wx: cx + rd[0] * ((lines.refOff || off) + gap), wy: cy + rd[1] * ((lines.refOff || off) + gap), dir: rd, lines });
         } else if (!st.realDir && C.flippable(c)) {
           const lines = [];
-          this.refMarks(S, c, null, rd, hw, cx, cy, ax, ay, marks, lines, fmt);
+          this.refMarks(S, c, null, rd, hwR, cx, cy, ax, ay, marks, lines, fmt);
           blocks.push({ wx: cx + rd[0] * (lines.refOff + gap), wy: cy + rd[1] * (lines.refOff + gap), dir: rd, lines });
         }
         opts.push({ blocks, marks, extra: marks.length ? extra : [], penalty: gap ? 3 : 0 });

@@ -756,6 +756,21 @@
     const p = this.world(e);
     let dy = e.deltaY;
     if (e.deltaMode === 1) dy *= 16;
+    // over the selected component (and not a pinch): the wheel steps its value instead of zooming
+    const app = this.app;
+    if (!e.ctrlKey && app.sel.size === 1 && app.tool === 'select') {
+      const c = app.selectedComps()[0];
+      if (c && app.valueKey(c) && C.hit(c, p.x, p.y, 0.3)) {
+        // a mouse notch is one step; a touchpad sends small deltas, one step every 40 px of travel
+        const now = performance.now();
+        if (!this.wheelT || now - this.wheelT > 300) this.wheelAcc = 0;
+        this.wheelT = now;
+        if (Math.abs(dy) >= 40) { this.wheelAcc = 0; app.adjustValue(c, dy < 0); return; }
+        this.wheelAcc += dy;
+        if (Math.abs(this.wheelAcc) >= 40) { app.adjustValue(c, this.wheelAcc < 0); this.wheelAcc = 0; }
+        return;
+      }
+    }
     const k = Math.exp(-dy * (e.ctrlKey ? 0.01 : 0.0018));
     this.app.zoomAt(k, p.sx, p.sy);
   };
@@ -763,6 +778,13 @@
   Editor.prototype.startPinch = function () {
     const [a, b] = Array.from(this.ptrs.values());
     this.pinch = { d0: Math.hypot(a.sx - b.sx, a.sy - b.sy) || 1, m0: [(a.sx + b.sx) / 2, (a.sy + b.sy) / 2], view0: Object.assign({}, this.app.view) };
+    // two fingers on the selected component: moving them up or down steps its value (no zoom)
+    const app = this.app, v = app.view;
+    const c = app.sel.size === 1 && app.tool === 'select' ? app.selectedComps()[0] : null;
+    if (c && app.valueKey(c)) {
+      const wx = (this.pinch.m0[0] - v.ox) / v.scale, wy = (this.pinch.m0[1] - v.oy) / v.scale;
+      if (C.hit(c, wx, wy, 1)) this.pinch.value = { c, y0: this.pinch.m0[1] };
+    }
   };
   Editor.prototype.updatePinch = function () {
     const pts = Array.from(this.ptrs.values());
@@ -770,6 +792,15 @@
     const [a, b] = pts, P = this.pinch, app = this.app;
     const d = Math.hypot(a.sx - b.sx, a.sy - b.sy) || 1;
     const m = [(a.sx + b.sx) / 2, (a.sy + b.sy) / 2];
+    if (P.value) {
+      // every 22 px of vertical motion is one step (up = larger)
+      while (Math.abs(m[1] - P.value.y0) >= 22) {
+        const up = m[1] < P.value.y0;
+        app.adjustValue(P.value.c, up);
+        P.value.y0 += up ? -22 : 22;
+      }
+      return;
+    }
     const s = Math.max(app.minScale, Math.min(app.maxScale, P.view0.scale * d / P.d0));
     // keep the world point under the first midpoint under the current midpoint
     const wx = (P.m0[0] - P.view0.ox) / P.view0.scale, wy = (P.m0[1] - P.view0.oy) / P.view0.scale;
