@@ -55,12 +55,13 @@
   }
 
   /* Which characteristic to show for the current selection */
-  function analyse(app) {
+  // ids: the components to look at (a pinned plot); the selection otherwise
+  function analyse(app, ids) {
     const res = app.result && app.result.ok ? app.result : null;
     if (!res) return null;
     const net = app.net, ckt = net.ckt;
-    const sel = app.selectedComps().filter(c => c.type !== 'ground');
-    if (app.sel.size !== sel.length && sel.length < 2) return null;
+    const sel = (ids ? ids.map(id => app.circuit.comps.find(c => c.id === id)).filter(Boolean) : app.selectedComps()).filter(c => c.type !== 'ground');
+    if (ids ? sel.length !== ids.length : (app.sel.size !== sel.length && sel.length < 2)) return null;
     if (sel.length === 1 && sel[0].type === 'bjt') return { kind: 'bjt', c: sel[0], r: res.el[sel[0].id] };
     if (sel.length === 1 && sel[0].type === 'opamp') return { kind: 'opamp', c: sel[0], r: res.el[sel[0].id] };
     const two = sel.filter(c => C.TYPES[c.type].terms.length === 2);
@@ -146,12 +147,13 @@
     return trace(rest, th.a, th.b, win, app.settings.tempC, 160).map(([v, i]) => [v, -i]);
   }
 
-  function build(app) {
-    const A = analyse(app);
+  // opts.levels: base currents of the transistor output curves (kept fixed by a pinned plot)
+  function build(app, only, opts) {
+    const A = analyse(app, only);
     if (!A) return null;
     const t = app.tp, tempC = app.settings.tempC;
     const spec = { kind: A.kind, series: [], lines: [], points: [], xlab: 'V', ylab: 'I', xu: 'V', yu: 'A' };
-    if (A.kind === 'bjt') return bjtSpecs(app, A, t, tempC);
+    if (A.kind === 'bjt') return bjtSpecs(app, A, t, tempC, opts || {});
     if (A.kind === 'opamp') {
       const c = A.c, r = A.r, p = c.props;
       const vp = p.sat ? Math.max(p.Vpos, p.Vneg) : Math.max(15, Math.abs(r.vout) * 1.3), vn = p.sat ? Math.min(p.Vpos, p.Vneg) : -vp;
@@ -229,7 +231,7 @@
    * point and the load line imposed by the rest of the circuit. The load lines come from solving the real
    * circuit again with one model parameter moved (V_BE(on) for the input; β, or V_CE(sat) in saturation, for
    * the output): every solution is a point that the circuit allows, so the line passes exactly through Q. */
-  function bjtSpecs(app, A, t, tempC) {
+  function bjtSpecs(app, A, t, tempC, opts) {
     const c = A.c, r = A.r, p = c.props, pnp = p.pol === 'pnp', em = p.model === 'em';
     const Vt = S.thermalVoltage(tempC);
     const elQ = app.net.ckt.elements.find(e => e.id === c.id);
@@ -315,12 +317,12 @@
     }
     if (!outLine) outLine = theveninLine(pnp ? ne : nc, pnp ? nc : ne);
     const ib0 = ibq > 0 ? ibq : 10e-6;
-    const levels = [0.5, 1, 1.5, 2].map(f => f * ib0);
+    const levels = opts.levels || [0.5, 1, 1.5, 2].map(f => f * ib0);
     const oInt = outLine ? intercepts(outLine) : {};
     const vcMax = Math.max(r.vce * 1.3, isFinite(oInt.v) ? oInt.v : 0, p.Vcesat * 4, 1);
     const icMax = Math.max(p.beta * levels[3] * (em && p.VA > 0 ? 1 + vcMax / p.VA : 1), isFinite(oInt.i) ? oInt.i : 0, r.ic * 1.2);
     const winOut = { v0: -0.05 * vcMax, v1: vcMax * 1.12, i0: -0.06 * icMax, i1: icMax * 1.12 };
-    const outSpec = { kind: 'bjt-out', series: [], lines: [], points: [], xu: 'V', yu: 'A', win: winOut };
+    const outSpec = { kind: 'bjt-out', series: [], lines: [], points: [], xu: 'V', yu: 'A', win: winOut, levels };
     levels.forEach((ib, k) => {
       const ic = p.beta * ib;
       let pts = [[0, 0], [p.Vcesat, 0], [p.Vcesat, ic], [winOut.v1, ic]];
@@ -435,6 +437,14 @@
       ctx.stroke();
       ctx.setLineDash([]);
     }
+    // where Q has been while a value was changed (pinned plot): faded dots joined by a thin line
+    if (spec.trail && spec.trail.length > 1) {
+      ctx.strokeStyle = col.port; ctx.globalAlpha = 0.35; ctx.lineWidth = 1.2;
+      ctx.beginPath(); spec.trail.forEach(([v, i], k) => { if (k) ctx.lineTo(X(v), Y(i)); else ctx.moveTo(X(v), Y(i)); }); ctx.stroke();
+      ctx.fillStyle = col.port;
+      for (const [v, i] of spec.trail) { ctx.beginPath(); ctx.arc(X(v), Y(i), 2.6, 0, 2 * Math.PI); ctx.fill(); }
+      ctx.globalAlpha = 1;
+    }
     // operating points (2px surface ring around each marker)
     for (const p of spec.points) {
       const x = X(p.v), y = Y(p.i), r = p.small ? 4.5 : 6.5;
@@ -515,5 +525,5 @@
     return { redraw };
   }
 
-  DCS.iv = { build, mount, analyse, trace, portSpec, nlNames, subHtml };
+  DCS.iv = { build, mount, analyse, trace, portSpec, nlNames, subHtml, draw };
 })(window);

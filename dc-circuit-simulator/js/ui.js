@@ -621,6 +621,7 @@
             }
           });
           field(propLabel(c, d), inp, d.unit);
+          if (LIVE_KEYS.has(d.key)) liveSlider(c, d, inp);
         }
       }
       if (C.flippable(c) && !app.settings.realDir) {
@@ -650,13 +651,45 @@
       issuesInto(pane, c.id);
     }
     // I–V characteristic of the selection, with its operating point and load line
+    /* a slider under the main value of a component: dragging it solves the circuit at every step (the pinned
+     * plot and the drawing follow); a logarithmic range ×1/10 … ×10 for positive values, linear ±2× for the
+     * signed ones (sources). The range is centred again on the value each time the panel is drawn. */
+    const LIVE_KEYS = new Set(['R', 'V', 'I', 'beta', 'Vf']);
+    function liveSlider(c, d, inp) {
+      const v0 = c.props[d.key];
+      const signed = d.min < 0;
+      let toV, toS;
+      if (signed) {
+        const span = Math.abs(v0) > 0 ? 2 * Math.abs(v0) : (d.key === 'I' ? 0.01 : 10);
+        toV = (s) => -span + 2 * span * s / 1000; toS = (v) => Math.round((v + span) / (2 * span) * 1000);
+      } else {
+        const base = v0 > 0 ? v0 : (d.key === 'R' ? 1000 : 1);
+        const lo = Math.max(d.min, base / 10), hi = Math.min(d.max, base * 10);
+        toV = (s) => lo * Math.pow(hi / lo, s / 1000); toS = (v) => Math.round(Math.log(v / lo) / Math.log(hi / lo) * 1000);
+      }
+      const nice = (v) => { if (v === 0) return 0; const e = Math.pow(10, Math.floor(Math.log10(Math.abs(v))) - 2); return Math.round(v / e) * e; };
+      const sl = el('input', { type: 'range', min: '0', max: '1000', step: '1', class: 'live-slider', title: plainText(t('live_tip')) });
+      sl.value = String(Math.max(0, Math.min(1000, toS(v0))));
+      let cp = false;
+      sl.addEventListener('input', () => {
+        if (!cp) { app.checkpoint(); cp = true; }
+        const v = Math.max(d.min, Math.min(d.max, nice(toV(+sl.value))));
+        c.props[d.key] = v;
+        inp.value = U.format(v, '', { digits: 6, trim: true, zero: 1e-30 }).trim();
+        app.circuitChanged(true);
+      });
+      sl.addEventListener('change', () => { cp = false; app.commit(); });
+      const r = el('div', { class: 'field live-row' });
+      r.appendChild(sl);
+      inp.closest('.field').after(r);
+    }
     function ivCard(pane) {
       let specs;
       try { specs = DCS.iv.build(app); } catch (e) { console.error(e); return; }
       if (!specs) return;
-      for (const spec of Array.isArray(specs) ? specs : [specs]) ivCardOne(pane, spec);
+      (Array.isArray(specs) ? specs : [specs]).forEach((spec, k) => ivCardOne(pane, spec, k));
     }
-    function ivCardOne(pane, spec) {
+    function ivCardOne(pane, spec, k) {
       const card = el('div', { class: 'card' });
       const head = el('div', { class: 'ivhead' });
       const title = spec.titleHtml || DCS.iv.subHtml(spec.title);
@@ -672,6 +705,12 @@
           if (spec.conv) box.appendChild(el('div', { class: 'hint' }, spec.conv));
         });
         head.appendChild(big);
+        // pin: the plot stays over the circuit and follows the changes of any value, live
+        if (k !== undefined) {
+          const pin = el('button', { type: 'button', class: 'btn', title: plainText(t('iv_pin')) }, '📌');
+          pin.addEventListener('click', () => app.pinPlot(k));
+          head.insertBefore(pin, big);
+        }
         DCS.iv.mount(card, spec);
       }
       if (spec.note) card.appendChild(el('div', { class: 'hint' }, spec.note));
@@ -1073,9 +1112,77 @@
       if (tab === 'props') renderProps();
       else if (tab === 'results') renderResults();
       else renderThev();
+      ui.updateMonitor();
     };
-    // light refresh while dragging: status only, the panel follows on release
-    ui.updateLive = function () { syncStatus(); };
+    // light refresh while dragging: status and pinned plot only, the panel follows on release
+    ui.updateLive = function () { syncStatus(); ui.updateMonitor(); };
+
+    /* ---------- pinned plot: a small window over the circuit that follows every change live ----------
+     * app.monitor = { ids, idx, win: [], trail: [] }: the axes stay put while values change (they only grow
+     * when Q leaves them) and Q leaves a trail, so its motion can be seen. */
+    const mon = el('div', { class: 'monitor' });
+    mon.hidden = true;
+    const mhead = el('div', { class: 'mon-head' });
+    const mtitle = el('span', { class: 'mon-title' });
+    const mswap = button('⇄', () => { const m = app.monitor; if (m) { m.idx = m.idx ? 0 : 1; ui.updateMonitor(); } });
+    const mreset = button('⟲', () => { const m = app.monitor; if (m) { m.win = []; m.trail = []; m.levels = null; ui.updateMonitor(); } });
+    const mclose = button('✕', () => { app.monitor = null; ui.updateMonitor(); });
+    mhead.appendChild(mtitle); mhead.appendChild(mswap); mhead.appendChild(mreset); mhead.appendChild(mclose);
+    const mcv = el('canvas', { class: 'mon-cv' });
+    mon.appendChild(mhead); mon.appendChild(mcv);
+    $('stage').appendChild(mon);
+    {
+      // the window can be moved by its title bar
+      let d = null;
+      mhead.addEventListener('pointerdown', (e) => {
+        if (e.target.closest('button')) return;
+        const r = mon.getBoundingClientRect(), s = $('stage').getBoundingClientRect();
+        d = { id: e.pointerId, dx: e.clientX - r.left, dy: e.clientY - r.top, s };
+        mhead.setPointerCapture(e.pointerId);
+      });
+      mhead.addEventListener('pointermove', (e) => {
+        if (!d || d.id !== e.pointerId) return;
+        const x = Math.max(0, Math.min(d.s.width - mon.offsetWidth, e.clientX - d.s.left - d.dx));
+        const y = Math.max(0, Math.min(d.s.height - mon.offsetHeight, e.clientY - d.s.top - d.dy));
+        Object.assign(mon.style, { left: x + 'px', top: y + 'px', right: 'auto', bottom: 'auto' });
+      });
+      mhead.addEventListener('pointerup', () => { d = null; });
+    }
+    app.pinPlot = function (k) {
+      app.monitor = { ids: app.selectedComps().map(c => c.id), idx: k || 0, win: [], trail: [] };
+      ui.updateMonitor();
+    };
+    ui.updateMonitor = function () {
+      const m = app.monitor;
+      if (!m) { mon.hidden = true; return; }
+      if (!m.ids.every(id => app.circuit.comps.some(c => c.id === id))) { app.monitor = null; mon.hidden = true; return; }
+      let specs = null;
+      try { specs = DCS.iv.build(app, m.ids, { levels: m.levels }); } catch (e) { console.error(e); }
+      if (!specs) return;   // no solution right now: keep the last drawing
+      specs = Array.isArray(specs) ? specs : [specs];
+      // the transistor output curves stay those of the moment the plot was pinned: Q moves among them
+      if (!m.levels) { const o = specs.find(s => s.levels); if (o) m.levels = o.levels; }
+      const k = Math.min(m.idx, specs.length - 1), spec = specs[k];
+      mon.hidden = false;
+      mswap.hidden = specs.length < 2;
+      mswap.title = t('mon_swap'); mreset.title = t('mon_reset'); mclose.title = t('close');
+      mtitle.innerHTML = (spec.titleHtml || DCS.iv.subHtml(spec.title));
+      const q = spec.points.find(p => p.label);
+      const w = m.win[k] || (m.win[k] = Object.assign({}, spec.win));
+      if (q) {
+        const dv = w.v1 - w.v0, di = w.i1 - w.i0;
+        if (q.v < w.v0) w.v0 = q.v - 0.1 * dv; if (q.v > w.v1) w.v1 = q.v + 0.1 * dv;
+        if (q.i < w.i0) w.i0 = q.i - 0.1 * di; if (q.i > w.i1) w.i1 = q.i + 0.1 * di;
+      }
+      spec.win = w;
+      const tr = m.trail[k] || (m.trail[k] = []);
+      if (q) {
+        const last = tr[tr.length - 1];
+        if (!last || Math.abs(last[0] - q.v) > 2e-3 * (w.v1 - w.v0) || Math.abs(last[1] - q.i) > 2e-3 * (w.i1 - w.i0)) { tr.push([q.v, q.i]); if (tr.length > 120) tr.shift(); }
+      }
+      spec.trail = tr;
+      DCS.iv.draw(mcv, spec, null);
+    };
 
     translate();
     requestAnimationFrame(syncPalFade);
