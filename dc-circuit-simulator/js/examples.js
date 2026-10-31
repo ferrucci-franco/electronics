@@ -85,6 +85,14 @@
         w: [[[0, 4], [0, 0], [2, 0]], [[6, 0], [14, 0], [14, 4]], [[6, 6], [6, 4], [8, 4]], [[12, 4], [14, 4]]]
       }
     },
+    pot: {
+      t: { en: 'Potentiometer as a voltage divider', fr: 'Potentiomètre en diviseur de tension', es: 'Potenciómetro como divisor de tensión' },
+      d: { en: 'Drag the wiper arrow of P1: with RL = 10 kΩ the output is not proportional to α (loading effect). Try RL = 1 MΩ (almost no load) and RL = 1 kΩ.', fr: 'Faites glisser la flèche du curseur de P1 : avec RL = 10 kΩ la sortie n’est pas proportionnelle à α (effet de charge). Essayez RL = 1 MΩ (presque à vide) et RL = 1 kΩ.', es: 'Arrastre la flecha del cursor de P1: con RL = 10 kΩ la salida no es proporcional a α (efecto de carga). Pruebe RL = 1 MΩ (casi sin carga) y RL = 1 kΩ.' },
+      s: {
+        c: [['vsource', 'V1', 0, 6, 1, { V: 10 }], ['pot', 'P1', 8, 6, 1, { R: 10000, alpha: 0.5 }], ['voltmeter', 'VM1', 15, 8, 1], ['resistor', 'RL', 22, 8, 1, { R: 10000 }], ['ground', '', 4, 12, 0]],
+        w: [[[0, 4], [0, 2], [8, 2], [8, 4]], [[0, 8], [0, 12], [22, 12], [22, 10]], [[8, 8], [8, 12]], [[10, 6], [22, 6]], [[15, 10], [15, 12]]]
+      }
+    },
     leds: {
       t: { en: 'LEDs and an RGB LED', fr: 'LED et LED RVB', es: 'LEDs y un LED RGB' },
       d: { en: 'Each LED needs a series resistor: I = (V − Vγ)/R. LED4 has too small a resistor (warning). The RGB LED mixes its three colours according to the channel currents: change RR, RG, RB.', fr: 'Chaque LED a besoin d’une résistance série : I = (V − Vγ)/R. LED4 a une résistance trop faible (avertissement). La LED RVB mélange ses trois couleurs selon les courants : changez RR, RG, RB.', es: 'Cada LED necesita una resistencia en serie: I = (V − Vγ)/R. LED4 tiene una resistencia demasiado chica (aviso). El LED RGB mezcla sus tres colores según las corrientes de cada canal: cambie RR, RG, RB.' },

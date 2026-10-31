@@ -256,3 +256,9 @@ html.layout-mobile .field input[type=text], html.layout-mobile .field select{fon
 .selbar [data-act=rubber] .cut{display:none}
 .selbar [data-act=rubber].off .cut{display:inline}
 .selbar [data-act=rubber].off{color:var(--muted)}
+
+/* potentiometer slider */
+.slider-row{display:flex; align-items:center; gap:8px}
+.slider-row input[type=range]{flex:1; min-width:0; accent-color:var(--accent); height:28px}
+.slider-val{font-variant-numeric:tabular-nums; min-width:44px; text-align:right; font-size:13.5px}
+@media (pointer:coarse){ .slider-row input[type=range]{height:36px} }

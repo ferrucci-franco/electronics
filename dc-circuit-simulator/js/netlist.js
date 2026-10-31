@@ -87,6 +87,13 @@
         case 'isource': elements.push({ type: 'I', id: c.id, n, I: pr.I }); break;
         case 'ammeter': elements.push({ type: 'AM', id: c.id, n }); break;
         case 'voltmeter': elements.push({ type: 'VM', id: c.id, n }); break;
+        case 'pot': {
+          // two resistors A–W and W–B; a tiny minimum keeps the end positions solvable
+          const f = C.potFrac(c), rmin = Math.max(1e-3, pr.R * 1e-6);
+          elements.push({ type: 'R', id: c.id + '#a', n: [n[0], n[2]], R: Math.max(rmin, pr.R * f) });
+          elements.push({ type: 'R', id: c.id + '#b', n: [n[2], n[1]], R: Math.max(rmin, pr.R * (1 - f)) });
+          break;
+        }
         case 'led': {
           // exact model: emission coefficient 2 and I_S chosen so that V = Vf at 10 mA
           const N = 2, Is = 0.01 / (Math.exp(pr.Vf / (N * 0.025865)) - 1);

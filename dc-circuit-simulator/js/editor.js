@@ -80,6 +80,11 @@
     return !!h && (h.kind === 'term' || (h.kind === 'comp' && C.hit(h.comp, p.x, p.y, -0.25)));
   };
 
+  Editor.prototype.onWiper = function (c, p) {
+    const [lx, ly] = C.toLocal(c, p.x, p.y);
+    return ly < -0.2 && ly > -1.75 && Math.abs(lx - C.potX(c)) < 0.75;
+  };
+
   Editor.prototype.snap = function (p) { return [Math.round(p.x), Math.round(p.y)]; };
 
   // Route a wire from a to b with axis-aligned pieces: among the L and Z shapes, keep the one that does
@@ -189,6 +194,12 @@
     const mk = app.renderer.markAt(p.sx, p.sy, e.pointerType === 'touch' ? 6 : 1);
     // the component body and its terminals win over a nearby mark
     if (mk && !g.shift && !this.onBody(h, p)) { g.mode = 'mark'; g.mark = mk; return; }
+    // potentiometer: dragging its wiper arrow moves the position, the circuit is solved while it moves
+    if (h && h.kind === 'comp' && h.comp.type === 'pot' && !g.shift && this.onWiper(h.comp, p)) {
+      g.mode = 'wiper'; g.comp = h.comp;
+      if (!app.sel.has(h.comp.id)) app.select([h.comp.id]);
+      return;
+    }
     if (h && (h.kind === 'term' || (h.kind === 'wend' && !app.sel.has(h.wire.id)))) {
       g.mode = 'maybe-wire'; g.a = h.pt;
     } else if (h && h.kind === 'wend') {
@@ -261,6 +272,13 @@
         app.overlay.band = [g.start.sx, g.start.sy, p.sx, p.sy];
         break;
       case 'move': this.doMove(g, p); break;
+      case 'wiper': {
+        if (!g.cp) { app.checkpoint(); g.cp = true; }
+        const [lx] = C.toLocal(g.comp, p.x, p.y);
+        g.comp.props.alpha = Math.round(100 * Math.max(0, Math.min(1, (lx + 1.2) / 2.4))) / 100;
+        app.circuitChanged(true);
+        break;
+      }
       case 'wire': {
         const b = this.endSnap(p, e.pointerType);
         app.overlay.wirePath = this.lPath(g.a, b, g.hFirst);
@@ -334,6 +352,9 @@
         break;
       case 'mark':
         if (!g.moved) app.flipRef(g.mark.id, g.mark.kind);
+        break;
+      case 'wiper':
+        if (g.moved) app.commit(); else this.tap(g, p, e);
         break;
       case 'maybe-wire':
       case 'endpoint':
@@ -580,6 +601,7 @@
     } else if (h) {
       if (h.kind === 'term' || (h.kind === 'wend' && !app.sel.has(h.wire.id))) { cursor = 'crosshair'; app.overlay.snap = h.pt; app.overlay.snapHot = true; }
       else if (h.kind === 'wend') cursor = 'move';
+      else if (h.kind === 'comp' && h.comp.type === 'pot' && this.onWiper(h.comp, p)) { cursor = 'ew-resize'; app.hover = { id: h.comp.id }; }
       else { cursor = 'move'; app.hover = { id: h.comp ? h.comp.id : h.wire.id }; }
     }
     this.cv.style.cursor = cursor;
@@ -648,6 +670,11 @@
     if (k === '-' || k === '_') { app.zoomAt(0.8, app.renderer.w / 2, app.renderer.h / 2); return; }
     if (k === '0') { app.fit(); return; }
     if (k === 'Enter' && app.sel.size === 1) { app.openProps(true); return; }
+    if ((k === '[' || k === ']') && app.sel.size === 1) {
+      const c = app.selectedComps()[0];
+      if (c && c.type === 'pot') { app.checkpoint(); c.props.alpha = Math.round(100 * Math.max(0, Math.min(1, c.props.alpha + (k === ']' ? 0.05 : -0.05)))) / 100; app.commit(); }
+      return;
+    }
     if (k.startsWith('Arrow') && app.sel.size) {
       e.preventDefault();
       const d = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[k];

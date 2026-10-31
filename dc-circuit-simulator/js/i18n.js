@@ -4,6 +4,7 @@
   const T = {
     en: {
       title: 'DC Circuit Simulator',
+      c_pot: 'Potentiometer', cs_pot: 'Potentiometer', p_alpha: 'Position α (A → B)', p_taper: 'Taper', lin: 'linear', log: 'logarithmic (audio)', wiper: 'wiper',
       c_led: 'LED', cs_led: 'LED', c_rgbled: 'RGB LED', cs_rgbled: 'RGB LED', p_color: 'Colour', p_Imax: 'Maximum current I<sub>max</sub>', p_common: 'Common terminal',
       p_VfR: 'V<sub>γ</sub> red', p_VfG: 'V<sub>γ</sub> green', p_VfB: 'V<sub>γ</sub> blue', cc: 'common cathode', ca: 'common anode',
       red: 'red', orange: 'orange', yellow: 'yellow', green: 'green', blue: 'blue', white: 'white', brightness: 'Brightness (I/I<sub>max</sub>)',
@@ -105,7 +106,7 @@
       close: 'Close', help_title: 'How to use',
       help_html: `<h4>Build the circuit</h4><ul>
 <li>Choose a component in the list, then click / tap on the grid to place it. You can also drag it from the list onto the circuit.</li>
-<li><b>R</b> rotates, <b>F</b> mirrors (also with the buttons over the circuit when an element is selected).</li>
+<li><b>R</b> rotates, <b>F</b> mirrors (also with the buttons over the circuit when an element is selected).</li><li>Potentiometer: drag its wiper arrow along the resistor (mouse or finger), use the slider in its panel, or the keys <b>[</b> and <b>]</b>; the circuit is solved while it moves.</li>
 <li>Wires: drag from a terminal (or from the end of a wire). With the <b>Wire</b> tool you can also tap point after point; tap the last point again or press Esc to finish.</li>
 <li>Wires connect at their ends and where an end touches another wire (a dot is drawn). Crossing wires are not connected.</li>
 <li>Edit values with a double-click / double-tap. Values accept prefixes: 4k7, 2.2M, 10m, 100u, 1n…</li>
@@ -136,6 +137,7 @@
     },
     fr: {
       title: 'Simulateur de circuits en continu',
+      c_pot: 'Potentiomètre', cs_pot: 'Potentiomètre', p_alpha: 'Position α (A → B)', p_taper: 'Loi de variation', lin: 'linéaire', log: 'logarithmique (audio)', wiper: 'curseur',
       c_led: 'LED', cs_led: 'LED', c_rgbled: 'LED RVB', cs_rgbled: 'LED RVB', p_color: 'Couleur', p_Imax: 'Courant maximal I<sub>max</sub>', p_common: 'Borne commune',
       p_VfR: 'V<sub>γ</sub> rouge', p_VfG: 'V<sub>γ</sub> vert', p_VfB: 'V<sub>γ</sub> bleu', cc: 'cathode commune', ca: 'anode commune',
       red: 'rouge', orange: 'orange', yellow: 'jaune', green: 'vert', blue: 'bleu', white: 'blanc', brightness: 'Luminosité (I/I<sub>max</sub>)',
@@ -237,7 +239,7 @@
       close: 'Fermer', help_title: 'Mode d’emploi',
       help_html: `<h4>Construire le circuit</h4><ul>
 <li>Choisissez un composant dans la liste, puis cliquez / touchez la grille pour le poser. On peut aussi le faire glisser depuis la liste.</li>
-<li><b>R</b> tourne, <b>F</b> retourne en miroir (aussi avec les boutons au-dessus du circuit quand un élément est sélectionné).</li>
+<li><b>R</b> tourne, <b>F</b> retourne en miroir (aussi avec les boutons au-dessus du circuit quand un élément est sélectionné).</li><li>Potentiomètre : faites glisser la flèche du curseur le long de la résistance (souris ou doigt), utilisez le curseur de son panneau, ou les touches <b>[</b> et <b>]</b> ; le circuit est résolu pendant le mouvement.</li>
 <li>Fils : glissez depuis une borne (ou depuis l’extrémité d’un fil). Avec l’outil <b>Fil</b> on peut aussi toucher point après point ; touchez à nouveau le dernier point ou appuyez sur Échap pour terminer.</li>
 <li>Les fils se connectent à leurs extrémités et là où une extrémité touche un autre fil (un point est dessiné). Des fils qui se croisent ne sont pas connectés.</li>
 <li>Modifiez les valeurs par double-clic / double toucher. Les préfixes sont acceptés : 4k7, 2.2M, 10m, 100u, 1n…</li>
@@ -268,6 +270,7 @@
     },
     es: {
       title: 'Simulador de circuitos en continua',
+      c_pot: 'Potenciómetro', cs_pot: 'Potenciómetro', p_alpha: 'Posición α (A → B)', p_taper: 'Curva', lin: 'lineal', log: 'logarítmica (audio)', wiper: 'cursor',
       c_led: 'LED', cs_led: 'LED', c_rgbled: 'LED RGB', cs_rgbled: 'LED RGB', p_color: 'Color', p_Imax: 'Corriente máxima I<sub>max</sub>', p_common: 'Terminal común',
       p_VfR: 'V<sub>γ</sub> rojo', p_VfG: 'V<sub>γ</sub> verde', p_VfB: 'V<sub>γ</sub> azul', cc: 'cátodo común', ca: 'ánodo común',
       red: 'rojo', orange: 'naranja', yellow: 'amarillo', green: 'verde', blue: 'azul', white: 'blanco', brightness: 'Brillo (I/I<sub>max</sub>)',
@@ -369,7 +372,7 @@
       close: 'Cerrar', help_title: 'Cómo se usa',
       help_html: `<h4>Armar el circuito</h4><ul>
 <li>Elija un componente en la lista y haga clic / toque en la grilla para colocarlo. También puede arrastrarlo desde la lista.</li>
-<li><b>R</b> rota, <b>F</b> espeja (también con los botones sobre el circuito cuando hay un elemento seleccionado).</li>
+<li><b>R</b> rota, <b>F</b> espeja (también con los botones sobre el circuito cuando hay un elemento seleccionado).</li><li>Potenciómetro: arrastre la flecha del cursor a lo largo de la resistencia (ratón o dedo), use el deslizador de su panel o las teclas <b>[</b> y <b>]</b>; el circuito se resuelve mientras se mueve.</li>
 <li>Cables: arrastre desde un terminal (o desde el extremo de un cable). Con la herramienta <b>Cable</b> también puede tocar punto tras punto; toque de nuevo el último punto o pulse Esc para terminar.</li>
 <li>Los cables se conectan en sus extremos y donde un extremo toca otro cable (se dibuja un punto). Los cables que se cruzan no están conectados.</li>
 <li>Edite los valores con doble clic / doble toque. Se aceptan prefijos: 4k7, 2.2M, 10m, 100u, 1n…</li>
