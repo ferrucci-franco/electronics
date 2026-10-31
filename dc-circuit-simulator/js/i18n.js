@@ -134,7 +134,6 @@
 <li>Op-amp: ideal (infinite gain, no input current, zero output resistance), with optional saturation at ±Vsat.</li>
 <li>Transistor (BJT): simple model (cutoff, active with V<sub>BE</sub> = 0.7 V and I<sub>C</sub> = βI<sub>B</sub>, or saturation with V<sub>CE</sub> = V<sub>CE,sat</sub>) or real model (Ebers-Moll with the Early effect: exponential junctions, smooth saturation).</li></ul>
 <h4>Rotate and mirror</h4><ul>
-<li>Mouse: <b>right click</b> on a component rotates it a quarter turn, <b>Shift + right click</b> mirrors it. While placing, the right click rotates the component before it is dropped.</li>
 <li>Keyboard: <b>R</b> rotates, <b>F</b> mirrors (the selection, or the component being placed).</li></ul><h4>Moving</h4><ul><li>Drag a component (or a selection): the wires attached to it follow (rubber band) and become straight pieces again when you release. Turn it off with <b>🔗</b> in the bar over the circuit or in Settings to move components without their wires, for example to disconnect them; <b>Alt + drag</b> does the opposite of the current setting for one move.</li>
 <li>Touch: select the component and use <b>⟳</b> / <b>⇋</b> in the bar over the circuit. While placing, the same bar rotates the component before you tap the grid.</li></ul>
 <h4>Zoom and pan</h4><ul>
@@ -279,7 +278,7 @@
 <li>AOP : idéal (gain infini, courants d’entrée nuls, résistance de sortie nulle), avec saturation optionnelle à ±Vsat.</li>
 <li>Transistor bipolaire : modèle simple (bloqué, actif avec V<sub>BE</sub> = 0,7 V et I<sub>C</sub> = βI<sub>B</sub>, ou saturé avec V<sub>CE</sub> = V<sub>CE,sat</sub>) ou modèle réel (Ebers-Moll avec effet Early : jonctions exponentielles, saturation progressive).</li></ul>
 <h4>Tourner et retourner</h4><ul>
-<li>Souris : <b>clic droit</b> sur un composant = quart de tour, <b>Maj + clic droit</b> = miroir. Pendant le placement, le clic droit tourne le composant avant de le poser.</li>
+<li>Souris ou clavier : <b>R</b> = quart de tour, <b>F</b> = miroir (la sélection, ou le composant en cours de placement), ou les boutons <b>⟳</b> / <b>⇋</b> de la barre au-dessus du circuit.</li>
 <li>Clavier : <b>R</b> tourne, <b>F</b> retourne (la sélection, ou le composant en cours de placement).</li></ul><h4>Déplacer</h4><ul><li>Faites glisser un composant (ou une sélection) : les fils qui y sont reliés suivent (élastique) et redeviennent des segments droits au lâcher. Désactivez-le avec <b>🔗</b> dans la barre au-dessus du circuit ou dans les réglages pour déplacer les composants sans leurs fils, par exemple pour les déconnecter ; <b>Alt + glisser</b> fait l’inverse du réglage pour un déplacement.</li>
 <li>Tactile : sélectionnez le composant et utilisez <b>⟳</b> / <b>⇋</b> dans la barre au-dessus du circuit. Pendant le placement, la même barre tourne le composant avant de toucher la grille.</li></ul>
 <h4>Zoom et déplacement</h4><ul>
@@ -424,7 +423,6 @@
 <li>AO: ideal (ganancia infinita, corrientes de entrada nulas, resistencia de salida nula), con saturación opcional en ±Vsat.</li>
 <li>Transistor (BJT): modelo simple (corte, activa con V<sub>BE</sub> = 0,7 V e I<sub>C</sub> = βI<sub>B</sub>, o saturación con V<sub>CE</sub> = V<sub>CE,sat</sub>) o modelo real (Ebers-Moll con efecto Early: junturas exponenciales, saturación suave).</li></ul>
 <h4>Rotar y espejar</h4><ul>
-<li>Ratón: <b>clic derecho</b> sobre un componente = un cuarto de vuelta, <b>Mayús + clic derecho</b> = espejar. Mientras se coloca, el clic derecho rota el componente antes de soltarlo.</li>
 <li>Teclado: <b>R</b> rota, <b>F</b> espeja (la selección, o el componente que se está colocando).</li></ul><h4>Mover</h4><ul><li>Arrastre un componente (o una selección): los cables conectados lo siguen (rubber band) y al soltar vuelven a quedar en tramos rectos. Desactívelo con <b>🔗</b> en la barra sobre el circuito o en Ajustes para mover componentes sin sus cables, por ejemplo para desconectarlos; <b>Alt + arrastrar</b> hace lo contrario del ajuste en ese movimiento.</li>
 <li>Táctil: seleccione el componente y use <b>⟳</b> / <b>⇋</b> en la barra sobre el circuito. Mientras coloca, la misma barra rota el componente antes de tocar la grilla.</li></ul>
 <h4>Zoom y desplazamiento</h4><ul>
