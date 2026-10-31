@@ -11,7 +11,7 @@
   const plain = (s) => String(s).replace(/<sub>(.*?)<\/sub>/g, '$1').replace(/<[^>]+>/g, '');
 
   const DEFAULT_SETTINGS = {
-    style: 'us', ivLoad: false, wheelDir: 'auto', flowScale: 'lin', realDir: false, rubber: true, showWireI: false, showV: true, showI: true, showP: false, showNodes: false, animate: false, colorV: false,
+    style: 'us', ivLoad: false, reqSteps: false, wheelDir: 'auto', flowScale: 'lin', realDir: false, rubber: true, showWireI: false, showV: true, showI: true, showP: false, showNodes: false, animate: false, colorV: false,
     showNames: true, showValues: true, showState: true, grid: true, digits: 3, tempC: 27, defModel: 'cvd'
   };
 
