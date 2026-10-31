@@ -11,7 +11,7 @@
   /* app: the application; th: app.thev (with res.a / res.b nodes and loadId). Returns
    * { kind: 'nonlinear' } | { kind: 'dep', rtest } | { kind: 'rn', steps, req, rtest, open, zero, stuck } */
   function compute(app, th) {
-    const net = app.net, r = th.res;
+    const net = th.net || app.net, r = th.res;   // th.net: the side looked into, when A–B cuts the circuit
     const exclude = new Set(th.loadId ? net.ckt.elements.filter(el => el.id.split('#')[0] === th.loadId).map(el => el.id) : []);
     const els = net.ckt.elements.filter(el => !exclude.has(el.id));
     if (els.some(el => el.type === 'D')) return { kind: 'nonlinear' };
