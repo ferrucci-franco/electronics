@@ -77,17 +77,50 @@
 
   Editor.prototype.snap = function (p) { return [Math.round(p.x), Math.round(p.y)]; };
 
+  // Route a wire from a to b with axis-aligned pieces: among the L and Z shapes, keep the one that does
+  // not run over terminals or component bodies and that leaves / reaches terminals along their leads.
   Editor.prototype.lPath = function (a, b, hFirst) {
     if (a[0] === b[0] || a[1] === b[1]) return [a, b];
-    // a wire that ends on a terminal arrives along the lead of that terminal
     const aa = this.axisAt(a), ba = this.axisAt(b);
-    if (aa && ba && aa === ba) {
-      if (aa === 'h') { const mx = Math.round((a[0] + b[0]) / 2); return [a, [mx, a[1]], [mx, b[1]], b]; }
-      const my = Math.round((a[1] + b[1]) / 2); return [a, [a[0], my], [b[0], my], b];
-    }
-    if (ba) hFirst = ba === 'v';
-    else if (aa) hFirst = aa === 'h';
-    return hFirst ? [a, [b[0], a[1]], b] : [a, [a[0], b[1]], b];
+    const mx = Math.round((a[0] + b[0]) / 2), my = Math.round((a[1] + b[1]) / 2);
+    const cands = [
+      [a, [b[0], a[1]], b], [a, [a[0], b[1]], b],
+      [a, [mx, a[1]], [mx, b[1]], b], [a, [a[0], my], [b[0], my], b]
+    ];
+    const app = this.app;
+    const terms = [];
+    for (const c of app.circuit.comps) for (const t of C.terminals(c)) terms.push(t);
+    const boxes = app.circuit.comps.map(c => C.bounds(c));
+    const eq = (p, q) => p[0] === q[0] && p[1] === q[1];
+    let best = null, bs = Infinity;
+    cands.forEach((path, k) => {
+      let sc = path.length * 1.5;
+      if (k === 0 && hFirst) sc -= 0.5;
+      if (k === 1 && !hFirst) sc -= 0.5;
+      const segAxis = (p, q) => (p[1] === q[1] ? 'h' : 'v');
+      if (aa && segAxis(path[0], path[1]) !== aa) sc += 3;
+      if (ba && segAxis(path[path.length - 2], path[path.length - 1]) !== ba) sc += 3;
+      for (let i = 0; i + 1 < path.length; i++) {
+        const p = path[i], q = path[i + 1];
+        if (eq(p, q)) { sc += 50; continue; }
+        const x0 = Math.min(p[0], q[0]), x1 = Math.max(p[0], q[0]), y0 = Math.min(p[1], q[1]), y1 = Math.max(p[1], q[1]);
+        for (const t of terms) {
+          if (eq(t, a) || eq(t, b)) continue;
+          if (t[0] >= x0 && t[0] <= x1 && t[1] >= y0 && t[1] <= y1) sc += 100; // would connect to that terminal
+        }
+        for (const bx of boxes) {
+          // crossing the inside of a component body (its terminals sit on the box edge)
+          if (x1 > bx[0] + 0.3 && x0 < bx[2] - 0.3 && y1 > bx[1] + 0.3 && y0 < bx[3] - 0.3) sc += 20;
+        }
+        for (const w of app.circuit.wires) {
+          // running along an existing wire
+          if (p[1] === q[1] && w.y1 === w.y2 && w.y1 === p[1] && Math.min(x1, Math.max(w.x1, w.x2)) - Math.max(x0, Math.min(w.x1, w.x2)) > 0) sc += 8;
+          if (p[0] === q[0] && w.x1 === w.x2 && w.x1 === p[0] && Math.min(y1, Math.max(w.y1, w.y2)) - Math.max(y0, Math.min(w.y1, w.y2)) > 0) sc += 8;
+        }
+      }
+      if (sc < bs) { bs = sc; best = path; }
+    });
+    return best;
   };
 
   // direction of the lead of the component terminal at this point ('h' or 'v'), if any

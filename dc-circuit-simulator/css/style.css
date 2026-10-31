@@ -65,14 +65,14 @@ html.layout-mobile #layoutBtn .i-mobile, html.layout-desktop #layoutBtn .i-deskt
 .pal-title{font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:4px 2px 0}
 .pal-tools, .pal-comps{display:grid; grid-template-columns:1fr; gap:4px}
 .palette button.tool, .palette button.comp{
-  display:flex; align-items:center; gap:8px; width:100%; text-align:left; padding:5px 8px; min-height:36px;
-  border:1px solid transparent; background:transparent; border-radius:10px; cursor:pointer; font-size:14px; touch-action:none
+  display:flex; align-items:center; gap:8px; width:100%; text-align:left; padding:4px 8px; min-height:34px;
+  border:1px solid transparent; background:transparent; border-radius:10px; cursor:pointer; font-size:14px; touch-action:pan-y
 }
 .palette button.tool:hover, .palette button.comp:hover{background:var(--btn-hover)}
 .palette button.tool.active, .palette button.comp.active{background:var(--card); border-color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent)}
-.palette button canvas{width:46px; height:26px; flex:none; pointer-events:none}
+.palette button canvas{width:46px; height:24px; flex:none; pointer-events:none}
 .palette button.tool svg{width:22px; height:22px; margin:0 12px}
-.pal-foot{margin-top:auto; padding-top:8px}
+.pal-foot{margin-top:auto; padding-top:6px; display:flex; flex-direction:column; gap:6px}
 .seg-sym button{flex:1}
 
 /* stage */
@@ -191,7 +191,7 @@ html.layout-mobile .palette{flex-direction:row; align-items:stretch; overflow-x:
 html.layout-mobile .pal-title, html.layout-mobile .pal-foot{display:none}
 html.layout-mobile .pal-tools, html.layout-mobile .pal-comps{display:flex; gap:4px}
 html.layout-mobile .pal-tools{padding-right:6px; border-right:1px solid var(--border)}
-html.layout-mobile .palette button.tool, html.layout-mobile .palette button.comp{flex-direction:column; justify-content:center; gap:2px; width:auto; min-width:62px; padding:4px 6px; font-size:11px; text-align:center; white-space:nowrap; min-height:56px}
+html.layout-mobile .palette button.tool, html.layout-mobile .palette button.comp{touch-action:pan-x; flex-direction:column; justify-content:center; gap:2px; width:auto; min-width:62px; padding:4px 6px; font-size:11px; text-align:center; white-space:nowrap; min-height:56px}
 html.layout-mobile .palette button.tool svg{margin:0; width:24px; height:24px}
 html.layout-mobile .palette button canvas{width:44px; height:24px}
 html.layout-mobile .viewbar .chip{padding:5px 9px; min-height:34px}

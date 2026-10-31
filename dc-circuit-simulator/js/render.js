@@ -392,7 +392,10 @@
           let off = hw + 0.35;
           const meter = c.type === 'ammeter' || c.type === 'voltmeter';
           if (meter) {
-            lines.push({ text: c.type === 'ammeter' ? fmt(r.i, 'A') : fmt(r.v, 'V'), mono: true, box: true, color: c.type === 'ammeter' ? col.cur : col.volt });
+            // a meter with a loose terminal has nothing to measure
+            const open = S.net && S.net.openTerms.some(t => t[2] === c.id);
+            const txt = open ? '—' : c.type === 'ammeter' ? fmt(r.i, 'A') : fmt(r.v, 'V');
+            lines.push({ text: txt, mono: true, box: true, color: c.type === 'ammeter' ? col.cur : col.volt });
           } else {
             const showI = st.showI && c.type !== 'isource', showV = st.showV && c.type !== 'vsource';
             if (showI) {

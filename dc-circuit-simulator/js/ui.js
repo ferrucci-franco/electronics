@@ -647,7 +647,7 @@
       }
       const rd = new R.Renderer(cv);
       rd.resize();
-      const view = app.fitView({ comps: circuit.comps, wires: circuit.wires.concat([{ x1: -4, y1: 0, x2: -4, y2: 0 }]) }, rd.w, rd.h, 1.2, 18);
+      const view = app.fitView({ comps: circuit.comps, wires: circuit.wires.concat([{ x1: -6, y1: 0, x2: -6, y2: 0 }]) }, rd.w, rd.h, 1.2, 18);
       rd.draw({
         circuit, view, sel: new Set(), net: DCS.netlist.build(circuit), result: null, overlay: {}, port: { a: [9, -1], b: [9, 7] }, flow: null, fontPx: 12,
         settings: Object.assign({}, app.settings, { grid: false, showNames: true, showValues: true, animate: false }), tr: app.tp
