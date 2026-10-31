@@ -1,0 +1,367 @@
+/* Interface texts: English, French, Spanish. */
+(function (root) {
+  'use strict';
+  const T = {
+    en: {
+      title: 'DC Circuit Simulator',
+      place_cancel: 'Stop placing (Esc)',
+      tip_flip: 'Tap to flip this reference', node_name: 'Node name', node_hint: 'Node voltages are measured from ground (0 V). Give the node a name (A, B, out…) to find it in the tables and the equations.',
+      nodes_hint: 'Unknowns of the nodal method: the voltage of each node with respect to ground. Hover or tap a row to find the node on the circuit.',
+      ref_title: 'Reference directions', ref_passive_s: 'passive convention', ref_active_s: 'generator convention',
+      ref_passive: 'Passive convention (I enters through the + of V): P = V·I is the power absorbed. Tap the + / − marks or the arrow on the circuit to change the references.',
+      ref_active: 'Generator convention (I leaves through the + of V): P = V·I is the power delivered. Tap the + / − marks or the arrow on the circuit to change the references.',
+      tbl_refs: 'V and I with the reference directions drawn on the circuit (+/− and arrows)',
+      eq_title: 'Kirchhoff’s laws (check)', eq_kcl: 'KCL at each node: sum of the currents leaving the node (reference arrows) = 0',
+      eq_kvl: 'KVL around each independent loop: sum of the voltage drops (+ → −) along the loop = 0', eq_none: 'No loops.', loop: 'Loop',
+      eq_skip: 'Loops through op-amps or transistors are not listed (their terminal currents are in KCL).',
+      set_realdir: 'Show magnitudes in the real direction instead of the reference directions',
+      iv_title: 'I–V characteristic', iv_series: 'In series', iv_parallel: 'In parallel', iv_comb_series: 'Series combination (V add up)', iv_comb_parallel: 'Parallel combination (I add up)',
+      iv_none: 'Select two-terminal elements that are in series or in parallel to see their characteristics and the combined one.',
+      iv_load: 'Load line (Thévenin of the rest)', iv_q: 'Operating point Q', iv_expand: 'Enlarge',
+      iv_load_lin: 'The rest of the circuit is nonlinear: its load line is linearised around the open-circuit point.',
+      iv_conv: 'The operating point Q is where the characteristic of the element meets the load line of the rest of the circuit. Passive convention: V = v₁ − v₂, I enters through terminal 1.',
+      iv_conv_ab: 'V and I of the group, from its first terminal to its last one. Q is where the combined characteristic meets the load line of the rest of the circuit; each dot is the point of one element.',
+      iv_bjt: 'Output characteristics I<sub>C</sub>(V<sub>CE</sub>)', iv_bjt_note: 'Curves for 0.5, 1, 1.5 and 2 times the operating base current (simple model: I<sub>C</sub> = βI<sub>B</sub> in the active region, V<sub>CE</sub> = V<sub>CE,sat</sub> in saturation). Dashed: load line of the collector circuit seen between C and E.',
+      iv_opamp: 'Transfer characteristic vₒ(v₊ − v₋)',
+      undo: 'Undo (Ctrl+Z)', redo: 'Redo (Ctrl+Y)', examples: 'Examples', file: 'File', settings: 'Settings', help: 'Help',
+      theme: 'Toggle theme', layout_to_mobile: 'Switch to mobile layout', layout_to_desktop: 'Switch to desktop layout',
+      tools: 'Tools', components: 'Components',
+      tool_select: 'Select', tool_wire: 'Wire', tool_erase: 'Erase', tool_port: 'Thévenin A–B',
+      tool_select_tip: 'Select, move, edit (Esc)', tool_wire_tip: 'Draw wires (W)', tool_erase_tip: 'Tap or swipe over items to delete them', tool_port_tip: 'Pick the two terminals A and B for the Thévenin / Norton equivalent',
+      c_resistor: 'Resistor', c_vsource: 'Voltage source', c_isource: 'Current source', c_ammeter: 'Ammeter', c_voltmeter: 'Voltmeter',
+      c_diode: 'Diode', c_schottky: 'Schottky diode', c_ground: 'Ground', c_opamp: 'Op-amp (ideal)', c_npn: 'NPN transistor', c_pnp: 'PNP transistor', c_bjt: 'Transistor (BJT)',
+      cs_resistor: 'R', cs_vsource: 'V source', cs_isource: 'I source', cs_ammeter: 'Ammeter', cs_voltmeter: 'Voltmeter', cs_diode: 'Diode', cs_schottky: 'Schottky',
+      cs_ground: 'Ground', cs_opamp: 'Op-amp', cs_npn: 'NPN', cs_pnp: 'PNP',
+      show: 'Show', show_v: 'Voltage', show_i: 'Current', show_p: 'Power', show_nodes: 'Node voltages', animate: 'Current flow', colorV: 'Colour wires by voltage',
+      show_v_s: 'V', show_i_s: 'I', show_p_s: 'P', show_nodes_s: 'Nodes', animate_s: 'Flow',
+      symbols: 'Symbols', sym_us: 'USA', sym_iec: 'IEC (Europe)',
+      p_name: 'Name', p_R: 'Resistance R', p_V: 'Voltage V', p_I: 'Current I', p_model: 'Model', p_Vf: 'Forward voltage V<sub>γ</sub>', p_rd: 'Series resistance r<sub>d</sub>',
+      p_Is: 'Saturation current I<sub>S</sub>', p_N: 'Emission coefficient n', p_sat: 'Output saturation', p_Vpos: 'Positive saturation +Vsat', p_Vneg: 'Negative saturation −Vsat',
+      p_pol: 'Type', p_beta: 'Current gain β', p_Vbe: 'V<sub>BE</sub> (on)', p_Vcesat: 'V<sub>CE</sub> (sat)', npn: 'NPN', pnp: 'PNP',
+      model_ideal: 'Ideal (short when on, open when off)', model_cvd: 'Constant drop V<sub>γ</sub> (+ r<sub>d</sub>)', model_exact: 'Exact (Shockley equation)',
+      model_ideal_short: 'ideal', model_cvd_short: 'V<sub>γ</sub> model', model_exact_short: 'Shockley',
+      state_on: 'ON', state_off: 'OFF', region_off: 'cutoff', region_act: 'active', region_sat: 'saturation',
+      tab_props: 'Element', tab_results: 'Results', tab_thev: 'Thévenin / Norton',
+      rotate: 'Rotate (R)', flip: 'Mirror (F)', duplicate: 'Duplicate (Ctrl+D)', del: 'Delete (Del)', edit: 'Properties', thev_seen: 'Thévenin seen by this element',
+      zoom_in: 'Zoom in', zoom_out: 'Zoom out', zoom_fit: 'Fit circuit', panel: 'Panel',
+      nothing_selected: 'Nothing selected.',
+      quick_help: '<b>Build:</b> pick a component and click (or tap) on the grid; drag a component from the list onto the circuit. <b>Wire:</b> drag from a terminal, or use the Wire tool. <b>Edit:</b> double-click a component. <b>View:</b> wheel or pinch to zoom, drag the background (touch) or right-drag (mouse) to pan.',
+      sel_count: '{n} items selected', wire_sel: 'Wire', node_voltage: 'Node voltage', terminal_voltages: 'Terminal voltages',
+      res_v: 'Voltage', res_i: 'Current', res_p: 'Power', res_state: 'State', res_region: 'Region',
+      absorbs: 'absorbed', delivers: 'delivered', p_abs_short: 'abs.', p_del_short: 'del.',
+      v_ref: 'positive at the + / anode / first terminal', i_ref: 'arrow shows the actual direction',
+      conv: 'Passive sign convention: V = v₁ − v₂ and I enters through terminal 1 (terminal 1 = + of a source, anode of a diode, tail of the arrow of a current source). P = V·I &gt; 0: absorbed, &lt; 0: delivered.',
+      reading: 'Reading', vout: 'Output voltage', iout: 'Output current (sourced)', vdiff: 'v<sub>+</sub> − v<sub>−</sub>', supply_p: 'Power from the supplies',
+      ib: 'Base current I<sub>B</sub>', ic: 'Collector current I<sub>C</sub>', ie: 'Emitter current I<sub>E</sub>', vbe: 'V<sub>BE</sub>', vce: 'V<sub>CE</sub>', veb: 'V<sub>EB</sub>', vec: 'V<sub>EC</sub>',
+      tbl_comp: 'Element', tbl_v: 'V', tbl_i: 'I', tbl_p: 'P',
+      balance: 'Power balance', p_gen: 'Delivered by the sources', p_abs: 'Absorbed by the loads', p_sum: 'Sum (should be 0)',
+      nodes_title: 'Node voltages (ground = 0 V)', node: 'Node',
+      st_ok: 'Solved', st_err: 'No solution', st_empty: 'Empty circuit: add components from the list',
+      iss_vshort: 'Voltage source {ids} is short-circuited.',
+      iss_amshort: 'Ammeter {ids} is short-circuited by a wire: it reads 0.',
+      iss_vloop: 'Loop of voltage sources / ammeters: {ids}. The currents are not defined (or the voltages contradict each other).',
+      iss_inopath: 'Current source {ids} has no closed path: an ideal current source cannot be left open.',
+      iss_noconv: 'No consistent operating point found.',
+      iss_huge: 'The solution is unphysical (huge voltage or current).',
+      iss_tied: '{ids}: an ideal diode, a transistor junction or an op-amp output is tied directly to a voltage source (infinite current).',
+      iss_unstable: 'Op-amp {ids}: positive feedback, the linear solution is unstable.',
+      iss_noground: 'No ground symbol: a reference node was chosen automatically. Add a ground (⏚).',
+      iss_floating: 'Part of the circuit is not connected to the reference: its voltages are arbitrary.',
+      iss_openterm: 'Some terminals are not connected (small circles).',
+      thev_intro: 'Equivalent circuit seen from two terminals A and B. Pick the terminals on the circuit, or select a two-terminal element and use it as the load.',
+      thev_pick: 'Pick terminals A and B', thev_use_sel: 'Use the selected element as the load', thev_clear: 'Clear',
+      thev_pickA: 'Tap the node for terminal A', thev_pickB: 'Tap the node for terminal B',
+      thev_load: 'Load removed: {name}', thev_port: 'Port A–B',
+      thevenin: 'Thévenin', norton: 'Norton', vth: 'V<sub>Th</sub>', rth: 'R<sub>Th</sub>', in_: 'I<sub>N</sub>', rn: 'R<sub>N</sub>',
+      thev_method: 'V<sub>Th</sub> = open-circuit voltage v<sub>AB</sub>; I<sub>N</sub> = short-circuit current A→B; R<sub>Th</sub> = slope of v<sub>AB</sub> when a test current is injected (dependent sources stay active).',
+      thev_none: 'There is no Thévenin equivalent (R<sub>Th</sub> = ∞): the port behaves as a current source.',
+      thev_nonorton: 'There is no Norton equivalent (R<sub>Th</sub> = 0): the port behaves as an ideal voltage source.',
+      thev_nonlinear: 'The circuit contains nonlinear elements: the equivalent is linearised around the open-circuit operating point.',
+      thev_isc_check: 'Measured short-circuit current: {isc} (V<sub>Th</sub>/R<sub>Th</sub> = {calc}). They differ because the circuit is nonlinear.',
+      thev_loadcalc: 'With the load {name}: ', thev_maxp: 'Maximum power transfer: R<sub>L</sub> = R<sub>Th</sub> = {r}, P<sub>max</sub> = {p}',
+      thev_err: 'The equivalent could not be computed.', thev_same: 'A and B are the same node.',
+      thev_negr: 'Negative resistance: the circuit contains active elements (op-amp, transistor).',
+      file_new: 'New circuit', file_open: 'Open file…', file_save: 'Save file', file_link: 'Copy share link', file_png: 'Export image (PNG)',
+      link_copied: 'Link copied to the clipboard', link_failed: 'Copy this link:', loaded: 'Circuit loaded', load_err: 'This file is not a valid circuit',
+      confirm_new: 'Clear the circuit? (Undo is available)',
+      set_title: 'Settings', set_digits: 'Significant digits', set_names: 'Show names', set_values: 'Show values', set_state: 'Show diode state (ON/OFF)',
+      set_grid: 'Show grid', set_temp: 'Temperature (exact diode model)', set_diodes: 'Diode model for all diodes', apply: 'Apply',
+      set_defmodel: 'Model of new diodes',
+      close: 'Close', help_title: 'How to use',
+      help_html: `<h4>Build the circuit</h4><ul>
+<li>Choose a component in the list, then click / tap on the grid to place it. You can also drag it from the list onto the circuit.</li>
+<li><b>R</b> rotates, <b>F</b> mirrors (also with the buttons over the circuit when an element is selected).</li>
+<li>Wires: drag from a terminal (or from the end of a wire). With the <b>Wire</b> tool you can also tap point after point; tap the last point again or press Esc to finish.</li>
+<li>Wires connect at their ends and where an end touches another wire (a dot is drawn). Crossing wires are not connected.</li>
+<li>Edit values with a double-click / double-tap. Values accept prefixes: 4k7, 2.2M, 10m, 100u, 1n…</li>
+<li>Every circuit needs a ground (⏚): node voltages are measured from it.</li></ul>
+<h4>Results</h4><ul>
+<li>The circuit is solved after every change. Choose what to show with V, I, P and Nodes over the circuit.</li>
+<li>Every element shows its <b>reference directions</b>: + and − for V and an arrow for I. Tap them to choose your own; the values carry the sign (a negative value means the real polarity or direction is the opposite). Power: positive = absorbed, negative (green) = delivered.</li><li>Node voltages are measured from ground; name a node by selecting one of its wires. The <b>Results</b> tab checks KCL at each node and KVL around each loop with your references.</li>
+<li>The <b>Results</b> tab lists every element and the power balance.</li></ul>
+<h4>Thévenin / Norton</h4><ul>
+<li>Select a two-terminal element and choose “Thévenin seen by this element”, or use the <b>Thévenin A–B</b> tool and tap two nodes.</li></ul>
+<h4>Models</h4><ul>
+<li>Diode: ideal (0 V when on), constant drop V<sub>γ</sub> with optional r<sub>d</sub>, or exact (Shockley: I = I<sub>S</sub>(e^{V/nV<sub>T</sub>} − 1)). Schottky: same models with lower V<sub>γ</sub> and higher I<sub>S</sub>.</li>
+<li>Op-amp: ideal (infinite gain, no input current, zero output resistance), with optional saturation at ±Vsat.</li>
+<li>Transistor (BJT): cutoff, active (V<sub>BE</sub> = 0.7 V, I<sub>C</sub> = βI<sub>B</sub>) or saturation (V<sub>CE</sub> = V<sub>CE,sat</sub>).</li></ul>
+<h4>Rotate and mirror</h4><ul>
+<li>Mouse: <b>right click</b> on a component rotates it a quarter turn, <b>Shift + right click</b> mirrors it. While placing, the right click rotates the component before it is dropped.</li>
+<li>Keyboard: <b>R</b> rotates, <b>F</b> mirrors (the selection, or the component being placed).</li>
+<li>Touch: select the component and use <b>⟳</b> / <b>⇋</b> in the bar over the circuit. While placing, the same bar rotates the component before you tap the grid.</li></ul>
+<h4>Zoom and pan</h4><ul>
+<li>Mouse: <b>wheel</b> = zoom around the pointer (pinch on a touchpad too); drag with the <b>right or middle button</b>, or hold <b>Space</b> and drag = pan; drag on the background = box selection.</li>
+<li>Touch: <b>one finger</b> on the background = pan, <b>two fingers</b> = zoom and pan; long press on the background = box selection, long press on an element = properties.</li>
+<li>Buttons + / − / ⤢ (fit the circuit) at the bottom right; keys <b>+</b>, <b>−</b>, <b>0</b>.</li></ul>
+<h4>Other keys</h4><ul><li>Del, Ctrl+Z / Ctrl+Y, Ctrl+C / Ctrl+V, Ctrl+D, Ctrl+A, arrows (move the selection), W (wire), Enter (properties), Esc.</li></ul>`,
+      ex_title: 'Examples', ex_load: 'Load',
+      copy_hint: 'Copied', pasted: 'Pasted',
+      unit_none: '',
+      tip_node: 'Node'
+    },
+    fr: {
+      title: 'Simulateur de circuits en continu',
+      place_cancel: 'Arrêter de placer (Échap)',
+      tip_flip: 'Touchez pour inverser cette référence', node_name: 'Nom du nœud', node_hint: 'Les potentiels sont mesurés par rapport à la masse (0 V). Donnez un nom au nœud (A, B, s…) pour le retrouver dans les tableaux et les équations.',
+      nodes_hint: 'Inconnues de la méthode des nœuds : le potentiel de chaque nœud par rapport à la masse. Survolez ou touchez une ligne pour repérer le nœud sur le circuit.',
+      ref_title: 'Sens de référence', ref_passive_s: 'convention récepteur', ref_active_s: 'convention générateur',
+      ref_passive: 'Convention récepteur (I entre par le + de V) : P = V·I est la puissance absorbée. Touchez les signes + / − ou la flèche sur le circuit pour changer les références.',
+      ref_active: 'Convention générateur (I sort par le + de V) : P = V·I est la puissance fournie. Touchez les signes + / − ou la flèche sur le circuit pour changer les références.',
+      tbl_refs: 'V et I avec les sens de référence dessinés sur le circuit (+/− et flèches)',
+      eq_title: 'Lois de Kirchhoff (vérification)', eq_kcl: 'Loi des nœuds : somme des courants qui sortent du nœud (flèches de référence) = 0',
+      eq_kvl: 'Loi des mailles pour chaque maille indépendante : somme des tensions (+ → −) le long de la maille = 0', eq_none: 'Pas de maille.', loop: 'Maille',
+      eq_skip: 'Les mailles qui passent par un AOP ou un transistor ne sont pas listées (leurs courants de borne figurent dans la loi des nœuds).',
+      set_realdir: 'Afficher les valeurs dans le sens réel au lieu des sens de référence',
+      iv_title: 'Caractéristique I–V', iv_series: 'En série', iv_parallel: 'En parallèle', iv_comb_series: 'Association série (les V s’additionnent)', iv_comb_parallel: 'Association parallèle (les I s’additionnent)',
+      iv_none: 'Sélectionnez des dipôles en série ou en parallèle pour voir leurs caractéristiques et la caractéristique équivalente.',
+      iv_load: 'Droite de charge (Thévenin du reste)', iv_q: 'Point de fonctionnement Q', iv_expand: 'Agrandir',
+      iv_load_lin: 'Le reste du circuit est non linéaire : sa droite de charge est linéarisée autour du point à vide.',
+      iv_conv: 'Le point de fonctionnement Q est l’intersection de la caractéristique de l’élément et de la droite de charge du reste du circuit. Convention récepteur : V = v₁ − v₂, I entre par la borne 1.',
+      iv_conv_ab: 'V et I du groupe, de sa première borne à la dernière. Q est l’intersection de la caractéristique équivalente et de la droite de charge du reste du circuit ; chaque point coloré est celui d’un élément.',
+      iv_bjt: 'Caractéristiques de sortie I<sub>C</sub>(V<sub>CE</sub>)', iv_bjt_note: 'Courbes pour 0,5, 1, 1,5 et 2 fois le courant de base de repos (modèle simple : I<sub>C</sub> = βI<sub>B</sub> en régime actif, V<sub>CE</sub> = V<sub>CE,sat</sub> en saturation). En pointillé : droite de charge du circuit de collecteur vue entre C et E.',
+      iv_opamp: 'Caractéristique de transfert vₒ(v₊ − v₋)',
+      undo: 'Annuler (Ctrl+Z)', redo: 'Rétablir (Ctrl+Y)', examples: 'Exemples', file: 'Fichier', settings: 'Réglages', help: 'Aide',
+      theme: 'Changer de thème', layout_to_mobile: 'Passer en affichage mobile', layout_to_desktop: 'Passer en affichage bureau',
+      tools: 'Outils', components: 'Composants',
+      tool_select: 'Sélection', tool_wire: 'Fil', tool_erase: 'Gomme', tool_port: 'Thévenin A–B',
+      tool_select_tip: 'Sélectionner, déplacer, modifier (Échap)', tool_wire_tip: 'Tracer des fils (W)', tool_erase_tip: 'Touchez ou balayez les éléments pour les supprimer', tool_port_tip: 'Choisir les deux bornes A et B de l’équivalent de Thévenin / Norton',
+      c_resistor: 'Résistance', c_vsource: 'Source de tension', c_isource: 'Source de courant', c_ammeter: 'Ampèremètre', c_voltmeter: 'Voltmètre',
+      c_diode: 'Diode', c_schottky: 'Diode Schottky', c_ground: 'Masse', c_opamp: 'AOP (idéal)', c_npn: 'Transistor NPN', c_pnp: 'Transistor PNP', c_bjt: 'Transistor (bipolaire)',
+      cs_resistor: 'R', cs_vsource: 'Source V', cs_isource: 'Source I', cs_ammeter: 'Ampèremètre', cs_voltmeter: 'Voltmètre', cs_diode: 'Diode', cs_schottky: 'Schottky',
+      cs_ground: 'Masse', cs_opamp: 'AOP', cs_npn: 'NPN', cs_pnp: 'PNP',
+      show: 'Afficher', show_v: 'Tension', show_i: 'Courant', show_p: 'Puissance', show_nodes: 'Potentiels des nœuds', animate: 'Circulation du courant', colorV: 'Colorer les fils selon le potentiel',
+      show_v_s: 'V', show_i_s: 'I', show_p_s: 'P', show_nodes_s: 'Nœuds', animate_s: 'Flux',
+      symbols: 'Symboles', sym_us: 'USA', sym_iec: 'CEI (Europe)',
+      p_name: 'Nom', p_R: 'Résistance R', p_V: 'Tension V', p_I: 'Courant I', p_model: 'Modèle', p_Vf: 'Tension de seuil V<sub>γ</sub>', p_rd: 'Résistance série r<sub>d</sub>',
+      p_Is: 'Courant de saturation I<sub>S</sub>', p_N: 'Coefficient d’émission n', p_sat: 'Saturation de la sortie', p_Vpos: 'Saturation positive +Vsat', p_Vneg: 'Saturation négative −Vsat',
+      p_pol: 'Type', p_beta: 'Gain en courant β', p_Vbe: 'V<sub>BE</sub> (passant)', p_Vcesat: 'V<sub>CE</sub> (sat)', npn: 'NPN', pnp: 'PNP',
+      model_ideal: 'Idéal (court-circuit passant, ouvert bloqué)', model_cvd: 'Seuil constant V<sub>γ</sub> (+ r<sub>d</sub>)', model_exact: 'Exact (équation de Shockley)',
+      model_ideal_short: 'idéale', model_cvd_short: 'modèle V<sub>γ</sub>', model_exact_short: 'Shockley',
+      state_on: 'PASSANTE', state_off: 'BLOQUÉE', region_off: 'bloqué', region_act: 'actif', region_sat: 'saturé',
+      tab_props: 'Élément', tab_results: 'Résultats', tab_thev: 'Thévenin / Norton',
+      rotate: 'Tourner (R)', flip: 'Miroir (F)', duplicate: 'Dupliquer (Ctrl+D)', del: 'Supprimer (Suppr)', edit: 'Propriétés', thev_seen: 'Thévenin vu par cet élément',
+      zoom_in: 'Zoom avant', zoom_out: 'Zoom arrière', zoom_fit: 'Cadrer le circuit', panel: 'Panneau',
+      nothing_selected: 'Aucune sélection.',
+      quick_help: '<b>Construire :</b> choisissez un composant puis cliquez (ou touchez) sur la grille ; on peut aussi le faire glisser depuis la liste. <b>Fils :</b> glissez depuis une borne, ou utilisez l’outil Fil. <b>Modifier :</b> double-clic sur un composant. <b>Vue :</b> molette ou pincement pour zoomer, glisser le fond (tactile) ou clic droit glissé (souris) pour se déplacer.',
+      sel_count: '{n} éléments sélectionnés', wire_sel: 'Fil', node_voltage: 'Potentiel du nœud', terminal_voltages: 'Potentiels des bornes',
+      res_v: 'Tension', res_i: 'Courant', res_p: 'Puissance', res_state: 'État', res_region: 'Régime',
+      absorbs: 'absorbée', delivers: 'fournie', p_abs_short: 'abs.', p_del_short: 'fourn.',
+      v_ref: 'positive côté + / anode / première borne', i_ref: 'la flèche indique le sens réel',
+      conv: 'Convention récepteur : V = v₁ − v₂ et I entre par la borne 1 (borne 1 = + d’une source, anode d’une diode, origine de la flèche d’une source de courant). P = V·I &gt; 0 : absorbée, &lt; 0 : fournie.',
+      reading: 'Mesure', vout: 'Tension de sortie', iout: 'Courant de sortie (débité)', vdiff: 'v<sub>+</sub> − v<sub>−</sub>', supply_p: 'Puissance fournie par les alimentations',
+      ib: 'Courant de base I<sub>B</sub>', ic: 'Courant de collecteur I<sub>C</sub>', ie: 'Courant d’émetteur I<sub>E</sub>', vbe: 'V<sub>BE</sub>', vce: 'V<sub>CE</sub>', veb: 'V<sub>EB</sub>', vec: 'V<sub>EC</sub>',
+      tbl_comp: 'Élément', tbl_v: 'V', tbl_i: 'I', tbl_p: 'P',
+      balance: 'Bilan de puissance', p_gen: 'Fournie par les sources', p_abs: 'Absorbée par les charges', p_sum: 'Somme (doit être 0)',
+      nodes_title: 'Potentiels des nœuds (masse = 0 V)', node: 'Nœud',
+      st_ok: 'Résolu', st_err: 'Pas de solution', st_empty: 'Circuit vide : ajoutez des composants depuis la liste',
+      iss_vshort: 'La source de tension {ids} est court-circuitée.',
+      iss_amshort: 'L’ampèremètre {ids} est court-circuité par un fil : il indique 0.',
+      iss_vloop: 'Maille de sources de tension / ampèremètres : {ids}. Les courants sont indéterminés (ou les tensions se contredisent).',
+      iss_inopath: 'La source de courant {ids} n’a pas de chemin fermé : une source de courant idéale ne peut pas rester ouverte.',
+      iss_noconv: 'Aucun point de fonctionnement cohérent trouvé.',
+      iss_huge: 'La solution n’est pas physique (tension ou courant énorme).',
+      iss_tied: '{ids} : une diode idéale, une jonction de transistor ou une sortie d’AOP est reliée directement à une source de tension (courant infini).',
+      iss_unstable: 'AOP {ids} : réaction positive, la solution linéaire est instable.',
+      iss_noground: 'Pas de masse : un nœud de référence a été choisi automatiquement. Ajoutez une masse (⏚).',
+      iss_floating: 'Une partie du circuit n’est pas reliée à la référence : ses potentiels sont arbitraires.',
+      iss_openterm: 'Certaines bornes ne sont pas connectées (petits cercles).',
+      thev_intro: 'Circuit équivalent vu depuis deux bornes A et B. Choisissez les bornes sur le circuit, ou sélectionnez un dipôle et utilisez-le comme charge.',
+      thev_pick: 'Choisir les bornes A et B', thev_use_sel: 'Prendre l’élément sélectionné comme charge', thev_clear: 'Effacer',
+      thev_pickA: 'Touchez le nœud de la borne A', thev_pickB: 'Touchez le nœud de la borne B',
+      thev_load: 'Charge retirée : {name}', thev_port: 'Bornes A–B',
+      thevenin: 'Thévenin', norton: 'Norton', vth: 'E<sub>Th</sub>', rth: 'R<sub>Th</sub>', in_: 'I<sub>N</sub>', rn: 'R<sub>N</sub>',
+      thev_method: 'E<sub>Th</sub> = tension à vide v<sub>AB</sub> ; I<sub>N</sub> = courant de court-circuit A→B ; R<sub>Th</sub> = pente de v<sub>AB</sub> quand on injecte un courant de test (les sources commandées restent actives).',
+      thev_none: 'Pas d’équivalent de Thévenin (R<sub>Th</sub> = ∞) : les bornes se comportent comme une source de courant.',
+      thev_nonorton: 'Pas d’équivalent de Norton (R<sub>Th</sub> = 0) : les bornes se comportent comme une source de tension idéale.',
+      thev_nonlinear: 'Le circuit contient des éléments non linéaires : l’équivalent est linéarisé autour du point de fonctionnement à vide.',
+      thev_isc_check: 'Courant de court-circuit mesuré : {isc} (E<sub>Th</sub>/R<sub>Th</sub> = {calc}). Ils diffèrent car le circuit est non linéaire.',
+      thev_loadcalc: 'Avec la charge {name} : ', thev_maxp: 'Transfert maximal de puissance : R<sub>L</sub> = R<sub>Th</sub> = {r}, P<sub>max</sub> = {p}',
+      thev_err: 'Impossible de calculer l’équivalent.', thev_same: 'A et B sont le même nœud.',
+      thev_negr: 'Résistance négative : le circuit contient des éléments actifs (AOP, transistor).',
+      file_new: 'Nouveau circuit', file_open: 'Ouvrir un fichier…', file_save: 'Enregistrer le fichier', file_link: 'Copier un lien de partage', file_png: 'Exporter une image (PNG)',
+      link_copied: 'Lien copié dans le presse-papiers', link_failed: 'Copiez ce lien :', loaded: 'Circuit chargé', load_err: 'Ce fichier n’est pas un circuit valide',
+      confirm_new: 'Effacer le circuit ? (on peut annuler)',
+      set_title: 'Réglages', set_digits: 'Chiffres significatifs', set_names: 'Afficher les noms', set_values: 'Afficher les valeurs', set_state: 'Afficher l’état des diodes',
+      set_grid: 'Afficher la grille', set_temp: 'Température (modèle exact de diode)', set_diodes: 'Modèle pour toutes les diodes', apply: 'Appliquer',
+      set_defmodel: 'Modèle des nouvelles diodes',
+      close: 'Fermer', help_title: 'Mode d’emploi',
+      help_html: `<h4>Construire le circuit</h4><ul>
+<li>Choisissez un composant dans la liste, puis cliquez / touchez la grille pour le poser. On peut aussi le faire glisser depuis la liste.</li>
+<li><b>R</b> tourne, <b>F</b> retourne en miroir (aussi avec les boutons au-dessus du circuit quand un élément est sélectionné).</li>
+<li>Fils : glissez depuis une borne (ou depuis l’extrémité d’un fil). Avec l’outil <b>Fil</b> on peut aussi toucher point après point ; touchez à nouveau le dernier point ou appuyez sur Échap pour terminer.</li>
+<li>Les fils se connectent à leurs extrémités et là où une extrémité touche un autre fil (un point est dessiné). Des fils qui se croisent ne sont pas connectés.</li>
+<li>Modifiez les valeurs par double-clic / double toucher. Les préfixes sont acceptés : 4k7, 2.2M, 10m, 100u, 1n…</li>
+<li>Tout circuit a besoin d’une masse (⏚) : les potentiels sont mesurés par rapport à elle.</li></ul>
+<h4>Résultats</h4><ul>
+<li>Le circuit est résolu après chaque modification. Choisissez l’affichage avec V, I, P et Nœuds au-dessus du circuit.</li>
+<li>Chaque élément montre ses <b>sens de référence</b> : + et − pour V, une flèche pour I. Touchez-les pour choisir les vôtres ; les valeurs portent le signe (une valeur négative signifie que la polarité ou le sens réel est l’opposé). Puissance : positive = absorbée, négative (vert) = fournie.</li><li>Les potentiels des nœuds sont mesurés par rapport à la masse ; nommez un nœud en sélectionnant un de ses fils. L’onglet <b>Résultats</b> vérifie la loi des nœuds et la loi des mailles avec vos références.</li>
+<li>L’onglet <b>Résultats</b> liste tous les éléments et le bilan de puissance.</li></ul>
+<h4>Thévenin / Norton</h4><ul>
+<li>Sélectionnez un dipôle et choisissez « Thévenin vu par cet élément », ou utilisez l’outil <b>Thévenin A–B</b> et touchez deux nœuds.</li></ul>
+<h4>Modèles</h4><ul>
+<li>Diode : idéale (0 V passante), seuil constant V<sub>γ</sub> avec r<sub>d</sub> optionnelle, ou exacte (Shockley : I = I<sub>S</sub>(e^{V/nV<sub>T</sub>} − 1)). Schottky : mêmes modèles avec V<sub>γ</sub> plus faible et I<sub>S</sub> plus grand.</li>
+<li>AOP : idéal (gain infini, courants d’entrée nuls, résistance de sortie nulle), avec saturation optionnelle à ±Vsat.</li>
+<li>Transistor bipolaire : bloqué, actif (V<sub>BE</sub> = 0,7 V, I<sub>C</sub> = βI<sub>B</sub>) ou saturé (V<sub>CE</sub> = V<sub>CE,sat</sub>).</li></ul>
+<h4>Tourner et retourner</h4><ul>
+<li>Souris : <b>clic droit</b> sur un composant = quart de tour, <b>Maj + clic droit</b> = miroir. Pendant le placement, le clic droit tourne le composant avant de le poser.</li>
+<li>Clavier : <b>R</b> tourne, <b>F</b> retourne (la sélection, ou le composant en cours de placement).</li>
+<li>Tactile : sélectionnez le composant et utilisez <b>⟳</b> / <b>⇋</b> dans la barre au-dessus du circuit. Pendant le placement, la même barre tourne le composant avant de toucher la grille.</li></ul>
+<h4>Zoom et déplacement</h4><ul>
+<li>Souris : <b>molette</b> = zoom autour du pointeur (pincement sur un pavé tactile aussi) ; glisser avec le <b>bouton droit ou du milieu</b>, ou maintenir <b>Espace</b> et glisser = déplacer la vue ; glisser sur le fond = sélection par rectangle.</li>
+<li>Tactile : <b>un doigt</b> sur le fond = déplacer la vue, <b>deux doigts</b> = zoom et déplacement ; appui long sur le fond = sélection par rectangle, appui long sur un élément = propriétés.</li>
+<li>Boutons + / − / ⤢ (cadrer le circuit) en bas à droite ; touches <b>+</b>, <b>−</b>, <b>0</b>.</li></ul>
+<h4>Autres touches</h4><ul><li>Suppr, Ctrl+Z / Ctrl+Y, Ctrl+C / Ctrl+V, Ctrl+D, Ctrl+A, flèches (déplacer la sélection), W (fil), Entrée (propriétés), Échap.</li></ul>`,
+      ex_title: 'Exemples', ex_load: 'Charger',
+      copy_hint: 'Copié', pasted: 'Collé',
+      unit_none: '',
+      tip_node: 'Nœud'
+    },
+    es: {
+      title: 'Simulador de circuitos en continua',
+      place_cancel: 'Dejar de colocar (Esc)',
+      tip_flip: 'Toque para invertir esta referencia', node_name: 'Nombre del nodo', node_hint: 'Las tensiones de nodo se miden respecto de masa (0 V). Póngale un nombre al nodo (A, B, sal…) para encontrarlo en las tablas y las ecuaciones.',
+      nodes_hint: 'Incógnitas del método de nodos: la tensión de cada nodo respecto de masa. Pase el ratón o toque una fila para ubicar el nodo en el circuito.',
+      ref_title: 'Sentidos de referencia', ref_passive_s: 'convención pasiva', ref_active_s: 'convención generador',
+      ref_passive: 'Convención pasiva (I entra por el + de V): P = V·I es la potencia absorbida. Toque los signos + / − o la flecha en el circuito para cambiar las referencias.',
+      ref_active: 'Convención generador (I sale por el + de V): P = V·I es la potencia entregada. Toque los signos + / − o la flecha en el circuito para cambiar las referencias.',
+      tbl_refs: 'V e I con los sentidos de referencia dibujados en el circuito (+/− y flechas)',
+      eq_title: 'Leyes de Kirchhoff (verificación)', eq_kcl: 'LKC en cada nodo: suma de las corrientes que salen del nodo (flechas de referencia) = 0',
+      eq_kvl: 'LKT en cada lazo independiente: suma de las caídas de tensión (+ → −) a lo largo del lazo = 0', eq_none: 'No hay lazos.', loop: 'Lazo',
+      eq_skip: 'No se listan los lazos que pasan por AO o transistores (sus corrientes de terminal están en la LKC).',
+      set_realdir: 'Mostrar los valores en el sentido real en lugar de los sentidos de referencia',
+      iv_title: 'Característica I–V', iv_series: 'En serie', iv_parallel: 'En paralelo', iv_comb_series: 'Combinación serie (se suman las V)', iv_comb_parallel: 'Combinación paralelo (se suman las I)',
+      iv_none: 'Seleccione elementos de dos terminales que estén en serie o en paralelo para ver sus características y la combinada.',
+      iv_load: 'Recta de carga (Thévenin del resto)', iv_q: 'Punto de operación Q', iv_expand: 'Agrandar',
+      iv_load_lin: 'El resto del circuito es no lineal: su recta de carga se linealiza alrededor del punto a circuito abierto.',
+      iv_conv: 'El punto de operación Q es donde la característica del elemento corta la recta de carga del resto del circuito. Convención pasiva: V = v₁ − v₂, I entra por el terminal 1.',
+      iv_conv_ab: 'V e I del grupo, desde su primer terminal hasta el último. Q es donde la característica combinada corta la recta de carga del resto del circuito; cada punto de color es el de un elemento.',
+      iv_bjt: 'Características de salida I<sub>C</sub>(V<sub>CE</sub>)', iv_bjt_note: 'Curvas para 0,5, 1, 1,5 y 2 veces la corriente de base de reposo (modelo simple: I<sub>C</sub> = βI<sub>B</sub> en activa, V<sub>CE</sub> = V<sub>CE,sat</sub> en saturación). En trazos: recta de carga del circuito de colector vista entre C y E.',
+      iv_opamp: 'Característica de transferencia vₒ(v₊ − v₋)',
+      undo: 'Deshacer (Ctrl+Z)', redo: 'Rehacer (Ctrl+Y)', examples: 'Ejemplos', file: 'Archivo', settings: 'Ajustes', help: 'Ayuda',
+      theme: 'Cambiar tema', layout_to_mobile: 'Pasar a modo móvil', layout_to_desktop: 'Pasar a modo escritorio',
+      tools: 'Herramientas', components: 'Componentes',
+      tool_select: 'Seleccionar', tool_wire: 'Cable', tool_erase: 'Borrar', tool_port: 'Thévenin A–B',
+      tool_select_tip: 'Seleccionar, mover, editar (Esc)', tool_wire_tip: 'Dibujar cables (W)', tool_erase_tip: 'Toque o deslice sobre los elementos para borrarlos', tool_port_tip: 'Elegir los dos terminales A y B del equivalente de Thévenin / Norton',
+      c_resistor: 'Resistencia', c_vsource: 'Fuente de tensión', c_isource: 'Fuente de corriente', c_ammeter: 'Amperímetro', c_voltmeter: 'Voltímetro',
+      c_diode: 'Diodo', c_schottky: 'Diodo Schottky', c_ground: 'Masa', c_opamp: 'Amp. operacional (ideal)', c_npn: 'Transistor NPN', c_pnp: 'Transistor PNP', c_bjt: 'Transistor (BJT)',
+      cs_resistor: 'R', cs_vsource: 'Fuente V', cs_isource: 'Fuente I', cs_ammeter: 'Amperímetro', cs_voltmeter: 'Voltímetro', cs_diode: 'Diodo', cs_schottky: 'Schottky',
+      cs_ground: 'Masa', cs_opamp: 'AO', cs_npn: 'NPN', cs_pnp: 'PNP',
+      show: 'Mostrar', show_v: 'Tensión', show_i: 'Corriente', show_p: 'Potencia', show_nodes: 'Tensiones de nodo', animate: 'Circulación de corriente', colorV: 'Colorear cables según la tensión',
+      show_v_s: 'V', show_i_s: 'I', show_p_s: 'P', show_nodes_s: 'Nodos', animate_s: 'Flujo',
+      symbols: 'Símbolos', sym_us: 'USA', sym_iec: 'IEC (Europa)',
+      p_name: 'Nombre', p_R: 'Resistencia R', p_V: 'Tensión V', p_I: 'Corriente I', p_model: 'Modelo', p_Vf: 'Tensión umbral V<sub>γ</sub>', p_rd: 'Resistencia serie r<sub>d</sub>',
+      p_Is: 'Corriente de saturación I<sub>S</sub>', p_N: 'Coeficiente de emisión n', p_sat: 'Saturación de la salida', p_Vpos: 'Saturación positiva +Vsat', p_Vneg: 'Saturación negativa −Vsat',
+      p_pol: 'Tipo', p_beta: 'Ganancia de corriente β', p_Vbe: 'V<sub>BE</sub> (conducción)', p_Vcesat: 'V<sub>CE</sub> (sat)', npn: 'NPN', pnp: 'PNP',
+      model_ideal: 'Ideal (cortocircuito si conduce, abierto si no)', model_cvd: 'Caída constante V<sub>γ</sub> (+ r<sub>d</sub>)', model_exact: 'Exacto (ecuación de Shockley)',
+      model_ideal_short: 'ideal', model_cvd_short: 'modelo V<sub>γ</sub>', model_exact_short: 'Shockley',
+      state_on: 'CONDUCE', state_off: 'CORTADO', region_off: 'corte', region_act: 'activa', region_sat: 'saturación',
+      tab_props: 'Elemento', tab_results: 'Resultados', tab_thev: 'Thévenin / Norton',
+      rotate: 'Rotar (R)', flip: 'Espejar (F)', duplicate: 'Duplicar (Ctrl+D)', del: 'Borrar (Supr)', edit: 'Propiedades', thev_seen: 'Thévenin visto por este elemento',
+      zoom_in: 'Acercar', zoom_out: 'Alejar', zoom_fit: 'Encuadrar el circuito', panel: 'Panel',
+      nothing_selected: 'Nada seleccionado.',
+      quick_help: '<b>Armar:</b> elija un componente y haga clic (o toque) en la grilla; también puede arrastrarlo desde la lista. <b>Cables:</b> arrastre desde un terminal, o use la herramienta Cable. <b>Editar:</b> doble clic sobre un componente. <b>Vista:</b> rueda o pellizco para el zoom, arrastrar el fondo (táctil) o arrastrar con el botón derecho (ratón) para desplazar.',
+      sel_count: '{n} elementos seleccionados', wire_sel: 'Cable', node_voltage: 'Tensión del nodo', terminal_voltages: 'Tensiones de los terminales',
+      res_v: 'Tensión', res_i: 'Corriente', res_p: 'Potencia', res_state: 'Estado', res_region: 'Región',
+      absorbs: 'absorbida', delivers: 'entregada', p_abs_short: 'abs.', p_del_short: 'entr.',
+      v_ref: 'positiva del lado + / ánodo / primer terminal', i_ref: 'la flecha indica el sentido real',
+      conv: 'Convención pasiva: V = v₁ − v₂ e I entra por el terminal 1 (terminal 1 = + de una fuente, ánodo de un diodo, origen de la flecha de una fuente de corriente). P = V·I &gt; 0: absorbida, &lt; 0: entregada.',
+      reading: 'Lectura', vout: 'Tensión de salida', iout: 'Corriente de salida (entregada)', vdiff: 'v<sub>+</sub> − v<sub>−</sub>', supply_p: 'Potencia entregada por las fuentes de alimentación',
+      ib: 'Corriente de base I<sub>B</sub>', ic: 'Corriente de colector I<sub>C</sub>', ie: 'Corriente de emisor I<sub>E</sub>', vbe: 'V<sub>BE</sub>', vce: 'V<sub>CE</sub>', veb: 'V<sub>EB</sub>', vec: 'V<sub>EC</sub>',
+      tbl_comp: 'Elemento', tbl_v: 'V', tbl_i: 'I', tbl_p: 'P',
+      balance: 'Balance de potencia', p_gen: 'Entregada por las fuentes', p_abs: 'Absorbida por las cargas', p_sum: 'Suma (debe ser 0)',
+      nodes_title: 'Tensiones de nodo (masa = 0 V)', node: 'Nodo',
+      st_ok: 'Resuelto', st_err: 'Sin solución', st_empty: 'Circuito vacío: agregue componentes desde la lista',
+      iss_vshort: 'La fuente de tensión {ids} está en cortocircuito.',
+      iss_amshort: 'El amperímetro {ids} está cortocircuitado por un cable: indica 0.',
+      iss_vloop: 'Lazo de fuentes de tensión / amperímetros: {ids}. Las corrientes quedan indeterminadas (o las tensiones se contradicen).',
+      iss_inopath: 'La fuente de corriente {ids} no tiene un camino cerrado: una fuente de corriente ideal no puede quedar abierta.',
+      iss_noconv: 'No se encontró un punto de operación coherente.',
+      iss_huge: 'La solución no es física (tensión o corriente enorme).',
+      iss_tied: '{ids}: un diodo ideal, una juntura de transistor o la salida de un AO está conectada directamente a una fuente de tensión (corriente infinita).',
+      iss_unstable: 'AO {ids}: realimentación positiva, la solución lineal es inestable.',
+      iss_noground: 'No hay masa: se eligió automáticamente un nodo de referencia. Agregue una masa (⏚).',
+      iss_floating: 'Una parte del circuito no está conectada a la referencia: sus tensiones son arbitrarias.',
+      iss_openterm: 'Hay terminales sin conectar (circulitos).',
+      thev_intro: 'Circuito equivalente visto desde dos terminales A y B. Elija los terminales en el circuito, o seleccione un elemento de dos terminales y úselo como carga.',
+      thev_pick: 'Elegir los terminales A y B', thev_use_sel: 'Usar el elemento seleccionado como carga', thev_clear: 'Borrar',
+      thev_pickA: 'Toque el nodo del terminal A', thev_pickB: 'Toque el nodo del terminal B',
+      thev_load: 'Carga retirada: {name}', thev_port: 'Terminales A–B',
+      thevenin: 'Thévenin', norton: 'Norton', vth: 'V<sub>Th</sub>', rth: 'R<sub>Th</sub>', in_: 'I<sub>N</sub>', rn: 'R<sub>N</sub>',
+      thev_method: 'V<sub>Th</sub> = tensión a circuito abierto v<sub>AB</sub>; I<sub>N</sub> = corriente de cortocircuito A→B; R<sub>Th</sub> = pendiente de v<sub>AB</sub> al inyectar una corriente de prueba (las fuentes dependientes siguen activas).',
+      thev_none: 'No existe equivalente de Thévenin (R<sub>Th</sub> = ∞): los terminales se comportan como una fuente de corriente.',
+      thev_nonorton: 'No existe equivalente de Norton (R<sub>Th</sub> = 0): los terminales se comportan como una fuente de tensión ideal.',
+      thev_nonlinear: 'El circuito tiene elementos no lineales: el equivalente se linealiza alrededor del punto de operación a circuito abierto.',
+      thev_isc_check: 'Corriente de cortocircuito medida: {isc} (V<sub>Th</sub>/R<sub>Th</sub> = {calc}). Difieren porque el circuito es no lineal.',
+      thev_loadcalc: 'Con la carga {name}: ', thev_maxp: 'Máxima transferencia de potencia: R<sub>L</sub> = R<sub>Th</sub> = {r}, P<sub>max</sub> = {p}',
+      thev_err: 'No se pudo calcular el equivalente.', thev_same: 'A y B son el mismo nodo.',
+      thev_negr: 'Resistencia negativa: el circuito contiene elementos activos (AO, transistor).',
+      file_new: 'Circuito nuevo', file_open: 'Abrir archivo…', file_save: 'Guardar archivo', file_link: 'Copiar enlace para compartir', file_png: 'Exportar imagen (PNG)',
+      link_copied: 'Enlace copiado al portapapeles', link_failed: 'Copie este enlace:', loaded: 'Circuito cargado', load_err: 'Este archivo no es un circuito válido',
+      confirm_new: '¿Borrar el circuito? (se puede deshacer)',
+      set_title: 'Ajustes', set_digits: 'Cifras significativas', set_names: 'Mostrar nombres', set_values: 'Mostrar valores', set_state: 'Mostrar el estado de los diodos',
+      set_grid: 'Mostrar grilla', set_temp: 'Temperatura (modelo exacto de diodo)', set_diodes: 'Modelo para todos los diodos', apply: 'Aplicar',
+      set_defmodel: 'Modelo de los diodos nuevos',
+      close: 'Cerrar', help_title: 'Cómo se usa',
+      help_html: `<h4>Armar el circuito</h4><ul>
+<li>Elija un componente en la lista y haga clic / toque en la grilla para colocarlo. También puede arrastrarlo desde la lista.</li>
+<li><b>R</b> rota, <b>F</b> espeja (también con los botones sobre el circuito cuando hay un elemento seleccionado).</li>
+<li>Cables: arrastre desde un terminal (o desde el extremo de un cable). Con la herramienta <b>Cable</b> también puede tocar punto tras punto; toque de nuevo el último punto o pulse Esc para terminar.</li>
+<li>Los cables se conectan en sus extremos y donde un extremo toca otro cable (se dibuja un punto). Los cables que se cruzan no están conectados.</li>
+<li>Edite los valores con doble clic / doble toque. Se aceptan prefijos: 4k7, 2.2M, 10m, 100u, 1n…</li>
+<li>Todo circuito necesita una masa (⏚): las tensiones de nodo se miden respecto de ella.</li></ul>
+<h4>Resultados</h4><ul>
+<li>El circuito se resuelve después de cada cambio. Elija qué mostrar con V, I, P y Nodos sobre el circuito.</li>
+<li>Cada elemento muestra sus <b>sentidos de referencia</b>: + y − para V y una flecha para I. Tóquelos para elegir los suyos; los valores llevan signo (un valor negativo indica que la polaridad o el sentido real es el opuesto). Potencia: positiva = absorbida, negativa (verde) = entregada.</li><li>Las tensiones de nodo se miden respecto de masa; para nombrar un nodo seleccione uno de sus cables. La pestaña <b>Resultados</b> verifica la LKC en cada nodo y la LKT en cada lazo con sus referencias.</li>
+<li>La pestaña <b>Resultados</b> lista todos los elementos y el balance de potencia.</li></ul>
+<h4>Thévenin / Norton</h4><ul>
+<li>Seleccione un elemento de dos terminales y elija «Thévenin visto por este elemento», o use la herramienta <b>Thévenin A–B</b> y toque dos nodos.</li></ul>
+<h4>Modelos</h4><ul>
+<li>Diodo: ideal (0 V al conducir), caída constante V<sub>γ</sub> con r<sub>d</sub> opcional, o exacto (Shockley: I = I<sub>S</sub>(e^{V/nV<sub>T</sub>} − 1)). Schottky: los mismos modelos con V<sub>γ</sub> menor e I<sub>S</sub> mayor.</li>
+<li>AO: ideal (ganancia infinita, corrientes de entrada nulas, resistencia de salida nula), con saturación opcional en ±Vsat.</li>
+<li>Transistor (BJT): corte, activa (V<sub>BE</sub> = 0,7 V, I<sub>C</sub> = βI<sub>B</sub>) o saturación (V<sub>CE</sub> = V<sub>CE,sat</sub>).</li></ul>
+<h4>Rotar y espejar</h4><ul>
+<li>Ratón: <b>clic derecho</b> sobre un componente = un cuarto de vuelta, <b>Mayús + clic derecho</b> = espejar. Mientras se coloca, el clic derecho rota el componente antes de soltarlo.</li>
+<li>Teclado: <b>R</b> rota, <b>F</b> espeja (la selección, o el componente que se está colocando).</li>
+<li>Táctil: seleccione el componente y use <b>⟳</b> / <b>⇋</b> en la barra sobre el circuito. Mientras coloca, la misma barra rota el componente antes de tocar la grilla.</li></ul>
+<h4>Zoom y desplazamiento</h4><ul>
+<li>Ratón: <b>rueda</b> = zoom alrededor del puntero (también pellizco en el touchpad); arrastrar con el <b>botón derecho o del medio</b>, o mantener <b>Espacio</b> y arrastrar = desplazar; arrastrar sobre el fondo = selección con rectángulo.</li>
+<li>Táctil: <b>un dedo</b> sobre el fondo = desplazar, <b>dos dedos</b> = zoom y desplazamiento; toque largo sobre el fondo = selección con rectángulo, toque largo sobre un elemento = propiedades.</li>
+<li>Botones + / − / ⤢ (encuadrar el circuito) abajo a la derecha; teclas <b>+</b>, <b>−</b>, <b>0</b>.</li></ul>
+<h4>Otras teclas</h4><ul><li>Supr, Ctrl+Z / Ctrl+Y, Ctrl+C / Ctrl+V, Ctrl+D, Ctrl+A, flechas (mover la selección), W (cable), Enter (propiedades), Esc.</li></ul>`,
+      ex_title: 'Ejemplos', ex_load: 'Cargar',
+      copy_hint: 'Copiado', pasted: 'Pegado',
+      unit_none: '',
+      tip_node: 'Nodo'
+    }
+  };
+
+  let lang = 'en';
+  function setLang(l) { lang = T[l] ? l : 'en'; }
+  function getLang() { return lang; }
+  function t(key, vars) {
+    let s = (T[lang] && T[lang][key]) != null ? T[lang][key] : (T.en[key] != null ? T.en[key] : key);
+    if (vars) for (const k in vars) s = s.split('{' + k + '}').join(vars[k]);
+    return s;
+  }
+  (root.DCS = root.DCS || {}).i18n = { t, setLang, getLang, T };
+})(window);

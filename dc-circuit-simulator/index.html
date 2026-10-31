@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>DC Circuit Simulator</title>
+<meta name="description" content="Build DC circuits with resistors, sources, meters, diodes, op-amps and transistors; see voltages, currents and powers, and compute Thévenin and Norton equivalents. Works with mouse and touch.">
+<script>
+  (function(){
+    var hour = new Date().getHours();
+    document.documentElement.classList.add((hour >= 7 && hour < 18) ? 'light' : 'dark');
+    var mode = null;
+    try { mode = localStorage.getItem('dcs.layout'); } catch (e) {}
+    if (mode !== 'mobile' && mode !== 'desktop') mode = (Math.min(window.innerWidth, 4000) < 900) ? 'mobile' : 'desktop';
+    document.documentElement.classList.add('layout-' + mode);
+  })();
+</script>
+<link rel="stylesheet" href="css/style.css">
+<!-- Contador de visitas (GoatCounter, sin cookies ni datos personales). No cuenta en localhost ni desde file://. -->
+<script data-goatcounter="https://ferrucci-franco.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</head>
+<body>
+<div class="app" id="app">
+  <header class="panel app-header">
+    <h1 id="title" data-i18n="title">DC Circuit Simulator</h1>
+    <div class="hdr">
+      <div class="hdr-group">
+        <button id="undoBtn" class="icon" type="button" data-i18n-title="undo"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
+        <button id="redoBtn" class="icon" type="button" data-i18n-title="redo"><svg viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
+      </div>
+      <div class="hdr-group">
+        <button id="examplesBtn" type="button"><svg viewBox="0 0 24 24"><path d="M4 19.5V5a2 2 0 0 1 2-2h14v16H6a2 2 0 0 0-2 2z"/><path d="M8 7h8"/></svg><span data-i18n="examples">Examples</span></button>
+        <button id="fileBtn" type="button"><svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg><span data-i18n="file">File</span></button>
+        <button id="settingsBtn" class="icon" type="button" data-i18n-title="settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+        <button id="helpBtn" class="icon" type="button" data-i18n-title="help"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M9.2 9.3a3 3 0 0 1 5.6 1c0 2-3 2.6-3 4.2"/><circle cx="12" cy="17.6" r=".6" fill="currentColor"/></svg></button>
+      </div>
+      <div class="hdr-group">
+        <div class="seg" role="group" aria-label="Language">
+          <button type="button" data-lang="en">EN</button>
+          <button type="button" data-lang="fr">FR</button>
+          <button type="button" data-lang="es">ES</button>
+        </div>
+        <button id="layoutBtn" class="icon" type="button"><svg class="i-mobile" viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M11 18.5h2"/></svg><svg class="i-desktop" viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="13" rx="1.5"/><path d="M8 21h8M12 17v4"/></svg></button>
+        <button id="themeBtn" class="icon" type="button" data-i18n-title="theme">🌗</button>
+      </div>
+    </div>
+  </header>
+
+  <aside class="panel palette" id="palette">
+    <div class="pal-title" data-i18n="tools">Tools</div>
+    <div class="pal-tools" id="palTools">
+      <button type="button" class="tool" data-tool="select"><svg viewBox="0 0 24 24"><path d="M5 3l13 7.5-5.8 1.4L9.5 18z"/></svg><span data-i18n="tool_select">Select</span></button>
+      <button type="button" class="tool" data-tool="wire"><svg viewBox="0 0 24 24"><path d="M3 18h7V6h11"/><circle cx="3" cy="18" r="1.6" fill="currentColor"/><circle cx="21" cy="6" r="1.6" fill="currentColor"/></svg><span data-i18n="tool_wire">Wire</span></button>
+      <button type="button" class="tool" data-tool="erase"><svg viewBox="0 0 24 24"><path d="M20 20H9L4 15a2 2 0 0 1 0-2.8L13.2 3a2 2 0 0 1 2.8 0l4 4a2 2 0 0 1 0 2.8L11 19"/><path d="m7.5 9.5 7 7"/></svg><span data-i18n="tool_erase">Erase</span></button>
+      <button type="button" class="tool" data-tool="port"><svg viewBox="0 0 24 24"><circle cx="5" cy="6" r="2.6"/><circle cx="5" cy="18" r="2.6"/><path d="M7.6 6H14v12H7.6"/><rect x="11.5" y="9" width="5" height="6" rx="1"/><path d="M16.5 12H21"/></svg><span data-i18n="tool_port">Thévenin A–B</span></button>
+    </div>
+    <div class="pal-title" data-i18n="components">Components</div>
+    <div class="pal-comps" id="palComps"></div>
+    <div class="pal-foot">
+      <div class="pal-title" data-i18n="symbols">Symbols</div>
+      <div class="seg seg-sym" role="group" id="symSeg">
+        <button type="button" data-sym="us">USA</button>
+        <button type="button" data-sym="iec">IEC</button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="panel stage" id="stage">
+    <canvas id="cv" tabindex="0"></canvas>
+    <div class="viewbar" id="viewbar">
+      <button type="button" class="chip" data-show="showV"><b class="dot-v"></b><span data-i18n="show_v_s">V</span></button>
+      <button type="button" class="chip" data-show="showI"><b class="dot-i"></b><span data-i18n="show_i_s">I</span></button>
+      <button type="button" class="chip" data-show="showP"><b class="dot-p"></b><span data-i18n="show_p_s">P</span></button>
+      <button type="button" class="chip" data-show="showNodes"><b class="dot-n"></b><span data-i18n="show_nodes_s">Nodes</span></button>
+      <button type="button" class="chip" data-show="animate"><b class="dot-f"></b><span data-i18n="animate_s">Flow</span></button>
+    </div>
+    <div class="selbar" id="selbar" hidden>
+      <button type="button" data-act="rotate" data-i18n-title="rotate"><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button>
+      <button type="button" data-act="flip" data-i18n-title="flip"><svg viewBox="0 0 24 24"><path d="M12 3v18" stroke-dasharray="2 2"/><path d="M9 7 4 17h5zM15 7l5 10h-5z"/></svg></button>
+      <button type="button" data-act="edit" data-i18n-title="edit"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg></button>
+      <button type="button" data-act="thev" data-i18n-title="thev_seen"><svg viewBox="0 0 24 24"><circle cx="5" cy="6" r="2.6"/><circle cx="5" cy="18" r="2.6"/><path d="M7.6 6H14v12H7.6"/><rect x="11.5" y="9" width="5" height="6" rx="1"/></svg></button>
+      <button type="button" data-act="dup" data-i18n-title="duplicate"><svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg></button>
+      <button type="button" data-act="cancel" data-i18n-title="place_cancel"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      <button type="button" data-act="del" class="danger" data-i18n-title="del"><svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>
+    </div>
+    <div class="zoombar">
+      <button type="button" id="zoomIn" data-i18n-title="zoom_in">+</button>
+      <button type="button" id="zoomOut" data-i18n-title="zoom_out">−</button>
+      <button type="button" id="zoomFit" data-i18n-title="zoom_fit"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+    </div>
+    <button type="button" class="status" id="status"></button>
+    <div class="hintbar" id="hintbar" hidden></div>
+    <div class="tip" id="tip" hidden></div>
+    <button type="button" class="sheet-btn" id="sheetBtn"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span data-i18n="panel">Panel</span></button>
+  </main>
+
+  <aside class="panel side" id="side">
+    <div class="sheet-grip" id="sheetGrip"><span></span></div>
+    <div class="tabs" role="tablist">
+      <button type="button" data-tab="props" data-i18n="tab_props">Element</button>
+      <button type="button" data-tab="results" data-i18n="tab_results">Results</button>
+      <button type="button" data-tab="thev" data-i18n="tab_thev">Thévenin / Norton</button>
+    </div>
+    <div class="pane" id="pane-props"></div>
+    <div class="pane" id="pane-results" hidden></div>
+    <div class="pane" id="pane-thev" hidden></div>
+    <div class="muted copyright">
+      © 2026 Franco Ferrucci ·
+      <a href="https://ferrucci-franco.github.io/electronics/" target="_blank" rel="noopener">ferrucci-franco.github.io/electronics</a>
+    </div>
+  </aside>
+</div>
+
+<div class="menu" id="fileMenu" hidden>
+  <button type="button" data-file="new" data-i18n="file_new">New circuit</button>
+  <button type="button" data-file="open" data-i18n="file_open">Open file…</button>
+  <button type="button" data-file="save" data-i18n="file_save">Save file</button>
+  <button type="button" data-file="link" data-i18n="file_link">Copy share link</button>
+  <button type="button" data-file="png" data-i18n="file_png">Export image (PNG)</button>
+</div>
+<input type="file" id="fileInput" accept=".json,application/json" hidden>
+
+<div class="modal-backdrop" id="modal">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-header"><h3 id="modalTitle"></h3><button type="button" class="icon-btn" id="modalClose" aria-label="Close">×</button></div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="js/i18n.js"></script>
+<script src="js/units.js"></script>
+<script src="js/components.js"></script>
+<script src="js/solver.js"></script>
+<script src="js/netlist.js"></script>
+<script src="js/render.js"></script>
+<script src="js/examples.js"></script>
+<script src="js/editor.js"></script>
+<script src="js/ivplot.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
