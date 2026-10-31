@@ -324,15 +324,33 @@
       P.head(base[0], base[1], tip[0], tip[1], 0.38);
     },
     // toggle switch: the blade pivots on the left contact
-    switch(P, c) {
+    // USA: contacts drawn as small circles; IEC 60617: the blade leaves the lead itself, no circles
+    switch(P, c, us) {
+      if (!us) {
+        P.line([[-2, 0], [-0.9, 0]]); P.line([[0.9, 0], [2, 0]]);
+        P.line(c.props.closed ? [[-0.9, 0], [1.15, -0.2]] : [[-0.9, 0], [1, -0.95]]);
+        return;
+      }
       P.line([[-2, 0], [-1, 0]]); P.line([[1, 0], [2, 0]]);
       P.circle(-1, 0, 0.14, true); P.circle(1, 0, 0.14, true);
       P.line(c.props.closed ? [[-1, 0], [1.05, -0.2]] : [[-1, 0], [0.75, -0.95]]);
     },
-    // push button with its return spring: a bar on a plunger; normally open = bar above the contacts,
-    // normally closed = bar under them; pressing pushes the bar down
-    button(P, c) {
+    // push button with its return spring. USA: a bar on a plunger; normally open = bar above the contacts,
+    // normally closed = bar under them; pressing pushes the bar down. IEC 60617: a make (NO) or break (NC,
+    // with its stop on the fixed contact) contact worked through a dashed link by the push operator ⊓.
+    button(P, c, us) {
       const nc = c.props.nc === 'nc', down = pressed.has(c.id);
+      if (!us) {
+        P.line([[-2, 0], [-0.9, 0]]); P.line([[0.9, 0], [2, 0]]);
+        if (nc) P.line([[0.9, 0], [0.9, -0.75]]);     // the stop of the break contact
+        // blade end: NO open up / closed down on the contact; NC resting on the stop / lifted away from it
+        const tip = nc ? (down ? [0.6, -1.15] : [1.15, -0.78]) : (down ? [1.15, -0.2] : [1, -0.95]);
+        P.line([[-0.9, 0], tip]);
+        const mx = (tip[0] - 0.9) / 2, my = tip[1] / 2, top = my - 0.95;
+        for (let y = my - 0.08; y > top + 0.12; y -= 0.3) P.line([[mx, y], [mx, Math.max(top + 0.08, y - 0.16)]]);
+        P.line([[mx - 0.42, top + 0.26], [mx - 0.42, top], [mx + 0.42, top], [mx + 0.42, top + 0.26]]);
+        return;
+      }
       P.line([[-2, 0], [-1, 0]]); P.line([[1, 0], [2, 0]]);
       P.circle(-1, 0, 0.14, true); P.circle(1, 0, 0.14, true);
       const y = nc ? (down ? 0.6 : 0.2) : (down ? -0.2 : -0.6);
