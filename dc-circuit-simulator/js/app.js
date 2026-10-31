@@ -442,6 +442,8 @@
 
   /* ---------- editing operations ---------- */
   app.select = function (ids) {
+    // a switch being operated hides the selection toolbar until the selection changes
+    if (app.selbarQuiet && !(ids.length === 1 && ids[0] === app.selbarQuiet)) app.selbarQuiet = null;
     app.sel = new Set(ids);
     app.ui.update();
     app.requestRender();

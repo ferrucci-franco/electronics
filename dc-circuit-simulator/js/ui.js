@@ -374,6 +374,8 @@
       const cs = app.selectedComps();
       const placing = app.tool === 'place';
       bar.hidden = !((app.tool === 'select' && app.sel.size) || placing);
+      // a switch that is being opened and closed: the toolbar gets out of the way (a long press brings it back)
+      if (!placing && app.selbarQuiet && app.sel.size === 1 && app.sel.has(app.selbarQuiet)) bar.hidden = true;
       bar.querySelector('[data-act=cancel]').hidden = !placing;
       for (const a of ['edit', 'thev', 'dup', 'del', 'rubber']) bar.querySelector(`[data-act=${a}]`).hidden = placing;
       bar.querySelector('[data-act=rubber]').classList.toggle('off', !app.settings.rubber);

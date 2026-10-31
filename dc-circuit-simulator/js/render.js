@@ -808,14 +808,15 @@
     // a wire branch whose current is not the current of any component (e.g. a wire between two nodes that
     // carries the difference of two branch currents) is labelled even when not selected: it cannot be read
     // anywhere else
-    const res = S.result, known = [];
+    const res = S.result;
     let imax = 0;
     if (res && res.ok) for (const c of S.circuit.comps) {
       const r = res.el[c.id];
       if (!r || !r.tc) continue;
-      for (const i of r.tc) { known.push(Math.abs(i)); imax = Math.max(imax, Math.abs(i)); }
+      for (const i of r.tc) imax = Math.max(imax, Math.abs(i));
     }
-    const unseen = (p) => !p.loop && Math.abs(p.i) > Math.max(1e-9, 1e-3 * imax) && !known.some(k => Math.abs(k - Math.abs(p.i)) <= 5e-3 * Math.max(k, Math.abs(p.i)));
+    // (a branch that is the lead of one component shows that component's current: not repeated)
+    const unseen = (p) => !p.loop && !p.lead && Math.abs(p.i) > Math.max(1e-9, 1e-3 * imax);
     // one label per branch (pieces in series carry the same current), on its longest piece
     const best = new Map();
     for (const [id, pieces] of S.wireCur) {
