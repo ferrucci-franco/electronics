@@ -4,6 +4,11 @@
   const T = {
     en: {
       title: 'DC Circuit Simulator',
+      model_simple: 'Simple (ideal: V<sub>BE</sub> fixed, I<sub>C</sub> = βI<sub>B</sub>, V<sub>CE,sat</sub> fixed)', model_em: 'Real (Ebers-Moll + Early effect)', model_em_short: 'Ebers-Moll',
+      p_betaR: 'Reverse current gain β<sub>R</sub>', p_VA: 'Early voltage V<sub>A</sub> (0 = none)',
+      iv_bjt_em_in: 'Ebers-Moll at V_CE = {vce}',
+      iv_bjt_in_note_em: 'Real model: the base–emitter junction is exponential, so V<sub>BE</sub> changes a little (about 60 mV per decade of current). Dashed: the simple model, for comparison. The dashed straight line is the base circuit: Q is where it meets the characteristic.',
+      iv_bjt_note_em: 'Real model (Ebers-Moll): the curves bend smoothly into saturation and, with V<sub>A</sub> &gt; 0, rise slightly with V<sub>CE</sub> (Early effect). Dashed: load line of the collector circuit, computed on the actual circuit.',
       iv_bjt_in: 'Input characteristic I_B(V_BE)', iv_bjt_model: 'Simple model (V_BE = V_BE(on))', iv_bjt_exp: 'Exponential junction through Q (reference)',
       iv_load_in: 'Input load line (base circuit)', iv_load_out: 'Output load line (collector circuit)',
       iv_bjt_in_note: 'The base–emitter junction behaves like a diode. The simple model replaces it by a fixed V<sub>BE</sub>; the dotted exponential shows the real shape. The dashed line is the base circuit: Q is where it meets the characteristic.',
@@ -110,7 +115,7 @@
 <h4>Models</h4><ul>
 <li>Diode: ideal (0 V when on), constant drop V<sub>γ</sub> with optional r<sub>d</sub>, or exact (Shockley: I = I<sub>S</sub>(e^{V/nV<sub>T</sub>} − 1)). Schottky: same models with lower V<sub>γ</sub> and higher I<sub>S</sub>.</li>
 <li>Op-amp: ideal (infinite gain, no input current, zero output resistance), with optional saturation at ±Vsat.</li>
-<li>Transistor (BJT): cutoff, active (V<sub>BE</sub> = 0.7 V, I<sub>C</sub> = βI<sub>B</sub>) or saturation (V<sub>CE</sub> = V<sub>CE,sat</sub>).</li></ul>
+<li>Transistor (BJT): simple model (cutoff, active with V<sub>BE</sub> = 0.7 V and I<sub>C</sub> = βI<sub>B</sub>, or saturation with V<sub>CE</sub> = V<sub>CE,sat</sub>) or real model (Ebers-Moll with the Early effect: exponential junctions, smooth saturation).</li></ul>
 <h4>Rotate and mirror</h4><ul>
 <li>Mouse: <b>right click</b> on a component rotates it a quarter turn, <b>Shift + right click</b> mirrors it. While placing, the right click rotates the component before it is dropped.</li>
 <li>Keyboard: <b>R</b> rotates, <b>F</b> mirrors (the selection, or the component being placed).</li></ul><h4>Moving</h4><ul><li>Drag a component (or a selection): the wires attached to it follow (rubber band) and become straight pieces again when you release. Turn it off with <b>🔗</b> in the bar over the circuit or in Settings to move components without their wires, for example to disconnect them; <b>Alt + drag</b> does the opposite of the current setting for one move.</li>
@@ -127,6 +132,11 @@
     },
     fr: {
       title: 'Simulateur de circuits en continu',
+      model_simple: 'Simple (idéal : V<sub>BE</sub> fixe, I<sub>C</sub> = βI<sub>B</sub>, V<sub>CE,sat</sub> fixe)', model_em: 'Réel (Ebers-Moll + effet Early)', model_em_short: 'Ebers-Moll',
+      p_betaR: 'Gain en courant inverse β<sub>R</sub>', p_VA: 'Tension d’Early V<sub>A</sub> (0 = sans)',
+      iv_bjt_em_in: 'Ebers-Moll à V_CE = {vce}',
+      iv_bjt_in_note_em: 'Modèle réel : la jonction base–émetteur est exponentielle, V<sub>BE</sub> varie donc un peu (environ 60 mV par décade de courant). En pointillé : le modèle simple, pour comparer. La droite en tirets est le circuit de base : Q est à son intersection avec la caractéristique.',
+      iv_bjt_note_em: 'Modèle réel (Ebers-Moll) : les courbes entrent progressivement en saturation et, avec V<sub>A</sub> &gt; 0, montent légèrement avec V<sub>CE</sub> (effet Early). En tirets : droite de charge du circuit de collecteur, calculée sur le circuit réel.',
       iv_bjt_in: 'Caractéristique d’entrée I_B(V_BE)', iv_bjt_model: 'Modèle simple (V_BE = V_BE(on))', iv_bjt_exp: 'Jonction exponentielle passant par Q (référence)',
       iv_load_in: 'Droite d’attaque (circuit de base)', iv_load_out: 'Droite de charge (circuit de collecteur)',
       iv_bjt_in_note: 'La jonction base–émetteur se comporte comme une diode. Le modèle simple la remplace par une V<sub>BE</sub> fixe ; l’exponentielle en pointillé montre la forme réelle. La droite en tirets est le circuit de base : Q est à son intersection avec la caractéristique.',
@@ -233,7 +243,7 @@
 <h4>Modèles</h4><ul>
 <li>Diode : idéale (0 V passante), seuil constant V<sub>γ</sub> avec r<sub>d</sub> optionnelle, ou exacte (Shockley : I = I<sub>S</sub>(e^{V/nV<sub>T</sub>} − 1)). Schottky : mêmes modèles avec V<sub>γ</sub> plus faible et I<sub>S</sub> plus grand.</li>
 <li>AOP : idéal (gain infini, courants d’entrée nuls, résistance de sortie nulle), avec saturation optionnelle à ±Vsat.</li>
-<li>Transistor bipolaire : bloqué, actif (V<sub>BE</sub> = 0,7 V, I<sub>C</sub> = βI<sub>B</sub>) ou saturé (V<sub>CE</sub> = V<sub>CE,sat</sub>).</li></ul>
+<li>Transistor bipolaire : modèle simple (bloqué, actif avec V<sub>BE</sub> = 0,7 V et I<sub>C</sub> = βI<sub>B</sub>, ou saturé avec V<sub>CE</sub> = V<sub>CE,sat</sub>) ou modèle réel (Ebers-Moll avec effet Early : jonctions exponentielles, saturation progressive).</li></ul>
 <h4>Tourner et retourner</h4><ul>
 <li>Souris : <b>clic droit</b> sur un composant = quart de tour, <b>Maj + clic droit</b> = miroir. Pendant le placement, le clic droit tourne le composant avant de le poser.</li>
 <li>Clavier : <b>R</b> tourne, <b>F</b> retourne (la sélection, ou le composant en cours de placement).</li></ul><h4>Déplacer</h4><ul><li>Faites glisser un composant (ou une sélection) : les fils qui y sont reliés suivent (élastique) et redeviennent des segments droits au lâcher. Désactivez-le avec <b>🔗</b> dans la barre au-dessus du circuit ou dans les réglages pour déplacer les composants sans leurs fils, par exemple pour les déconnecter ; <b>Alt + glisser</b> fait l’inverse du réglage pour un déplacement.</li>
@@ -250,6 +260,11 @@
     },
     es: {
       title: 'Simulador de circuitos en continua',
+      model_simple: 'Simple (ideal: V<sub>BE</sub> fija, I<sub>C</sub> = βI<sub>B</sub>, V<sub>CE,sat</sub> fija)', model_em: 'Real (Ebers-Moll + efecto Early)', model_em_short: 'Ebers-Moll',
+      p_betaR: 'Ganancia de corriente inversa β<sub>R</sub>', p_VA: 'Tensión de Early V<sub>A</sub> (0 = sin efecto)',
+      iv_bjt_em_in: 'Ebers-Moll con V_CE = {vce}',
+      iv_bjt_in_note_em: 'Modelo real: la juntura base–emisor es exponencial, así que V<sub>BE</sub> cambia un poco (unos 60 mV por década de corriente). En punteado: el modelo simple, para comparar. La recta en trazos es el circuito de base: Q está donde corta a la característica.',
+      iv_bjt_note_em: 'Modelo real (Ebers-Moll): las curvas entran en saturación de forma suave y, con V<sub>A</sub> &gt; 0, suben levemente con V<sub>CE</sub> (efecto Early). En trazos: recta de carga del circuito de colector, calculada sobre el circuito real.',
       iv_bjt_in: 'Característica de entrada I_B(V_BE)', iv_bjt_model: 'Modelo simple (V_BE = V_BE(on))', iv_bjt_exp: 'Juntura exponencial que pasa por Q (referencia)',
       iv_load_in: 'Recta de carga de entrada (circuito de base)', iv_load_out: 'Recta de carga de salida (circuito de colector)',
       iv_bjt_in_note: 'La juntura base–emisor se comporta como un diodo. El modelo simple la reemplaza por una V<sub>BE</sub> fija; la exponencial punteada muestra la forma real. La recta en trazos es el circuito de base: Q está donde corta a la característica.',
@@ -356,7 +371,7 @@
 <h4>Modelos</h4><ul>
 <li>Diodo: ideal (0 V al conducir), caída constante V<sub>γ</sub> con r<sub>d</sub> opcional, o exacto (Shockley: I = I<sub>S</sub>(e^{V/nV<sub>T</sub>} − 1)). Schottky: los mismos modelos con V<sub>γ</sub> menor e I<sub>S</sub> mayor.</li>
 <li>AO: ideal (ganancia infinita, corrientes de entrada nulas, resistencia de salida nula), con saturación opcional en ±Vsat.</li>
-<li>Transistor (BJT): corte, activa (V<sub>BE</sub> = 0,7 V, I<sub>C</sub> = βI<sub>B</sub>) o saturación (V<sub>CE</sub> = V<sub>CE,sat</sub>).</li></ul>
+<li>Transistor (BJT): modelo simple (corte, activa con V<sub>BE</sub> = 0,7 V e I<sub>C</sub> = βI<sub>B</sub>, o saturación con V<sub>CE</sub> = V<sub>CE,sat</sub>) o modelo real (Ebers-Moll con efecto Early: junturas exponenciales, saturación suave).</li></ul>
 <h4>Rotar y espejar</h4><ul>
 <li>Ratón: <b>clic derecho</b> sobre un componente = un cuarto de vuelta, <b>Mayús + clic derecho</b> = espejar. Mientras se coloca, el clic derecho rota el componente antes de soltarlo.</li>
 <li>Teclado: <b>R</b> rota, <b>F</b> espeja (la selección, o el componente que se está colocando).</li></ul><h4>Mover</h4><ul><li>Arrastre un componente (o una selección): los cables conectados lo siguen (rubber band) y al soltar vuelven a quedar en tramos rectos. Desactívelo con <b>🔗</b> en la barra sobre el circuito o en Ajustes para mover componentes sin sus cables, por ejemplo para desconectarlos; <b>Alt + arrastrar</b> hace lo contrario del ajuste en ese movimiento.</li>

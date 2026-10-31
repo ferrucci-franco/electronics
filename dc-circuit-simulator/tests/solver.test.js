@@ -205,5 +205,29 @@ const Q = (id, b, c, e, pnp) => ({ type: 'Q', id, n: [b, c, e], pnp: !!pnp, beta
   near('large R vth', t.vth, 10, 1e-6); near('large R rth', t.rth, 1e10, 1e-6);
 }
 
+// 23. Ebers-Moll transistor (exponential model with the Early effect)
+{
+  const EM = (id, b, c, e, extra) => Object.assign({ type: 'Q', id, n: [b, c, e], pnp: false, model: 'em', beta: 100, betaR: 1, Is: 1e-14, VA: 0 }, extra || {});
+  const ckt = (rb, q) => ({ nodeCount: 5, elements: [V('VCC', 1, 0, 10), V('VBB', 2, 0, 5), R('RB', 2, 3, rb), R('RC', 1, 4, 1000), q] });
+  let r = S.solve(ckt(100000, EM('Q1', 3, 4, 0)));
+  truthy('EM ok', r.ok);
+  near('EM IC = beta IB in active', r.el.Q1.ic / r.el.Q1.ib, 100, 1e-6);
+  near('EM VBE from Shockley', r.el.Q1.vbe, S.thermalVoltage(27) * Math.log(r.el.Q1.ic / 1e-14 + 1), 1e-6);
+  near('EM KVL base', 100000 * r.el.Q1.ib + r.el.Q1.vbe, 5, 1e-9);
+  truthy('EM active region', r.el.Q1.state === 'act');
+  r = S.solve(ckt(10000, EM('Q1', 3, 4, 0)));
+  truthy('EM saturation', r.ok && r.el.Q1.state === 'sat' && r.el.Q1.vce > 0.02 && r.el.Q1.vce < 0.3 && r.el.Q1.ic < 100 * r.el.Q1.ib);
+  near('EM saturation KVL collector', 1000 * r.el.Q1.ic + r.el.Q1.vce, 10, 1e-9);
+  // Early effect: the collector current grows with VCE
+  const a = S.solve({ nodeCount: 3, elements: [I('IB', 0, 1, 10e-6), V('VC', 2, 0, 2), EM('Q1', 1, 2, 0, { VA: 50 })] });
+  const b2 = S.solve({ nodeCount: 3, elements: [I('IB', 0, 1, 10e-6), V('VC', 2, 0, 12), EM('Q1', 1, 2, 0, { VA: 50 })] });
+  truthy('EM Early slope', b2.el.Q1.ic > a.el.Q1.ic * 1.15);
+  // PNP mirror and power balance
+  r = S.solve({ nodeCount: 5, elements: [V('VEE', 1, 0, 10), V('VB', 2, 0, 5), R('RB', 2, 3, 100000), EM('Q1', 3, 4, 1, { pnp: true }), R('RC', 4, 0, 1000)] });
+  truthy('EM pnp active', r.ok && r.el.Q1.state === 'act');
+  near('EM pnp beta', r.el.Q1.ic / r.el.Q1.ib, 100, 1e-6);
+  near('EM power balance', r.pSum, 0, 1e-9);
+}
+
 console.log(`${count - fails}/${count} checks passed`);
 process.exit(fails ? 1 : 0);
