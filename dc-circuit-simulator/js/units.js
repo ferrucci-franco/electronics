@@ -26,7 +26,9 @@
     if (v == null || isNaN(v)) return '—';
     const neg = v < 0;
     let a = Math.abs(v);
-    if (a < (opts.zero != null ? opts.zero : 1e-15)) return (opts.trim ? '0' : fixed(0, digits)) + (unit ? ' ' + unit : '');
+    // below these the values are numerical leakage (the 1 pS of open junctions), not physics: shown as 0
+    const ZERO = { A: 5e-11, V: 1e-9, W: 1e-9 };
+    if (a < (opts.zero != null ? opts.zero : ZERO[unit] || 1e-15)) return (opts.trim ? '0' : fixed(0, digits)) + (unit ? ' ' + unit : '');
     let k = PREFIX.length - 1;
     for (let i = 0; i < PREFIX.length; i++) { if (a >= PREFIX[i][0] * 0.9995) { k = i; break; } }
     let m = Number((a / PREFIX[k][0]).toPrecision(digits));

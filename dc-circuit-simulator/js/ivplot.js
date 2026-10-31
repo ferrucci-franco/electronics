@@ -322,9 +322,12 @@
       outLine = lineFrom(pts);
     }
     if (!outLine) outLine = theveninLine(pnp ? ne : nc, pnp ? nc : ne);
-    const ib0 = ibq > 0 ? ibq : 10e-6;
-    const levels = opts.levels || [0.5, 1, 1.5, 2].map(f => f * ib0);
     const oInt = outLine ? intercepts(outLine) : {};
+    // the family around the operating base current; in cut-off (I_B = 0) around the base current that would
+    // just saturate the transistor with this load (I_C,sat / β), so that the curves span the plot
+    const cut = !(ibq > 1e-12);
+    const ib0 = !cut ? ibq : (isFinite(oInt.i) && oInt.i > 0 ? oInt.i / p.beta / 1.5 : 10e-6);
+    const levels = opts.levels || [0.5, 1, 1.5, 2].map(f => f * ib0);
     const vcMax = Math.max(r.vce * 1.3, isFinite(oInt.v) ? oInt.v : 0, p.Vcesat * 4, 1);
     const icMax = Math.max(p.beta * levels[3] * (em && p.VA > 0 ? 1 + vcMax / p.VA : 1), isFinite(oInt.i) ? oInt.i : 0, r.ic * 1.2);
     const winOut = winOf(1, { v0: -0.05 * vcMax, v1: vcMax * 1.12, i0: -0.06 * icMax, i1: icMax * 1.12 });
@@ -343,8 +346,11 @@
           pts.push([vce, S.bjtEM(elQ, vbe, vbe - vce, Vt).ic]);
         }
       }
-      outSpec.series.push({ name: 'I_B = ' + U.format(ib, 'A'), color: slot(k), pts, width: k === 1 && ibq > 0 ? 2.6 : 1.6, inline: true });
+      outSpec.series.push({ name: 'I_B = ' + U.format(ib, 'A'), color: slot(k), pts, width: k === 1 && !cut ? 2.6 : 1.6, inline: true, dim: cut });
     });
+    // in cut-off the transistor works on the I_B = 0 curve (I_C = 0): that one is drawn bold, the others are
+    // only there for reference
+    if (cut) outSpec.series.unshift({ name: 'I_B = 0', color: slot(4), pts: [[0, 0], [winOut.v1, 0]], width: 3, inline: true });
     outSpec.regions = em ? [] : [
       { v0: winOut.v0, v1: p.Vcesat, i0: winOut.i0, i1: winOut.i1, label: t('region_sat'), kind: 'sat' },
       { v0: p.Vcesat, v1: winOut.v1, i0: winOut.i0, i1: 0.04 * icMax, label: t('region_off'), kind: 'off' }
@@ -438,10 +444,11 @@
       if (!s.pts || s.pts.length < 2) continue;
       ctx.strokeStyle = s.color === 'fg' ? col.fg : s.color === 'muted' ? col.muted : s.color; ctx.lineWidth = s.width || 2;
       ctx.setLineDash(s.dash ? [2, 3] : []);
+      ctx.globalAlpha = s.dim ? 0.4 : 1;   // reference curves (transistor in cut-off)
       ctx.beginPath();
       s.pts.forEach(([v, i], k) => { const x = X(v), y = Y(i); if (k) ctx.lineTo(x, y); else ctx.moveTo(x, y); });
       ctx.stroke();
-      ctx.setLineDash([]);
+      ctx.setLineDash([]); ctx.globalAlpha = 1;
     }
     // curves named on the line itself (transistor output: I_B = …), at their right end, just above the curve
     let lastY = -1e9;
@@ -462,8 +469,9 @@
       if (qp) { const qx = X(qp.v), qy = Y(qp.i); if (qx > x - wd - 12 && qx < x + 12 && Math.abs(qy - (y - 4)) < 14) x = Math.max(L + wd + 6, qx - 12); }
       ctx.fillStyle = col.bg; ctx.globalAlpha = 0.85; ctx.fillRect(x - wd - 3, y - 12, wd + 4, 15); ctx.globalAlpha = 1;
       taken.push([x - wd - 3, y - 12, x + 1, y + 3]);
-      ctx.fillStyle = c;
+      ctx.fillStyle = c; ctx.globalAlpha = sr.dim ? 0.55 : 1;
       subText(ctx, sr.name, x - 1, y, 'right', 11.5, 600);
+      ctx.globalAlpha = 1;
     }
     // operating points (2px surface ring around each marker)
     for (const p of spec.points) {
