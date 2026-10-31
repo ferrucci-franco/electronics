@@ -147,7 +147,7 @@
       tab_name: 'Circuit {n}', tab_new: 'New tab', tab_list: 'All tabs', tab_close: 'Close the tab', tab_rename: 'Name of the tab:', tab_close_confirm: 'Close “{name}”? Its circuit is lost.', tab_shared: 'Shared', tab_tip: 'Double click: rename',
       set_title: 'Settings', set_digits: 'Significant digits', set_names: 'Show names', set_values: 'Show values', set_state: 'Show diode state (ON/OFF)',
       set_grid: 'Show grid', set_temp: 'Temperature (exact diode model)', set_diodes: 'Diode model for all diodes', apply: 'Apply',
-      set_defmodel: 'Model of new diodes',
+      set_qs: 'Value sliders (long press)', set_qs_stack: 'Stacked, each closed with its ✕', set_qs_one: 'Only one, closed by a tap elsewhere', set_defmodel: 'Model of new diodes',
       close: 'Close', help_title: 'How to use',
       help_html: `<h4>Build the circuit</h4><ul>
 <li>Choose a component in the list, then click / tap on the grid to place it. You can also drag it from the list onto the circuit.</li>
@@ -326,7 +326,7 @@
       tab_name: 'Circuit {n}', tab_new: 'Nouvel onglet', tab_list: 'Tous les onglets', tab_close: 'Fermer l’onglet', tab_rename: 'Nom de l’onglet :', tab_close_confirm: 'Fermer « {name} » ? Son circuit sera perdu.', tab_shared: 'Partagé', tab_tip: 'Double-clic : renommer',
       set_title: 'Réglages', set_digits: 'Chiffres significatifs', set_names: 'Afficher les noms', set_values: 'Afficher les valeurs', set_state: 'Afficher l’état des diodes',
       set_grid: 'Afficher la grille', set_temp: 'Température (modèle exact de diode)', set_diodes: 'Modèle pour toutes les diodes', apply: 'Appliquer',
-      set_defmodel: 'Modèle des nouvelles diodes',
+      set_qs: 'Curseurs de valeur (appui long)', set_qs_stack: 'Empilés, chacun fermé par sa ✕', set_qs_one: 'Un seul, fermé en touchant ailleurs', set_defmodel: 'Modèle des nouvelles diodes',
       close: 'Fermer', help_title: 'Mode d’emploi',
       help_html: `<h4>Construire le circuit</h4><ul>
 <li>Choisissez un composant dans la liste, puis cliquez / touchez la grille pour le poser. On peut aussi le faire glisser depuis la liste.</li>
@@ -506,7 +506,7 @@
       tab_name: 'Circuito {n}', tab_new: 'Nueva pestaña', tab_list: 'Todas las pestañas', tab_close: 'Cerrar la pestaña', tab_rename: 'Nombre de la pestaña:', tab_close_confirm: '¿Cerrar «{name}»? Se pierde su circuito.', tab_shared: 'Compartido', tab_tip: 'Doble clic: cambiar el nombre',
       set_title: 'Ajustes', set_digits: 'Cifras significativas', set_names: 'Mostrar nombres', set_values: 'Mostrar valores', set_state: 'Mostrar el estado de los diodos',
       set_grid: 'Mostrar grilla', set_temp: 'Temperatura (modelo exacto de diodo)', set_diodes: 'Modelo para todos los diodos', apply: 'Aplicar',
-      set_defmodel: 'Modelo de los diodos nuevos',
+      set_qs: 'Deslizadores de valor (toque largo)', set_qs_stack: 'Apilados, cada uno se cierra con su ✕', set_qs_one: 'Uno solo, se cierra al tocar afuera', set_defmodel: 'Modelo de los diodos nuevos',
       close: 'Cerrar', help_title: 'Cómo se usa',
       help_html: `<h4>Armar el circuito</h4><ul>
 <li>Elija un componente en la lista y haga clic / toque en la grilla para colocarlo. También puede arrastrarlo desde la lista.</li>
