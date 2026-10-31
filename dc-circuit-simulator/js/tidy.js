@@ -167,7 +167,8 @@
     const r = apply(app, ws, before);
     if (!r.ok) { app.dropCheckpoint(); return r; }
     const jogs = straightenJogs(app, before);
-    if (!r.changed && !jogs) { app.dropCheckpoint(); return { ok: true, changed: false }; }
+    const centred = centreInline(app, before);
+    if (!r.changed && !jogs && !centred) { app.dropCheckpoint(); return { ok: true, changed: false }; }
     app.commit();
     return { ok: true, changed: true, before: n0, after: app.circuit.wires.length, jogs };
   }
@@ -255,6 +256,103 @@
       if (!applied) break;
     }
     return done;
+  }
+
+  /* Components in line with their wires are centred on their stretch of line: a chain of straight wires and
+   * two-terminal components along one row (or column), between two points where something else connects
+   * (corner, junction, terminal of another component). The free length is shared out evenly between the
+   * gaps, so that one component sits in the middle and several in series are spaced regularly. Each chain is
+   * kept only if the connections stay the same. */
+  function centreInline(app, sig) {
+    const circuit = app.circuit;
+    const key = (x, y) => x + ',' + y;
+    let moved = 0;
+    for (const horiz of [true, false]) {
+      // one chain at a time (the lines are read again after each change)
+      for (let pass = 0; pass < 200; pass++) {
+        let any = false;
+        // axis coordinate u along the line, k the line (row y or column x)
+        const U = (x, y) => (horiz ? x : y), K = (x, y) => (horiz ? y : x);
+        const P = (u, k) => (horiz ? [u, k] : [k, u]);
+        const items = [];
+        for (const w of circuit.wires) {
+          if (horiz ? (w.y1 !== w.y2 || w.x1 === w.x2) : (w.x1 !== w.x2 || w.y1 === w.y2)) continue;
+          items.push({ w, k: K(w.x1, w.y1), a: Math.min(U(w.x1, w.y1), U(w.x2, w.y2)), b: Math.max(U(w.x1, w.y1), U(w.x2, w.y2)) });
+        }
+        const inline = new Set();
+        for (const c of circuit.comps) {
+          if (C.TYPES[c.type].terms.length !== 2) continue;
+          const [t0, t1] = C.terminals(c);
+          if (K(t0[0], t0[1]) !== K(t1[0], t1[1]) || U(t0[0], t0[1]) === U(t1[0], t1[1])) continue;
+          items.push({ c, k: K(t0[0], t0[1]), a: Math.min(U(t0[0], t0[1]), U(t1[0], t1[1])), b: Math.max(U(t0[0], t0[1]), U(t1[0], t1[1])) });
+          inline.add(c);
+        }
+        // everything that touches a point, apart from the items of its own line
+        const ext = new Map();
+        const addExt = (x, y) => ext.set(key(x, y), (ext.get(key(x, y)) || 0) + 1);
+        const lineItem = new Set(items.map(it => it.w || it.c));
+        for (const w of circuit.wires) if (!lineItem.has(w)) { addExt(w.x1, w.y1); addExt(w.x2, w.y2); }
+        for (const c of circuit.comps) if (!inline.has(c) || !lineItem.has(c)) for (const t of C.terminals(c)) addExt(t[0], t[1]);
+        const crossing = (x, y) => circuit.wires.some(w => !lineItem.has(w) && onInterior(x, y, w));
+        const byLine = new Map();
+        for (const it of items) { if (!byLine.has(it.k)) byLine.set(it.k, []); byLine.get(it.k).push(it); }
+        for (const [k, its] of byLine) {
+          const starts = new Map(), ends = new Map();
+          for (const it of its) {
+            if (!starts.has(it.a)) starts.set(it.a, []); starts.get(it.a).push(it);
+            if (!ends.has(it.b)) ends.set(it.b, []); ends.get(it.b).push(it);
+          }
+          // a joint inside a chain: one item ends there, one starts, nothing else
+          const inner = (u) => {
+            const [x, y] = P(u, k);
+            return (ends.get(u) || []).length === 1 && (starts.get(u) || []).length === 1 && !ext.get(key(x, y)) && !crossing(x, y);
+          };
+          const seen = new Set();
+          for (const first of its.slice().sort((p, q) => p.a - q.a)) {
+            if (seen.has(first) || inner(first.a)) continue;
+            const chain = [first];
+            seen.add(first);
+            let cur = first;
+            while (inner(cur.b)) { cur = starts.get(cur.b)[0]; if (seen.has(cur)) break; chain.push(cur); seen.add(cur); }
+            const comps = chain.filter(it => it.c);
+            if (!comps.length || comps.length === chain.length) continue;
+            const A = chain[0].a, B = chain[chain.length - 1].b;
+            const G = (B - A) - comps.reduce((s, it) => s + (it.b - it.a), 0);
+            const n = comps.length + 1, base = Math.floor(G / n);
+            const gaps = new Array(n).fill(base);
+            // the odd units go to the gaps nearest the middle
+            const order = gaps.map((_, i) => i).sort((p, q) => Math.abs(p - (n - 1) / 2) - Math.abs(q - (n - 1) / 2) || p - q);
+            for (let r = G - base * n, i = 0; r > 0; r--, i++) gaps[order[i]]++;
+            let u = A;
+            const plan = [], wires = [];
+            comps.forEach((it, i) => {
+              const a2 = u + gaps[i];
+              if (gaps[i] > 0) { const [x1, y1] = P(u, k), [x2, y2] = P(a2, k); wires.push({ x1, y1, x2, y2 }); }
+              plan.push({ it, d: a2 - it.a });
+              u = a2 + (it.b - it.a);
+            });
+            if (gaps[n - 1] > 0) { const [x1, y1] = P(u, k), [x2, y2] = P(B, k); wires.push({ x1, y1, x2, y2 }); }
+            if (plan.every(p => p.d === 0)) continue;
+            // try it: move the components, replace the chain's wires
+            const old = plan.map(p => [p.it.c, p.it.c.x, p.it.c.y]);
+            for (const p of plan) { if (horiz) p.it.c.x += p.d; else p.it.c.y += p.d; }
+            const chainW = new Set(chain.filter(it => it.w).map(it => it.w));
+            const oldW = circuit.wires;
+            circuit.wires = oldW.filter(w => !chainW.has(w)).concat(wires.map(w => Object.assign({ id: app.newWireId() }, w)));
+            if (signature(circuit) !== sig) {
+              for (const [c, x, y] of old) { c.x = x; c.y = y; }
+              circuit.wires = oldW;
+              continue;
+            }
+            moved += plan.filter(p => p.d).length;
+            any = true;
+          }
+          if (any) break;
+        }
+        if (!any) break;
+      }
+    }
+    return moved;
   }
 
   // copy of the wires with the point E slid by d along its rail, or null if that would change a connection
