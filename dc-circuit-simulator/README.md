@@ -34,7 +34,7 @@ Símbolos USA (por defecto) o IEC/europeos.
 
 ## Uso
 
-- Colocar: tocar o hacer clic en un componente de la lista y luego en la grilla, o arrastrarlo desde la lista. Arrastrar desde un terminal dibuja un cable (el ruteo esquiva los componentes). Doble clic / doble toque = propiedades.
+- Colocar: tocar o hacer clic en un componente de la lista y luego en la grilla, o arrastrarlo desde la lista. En el teléfono la lista es una tira horizontal: se desliza con el dedo para ver todos los componentes (los bordes difuminados indican que hay más) y se arrastra un componente hacia arriba para soltarlo sobre el circuito. Arrastrar desde un terminal dibuja un cable (el ruteo esquiva los componentes). Doble clic / doble toque = propiedades.
 - Mover: un cable perpendicular al movimiento viaja con el componente y su unión se desliza sobre el cable donde cuelga (por ejemplo, una resistencia entre dos rieles se mueve con sus dos tramos); los demás cables conectados siguen al componente (rubber band) y se rutean en tramos horizontales y verticales durante el arrastre; si un terminal tocaba otro terminal o un cable sin cable propio, se crea el cable que mantiene la conexión; al soltar se unen tramos colineales y se recortan las puntas que quedaron sueltas; se desactiva con 🔗 (barra sobre el circuito) o en Ajustes para mover sin cables (desconectar). Alt + arrastrar invierte el modo en ese movimiento.
 - Bifurcaciones: un cable que tiene en su medio el extremo de otro cable o un terminal se parte en dos en ese punto, así cada tramo se mueve o se borra por separado.
 - Puntos de cable: arrastrar una esquina o un punto de unión mueve ese punto con sus cables (para empezar un cable nuevo desde un cable, herramienta Cable).

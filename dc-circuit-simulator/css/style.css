@@ -206,6 +206,12 @@ html.layout-mobile .pal-tools, html.layout-mobile .pal-comps{display:flex; gap:4
 html.layout-mobile .pal-tools{padding-right:6px; border-right:1px solid var(--border)}
 html.layout-mobile .palette button.tool, html.layout-mobile .palette button.comp{touch-action:pan-x; flex-direction:column; justify-content:center; gap:2px; width:auto; min-width:62px; padding:4px 6px; font-size:11px; text-align:center; white-space:nowrap; min-height:56px}
 html.layout-mobile .palette button.tool svg{margin:0; width:24px; height:24px}
+/* phone: the tools are icons only, so that more components fit; faded edges show that the strip scrolls */
+html.layout-mobile .palette button.tool{min-width:44px; padding:4px}
+html.layout-mobile .palette button.tool span{display:none}
+html.layout-mobile .palette.more-r{-webkit-mask-image:linear-gradient(to right, #000 calc(100% - 44px), rgba(0,0,0,.12)); mask-image:linear-gradient(to right, #000 calc(100% - 44px), rgba(0,0,0,.12))}
+html.layout-mobile .palette.more-l{-webkit-mask-image:linear-gradient(to left, #000 calc(100% - 44px), rgba(0,0,0,.12)); mask-image:linear-gradient(to left, #000 calc(100% - 44px), rgba(0,0,0,.12))}
+html.layout-mobile .palette.more-l.more-r{-webkit-mask-image:linear-gradient(to right, rgba(0,0,0,.12), #000 44px, #000 calc(100% - 44px), rgba(0,0,0,.12)); mask-image:linear-gradient(to right, rgba(0,0,0,.12), #000 44px, #000 calc(100% - 44px), rgba(0,0,0,.12))}
 html.layout-mobile .palette button canvas{width:44px; height:24px}
 html.layout-mobile .viewbar .chip{padding:5px 9px; min-height:34px}
 html.layout-mobile .selbar{top:auto; bottom:56px}

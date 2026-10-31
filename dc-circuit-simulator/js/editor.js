@@ -937,15 +937,20 @@
     let st = null;
     btn.addEventListener('pointerdown', (e) => {
       if (e.button > 0) return;
-      st = { id: e.pointerId, x: e.clientX, y: e.clientY, drag: false };
-      try { btn.setPointerCapture(e.pointerId); } catch (_) {}
+      st = { id: e.pointerId, x: e.clientX, y: e.clientY, drag: false, touch: e.pointerType !== 'mouse' };
+      if (!st.touch) try { btn.setPointerCapture(e.pointerId); } catch (_) {}
     });
     btn.addEventListener('pointermove', (e) => {
       if (!st || st.id !== e.pointerId) return;
       if (!st.drag) {
         const dx = e.clientX - st.x, dy = e.clientY - st.y;
         if (Math.hypot(dx, dy) < 10) return;
+        // with a finger, a swipe along the list scrolls it (horizontal strip on a phone, vertical column
+        // otherwise); only a drag across it, towards the circuit, takes the component
+        const strip = document.documentElement.classList.contains('layout-mobile');
+        if (st.touch && (strip ? Math.abs(dx) > Math.abs(dy) : Math.abs(dy) > Math.abs(dx))) { st = null; return; }
         st.drag = true;
+        try { btn.setPointerCapture(e.pointerId); } catch (_) {}
         app.setTool('place', { type, props });
       }
       const r = this.cv.getBoundingClientRect();
