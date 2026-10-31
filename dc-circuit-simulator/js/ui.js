@@ -396,6 +396,7 @@
 
     ui.showTab = function (name, open) {
       tab = name;
+      if (name !== 'thev' && app.overlay.hl) { app.overlay.hl = null; app.requestRender(); }
       if (open && !isMobile()) ui.setPanelHidden('side', false);
       document.querySelectorAll('.tabs [data-tab]').forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
       for (const n of ['props', 'results', 'thev']) $('pane-' + n).hidden = n !== name;
@@ -879,6 +880,7 @@
     function renderThev() {
       const pane = $('pane-thev');
       pane.innerHTML = '';
+      if (app.overlay.hl) { app.overlay.hl = null; app.requestRender(); }
       const intro = el('div', { class: 'card' }, `<div class="hint">${t('thev_intro')}</div>`);
       const row = el('div', { class: 'btnrow' });
       row.appendChild(button(t('thev_pick'), () => app.setTool('port'), 'primary'));
@@ -936,6 +938,8 @@
       card.appendChild(el('div', { class: 'hint' }, t('thev_method')));
       if (r.rth < 0) card.appendChild(el('div', { class: 'issue warn' }, t('thev_negr')));
       pane.appendChild(card);
+      // equivalent resistance, step by step
+      try { reqCard(pane, th); } catch (e) { console.error(e); }
       // with the load
       if (load && load.type === 'resistor' && fin(r.vth) && fin(r.rth) && r.rth > 0) {
         const RL = load.props.R;
@@ -945,6 +949,78 @@
         c2.appendChild(el('div', { class: 'hint' }, t('thev_maxp', { r: fmt(r.rth, 'Ω'), p: fmt(r.vth * r.vth / (4 * r.rth), 'W') })));
         pane.appendChild(c2);
       }
+    }
+
+    /* R_eq between A and B: sources set to zero, reduction steps (a tap highlights the resistors of a step,
+     * on the circuit and on the small drawing of the network), check with a test source */
+    function reqCard(pane, th) {
+      const q = DCS.req.compute(app, th);
+      if (q.kind === 'nonlinear') return;
+      const R_ = (v) => (v === Infinity ? '∞' : v === undefined || !isFinite(v) ? '—' : fmt(v, 'Ω', 4));
+      const card = el('div', { class: 'card' });
+      card.appendChild(el('h3', null, t('req_title')));
+      if (q.kind === 'dep') { card.appendChild(el('div', { class: 'hint' }, t('req_dep', { v: R_(q.rtest) }))); pane.appendChild(card); return; }
+      card.appendChild(el('div', { class: 'hint' }, '<b>1.</b> ' + t('req_passive')));
+      const cv = el('canvas', { class: 'req-cv' });
+      card.appendChild(cv);
+      const redraw = (hl) => drawPassive(cv, th, hl);
+      requestAnimationFrame(() => redraw(null));
+      card.appendChild(el('div', { class: 'hint' }, '<b>2.</b> ' + t(q.steps.length ? 'req_reduce' : 'req_reduce_none')));
+      const list = el('ol', { class: 'req-steps' });
+      let on = null;
+      const show = (li, st) => {
+        if (on) on.classList.remove('on');
+        on = li && st ? li : null;
+        if (on) on.classList.add('on');
+        app.overlay.hl = st ? new Set(st.ids) : null;
+        app.requestRender(); redraw(app.overlay.hl);
+      };
+      for (const st of q.steps) {
+        const li = el('li', null, stepHtml(st, R_));
+        li.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') show(li, st); });
+        li.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse' && on === li) show(null, null); });
+        // mouse: hovering shows the step and a click keeps it; finger: a tap shows it, a second tap hides it
+        let ptr = 'mouse';
+        li.addEventListener('pointerdown', (e) => { ptr = e.pointerType; });
+        li.addEventListener('click', () => { if (ptr === 'mouse' || on !== li) show(li, st); else show(null, null); });
+        list.appendChild(li);
+      }
+      if (q.steps.length) card.appendChild(list);
+      let res;
+      if (q.zero) res = t('req_zero');
+      else if (q.open) res = t('req_open');
+      else if (q.stuck) res = t('req_stuck');
+      else res = `R<sub>eq</sub> = ${q.last} = <b>${R_(q.req)}</b>`;
+      card.appendChild(el('div', { class: 'req-result' }, res));
+      const same = q.req !== undefined && q.rtest !== undefined && (q.req === q.rtest || (isFinite(q.req) && isFinite(q.rtest) && Math.abs(q.req - q.rtest) <= 1e-6 * Math.max(Math.abs(q.rtest), 1e-9)));
+      card.appendChild(el('div', { class: 'hint' }, '<b>3.</b> ' + t('req_verify', { v: R_(q.rtest) }) + (same ? ' <b class="ok">✓</b>' : '')));
+      pane.appendChild(card);
+    }
+    function stepHtml(st, R_) {
+      if (st.code === 'req_par') return `${st.r} = ${st.a} ∥ ${st.b} = (${R_(st.va)} · ${R_(st.vb)}) / (${R_(st.va)} + ${R_(st.vb)}) = <b>${R_(st.v)}</b>`;
+      if (st.code === 'req_ser') return `${st.r} = ${st.a} + ${st.b} = ${R_(st.va)} + ${R_(st.vb)} = <b>${R_(st.v)}</b>`;
+      if (st.code === 'req_dy') return t('req_dy', { a: st.a, b: st.b, c: st.c, s: R_(st.va + st.vb + st.vc) }) + ' ' + st.y.map(y => `${y.name} = <b>${R_(y.v)}</b>`).join(', ');
+      return t(st.code, { a: st.a });
+    }
+    // the network seen from A–B with the sources set to zero and the load removed
+    function drawPassive(cv, th, hl) {
+      const comps = [], wires = app.circuit.wires.slice();
+      for (const c of app.circuit.comps) {
+        if (c.id === th.loadId) continue;
+        const ts = C.terminals(c);
+        if (c.type === 'vsource' || c.type === 'ammeter' || (C.isSwitch(c) && C.isClosed(c))) { wires.push({ id: 'p' + c.id, x1: ts[0][0], y1: ts[0][1], x2: ts[1][0], y2: ts[1][1] }); continue; }
+        if (c.type === 'isource' || c.type === 'voltmeter' || C.isSwitch(c)) continue;
+        comps.push(c);
+      }
+      const circuit = { comps, wires };
+      const rd = new R.Renderer(cv);
+      rd.resize();
+      if (!rd.w || !rd.h) return;
+      const view = app.fitView({ comps, wires: wires.concat([{ x1: th.a[0], y1: th.a[1], x2: th.b[0], y2: th.b[1] }]) }, rd.w, rd.h, 1.15, 14);
+      rd.draw({
+        circuit, view, sel: new Set(), net: DCS.netlist.build(circuit), result: null, overlay: { hl }, port: { a: th.a, b: th.b }, flow: null, fontPx: 11,
+        settings: Object.assign({}, app.settings, { grid: false, showNames: true, showValues: true, animate: false, realDir: true }), tr: app.tp
+      });
     }
 
     function drawEquivalent(cv, kind, r, lab) {
