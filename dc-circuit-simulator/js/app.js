@@ -433,7 +433,8 @@
     const f = C.refs(c);
     app.checkpoint();
     c.refV = f.refV; c.refI = f.refI;
-    if (kind === 'v') c.refV = 1 - f.refV; else c.refI = 1 - f.refI;
+    if (C.passiveOnly(c)) { c.refV = c.refI = 1 - f.refV; }
+    else if (kind === 'v') c.refV = 1 - f.refV; else c.refI = 1 - f.refI;
     app.commit();
   };
   app.setNodeName = function (pt, name) {

@@ -27,6 +27,7 @@
       tip_flip: 'Tap to flip this reference', node_name: 'Node name', node_hint: 'Node voltages are measured from ground (0 V). Give the node a name (A, B, out…) to find it in the tables and the equations.',
       nodes_hint: 'Unknowns of the nodal method: the voltage of each node with respect to ground. Hover or tap a row to find the node on the circuit.',
       ref_title: 'Reference directions', ref_passive_s: 'passive convention', ref_active_s: 'generator convention',
+      ref_passive_fixed: 'passive convention: the current always enters through +', ref_flip_both: 'Invert V and I',
       ref_passive: 'Passive convention (I enters through the + of V): P = V·I is the power absorbed. Select the element and tap the + / − marks or the arrow on the circuit to change the references.',
       ref_active: 'Generator convention (I leaves through the + of V): P = V·I is the power delivered. Select the element and tap the + / − marks or the arrow on the circuit to change the references.',
       tbl_refs: 'V and I with the reference directions drawn on the circuit (+/− and arrows)',
@@ -141,7 +142,7 @@
 <li>Every circuit needs a ground (⏚): node voltages are measured from it.</li></ul>
 <h4>Results</h4><ul>
 <li>The circuit is solved after every change. Choose what to show with V, I, P and Nodes over the circuit.</li>
-<li>Every element shows its <b>reference directions</b>: + and − for V and an arrow for I. Select the element and tap them to choose your own; the values carry the sign (a negative value means the real polarity or direction is the opposite). Power: positive = absorbed, negative (green) = delivered.</li><li>Node voltages are measured from ground; name a node by selecting one of its wires. The <b>Results</b> tab checks KCL at each node and KVL around each loop with your references.</li>
+<li>Every element shows its <b>reference directions</b>: + and − for V and an arrow for I. Select the element and tap them to choose your own; the values carry the sign (a negative value means the real polarity or direction is the opposite). In resistors, diodes, LEDs and switches the current arrow always enters through + (passive convention): flipping one flips both; only the sources can take the generator convention. Power: positive = absorbed, negative (green) = delivered.</li><li>Node voltages are measured from ground; name a node by selecting one of its wires. The <b>Results</b> tab checks KCL at each node and KVL around each loop with your references.</li>
 <li>The <b>Results</b> tab lists every element and the power balance.</li></ul>
 <h4>Thévenin / Norton</h4><ul>
 <li>Select a two-terminal element and choose “Thévenin seen by this element”, or use the <b>Thévenin A–B</b> tool and tap two nodes.</li></ul>
@@ -188,6 +189,7 @@
       tip_flip: 'Touchez pour inverser cette référence', node_name: 'Nom du nœud', node_hint: 'Les potentiels sont mesurés par rapport à la masse (0 V). Donnez un nom au nœud (A, B, s…) pour le retrouver dans les tableaux et les équations.',
       nodes_hint: 'Inconnues de la méthode des nœuds : le potentiel de chaque nœud par rapport à la masse. Survolez ou touchez une ligne pour repérer le nœud sur le circuit.',
       ref_title: 'Sens de référence', ref_passive_s: 'convention récepteur', ref_active_s: 'convention générateur',
+      ref_passive_fixed: 'convention récepteur : le courant entre toujours par +', ref_flip_both: 'Inverser V et I',
       ref_passive: 'Convention récepteur (I entre par le + de V) : P = V·I est la puissance absorbée. Sélectionnez l’élément puis touchez les signes + / − ou la flèche sur le circuit pour changer les références.',
       ref_active: 'Convention générateur (I sort par le + de V) : P = V·I est la puissance fournie. Sélectionnez l’élément puis touchez les signes + / − ou la flèche sur le circuit pour changer les références.',
       tbl_refs: 'V et I avec les sens de référence dessinés sur le circuit (+/− et flèches)',
@@ -302,7 +304,7 @@
 <li>Tout circuit a besoin d’une masse (⏚) : les potentiels sont mesurés par rapport à elle.</li></ul>
 <h4>Résultats</h4><ul>
 <li>Le circuit est résolu après chaque modification. Choisissez l’affichage avec V, I, P et Nœuds au-dessus du circuit.</li>
-<li>Chaque élément montre ses <b>sens de référence</b> : + et − pour V, une flèche pour I. Sélectionnez l’élément puis touchez-les pour choisir les vôtres ; les valeurs portent le signe (une valeur négative signifie que la polarité ou le sens réel est l’opposé). Puissance : positive = absorbée, négative (vert) = fournie.</li><li>Les potentiels des nœuds sont mesurés par rapport à la masse ; nommez un nœud en sélectionnant un de ses fils. L’onglet <b>Résultats</b> vérifie la loi des nœuds et la loi des mailles avec vos références.</li>
+<li>Chaque élément montre ses <b>sens de référence</b> : + et − pour V, une flèche pour I. Sélectionnez l’élément puis touchez-les pour choisir les vôtres ; les valeurs portent le signe (une valeur négative signifie que la polarité ou le sens réel est l’opposé). Dans les résistances, diodes, LED et interrupteurs la flèche du courant entre toujours par + (convention récepteur) : inverser l’un inverse l’autre ; seules les sources peuvent prendre la convention générateur. Puissance : positive = absorbée, négative (vert) = fournie.</li><li>Les potentiels des nœuds sont mesurés par rapport à la masse ; nommez un nœud en sélectionnant un de ses fils. L’onglet <b>Résultats</b> vérifie la loi des nœuds et la loi des mailles avec vos références.</li>
 <li>L’onglet <b>Résultats</b> liste tous les éléments et le bilan de puissance.</li></ul>
 <h4>Thévenin / Norton</h4><ul>
 <li>Sélectionnez un dipôle et choisissez « Thévenin vu par cet élément », ou utilisez l’outil <b>Thévenin A–B</b> et touchez deux nœuds.</li></ul>
@@ -350,6 +352,7 @@
       tip_flip: 'Toque para invertir esta referencia', node_name: 'Nombre del nodo', node_hint: 'Las tensiones de nodo se miden respecto de masa (0 V). Póngale un nombre al nodo (A, B, sal…) para encontrarlo en las tablas y las ecuaciones.',
       nodes_hint: 'Incógnitas del método de nodos: la tensión de cada nodo respecto de masa. Pase el ratón o toque una fila para ubicar el nodo en el circuito.',
       ref_title: 'Sentidos de referencia', ref_passive_s: 'convención pasiva', ref_active_s: 'convención generador',
+      ref_passive_fixed: 'convención pasiva: la corriente entra siempre por +', ref_flip_both: 'Invertir V e I',
       ref_passive: 'Convención pasiva (I entra por el + de V): P = V·I es la potencia absorbida. Seleccione el elemento y toque los signos + / − o la flecha en el circuito para cambiar las referencias.',
       ref_active: 'Convención generador (I sale por el + de V): P = V·I es la potencia entregada. Seleccione el elemento y toque los signos + / − o la flecha en el circuito para cambiar las referencias.',
       tbl_refs: 'V e I con los sentidos de referencia dibujados en el circuito (+/− y flechas)',
@@ -464,7 +467,7 @@
 <li>Todo circuito necesita una masa (⏚): las tensiones de nodo se miden respecto de ella.</li></ul>
 <h4>Resultados</h4><ul>
 <li>El circuito se resuelve después de cada cambio. Elija qué mostrar con V, I, P y Nodos sobre el circuito.</li>
-<li>Cada elemento muestra sus <b>sentidos de referencia</b>: + y − para V y una flecha para I. Seleccione el elemento y tóquelos para elegir los suyos; los valores llevan signo (un valor negativo indica que la polaridad o el sentido real es el opuesto). Potencia: positiva = absorbida, negativa (verde) = entregada.</li><li>Las tensiones de nodo se miden respecto de masa; para nombrar un nodo seleccione uno de sus cables. La pestaña <b>Resultados</b> verifica la LKC en cada nodo y la LKT en cada lazo con sus referencias.</li>
+<li>Cada elemento muestra sus <b>sentidos de referencia</b>: + y − para V y una flecha para I. Seleccione el elemento y tóquelos para elegir los suyos; los valores llevan signo (un valor negativo indica que la polaridad o el sentido real es el opuesto). En resistencias, diodos, LED e interruptores la flecha de la corriente entra siempre por + (convención pasiva): invertir uno invierte el otro; solo las fuentes pueden usar la convención generador. Potencia: positiva = absorbida, negativa (verde) = entregada.</li><li>Las tensiones de nodo se miden respecto de masa; para nombrar un nodo seleccione uno de sus cables. La pestaña <b>Resultados</b> verifica la LKC en cada nodo y la LKT en cada lazo con sus referencias.</li>
 <li>La pestaña <b>Resultados</b> lista todos los elementos y el balance de potencia.</li></ul>
 <h4>Thévenin / Norton</h4><ul>
 <li>Seleccione un elemento de dos terminales y elija «Thévenin visto por este elemento», o use la herramienta <b>Thévenin A–B</b> y toque dos nodos.</li></ul>
