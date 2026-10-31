@@ -1124,14 +1124,14 @@
     ui.updateLive = function () { syncStatus(); ui.updateMonitor(); };
 
     /* ---------- pinned plot: a small window over the circuit that follows every change live ----------
-     * app.monitor = { ids, idx, win: [], trail: [] }: the axes stay put while values change (they only grow
-     * when Q leaves them) and Q leaves a trail, so its motion can be seen. */
+     * app.monitor = { ids, idx, win: [] }: the axes stay put while values change (they only grow when Q
+     * leaves them), so the motion of Q can be seen. */
     const mon = el('div', { class: 'monitor' });
     mon.hidden = true;
     const mhead = el('div', { class: 'mon-head' });
     const mtitle = el('span', { class: 'mon-title' });
     const mswap = button('⇄', () => { const m = app.monitor; if (m) { m.idx = m.idx ? 0 : 1; ui.updateMonitor(); } });
-    const mreset = button('⟲', () => { const m = app.monitor; if (m) { m.win = []; m.trail = []; m.levels = null; ui.updateMonitor(); } });
+    const mreset = button('⟲', () => { const m = app.monitor; if (m) { m.win = []; m.levels = null; ui.updateMonitor(); } });
     const mclose = button('✕', () => { app.monitor = null; ui.updateMonitor(); });
     mhead.appendChild(mtitle); mhead.appendChild(mswap); mhead.appendChild(mreset); mhead.appendChild(mclose);
     const mcv = el('canvas', { class: 'mon-cv' });
@@ -1155,17 +1155,18 @@
       mhead.addEventListener('pointerup', () => { d = null; });
     }
     app.pinPlot = function (k) {
-      app.monitor = { ids: app.selectedComps().map(c => c.id), idx: k || 0, win: [], trail: [] };
+      app.monitor = { ids: app.selectedComps().map(c => c.id), idx: k || 0, win: [] };
       ui.updateMonitor();
     };
     ui.updateMonitor = function () {
       const m = app.monitor;
       if (!m) { mon.hidden = true; return; }
       if (!m.ids.every(id => app.circuit.comps.some(c => c.id === id))) { app.monitor = null; mon.hidden = true; return; }
-      // the fixed output curves are traced again around the base current when it has gone far from them
+      // the fixed output curves are traced again around the base current when it has gone far from them, in the
+      // active region only (in saturation the base current says nothing about I_C); the axes stay as they are
       const qc = app.circuit.comps.find(c => c.id === m.ids[0]);
       const rq = qc && qc.type === 'bjt' && app.result && app.result.ok ? app.result.el[qc.id] : null;
-      if (m.levels && rq && rq.ib > 0 && (rq.ib < m.levels[0] * 0.5 || rq.ib > m.levels[3] * 1.5)) { m.levels = null; m.win[1] = null; }
+      if (m.levels && rq && rq.state === 'act' && rq.ib > 0 && (rq.ib < m.levels[0] * 0.5 || rq.ib > m.levels[3] * 1.5)) m.levels = null;
       // traced over the window shown: if Q left it, the window grows and the curves are traced again
       const make = () => { try { return DCS.iv.build(app, m.ids, { levels: m.levels, wins: m.win }); } catch (e) { console.error(e); return null; } };
       let specs = make();
@@ -1190,12 +1191,6 @@
       mswap.title = t('mon_swap'); mreset.title = t('mon_reset'); mclose.title = t('close');
       mtitle.innerHTML = (spec.titleHtml || DCS.iv.subHtml(spec.title));
       spec.win = w;
-      const tr = m.trail[k] || (m.trail[k] = []);
-      if (q) {
-        const last = tr[tr.length - 1];
-        if (!last || Math.abs(last[0] - q.v) > 2e-3 * (w.v1 - w.v0) || Math.abs(last[1] - q.i) > 2e-3 * (w.i1 - w.i0)) { tr.push([q.v, q.i]); if (tr.length > 120) tr.shift(); }
-      }
-      spec.trail = tr;
       DCS.iv.draw(mcv, spec, null);
     };
 
