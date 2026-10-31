@@ -57,11 +57,15 @@
       prefix: 'Q', terms: [[-2, 0], [1, -2], [1, 2]], termNames: ['B', 'C', 'E'], box: [-2, -2, 1.8, 2],
       props: [
         { key: 'pol', type: 'select', options: ['npn', 'pnp'], def: 'npn' },
+        { key: 'model', type: 'select', options: ['simple', 'em'], def: 'simple' },
         { key: 'beta', unit: '', def: 100, min: 1, max: 1e5 },
-        { key: 'Vbe', unit: 'V', def: 0.7, min: 0, max: 5 },
-        { key: 'Vcesat', unit: 'V', def: 0.2, min: 0, max: 5 }
+        { key: 'Vbe', unit: 'V', def: 0.7, min: 0, max: 5, show: c => c.props.model !== 'em' },
+        { key: 'Vcesat', unit: 'V', def: 0.2, min: 0, max: 5, show: c => c.props.model !== 'em' },
+        { key: 'Is', unit: 'A', def: 1e-14, min: 1e-20, max: 1e-6, show: c => c.props.model === 'em' },
+        { key: 'betaR', unit: '', def: 1, min: 0.01, max: 1e3, show: c => c.props.model === 'em' },
+        { key: 'VA', unit: 'V', def: 100, min: 0, max: 1e4, show: c => c.props.model === 'em' }
       ],
-      valueText: (c, f) => 'β = ' + c.props.beta
+      valueText: (c, f, t) => 'β = ' + c.props.beta + (c.props.model === 'em' ? ' · ' + t('model_em_short') : '')
     }
   };
 

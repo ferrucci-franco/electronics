@@ -96,6 +96,31 @@
     return vnew;
   }
 
+  /* Ebers-Moll transport model with the Early effect, in NPN-normalised junction voltages:
+   *   I_C = I_S (e^{vbe/Vt} − e^{vbc/Vt}) (1 + v_CE/V_A) − (I_S/β_R)(e^{vbc/Vt} − 1)
+   *   I_B = (I_S/β_F)(e^{vbe/Vt} − 1) + (I_S/β_R)(e^{vbc/Vt} − 1)
+   * Returns the currents and their partial derivatives with respect to vbe and vbc. */
+  function expLim(x) {
+    const xmax = 80;
+    if (x > xmax) { const e = Math.exp(xmax); return { e: e * (1 + x - xmax), d: e }; }
+    const e = Math.exp(x); return { e, d: e };
+  }
+  function bjtEM(el, vbe, vbc, Vt) {
+    const Is = el.Is > 0 ? el.Is : 1e-14, bf = el.beta, br = el.betaR > 0 ? el.betaR : 1, VA = el.VA > 0 ? el.VA : 0;
+    const a = expLim(vbe / Vt), c = expLim(vbc / Vt);
+    const ea = a.e, eb = c.e, da = a.d / Vt, db = c.d / Vt;
+    const ict = Is * (ea - eb);
+    const early = VA ? Math.max(0.05, 1 + (vbe - vbc) / VA) : 1;
+    const dE = VA && early > 0.05 ? 1 / VA : 0;
+    const ic = ict * early - Is / br * (eb - 1);
+    const ib = Is / bf * (ea - 1) + Is / br * (eb - 1);
+    return {
+      ic, ib,
+      ic_be: Is * da * early + ict * dE, ic_bc: -Is * db * early - ict * dE - Is / br * db,
+      ib_be: Is / bf * da, ib_bc: Is / br * db
+    };
+  }
+
   const DEV = {
     R: {
       stamp(S, el) { S.g(el.n[0], el.n[1], 1 / el.R); },
@@ -196,10 +221,30 @@
       tc(el, st, sol, br) { return [0, 0, sol.x[br[0]]]; }
     },
     Q: {
-      states() { return ['off', 'act', 'sat']; },
-      branches(el, st) { return st === 'off' ? 0 : st === 'act' ? 1 : 2; },
-      stamp(S, el, st, br) {
+      states(el) { return el.model === 'em' ? null : ['off', 'act', 'sat']; },
+      branches(el, st) { return el.model === 'em' || st === 'off' ? 0 : st === 'act' ? 1 : 2; },
+      stamp(S, el, st, br, k) {
         const [b, c, e] = el.n;
+        if (el.model === 'em') {
+          // Newton linearisation around the limited junction voltages
+          const s = el.pnp ? -1 : 1, Vt = S.Vt, Is = el.Is > 0 ? el.Is : 1e-14;
+          const vcrit = Vt * Math.log(Vt / (Math.SQRT2 * Is));
+          const old = S.dv[k] || { be: 0, bc: 0 };
+          const rbe = s * (S.vguess[b] - S.vguess[e]), rbc = s * (S.vguess[b] - S.vguess[c]);
+          const vbe = pnjlim(rbe, old.be, Vt, vcrit), vbc = pnjlim(rbc, old.bc, Vt, vcrit);
+          if (Math.abs(vbe - rbe) > 1e-12 || Math.abs(vbc - rbc) > 1e-12) S.limited = true;
+          S.dv[k] = { be: vbe, bc: vbc };
+          const m = bjtEM(el, vbe, vbc, Vt);
+          const term = (node, f, a, bb) => {
+            S.mat(node, b, a + bb); S.mat(node, e, -a); S.mat(node, c, -bb);
+            S.inj(node, -s * (f - a * vbe - bb * vbc));
+          };
+          term(b, m.ib, m.ib_be, m.ib_bc);
+          term(c, m.ic, m.ic_be, m.ic_bc);
+          term(e, -(m.ib + m.ic), -(m.ib_be + m.ic_be), -(m.ib_bc + m.ic_bc));
+          S.g(b, e, GMIN); S.g(b, c, GMIN);
+          return;
+        }
         if (st === 'off') { S.g(b, e, GMIN); S.g(b, c, GMIN); S.g(c, e, GMIN); return; }
         if (!el.pnp) {
           S.vbr(b, e, br[0], el.Vbe, 0);                       // i_br0: base current (into B)
@@ -219,6 +264,7 @@
         return { ib, ic };
       },
       check(el, st, sol, br) {
+        if (el.model === 'em') return null;
         const [b, c, e] = el.n;
         const s = el.pnp ? -1 : 1;
         const vbe = s * (sol.v[b] - sol.v[e]), vce = s * (sol.v[c] - sol.v[e]);
@@ -229,7 +275,14 @@
         if (st === 'sat' && f.ic > el.beta * f.ib + ITOL) return { next: 'act', mag: (f.ic - el.beta * f.ib) * 1e3 };
         return null;
       },
-      tc(el, st, sol, br) {
+      tc(el, st, sol, br, Vt) {
+        if (el.model === 'em') {
+          const [b, c, e] = el.n, s = el.pnp ? -1 : 1, v = sol.v;
+          const vbe = s * (v[b] - v[e]), vbc = s * (v[b] - v[c]);
+          const m = bjtEM(el, vbe, vbc, Vt);
+          const ib = m.ib + GMIN * vbe + GMIN * vbc, ic = m.ic - GMIN * vbc;
+          return [s * ib, s * ic, -s * (ib + ic)];
+        }
         const f = DEV.Q.fwd(el, st, sol, br);
         let ib = f.ib, ic = f.ic;
         if (st === 'off') {
@@ -358,6 +411,8 @@
       col(node, k, v) { const i = ni(node); if (i >= 0) A[i][k] += v; },
       row(k, node, v) { const j = ni(node); if (j >= 0) A[k][j] += v; },
       rhs(k, v) { b[k] += v; },
+      mat(rowNode, colNode, v) { const i = ni(rowNode), j = ni(colNode); if (i >= 0 && j >= 0) A[i][j] += v; },
+      inj(node, v) { const i = ni(node); if (i >= 0) b[i] += v; },
       vbr(p, m, k, V, r) {
         const i = ni(p), j = ni(m);
         if (i >= 0) { A[i][k] += 1; A[k][i] += 1; }
@@ -528,7 +583,7 @@
     const N = ckt.nodeCount;
     const Vt = thermalVoltage(opts.tempC);
     const topo = analyseTopology(ckt);
-    const ctx = { noHuge: !!opts.noHuge, Vt, skip: topo.skip, floating: topo.floating, hasExact: ckt.elements.some(el => el.type === 'D' && el.model === 'exact') };
+    const ctx = { noHuge: !!opts.noHuge, Vt, skip: topo.skip, floating: topo.floating, hasExact: ckt.elements.some(el => (el.type === 'D' && el.model === 'exact') || (el.type === 'Q' && el.model === 'em')) };
     const result = { ok: false, issues: topo.issues.slice(), Vt };
     if (topo.issues.some(i => i.level === 'error')) return result;
 
@@ -605,6 +660,11 @@
         const [b, c, e] = el.n, s = el.pnp ? -1 : 1;
         r.vbe = s * (sol.v[b] - sol.v[e]); r.vce = s * (sol.v[c] - sol.v[e]);
         r.ib = s * tc[0]; r.ic = s * tc[1]; r.ie = -s * tc[2];
+        if (el.model === 'em') {
+          // region of the exponential model: B–C junction forward biased = saturation
+          const vbc = r.vbe - r.vce;
+          r.state = r.vbe < 0.45 && Math.abs(r.ic) < 1e-6 ? 'off' : vbc > 0.45 ? 'sat' : 'act';
+        }
       }
       if (el.type === 'OA') { r.vout = sol.v[el.n[2]]; r.iout = -tc[2]; r.vd = sol.v[el.n[0]] - sol.v[el.n[1]]; }
       result.el[el.id] = r;
@@ -669,7 +729,7 @@
     return out;
   }
 
-  const api = { solve, thevenin, luSolve, thermalVoltage, GMIN };
+  const api = { solve, thevenin, luSolve, thermalVoltage, bjtEM, GMIN };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else (root.DCS = root.DCS || {}).solver = api;
 })(typeof window !== 'undefined' ? window : globalThis);

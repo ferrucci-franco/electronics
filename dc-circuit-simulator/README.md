@@ -13,7 +13,7 @@ Copia pública: https://ferrucci-franco.github.io/electronics/dc-circuit-simulat
 | Amperímetro / voltímetro | ideales (0 V / circuito abierto) |
 | Diodo y diodo Schottky | ideal (0 V al conducir), caída constante Vγ con r_d opcional, o exacto (Shockley, I = I_S(e^{V/nV_T} − 1)) |
 | Amplificador operacional | ideal (ganancia infinita, sin corriente de entrada, R_out = 0), saturación opcional en ±Vsat |
-| Transistor bipolar NPN / PNP | simple: corte, activa (V_BE = 0,7 V, I_C = βI_B) o saturación (V_CE = V_CE,sat) |
+| Transistor bipolar NPN / PNP | simple (ideal): corte, activa (V_BE = 0,7 V, I_C = βI_B) o saturación (V_CE = V_CE,sat); o real: Ebers-Moll con efecto Early (I_S, β_F, β_R, V_A), junturas exponenciales y saturación suave |
 | Masa | nodo de referencia |
 
 Símbolos USA (por defecto) o IEC/europeos.

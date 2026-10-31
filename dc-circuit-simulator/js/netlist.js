@@ -90,7 +90,7 @@
         case 'diode': case 'schottky':
           elements.push({ type: 'D', id: c.id, n, model: pr.model, Vf: pr.Vf, rd: pr.rd, Is: pr.Is, N: pr.N }); break;
         case 'opamp': elements.push({ type: 'OA', id: c.id, n, sat: !!pr.sat, Vpos: Math.max(pr.Vpos, pr.Vneg), Vneg: Math.min(pr.Vpos, pr.Vneg) }); break;
-        case 'bjt': elements.push({ type: 'Q', id: c.id, n, pnp: pr.pol === 'pnp', beta: pr.beta, Vbe: pr.Vbe, Vcesat: pr.Vcesat }); break;
+        case 'bjt': elements.push({ type: 'Q', id: c.id, n, pnp: pr.pol === 'pnp', model: pr.model === 'em' ? 'em' : 'simple', beta: pr.beta, Vbe: pr.Vbe, Vcesat: pr.Vcesat, Is: pr.Is, betaR: pr.betaR, VA: pr.VA }); break;
         default: break;
       }
     }

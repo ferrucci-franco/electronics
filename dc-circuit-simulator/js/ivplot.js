@@ -169,12 +169,14 @@
    * circuit again with one model parameter moved (V_BE(on) for the input; β, or V_CE(sat) in saturation, for
    * the output): every solution is a point that the circuit allows, so the line passes exactly through Q. */
   function bjtSpecs(app, A, t, tempC) {
-    const c = A.c, r = A.r, p = c.props, pnp = p.pol === 'pnp';
+    const c = A.c, r = A.r, p = c.props, pnp = p.pol === 'pnp', em = p.model === 'em';
+    const Vt = S.thermalVoltage(tempC);
+    const elQ = app.net.ckt.elements.find(e => e.id === c.id);
     const net = app.net, [nb, nc, ne] = net.compNodes.get(c.id);
     const solveWith = (patch) => {
       const els = net.ckt.elements.map(e => (e.id === c.id ? Object.assign({}, e, patch) : e));
       const res = S.solve({ nodeCount: net.ckt.nodeCount, elements: els }, { prevStates: Object.assign({}, app.prevStates, { [c.id]: r.state }), tempC });
-      return res.ok && res.states[c.id] === r.state ? res.el[c.id] : null;
+      return res.ok && (em || res.states[c.id] === r.state) ? res.el[c.id] : null;
     };
     const lineFrom = (pts) => {
       if (pts.length < 2) return null;
@@ -199,20 +201,33 @@
 
     /* ----- input ----- */
     let inLine = null;
-    if (r.state !== 'off') {
+    if (r.state !== 'off' || em) {
       const pts = [];
-      for (const dv of [-0.15, 0.15]) { const q = solveWith({ Vbe: p.Vbe + dv }); if (q) pts.push([q.vbe, q.ib]); }
+      if (em) for (const f of [0.05, 20]) { const q = solveWith({ Is: (p.Is || 1e-14) * f }); if (q) pts.push([q.vbe, q.ib]); }
+      else for (const dv of [-0.15, 0.15]) { const q = solveWith({ Vbe: p.Vbe + dv }); if (q) pts.push([q.vbe, q.ib]); }
       inLine = lineFrom(pts);
     }
     if (!inLine) inLine = theveninLine(pnp ? ne : nb, pnp ? nb : ne);
     const ibq = Math.max(r.ib, 0);
     const iInt = inLine ? intercepts(inLine) : {};
-    const vMax = Math.max(1.6 * p.Vbe, Math.min(isFinite(iInt.v) ? iInt.v : 0, 4 * p.Vbe), r.vbe * 1.3, 0.5);
+    const vOn = em ? Math.max(0.5, r.vbe) : p.Vbe;
+    const vMax = Math.max(1.6 * vOn, Math.min(isFinite(iInt.v) ? iInt.v : 0, 4 * vOn), r.vbe * 1.3, 0.5);
     const iMax = Math.max(ibq * 1.8, Math.min(isFinite(iInt.i) ? iInt.i : 0, ibq * 4), ibq > 0 ? 0 : 10e-6);
     const winIn = { v0: -0.15 * vMax, v1: vMax * 1.05, i0: -0.12 * iMax, i1: iMax * 1.15 };
     const inSpec = { kind: 'bjt-in', series: [], lines: [], points: [], regions: [], xu: 'V', yu: 'A', win: winIn };
-    inSpec.series.push({ name: t('iv_bjt_model'), color: slot(0), pts: [[winIn.v0, 0], [p.Vbe, 0], [p.Vbe, winIn.i1 * 1.5]], width: 2.6 });
-    if (ibq > 0) {
+    if (em) {
+      // I_B(V_BE) of the Ebers-Moll model at the operating V_CE
+      const pts = [];
+      for (let k = 0; k <= 160; k++) {
+        const v = winIn.v0 + (winIn.v1 - winIn.v0) * k / 160;
+        const i = S.bjtEM(elQ, v, v - r.vce, Vt).ib;
+        if (i > winIn.i1 * 1.5) break;
+        pts.push([v, i]);
+      }
+      inSpec.series.push({ name: t('iv_bjt_em_in', { vce: U.format(r.vce, 'V') }), color: slot(0), pts, width: 2.6 });
+      inSpec.series.push({ name: t('iv_bjt_model'), color: 'muted', pts: [[winIn.v0, 0], [p.Vbe, 0], [p.Vbe, winIn.i1 * 1.5]], width: 1.4, dash: true });
+    } else inSpec.series.push({ name: t('iv_bjt_model'), color: slot(0), pts: [[winIn.v0, 0], [p.Vbe, 0], [p.Vbe, winIn.i1 * 1.5]], width: 2.6 });
+    if (ibq > 0 && !em) {
       // exponential junction through Q, for comparison with the simple model
       const Vt = S.thermalVoltage(tempC), isb = ibq / (Math.exp(p.Vbe / Vt) - 1);
       const pts = [];
@@ -223,11 +238,11 @@
     inSpec.points.push({ name: 'Q', v: r.vbe, i: r.ib, label: `Q (${U.format(r.vbe, 'V')}, ${U.format(r.ib, 'A')})` });
     inSpec.xlab = pnp ? 'V_EB' : 'V_BE'; inSpec.ylab = 'I_B';
     inSpec.title = t('iv_bjt_in');
-    inSpec.note = app.t('iv_bjt_in_note');
+    inSpec.note = app.t(em ? 'iv_bjt_in_note_em' : 'iv_bjt_in_note');
 
     /* ----- output ----- */
     let outLine = null;
-    if (r.state === 'act') {
+    if (r.state === 'act' || em) {
       const pts = [];
       for (const f of [0.6, 1.4]) { const q = solveWith({ beta: p.beta * f }); if (q) pts.push([q.vce, q.ic]); }
       outLine = lineFrom(pts);
@@ -241,14 +256,26 @@
     const levels = [0.5, 1, 1.5, 2].map(f => f * ib0);
     const oInt = outLine ? intercepts(outLine) : {};
     const vcMax = Math.max(r.vce * 1.3, isFinite(oInt.v) ? oInt.v : 0, p.Vcesat * 4, 1);
-    const icMax = Math.max(p.beta * levels[3], isFinite(oInt.i) ? oInt.i : 0, r.ic * 1.2);
+    const icMax = Math.max(p.beta * levels[3] * (em && p.VA > 0 ? 1 + vcMax / p.VA : 1), isFinite(oInt.i) ? oInt.i : 0, r.ic * 1.2);
     const winOut = { v0: -0.05 * vcMax, v1: vcMax * 1.12, i0: -0.06 * icMax, i1: icMax * 1.12 };
     const outSpec = { kind: 'bjt-out', series: [], lines: [], points: [], xu: 'V', yu: 'A', win: winOut };
     levels.forEach((ib, k) => {
       const ic = p.beta * ib;
-      outSpec.series.push({ name: 'I_B = ' + U.format(ib, 'A'), color: slot(k), pts: [[0, 0], [p.Vcesat, 0], [p.Vcesat, ic], [winOut.v1, ic]], width: k === 1 && ibq > 0 ? 2.6 : 1.6 });
+      let pts = [[0, 0], [p.Vcesat, 0], [p.Vcesat, ic], [winOut.v1, ic]];
+      if (em) {
+        // for each V_CE, the V_BE that gives this base current (bisection), then I_C
+        pts = [];
+        for (let j = 0; j <= 140; j++) {
+          const vce = winOut.v1 * Math.pow(j / 140, 1.6);
+          let lo = -0.5, hi = 1.5;
+          for (let it = 0; it < 60; it++) { const mid = (lo + hi) / 2; if (S.bjtEM(elQ, mid, mid - vce, Vt).ib > ib) hi = mid; else lo = mid; }
+          const vbe = (lo + hi) / 2;
+          pts.push([vce, S.bjtEM(elQ, vbe, vbe - vce, Vt).ic]);
+        }
+      }
+      outSpec.series.push({ name: 'I_B = ' + U.format(ib, 'A'), color: slot(k), pts, width: k === 1 && ibq > 0 ? 2.6 : 1.6 });
     });
-    outSpec.regions = [
+    outSpec.regions = em ? [] : [
       { v0: winOut.v0, v1: p.Vcesat, i0: winOut.i0, i1: winOut.i1, label: t('region_sat'), at: 'top' },
       { v0: p.Vcesat, v1: winOut.v1, i0: winOut.i0, i1: 0.04 * icMax, label: t('region_off'), at: 'right' }
     ];
@@ -256,7 +283,7 @@
     outSpec.points.push({ name: 'Q', v: r.vce, i: r.ic, label: `Q (${U.format(r.vce, 'V')}, ${U.format(r.ic, 'A')}) · ${t('region_' + r.state)}` });
     outSpec.xlab = pnp ? 'V_EC' : 'V_CE'; outSpec.ylab = 'I_C';
     outSpec.title = t('iv_bjt');
-    outSpec.note = app.t('iv_bjt_note');
+    outSpec.note = app.t(em ? 'iv_bjt_note_em' : 'iv_bjt_note');
     return [inSpec, outSpec];
   }
 
