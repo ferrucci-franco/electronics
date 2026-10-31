@@ -218,7 +218,14 @@ html.layout-mobile .selbar{top:auto; bottom:56px}
 html.layout-mobile .selbar button{width:44px; height:42px}
 html.layout-mobile .zoombar{bottom:8px}
 html.layout-mobile .zoombar button{width:42px; height:42px}
-html.layout-mobile .status{bottom:8px; max-width:calc(100% - 180px)}
+/* phone: undo / redo within reach of the thumb, at the bottom left of the circuit */
+.histbar{display:none}
+html.layout-mobile .histbar{display:flex; gap:4px; position:absolute; left:8px; bottom:8px}
+html.layout-mobile .histbar button{width:42px; height:42px; border:1px solid var(--border); background:var(--btn); border-radius:10px; box-shadow:var(--shadow); display:grid; place-items:center; cursor:pointer; color:var(--fg)}
+html.layout-mobile .histbar button:disabled{opacity:.4}
+html.layout-mobile .histbar svg{width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
+html.layout-mobile #undoBtn, html.layout-mobile #redoBtn{display:none}
+html.layout-mobile .status{bottom:8px; left:100px; max-width:calc(100% - 270px); min-height:42px}
 html.layout-mobile .hintbar{bottom:104px}
 html.layout-mobile .sheet-btn{display:inline-flex; align-items:center; gap:6px; position:absolute; right:56px; bottom:8px; height:42px; padding:0 12px; border:1px solid var(--border); background:var(--btn); border-radius:10px; box-shadow:var(--shadow); font-size:14px; font-weight:600; cursor:pointer}
 html.layout-mobile .side{
@@ -227,14 +234,19 @@ html.layout-mobile .side{
   padding-bottom:env(safe-area-inset-bottom)
 }
 html.layout-mobile .side.open{transform:none}
-html.layout-mobile .sheet-grip{display:flex; justify-content:center; padding:8px 0 2px; cursor:grab; touch-action:none}
+html.layout-mobile .sheet-grip{display:flex; justify-content:center; align-items:center; position:relative; min-height:34px; padding:6px 0 2px; cursor:grab; touch-action:none}
+html.layout-mobile .side .tabs{touch-action:none}
+.sheet-close{display:none}
+html.layout-mobile .sheet-close{display:grid; place-items:center; position:absolute; right:8px; top:4px; width:36px; height:30px; border:1px solid var(--border); border-radius:9px; background:var(--btn); color:var(--fg); cursor:pointer}
+html.layout-mobile .sheet-close svg{width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round}
+html.layout-mobile .side.dragging{transition:none}
 html.layout-mobile .sheet-grip span{width:44px; height:5px; border-radius:3px; background:var(--muted); opacity:.5}
 html.layout-mobile .tabs button{padding:9px 4px}
 html.layout-mobile .field{grid-template-columns:minmax(0,1fr) 150px}
 html.layout-mobile .field input[type=text], html.layout-mobile .field select{font-size:16px; min-height:40px}
 @media (max-width:420px){
   html.layout-mobile .app-header h1{display:none}
-  html.layout-mobile .status{max-width:calc(100% - 160px)}
+  html.layout-mobile .status{max-width:calc(100% - 250px)}
   html.layout-mobile .sheet-btn span{display:none}
 }
 /* desktop layout on a medium screen: narrower side columns */
