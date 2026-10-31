@@ -156,6 +156,8 @@
         case 'open': $('fileInput').click(); break;
         case 'save': app.saveFile(); break;
         case 'png': app.exportPNG(); break;
+        case 'qr': DCS.share.showQR(app, ui); break;
+        case 'scan': DCS.share.scan(app, ui); break;
         case 'link': {
           const url = await app.shareLink();
           try { await navigator.clipboard.writeText(url); app.toast(t('link_copied')); }
@@ -168,7 +170,10 @@
 
     /* ---------- modal ---------- */
     const modal = $('modal');
-    function openModal(title, html) {
+    let modalCleanup = null;
+    function openModal(title, html, onClose) {
+      if (modalCleanup) { const f = modalCleanup; modalCleanup = null; f(); }
+      modalCleanup = onClose || null;
       $('modalTitle').innerHTML = title;
       const body = $('modalBody');
       body.innerHTML = '';
@@ -176,7 +181,11 @@
       modal.classList.add('open');
       requestAnimationFrame(() => body.querySelectorAll('select').forEach((s) => { const o = s.options[s.selectedIndex]; s.title = o ? o.textContent : ''; }));
     }
-    function closeModal() { modal.classList.remove('open'); }
+    function closeModal() {
+      modal.classList.remove('open');
+      if (modalCleanup) { const f = modalCleanup; modalCleanup = null; f(); }
+    }
+    ui.openModal = openModal;
     app.modalOpen = () => modal.classList.contains('open');
     app.closeModal = closeModal;
     $('modalClose').addEventListener('click', closeModal);

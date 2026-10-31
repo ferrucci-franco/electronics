@@ -56,6 +56,7 @@ Símbolos USA (por defecto) o IEC/europeos.
 - Los valores aceptan prefijos: 4k7, 2.2M, 10m, 100u, 1n… (M = mega, m = mili).
 - **Pestañas**: varios circuitos abiertos a la vez, como píldoras junto al título (la activa resaltada). «+» (o Archivo → Nuevo) abre una pestaña vacía, × la cierra (pide confirmación si tiene componentes), doble clic le cambia el nombre. Cada pestaña guarda su circuito, su vista y su historial de deshacer. Un ejemplo, un archivo o un enlace compartido se abren en la pestaña actual si está vacía, o en una nueva con su nombre. Las pestañas se guardan en el navegador.
 - Archivo: guardar / abrir JSON, copiar un enlace que contiene el circuito, exportar PNG.
+- **Compartir con código QR** (Archivo → Compartir): el enlace del circuito como código QR, con «Pantalla completa» para proyectarlo en clase (tocar o Esc cierra), «Compartir…» (hoja de compartir del sistema: WhatsApp, mail, AirDrop…) y copiar enlace. Los estudiantes lo leen con la cámara del celular y el circuito se abre en el simulador, en una pestaña nueva. **Escanear un código QR** (Archivo → Escanear) usa la cámara dentro del simulador (https) o una foto / captura del código, y abre el circuito en una pestaña nueva sin salir de la página. Un circuito muy grande puede no entrar en un QR: queda el enlace o el archivo.
 
 ## Cálculo
 
@@ -69,4 +70,4 @@ Verificaciones numéricas (contra cálculos a mano):
 ## Archivos
 
 - `index.html`, `css/style.css`
-- `js/solver.js` (MNA, estados, Newton, Thévenin/Norton), `js/netlist.js` (del dibujo a los nodos), `js/components.js` (geometría y símbolos), `js/render.js` (dibujo en canvas y ubicación de etiquetas), `js/editor.js` (ratón, táctil, teclado), `js/ui.js` (paneles), `js/app.js` (estado, historial, guardado), `js/i18n.js`, `js/units.js`, `js/examples.js`
+- `js/solver.js` (MNA, estados, Newton, Thévenin/Norton), `js/netlist.js` (del dibujo a los nodos), `js/components.js` (geometría y símbolos), `js/render.js` (dibujo en canvas y ubicación de etiquetas), `js/editor.js` (ratón, táctil, teclado), `js/ui.js` (paneles), `js/app.js` (estado, historial, guardado), `js/i18n.js`, `js/units.js`, `js/examples.js`, `js/share.js` (código QR: compartir y escanear). `js/vendor/`: [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) (Kazuhiko Arase, MIT) y [jsQR](https://github.com/cozmo/jsQR) (Cosmo Wolfe, Apache 2.0, ver `LICENSE-jsQR.txt`), cargados solo al usarlos

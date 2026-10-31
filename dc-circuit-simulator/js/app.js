@@ -832,16 +832,21 @@
     else code = 'j' + b64u.enc(json);
     return location.href.split('#')[0] + '#c=' + code;
   };
-  async function loadFromHash(keepPrevious) {
-    const m = /#c=([zj])([A-Za-z0-9_-]+)/.exec(location.hash);
+  // a shared circuit (#c=… of a share link, from the address bar or from a scanned QR code) opens in a new tab
+  app.openShared = async function (text) {
+    const m = /#c=([zj])([A-Za-z0-9_-]+)/.exec(String(text || ''));
     if (!m) return false;
     try {
       let bytes = b64u.dec(m[2]);
       if (m[1] === 'z') bytes = await streamBytes(bytes, new DecompressionStream('deflate-raw'));
       app.openInTab(expand(JSON.parse(new TextDecoder().decode(bytes))), app.tp('tab_shared'));
-      history.replaceState(null, '', location.href.split('#')[0]);
       return true;
     } catch (e) { return false; }
+  };
+  async function loadFromHash() {
+    const ok = await app.openShared(location.hash);
+    if (ok) history.replaceState(null, '', location.href.split('#')[0]);
+    return ok;
   }
   app.exportPNG = function () {
     const b = app.circuitBounds(app.circuit);
@@ -917,6 +922,8 @@
     showTab(active);
     // a shared circuit opens in its own tab
     await loadFromHash();
+    // a share link opened while the simulator is already open in this tab
+    window.addEventListener('hashchange', () => { loadFromHash(); });
     app.fit();
     new ResizeObserver(() => { const w = app.renderer.w, h = app.renderer.h; app.renderer.resize(); if (!w || !h) app.fit(); app.requestRender(); }).observe(cv);
   }
