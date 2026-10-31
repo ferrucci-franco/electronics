@@ -358,6 +358,13 @@ html.layout-mobile .field input[type=text], html.layout-mobile .field select{fon
 /* pinned I–V plot over the circuit */
 .monitor{position:absolute; left:8px; bottom:52px; width:min(380px, calc(100% - 80px)); background:var(--panel); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); padding:6px 8px 8px; z-index:6; display:flex; flex-direction:column; gap:4px}
 .monitor[hidden]{display:none}
+.qslider{position:absolute; z-index:8; width:min(300px, calc(100% - 16px)); background:var(--panel); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); padding:6px 10px 10px}
+.qslider[hidden]{display:none}
+.qs-head{display:flex; align-items:center; gap:8px; font-size:14px}
+.qs-name{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600}
+.qs-val{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-variant-numeric:tabular-nums}
+.qs-head .btn{padding:2px 8px; min-height:28px}
+.qslider input[type=range]{width:100%; margin:8px 0 0; height:30px}
 .mon2{left:calc(min(380px, 100% - 80px) + 16px)}
 .tmon{left:auto; right:28px; bottom:auto; top:52px; width:min(260px, calc(100% - 80px))}
 .tmon .kv{margin:2px 4px 0; font-size:14px}

@@ -514,7 +514,7 @@
   // direction of the wheel for values: +1 classic (wheel up = dy < 0), −1 "natural" scrolling (macOS default)
   const isMac = /Mac|iPhone|iPad/.test(navigator.platform || '') || /Mac OS X/.test(navigator.userAgent || '');
   app.wheelSign = () => (app.settings.wheelDir === 'normal' ? 1 : app.settings.wheelDir === 'inverted' ? -1 : (isMac ? -1 : 1));
-  app.valueKey = (c) => ({ resistor: 'R', vsource: 'V', isource: 'I', pot: 'alpha', bjt: 'beta' })[c.type] || null;
+  app.valueKey = (c) => ({ resistor: 'R', vsource: 'V', isource: 'I', pot: 'alpha', bjt: 'beta', depv: 'k', depi: 'k' })[c.type] || null;
   let adjustT = 0;
   app.adjustValue = function (c, up) {
     const key = app.valueKey(c);
