@@ -7,7 +7,7 @@
   const TYPES = {
     resistor: {
       prefix: 'R', terms: [[-2, 0], [2, 0]], box: [-2, -0.75, 2, 0.75],
-      props: [{ key: 'R', unit: 'Ω', def: 1000, min: 1e-3, max: 1e12 }],
+      props: [{ key: 'R', unit: 'Ω', def: 1000, min: 1e-3, max: 1e10 }],
       valueText: (c, f) => f(c.props.R, 'Ω')
     },
     vsource: {

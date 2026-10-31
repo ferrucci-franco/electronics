@@ -174,7 +174,8 @@
     const tool = app.tool;
     if (tool === 'place') { g.mode = 'place'; return; }
     if (tool === 'wire') { g.mode = 'wire'; g.a = h && (h.kind === 'term' || h.kind === 'wend') ? h.pt : this.snap(p); return; }
-    if (tool === 'erase') { g.mode = 'erase'; g.erased = false; this.eraseAt(p, g); return; }
+    // with touch the first erase waits for a move or a lift, so that a pinch never deletes anything
+    if (tool === 'erase') { g.mode = 'erase'; g.erased = false; if (e.pointerType === 'mouse') this.eraseAt(p, g); return; }
     if (tool === 'port') { g.mode = 'port'; return; }
 
     // select tool
@@ -233,7 +234,7 @@
       g.moved = true;
       clearTimeout(g.longTimer);
       if (g.mode === 'maybe-wire') g.mode = 'wire';
-      if (g.mode === 'toggle') g.mode = 'move';
+      if (g.mode === 'toggle') { g.mode = 'move'; app.sel.add(g.toggleId); }
       if (g.mode === 'move') this.startMove(g);
       if (g.mode === 'wire') g.hFirst = Math.abs(p.x - g.start.x) >= Math.abs(p.y - g.start.y);
       if (g.mode === 'endpoint') { app.checkpoint(); g.cp = true; }
@@ -330,6 +331,7 @@
         break;
       }
       case 'erase':
+        if (!g.moved) this.eraseAt(p, g);
         if (g.erased) app.commit();
         break;
       case 'place':
@@ -361,7 +363,7 @@
       app.circuitChanged();
     }
     if (g.mode === 'endpoint' && g.moved && g.cp) { app.undo(true); }
-    if (g.mode === 'erase' && g.erased) app.commit();
+    if (g.mode === 'erase' && g.erased) app.undo(true);
     app.overlay.band = null; app.overlay.wirePath = null; app.overlay.snap = null;
     this.g = null;
     app.requestRender();
@@ -430,7 +432,6 @@
   /* ---------- moving ---------- */
   Editor.prototype.startMove = function (g) {
     const app = this.app;
-    app.checkpoint(); g.cp = true;
     const comps = app.circuit.comps.filter(c => app.sel.has(c.id));
     const wires = app.circuit.wires.filter(w => app.sel.has(w.id));
     g.orig = [];
@@ -456,6 +457,7 @@
   Editor.prototype.doMove = function (g, p) {
     const dx = Math.round(p.x - g.start.x), dy = Math.round(p.y - g.start.y);
     if (dx === g.delta[0] && dy === g.delta[1]) return;
+    if (!g.cp) { this.app.checkpoint(); g.cp = true; }
     g.delta = [dx, dy];
     for (const o of g.orig) {
       if (o.pos.x !== undefined && g.comps.includes(o.obj)) { o.obj.x = o.pos.x + dx; o.obj.y = o.pos.y + dy; }
@@ -473,7 +475,7 @@
 
   Editor.prototype.endMove = function (g) {
     const app = this.app;
-    if (g.delta[0] === 0 && g.delta[1] === 0) { app.dropCheckpoint(); return; }
+    if (g.delta[0] === 0 && g.delta[1] === 0) { if (g.cp) app.dropCheckpoint(); app.circuitChanged(); return; }
     // a stretched wire that became diagonal is bent into two axis-aligned pieces
     for (const s of g.stretch) {
       const w = s.w;
@@ -650,7 +652,7 @@
       st = null;
       if (cancel) { if (wasDrag) { app.overlay.ghost = null; app.requestRender(); } return; }
       if (!wasDrag) {
-        if (app.tool === 'place' && app.place && app.place.type === type && JSON.stringify(app.place.props) === JSON.stringify(props)) app.setTool('select');
+        if (app.tool === 'place' && app.place && app.place.type === type && (!props || app.place.props.pol === props.pol)) app.setTool('select');
         else app.setTool('place', { type, props });
         return;
       }

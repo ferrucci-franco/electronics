@@ -193,5 +193,17 @@ const Q = (id, b, c, e, pnp) => ({ type: 'Q', id, n: [b, c, e], pnp: !!pnp, beta
   near('ladder last node', r.v[nodes - 1], 0.7, 1e-3);
 }
 
+// 21. a separate island with a current source and a resistor is legal (floating, not an error)
+{
+  const r = S.solve({ nodeCount: 4, elements: [V('V1', 1, 0, 5), R('R0', 1, 0, 1000), I('I1', 2, 3, 1e-3), R('R1', 2, 3, 1000)] });
+  truthy('floating I island ok', r.ok);
+  near('floating I island v', r.el.R1.v, -1);
+}
+// 22. Thévenin with a very large but legal resistance
+{
+  const t = S.thevenin({ nodeCount: 3, elements: [V('V1', 1, 0, 10), R('R1', 1, 2, 1e10)] }, 2, 0, {});
+  near('large R vth', t.vth, 10, 1e-6); near('large R rth', t.rth, 1e10, 1e-6);
+}
+
 console.log(`${count - fails}/${count} checks passed`);
 process.exit(fails ? 1 : 0);

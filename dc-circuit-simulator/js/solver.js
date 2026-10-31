@@ -292,7 +292,8 @@
     for (let i = 1; i < N; i++) if (con.find(i) !== root0) floating.push(i);
     if (floating.length) {
       const fl = new Set(floating);
-      const ids = ckt.elements.filter(el => el.type === 'I' && (fl.has(el.n[0]) || fl.has(el.n[1])) && el.I !== 0).map(el => el.id);
+      // a current source with no conducting path between its terminals forces a current into nothing
+      const ids = ckt.elements.filter(el => el.type === 'I' && el.I !== 0 && (fl.has(el.n[0]) || fl.has(el.n[1])) && con.find(el.n[0]) !== con.find(el.n[1])).map(el => el.id);
       if (ids.length) issues.push({ level: 'error', code: 'inopath', ids });
     }
     return { issues, skip, floating };
@@ -405,7 +406,7 @@
       if (!good || alpha < 1) r = { ok: false, reason: 'newton' };
     }
     if (!r.ok) return r;
-    for (let i = 0; i < r.x.length; i++) if (Math.abs(r.x[i]) > HUGE) return { ok: false, reason: 'huge', x: r.x, v: r.v, brIndex: r.brIndex };
+    if (!ctx.noHuge) for (let i = 0; i < r.x.length; i++) if (Math.abs(r.x[i]) > HUGE) return { ok: false, reason: 'huge', x: r.x, v: r.v, brIndex: r.brIndex };
     return r;
   }
 
@@ -527,7 +528,7 @@
     const N = ckt.nodeCount;
     const Vt = thermalVoltage(opts.tempC);
     const topo = analyseTopology(ckt);
-    const ctx = { Vt, skip: topo.skip, floating: topo.floating, hasExact: ckt.elements.some(el => el.type === 'D' && el.model === 'exact') };
+    const ctx = { noHuge: !!opts.noHuge, Vt, skip: topo.skip, floating: topo.floating, hasExact: ckt.elements.some(el => el.type === 'D' && el.model === 'exact') };
     const result = { ok: false, issues: topo.issues.slice(), Vt };
     if (topo.issues.some(i => i.level === 'error')) return result;
 
@@ -627,8 +628,10 @@
     const nonlinear = base.some(el => el.type === 'D' || el.type === 'Q' || (el.type === 'OA' && el.sat));
     out.nonlinear = nonlinear;
     const prevStates = opts.prevStates;
-    const withI = (I) => solve({ nodeCount: ckt.nodeCount, elements: base.concat([{ type: 'IT', id: '__test', n: [b, a], I }]) }, { prevStates, tempC: opts.tempC, prevV: opts.prevV });
-    const withV = (V) => solve({ nodeCount: ckt.nodeCount, elements: base.concat([{ type: 'VT', id: '__test', n: [a, b], V }]) }, { prevStates, tempC: opts.tempC, prevV: opts.prevV });
+    // test solves may legitimately reach large voltages (a test current into a large resistance)
+    const sopts = { prevStates, tempC: opts.tempC, prevV: opts.prevV, noHuge: !nonlinear };
+    const withI = (I) => solve({ nodeCount: ckt.nodeCount, elements: base.concat([{ type: 'IT', id: '__test', n: [b, a], I }]) }, sopts);
+    const withV = (V) => solve({ nodeCount: ckt.nodeCount, elements: base.concat([{ type: 'VT', id: '__test', n: [a, b], V }]) }, sopts);
     const vab = (r) => r.v[a] - r.v[b];
 
     const r0 = withI(0);
@@ -639,7 +642,7 @@
       const rp = withI(d), rm = withI(-d);
       if (rp.ok && rm.ok) {
         out.rth = (vab(rp) - vab(rm)) / (2 * d);
-        if (Math.abs(out.rth) > 1e10) out.rth = Infinity;
+        if (Math.abs(out.rth) > 1e11) out.rth = Infinity;
         else if (Math.abs(out.rth) < 1e-9) out.rth = 0;
       }
     }
@@ -652,7 +655,7 @@
       const rp = withV(dV), rm = withV(-dV);
       if (rp.ok && rm.ok) {
         const gn = -(rp.el.__test.i - rm.el.__test.i) / (2 * dV);
-        if (Math.abs(gn) < 1e-10) out.rth = Infinity;
+        if (Math.abs(gn) < 1e-11) out.rth = Infinity;
         else { out.rth = 1 / gn; if (out.isc !== undefined) out.voc = out.isc * out.rth; }
       }
     }

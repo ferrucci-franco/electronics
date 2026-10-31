@@ -3,7 +3,7 @@
   'use strict';
 
   const PREFIX = [
-    [1e9, 'G'], [1e6, 'M'], [1e3, 'k'], [1, ''], [1e-3, 'm'], [1e-6, 'µ'], [1e-9, 'n'], [1e-12, 'p']
+    [1e9, 'G'], [1e6, 'M'], [1e3, 'k'], [1, ''], [1e-3, 'm'], [1e-6, 'µ'], [1e-9, 'n'], [1e-12, 'p'], [1e-15, 'f']
   ];
 
   let decimalComma = false;
@@ -39,7 +39,7 @@
   }
 
   const scale = (v, p) => (p < 1 ? v / Math.round(1 / p) : v * p);
-  const MULT = { T: 1e12, G: 1e9, M: 1e6, MEG: 1e6, K: 1e3, k: 1e3, m: 1e-3, u: 1e-6, 'µ': 1e-6, 'μ': 1e-6, n: 1e-9, p: 1e-12 };
+  const MULT = { T: 1e12, G: 1e9, M: 1e6, MEG: 1e6, K: 1e3, k: 1e3, m: 1e-3, u: 1e-6, 'µ': 1e-6, 'μ': 1e-6, n: 1e-9, p: 1e-12, f: 1e-15 };
 
   // parse("4k7") = 4700, parse("2,2 MΩ") = 2.2e6, parse("-5") = -5. Returns NaN when invalid.
   function parse(str) {
@@ -48,12 +48,12 @@
     s = s.replace(/(ohms?|Ω|V|A|W)$/i, '');
     if (!s) return NaN;
     // 4k7 style: digits, prefix, digits
-    let m = s.match(/^([+-]?)(\d+)(meg|[TGMKkmuµμnp])(\d+)$/i);
+    let m = s.match(/^([+-]?)(\d+)(meg|[TGMKkmuµμnpf])(\d+)$/i);
     if (m) {
       const p = m[3].toLowerCase() === 'meg' ? 1e6 : MULT[m[3]];
       return (m[1] === '-' ? -1 : 1) * scale(parseFloat(m[2] + '.' + m[4]), p);
     }
-    m = s.match(/^([+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?)(meg|[TGMKkmuµμnp])?$/i);
+    m = s.match(/^([+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?)(meg|[TGMKkmuµμnpf])?$/i);
     if (!m) return NaN;
     let v = parseFloat(m[1]);
     if (m[2]) v = scale(v, m[2].toLowerCase() === 'meg' ? 1e6 : MULT[m[2]]);

@@ -426,7 +426,7 @@
           field(propLabel(c, d), b);
         } else {
           const inp = el('input', { type: 'text', 'data-prop': d.key, inputmode: 'text', autocomplete: 'off', spellcheck: 'false' });
-          inp.value = d.unit ? U.format(c.props[d.key], '', { digits: 6, trim: true }).trim() : String(c.props[d.key]).replace('.', I.getLang() === 'en' ? '.' : ',');
+          inp.value = d.unit ? U.format(c.props[d.key], '', { digits: 6, trim: true, zero: 1e-30 }).trim() : String(c.props[d.key]).replace('.', I.getLang() === 'en' ? '.' : ',');
           const apply = () => {
             const v = U.parse(inp.value);
             if (!isFinite(v) || v < d.min || v > d.max) { inp.classList.add('bad'); return false; }
@@ -446,7 +446,7 @@
               const up = e.key === 'ArrowUp';
               let v = d.key === 'R' ? step125(v0, up) : (Math.abs(v0) < 1e-12 ? (up ? 0.1 : -0.1) : v0 + (up ? 1 : -1) * stepOf(v0));
               v = Math.max(d.min, Math.min(d.max, v));
-              inp.value = U.format(v, '', { digits: 6, trim: true }).trim();
+              inp.value = U.format(v, '', { digits: 6, trim: true, zero: 1e-30 }).trim();
               apply();
               requestAnimationFrame(() => { const i2 = $('pane-props').querySelector(`input[data-prop="${d.key}"]`); if (i2) { i2.focus(); i2.setSelectionRange(i2.value.length, i2.value.length); } });
             }

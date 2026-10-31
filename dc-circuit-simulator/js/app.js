@@ -55,13 +55,20 @@
 
   /* ---------- history ---------- */
   const snap = () => JSON.stringify(app.circuit);
+  let redoSaved = null;
   app.checkpoint = function () {
     app.undoStack.push(snap());
     if (app.undoStack.length > 200) app.undoStack.shift();
+    redoSaved = app.redoStack.slice();
     app.redoStack.length = 0;
     app.ui && app.ui.updateHistory();
   };
-  app.dropCheckpoint = function () { app.undoStack.pop(); app.ui && app.ui.updateHistory(); };
+  app.dropCheckpoint = function () {
+    app.undoStack.pop();
+    if (redoSaved) app.redoStack = redoSaved;
+    redoSaved = null;
+    app.ui && app.ui.updateHistory();
+  };
   app.undo = function (silent) {
     if (!app.undoStack.length) return;
     if (!silent) app.redoStack.push(snap());
@@ -114,6 +121,18 @@
   };
 
   /* ---------- Thévenin ---------- */
+  // node of a grid point: a terminal or wire end, or a point inside a wire
+  function nodeAt(p) {
+    const n = app.net.pointNode.get(N.key(p[0], p[1]));
+    if (n != null) return n;
+    for (const w of app.circuit.wires) {
+      const dx = w.x2 - w.x1, dy = w.y2 - w.y1;
+      if ((p[0] - w.x1) * dy - (p[1] - w.y1) * dx !== 0) continue;
+      const t = (p[0] - w.x1) * dx + (p[1] - w.y1) * dy;
+      if (t >= 0 && t <= dx * dx + dy * dy) return app.net.wireNode.get(w.id);
+    }
+    return null;
+  }
   function computeThevenin() {
     const th = app.thev, net = app.net;
     th.res = null; th.err = null;
@@ -127,8 +146,7 @@
       exclude = [c.id];
     } else {
       if (!th.a || !th.b) return;
-      na = net.pointNode.get(N.key(th.a[0], th.a[1]));
-      nb = net.pointNode.get(N.key(th.b[0], th.b[1]));
+      na = nodeAt(th.a); nb = nodeAt(th.b);
       if (na == null || nb == null) { th.err = 'thev_err'; return; }
     }
     app.port = { a: th.a, b: th.b };
@@ -422,13 +440,13 @@
     else code = 'j' + b64u.enc(json);
     return location.href.split('#')[0] + '#c=' + code;
   };
-  async function loadFromHash() {
+  async function loadFromHash(keepPrevious) {
     const m = /#c=([zj])([A-Za-z0-9_-]+)/.exec(location.hash);
     if (!m) return false;
     try {
       let bytes = b64u.dec(m[2]);
       if (m[1] === 'z') bytes = await streamBytes(bytes, new DecompressionStream('deflate-raw'));
-      app.loadCircuit(expand(JSON.parse(new TextDecoder().decode(bytes))), { fit: true });
+      app.loadCircuit(expand(JSON.parse(new TextDecoder().decode(bytes))), { fit: true, checkpoint: !!keepPrevious });
       history.replaceState(null, '', location.href.split('#')[0]);
       return true;
     } catch (e) { return false; }
@@ -488,11 +506,11 @@
     app.ui = DCS.UI(app);
     app.renderer.resize();
 
-    let loaded = await loadFromHash();
-    if (!loaded) {
-      const c = LS.get('dcs.circuit');
-      if (c) { try { const o = JSON.parse(c); if (o.comps && o.comps.length) { app.loadCircuit(o); loaded = true; } } catch (e) { /* ignore */ } }
-    }
+    let loaded = false;
+    const c = LS.get('dcs.circuit');
+    if (c) { try { const o = JSON.parse(c); if (o.comps && o.comps.length) { app.loadCircuit(o); loaded = true; } } catch (e) { /* ignore */ } }
+    // a shared circuit replaces the saved one, which stays one undo away
+    if (await loadFromHash(loaded)) loaded = true;
     if (!loaded) app.loadCircuit(DCS.examples.get('divider'));
     app.fit();
     new ResizeObserver(() => { const w = app.renderer.w, h = app.renderer.h; app.renderer.resize(); if (!w || !h) app.fit(); app.requestRender(); }).observe(cv);
