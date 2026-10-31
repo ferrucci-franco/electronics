@@ -127,6 +127,8 @@
   /* ---------- label layout ---------- */
   const HALF = { switch: 1.0, button: 1.1, resistor: 0.4, vsource: 0.9, isource: 0.9, ammeter: 0.9, voltmeter: 0.9, depv: 0.95, depi: 0.95, isense: 0.5, vsense: 0.5, diode: 0.6, schottky: 0.6, zener: 0.6, led: 0.6 };
 
+  // drawn extent of a few symbols beyond HALF, on the local −y (up) and +y (down) sides
+  const SIDE_EXT = { button: [1.6, 0.75], switch: [1.05, 0.3], isense: [0.98, 0.55], vsense: [0.68, 0.55] };
   function worldDir(comp, dx, dy) {
     const m = localMatrix(comp);
     return [m[0] * dx + m[2] * dy, m[1] * dx + m[3] * dy];
@@ -455,7 +457,14 @@
       const hw = HALF[c.type] || 0.6;
       // the light arrows of a LED stick out on one side: the labels keep clear of them
       const lightDir = c.type === 'led' ? worldDir(c, 0, -1) : null;
-      const hwSide = (d) => (lightDir && d[0] * lightDir[0] + d[1] * lightDir[1] > 0.5 ? 1.45 : hw);
+      // symbols that stick out more on one side (push button plunger, sensor arrow): their own extent there
+      const ext = SIDE_EXT[c.type];
+      const up = ext ? worldDir(c, 0, -1) : null;
+      const hwSide = (d) => {
+        if (lightDir && d[0] * lightDir[0] + d[1] * lightDir[1] > 0.5) return 1.45;
+        if (ext) return Math.max(hw, d[0] * up[0] + d[1] * up[1] > 0.5 ? ext[0] : ext[1]);
+        return hw;
+      };
       const [t0, t1] = C.terminals(c);
       const cx = (t0[0] + t1[0]) / 2, cy = (t0[1] + t1[1]) / 2;
       const horiz = t0[1] === t1[1];
