@@ -481,7 +481,7 @@
         }
         if (st.showP) lines.push({ text: 'P ' + fmt(r.p, 'W'), color: col.pabs, mono: true });
       }
-      for (const [lx, ly, dx, dy] of [[0, 0.95, 0, 1], [-2.3, -0.4, -1, 0], [2.3, -0.4, 1, 0], [1.4, -1.6, 1, 0]]) {
+      for (const [lx, ly, dx, dy] of [[0, c.props.ctl === 'knob' ? 1.85 : 0.95, 0, 1], [-2.3, -0.4, -1, 0], [2.3, -0.4, 1, 0], [1.4, -1.6, 1, 0]]) {
         const p = C.toWorld(c, lx, ly);
         opts.push({ blocks: [{ wx: p[0], wy: p[1], dir: worldDir(c, dx, dy), lines }], marks: [] });
       }

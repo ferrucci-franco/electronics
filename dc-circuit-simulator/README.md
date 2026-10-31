@@ -9,7 +9,7 @@ Copia pública: https://ferrucci-franco.github.io/electronics/dc-circuit-simulat
 | Componente | Modelo |
 |---|---|
 | Resistencia | lineal |
-| Potenciómetro | dos resistencias A–cursor y cursor–B según la posición α, curva lineal o logarítmica (audio); la flecha del cursor se arrastra sobre el circuito (o deslizador del panel, teclas [ y ]) y el circuito se resuelve en vivo; control opcional tipo perilla (rotativo, 270°) que se gira arrastrando |
+| Potenciómetro | dos resistencias A–cursor y cursor–B según la posición α, curva lineal o logarítmica (audio); la flecha del cursor se arrastra sobre el circuito (o deslizador del panel, teclas [ y ]) y el circuito se resuelve en vivo; o símbolo rotativo (pista semicircular y cursor que gira alrededor del centro) que se gira arrastrando alrededor del símbolo |
 | Fuente de tensión / de corriente | ideales, continuas |
 | Amperímetro / voltímetro | ideales (0 V / circuito abierto) |
 | Diodo y diodo Schottky | ideal (0 V al conducir), caída constante Vγ con r_d opcional, o exacto (Shockley, I = I_S(e^{V/nV_T} − 1)) |
