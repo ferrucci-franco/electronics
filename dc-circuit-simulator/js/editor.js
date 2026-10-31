@@ -101,7 +101,11 @@
 
   // Route a wire from a to b with axis-aligned pieces: among the L and Z shapes, keep the one that does
   // not run over terminals or component bodies and that leaves / reaches terminals along their leads.
-  Editor.prototype.lPath = function (a, b, hFirst) {
+  // the wire being drawn: the L of the user's choice when R flipped it (wireOrient 'h' or 'v' = first piece)
+  Editor.prototype.wirePathTo = function (a, b, hFirst) {
+    return this.wireOrient ? this.lPath(a, b, this.wireOrient === 'h', true) : this.lPath(a, b, hFirst);
+  };
+  Editor.prototype.lPath = function (a, b, hFirst, force) {
     if (a[0] === b[0] || a[1] === b[1]) return [a, b];
     const aa = this.axisAt(a), ba = this.axisAt(b);
     const mx = Math.round((a[0] + b[0]) / 2), my = Math.round((a[1] + b[1]) / 2);
@@ -117,8 +121,8 @@
     let best = null, bs = Infinity;
     cands.forEach((path, k) => {
       let sc = path.length * 1.5;
-      if (k === 0 && hFirst) sc -= 0.5;
-      if (k === 1 && !hFirst) sc -= 0.5;
+      if (k === 0 && hFirst) sc -= force ? 10 : 0.5;
+      if (k === 1 && !hFirst) sc -= force ? 10 : 0.5;
       const segAxis = (p, q) => (p[1] === q[1] ? 'h' : 'v');
       if (aa && segAxis(path[0], path[1]) !== aa) sc += 3;
       if (ba && segAxis(path[path.length - 2], path[path.length - 1]) !== ba) sc += 3;
@@ -196,7 +200,7 @@
     g.hit = h;
     const tool = app.tool;
     if (tool === 'place') { g.mode = 'place'; return; }
-    if (tool === 'wire') { g.mode = 'wire'; g.a = h && (h.kind === 'term' || h.kind === 'wend') ? h.pt : this.snap(p); return; }
+    if (tool === 'wire') { g.mode = 'wire'; g.a = h && (h.kind === 'term' || h.kind === 'wend') ? h.pt : this.snap(p); if (!this.chain) this.wireOrient = null; return; }
     // with touch the first erase waits for a move or a lift, so that a pinch never deletes anything
     if (tool === 'erase') { g.mode = 'erase'; g.erased = false; if (e.pointerType === 'mouse') this.eraseAt(p, g); return; }
     if (tool === 'port') { g.mode = 'port'; return; }
@@ -332,7 +336,7 @@
       }
       case 'wire': {
         const b = this.endSnap(p, e.pointerType);
-        app.overlay.wirePath = this.lPath(g.a, b, g.hFirst);
+        app.overlay.wirePath = this.wirePathTo(g.a, b, g.hFirst);
         app.overlay.snap = b; app.overlay.snapHot = this.isConn(b[0], b[1]);
         break;
       }
@@ -429,10 +433,10 @@
         const b = this.endSnap(p, e.pointerType);
         if (b[0] !== g.a[0] || b[1] !== g.a[1]) {
           app.checkpoint();
-          app.addWirePath(this.lPath(g.a, b, g.hFirst));
+          app.addWirePath(this.wirePathTo(g.a, b, g.hFirst));
           app.commit();
         }
-        this.chain = null;
+        this.chain = null; this.wireOrient = null;
         break;
       }
       case 'erase':
@@ -514,6 +518,7 @@
     const b = h && (h.kind === 'term' || h.kind === 'wend') ? h.pt : this.snap(p);
     if (!this.chain) {
       this.chain = { pt: b, first: true };
+      this.wireOrient = null;
       app.overlay.snap = b;
       app.hint(app.t('tool_wire_tip'));
       return;
@@ -522,8 +527,9 @@
     if (a[0] === b[0] && a[1] === b[1]) { this.chain = null; app.overlay.wirePath = null; app.hint(null); return; }
     const conn = this.isConn(b[0], b[1]);
     app.checkpoint();
-    app.addWirePath(this.lPath(a, b, Math.abs(b[0] - a[0]) >= Math.abs(b[1] - a[1])));
+    app.addWirePath(this.wirePathTo(a, b, Math.abs(b[0] - a[0]) >= Math.abs(b[1] - a[1])));
     app.commit();
+    this.wireOrient = null;
     if (conn && !this.chain.first) { this.chain = null; app.overlay.wirePath = null; app.hint(null); }
     else this.chain = { pt: b, first: false };
   };
@@ -766,7 +772,7 @@
       cursor = 'crosshair';
       const b = this.endSnap(p, 'mouse');
       app.overlay.snap = b; app.overlay.snapHot = this.isConn(b[0], b[1]);
-      if (this.chain) app.overlay.wirePath = this.lPath(this.chain.pt, b, Math.abs(b[0] - this.chain.pt[0]) >= Math.abs(b[1] - this.chain.pt[1]));
+      if (this.chain) app.overlay.wirePath = this.wirePathTo(this.chain.pt, b, Math.abs(b[0] - this.chain.pt[0]) >= Math.abs(b[1] - this.chain.pt[1]));
     } else if (app.tool === 'erase') {
       cursor = h ? 'pointer' : 'default';
       if (h) app.hover = { id: h.comp ? h.comp.id : h.wire.id };
@@ -930,11 +936,27 @@
     if (mod) return;
     if (k === 'Delete' || k === 'Backspace') { e.preventDefault(); app.deleteSel(); return; }
     if (k === 'Escape') {
-      if (this.chain) { this.chain = null; app.overlay.wirePath = null; app.hint(null); app.requestRender(); return; }
+      if (this.chain) { this.chain = null; this.wireOrient = null; app.overlay.wirePath = null; app.hint(null); app.requestRender(); return; }
       if (this.g) { this.abortGesture(); return; }
       if (app.tool !== 'select') { app.setTool('select'); return; }
       app.select([]);
       return;
+    }
+    // R: while a wire is drawn it flips the corner (horizontal first ↔ vertical first); while placing, or with
+    // a selection, it rotates; with nothing selected it takes a resistor
+    if (k === 'r' || k === 'R') {
+      const g = this.g, drag = g && g.mode === 'wire';
+      if (drag || this.chain) {
+        const a = drag ? g.a : this.chain.pt, q = drag ? g.last : this.lastMouse;
+        const path = app.overlay.wirePath;
+        const cur = this.wireOrient || (path && path.length > 2 ? (path[0][1] === path[1][1] ? 'h' : 'v') : 'h');
+        this.wireOrient = cur === 'h' ? 'v' : 'h';
+        if (q) { const b = this.endSnap(q, drag ? g.type : 'mouse'); app.overlay.wirePath = this.wirePathTo(a, b, true); app.requestRender(); }
+        return;
+      }
+      if (app.tool === 'wire') return;
+      if (app.tool === 'place') { app.rotatePlace(); return; }
+      if (app.sel.size) { app.rotateSel(); return; }
     }
     // one key takes a component, ready to be dropped where the pointer is
     const take = SHORTCUTS[k.toLowerCase()];
