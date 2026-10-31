@@ -229,3 +229,17 @@ html.layout-mobile .field input[type=text], html.layout-mobile .field select{fon
 .modal .field{grid-template-columns:minmax(0,1fr) minmax(150px, 300px)}
 .modal .field .btnrow{flex-wrap:nowrap}
 .modal .field .btnrow select{flex:1; min-width:0}
+
+/* I–V characteristic */
+.ivhead{display:flex; align-items:center; justify-content:space-between; gap:8px}
+.ivhead h3{font-size:14.5px}
+.ivwrap{position:relative}
+.ivplot{display:block; width:100%; height:240px; border:1px solid var(--border); border-radius:10px; background:var(--canvas); touch-action:pan-y; cursor:crosshair}
+.ivplot.big{height:min(68vh, 560px)}
+.ivtip{position:absolute; pointer-events:none; background:var(--paper); border:1px solid var(--border); border-radius:7px; padding:3px 7px; font-size:12px; white-space:nowrap; box-shadow:var(--shadow); font-variant-numeric:tabular-nums}
+.ivtip[hidden]{display:none}
+.ivlegend{display:flex; flex-wrap:wrap; gap:4px 14px; font-size:12.5px; color:var(--fg)}
+.ivlegend > span{display:inline-flex; align-items:center}
+.ivlegend .sw{display:inline-block; width:16px; height:3px; border-radius:2px; margin-right:6px}
+.ivlegend .sw.dash{height:0; background:none; border-top:2px dashed}
+.ivlegend .sw.dot{width:10px; height:10px; border-radius:50%}

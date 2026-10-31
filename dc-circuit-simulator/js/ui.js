@@ -365,6 +365,7 @@
         row.appendChild(button(t('del'), () => app.deleteSel(), 'warn'));
         card.appendChild(row);
         pane.appendChild(card);
+        ivCard(pane);
         return;
       }
       if (ws.length) {
@@ -462,7 +463,33 @@
 
       // results of this element
       if (res && res.el[c.id] && c.type !== 'ground') pane.appendChild(resultsCard(c, res.el[c.id], res));
+      ivCard(pane);
       issuesInto(pane, c.id);
+    }
+    // I–V characteristic of the selection, with its operating point and load line
+    function ivCard(pane) {
+      let spec;
+      try { spec = DCS.iv.build(app); } catch (e) { console.error(e); return; }
+      if (!spec) return;
+      const card = el('div', { class: 'card' });
+      const head = el('div', { class: 'ivhead' });
+      head.appendChild(el('h3', null, esc(spec.title)));
+      card.appendChild(head);
+      if (spec.series.length) {
+        const big = el('button', { type: 'button', class: 'btn', title: plainText(t('iv_expand')) }, '⤢');
+        big.addEventListener('click', () => {
+          const box = el('div', { class: 'card' });
+          openModal(esc(spec.title), box);
+          DCS.iv.mount(box, spec, { big: true });
+          if (spec.note) box.appendChild(el('div', { class: 'hint' }, spec.note));
+          if (spec.conv) box.appendChild(el('div', { class: 'hint' }, spec.conv));
+        });
+        head.appendChild(big);
+        DCS.iv.mount(card, spec);
+      }
+      if (spec.note) card.appendChild(el('div', { class: 'hint' }, spec.note));
+      if (spec.conv) card.appendChild(el('div', { class: 'hint' }, spec.conv));
+      pane.appendChild(card);
     }
     function step125(v, up) {
       const e = Math.floor(Math.log10(v) + 1e-9), m = v / Math.pow(10, e);
