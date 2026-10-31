@@ -1028,8 +1028,9 @@
         else if (q.stuck) res = t('req_stuck');
         else res = `R<sub>eq</sub> = ${full && q.steps.length ? q.last + ' = ' : ''}<b>${R_(q.req)}</b>`;
         card.appendChild(el('div', { class: 'req-result' }, res));
+        if (!full) return;   // the test-source check belongs to the derivation
         const same = q.req !== undefined && q.rtest !== undefined && (q.req === q.rtest || (isFinite(q.req) && isFinite(q.rtest) && Math.abs(q.req - q.rtest) <= 1e-6 * Math.max(Math.abs(q.rtest), 1e-9)));
-        card.appendChild(el('div', { class: 'hint' }, (full ? '<b>3.</b> ' : '') + t('req_verify', { v: R_(q.rtest) }) + (same ? ' <b class="ok">✓</b>' : '')));
+        card.appendChild(el('div', { class: 'hint' }, '<b>3.</b> ' + t('req_verify', { v: R_(q.rtest) }) + (same ? ' <b class="ok">✓</b>' : '')));
       };
       if (!full) { result(); pane.appendChild(card); return; }
       card.appendChild(el('div', { class: 'hint' }, '<b>1.</b> ' + t('req_passive')));
