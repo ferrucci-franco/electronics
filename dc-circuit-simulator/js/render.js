@@ -269,6 +269,7 @@
       }
       let lit;
       if (c.type === 'rgbled' && res && res.el[c.id] && res.el[c.id].ch) lit = res.el[c.id].ch.map(q => Math.max(0, Math.min(1, q.i / c.props.Imax)));
+      if (c.type === 'led') lit = [res && res.el[c.id] ? Math.max(0, Math.min(1, res.el[c.id].i / c.props.Imax)) : 0];
       drawSymbol(this, c, view, selected ? col.sel : bad ? col.err : col.fg, st.style, lw, lit);
     }
 
@@ -621,10 +622,11 @@
       const whiteish = Math.min(...rgb) > 200;
       if (lightBg && whiteish) rgb = [255, 226, 140];
       const [wx, wy] = C.toWorld(c, c.type === 'led' ? 0 : 0.2, 0);
-      const x = wx * s + view.ox, y = wy * s + view.oy, R0 = s * (c.type === 'led' ? 1.9 : 2.8);
+      // the halo grows and strengthens with the current
+      const x = wx * s + view.ox, y = wy * s + view.oy, R0 = s * (c.type === 'led' ? 0.9 + 1.3 * Math.sqrt(b) : 1.5 + 1.6 * Math.sqrt(b));
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       const g = ctx.createRadialGradient(x, y, 0, x, y, R0);
-      const a = 0.25 + 0.65 * Math.sqrt(b);
+      const a = 0.9 * Math.sqrt(b);
       g.addColorStop(0, `rgba(${rgb.join(',')},${a})`);
       g.addColorStop(0.45, `rgba(${rgb.join(',')},${a * 0.45})`);
       g.addColorStop(1, `rgba(${rgb.join(',')},0)`);

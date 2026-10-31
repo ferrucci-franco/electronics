@@ -229,5 +229,16 @@ const Q = (id, b, c, e, pnp) => ({ type: 'Q', id, n: [b, c, e], pnp: !!pnp, beta
   near('EM power balance', r.pSum, 0, 1e-9);
 }
 
+// 24. many current sources each feeding a diode that starts off (beyond the exhaustive search)
+{
+  const els = [];
+  let n = 1;
+  for (let k = 0; k < 30; k++) { els.push(I('I' + k, 0, n, (k % 5) * 5e-3), D('D' + k, n, 0, 'cvd', { Vf: 1.8 })); n++; }
+  const r = S.solve({ nodeCount: n, elements: els });
+  truthy('30 LEDs fed by current sources', r.ok);
+  near('LED on at 20 mA', r.el.D4.i, 20e-3); near('LED voltage', r.el.D4.v, 1.8);
+  near('LED off at 0 A', r.el.D0.i, 0, 1e-9);
+}
+
 console.log(`${count - fails}/${count} checks passed`);
 process.exit(fails ? 1 : 0);
