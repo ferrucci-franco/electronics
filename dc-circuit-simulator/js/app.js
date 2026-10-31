@@ -102,6 +102,8 @@
     app.badIds = bad;
     if (app.thev) computeThevenin();
     app.wireCur = res.ok ? N.wireCurrents(net, res, S) : new Map();
+    // closed switches: 0 V, and the current that the wire graph gives them (indeterminate inside a loop)
+    if (res.ok) for (const [id, s] of app.wireCur.sw) res.el[id] = { v: 0, i: s.i, tc: [s.i, -s.i], p: 0, state: null, loop: s.loop };
     buildFlow();
     if (!live) app.ui && app.ui.update();
     else app.ui && app.ui.updateLive();

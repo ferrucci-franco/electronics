@@ -12,6 +12,7 @@ Copia pública: https://ferrucci-franco.github.io/electronics/dc-circuit-simulat
 | Potenciómetro | dos resistencias A–cursor y cursor–B según la posición α, curva lineal o logarítmica (audio); la flecha del cursor se arrastra sobre el circuito (o deslizador del panel, teclas [ y ]) y el circuito se resuelve en vivo; o símbolo rotativo (pista semicircular y cursor que gira alrededor del centro) que se gira arrastrando alrededor del símbolo |
 | Fuente de tensión / de corriente | ideales, continuas |
 | Amperímetro / voltímetro | ideales (0 V / circuito abierto) |
+| Interruptor (sin resorte) y pulsador (con resorte, normal abierto NA o normal cerrado NC) | ideales: cerrado = un cable (une los dos nodos; su corriente sale de la LKC, como en los cables), abierto = circuito abierto (se ve la tensión entre sus contactos). El interruptor se abre o se cierra con un clic o un toque y queda así; el pulsador cambia solo mientras se lo mantiene apretado y vuelve al soltarlo |
 | Diodo y diodo Schottky | ideal (0 V al conducir), caída constante Vγ con r_d opcional, o exacto (Shockley, I = I_S(e^{V/nV_T} − 1)) |
 | LED (rojo, naranja, amarillo, verde, azul, blanco) | caída constante Vγ típica del color (con r_d) o exacto (exponencial, n = 2, Vγ a 10 mA); se ilumina según I/I_max y avisa si I > I_max |
 | LED RGB | cátodo común o ánodo común, Vγ por canal; el brillo mezcla los tres colores según la corriente de cada canal |

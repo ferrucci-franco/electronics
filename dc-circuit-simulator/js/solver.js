@@ -660,7 +660,8 @@
       let p = 0;
       if (el.type === 'OA') p = sol.v[el.n[2]] * tc[2];                    // power drawn from the hidden supplies
       else el.n.forEach((node, j) => { p += sol.v[node] * tc[j]; });
-      const r = { tc, p, state: st };
+      // a conducting junction that carries no current (e.g. in a branch left open by a switch) is shown off
+      const r = { tc, p, state: el.type === 'D' && st === 'on' && Math.abs(tc[0]) < ITOL ? 'off' : st };
       if (el.n.length === 2) { r.v = sol.v[el.n[0]] - sol.v[el.n[1]]; r.i = tc[0]; }
       if (el.type === 'Q') {
         const [b, c, e] = el.n, s = el.pnp ? -1 : 1;
