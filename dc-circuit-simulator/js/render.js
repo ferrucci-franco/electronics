@@ -458,6 +458,7 @@
         const mx = cx + rd[0] * (hwR + 0.95) / 2, my = cy + rd[1] * (hwR + 0.95) / 2;
         const extra = [[mx - ex / 2 - (rd[0] ? 0 : 0), my - ey / 2, mx + ex / 2, my + ey / 2]];
         const marks = [];
+        let rb = null;   // the block of readings (or reference marks) on the side rd
         if (r) {
           const lines = [];
           let off = hwR + 0.35;
@@ -489,13 +490,20 @@
             if (st.showP) lines.push({ text: fmt(r.p, 'W'), color: r.p < -1e-15 ? col.pgen : col.pabs, mono: true });
             if (C.isDiode(c) && c.props.model !== 'exact' && st.showState) lines.push({ text: tr('state_' + r.state), color: col.muted });
           }
-          blocks.push({ wx: cx + rd[0] * ((lines.refOff || off) + gap), wy: cy + rd[1] * ((lines.refOff || off) + gap), dir: rd, lines });
+          rb = { wx: cx + rd[0] * ((lines.refOff || off) + gap), wy: cy + rd[1] * ((lines.refOff || off) + gap), dir: rd, lines };
+          blocks.push(rb);
         } else if (!st.realDir && C.flippable(c)) {
           const lines = [];
           this.refMarks(S, c, null, rd, hwR, cx, cy, ax, ay, marks, lines, fmt);
-          blocks.push({ wx: cx + rd[0] * (lines.refOff + gap), wy: cy + rd[1] * (lines.refOff + gap), dir: rd, lines });
+          rb = { wx: cx + rd[0] * (lines.refOff + gap), wy: cy + rd[1] * (lines.refOff + gap), dir: rd, lines };
+          blocks.push(rb);
         }
         opts.push({ blocks, marks, extra: marks.length ? extra : [], penalty: gap ? 3 : 0 });
+        // everything on one side (name and value above the readings): for components side by side with
+        // little room between them, each one keeps its labels on its outer side
+        if (!gap && rb && nameLines.length && rb.lines.length) {
+          opts.push({ blocks: [Object.assign({}, rb, { lines: nameLines.concat(rb.lines) })], marks, extra: marks.length ? extra : [], penalty: 1.5 });
+        }
       }
       return opts;
     }
