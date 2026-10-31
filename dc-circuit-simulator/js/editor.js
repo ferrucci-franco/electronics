@@ -164,8 +164,10 @@
     this.g = g;
     // panning with the right or middle mouse button, or with space held
     if (e.pointerType === 'mouse' && (e.button === 1 || e.button === 2 || this.space)) {
-      if (e.button === 2 && app.tool === 'place') { app.rotatePlace(); this.g = null; return; }
+      if (e.button === 2 && app.tool === 'place') { if (e.shiftKey) app.flipPlace(); else app.rotatePlace(); this.g = null; return; }
       g.mode = 'pan'; g.view0 = Object.assign({}, app.view);
+      // a right click without dragging rotates the component under the pointer (Shift: mirror)
+      if (e.button === 2) { g.rclick = true; g.hit = this.hit(p.x, p.y, 'mouse'); }
       return;
     }
     if (e.button > 0 && e.pointerType === 'mouse') { this.g = null; return; }
@@ -299,7 +301,16 @@
 
     switch (g.mode) {
       case 'pan':
-        if (!g.moved) this.tap(g, p, e);
+        if (g.moved) break;
+        if (g.rclick) {
+          const c = g.hit && g.hit.comp;
+          if (c && app.tool === 'select') {
+            if (!app.sel.has(c.id)) app.select([c.id]);
+            if (g.shift || e.shiftKey) app.flipSel(); else app.rotateSel();
+          }
+          break;
+        }
+        this.tap(g, p, e);
         break;
       case 'band': {
         const band = app.overlay.band;
@@ -626,6 +637,9 @@
     if (k === 'r' || k === 'R') { if (app.tool === 'place') app.rotatePlace(); else app.rotateSel(); return; }
     if (k === 'f' || k === 'F') { if (app.tool === 'place') app.flipPlace(); else app.flipSel(); return; }
     if (k === 'w' || k === 'W') { app.setTool(app.tool === 'wire' ? 'select' : 'wire'); return; }
+    if (k === '+' || k === '=') { app.zoomAt(1.25, app.renderer.w / 2, app.renderer.h / 2); return; }
+    if (k === '-' || k === '_') { app.zoomAt(0.8, app.renderer.w / 2, app.renderer.h / 2); return; }
+    if (k === '0') { app.fit(); return; }
     if (k === 'Enter' && app.sel.size === 1) { app.openProps(true); return; }
     if (k.startsWith('Arrow') && app.sel.size) {
       e.preventDefault();

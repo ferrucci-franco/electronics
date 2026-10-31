@@ -29,9 +29,11 @@ Símbolos USA (por defecto) o IEC/europeos.
 
 ## Uso
 
-- Ratón: clic en un componente de la lista y clic en la grilla (o arrastrar desde la lista); arrastrar desde un terminal dibuja un cable; rueda = zoom; botón derecho o del medio = desplazar; arrastrar sobre el fondo = selección por rectángulo; doble clic = propiedades.
-- Táctil: tocar el componente y luego la grilla; un dedo sobre el fondo desplaza, dos dedos hacen zoom; toque largo sobre el fondo = selección por rectángulo, sobre un elemento = propiedades.
-- Teclado: R (rotar), F (espejar), W (cable), Supr, Ctrl+Z / Ctrl+Y, Ctrl+C / Ctrl+V, Ctrl+D, Ctrl+A, flechas, Esc.
+- Colocar: tocar o hacer clic en un componente de la lista y luego en la grilla, o arrastrarlo desde la lista. Arrastrar desde un terminal dibuja un cable (el ruteo esquiva los componentes). Doble clic / doble toque = propiedades.
+- Rotar y espejar: clic derecho sobre un componente (Mayús + clic derecho = espejo), teclas R / F, o los botones ⟳ / ⇋ de la barra sobre el circuito (también mientras se coloca, para el uso con el dedo).
+- Zoom y desplazamiento: rueda (o pellizco en el touchpad) = zoom alrededor del puntero; arrastrar con el botón derecho o del medio, o Espacio + arrastrar = desplazar; con el dedo, un dedo sobre el fondo desplaza y dos dedos hacen zoom; botones + / − / ⤢ y teclas +, −, 0. Arrastrar sobre el fondo con el ratón (o toque largo y arrastrar con el dedo) = selección por rectángulo.
+- Teclado: Supr, Ctrl+Z / Ctrl+Y, Ctrl+C / Ctrl+V, Ctrl+D, Ctrl+A, flechas, W (cable), Enter (propiedades), Esc.
+- Las etiquetas (nombre, valor y resultados) se ubican solas del lado que no tapa símbolos, cables ni otras etiquetas.
 - Los valores aceptan prefijos: 4k7, 2.2M, 10m, 100u, 1n… (M = mega, m = mili).
 - Archivo: guardar / abrir JSON, copiar un enlace que contiene el circuito, exportar PNG. El circuito actual se guarda en el navegador.
 

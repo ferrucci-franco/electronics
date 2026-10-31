@@ -383,9 +383,13 @@
       const horiz = t0[1] === t1[1];
       const ax = (t1[0] - t0[0]) / 4, ay = (t1[1] - t0[1]) / 4;
       const sides = horiz ? [[0, -1], [0, 1]] : [[1, 0], [-1, 0]];
-      for (const nd of sides) {
+      for (const [nd, gap] of [[sides[0], 0], [sides[1], 0], [sides[0], 0.9], [sides[1], 0.9]]) {
         const rd = [-nd[0], -nd[1]];
-        const blocks = [{ wx: cx + nd[0] * (hw + 0.35), wy: cy + nd[1] * (hw + 0.35), dir: nd, lines: nameLines }];
+        const blocks = [{ wx: cx + nd[0] * (hw + 0.35 + gap), wy: cy + nd[1] * (hw + 0.35 + gap), dir: nd, lines: nameLines }];
+        // the strip next to the body where the reference marks and arrows go
+        const ex = Math.abs(ax) * 1.9 + Math.abs(rd[0]) * (hw + 0.95), ey = Math.abs(ay) * 1.9 + Math.abs(rd[1]) * (hw + 0.95);
+        const mx = cx + rd[0] * (hw + 0.95) / 2, my = cy + rd[1] * (hw + 0.95) / 2;
+        const extra = [[mx - ex / 2 - (rd[0] ? 0 : 0), my - ey / 2, mx + ex / 2, my + ey / 2]];
         const marks = [];
         if (r) {
           const lines = [];
@@ -418,13 +422,13 @@
             if (st.showP) lines.push({ text: fmt(r.p, 'W'), color: r.p < -1e-15 ? col.pgen : col.pabs, mono: true });
             if ((c.type === 'diode' || c.type === 'schottky') && c.props.model !== 'exact' && st.showState) lines.push({ text: tr('state_' + r.state), color: col.muted });
           }
-          blocks.push({ wx: cx + rd[0] * (lines.refOff || off), wy: cy + rd[1] * (lines.refOff || off), dir: rd, lines });
+          blocks.push({ wx: cx + rd[0] * ((lines.refOff || off) + gap), wy: cy + rd[1] * ((lines.refOff || off) + gap), dir: rd, lines });
         } else if (!st.realDir && C.flippable(c)) {
           const lines = [];
           this.refMarks(S, c, null, rd, hw, cx, cy, ax, ay, marks, lines, fmt);
-          blocks.push({ wx: cx + rd[0] * lines.refOff, wy: cy + rd[1] * lines.refOff, dir: rd, lines });
+          blocks.push({ wx: cx + rd[0] * (lines.refOff + gap), wy: cy + rd[1] * (lines.refOff + gap), dir: rd, lines });
         }
-        opts.push({ blocks, marks });
+        opts.push({ blocks, marks, extra: marks.length ? extra : [], penalty: gap ? 3 : 0 });
       }
       return opts;
     }
@@ -444,10 +448,12 @@
         else arrowScreen(this, S.view, b[0], b[1], a[0], a[1], col.cur, 1.8);
       });
       const blk = (lx, ly, dx, dy, lines) => { const p = C.toWorld(c, lx, ly); return { wx: p[0], wy: p[1], dir: worldDir(c, dx, dy), lines }; };
-      const name = { wx: C.toWorld(c, -0.25, 0)[0], wy: C.toWorld(c, -0.25, 0)[1], dir: [0, 0], lines: nameLines.slice(0, 1), center: true };
-      for (const b of [blk(1.6, 1.1, 0, 1, lines), blk(1.6, -1.1, 0, -1, lines), blk(3.3, 0.4, 1, 0, lines), blk(-0.6, 2.3, 0, 1, lines), blk(-0.6, -2.3, 0, -1, lines)]) {
-        opts.push({ blocks: [name, b], marks });
-      }
+      const names = [blk(-1.2, -2.25, 0, -1, nameLines), blk(-1.2, 2.25, 0, 1, nameLines), blk(1.2, -1.35, 0, -1, nameLines)];
+      const results = [blk(1.6, 1.1, 0, 1, lines), blk(1.6, -1.1, 0, -1, lines), blk(3.3, 0.4, 1, 0, lines), blk(-0.6, 2.3, 0, 1, lines), blk(-0.6, -2.3, 0, -1, lines)];
+      names.forEach((nb, i) => results.forEach((rb, j) => {
+        if ((i === 0 && j === 4) || (i === 1 && j === 3) || (i === 2 && j === 1)) return;
+        opts.push({ blocks: [nb, rb], marks, penalty: (i + j) * 0.3 });
+      }));
       return opts;
     }
 
@@ -560,11 +566,11 @@
     const obst = [];
     for (const c of S.circuit.comps) {
       const b = C.bounds(c), p = toS(b[0], b[1]), q = toS(b[2], b[3]);
-      obst.push({ r: [p[0], p[1], q[0], q[1]], id: c.id, w: 1 });
+      obst.push({ r: [p[0], p[1], q[0], q[1]], id: c.id, w: 40 });
     }
     for (const w of S.circuit.wires) {
       const p = toS(w.x1, w.y1), q = toS(w.x2, w.y2);
-      obst.push({ r: [Math.min(p[0], q[0]) - 3, Math.min(p[1], q[1]) - 3, Math.max(p[0], q[0]) + 3, Math.max(p[1], q[1]) + 3], w: 0.7 });
+      obst.push({ r: [Math.min(p[0], q[0]) - 3, Math.min(p[1], q[1]) - 3, Math.max(p[0], q[0]) + 3, Math.max(p[1], q[1]) + 3], w: 4 });
     }
     const W = this.w, H = this.h;
     const items = [];
@@ -572,20 +578,34 @@
       if (c.type === 'ground') continue;
       const opts = this.labelOptions(S, c, res, fmt);
       if (!opts.length) continue;
-      for (const o of opts) o.rects = o.blocks.map(b => blockRect(this, view, b, fontPx)).filter(Boolean);
-      items.push({ c, opts, pick: 0 });
+      for (const o of opts) {
+        o.rects = o.blocks.map(b => blockRect(this, view, b, fontPx)).filter(Boolean);
+        // marks strip: kept clear of other labels, but it may touch wires and its own body
+        o.marks2 = (o.extra || []).map(e => { const p = toS(e[0], e[1]), q = toS(e[2], e[3]); return [Math.min(p[0], q[0]), Math.min(p[1], q[1]), Math.max(p[0], q[0]), Math.max(p[1], q[1])]; });
+      }
+      items.push({ c, opts, pick: 0, two: C.TYPES[c.type].terms.length === 2 });
     }
     const cost = (it, k) => {
       const o = it.opts[k];
-      let score = k * 0.5; // mild preference for the conventional option
+      let score = k * 0.5 + (o.penalty || 0) * 100; // mild preference for the conventional option
       for (const r of o.rects) {
-        for (const ob of obst) if (ob.id !== it.c.id) score += overlap(r, ob.r) * ob.w;
+        // the own body counts too for two-terminal elements (their box is their symbol)
+        for (const ob of obst) if (ob.id !== it.c.id || (ob.w > 10 && it.two)) score += overlap(r, ob.r) * ob.w;
         for (const other of items) {
           if (other === it || other.pick < 0) continue;
-          for (const pr of other.opts[other.pick].rects) score += overlap(r, pr) * 2;
+          const oo = other.opts[other.pick];
+          for (const pr of oo.rects) score += overlap(r, pr) * 40;
+          for (const pr of oo.marks2) score += overlap(r, pr) * 20;
         }
         const area = (r[2] - r[0]) * (r[3] - r[1]);
         score += (area - overlap(r, [0, 0, W, H])) * 0.3;
+      }
+      for (const m of o.marks2) {
+        for (const other of items) {
+          if (other === it || other.pick < 0) continue;
+          for (const pr of other.opts[other.pick].rects) score += overlap(m, pr) * 20;
+        }
+        for (const ob of obst) if (ob.id !== it.c.id && ob.w > 10) score += overlap(m, ob.r) * 10;
       }
       return score;
     };

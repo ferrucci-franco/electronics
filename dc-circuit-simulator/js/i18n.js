@@ -4,6 +4,7 @@
   const T = {
     en: {
       title: 'DC Circuit Simulator',
+      place_cancel: 'Stop placing (Esc)',
       tip_flip: 'Tap to flip this reference', node_name: 'Node name', node_hint: 'Node voltages are measured from ground (0 V). Give the node a name (A, B, out…) to find it in the tables and the equations.',
       nodes_hint: 'Unknowns of the nodal method: the voltage of each node with respect to ground. Hover or tap a row to find the node on the circuit.',
       ref_title: 'Reference directions', ref_passive_s: 'passive convention', ref_active_s: 'generator convention',
@@ -104,10 +105,15 @@
 <li>Diode: ideal (0 V when on), constant drop V<sub>γ</sub> with optional r<sub>d</sub>, or exact (Shockley: I = I<sub>S</sub>(e^{V/nV<sub>T</sub>} − 1)). Schottky: same models with lower V<sub>γ</sub> and higher I<sub>S</sub>.</li>
 <li>Op-amp: ideal (infinite gain, no input current, zero output resistance), with optional saturation at ±Vsat.</li>
 <li>Transistor (BJT): cutoff, active (V<sub>BE</sub> = 0.7 V, I<sub>C</sub> = βI<sub>B</sub>) or saturation (V<sub>CE</sub> = V<sub>CE,sat</sub>).</li></ul>
-<h4>Mouse and touch</h4><ul>
-<li>Mouse: wheel = zoom, right button or middle button drag = pan, drag on the background = box selection.</li>
-<li>Touch: one finger on the background = pan, two fingers = zoom, long press on the background = box selection, long press on an element = properties.</li>
-<li>Keys: Del, Ctrl+Z / Ctrl+Y, Ctrl+C / Ctrl+V, Ctrl+D, Ctrl+A, W (wire), Esc.</li></ul>`,
+<h4>Rotate and mirror</h4><ul>
+<li>Mouse: <b>right click</b> on a component rotates it a quarter turn, <b>Shift + right click</b> mirrors it. While placing, the right click rotates the component before it is dropped.</li>
+<li>Keyboard: <b>R</b> rotates, <b>F</b> mirrors (the selection, or the component being placed).</li>
+<li>Touch: select the component and use <b>⟳</b> / <b>⇋</b> in the bar over the circuit. While placing, the same bar rotates the component before you tap the grid.</li></ul>
+<h4>Zoom and pan</h4><ul>
+<li>Mouse: <b>wheel</b> = zoom around the pointer (pinch on a touchpad too); drag with the <b>right or middle button</b>, or hold <b>Space</b> and drag = pan; drag on the background = box selection.</li>
+<li>Touch: <b>one finger</b> on the background = pan, <b>two fingers</b> = zoom and pan; long press on the background = box selection, long press on an element = properties.</li>
+<li>Buttons + / − / ⤢ (fit the circuit) at the bottom right; keys <b>+</b>, <b>−</b>, <b>0</b>.</li></ul>
+<h4>Other keys</h4><ul><li>Del, Ctrl+Z / Ctrl+Y, Ctrl+C / Ctrl+V, Ctrl+D, Ctrl+A, arrows (move the selection), W (wire), Enter (properties), Esc.</li></ul>`,
       ex_title: 'Examples', ex_load: 'Load',
       copy_hint: 'Copied', pasted: 'Pasted',
       unit_none: '',
@@ -115,6 +121,7 @@
     },
     fr: {
       title: 'Simulateur de circuits en continu',
+      place_cancel: 'Arrêter de placer (Échap)',
       tip_flip: 'Touchez pour inverser cette référence', node_name: 'Nom du nœud', node_hint: 'Les potentiels sont mesurés par rapport à la masse (0 V). Donnez un nom au nœud (A, B, s…) pour le retrouver dans les tableaux et les équations.',
       nodes_hint: 'Inconnues de la méthode des nœuds : le potentiel de chaque nœud par rapport à la masse. Survolez ou touchez une ligne pour repérer le nœud sur le circuit.',
       ref_title: 'Sens de référence', ref_passive_s: 'convention récepteur', ref_active_s: 'convention générateur',
@@ -215,10 +222,15 @@
 <li>Diode : idéale (0 V passante), seuil constant V<sub>γ</sub> avec r<sub>d</sub> optionnelle, ou exacte (Shockley : I = I<sub>S</sub>(e^{V/nV<sub>T</sub>} − 1)). Schottky : mêmes modèles avec V<sub>γ</sub> plus faible et I<sub>S</sub> plus grand.</li>
 <li>AOP : idéal (gain infini, courants d’entrée nuls, résistance de sortie nulle), avec saturation optionnelle à ±Vsat.</li>
 <li>Transistor bipolaire : bloqué, actif (V<sub>BE</sub> = 0,7 V, I<sub>C</sub> = βI<sub>B</sub>) ou saturé (V<sub>CE</sub> = V<sub>CE,sat</sub>).</li></ul>
-<h4>Souris et tactile</h4><ul>
-<li>Souris : molette = zoom, glisser avec le bouton droit ou du milieu = déplacer la vue, glisser sur le fond = sélection par rectangle.</li>
-<li>Tactile : un doigt sur le fond = déplacer la vue, deux doigts = zoom, appui long sur le fond = sélection par rectangle, appui long sur un élément = propriétés.</li>
-<li>Clavier : Suppr, Ctrl+Z / Ctrl+Y, Ctrl+C / Ctrl+V, Ctrl+D, Ctrl+A, W (fil), Échap.</li></ul>`,
+<h4>Tourner et retourner</h4><ul>
+<li>Souris : <b>clic droit</b> sur un composant = quart de tour, <b>Maj + clic droit</b> = miroir. Pendant le placement, le clic droit tourne le composant avant de le poser.</li>
+<li>Clavier : <b>R</b> tourne, <b>F</b> retourne (la sélection, ou le composant en cours de placement).</li>
+<li>Tactile : sélectionnez le composant et utilisez <b>⟳</b> / <b>⇋</b> dans la barre au-dessus du circuit. Pendant le placement, la même barre tourne le composant avant de toucher la grille.</li></ul>
+<h4>Zoom et déplacement</h4><ul>
+<li>Souris : <b>molette</b> = zoom autour du pointeur (pincement sur un pavé tactile aussi) ; glisser avec le <b>bouton droit ou du milieu</b>, ou maintenir <b>Espace</b> et glisser = déplacer la vue ; glisser sur le fond = sélection par rectangle.</li>
+<li>Tactile : <b>un doigt</b> sur le fond = déplacer la vue, <b>deux doigts</b> = zoom et déplacement ; appui long sur le fond = sélection par rectangle, appui long sur un élément = propriétés.</li>
+<li>Boutons + / − / ⤢ (cadrer le circuit) en bas à droite ; touches <b>+</b>, <b>−</b>, <b>0</b>.</li></ul>
+<h4>Autres touches</h4><ul><li>Suppr, Ctrl+Z / Ctrl+Y, Ctrl+C / Ctrl+V, Ctrl+D, Ctrl+A, flèches (déplacer la sélection), W (fil), Entrée (propriétés), Échap.</li></ul>`,
       ex_title: 'Exemples', ex_load: 'Charger',
       copy_hint: 'Copié', pasted: 'Collé',
       unit_none: '',
@@ -226,6 +238,7 @@
     },
     es: {
       title: 'Simulador de circuitos en continua',
+      place_cancel: 'Dejar de colocar (Esc)',
       tip_flip: 'Toque para invertir esta referencia', node_name: 'Nombre del nodo', node_hint: 'Las tensiones de nodo se miden respecto de masa (0 V). Póngale un nombre al nodo (A, B, sal…) para encontrarlo en las tablas y las ecuaciones.',
       nodes_hint: 'Incógnitas del método de nodos: la tensión de cada nodo respecto de masa. Pase el ratón o toque una fila para ubicar el nodo en el circuito.',
       ref_title: 'Sentidos de referencia', ref_passive_s: 'convención pasiva', ref_active_s: 'convención generador',
@@ -326,10 +339,15 @@
 <li>Diodo: ideal (0 V al conducir), caída constante V<sub>γ</sub> con r<sub>d</sub> opcional, o exacto (Shockley: I = I<sub>S</sub>(e^{V/nV<sub>T</sub>} − 1)). Schottky: los mismos modelos con V<sub>γ</sub> menor e I<sub>S</sub> mayor.</li>
 <li>AO: ideal (ganancia infinita, corrientes de entrada nulas, resistencia de salida nula), con saturación opcional en ±Vsat.</li>
 <li>Transistor (BJT): corte, activa (V<sub>BE</sub> = 0,7 V, I<sub>C</sub> = βI<sub>B</sub>) o saturación (V<sub>CE</sub> = V<sub>CE,sat</sub>).</li></ul>
-<h4>Ratón y pantalla táctil</h4><ul>
-<li>Ratón: rueda = zoom, arrastrar con el botón derecho o del medio = desplazar, arrastrar sobre el fondo = selección con rectángulo.</li>
-<li>Táctil: un dedo sobre el fondo = desplazar, dos dedos = zoom, toque largo sobre el fondo = selección con rectángulo, toque largo sobre un elemento = propiedades.</li>
-<li>Teclado: Supr, Ctrl+Z / Ctrl+Y, Ctrl+C / Ctrl+V, Ctrl+D, Ctrl+A, W (cable), Esc.</li></ul>`,
+<h4>Rotar y espejar</h4><ul>
+<li>Ratón: <b>clic derecho</b> sobre un componente = un cuarto de vuelta, <b>Mayús + clic derecho</b> = espejar. Mientras se coloca, el clic derecho rota el componente antes de soltarlo.</li>
+<li>Teclado: <b>R</b> rota, <b>F</b> espeja (la selección, o el componente que se está colocando).</li>
+<li>Táctil: seleccione el componente y use <b>⟳</b> / <b>⇋</b> en la barra sobre el circuito. Mientras coloca, la misma barra rota el componente antes de tocar la grilla.</li></ul>
+<h4>Zoom y desplazamiento</h4><ul>
+<li>Ratón: <b>rueda</b> = zoom alrededor del puntero (también pellizco en el touchpad); arrastrar con el <b>botón derecho o del medio</b>, o mantener <b>Espacio</b> y arrastrar = desplazar; arrastrar sobre el fondo = selección con rectángulo.</li>
+<li>Táctil: <b>un dedo</b> sobre el fondo = desplazar, <b>dos dedos</b> = zoom y desplazamiento; toque largo sobre el fondo = selección con rectángulo, toque largo sobre un elemento = propiedades.</li>
+<li>Botones + / − / ⤢ (encuadrar el circuito) abajo a la derecha; teclas <b>+</b>, <b>−</b>, <b>0</b>.</li></ul>
+<h4>Otras teclas</h4><ul><li>Supr, Ctrl+Z / Ctrl+Y, Ctrl+C / Ctrl+V, Ctrl+D, Ctrl+A, flechas (mover la selección), W (cable), Enter (propiedades), Esc.</li></ul>`,
       ex_title: 'Ejemplos', ex_load: 'Cargar',
       copy_hint: 'Copiado', pasted: 'Pegado',
       unit_none: '',

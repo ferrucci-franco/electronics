@@ -239,8 +239,9 @@
       const b = e.target.closest('[data-act]');
       if (!b) return;
       switch (b.dataset.act) {
-        case 'rotate': app.rotateSel(); break;
-        case 'flip': app.flipSel(); break;
+        case 'rotate': if (app.tool === 'place') app.rotatePlace(); else app.rotateSel(); break;
+        case 'flip': if (app.tool === 'place') app.flipPlace(); else app.flipSel(); break;
+        case 'cancel': app.setTool('select'); break;
         case 'edit': app.openProps(true); break;
         case 'dup': app.duplicateSel(); break;
         case 'del': app.deleteSel(); break;
@@ -250,7 +251,17 @@
     function syncSelbar() {
       const bar = $('selbar');
       const cs = app.selectedComps();
-      bar.hidden = !(app.tool === 'select' && app.sel.size);
+      const placing = app.tool === 'place';
+      bar.hidden = !((app.tool === 'select' && app.sel.size) || placing);
+      bar.querySelector('[data-act=cancel]').hidden = !placing;
+      for (const a of ['edit', 'thev', 'dup', 'del']) bar.querySelector(`[data-act=${a}]`).hidden = placing;
+      if (placing) {
+        bar.querySelector('[data-act=rotate]').hidden = false;
+        bar.querySelector('[data-act=flip]').hidden = false;
+        return;
+      }
+      bar.querySelector('[data-act=dup]').hidden = false;
+      bar.querySelector('[data-act=del]').hidden = false;
       const one = cs.length === 1 && app.sel.size === 1 ? cs[0] : null;
       bar.querySelector('[data-act=rotate]').hidden = !cs.length;
       bar.querySelector('[data-act=flip]').hidden = !cs.length;
