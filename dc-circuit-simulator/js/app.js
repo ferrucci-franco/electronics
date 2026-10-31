@@ -94,9 +94,10 @@
     app.net = net;
     const res = S.solve(net.ckt, { prevStates: app.prevStates, tempC: app.settings.tempC, prevV: app.prevV && app.prevV.length === net.ckt.nodeCount ? app.prevV : null });
     if (res.ok) { app.prevStates = Object.assign({}, app.prevStates, res.states); app.prevV = res.v; }
+    if (res.ok) mergeRGB(res);
     app.result = res;
     const bad = new Set();
-    for (const iss of res.issues) if (iss.level === 'error') for (const id of iss.ids) bad.add(id);
+    for (const iss of res.issues) if (iss.level === 'error') for (const id of iss.ids) bad.add(String(id).split('#')[0]);
     app.badIds = bad;
     if (app.thev) computeThevenin();
     app.wireCur = res.ok ? N.wireCurrents(net, res, S) : new Map();
@@ -110,12 +111,33 @@
     save();
   };
 
+  // the three junctions of an RGB LED become one result with four terminal currents
+  function mergeRGB(res) {
+    for (const c of app.circuit.comps) {
+      if (c.type !== 'rgbled') continue;
+      const ch = [0, 1, 2].map(k => res.el[c.id + '#' + k]);
+      if (ch.some(x => !x)) continue;
+      const ca = c.props.common === 'ca';
+      const tc = ch.map(x => (ca ? x.tc[1] : x.tc[0]));
+      tc.push(-tc.reduce((a, b) => a + b, 0));
+      res.el[c.id] = { tc, p: ch.reduce((a, x) => a + x.p, 0), ch: ch.map(x => ({ v: x.v, i: x.i, state: x.state })), state: null };
+      if (res.states) ch.forEach((x, k) => { if (x.state) res.states[c.id + '#' + k] = x.state; });
+    }
+  }
+
   app.issues = function () {
     const res = app.result, out = [];
     if (!res) return out;
-    const name = (id) => { const c = app.circuit.comps.find(x => x.id === id); return c ? (c.name || app.tp('c_' + c.type)) : id; };
+    const name = (id) => { const base = String(id).split('#')[0]; const c = app.circuit.comps.find(x => x.id === base); return c ? (c.name || app.tp('c_' + c.type)) : id; };
     for (const iss of res.issues) out.push({ level: iss.level, text: app.t('iss_' + iss.code, { ids: iss.ids.map(name).join(', ') }), ids: iss.ids });
     if (app.net && app.net.noGround) out.push({ level: 'warn', text: app.t('iss_noground'), ids: [] });
+    if (res.ok) for (const c of app.circuit.comps) {
+      const r = res.el[c.id];
+      if (!r) continue;
+      const imax = c.props.Imax;
+      const i = c.type === 'led' ? r.i : c.type === 'rgbled' ? Math.max(...r.ch.map(q => q.i)) : null;
+      if (i != null && i > imax * 1.0001) out.push({ level: 'warn', text: app.t('iss_ledmax', { ids: c.name, i: U.format(i, 'A'), imax: U.format(imax, 'A', { trim: true }) }), ids: [c.id] });
+    }
     if (res.ok && res.floating && res.floating.length) out.push({ level: 'warn', text: app.t('iss_floating'), ids: [] });
     if (app.net && app.net.openTerms.length) out.push({ level: 'info', text: app.t('iss_openterm'), ids: [] });
     return out;
@@ -184,7 +206,7 @@
     if (!res || !res.ok || !app.settings.animate) { app.flow = null; return; }
     const segs = [];
     for (const pieces of app.wireCur.values()) for (const p of pieces) segs.push({ x1: p.x1, y1: p.y1, x2: p.x2, y2: p.y2, i: p.i });
-    const inner = { opamp: [[-2, 1], [-2, -1], [2, 0]], bjt: [[-0.45, 0], [1, -1.15], [1, 1.15]] };
+    const inner = { opamp: [[-2, 1], [-2, -1], [2, 0]], bjt: [[-0.45, 0], [1, -1.15], [1, 1.15]], rgbled: [[-1.25, -1.1], [-1.25, 0], [-1.25, 1.1], [0.95, 0]] };
     for (const c of app.circuit.comps) {
       const r = res.el[c.id];
       if (!r) continue;
@@ -336,7 +358,8 @@
     if (app.editor) app.editor.chain = null;
     if (tool === 'place') {
       const type = opts.type;
-      const props = Object.assign(C.defaults(type), (type === 'diode' || type === 'schottky') ? { model: app.settings.defModel } : {}, opts.props || {});
+      const dm = app.settings.defModel;
+      const props = Object.assign(C.defaults(type), (type === 'diode' || type === 'schottky') ? { model: dm } : (type === 'led' || type === 'rgbled') && dm === 'exact' ? { model: 'exact' } : {}, opts.props || {});
       app.place = { type, props, rot: C.TYPES[type].defRot || 0, flip: type === 'bjt' && props.pol === 'pnp' };
     } else app.place = null;
     if (tool !== 'select') app.sel.clear();

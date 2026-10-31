@@ -4,6 +4,10 @@
   const T = {
     en: {
       title: 'DC Circuit Simulator',
+      c_led: 'LED', cs_led: 'LED', c_rgbled: 'RGB LED', cs_rgbled: 'RGB LED', p_color: 'Colour', p_Imax: 'Maximum current I<sub>max</sub>', p_common: 'Common terminal',
+      p_VfR: 'V<sub>γ</sub> red', p_VfG: 'V<sub>γ</sub> green', p_VfB: 'V<sub>γ</sub> blue', cc: 'common cathode', ca: 'common anode',
+      red: 'red', orange: 'orange', yellow: 'yellow', green: 'green', blue: 'blue', white: 'white', brightness: 'Brightness (I/I<sub>max</sub>)',
+      iss_ledmax: '{ids}: I = {i} is above I<sub>max</sub> = {imax}: a real LED would be damaged. Increase the series resistance.',
       model_simple: 'Simple (ideal: V<sub>BE</sub> fixed, I<sub>C</sub> = βI<sub>B</sub>, V<sub>CE,sat</sub> fixed)', model_em: 'Real (Ebers-Moll + Early effect)', model_em_short: 'Ebers-Moll',
       p_betaR: 'Reverse current gain β<sub>R</sub>', p_VA: 'Early voltage V<sub>A</sub> (0 = none)',
       iv_bjt_em_in: 'Ebers-Moll at V_CE = {vce}',
@@ -132,6 +136,10 @@
     },
     fr: {
       title: 'Simulateur de circuits en continu',
+      c_led: 'LED', cs_led: 'LED', c_rgbled: 'LED RVB', cs_rgbled: 'LED RVB', p_color: 'Couleur', p_Imax: 'Courant maximal I<sub>max</sub>', p_common: 'Borne commune',
+      p_VfR: 'V<sub>γ</sub> rouge', p_VfG: 'V<sub>γ</sub> vert', p_VfB: 'V<sub>γ</sub> bleu', cc: 'cathode commune', ca: 'anode commune',
+      red: 'rouge', orange: 'orange', yellow: 'jaune', green: 'vert', blue: 'bleu', white: 'blanc', brightness: 'Luminosité (I/I<sub>max</sub>)',
+      iss_ledmax: '{ids} : I = {i} dépasse I<sub>max</sub> = {imax} : une vraie LED serait détruite. Augmentez la résistance série.',
       model_simple: 'Simple (idéal : V<sub>BE</sub> fixe, I<sub>C</sub> = βI<sub>B</sub>, V<sub>CE,sat</sub> fixe)', model_em: 'Réel (Ebers-Moll + effet Early)', model_em_short: 'Ebers-Moll',
       p_betaR: 'Gain en courant inverse β<sub>R</sub>', p_VA: 'Tension d’Early V<sub>A</sub> (0 = sans)',
       iv_bjt_em_in: 'Ebers-Moll à V_CE = {vce}',
@@ -260,6 +268,10 @@
     },
     es: {
       title: 'Simulador de circuitos en continua',
+      c_led: 'LED', cs_led: 'LED', c_rgbled: 'LED RGB', cs_rgbled: 'LED RGB', p_color: 'Color', p_Imax: 'Corriente máxima I<sub>max</sub>', p_common: 'Terminal común',
+      p_VfR: 'V<sub>γ</sub> rojo', p_VfG: 'V<sub>γ</sub> verde', p_VfB: 'V<sub>γ</sub> azul', cc: 'cátodo común', ca: 'ánodo común',
+      red: 'rojo', orange: 'naranja', yellow: 'amarillo', green: 'verde', blue: 'azul', white: 'blanco', brightness: 'Brillo (I/I<sub>max</sub>)',
+      iss_ledmax: '{ids}: I = {i} supera I<sub>max</sub> = {imax}: un LED real se dañaría. Aumente la resistencia en serie.',
       model_simple: 'Simple (ideal: V<sub>BE</sub> fija, I<sub>C</sub> = βI<sub>B</sub>, V<sub>CE,sat</sub> fija)', model_em: 'Real (Ebers-Moll + efecto Early)', model_em_short: 'Ebers-Moll',
       p_betaR: 'Ganancia de corriente inversa β<sub>R</sub>', p_VA: 'Tensión de Early V<sub>A</sub> (0 = sin efecto)',
       iv_bjt_em_in: 'Ebers-Moll con V_CE = {vce}',

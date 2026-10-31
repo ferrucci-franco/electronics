@@ -12,6 +12,8 @@ Copia pública: https://ferrucci-franco.github.io/electronics/dc-circuit-simulat
 | Fuente de tensión / de corriente | ideales, continuas |
 | Amperímetro / voltímetro | ideales (0 V / circuito abierto) |
 | Diodo y diodo Schottky | ideal (0 V al conducir), caída constante Vγ con r_d opcional, o exacto (Shockley, I = I_S(e^{V/nV_T} − 1)) |
+| LED (rojo, naranja, amarillo, verde, azul, blanco) | caída constante Vγ típica del color (con r_d) o exacto (exponencial, n = 2, Vγ a 10 mA); se ilumina según I/I_max y avisa si I > I_max |
+| LED RGB | cátodo común o ánodo común, Vγ por canal; el brillo mezcla los tres colores según la corriente de cada canal |
 | Amplificador operacional | ideal (ganancia infinita, sin corriente de entrada, R_out = 0), saturación opcional en ±Vsat |
 | Transistor bipolar NPN / PNP | simple (ideal): corte, activa (V_BE = 0,7 V, I_C = βI_B) o saturación (V_CE = V_CE,sat); o real: Ebers-Moll con efecto Early (I_S, β_F, β_R, V_A), junturas exponenciales y saturación suave |
 | Masa | nodo de referencia |

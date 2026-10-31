@@ -45,7 +45,8 @@
   };
 
   /* A pen drawing a symbol in the component's local frame */
-  function makePen(R, comp, view, color, lwPx) {
+  function makePen(R, comp, view, color0, lwPx) {
+    let color = color0;
     const ctx = R.ctx, dpr = R.dpr, s = view.scale;
     const m = localMatrix(comp);
     const setLocal = () => ctx.setTransform(dpr * s * m[0], dpr * s * m[1], dpr * s * m[2], dpr * s * m[3], dpr * (s * m[4] + view.ox), dpr * (s * m[5] + view.oy));
@@ -55,6 +56,8 @@
     };
     const lw = lwPx / s;
     const P = {
+      // temporary colour (LED light, RGB channels); `force` keeps it also on a selected or ghost symbol
+      tint(c, force) { color = c && (force || color0 === col.fg) ? c : color0; },
       line(pts) {
         setLocal(); ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
         ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
@@ -119,7 +122,7 @@
   }
 
   /* ---------- label layout ---------- */
-  const HALF = { resistor: 0.4, vsource: 0.9, isource: 0.9, ammeter: 0.9, voltmeter: 0.9, diode: 0.6, schottky: 0.6 };
+  const HALF = { resistor: 0.4, vsource: 0.9, isource: 0.9, ammeter: 0.9, voltmeter: 0.9, diode: 0.6, schottky: 0.6, led: 0.6 };
 
   function worldDir(comp, dx, dy) {
     const m = localMatrix(comp);
@@ -245,6 +248,8 @@
       ctx.beginPath(); ctx.moveTo(w.x1, w.y1); ctx.lineTo(w.x2, w.y2); ctx.stroke();
     }
 
+    // light of the LEDs, under the symbols
+    if (res) this.drawGlow(S, res);
     // components
     for (const c of S.circuit.comps) {
       const selected = S.sel.has(c.id);
@@ -423,7 +428,7 @@
             }
             if (showI) lines.push({ text: fmt(Math.abs(r.i), 'A'), color: col.cur, mono: true });
             if (st.showP) lines.push({ text: fmt(r.p, 'W'), color: r.p < -1e-15 ? col.pgen : col.pabs, mono: true });
-            if ((c.type === 'diode' || c.type === 'schottky') && c.props.model !== 'exact' && st.showState) lines.push({ text: tr('state_' + r.state), color: col.muted });
+            if (C.isDiode(c) && c.props.model !== 'exact' && st.showState) lines.push({ text: tr('state_' + r.state), color: col.muted });
           }
           blocks.push({ wx: cx + rd[0] * ((lines.refOff || off) + gap), wy: cy + rd[1] * ((lines.refOff || off) + gap), dir: rd, lines });
         } else if (!st.realDir && C.flippable(c)) {
@@ -457,6 +462,25 @@
         if ((i === 0 && j === 4) || (i === 1 && j === 3) || (i === 2 && j === 1)) return;
         opts.push({ blocks: [nb, rb], marks, penalty: (i + j) * 0.3 });
       }));
+      return opts;
+    }
+
+    if (c.type === 'rgbled') {
+      const lines = nameLines.slice();
+      if (r) {
+        ['R', 'G', 'B'].forEach((n, k) => {
+          const q = r.ch[k];
+          const parts = [];
+          if (st.showI) parts.push(fmt(q.i, 'A'));
+          if (st.showV) parts.push(fmt(q.v, 'V'));
+          if (parts.length) lines.push({ text: n + ' ' + parts.join(' '), color: st.showI ? col.cur : col.volt, mono: true });
+        });
+        if (st.showP) lines.push({ text: 'P ' + fmt(r.p, 'W'), color: col.pabs, mono: true });
+      }
+      for (const [lx, ly, dx, dy] of [[0.2, -2.6, 0, -1], [0.2, 2.6, 0, 1], [3.3, 0.6, 1, 0]]) {
+        const p = C.toWorld(c, lx, ly);
+        opts.push({ blocks: [{ wx: p[0], wy: p[1], dir: worldDir(c, dx, dy), lines }], marks: [] });
+      }
       return opts;
     }
 
@@ -525,7 +549,7 @@
       if (st.showV) lines.push({ text: fmt(sg.v, 'V'), color: col.volt, mono: true });
       if (st.showI) lines.push({ text: fmt(sg.i, 'A'), color: col.cur, mono: true });
       if (st.showP) lines.push({ text: fmt(r.p, 'W'), color: r.p < -1e-15 ? col.pgen : col.pabs, mono: true });
-      if ((c.type === 'diode' || c.type === 'schottky') && c.props.model !== 'exact' && st.showState) lines.push({ text: S.tr('state_' + r.state), color: col.muted });
+      if (C.isDiode(c) && c.props.model !== 'exact' && st.showState) lines.push({ text: S.tr('state_' + r.state), color: col.muted });
     }
     lines.refOff = off;
   };
@@ -543,6 +567,39 @@
       if (d < bd) { bd = d; best = h; }
     }
     return best;
+  };
+
+  // brightness grows with the forward current, full at I_max
+  Renderer.prototype.drawGlow = function (S, res) {
+    const ctx = this.ctx, dpr = this.dpr, view = S.view, s = view.scale;
+    for (const c of S.circuit.comps) {
+      if (c.type !== 'led' && c.type !== 'rgbled') continue;
+      const r = res.el[c.id];
+      if (!r) continue;
+      let rgb, b;
+      if (c.type === 'led') {
+        b = Math.max(0, Math.min(1, r.i / c.props.Imax));
+        rgb = (C.LED_COLORS[c.props.color] || C.LED_COLORS.red).rgb;
+      } else {
+        const ch = r.ch.map(q => Math.max(0, Math.min(1, q.i / c.props.Imax)));
+        b = Math.max(...ch);
+        const m = [[255, 30, 30], [30, 255, 60], [40, 110, 255]];
+        rgb = [0, 1, 2].map(j => ch.reduce((sum, v, k) => sum + v * m[k][j], 0));
+        const top = Math.max(1, ...rgb);
+        rgb = rgb.map(v => Math.round(255 * v / top));
+      }
+      if (b < 0.005) continue;
+      const [wx, wy] = C.toWorld(c, c.type === 'led' ? 0 : 0.2, 0);
+      const x = wx * s + view.ox, y = wy * s + view.oy, R0 = s * (c.type === 'led' ? 1.9 : 2.8);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const g = ctx.createRadialGradient(x, y, 0, x, y, R0);
+      const a = 0.25 + 0.65 * Math.sqrt(b);
+      g.addColorStop(0, `rgba(${rgb.join(',')},${a})`);
+      g.addColorStop(0.45, `rgba(${rgb.join(',')},${a * 0.45})`);
+      g.addColorStop(1, `rgba(${rgb.join(',')},0)`);
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(x, y, R0, 0, 2 * Math.PI); ctx.fill();
+    }
   };
 
   function blockRect(R, view, b, fontPx) {

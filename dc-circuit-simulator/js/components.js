@@ -4,6 +4,13 @@
 (function (root) {
   'use strict';
 
+  // LED colours: typical forward voltage at about 10 mA and the colour of the light
+  const LED_COLORS = {
+    red: { vf: 1.8, rgb: [255, 45, 45] }, orange: { vf: 2.0, rgb: [255, 140, 20] }, yellow: { vf: 2.1, rgb: [255, 215, 0] },
+    green: { vf: 2.2, rgb: [40, 220, 70] }, blue: { vf: 3.0, rgb: [50, 120, 255] }, white: { vf: 3.1, rgb: [255, 255, 255] }
+  };
+  const isDiode = (c) => c.type === 'diode' || c.type === 'schottky' || c.type === 'led';
+
   const TYPES = {
     resistor: {
       prefix: 'R', terms: [[-2, 0], [2, 0]], box: [-2, -0.75, 2, 0.75],
@@ -43,6 +50,29 @@
         { key: 'N', unit: '', def: 1.05, min: 0.5, max: 5, show: c => c.props.model === 'exact' }
       ],
       valueText: (c, f, t) => t('model_' + c.props.model + '_short')
+    },
+    led: {
+      prefix: 'LED', terms: [[-2, 0], [2, 0]], box: [-2, -1.25, 2, 0.8],
+      props: [
+        { key: 'color', type: 'select', options: ['red', 'orange', 'yellow', 'green', 'blue', 'white'], def: 'red', onChange: c => { c.props.Vf = LED_COLORS[c.props.color].vf; } },
+        { key: 'model', type: 'select', options: ['cvd', 'exact'], def: 'cvd' },
+        { key: 'Vf', unit: 'V', def: 1.8, min: 0.5, max: 6 },
+        { key: 'rd', unit: 'Ω', def: 0, min: 0, max: 1e6, show: c => c.props.model === 'cvd' },
+        { key: 'Imax', unit: 'A', def: 0.02, min: 1e-4, max: 10 }
+      ],
+      valueText: (c, f, t) => t(c.props.color) + ' · ' + f(c.props.Vf, 'V')
+    },
+    rgbled: {
+      prefix: 'LED', terms: [[-3, -2], [-3, 0], [-3, 2], [3, 0]], termNames: ['R', 'G', 'B', 'COM'], box: [-3, -2.4, 3, 2.4],
+      props: [
+        { key: 'common', type: 'select', options: ['cc', 'ca'], def: 'cc' },
+        { key: 'model', type: 'select', options: ['cvd', 'exact'], def: 'cvd' },
+        { key: 'VfR', unit: 'V', def: 2.0, min: 0.5, max: 6 },
+        { key: 'VfG', unit: 'V', def: 3.0, min: 0.5, max: 6 },
+        { key: 'VfB', unit: 'V', def: 3.1, min: 0.5, max: 6 },
+        { key: 'Imax', unit: 'A', def: 0.02, min: 1e-4, max: 10 }
+      ],
+      valueText: (c, f, t) => 'RGB · ' + t(c.props.common)
     },
     ground: { prefix: 'GND', terms: [[0, 0]], box: [-0.9, -0.2, 0.9, 1.6], props: [] },
     opamp: {
@@ -185,6 +215,33 @@
       if (!us) P.line([[-0.6, 0], [0.6, 0]]);
       P.line([[0.35, -0.42], [0.35, -0.6], [0.6, -0.6], [0.6, 0.6], [0.85, 0.6], [0.85, 0.42]]);
     },
+    led(P, c, us) {
+      SYM.diode(P, c, us);
+      // light arrows in the colour of the LED
+      const rgb = (LED_COLORS[c.props.color] || LED_COLORS.red).rgb;
+      P.tint(`rgb(${rgb.join(',')})`, true);
+      P.arrow(-0.05, -0.75, 0.55, -1.3, 0.28);
+      P.arrow(0.45, -0.6, 1.05, -1.15, 0.28);
+      P.tint(null);
+    },
+    rgbled(P, c) {
+      const ca = c.props.common === 'ca';
+      P.circle(0.2, 0, 1.95, false);
+      const cols = [[255, 45, 45], [40, 200, 70], [50, 120, 255]];
+      [-1.1, 0, 1.1].forEach((y, k) => {
+        const yt = [-2, 0, 2][k];
+        P.line([[-3, yt], [-1.6, yt], [-1.25, y], [-0.75, y]]);
+        // small diode, anode on the channel side (common cathode) or on the common side (common anode)
+        const a = ca ? 0.25 : -0.75, b = ca ? -0.75 : 0.25;
+        P.tint(`rgb(${cols[k].join(',')})`, true);
+        P.poly([[a, y - 0.32], [a, y + 0.32], [b, y]], true);
+        P.tint(null);
+        P.line([[b, y - 0.32], [b, y + 0.32]]);
+        P.line([[0.25, y], [0.95, y]]);
+      });
+      P.line([[0.95, -1.1], [0.95, 1.1]]);
+      P.line([[0.95, 0], [3, 0]]);
+    },
     ground(P) {
       P.line([[0, 0], [0, 0.8]]);
       P.line([[-0.8, 0.8], [0.8, 0.8]]);
@@ -208,7 +265,7 @@
     }
   };
 
-  const api = { TYPES, defaults, defRef, refs, signed, flippable, toWorld, toLocal, terminals, hit, bounds, SYM };
+  const api = { TYPES, LED_COLORS, isDiode, defaults, defRef, refs, signed, flippable, toWorld, toLocal, terminals, hit, bounds, SYM };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else (root.DCS = root.DCS || {}).comp = api;
 })(typeof window !== 'undefined' ? window : globalThis);
