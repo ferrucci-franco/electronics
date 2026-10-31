@@ -724,11 +724,6 @@
         if (c.type === 'resistor') html += `<dt>V/R</dt><dd>${fmt(r.v / c.props.R, 'A')}</dd>`;
       }
       card.appendChild(el('dl', { class: 'kv' }, html));
-      if (C.flippable(c)) card.appendChild(el('div', { class: 'hint' }, app.settings.realDir ? t('conv') : t(C.signed(c, r).passive ? 'ref_passive' : 'ref_active')));
-      // terminal voltages
-      const nodes = app.net.compNodes.get(c.id);
-      const names = C.TYPES[c.type].termNames || (C.isDiode(c) ? ['A', 'K'] : ['1', '2']);
-      card.appendChild(el('div', { class: 'hint' }, t('terminal_voltages') + ': ' + nodes.map((n, j) => `${names[j]} = ${fmt(res.v[n], 'V')}`).join(' · ')));
       return card;
     }
 
