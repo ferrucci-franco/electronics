@@ -40,10 +40,23 @@ canvas:focus{outline:none}
 .app{
   display:grid; gap:10px; padding:10px; height:100vh; height:100dvh;
   padding-left:max(10px, env(safe-area-inset-left)); padding-right:max(10px, env(safe-area-inset-right));
-  grid-template-columns:190px minmax(0,1fr) 340px;
+  --pal-w:190px; --side-w:340px;
+  grid-template-columns:var(--pal-w) minmax(0,1fr) var(--side-w);
   grid-template-rows:auto minmax(0,1fr);
   grid-template-areas:"head head head" "pal stage side";
 }
+/* desktop: the side columns can be hidden (buttons on the edges of the circuit) */
+html.layout-desktop.hide-pal .palette, html.layout-desktop.hide-side .side{display:none}
+html.layout-desktop.hide-pal .app{grid-template-columns:minmax(0,1fr) var(--side-w); grid-template-areas:"head head" "stage side"}
+html.layout-desktop.hide-side .app{grid-template-columns:var(--pal-w) minmax(0,1fr); grid-template-areas:"head head" "pal stage"}
+html.layout-desktop.hide-pal.hide-side .app{grid-template-columns:minmax(0,1fr); grid-template-areas:"head" "stage"}
+.edge-btn{position:absolute; top:50%; transform:translateY(-50%); width:16px; height:56px; padding:0; display:flex; align-items:center; justify-content:center; border:1px solid var(--border); background:var(--btn); color:var(--muted); box-shadow:var(--shadow); cursor:pointer; opacity:.75; z-index:5}
+.edge-btn:hover{opacity:1; color:var(--fg)}
+.edge-btn svg{width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; transition:transform .15s}
+.edge-btn.left{left:-1px; border-radius:0 9px 9px 0}
+.edge-btn.right{right:-1px; border-radius:9px 0 0 9px}
+html.hide-pal .edge-btn.left svg, html.hide-side .edge-btn.right svg{transform:scaleX(-1)}
+html.layout-mobile .edge-btn{display:none}
 .panel{border:1px solid var(--border); background:var(--panel); border-radius:16px; min-width:0; min-height:0}
 .app-header{grid-area:head; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px 12px; padding:8px 12px}
 .app-header h1{margin:0; font-size:18px; font-weight:700; line-height:1.2}
@@ -220,10 +233,10 @@ html.layout-mobile .field input[type=text], html.layout-mobile .field select{fon
 }
 /* desktop layout on a medium screen: narrower side columns */
 @media (max-width:1180px){
-  html.layout-desktop .app{grid-template-columns:170px minmax(0,1fr) 300px}
+  html.layout-desktop .app{--pal-w:170px; --side-w:300px}
 }
 @media (max-width:899px){
-  html.layout-desktop .app{grid-template-columns:150px minmax(0,1fr) 260px}
+  html.layout-desktop .app{--pal-w:150px; --side-w:260px}
   html.layout-desktop .palette button span{font-size:12.5px}
 }
 .modal .field{grid-template-columns:minmax(0,1fr) minmax(150px, 300px)}
