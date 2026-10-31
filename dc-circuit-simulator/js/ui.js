@@ -205,7 +205,7 @@
       fs.addEventListener('change', () => { s.flowScale = fs.value; changed(true); });
       const dg = row(t('set_digits'), select([[3, '3'], [4, '4'], [5, '5']], s.digits));
       dg.addEventListener('change', () => { s.digits = +dg.value; changed(); });
-      for (const [k, lab] of [['showWireI', 'set_wirei'], ['rubber', 'set_rubber'], ['realDir', 'set_realdir'], ['showNames', 'set_names'], ['showValues', 'set_values'], ['showState', 'set_state'], ['grid', 'set_grid'], ['colorV', 'colorV']]) {
+      for (const [k, lab] of [['ivLoad', 'set_ivload'], ['showWireI', 'set_wirei'], ['rubber', 'set_rubber'], ['realDir', 'set_realdir'], ['showNames', 'set_names'], ['showValues', 'set_values'], ['showState', 'set_state'], ['grid', 'set_grid'], ['colorV', 'colorV']]) {
         const c = row(t(lab), check(s[k]));
         c.addEventListener('change', () => { s[k] = c.checked; changed(); });
       }
