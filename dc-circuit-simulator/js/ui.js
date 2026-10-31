@@ -194,12 +194,49 @@
         x.addEventListener('click', (e) => { e.stopPropagation(); app.closeTab(k); });
         bar.appendChild(b);
       });
-      const add = el('button', { type: 'button', class: 'ctab-add', title: app.tp('tab_new'), 'aria-label': app.tp('tab_new') }, '+');
-      add.addEventListener('click', () => app.newTab());
-      bar.appendChild(add);
-      const on = bar.querySelector('.ctab.on');
-      if (on) on.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      $('tabAdd').title = app.tp('tab_new'); $('tabAdd').setAttribute('aria-label', app.tp('tab_new'));
+      $('tabList').title = app.tp('tab_list'); $('tabList').setAttribute('aria-label', app.tp('tab_list'));
+      syncTabFade();
+      showActiveTab();
     };
+    // the active tab in full view, clear of the faded edges
+    function showActiveTab() {
+      const bar = $('tabbar'), on = bar.querySelector('.ctab.on');
+      if (!on) return;
+      const x0 = on.getBoundingClientRect().left - bar.getBoundingClientRect().left + bar.scrollLeft, x1 = x0 + on.offsetWidth, pad = 50;
+      if (x1 > bar.scrollLeft + bar.clientWidth - pad) bar.scrollLeft = x1 - bar.clientWidth + pad;
+      if (x0 < bar.scrollLeft + pad) bar.scrollLeft = Math.max(0, x0 - pad);
+      syncTabFade();
+    }
+    // faded edges where the strip has more tabs to scroll; the list button only when they do not all fit
+    function syncTabFade() {
+      const bar = $('tabbar');
+      bar.classList.toggle('more-l', bar.scrollLeft > 2);
+      bar.classList.toggle('more-r', bar.scrollLeft + bar.clientWidth < bar.scrollWidth - 2);
+      const hide = bar.scrollWidth <= bar.clientWidth + 2;
+      if ($('tabList').hidden !== hide) { $('tabList').hidden = hide; showActiveTab(); }   // the strip changed width
+    }
+    $('tabbar').addEventListener('scroll', syncTabFade, { passive: true });
+    window.addEventListener('resize', syncTabFade);
+    // the mouse wheel scrolls the strip sideways
+    $('tabbar').addEventListener('wheel', (e) => { const b = $('tabbar'); if (b.scrollWidth > b.clientWidth && Math.abs(e.deltaY) > Math.abs(e.deltaX)) { b.scrollLeft += e.deltaY; e.preventDefault(); } }, { passive: false });
+    $('tabAdd').addEventListener('click', () => app.newTab());
+    const tabMenu = $('tabMenu');
+    $('tabList').addEventListener('click', () => {
+      if (!tabMenu.hidden) { tabMenu.hidden = true; return; }
+      tabMenu.innerHTML = '';
+      app.tabs.forEach((tb, k) => {
+        const b = el('button', { type: 'button', class: k === app.tabIdx ? 'on' : '' });
+        b.textContent = tb.name;
+        b.addEventListener('click', () => { tabMenu.hidden = true; app.switchTab(k); });
+        tabMenu.appendChild(b);
+      });
+      const r = $('tabList').getBoundingClientRect();
+      tabMenu.hidden = false;
+      tabMenu.style.top = (r.bottom + 6) + 'px';
+      tabMenu.style.left = Math.max(8, Math.min(window.innerWidth - tabMenu.offsetWidth - 8, r.right - tabMenu.offsetWidth)) + 'px';
+    });
+    document.addEventListener('pointerdown', (e) => { if (!tabMenu.hidden && !tabMenu.contains(e.target) && !$('tabList').contains(e.target)) tabMenu.hidden = true; });
 
     $('helpBtn').addEventListener('click', () => openModal(t('help_title'), t('help_html')));
     $('examplesBtn').addEventListener('click', () => {
