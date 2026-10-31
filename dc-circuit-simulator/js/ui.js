@@ -894,6 +894,19 @@
       pane.appendChild(intro);
       const th = app.thev;
       if (!th) return;
+      // A–B cuts the circuit in two: which side to look into
+      if (th.cut) {
+        const sr = el('div', { class: 'thev-side' });
+        sr.appendChild(el('div', { class: 'hint' }, t('thev_side')));
+        const br = el('div', { class: 'btnrow' });
+        th.cut.sides.forEach((sd, k) => {
+          const names = sd.names.length ? sd.names.slice(0, 4).map(esc).join(', ') + (sd.names.length > 4 ? '…' : '') : t('thev_side_empty');
+          const b = button('→ ' + names, () => app.setThevSide(k), th.side === k ? 'primary' : '');
+          br.appendChild(b);
+        });
+        sr.appendChild(br);
+        intro.appendChild(sr);
+      }
       if (th.err) { pane.appendChild(el('div', { class: 'issue error' }, t(th.err))); return; }
       if (!th.res) return;
       const r = th.res;
@@ -1007,8 +1020,9 @@
     }
     // the network seen from A–B with the sources set to zero and the load removed
     function drawPassive(cv, th, hl) {
-      const comps = [], wires = app.circuit.wires.slice();
-      for (const c of app.circuit.comps) {
+      const src = th.circuit || app.circuit;
+      const comps = [], wires = src.wires.slice();
+      for (const c of src.comps) {
         if (c.id === th.loadId) continue;
         const ts = C.terminals(c);
         if (c.type === 'vsource' || c.type === 'ammeter' || (C.isSwitch(c) && C.isClosed(c))) { wires.push({ id: 'p' + c.id, x1: ts[0][0], y1: ts[0][1], x2: ts[1][0], y2: ts[1][1] }); continue; }

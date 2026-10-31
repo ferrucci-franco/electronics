@@ -315,7 +315,19 @@
       }
     }
 
-    // Thevenin port
+    // Thevenin port; the wire pieces cut away from the side looked into are shown dashed
+    if (S.port && S.port.cut) {
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.lineCap = 'butt';
+      for (const pc of S.port.cut) {
+        const x1 = pc.a[0] * s + view.ox, y1 = pc.a[1] * s + view.oy, x2 = pc.b[0] * s + view.ox, y2 = pc.b[1] * s + view.oy;
+        ctx.strokeStyle = col.bg; ctx.lineWidth = Math.max(4, s * 0.16); ctx.setLineDash([]);
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+        ctx.strokeStyle = col.port; ctx.lineWidth = 1.8; ctx.setLineDash([5, 4]);
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+      }
+      ctx.setLineDash([]); ctx.lineCap = 'round';
+    }
     if (S.port) {
       for (const [p, lab] of [[S.port.a, 'A'], [S.port.b, 'B']]) {
         if (!p) continue;

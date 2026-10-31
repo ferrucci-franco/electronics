@@ -170,6 +170,8 @@ table.res .v{color:var(--c-volt)} table.res .i{color:var(--c-cur)} table.res .pa
 .req-steps li{padding:4px 6px; border-radius:8px; cursor:pointer}
 .req-steps li:hover, .req-steps li.on{background:var(--btn-hover)}
 .req-steps li.on{box-shadow:inset 0 0 0 1px var(--c-port)}
+.thev-side{margin-top:8px; display:flex; flex-direction:column; gap:6px}
+.thev-side .btn{white-space:normal; text-align:left}
 .req-result{font-size:15px; padding:2px 0}
 .ok{color:var(--c-pgen)}
 .eq canvas{width:100%; height:150px; border:1px solid var(--border); border-radius:10px; background:var(--canvas)}

@@ -211,20 +211,92 @@
 
   /* ---------- Thévenin ---------- */
   // node of a grid point: a terminal or wire end, or a point inside a wire
-  function nodeAt(p) {
-    const n = app.net.pointNode.get(N.key(p[0], p[1]));
+  function nodeAt(p, net, circuit) {
+    net = net || app.net; circuit = circuit || app.circuit;
+    const n = net.pointNode.get(N.key(p[0], p[1]));
     if (n != null) return n;
-    for (const w of app.circuit.wires) {
+    for (const w of circuit.wires) {
       const dx = w.x2 - w.x1, dy = w.y2 - w.y1;
       if ((p[0] - w.x1) * dy - (p[1] - w.y1) * dx !== 0) continue;
       const t = (p[0] - w.x1) * dx + (p[1] - w.y1) * dy;
-      if (t >= 0 && t <= dx * dx + dy * dy) return app.net.wireNode.get(w.id);
+      if (t >= 0 && t <= dx * dx + dy * dy) return net.wireNode.get(w.id);
     }
     return null;
   }
+
+  /* ---------- the port A–B cuts the circuit ----------
+   * A and B picked on wires: the wires are cut at A and at B. When that splits the circuit in two, the
+   * equivalent is the one of the side the user looks into, and the other side is left out. */
+  // the two wire pieces that leave the point X (inside a wire, or the corner of two wires), or null
+  function halvesAt(net, wires, X) {
+    const pt = net.points.get(N.key(X[0], X[1]));
+    if (pt && pt.terms.length) return null;   // a component terminal: nothing to cut there
+    const out = [];
+    for (const w of wires) {
+      const dx = w.x2 - w.x1, dy = w.y2 - w.y1;
+      if ((X[0] - w.x1) * dy - (X[1] - w.y1) * dx !== 0) continue;
+      const tt = (p) => (p[0] - w.x1) * dx + (p[1] - w.y1) * dy, t = tt(X);
+      if (t < 0 || t > dx * dx + dy * dy) continue;
+      const pts = [[w.x1, w.y1]].concat((net.inner.get(w.id) || []).map(p => [p.x, p.y]), [[w.x2, w.y2]]);
+      let before = null, after = null;
+      for (const p of pts) {
+        const tp = tt(p);
+        if (tp < t && (!before || tp > tt(before))) before = p;
+        if (tp > t && (!after || tp < tt(after))) after = p;
+      }
+      if (before) out.push({ w, a: X, b: before });
+      if (after) out.push({ w, a: X, b: after });
+    }
+    return out.length === 2 ? out : null;
+  }
+  // the wires with the given pieces taken out
+  function cutWires(wires, pieces) {
+    const out = [];
+    for (const w of wires) {
+      const mine = pieces.filter(pc => pc.w.id === w.id);
+      if (!mine.length) { out.push(w); continue; }
+      const dx = w.x2 - w.x1, dy = w.y2 - w.y1, L2 = dx * dx + dy * dy;
+      const u = (p) => ((p[0] - w.x1) * dx + (p[1] - w.y1) * dy) / L2, at = (s) => [w.x1 + dx * s, w.y1 + dy * s];
+      const gaps = mine.map(pc => [Math.min(u(pc.a), u(pc.b)), Math.max(u(pc.a), u(pc.b))]).sort((a, b) => a[0] - b[0]);
+      let s = 0, k = 0;
+      const keep = (s0, s1) => { const p = at(s0), q = at(s1); out.push({ id: w.id + '~' + (k++), x1: p[0], y1: p[1], x2: q[0], y2: q[1] }); };
+      for (const [g0, g1] of gaps) { if (g0 > s) keep(s, g0); s = Math.max(s, g1); }
+      if (s < 1) keep(s, 1);
+    }
+    return out;
+  }
+  // the two sides of the cut A–B: for each, its components, its wires and the pieces cut away from it
+  function portCut(A, B) {
+    const net = app.net, wires = app.circuit.wires;
+    const hA = halvesAt(net, wires, A), hB = halvesAt(net, wires, B);
+    if (!hA || !hB) return null;
+    const c0 = { comps: app.circuit.comps, wires: cutWires(wires, hA.concat(hB)) };
+    const n0 = N.build(c0);
+    // groups of nodes joined through components (the ground symbols already share node 0)
+    const par = Array.from({ length: n0.ckt.nodeCount }, (_, i) => i);
+    const find = (i) => { while (par[i] !== i) { par[i] = par[par[i]]; i = par[i]; } return i; };
+    for (const c of c0.comps) { const ns = n0.compNodes.get(c.id); for (const n of ns) par[find(n)] = find(ns[0]); }
+    const grp = (p) => { const n = n0.pointNode.get(N.key(p[0], p[1])); return n == null ? null : find(n); };
+    const [a1, a2] = hA.map(h => grp(h.b)), [b1, b2] = hB.map(h => grp(h.b));
+    let pairs;
+    if (a1 != null && a2 != null && a1 !== a2 && a1 === b1 && a2 === b2) pairs = [[hA[0], hB[0]], [hA[1], hB[1]]];
+    else if (a1 != null && a2 != null && a1 !== a2 && a1 === b2 && a2 === b1) pairs = [[hA[0], hB[1]], [hA[1], hB[0]]];
+    else return null;
+    const sides = pairs.map(([ha, hb], k) => {
+      const g = grp(ha.b);
+      const comps = c0.comps.filter(c => find(n0.compNodes.get(c.id)[0]) === g);
+      const ws = c0.wires.filter(w => find(n0.wireNode.get(w.id)) === g)
+        .concat([ha, hb].map((h, j) => ({ id: 'cut' + k + j, x1: h.a[0], y1: h.a[1], x2: h.b[0], y2: h.b[1] })));
+      return { comps, wires: ws, names: comps.filter(c => c.type !== 'ground').map(c => c.name || app.tp('c_' + c.type)), cut: pairs[1 - k] };
+    });
+    const n = sides.map(s => s.names.length);
+    return { sides, def: n[1] > n[0] ? 1 : 0 };
+  }
+
   function computeThevenin() {
-    const th = app.thev, net = app.net;
-    th.res = null; th.err = null;
+    const th = app.thev;
+    let net = app.net;
+    th.res = null; th.err = null; th.net = null; th.circuit = null; th.cut = null;
     let na, nb, exclude = [];
     if (th.loadId) {
       const c = app.circuit.comps.find(x => x.id === th.loadId);
@@ -235,15 +307,28 @@
       exclude = [c.id];
     } else {
       if (!th.a || !th.b) return;
-      na = nodeAt(th.a); nb = nodeAt(th.b);
-      if (na == null || nb == null) { th.err = 'thev_err'; return; }
+      th.cut = portCut(th.a, th.b);
+      if (th.cut) {
+        // look into one side only: the circuit of that side, with the port at the cut
+        if (th.side !== 0 && th.side !== 1) th.side = th.cut.def;
+        const sd = th.cut.sides[th.side];
+        th.circuit = { comps: sd.comps, wires: sd.wires, nodeNames: app.circuit.nodeNames };
+        net = th.net = N.build(th.circuit);
+      }
+      na = nodeAt(th.a, net, th.circuit); nb = nodeAt(th.b, net, th.circuit);
+      if (na == null || nb == null) { th.err = 'thev_err'; app.port = { a: th.a, b: th.b }; return; }
     }
-    app.port = { a: th.a, b: th.b };
+    app.port = { a: th.a, b: th.b, cut: th.cut ? th.cut.sides[th.side].cut : null };
     if (na === nb) { th.err = 'thev_same'; return; }
     const r = S.thevenin(net.ckt, na, nb, { exclude, prevStates: app.prevStates, tempC: app.settings.tempC });
     if (r.error) { th.err = r.error === 'samenode' ? 'thev_same' : 'thev_err'; return; }
     th.res = r;
   }
+  app.setThevSide = function (k) {
+    if (!app.thev || !app.thev.cut) return;
+    app.thev.side = k;
+    app.circuitChanged();
+  };
   app.portFromComp = function (c) {
     app.thev = { loadId: c.id };
     app.circuitChanged();
