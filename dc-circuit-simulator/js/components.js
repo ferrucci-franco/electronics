@@ -9,6 +9,7 @@
     red: { vf: 1.8, rgb: [255, 45, 45] }, orange: { vf: 2.0, rgb: [255, 140, 20] }, yellow: { vf: 2.1, rgb: [255, 215, 0] },
     green: { vf: 2.2, rgb: [40, 220, 70] }, blue: { vf: 3.0, rgb: [50, 120, 255] }, white: { vf: 3.1, rgb: [255, 255, 255] }
   };
+  const KNOB = [1.9, -2.25];
   const potX = (c) => -1.2 + 2.4 * Math.max(0, Math.min(1, c.props.alpha));
   // fraction of the resistance between A and the wiper: linear, or logarithmic (audio) taper
   const potFrac = (c) => { const a = Math.max(0, Math.min(1, c.props.alpha)); return c.props.taper === 'log' ? (Math.pow(10, 2 * a) - 1) / 99 : a; };
@@ -78,10 +79,11 @@
       valueText: (c, f, t) => 'RGB · ' + t(c.props.common)
     },
     pot: {
-      prefix: 'P', terms: [[-2, 0], [2, 0], [0, -2]], termNames: ['A', 'B', 'W'], box: [-2, -2, 2, 0.75],
+      prefix: 'P', terms: [[-2, 0], [2, 0], [0, -2]], termNames: ['A', 'B', 'W'], box: [-2, -3.05, 2.65, 0.75],
       props: [
         { key: 'R', unit: 'Ω', def: 10000, min: 1, max: 1e10 },
         { key: 'alpha', type: 'slider', def: 0.5 },
+        { key: 'ctl', type: 'select', options: ['slider', 'knob'], def: 'slider' },
         { key: 'taper', type: 'select', options: ['lin', 'log'], def: 'lin' }
       ],
       valueText: (c, f) => f(c.props.R, 'Ω') + ' · ' + Math.round(c.props.alpha * 100) + ' %'
@@ -261,6 +263,17 @@
       const x = potX(c);
       P.line([[0, -2], [0, -1.3], [x, -1.3], [x, -0.85]]);
       P.head(x, -1.3, x, -0.45, 0.4);
+      if (c.props.ctl === 'knob') {
+        // rotary knob: 270° travel, pointer at −135° + 270°·α from the top
+        // the dial stays upright on screen whatever the rotation of the component
+        const [kx, ky] = KNOB, r = 0.62;
+        const [wx, wy] = toWorld(c, kx, ky);
+        const at = (deg, d) => { const t = deg * Math.PI / 180; return toLocal(c, wx + Math.sin(t) * d, wy - Math.cos(t) * d); };
+        P.circle(kx, ky, r, false);
+        for (const a of [-135, 135]) P.line([at(a, r + 0.08), at(a, r + 0.25)]);
+        const deg = -135 + 270 * Math.max(0, Math.min(1, c.props.alpha));
+        P.thick([at(deg, 0.12), at(deg, r - 0.06)]);
+      }
     },
     ground(P) {
       P.line([[0, 0], [0, 0.8]]);
@@ -285,7 +298,7 @@
     }
   };
 
-  const api = { TYPES, LED_COLORS, isDiode, potX, potFrac, defaults, defRef, refs, signed, flippable, toWorld, toLocal, terminals, hit, bounds, SYM };
+  const api = { TYPES, LED_COLORS, isDiode, potX, potFrac, KNOB, defaults, defRef, refs, signed, flippable, toWorld, toLocal, terminals, hit, bounds, SYM };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else (root.DCS = root.DCS || {}).comp = api;
 })(typeof window !== 'undefined' ? window : globalThis);

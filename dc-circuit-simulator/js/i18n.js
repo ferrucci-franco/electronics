@@ -4,6 +4,7 @@
   const T = {
     en: {
       title: 'DC Circuit Simulator',
+      tidy: 'Prettify', tidy_tip: 'Tidy the wires without changing any connection (Ctrl+Z to undo)', tidy_done: 'Wires tidied: {a} → {b} pieces (Ctrl+Z to undo)', tidy_none: 'Nothing to tidy', tidy_fail: 'Not tidied: it would have changed a connection', p_ctl: 'Control', slider: 'slider (straight)', knob: 'knob (rotary)',
       c_pot: 'Potentiometer', cs_pot: 'Potentiometer', p_alpha: 'Position α (A → B)', p_taper: 'Taper', lin: 'linear', log: 'logarithmic (audio)', wiper: 'wiper',
       c_led: 'LED', cs_led: 'LED', c_rgbled: 'RGB LED', cs_rgbled: 'RGB LED', p_color: 'Colour', p_Imax: 'Maximum current I<sub>max</sub>', p_common: 'Common terminal',
       p_VfR: 'V<sub>γ</sub> red', p_VfG: 'V<sub>γ</sub> green', p_VfB: 'V<sub>γ</sub> blue', cc: 'common cathode', ca: 'common anode',
@@ -137,6 +138,7 @@
     },
     fr: {
       title: 'Simulateur de circuits en continu',
+      tidy: 'Embellir', tidy_tip: 'Ranger les fils sans changer aucune connexion (Ctrl+Z pour annuler)', tidy_done: 'Fils rangés : {a} → {b} segments (Ctrl+Z pour annuler)', tidy_none: 'Rien à ranger', tidy_fail: 'Non rangé : une connexion aurait changé', p_ctl: 'Commande', slider: 'glissière (rectiligne)', knob: 'bouton (rotatif)',
       c_pot: 'Potentiomètre', cs_pot: 'Potentiomètre', p_alpha: 'Position α (A → B)', p_taper: 'Loi de variation', lin: 'linéaire', log: 'logarithmique (audio)', wiper: 'curseur',
       c_led: 'LED', cs_led: 'LED', c_rgbled: 'LED RVB', cs_rgbled: 'LED RVB', p_color: 'Couleur', p_Imax: 'Courant maximal I<sub>max</sub>', p_common: 'Borne commune',
       p_VfR: 'V<sub>γ</sub> rouge', p_VfG: 'V<sub>γ</sub> vert', p_VfB: 'V<sub>γ</sub> bleu', cc: 'cathode commune', ca: 'anode commune',
@@ -270,6 +272,7 @@
     },
     es: {
       title: 'Simulador de circuitos en continua',
+      tidy: 'Ordenar', tidy_tip: 'Ordenar los cables sin cambiar ninguna conexión (Ctrl+Z para deshacer)', tidy_done: 'Cables ordenados: {a} → {b} tramos (Ctrl+Z para deshacer)', tidy_none: 'No hay nada que ordenar', tidy_fail: 'No se ordenó: habría cambiado una conexión', p_ctl: 'Control', slider: 'deslizante (recto)', knob: 'perilla (rotativo)',
       c_pot: 'Potenciómetro', cs_pot: 'Potenciómetro', p_alpha: 'Posición α (A → B)', p_taper: 'Curva', lin: 'lineal', log: 'logarítmica (audio)', wiper: 'cursor',
       c_led: 'LED', cs_led: 'LED', c_rgbled: 'LED RGB', cs_rgbled: 'LED RGB', p_color: 'Color', p_Imax: 'Corriente máxima I<sub>max</sub>', p_common: 'Terminal común',
       p_VfR: 'V<sub>γ</sub> rojo', p_VfG: 'V<sub>γ</sub> verde', p_VfB: 'V<sub>γ</sub> azul', cc: 'cátodo común', ca: 'ánodo común',
