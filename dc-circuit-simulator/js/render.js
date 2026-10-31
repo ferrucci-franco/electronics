@@ -470,6 +470,24 @@
       return opts;
     }
 
+    if (c.type === 'pot') {
+      const lines = nameLines.slice();
+      if (r) {
+        for (const [lab, q] of [['AW', r.aw], ['WB', r.wb]]) {
+          const parts = [];
+          if (st.showV) parts.push(fmt(q.v, 'V'));
+          if (st.showI) parts.push(fmt(q.i, 'A'));
+          if (parts.length) lines.push({ text: lab + ' ' + parts.join(' '), color: st.showV ? col.volt : col.cur, mono: true });
+        }
+        if (st.showP) lines.push({ text: 'P ' + fmt(r.p, 'W'), color: col.pabs, mono: true });
+      }
+      for (const [lx, ly, dx, dy] of [[0, 0.95, 0, 1], [-2.3, -0.4, -1, 0], [2.3, -0.4, 1, 0], [1.4, -1.6, 1, 0]]) {
+        const p = C.toWorld(c, lx, ly);
+        opts.push({ blocks: [{ wx: p[0], wy: p[1], dir: worldDir(c, dx, dy), lines }], marks: [] });
+      }
+      return opts;
+    }
+
     if (c.type === 'rgbled') {
       const lines = nameLines.slice();
       if (r) {

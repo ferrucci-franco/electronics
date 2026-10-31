@@ -114,6 +114,13 @@
   // the three junctions of an RGB LED become one result with four terminal currents
   function mergeRGB(res) {
     for (const c of app.circuit.comps) {
+      if (c.type === 'pot') {
+        const a = res.el[c.id + '#a'], b = res.el[c.id + '#b'];
+        if (!a || !b) continue;
+        // terminals A, B, W; halves AW and WB in the passive convention A → W → B
+        res.el[c.id] = { tc: [a.tc[0], b.tc[1], a.tc[1] + b.tc[0]], p: a.p + b.p, aw: { v: a.v, i: a.i }, wb: { v: b.v, i: b.i }, state: null };
+        continue;
+      }
       if (c.type !== 'rgbled') continue;
       const ch = [0, 1, 2].map(k => res.el[c.id + '#' + k]);
       if (ch.some(x => !x)) continue;
@@ -212,7 +219,10 @@
       if (!r) continue;
       const ts = C.terminals(c);
       if (ts.length === 2) segs.push({ x1: ts[0][0], y1: ts[0][1], x2: ts[1][0], y2: ts[1][1], i: r.i });
-      else if (inner[c.type]) ts.forEach((t, j) => { const q = C.toWorld(c, inner[c.type][j][0], inner[c.type][j][1]); segs.push({ x1: t[0], y1: t[1], x2: q[0], y2: q[1], i: r.tc[j] }); });
+      else if (c.type === 'pot') {
+        const q = C.toWorld(c, C.potX(c), 0);
+        ts.forEach((t, j) => segs.push({ x1: t[0], y1: t[1], x2: q[0], y2: q[1], i: r.tc[j] }));
+      } else if (inner[c.type]) ts.forEach((t, j) => { const q = C.toWorld(c, inner[c.type][j][0], inner[c.type][j][1]); segs.push({ x1: t[0], y1: t[1], x2: q[0], y2: q[1], i: r.tc[j] }); });
     }
     let imax = 0;
     for (const s of segs) imax = Math.max(imax, Math.abs(s.i));

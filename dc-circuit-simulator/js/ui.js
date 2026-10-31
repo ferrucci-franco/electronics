@@ -5,7 +5,7 @@
   const C = DCS.comp, U = DCS.units, I = DCS.i18n, R = DCS.render;
 
   const PALETTE = [
-    { type: 'resistor', key: 'resistor' }, { type: 'vsource', key: 'vsource' }, { type: 'isource', key: 'isource' },
+    { type: 'resistor', key: 'resistor' }, { type: 'pot', key: 'pot' }, { type: 'vsource', key: 'vsource' }, { type: 'isource', key: 'isource' },
     { type: 'ground', key: 'ground' }, { type: 'ammeter', key: 'ammeter' }, { type: 'voltmeter', key: 'voltmeter' },
     { type: 'diode', key: 'diode' }, { type: 'schottky', key: 'schottky' }, { type: 'led', key: 'led' }, { type: 'rgbled', key: 'rgbled' }, { type: 'opamp', key: 'opamp' },
     { type: 'bjt', key: 'npn', props: { pol: 'npn' } }, { type: 'bjt', key: 'pnp', props: { pol: 'pnp' } }
@@ -466,6 +466,22 @@
             app.commit();
           });
           field(propLabel(c, d), s);
+        } else if (d.type === 'slider') {
+          // potentiometer position: the circuit follows the slider while it moves
+          const w = el('div', { class: 'slider-row' });
+          const sl = el('input', { type: 'range', min: '0', max: '100', step: '1', 'data-prop': d.key });
+          sl.value = String(Math.round(c.props[d.key] * 100));
+          const out = el('span', { class: 'slider-val' }, sl.value + ' %');
+          let cp = false;
+          sl.addEventListener('input', () => {
+            if (!cp) { app.checkpoint(); cp = true; }
+            c.props[d.key] = (+sl.value) / 100;
+            out.textContent = sl.value + ' %';
+            app.circuitChanged(true);
+          });
+          sl.addEventListener('change', () => { cp = false; app.commit(); });
+          w.appendChild(sl); w.appendChild(out);
+          field(propLabel(c, d), w);
         } else if (d.type === 'bool') {
           const b = el('input', { type: 'checkbox', 'data-prop': d.key });
           b.checked = !!c.props[d.key];
@@ -575,6 +591,12 @@
         html = `<dt>${t('vout')}</dt><dd class="v">${fmt(r.vout, 'V')}</dd><dt>${t('iout')}</dt><dd class="i">${fmt(r.iout, 'A')}</dd>` +
           `<dt>${t('vdiff')}</dt><dd>${fmt(r.vd, 'V')}</dd><dt>${t('res_state')}</dt><dd>${r.state === 'lin' ? 'linear' : r.state === 'sp' ? 'SAT +' : 'SAT −'}</dd>` +
           `<dt>${t('supply_p')}</dt><dd class="pg">${fmt(-r.p, 'W')}</dd>`;
+      } else if (c.type === 'pot') {
+        const f = C.potFrac(c);
+        html = `<dt>R<sub>AW</sub> / R<sub>WB</sub></dt><dd>${fmt(c.props.R * f, 'Ω')} / ${fmt(c.props.R * (1 - f), 'Ω')}</dd>` +
+          `<dt>V<sub>AW</sub> · I<sub>AW</sub></dt><dd><span class="v">${fmt(r.aw.v, 'V')}</span> · <span class="i">${fmt(r.aw.i, 'A')}</span></dd>` +
+          `<dt>V<sub>WB</sub> · I<sub>WB</sub></dt><dd><span class="v">${fmt(r.wb.v, 'V')}</span> · <span class="i">${fmt(r.wb.i, 'A')}</span></dd>` +
+          `<dt>I<sub>W</sub> (${t('wiper')})</dt><dd class="i">${fmt(r.tc[2], 'A')}</dd>` + pRow(r.p);
       } else if (c.type === 'rgbled') {
         html = ['R', 'G', 'B'].map((n, k) => { const q = r.ch[k]; return `<dt>${n}: V / I</dt><dd><span class="v">${fmt(q.v, 'V')}</span> · <span class="i">${fmt(q.i, 'A')}</span> · ${Math.round(100 * Math.max(0, Math.min(1, q.i / c.props.Imax)))} %</dd>`; }).join('') + pRow(r.p);
       } else if (c.type === 'bjt') {
@@ -632,7 +654,7 @@
       nd.appendChild(el('div', { class: 'hint' }, t('nodes_hint')));
       nd.appendChild(nt);
       pane.appendChild(nd);
-      const order = ['vsource', 'isource', 'resistor', 'diode', 'schottky', 'led', 'rgbled', 'bjt', 'opamp', 'ammeter', 'voltmeter'];
+      const order = ['vsource', 'isource', 'resistor', 'pot', 'diode', 'schottky', 'led', 'rgbled', 'bjt', 'opamp', 'ammeter', 'voltmeter'];
       const comps = app.circuit.comps.filter(c => c.type !== 'ground').sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type) || String(a.name).localeCompare(String(b.name), undefined, { numeric: true }));
       const tbl = el('table', { class: 'res' });
       let rows = `<tr><th>${t('tbl_comp')}</th><th>${t('tbl_v')}</th><th>${t('tbl_i')}</th><th>${t('tbl_p')}</th></tr>`;
@@ -645,6 +667,7 @@
         if (c.type === 'opamp') { v = r.vout; i = r.iout; p = r.p; }
         if (c.type === 'bjt') { v = r.vce; i = r.ic; }
         if (c.type === 'rgbled') { v = NaN; i = r.tc[3]; }
+        if (c.type === 'pot') { v = r.aw.v + r.wb.v; i = r.tc[0]; }
         if (c.type === 'opamp') { if (p > 0) pAbs += p; else pGen -= p; }
         else if (p >= 0) pAbs += p; else pGen -= p;
         const meter = c.type === 'ammeter' || c.type === 'voltmeter';
@@ -696,6 +719,12 @@
           multi = true;
           const s = c.props.pol === 'pnp' ? -1 : 1;
           addI(n[0], s, sub('I', 'B,' + c.name), r.ib); addI(n[1], s, sub('I', 'C,' + c.name), r.ic); addI(n[2], -s, sub('I', 'E,' + c.name), r.ie);
+        } else if (c.type === 'pot') {
+          // the two halves are ordinary resistors in KCL and KVL (passive convention A → W → B)
+          addI(n[0], 1, sub('I', c.name + '.AW'), r.aw.i); addI(n[2], -1, sub('I', c.name + '.AW'), r.aw.i);
+          addI(n[2], 1, sub('I', c.name + '.WB'), r.wb.i); addI(n[1], -1, sub('I', c.name + '.WB'), r.wb.i);
+          if (n[0] !== n[2]) branches.push({ c: { name: c.name + '.AW' }, plus: n[0], minus: n[2], v: r.aw.v });
+          if (n[2] !== n[1]) branches.push({ c: { name: c.name + '.WB' }, plus: n[2], minus: n[1], v: r.wb.v });
         } else if (c.type === 'rgbled') {
           multi = true;
           ['R', 'G', 'B', 'COM'].forEach((tn, j) => addI(n[j], 1, sub('I', tn + ',' + c.name), r.tc[j]));

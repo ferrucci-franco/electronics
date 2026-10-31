@@ -9,6 +9,9 @@
     red: { vf: 1.8, rgb: [255, 45, 45] }, orange: { vf: 2.0, rgb: [255, 140, 20] }, yellow: { vf: 2.1, rgb: [255, 215, 0] },
     green: { vf: 2.2, rgb: [40, 220, 70] }, blue: { vf: 3.0, rgb: [50, 120, 255] }, white: { vf: 3.1, rgb: [255, 255, 255] }
   };
+  const potX = (c) => -1.2 + 2.4 * Math.max(0, Math.min(1, c.props.alpha));
+  // fraction of the resistance between A and the wiper: linear, or logarithmic (audio) taper
+  const potFrac = (c) => { const a = Math.max(0, Math.min(1, c.props.alpha)); return c.props.taper === 'log' ? (Math.pow(10, 2 * a) - 1) / 99 : a; };
   const isDiode = (c) => c.type === 'diode' || c.type === 'schottky' || c.type === 'led';
 
   const TYPES = {
@@ -73,6 +76,15 @@
         { key: 'Imax', unit: 'A', def: 0.02, min: 1e-4, max: 10 }
       ],
       valueText: (c, f, t) => 'RGB · ' + t(c.props.common)
+    },
+    pot: {
+      prefix: 'P', terms: [[-2, 0], [2, 0], [0, -2]], termNames: ['A', 'B', 'W'], box: [-2, -2, 2, 0.75],
+      props: [
+        { key: 'R', unit: 'Ω', def: 10000, min: 1, max: 1e10 },
+        { key: 'alpha', type: 'slider', def: 0.5 },
+        { key: 'taper', type: 'select', options: ['lin', 'log'], def: 'lin' }
+      ],
+      valueText: (c, f) => f(c.props.R, 'Ω') + ' · ' + Math.round(c.props.alpha * 100) + ' %'
     },
     ground: { prefix: 'GND', terms: [[0, 0]], box: [-0.9, -0.2, 0.9, 1.6], props: [] },
     opamp: {
@@ -243,6 +255,13 @@
       P.line([[0.95, -1.1], [0.95, 1.1]]);
       P.line([[0.95, 0], [3, 0]]);
     },
+    pot(P, c, us) {
+      SYM.resistor(P, c, us);
+      // the wiper arrow sits at the position α along the resistor (A at α = 0, B at α = 1)
+      const x = potX(c);
+      P.line([[0, -2], [0, -1.3], [x, -1.3], [x, -0.85]]);
+      P.head(x, -1.3, x, -0.45, 0.4);
+    },
     ground(P) {
       P.line([[0, 0], [0, 0.8]]);
       P.line([[-0.8, 0.8], [0.8, 0.8]]);
@@ -266,7 +285,7 @@
     }
   };
 
-  const api = { TYPES, LED_COLORS, isDiode, defaults, defRef, refs, signed, flippable, toWorld, toLocal, terminals, hit, bounds, SYM };
+  const api = { TYPES, LED_COLORS, isDiode, potX, potFrac, defaults, defRef, refs, signed, flippable, toWorld, toLocal, terminals, hit, bounds, SYM };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else (root.DCS = root.DCS || {}).comp = api;
 })(typeof window !== 'undefined' ? window : globalThis);
