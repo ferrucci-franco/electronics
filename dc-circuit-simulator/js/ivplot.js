@@ -365,7 +365,7 @@
   }
 
   /* ---------- plot ---------- */
-  const regionColor = (rg, col) => (rg.kind === 'sat' ? col.err : col.accent);
+  const regionColor = (rg, col) => rg.color || (rg.kind === 'sat' ? col.err : col.accent);
   function niceStep(span, n) {
     const raw = span / n, e = Math.pow(10, Math.floor(Math.log10(raw))), m = raw / e;
     return (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10) * e;
@@ -462,7 +462,7 @@
     for (const s of spec.series) {
       if (!s.pts || s.pts.length < 2) continue;
       ctx.strokeStyle = s.color === 'fg' ? col.fg : s.color === 'muted' ? col.muted : s.color; ctx.lineWidth = s.width || 2;
-      ctx.setLineDash(s.dash ? [2, 3] : []);
+      ctx.setLineDash(s.dash ? (Array.isArray(s.dash) ? s.dash : [2, 3]) : []);
       ctx.globalAlpha = s.dim ? 0.4 : 1;   // reference curves (transistor in cut-off)
       ctx.beginPath();
       s.pts.forEach(([v, i], k) => { const x = X(v), y = Y(i); if (k) ctx.lineTo(x, y); else ctx.moveTo(x, y); });

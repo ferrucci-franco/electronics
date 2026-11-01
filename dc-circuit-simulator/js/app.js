@@ -855,6 +855,12 @@
         .map((y, k) => Object.assign(y.n ? { n: [Math.round(y.n[0]), Math.round(y.n[1])] } : { id: String(y.id), q: y.q }, { c: isFinite(y.c) ? Math.abs(Math.round(y.c)) % 8 : k }));
       const x = sw.x && ids.has(String(sw.x.id)) && typeof sw.x.key === 'string' && isFinite(sw.x.from) && isFinite(sw.x.to) ? { id: String(sw.x.id), key: sw.x.key, from: +sw.x.from, to: +sw.x.to, log: !!sw.x.log } : null;
       if (ys.length) clean.sweep = { x, ys };
+      const f = sw.f;
+      if (ys.length && f && ids.has(String(f.id)) && typeof f.key === 'string' && Array.isArray(f.vals)) {
+        const vals = f.vals.map(Number).filter(isFinite).slice(0, 6);
+        if (vals.length) clean.sweep.f = { id: String(f.id), key: f.key, vals };
+      }
+      if (ys.length && (sw.z === '' || ids.has(String(sw.z)))) clean.sweep.z = String(sw.z);
     }
     app.circuit = clean;
     app.sel.clear();
@@ -883,6 +889,8 @@
     if (sw) {
       const ix = (id) => app.circuit.comps.findIndex(c => c.id === id);
       o.s = { x: sw.x ? [ix(sw.x.id), sw.x.key, sw.x.from, sw.x.to, sw.x.log ? 1 : 0] : null, y: sw.ys.map(y => (y.n ? [y.n[0], y.n[1], y.c] : [ix(y.id), y.q, y.c])) };
+      if (sw.f) o.s.f = [ix(sw.f.id), sw.f.key, sw.f.vals];
+      if (sw.z !== undefined) o.s.z = sw.z === '' ? -1 : ix(sw.z);
     }
     return JSON.stringify(o);
   }
@@ -895,6 +903,8 @@
         x: o.s.x ? { id: id(o.s.x[0]), key: o.s.x[1], from: o.s.x[2], to: o.s.x[3], log: !!o.s.x[4] } : null,
         ys: o.s.y.map(a => (typeof a[1] === 'string' ? { id: id(a[0]), q: a[1], c: a[2] } : { n: [a[0], a[1]], c: a[2] }))
       };
+      if (o.s.f) out.sweep.f = { id: id(o.s.f[0]), key: o.s.f[1], vals: o.s.f[2] };
+      if (o.s.z !== undefined) out.sweep.z = o.s.z < 0 ? '' : id(o.s.z);
     }
     return out;
   }
