@@ -992,6 +992,13 @@
     app.renderer = new DCS.render.Renderer(cv);
     DCS.render.readColors();
     app.editor = new DCS.Editor(app, cv);
+    // the browser's own right-click menu is of no use in the app (the right button pans the circuit): it is
+    // kept only in the text fields, for copy and paste
+    document.addEventListener('contextmenu', (e) => {
+      const t = e.target;
+      if (t && t.closest && t.closest('input, textarea, [contenteditable=""], [contenteditable="true"]')) return;
+      e.preventDefault();
+    });
     app.ui = DCS.UI(app);
     app.renderer.resize();
 
