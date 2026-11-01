@@ -267,8 +267,9 @@
     const side = S.port && S.port.side;
     for (const w of S.circuit.wires) {
       const selected = S.sel.has(w.id);
-      const hov = S.hover && S.hover.id === w.id;
       const node = net && net.wireNode.get(w.id);
+      // hovering a wire (or the tag of a node) lights up every wire of that node
+      const hov = S.hover && (S.hover.id === w.id || (S.hover.node != null && node === S.hover.node));
       const hiNode = S.hiNode != null && node === S.hiNode;
       if (selected || hov || hiNode) {
         ctx.strokeStyle = selected ? col.sel : hiNode ? col.port : col.hover; ctx.globalAlpha = selected ? 0.35 : 0.3; ctx.lineWidth = (lw + 7) / s;
@@ -351,7 +352,8 @@
     // current in the wires: the selected / hovered wire, or every wire when asked
     if (res && S.wireCur && (st.showI || st.showWireI)) this.drawWireCurrents(S, fmt);
 
-    // node voltage tags
+    // node voltage tags (their boxes are kept: the pointer over a tag shows its node, even over a component)
+    this.nodeTags = [];
     if (res && st.showNodes && net) {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.font = `600 ${fontPx - 1}px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
@@ -364,6 +366,7 @@
         ctx.fillStyle = col.tagBg; ctx.strokeStyle = voltColorTag(res.v[nd.id], vmax); ctx.lineWidth = 1.2;
         roundRect(ctx, sx, sy - h / 2, w, h, 5); ctx.fill(); ctx.stroke();
         ctx.fillStyle = col.fg; ctx.fillText(txt, sx + 4, sy + 0.5);
+        this.nodeTags.push({ node: nd.id, r: [sx, sy - h / 2, sx + w, sy + h / 2] });
       }
     }
 
@@ -383,6 +386,8 @@
         ctx.fillStyle = pr.color; ctx.beginPath(); ctx.arc(sx, sy, 4, 0, 2 * Math.PI); ctx.fill();
         roundRect(ctx, fx, fy, w, h, 5); ctx.fill();
         ctx.fillStyle = '#fff'; ctx.fillText(pr.name, fx + w / 2, fy + h / 2 + 0.5);
+        const pn = net && net.nodeOf(pr.pt[0], pr.pt[1]);
+        if (pn != null) this.nodeTags.push({ node: pn, r: [fx, fy, fx + w, fy + h] });
       }
     }
 
@@ -701,6 +706,12 @@
 
   /* reference marks of a two-terminal element: + and − of V at the chosen terminals, the arrow of I in the
    * chosen direction (both can be tapped to flip them), and the values with their sign */
+  // the node whose tag (voltage tag, sweep probe) is under a screen point, or null
+  Renderer.prototype.nodeTagAt = function (sx, sy) {
+    for (const t of this.nodeTags || []) if (sx >= t.r[0] - 2 && sx <= t.r[2] + 2 && sy >= t.r[1] - 2 && sy <= t.r[3] + 2) return t.node;
+    return null;
+  };
+
   Renderer.prototype.refMarks = function (S, c, r, rd, hw, cx, cy, ax, ay, marks, lines, fmt) {
     const st = S.settings;
     const f = C.refs(c), sV = f.refV ? -1 : 1, sI = f.refI ? -1 : 1;
