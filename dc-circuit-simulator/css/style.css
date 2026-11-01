@@ -484,3 +484,10 @@ html.layout-mobile .mon2{left:6px; top:auto; bottom:6px}
 .quiz-score{font-size:22px; font-weight:700; text-align:center; padding:10px 0}
 .quiz-card .quiz-prog{color:var(--accent); font-size:12.5px}
 .quiz-card .btnrow{margin-top:4px}
+
+/* pinned plot: a corner to resize it */
+.monitor{position:absolute}
+.mon-grip{position:absolute; right:0; bottom:0; width:22px; height:22px; cursor:nwse-resize; touch-action:none; border-bottom-right-radius:12px;
+  background:linear-gradient(135deg, transparent 50%, var(--muted) 50%, var(--muted) 56%, transparent 56%, transparent 68%, var(--muted) 68%, var(--muted) 74%, transparent 74%); opacity:.7}
+.mon-grip:hover{opacity:1}
+html.layout-mobile .mon-grip{width:28px; height:28px}

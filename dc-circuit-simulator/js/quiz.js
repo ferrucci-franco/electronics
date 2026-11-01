@@ -225,14 +225,14 @@
       if (c.revealed) {
         const fb = el('div', { class: 'quiz-fb ' + (c.right ? 'right' : 'wrong') });
         const shown = a.kind === 'choice' ? esc(L(a.options)[c.want]) : h.f(c.want, a.unit);
-        fb.innerHTML = (c.right ? '✓ ' + t('quiz_right') : '✗ ' + t('quiz_wrong') + (a.kind === 'num' ? ' · ' + t('quiz_answer', { a: shown }) : ''));
+        // just ✓, or ✗ with the right value
+        fb.innerHTML = c.right ? '✓' : '✗' + (a.kind === 'num' ? ' ' + shown : '');
         card.appendChild(fb);
         card.appendChild(el('div', { class: 'quiz-explain' }, keep(L(q.explain)(c.p, c.sol, h))));
-        card.appendChild(el('div', { class: 'hint' }, t('quiz_play')));
         const row = el('div', { class: 'btnrow' });
         row.appendChild(btn(st.pos + 1 < st.total ? t('quiz_next') + ' →' : t('quiz_finish'), next, 'primary'));
         card.appendChild(row);
-      } else card.appendChild(el('div', { class: 'hint' }, t('quiz_hidden')));
+      }
       P.appendChild(card);
     }
     Q.render = render;

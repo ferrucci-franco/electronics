@@ -779,6 +779,14 @@
       result.el[el.id] = r;
       pSum += p; pAbs += Math.abs(p);
     });
+    // numerical leakage leaves nanovolts across elements of a branch that carries nothing (behind an open switch):
+    // differences far below the circuit's voltages are exactly zero
+    {
+      let vmax = 0;
+      for (const x of result.v) vmax = Math.max(vmax, Math.abs(x));
+      const vz = 1e-6 * Math.max(1, vmax);
+      for (const id in result.el) { const r = result.el[id]; if (r.v !== undefined && Math.abs(r.v) < vz) r.v = 0; }
+    }
     result.pSum = pSum;
     result.pAbs = pAbs;
     if (topo.floating.length) result.floating = topo.floating.slice();
