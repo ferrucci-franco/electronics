@@ -1524,7 +1524,7 @@
     function dragByHead(win, head) {
       let d = null;
       head.addEventListener('pointerdown', (e) => {
-        if (e.target.closest('button')) return;
+        if (e.target.closest('button') || win.classList.contains('max')) return;
         const r = win.getBoundingClientRect(), s = $('stage').getBoundingClientRect();
         d = { id: e.pointerId, dx: e.clientX - r.left, dy: e.clientY - r.top, s };
         head.setPointerCapture(e.pointerId);
@@ -1549,7 +1549,7 @@
       let wins;
       try { wins = [qs, tmon].concat(monWins.map(m => m.mon), ui.floats); } catch (e) { return; }   // (not all built yet)
       for (const w of wins) {
-        if (!w || w.hidden) continue;
+        if (!w || w.hidden || w.classList.contains('max')) continue;
         const x = w.offsetLeft, y = w.offsetTop, ww = w.offsetWidth, hh = w.offsetHeight;
         const nx = Math.max(4, Math.min(W - ww - 4, x)), ny = Math.max(4, Math.min(H - hh - 4, y));
         if (nx !== x || ny !== y) Object.assign(w.style, { left: nx + 'px', top: ny + 'px', right: 'auto', bottom: 'auto' });
