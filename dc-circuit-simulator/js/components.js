@@ -32,6 +32,9 @@
     if (c.type === 'depv') return cur ? { sym: 'r<sub>m</sub>', unit: 'Ω', code: 'ccvs', x: 'i' } : { sym: 'μ', unit: 'V/V', code: 'vcvs', x: 'v' };
     return cur ? { sym: 'β', unit: 'A/A', code: 'cccs', x: 'i' } : { sym: 'g<sub>m</sub>', unit: 'S', code: 'vccs', x: 'v' };
   }
+  // op-amp internal supplies: the local y of the upper side (−1, or +1 when mirrored) and the end of the stubs
+  const opampUp = (c) => (c.flip ? 1 : -1);
+  const SUP_END = 2.35, SUP_X = -0.6, SUP_Y0 = 1.3;   // stub: x, from the edge (|y| = 1.3) to |y| = SUP_END
   const isClosed = (c) => (c.type === 'switch' ? !!c.props.closed : c.type === 'button' ? (c.props.nc === 'nc') !== pressed.has(c.id) : false);
 
   const TYPES = {
@@ -163,7 +166,7 @@
     },
     ground: { prefix: 'GND', terms: [[0, 0]], box: [-0.9, -0.2, 0.9, 1.6], props: [] },
     opamp: {
-      prefix: 'U', terms: [[-3, 1], [-3, -1], [3, 0]], termNames: ['+', '−', 'out'], box: [-3, -2.2, 3, 2.2],
+      prefix: 'U', terms: [[-3, 1], [-3, -1], [3, 0]], termNames: ['+', '−', 'out'], box: [-3, -2.5, 3, 2.5],
       props: [
         { key: 'sat', type: 'bool', def: true },
         { key: 'Vpos', unit: 'V', def: 15, min: -1e4, max: 1e4, show: c => c.props.sat },
@@ -515,10 +518,23 @@
       P.line([[-0.5, 1.12], [0.5, 1.12]]);
       P.line([[-0.2, 1.44], [0.2, 1.44]]);
     },
-    opamp(P) {
+    opamp(P, c) {
       P.poly([[-2, -2], [-2, 2], [2, 0]], false);
       P.line([[-3, 1], [-2, 1]]); P.line([[-3, -1], [-2, -1]]); P.line([[2, 0], [3, 0]]);
       P.plus(-1.45, 1, 0.42); P.minus(-1.45, -1, 0.42);
+      // the internal supplies: thin muted stubs ending in a bar (a power port, not a terminal), V+ on the upper
+      // side of the triangle and V− on the lower one, whatever the mirroring (which only swaps the inputs)
+      if (P.supplies) {
+        const up = opampUp(c), sat = c.props.sat, fv = P.fmtV || ((v) => v + ' V');
+        P.tint(P.muted, true);
+        for (const [side, label] of [[up, sat ? fv(Math.max(c.props.Vpos, c.props.Vneg), true) : 'V+'], [-up, sat ? fv(Math.min(c.props.Vpos, c.props.Vneg), true) : 'V−']]) {
+          // on the slanted side, towards the inputs (the output side stays free for the readings)
+          P.line([[SUP_X, side * SUP_Y0], [SUP_X, side * SUP_END]], 0.6);
+          P.line([[SUP_X - 0.35, side * SUP_END], [SUP_X + 0.35, side * SUP_END]], 0.6);
+          P.textOut(SUP_X, side * (SUP_END + 0.18), 0, side, label, 0.5);
+        }
+        P.tint(null);
+      }
     },
     bjt(P, c, us) {
       const pnp = c.props.pol === 'pnp';
@@ -532,7 +548,7 @@
     }
   };
 
-  const api = { TYPES, LED_COLORS, lampState, meterKind, isDep, ctrlOf, depKind, depText, isDiode, pressed, isSwitch, isClosed, passiveOnly, potX, potFrac, ROT, defaults, defRef, refs, signed, flippable, toWorld, toLocal, terminals, hit, bounds, SYM };
+  const api = { TYPES, LED_COLORS, opampUp, SUP_END, SUP_X, SUP_Y0, lampState, meterKind, isDep, ctrlOf, depKind, depText, isDiode, pressed, isSwitch, isClosed, passiveOnly, potX, potFrac, ROT, defaults, defRef, refs, signed, flippable, toWorld, toLocal, terminals, hit, bounds, SYM };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else (root.DCS = root.DCS || {}).comp = api;
 })(typeof window !== 'undefined' ? window : globalThis);

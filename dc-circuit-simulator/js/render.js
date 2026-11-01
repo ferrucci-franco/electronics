@@ -56,10 +56,11 @@
     };
     const lw = lwPx / s;
     const P = {
+      supplies: !!R.showSupplies, muted: col.muted, fmtV: (v) => (v > 0 ? '+' : '') + U.format(v, 'V', { digits: 3, trim: true }),
       // temporary colour (LED light, RGB channels); `force` keeps it also on a selected or ghost symbol
       tint(c, force) { color = c && (force || color0 === col.fg) ? c : color0; },
-      line(pts) {
-        setLocal(); ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+      line(pts, k) {   // (k: a fraction of the normal line width)
+        setLocal(); ctx.strokeStyle = color; ctx.lineWidth = lw * (k || 1); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
         ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
         for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
         ctx.stroke();
@@ -106,6 +107,17 @@
         const [sx, sy] = screen(x, y), h = size * s / 2;
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.strokeStyle = color; ctx.lineWidth = Math.max(1.2, lwPx * 0.9); ctx.lineCap = 'butt';
         ctx.beginPath(); ctx.moveTo(sx - h, sy); ctx.lineTo(sx + h, sy); ctx.stroke();
+      },
+      // a label just past (x, y) going away along the local direction (dx, dy), upright and aligned on screen so
+      // that it never overlaps what it labels, whatever the rotation
+      textOut(x, y, dx, dy, str, size) {
+        const [sx, sy] = screen(x, y), [ex, ey] = screen(x + dx, y + dy);
+        const ux = ex - sx, uy = ey - sy;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.fillStyle = color;
+        ctx.font = `600 ${Math.max(9, Math.min(12, size * s))}px ui-sans-serif, system-ui, sans-serif`;
+        if (Math.abs(uy) >= Math.abs(ux)) { ctx.textAlign = 'center'; ctx.textBaseline = uy < 0 ? 'bottom' : 'top'; }
+        else { ctx.textAlign = ux < 0 ? 'right' : 'left'; ctx.textBaseline = 'middle'; }
+        ctx.fillText(str, sx, sy);
       },
       text(x, y, str, size) {
         const [sx, sy] = screen(x, y);
@@ -215,6 +227,7 @@
     const ctx = this.ctx, dpr = this.dpr, view = S.view, s = view.scale;
     const st = S.settings, res = S.result && S.result.ok ? S.result : null;
     const fmt = (v, u) => U.format(v, u, { digits: st.digits });
+    this.showSupplies = st.opSupplies !== false;
     this.hits = [];
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.fillStyle = col.bg;
@@ -547,7 +560,10 @@
       });
       const blk = (lx, ly, dx, dy, lines) => { const p = C.toWorld(c, lx, ly); return { wx: p[0], wy: p[1], dir: worldDir(c, dx, dy), lines }; };
       const names = [blk(-1.2, -2.25, 0, -1, nameLines), blk(-1.2, 2.25, 0, 1, nameLines), blk(1.2, -1.35, 0, -1, nameLines)];
-      const results = [blk(1.6, 1.1, 0, 1, lines), blk(1.6, -1.1, 0, -1, lines), blk(3.3, 0.4, 1, 0, lines), blk(-0.6, 2.3, 0, 1, lines), blk(-0.6, -2.3, 0, -1, lines)];
+      // (with the supply stubs drawn, the readings also fit between the stub and the output, left-aligned)
+      const sup = this.showSupplies;
+      const results = [blk(1.6, 1.1, 0, 1, lines), blk(1.6, -1.1, 0, -1, lines), blk(3.3, 0.4, 1, 0, lines), blk(-0.6, 2.3, 0, 1, lines), blk(-0.6, -2.3, 0, -1, lines)]
+        .concat(sup ? [blk(0.25, -1.55, 1, 0, lines), blk(0.25, 1.55, 1, 0, lines)] : []);
       names.forEach((nb, i) => results.forEach((rb, j) => {
         if ((i === 0 && j === 4) || (i === 1 && j === 3) || (i === 2 && j === 1)) return;
         opts.push({ blocks: [nb, rb], marks, penalty: (i + j) * 0.3 });
@@ -762,6 +778,11 @@
     for (const c of S.circuit.comps) {
       const b = C.bounds(c), p = toS(b[0], b[1]), q = toS(b[2], b[3]);
       obst.push({ r: [p[0], p[1], q[0], q[1]], id: c.id, w: 40 });
+      // the op-amp's supply stubs and their labels: other labels (its own too) keep clear of them
+      if (c.type === 'opamp' && this.showSupplies) for (const side of [-1, 1]) {
+        const a = toS(...C.toWorld(c, C.SUP_X - 0.85, side * C.SUP_Y0)), z = toS(...C.toWorld(c, C.SUP_X + 0.85, side * (C.SUP_END + 0.75)));
+        obst.push({ r: [Math.min(a[0], z[0]), Math.min(a[1], z[1]), Math.max(a[0], z[0]), Math.max(a[1], z[1])], id: c.id + ':sup', w: 40 });
+      }
     }
     for (const w of S.circuit.wires) {
       const p = toS(w.x1, w.y1), q = toS(w.x2, w.y2);
@@ -783,6 +804,8 @@
     const cost = (it, k) => {
       const o = it.opts[k];
       let score = k * 0.5 + (o.penalty || 0) * 100; // mild preference for the conventional option
+      // the blocks of one option must not overlap each other either (an op-amp's name and its readings)
+      for (let a = 0; a < o.rects.length; a++) for (let b = a + 1; b < o.rects.length; b++) score += overlap(o.rects[a], o.rects[b]) * 40;
       for (const r of o.rects) {
         // the own body counts too for two-terminal elements (their box is their symbol)
         for (const ob of obst) if (ob.id !== it.c.id || (ob.w > 10 && it.two)) score += overlap(r, ob.r) * ob.w;
@@ -807,6 +830,8 @@
     // greedy placement, then two passes where each label moves if another option is better. A label keeps its
     // previous place unless another one is clearly better (no flickering from side to side as a value changes),
     // and none moves while a value is being changed (slider, wheel)
+    // (only within the same circuit: another one loaded, or an undo, starts afresh — ids repeat across circuits)
+    if (this.prevCircuit !== S.circuit) { this.prevPick = null; this.prevCircuit = S.circuit; }
     const prev = this.prevPick || new Map();
     const frozen = !!(S.overlay && S.overlay.live);
     const MARGIN = 400;   // (overlap cost units: about 10 px² of text over text)
