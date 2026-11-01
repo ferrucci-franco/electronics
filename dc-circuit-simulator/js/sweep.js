@@ -2,15 +2,18 @@
  * against one value of a component (a source voltage, a resistance, β…) that goes from a value to another.
  * First what is measured: a wire (its node voltage, the node gets a letter A, B… if it has no name) or a
  * component (one of its quantities), from the selection toolbar; then what varies: a tap on a component.
+ * Optionally a family (one curve for each of a few values of a second value) and the regions of a nonlinear
+ * component (cut-off / active / saturation, on / off…) shaded under the curves.
  * The sweep is part of the circuit (circuit.sweep, kept with the tab, the file and the share link):
- *   { x: { id, key, from, to, log } | null, ys: [{ n: [x, y], c } | { id, q, c }] }   (c: colour slot)
- * Every point is solved from the solution of the previous one (continuation). A dashed line marks the value
- * the circuit has now; dragging on the plot sets that value in the circuit. */
+ *   { x: { id, key, from, to, log } | null, ys: [{ n: [x, y], c } | { id, q, c }],   (c: colour slot)
+ *     f: { id, key, vals: [..] } (family, optional), z: id | '' (regions: a component, none; absent: automatic) }
+ * Every point is solved from the solution of the previous one (continuation), there and back (hysteresis).
+ * A dashed line marks the value the circuit has now; dragging on the plot sets that value in the circuit. */
 (function (root) {
   'use strict';
   const DCS = root.DCS;
   const C = DCS.comp, N = DCS.netlist, S = DCS.solver, U = DCS.units;
-  const NPTS = 201, NLIVE = 61;
+  const NPTS = 201, NLIVE = 61, NFAM = 121, MAXFAM = 6;
 
   // the names of the values, written for the axis (the part after _ is a subscript)
   const PNAME = {
@@ -38,6 +41,7 @@
     const main = { resistor: 'R', vsource: 'V', isource: 'I' }[c.type];
     return key === main ? c.name : (PNAME[key] || key) + ' (' + c.name + ')';
   }
+  const clampP = (p, v) => Math.max(p.min != null ? p.min : -Infinity, Math.min(p.max != null ? p.max : Infinity, v));
   // the default range: a source from −2|value| to +2|value|, any other value from 0 to twice its value
   function defRange(c, p) {
     if (p.key === 'alpha') return [0, 1];
@@ -47,8 +51,14 @@
     else if (v > 0) { a = 0; b = 2 * v; }
     else if (v < 0) { a = 2 * v; b = 0; }
     else { a = 0; b = 1; }
-    a = Math.max(p.min != null ? p.min : -Infinity, a); b = Math.min(p.max != null ? p.max : Infinity, b);
-    return [a, b];
+    return [clampP(p, a), clampP(p, b)];
+  }
+  // the default values of a family: half, the value, twice (α: 25, 50, 75 %)
+  function defFamily(c, p) {
+    if (p.key === 'alpha') return [0.25, 0.5, 0.75];
+    const v = +c.props[p.key] || 0;
+    const vals = v ? [v / 2, v, 2 * v] : [0, 1, 2];
+    return Array.from(new Set(vals.map(x => clampP(p, Number(x.toPrecision(3))))));
   }
 
   // what can be measured on a component
@@ -92,6 +102,15 @@
     return qq ? { c, q: y.q, name: qq.name, u: qq.u } : null;
   }
 
+  // the components whose regions can be shown, and the regions they go through
+  const zoneable = (c) => !!c && (c.type === 'bjt' || c.type === 'opamp' || C.isDiode(c));
+  const ZONES = {
+    bjt: { off: ['region_off', 'muted'], act: ['region_act', 2], sat: ['region_sat', 'err'] },
+    opamp: { lin: ['sw_z_lin', 2], sp: ['sw_z_sp', 'err'], sn: ['sw_z_sn', 6] },
+    diode: { off: ['sw_z_off', 'muted'], on: ['sw_z_on', 2], bd: ['sw_z_bd', 3] }
+  };
+  const zoneSet = (c) => ZONES[c.type] || ZONES.diode;
+
   function grid(x, n) {
     const out = new Float64Array(n);
     const lg = x.log && x.from > 0 && x.to > 0;
@@ -103,12 +122,14 @@
   }
   /* The sweep: every point solved from the previous one. It goes there and back: a circuit with memory
    * (positive feedback, a Schmitt trigger) gives two different curves, the hysteresis loop. The way there is
-   * swept a second time, starting from the end of the way back, so that both ways have the same history. */
-  function run(circuit, sw, n, tempC) {
+   * swept a second time, starting from the end of the way back, so that both ways have the same history.
+   * zid: the component whose state (region) is noted at every point of the way there. */
+  function run(circuit, sw, n, tempC, zid) {
     const c = circuit.comps.find(q => q.id === sw.x.id);
     const xs = grid(sw.x, n);
     function pass(order, st) {
       const ys = sw.ys.map(() => new Float64Array(n).fill(NaN));
+      const zs = new Array(n).fill(null);
       let prevStates = st ? st.states : {}, prevV = st ? st.v : null;
       for (const k of order) {
         const cx = Object.assign({}, c, { props: Object.assign({}, c.props, { [sw.x.key]: xs[k] }) });
@@ -122,8 +143,9 @@
           if (!cv) return;
           ys[j][k] = cv.node != null ? (cv.node ? res.v[cv.node] : 0) : qval(res, cv.c, cv.q);
         });
+        if (zid && res.el[zid]) zs[k] = res.el[zid].state || null;
       }
-      return { ys, states: prevStates, v: prevV };
+      return { ys, zs, states: prevStates, v: prevV };
     }
     const up = [...Array(n).keys()], down = up.slice().reverse();
     let fwd = pass(up, null);
@@ -136,9 +158,25 @@
       for (let k = 0; k < n; k++) { const p = ys[k], q = b.ys[j][k]; if (isFinite(p) !== isFinite(q) || (isFinite(p) && Math.abs(p - q) > tol)) return false; }
       return true;
     });
-    if (same(fwd, back)) return { xs, ys: fwd.ys, back: null };
+    if (same(fwd, back)) return { xs, ys: fwd.ys, back: null, zs: fwd.zs };
     fwd = pass(up, back);
-    return { xs, ys: fwd.ys, back: same(fwd, back) ? null : back.ys };
+    return { xs, ys: fwd.ys, back: same(fwd, back) ? null : back.ys, zs: fwd.zs };
+  }
+  // the whole sweep: one run, or one for each value of the family
+  function runAll(circuit, sw, n, tempC, zid) {
+    const f = sw.f && sw.f.vals && sw.f.vals.length && circuit.comps.some(c => c.id === sw.f.id) ? sw.f : null;
+    if (!f) return { runs: [Object.assign({ fv: null }, run(circuit, sw, n, tempC, zid))] };
+    const runs = f.vals.map(fv => {
+      const ckt = { comps: circuit.comps.map(q => (q.id === f.id ? Object.assign({}, q, { props: Object.assign({}, q.props, { [f.key]: fv }) }) : q)), wires: circuit.wires, nodeNames: circuit.nodeNames };
+      return Object.assign({ fv }, run(ckt, sw, n, tempC, null));
+    });
+    return { runs };
+  }
+
+  function niceStep(span) {
+    if (!(span > 0)) return 1;
+    const e = Math.pow(10, Math.floor(Math.log10(span))), m = span / e;
+    return (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10) * e;
   }
 
   /* ---------- the window ---------- */
@@ -149,7 +187,9 @@
     const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
     const btn = (html, fn, cls) => { const b = el('button', 'btn' + (cls ? ' ' + cls : ''), html); b.type = 'button'; b.addEventListener('click', fn); return b; };
     const fmt = (v, u, d) => U.format(v, u, { digits: d || 3 });
-    const fmtIn = (v, u) => U.format(v, u, { digits: 4, trim: true }).replace(/\s+/g, ' ');
+    // a value in a text field: the number with its prefix, the unit is written after the field ("4.7k", "−2")
+    const fmtNum = (v) => U.format(v, '', { digits: 4, trim: true }).replace(/\s+/g, '');
+    const colOf = (k) => { const col = DCS.render.colors(); return k === 'muted' ? col.muted : k === 'err' ? col.err : DCS.iv.slot(k); };
     const stage = document.getElementById('stage');
 
     const win = el('div', 'monitor swmon');
@@ -157,14 +197,15 @@
     const head = el('div', 'mon-head');
     const title = el('span', 'mon-title');
     const csvB = btn('CSV', () => exportCSV());
-    const closeB = btn('✕', () => { app.checkpoint(); delete app.circuit.sweep; app.sweepPicking = false; app.hint(null); app.commit(); });
+    const closeB = btn('✕', () => { app.checkpoint(); delete app.circuit.sweep; stopPick(); app.commit(); });
     head.appendChild(title); head.appendChild(csvB); head.appendChild(closeB);
     const xrow = el('div', 'sw-x');
+    const orow = el('div', 'sw-x sw-opt');
     const legend = el('div', 'sw-legend');
     const cv = el('canvas', 'mon-cv sw-cv');
     const read = el('div', 'sw-read');
     const grip = el('div', 'mon-grip');
-    win.appendChild(head); win.appendChild(xrow); win.appendChild(legend); win.appendChild(cv); win.appendChild(read); win.appendChild(grip);
+    for (const e of [head, xrow, orow, legend, cv, read, grip]) win.appendChild(e);
     stage.appendChild(win);
     ui.dragByHead(win, head);
     ui.floats.push(win);
@@ -191,13 +232,29 @@
 
     let data = null, dataKey = '', dataFull = false, axisU = null, spec = null;
     const sw = () => app.circuit.sweep || null;
-    const xcomp = () => { const s = sw(); return s && s.x ? app.circuit.comps.find(c => c.id === s.x.id) || null : null; };
+    const compById = (id) => app.circuit.comps.find(c => c.id === id) || null;
+    const xcomp = () => { const s = sw(); return s && s.x ? compById(s.x.id) : null; };
     const xparam = () => { const s = sw(), c = xcomp(); return c ? params(c, app.circuit).find(p => p.key === s.x.key) || null : null; };
+    const fcomp = () => { const s = sw(); return s && s.f ? compById(s.f.id) : null; };
+    const fparam = () => { const s = sw(), c = fcomp(); return c ? params(c, app.circuit).find(p => p.key === s.f.key) || null : null; };
+    // the component whose regions are shaded: the one chosen; automatically, the component measured, else the
+    // one that varies, else the only nonlinear one; none with a family (each curve has its own)
+    function zcomp() {
+      const s = sw();
+      if (!s || fcomp()) return null;
+      if (s.z === '') return null;
+      if (s.z) { const c = compById(s.z); if (zoneable(c)) return c; }
+      for (const y of s.ys) { const c = y.id && compById(y.id); if (zoneable(c)) return c; }
+      if (zoneable(xcomp())) return xcomp();
+      const nl = app.circuit.comps.filter(zoneable);
+      return nl.length === 1 ? nl[0] : null;
+    }
 
     // what the curves depend on: everything but the swept value itself (and the window, the colours)
     function keyOf(s) {
       const comps = app.circuit.comps.map(c => (c.id === s.x.id ? Object.assign({}, c, { props: Object.assign({}, c.props, { [s.x.key]: null }) }) : c));
-      return JSON.stringify([comps, app.circuit.wires, app.circuit.nodeNames, s.x, s.ys.map(y => [y.n, y.id, y.q]), app.settings.tempC, Array.from(C.pressed)]);
+      const z = zcomp();
+      return JSON.stringify([comps, app.circuit.wires, app.circuit.nodeNames, s.x, s.ys.map(y => [y.n, y.id, y.q]), s.f || null, z && z.id, app.settings.tempC, Array.from(C.pressed)]);
     }
 
     /* ---------- what is measured: from the selection toolbar ---------- */
@@ -224,7 +281,7 @@
       s.ys.push(y);
       const fresh = !app.circuit.sweep;
       app.circuit.sweep = s;
-      if (!s.x) startPick(); else if (!fresh) app.toast(t('sw_added'));
+      if (!s.x) startPick('x'); else if (!fresh) app.toast(t('sw_added'));
       app.commit();
     }
     // the selection toolbar: a wire gives its node voltage; a component, the quantity chosen in a small menu
@@ -262,81 +319,175 @@
       return !!(c && quantities(c).length);
     };
 
-    /* ---------- what varies: a tap on a component ---------- */
-    function startPick() { app.sweepPicking = true; app.hint(t('sw_pick')); render(); }
-    function stopPick() { app.sweepPicking = false; app.hint(null); }
+    /* ---------- what varies (x), the family (f): a tap on a component ---------- */
+    let picking = null;
+    function startPick(what) { picking = what; app.sweepPicking = true; app.hint(t(what === 'f' ? 'sw_pick_f' : 'sw_pick')); render(); }
+    function stopPick() { picking = null; app.sweepPicking = false; app.hint(null); }
     // the editor hands over the component tapped while picking; true when it was taken
     function pick(c) {
       const s = sw();
       if (!s) { stopPick(); return false; }
-      const ps = params(c, app.circuit);
+      let ps = params(c, app.circuit);
+      // the family: another value than the one swept
+      if (picking === 'f' && s.x && c.id === s.x.id) ps = ps.filter(p => p.key !== s.x.key);
       if (!ps.length) { app.toast(tp('sw_noparam', { name: c.name })); return true; }
-      const p = ps[0], [a, b] = defRange(c, p);
+      const p = ps[0];
       app.checkpoint();
-      s.x = { id: c.id, key: p.key, from: a, to: b, log: false };
+      if (picking === 'f') s.f = { id: c.id, key: p.key, vals: defFamily(c, p) };
+      else {
+        const [a, b] = defRange(c, p);
+        s.x = { id: c.id, key: p.key, from: a, to: b, log: false };
+        if (s.f && s.f.id === c.id && s.f.key === p.key) delete s.f;
+      }
       stopPick();
       app.commit();
       return true;
     }
 
-    /* ---------- the X row: component, value, range, scale ---------- */
+    /* ---------- the limits: typed, or changed with the wheel (two fingers on a trackpad) over the field ---------- */
+    let wheel = null;
+    function onWheel(e, k) {
+      const s = sw(), p = xparam();
+      if (!s || !s.x || !p) return;
+      e.preventDefault();
+      if (!wheel) {
+        wheel = { acc: 0, step: niceStep(Math.abs(s.x.to - s.x.from) / 40 || Math.abs(s.x[k]) / 20 || 1), timer: 0, started: false };
+      }
+      wheel.acc += e.deltaMode === 1 ? e.deltaY * 33 : e.deltaMode === 2 ? e.deltaY * 400 : e.deltaY;
+      const n = Math.trunc(wheel.acc / 40);
+      clearTimeout(wheel.timer);
+      wheel.timer = setTimeout(() => { const w = wheel; wheel = null; if (w && w.started) app.commit(); }, 450);
+      if (!n) return;
+      wheel.acc -= n * 40;
+      let v = s.x[k];
+      const dir = n < 0 ? 1 : -1;   // wheel up, fingers up: larger
+      for (let i = 0; i < Math.abs(n); i++) {
+        if (s.x.log) v = Number((v * Math.pow(10, dir * 0.05)).toPrecision(3));
+        else v = Number((Math.round(v / wheel.step + dir) * wheel.step).toPrecision(6));
+      }
+      v = clampP(p, v);
+      if (s.x.log && !(v > 0)) return;
+      if (v === s.x[k]) return;
+      if (!wheel.started) { wheel.started = true; app.checkpoint(); }
+      s.x[k] = v;
+      e.target.value = fmtNum(v);
+      update(true);
+    }
+    // a text field for a value, with its unit after it
+    function numField(value, unit, title, onSet, wheelKey) {
+      const wrap = el('span', 'sw-field');
+      const inp = el('input', 'sw-in');
+      inp.type = 'text'; inp.value = fmtNum(value); inp.title = title;
+      inp.setAttribute('inputmode', 'decimal'); inp.spellcheck = false;
+      inp.addEventListener('change', () => {
+        const v = U.parse(inp.value);
+        if (!isFinite(v)) { inp.value = fmtNum(value); return; }
+        onSet(v);
+      });
+      inp.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Enter') inp.blur(); });
+      if (wheelKey) inp.addEventListener('wheel', (e) => onWheel(e, wheelKey), { passive: false });
+      wrap.appendChild(inp);
+      if (unit) wrap.appendChild(el('span', 'sw-unit', esc(unit)));
+      return wrap;
+    }
+    function paramSelect(c, key, skip, onPick) {
+      const ps = params(c, app.circuit).filter(p => p.key === key || !skip || p.key !== skip);
+      if (ps.length < 2) return null;
+      const sel = el('select', 'sw-key');
+      for (const p of ps) { const o = el('option', null, sub(PNAME[p.key] || p.key)); o.value = p.key; sel.appendChild(o); }
+      sel.value = key;
+      sel.addEventListener('change', () => onPick(ps.find(q => q.key === sel.value)));
+      return sel;
+    }
+
+    /* ---------- the rows: what varies (component, value, range, scale); family and regions ---------- */
     function render() {
       const s = sw(), c = xcomp();
-      xrow.innerHTML = '';
+      xrow.innerHTML = ''; orow.innerHTML = '';
       if (!s) return;
-      if (!c || app.sweepPicking) {
+      if (!c || picking === 'x') {
         xrow.appendChild(el('span', 'sw-ask', esc(t('sw_pick'))));
         if (c) xrow.appendChild(btn('✕', () => { stopPick(); render(); }, 'sw-cancel'));
         return;
       }
-      const cb = btn(esc(c.name), () => startPick(), 'sw-comp');
+      const cb = btn(esc(c.name), () => startPick('x'), 'sw-comp');
       cb.title = tp('sw_change');
       xrow.appendChild(cb);
-      const ps = params(c, app.circuit);
-      if (ps.length > 1) {
-        const sel = el('select', 'sw-key');
-        for (const p of ps) { const o = el('option', null, sub(PNAME[p.key] || p.key)); o.value = p.key; sel.appendChild(o); }
-        sel.value = s.x.key;
-        sel.addEventListener('change', () => {
-          const p = ps.find(q => q.key === sel.value);
-          const [a, b] = defRange(c, p);
-          app.checkpoint(); Object.assign(s.x, { key: p.key, from: a, to: b, log: false }); app.commit();
-        });
-        xrow.appendChild(sel);
-      }
-      const p = xparam() || ps[0];
-      const field = (k) => {
-        const inp = el('input', 'sw-in');
-        inp.type = 'text'; inp.value = fmtIn(s.x[k], p.unit); inp.title = tp(k === 'from' ? 'sw_from' : 'sw_to');
-        inp.setAttribute('inputmode', 'decimal'); inp.spellcheck = false;
-        inp.addEventListener('change', () => {
-          let v = U.parse(inp.value);
-          if (!isFinite(v)) { inp.value = fmtIn(s.x[k], p.unit); return; }
-          v = Math.max(p.min != null ? p.min : -Infinity, Math.min(p.max != null ? p.max : Infinity, v));
-          app.checkpoint(); s.x[k] = v; if (s.x.log && !(s.x.from > 0 && s.x.to > 0)) s.x.log = false; app.commit();
-        });
-        inp.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Enter') inp.blur(); });
-        return inp;
-      };
-      xrow.appendChild(field('from'));
+      const sel = paramSelect(c, s.x.key, s.f && s.f.id === c.id ? s.f.key : null, (p) => {
+        const [a, b] = defRange(c, p);
+        app.checkpoint(); Object.assign(s.x, { key: p.key, from: a, to: b, log: false }); app.commit();
+      });
+      if (sel) xrow.appendChild(sel);
+      const p = xparam() || params(c, app.circuit)[0];
+      const setLim = (k) => (v) => { app.checkpoint(); s.x[k] = clampP(p, v); if (s.x.log && !(s.x.from > 0 && s.x.to > 0)) s.x.log = false; app.commit(); };
+      xrow.appendChild(numField(s.x.from, p.unit, tp('sw_from') + ' · ' + tp('sw_wheel'), setLim('from'), 'from'));
       xrow.appendChild(el('span', 'sw-arrow', '→'));
-      xrow.appendChild(field('to'));
+      xrow.appendChild(numField(s.x.to, p.unit, tp('sw_to') + ' · ' + tp('sw_wheel'), setLim('to'), 'to'));
       if (s.x.from > 0 && s.x.to > 0) {
         const lb = btn('log', () => { app.checkpoint(); s.x.log = !s.x.log; app.commit(); }, 'sw-log' + (s.x.log ? ' on' : ''));
         lb.title = tp('sw_log');
         xrow.appendChild(lb);
       }
+      // family
+      const fc = fcomp(), fp = fparam();
+      if (picking === 'f') {
+        orow.appendChild(el('span', 'sw-ask', esc(t('sw_pick_f'))));
+        orow.appendChild(btn('✕', () => { stopPick(); render(); }, 'sw-cancel'));
+      } else if (fc && fp) {
+        orow.appendChild(el('span', 'sw-lab', esc(t('sw_family'))));
+        const fb = btn(esc(fc.name), () => startPick('f'), 'sw-comp');
+        fb.title = tp('sw_change');
+        orow.appendChild(fb);
+        const fsel = paramSelect(fc, s.f.key, s.x.id === fc.id ? s.x.key : null, (q) => { app.checkpoint(); s.f.key = q.key; s.f.vals = defFamily(fc, q); app.commit(); });
+        if (fsel) orow.appendChild(fsel);
+        // the values, separated by ";" or spaces ("1k; 2.2k; 4.7k")
+        const vals = el('span', 'sw-field');
+        const inp = el('input', 'sw-in wide');
+        inp.type = 'text'; inp.spellcheck = false; inp.title = tp('sw_family_vals');
+        inp.value = s.f.vals.map(fmtNum).join('; ');
+        inp.addEventListener('change', () => {
+          const vs = inp.value.split(/[;\s]+/).filter(Boolean).map(x => U.parse(x)).filter(isFinite).map(v => clampP(fp, v)).slice(0, MAXFAM);
+          if (!vs.length) { inp.value = s.f.vals.map(fmtNum).join('; '); return; }
+          app.checkpoint(); s.f.vals = vs; app.commit();
+        });
+        inp.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Enter') inp.blur(); });
+        vals.appendChild(inp);
+        if (fp.unit) vals.appendChild(el('span', 'sw-unit', esc(fp.unit)));
+        orow.appendChild(vals);
+        const fx = btn('✕', () => { app.checkpoint(); delete s.f; app.commit(); }, 'sw-cancel');
+        fx.title = tp('sw_family_del');
+        orow.appendChild(fx);
+      } else {
+        const fb = btn('+ ' + esc(t('sw_family')), () => startPick('f'), 'sw-fam');
+        fb.title = tp('sw_family_tip');
+        orow.appendChild(fb);
+      }
+      // regions
+      const nl = app.circuit.comps.filter(zoneable);
+      if (nl.length && !(fc && fp) && picking !== 'f') {
+        orow.appendChild(el('span', 'sw-lab sw-zl', esc(t('sw_zones'))));
+        const zs = el('select', 'sw-key');
+        const z = zcomp();
+        zs.appendChild(Object.assign(el('option', null, '—'), { value: '' }));
+        for (const q of nl) zs.appendChild(Object.assign(el('option', null, esc(q.name)), { value: q.id }));
+        zs.value = z ? z.id : '';
+        zs.title = tp('sw_zones_tip');
+        zs.addEventListener('change', () => { app.checkpoint(); s.z = zs.value; app.commit(); });
+        orow.appendChild(zs);
+      }
     }
 
     function renderLegend(cvs) {
       legend.innerHTML = '';
-      const s = sw();
+      const s = sw(), fam = data && data.runs.length > 1 ? data.runs : null;
       s.ys.forEach((y, j) => {
         const cvv = cvs[j];
         if (!cvv) return;
         const off = cvv.u !== axisU;
         const it = el('span', 'sw-item' + (off ? ' off' : ''));
-        const nm = el('span', 'sw-name', `<i class="sw" style="background:${DCS.iv.slot(y.c)}"></i>` + sub(cvv.name));
+        // with a family the colours are the values of the family, the curves differ by their line
+        const swatch = fam ? `<i class="sw ln${dashIdx(s, y)}" style="border-color:var(--fg)"></i>` : `<i class="sw" style="background:${DCS.iv.slot(y.c)}"></i>`;
+        const nm = el('span', 'sw-name', swatch + sub(cvv.name));
         if (off) { nm.title = tp('sw_axis'); nm.addEventListener('click', () => { axisU = cvv.u; update(false); }); }
         it.appendChild(nm);
         const x = btn('✕', () => { app.checkpoint(); s.ys.splice(s.ys.indexOf(y), 1); if (!s.ys.length) delete app.circuit.sweep; app.commit(); }, 'sw-del');
@@ -344,7 +495,21 @@
         it.appendChild(x);
         legend.appendChild(it);
       });
+      if (fam) {
+        const fc = fcomp(), fp = fparam();
+        fam.forEach((r, k) => legend.appendChild(el('span', 'sw-item', `<i class="sw" style="background:${DCS.iv.slot(k)}"></i>` + sub(paramName(fc, s.f.key)) + ' = ' + esc(fmt(r.fv, fp.unit)))));
+      }
+      // the regions shaded
+      const zc = zcomp();
+      if (zc && data && data.runs[0] && data.runs[0].zs) {
+        const seen = new Set(data.runs[0].zs.filter(Boolean));
+        const zset = zoneSet(zc);
+        for (const st of Object.keys(zset)) if (seen.has(st)) legend.appendChild(el('span', 'sw-item', `<i class="sw reg" style="background:${colOf(zset[st][1])}"></i>` + esc(zc.name) + ' ' + esc(t(zset[st][0]))));
+      }
     }
+    // the line of a curve inside a family: solid, dashed, dotted…
+    const DASHES = [null, [7, 4], [2, 3], [9, 3, 2, 3]];
+    const dashIdx = (s, y) => s.ys.indexOf(y) % DASHES.length;
 
     /* ---------- refresh: after every change (live: while a value is dragged) ---------- */
     let liveRaf = 0;
@@ -360,8 +525,9 @@
       const net = app.net;
       s.ys = s.ys.filter(y => y.n || app.circuit.comps.some(c => c.id === y.id));
       if (!s.ys.length) { delete app.circuit.sweep; win.hidden = true; stopPick(); return; }
-      if (s.x && !xcomp()) { s.x = null; }
-      if (!s.x && !app.sweepPicking) startPick();
+      if (s.x && !xcomp()) s.x = null;
+      if (s.f && (!fcomp() || !fparam())) delete s.f;
+      if (!s.x && picking !== 'x') startPick('x');
       const wasHidden = win.hidden;
       win.hidden = false;
       if (wasHidden) requestAnimationFrame(() => { ui.clampFloats(); makeRoom(); });
@@ -374,15 +540,21 @@
       const names = cvs.filter(q => q && q.u === axisU).map(q => sub(q.name));
       title.innerHTML = (names.length ? names.join(', ') : esc(t('sw_title'))) + (c ? ' <span class="sw-vs">' + esc(t('sw_vs')) + '</span> ' + sub(paramName(c, s.x.key)) : '');
       if (!live) render();
-      renderLegend(cvs);
-      if (!c) { data = null; spec = null; draw(); readout(cvs); return; }
+      if (!c) { data = null; spec = null; renderLegend(cvs); draw(); readout(cvs); return; }
       const key = keyOf(s);
       if (key !== dataKey || (!live && !dataFull)) {
         if (live) {
           // while a value is dragged: fewer points, once per frame
-          if (!liveRaf) liveRaf = requestAnimationFrame(() => { liveRaf = 0; const s2 = sw(); if (!s2 || !s2.x) return; data = safeRun(s2, NLIVE); dataKey = keyOf(s2); dataFull = false; draw(); });
-        } else { data = safeRun(s, NPTS); dataKey = key; dataFull = true; }
+          if (!liveRaf) liveRaf = requestAnimationFrame(() => {
+            liveRaf = 0;
+            const s2 = sw();
+            if (!s2 || !s2.x) return;
+            data = safeRun(s2, NLIVE); dataKey = keyOf(s2); dataFull = false;
+            renderLegend(s2.ys.map(y => curve(y, app.circuit, app.net))); draw();
+          });
+        } else { data = safeRun(s, s.f ? NFAM : NPTS); dataKey = key; dataFull = true; }
       }
+      renderLegend(cvs);
       draw();
       readout(cvs);
     }
@@ -395,7 +567,8 @@
       if (y1 > r.top && x1 > r.left && x0 < r.right && r.top - st.top > 130) app.fit({ bottom: st.bottom - r.top - 40 });
     }
     function safeRun(s, n) {
-      try { return run(app.circuit, s, n, app.settings.tempC); } catch (e) { console.error(e); return null; }
+      const z = zcomp();
+      try { return runAll(app.circuit, s, n, app.settings.tempC, z && z.id); } catch (e) { console.error(e); return null; }
     }
 
     // the values now, in the circuit as it is (they follow the cursor)
@@ -412,7 +585,11 @@
       if (!c || !p) { read.innerHTML = ''; return; }
       const vals = now(cvs);
       const parts = ['<b>' + sub(paramName(c, s.x.key)) + ' = ' + esc(fmt(c.props[s.x.key], p.unit, 4)) + '</b>'];
-      s.ys.forEach((y, j) => { if (cvs[j]) parts.push(`<span style="color:${DCS.iv.slot(y.c)}">${sub(cvs[j].name)} = ${esc(fmt(vals[j], cvs[j].u))}</span>`); });
+      const fam = !!fcomp();
+      if (fam) { const fc = fcomp(), fp = fparam(); parts.push(sub(paramName(fc, s.f.key)) + ' = ' + esc(fmt(fc.props[s.f.key], fp.unit))); }
+      s.ys.forEach((y, j) => { if (cvs[j]) parts.push(`<span style="color:${fam ? 'var(--fg)' : DCS.iv.slot(y.c)}">${sub(cvs[j].name)} = ${esc(fmt(vals[j], cvs[j].u))}</span>`); });
+      const zc = zcomp(), res = app.result && app.result.ok ? app.result : null;
+      if (zc && res && res.el[zc.id] && zoneSet(zc)[res.el[zc.id].state]) parts.push(esc(zc.name) + ' ' + esc(t(zoneSet(zc)[res.el[zc.id].state][0])));
       read.innerHTML = parts.join(' · ');
     }
 
@@ -420,13 +597,13 @@
       const s = sw(), c = xcomp(), p = xparam();
       if (win.hidden) return;
       const ctx = cv.getContext('2d');
+      const col = DCS.render.colors();
       if (!s || !c || !p || !data) {
         // nothing to plot yet: the question, in the middle
         const dpr = Math.min(3, window.devicePixelRatio || 1), W = cv.clientWidth, H = cv.clientHeight;
         if (!W || !H) return;
         cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        const col = DCS.render.colors();
         ctx.fillStyle = col.bg; ctx.fillRect(0, 0, W, H);
         ctx.fillStyle = col.muted; ctx.font = '13px ui-sans-serif, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText(tp(data === null && c ? 'sw_none' : 'sw_pick_short'), W / 2, H / 2);
@@ -435,48 +612,70 @@
       }
       const cvs = s.ys.map(y => curve(y, app.circuit, app.net));
       const vals = now(cvs);
+      const fam = data.runs.length > 1 || data.runs[0].fv !== null;
+      const fc = fam ? fcomp() : null, fp = fam ? fparam() : null;
       const series = [], points = [], jumps = [];
       let lo = Infinity, hi = -Infinity;
-      const xs = data.xs;
-      s.ys.forEach((y, j) => {
-        const cvv = cvs[j];
-        if (!cvv || cvv.u !== axisU) return;
-        const ys = data.ys[j];
-        if (!ys) return;
-        let run = [];
+      const xs = data.runs[0].xs;
+      const xv = +c.props[s.x.key];
+      const inRange = xv >= Math.min(s.x.from, s.x.to) && xv <= Math.max(s.x.from, s.x.to);
+      const addRuns = (ys, name, color, dash, inline) => {
+        let pts = [];
+        const flush = () => { if (pts.length > 1) series.push({ name, color, pts, dash, inline }); pts = []; inline = false; };
         for (let k = 0; k < xs.length; k++) {
           const v = ys[k];
-          if (!isFinite(v)) { if (run.length > 1) series.push({ name: cvv.name, color: DCS.iv.slot(y.c), pts: run }); run = []; continue; }
-          run.push([xs[k], v]);
+          if (!isFinite(v)) { flush(); continue; }
+          pts.push([xs[k], v]);
           if (v < lo) lo = v; if (v > hi) hi = v;
         }
-        if (run.length > 1) series.push({ name: cvv.name, color: DCS.iv.slot(y.c), pts: run });
-        // the way back, when it is another curve (hysteresis)
-        const bk = data.back && data.back[j];
-        if (bk) {
-          run = [];
-          for (let k = 0; k < xs.length; k++) {
-            const v = bk[k];
-            if (!isFinite(v)) { if (run.length > 1) series.push({ name: cvv.name, color: DCS.iv.slot(y.c), pts: run }); run = []; continue; }
-            run.push([xs[k], v]);
-            if (v < lo) lo = v; if (v > hi) hi = v;
+        flush();
+      };
+      data.runs.forEach((r, fi) => {
+        s.ys.forEach((y, j) => {
+          const cvv = cvs[j];
+          if (!cvv || cvv.u !== axisU || !r.ys[j]) return;
+          const color = fam ? DCS.iv.slot(fi) : DCS.iv.slot(y.c);
+          const dash = fam ? DASHES[dashIdx(s, y)] : null;
+          // a family: the value of each curve written at its end (on the first quantity only)
+          const nm = fam ? fmt(r.fv, fp.unit) : cvv.name;
+          addRuns(r.ys[j], nm, color, dash, fam && j === s.ys.findIndex((q, i) => cvs[i] && cvs[i].u === axisU));
+          // the way back, when it is another curve (hysteresis)
+          if (r.back && r.back[j]) {
+            addRuns(r.back[j], nm, color, dash, false);
+            jumps.push({ ys: r.ys[j], up: true, color }, { ys: r.back[j], up: false, color });
           }
-          if (run.length > 1) series.push({ name: cvv.name, color: DCS.iv.slot(y.c), pts: run });
-          jumps.push({ ys, up: true, color: DCS.iv.slot(y.c) }, { ys: bk, up: false, color: DCS.iv.slot(y.c) });
-        }
-        const xv = +c.props[s.x.key];
-        if (isFinite(vals[j]) && xv >= Math.min(s.x.from, s.x.to) && xv <= Math.max(s.x.from, s.x.to)) points.push({ v: xv, i: vals[j], small: true, color: DCS.iv.slot(y.c) });
+          if (!fam && isFinite(vals[j]) && inRange) points.push({ v: xv, i: vals[j], small: true, color });
+        });
       });
+      // with a family, the point of the circuit now (between the curves when its value is not one of them)
+      if (fam && inRange) s.ys.forEach((y, j) => { if (cvs[j] && cvs[j].u === axisU && isFinite(vals[j])) points.push({ v: xv, i: vals[j], small: true, color: col.fg }); });
       if (!isFinite(lo)) { lo = -1; hi = 1; }
       let span = hi - lo;
       if (span < 1e-12 * Math.max(1, Math.abs(hi))) { const m = Math.abs(hi) * 0.1 || 1; lo -= m; hi += m; span = hi - lo; }
       const x0 = Math.min(s.x.from, s.x.to), x1 = Math.max(s.x.from, s.x.to);
       const lg = !!s.x.log && x0 > 0;
+      const pw = { v0: x0, v1: x1 > x0 ? x1 : x0 + 1, i0: lo - 0.08 * span, i1: hi + 0.08 * span };
+      // the regions of the chosen component, as bands from one point to the next
+      const regions = [];
+      const zc = zcomp(), zs = !fam && data.runs[0].zs;
+      if (zc && zs) {
+        const zset = zoneSet(zc);
+        let k0 = 0;
+        for (let k = 1; k <= xs.length; k++) {
+          if (k < xs.length && zs[k] === zs[k0]) continue;
+          const st = zs[k0];
+          if (st && zset[st]) {
+            const a = k0 === 0 ? pw.v0 : (lg ? Math.sqrt(xs[k0 - 1] * xs[k0]) : (xs[k0 - 1] + xs[k0]) / 2);
+            const b = k === xs.length ? pw.v1 : (lg ? Math.sqrt(xs[k - 1] * xs[k]) : (xs[k - 1] + xs[k]) / 2);
+            regions.push({ v0: Math.min(a, b), v1: Math.max(a, b), i0: pw.i0, i1: pw.i1, color: colOf(zset[st][1]) });
+          }
+          k0 = k;
+        }
+      }
       const yn = cvs.filter(q => q && q.u === axisU);
       spec = {
-        win: { v0: x0, v1: x1 > x0 ? x1 : x0 + 1, i0: lo - 0.08 * span, i1: hi + 0.08 * span },
-        xlab: paramName(c, s.x.key), ylab: yn.length === 1 ? yn[0].name : axisU, xu: p.unit, yu: axisU, xlog: lg,
-        series, points, lines: [{ vt: +c.props[s.x.key] }], regions: []
+        win: pw, xlab: paramName(c, s.x.key), ylab: yn.length === 1 ? yn[0].name : axisU, xu: p.unit, yu: axisU, xlog: lg,
+        series, points, lines: [{ vt: xv }], regions
       };
       DCS.iv.draw(cv, spec, null);
       // hysteresis: an arrow on the jump of each way (up on the way there, down on the way back)
@@ -506,12 +705,12 @@
       let v = DCS.iv.xInv(spec, cv.clientWidth, e.clientX - b.left);
       v = Number(v.toPrecision(3));
       if (s.x.key === 'alpha') v = Math.round(v * 100) / 100;
-      return Math.max(p.min != null ? p.min : -Infinity, Math.min(p.max != null ? p.max : Infinity, v));
+      return clampP(p, v);
     };
     cv.addEventListener('pointerdown', (e) => {
       if (!spec || !xcomp()) return;
       e.preventDefault();
-      drag = { id: e.pointerId, c: xcomp(), key: sw().x.key };
+      drag = { id: e.pointerId, c: xcomp(), key: sw().x.key, moved: false };
       app.checkpoint();
       try { cv.setPointerCapture(e.pointerId); } catch (_) {}
       setVal(valueAt(e));
@@ -537,9 +736,20 @@
       const cvs = s.ys.map(y => curve(y, app.circuit, app.net));
       const p = xparam();
       const plain = (n, u) => n.replace(/_/g, '') + (u ? ' (' + u + ')' : '');
-      const cols = [plain(paramName(c, s.x.key), p.unit)].concat(cvs.map(q => (q ? plain(q.name, q.u) : '')));
+      const fc = fcomp(), fp = fparam();
+      const cols = [plain(paramName(c, s.x.key), p.unit)];
+      const xs = data.runs[0].xs;
+      const colsData = [];
+      for (const r of data.runs) {
+        const tag = r.fv !== null && fc ? ' [' + plain(paramName(fc, s.f.key), '') + '=' + fmt(r.fv, fp.unit) + ']' : '';
+        cvs.forEach((q, j) => {
+          if (!q) return;
+          cols.push(plain(q.name, q.u) + tag); colsData.push(r.ys[j]);
+          if (r.back && r.back[j]) { cols.push(plain(q.name, q.u) + tag + ' ←'); colsData.push(r.back[j]); }
+        });
+      }
       const lines = [cols.map(x => '"' + x.replace(/"/g, '') + '"').join(',')];
-      for (let k = 0; k < data.xs.length; k++) lines.push([data.xs[k]].concat(data.ys.map(ys => ys[k])).map(v => (isFinite(v) ? Number(v.toPrecision(8)) : '')).join(','));
+      for (let k = 0; k < xs.length; k++) lines.push([xs[k]].concat(colsData.map(ys => ys[k])).map(v => (isFinite(v) ? Number(v.toPrecision(8)) : '')).join(','));
       const blob = new Blob([lines.join('\n') + '\n'], { type: 'text/csv' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
@@ -553,11 +763,12 @@
       const s = sw();
       if (!s || win.hidden || !app.net) return null;
       const out = [];
+      const fam = !!fcomp();
       for (const y of s.ys) {
         if (!y.n) continue;
         const nd = app.net.nodeOf(y.n[0], y.n[1]);
         if (nd == null) continue;
-        out.push({ pt: y.n, name: app.net.nodes[nd].name, color: DCS.iv.slot(y.c) });
+        out.push({ pt: y.n, name: app.net.nodes[nd].name, color: fam ? DCS.render.colors().fg : DCS.iv.slot(y.c) });
       }
       return out;
     }
@@ -565,5 +776,5 @@
     return { update, fromSelection, canMeasure, pick, probes, stopPick };
   }
 
-  DCS.sweep = { init, params, quantities, run, defRange, paramName };
+  DCS.sweep = { init, params, quantities, run, runAll, defRange, defFamily, paramName };
 })(window);
