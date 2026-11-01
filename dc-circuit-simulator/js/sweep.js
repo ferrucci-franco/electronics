@@ -197,8 +197,17 @@
     const head = el('div', 'mon-head');
     const title = el('span', 'mon-title');
     const csvB = btn('CSV', () => exportCSV());
-    const closeB = btn('✕', () => { app.checkpoint(); delete app.circuit.sweep; stopPick(); app.commit(); });
-    head.appendChild(title); head.appendChild(csvB); head.appendChild(closeB);
+    const closeB = btn('✕', () => { app.checkpoint(); delete app.circuit.sweep; stopPick(); setMax(false); app.commit(); });
+    // maximize: the window over the whole circuit area (everything keeps working: cursor, limits, family)
+    const maxB = btn('⤢', () => setMax(!win.classList.contains('max')));
+    function setMax(on) {
+      win.classList.toggle('max', on);
+      maxB.textContent = on ? '⤡' : '⤢';
+      maxB.title = tp(on ? 'sw_restore' : 'iv_expand');
+      requestAnimationFrame(() => { draw(); if (!on) ui.clampFloats(); });
+    }
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && win.classList.contains('max') && !win.hidden) { e.stopPropagation(); setMax(false); } }, true);
+    head.appendChild(title); head.appendChild(csvB); head.appendChild(maxB); head.appendChild(closeB);
     const xrow = el('div', 'sw-x');
     const orow = el('div', 'sw-x sw-opt');
     const legend = el('div', 'sw-legend');
@@ -531,7 +540,7 @@
       const wasHidden = win.hidden;
       win.hidden = false;
       if (wasHidden) requestAnimationFrame(() => { ui.clampFloats(); makeRoom(); });
-      csvB.title = tp('sw_csv'); closeB.title = tp('close');
+      csvB.title = tp('sw_csv'); closeB.title = tp('close'); maxB.title = tp(win.classList.contains('max') ? 'sw_restore' : 'iv_expand');
       const cvs = s.ys.map(y => curve(y, app.circuit, net));
       // the unit of the y axis: the one chosen, else that of the first curve
       const units = cvs.filter(Boolean).map(q => q.u);

@@ -533,3 +533,8 @@ html.layout-mobile .sw-cv{height:130px}
 .sw-legend i.sw.ln2{height:0; background:none; border-top:2.5px dotted}
 .sw-legend i.sw.ln3{height:0; background:none; border-top:2.5px dashed}
 .sw-legend i.sw.reg{width:14px; height:10px; border-radius:2px; opacity:.35}
+/* DC sweep maximized: over the whole circuit area */
+.monitor.swmon.max{left:8px !important; right:8px !important; top:8px !important; bottom:8px !important; width:auto !important; z-index:12}
+.swmon.max .sw-cv{flex:1 1 auto; height:auto !important; min-height:120px}
+.swmon.max .mon-grip{display:none}
+.swmon.max .mon-head{cursor:default}
