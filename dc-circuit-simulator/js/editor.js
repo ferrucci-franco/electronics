@@ -6,7 +6,7 @@
 
   const DRAG_PX = { mouse: 4, pen: 6, touch: 9 };
   const EDGE_MODES = new Set(['move', 'wire', 'band', 'endpoint']);
-  const LONG_MS = 250;
+  const LONG_MS = 200;
   // keyboard: a letter takes a component (W is the wire tool, F mirrors)
   const SHORTCUTS = { g: 'ground', r: 'resistor', v: 'vsource', i: 'isource', a: 'opamp', d: 'diode', z: 'zener', t: 'bjt', s: 'switch' };
   const DBL_TOUCH_MS = 700;   // background: a second touch this soon after a tap starts a selection window (also slow)
