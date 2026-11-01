@@ -506,7 +506,14 @@
       });
       if (fam) {
         const fc = fcomp(), fp = fparam();
-        fam.forEach((r, k) => legend.appendChild(el('span', 'sw-item', `<i class="sw" style="background:${DCS.iv.slot(k)}"></i>` + sub(paramName(fc, s.f.key)) + ' = ' + esc(fmt(r.fv, fp.unit)))));
+        // a tap on a value of the family puts it in the circuit: the operating point moves to that curve
+        const act = activeFam();
+        fam.forEach((r, k) => {
+          const it = el('span', 'sw-item sw-fv' + (k === act ? ' on' : ''), `<i class="sw" style="background:${DCS.iv.slot(k)}"></i>` + sub(paramName(fc, s.f.key)) + ' = ' + esc(fmt(r.fv, fp.unit)));
+          it.title = tp('sw_fam_use');
+          it.addEventListener('click', () => { if (k === activeFam()) return; app.checkpoint(); fc.props[s.f.key] = r.fv; app.liveMark(fc.id, 900); app.commit(); });
+          legend.appendChild(it);
+        });
       }
       // the regions shaded
       const zc = zcomp();
@@ -589,6 +596,49 @@
         return qval(res, cvv.c, cvv.q);
       });
     }
+    // the curve of the family that the circuit is on now (its value is the one of the component), or −1
+    function activeFam() {
+      const s = sw(), fc = fcomp();
+      if (!fc || !data || data.runs.length < 1 || data.runs[0].fv === null) return -1;
+      const v = +fc.props[s.f.key];
+      return data.runs.findIndex(r => Math.abs(r.fv - v) <= 1e-9 * Math.max(Math.abs(v), 1e-12));
+    }
+    // the circuit solved with the swept value x, from the solution now (same branch of a hysteresis loop)
+    function valuesAt(x, cvs) {
+      const s = sw(), c = xcomp();
+      const cx = Object.assign({}, c, { props: Object.assign({}, c.props, { [s.x.key]: x }) });
+      const ckt = { comps: app.circuit.comps.map(q => (q === c ? cx : q)), wires: app.circuit.wires, nodeNames: app.circuit.nodeNames };
+      const net = N.build(ckt);
+      const res = S.solve(net.ckt, { prevStates: app.prevStates, prevV: app.prevV && app.prevV.length === net.ckt.nodeCount ? app.prevV : null, tempC: app.settings.tempC, budget: 400 });
+      if (!res.ok) return null;
+      return s.ys.map((y, j) => {
+        if (!cvs[j]) return NaN;
+        const cv2 = curve(y, ckt, net);
+        if (!cv2) return NaN;
+        return cv2.node != null ? (cv2.node ? res.v[cv2.node] : 0) : qval(res, cv2.c, cv2.q);
+      });
+    }
+    // the slope of every curve at the present value: dY/dX by a small step on each side
+    function slopes(cvs) {
+      const s = sw(), c = xcomp(), p = xparam();
+      if (!c || !p || !app.result || !app.result.ok) return null;
+      const xv = +c.props[s.x.key];
+      const h = 1e-4 * Math.max(Math.abs(s.x.to - s.x.from), Math.abs(xv), 1e-12);
+      let a = xv - h, b = xv + h;
+      if (p.min != null && a < p.min) a = xv;
+      if (p.max != null && b > p.max) b = xv;
+      if (a === b) return null;
+      try {
+        const ya = a === xv ? now(cvs) : valuesAt(a, cvs), yb = b === xv ? now(cvs) : valuesAt(b, cvs);
+        if (!ya || !yb) return null;
+        return cvs.map((q, j) => {
+          const d = yb[j] - ya[j];
+          if (!isFinite(d)) return NaN;
+          return Math.abs(d) <= 1e-9 * Math.max(Math.abs(ya[j]), Math.abs(yb[j]), 1e-12) ? 0 : d / (b - a);
+        });
+      } catch (e) { return null; }
+    }
+    const slopeUnit = (yu, xu) => (xu ? yu + '/' + xu : yu);
     function readout(cvs) {
       const s = sw(), c = xcomp(), p = xparam();
       if (!c || !p) { read.innerHTML = ''; return; }
@@ -596,7 +646,16 @@
       const parts = ['<b>' + sub(paramName(c, s.x.key)) + ' = ' + esc(fmt(c.props[s.x.key], p.unit, 4)) + '</b>'];
       const fam = !!fcomp();
       if (fam) { const fc = fcomp(), fp = fparam(); parts.push(sub(paramName(fc, s.f.key)) + ' = ' + esc(fmt(fc.props[s.f.key], fp.unit))); }
-      s.ys.forEach((y, j) => { if (cvs[j]) parts.push(`<span style="color:${fam ? 'var(--fg)' : DCS.iv.slot(y.c)}">${sub(cvs[j].name)} = ${esc(fmt(vals[j], cvs[j].u))}</span>`); });
+      // each value with its slope (a gain V/V, a transconductance A/V, a resistance V/A…)
+      const sl = slopes(cvs);
+      const act = activeFam();
+      s.ys.forEach((y, j) => {
+        if (!cvs[j]) return;
+        const k = sl ? sl[j] : NaN;
+        const slope = isFinite(k) ? ` <span class="sw-slope">(${esc(t('sw_slope'))} ${esc(U.format(k, slopeUnit(cvs[j].u, p.unit), { digits: 3, zero: 1e-300 }))})</span>` : '';
+        const color = fam ? (act >= 0 ? DCS.iv.slot(act) : 'var(--fg)') : DCS.iv.slot(y.c);
+        parts.push(`<span style="color:${color}">${sub(cvs[j].name)} = ${esc(fmt(vals[j], cvs[j].u))}</span>${slope}`);
+      });
       const zc = zcomp(), res = app.result && app.result.ok ? app.result : null;
       if (zc && res && res.el[zc.id] && zoneSet(zc)[res.el[zc.id].state]) parts.push(esc(zc.name) + ' ' + esc(t(zoneSet(zc)[res.el[zc.id].state][0])));
       read.innerHTML = parts.join(' · ');
@@ -628,9 +687,10 @@
       const xs = data.runs[0].xs;
       const xv = +c.props[s.x.key];
       const inRange = xv >= Math.min(s.x.from, s.x.to) && xv <= Math.max(s.x.from, s.x.to);
-      const addRuns = (ys, name, color, dash, inline) => {
+      const act = activeFam();
+      const addRuns = (ys, name, color, dash, inline, dim) => {
         let pts = [];
-        const flush = () => { if (pts.length > 1) series.push({ name, color, pts, dash, inline }); pts = []; inline = false; };
+        const flush = () => { if (pts.length > 1) series.push({ name, color, pts, dash, inline, dim, width: dim === false ? 2.6 : 2 }); pts = []; inline = false; };
         for (let k = 0; k < xs.length; k++) {
           const v = ys[k];
           if (!isFinite(v)) { flush(); continue; }
@@ -647,17 +707,19 @@
           const dash = fam ? DASHES[dashIdx(s, y)] : null;
           // a family: the value of each curve written at its end (on the first quantity only)
           const nm = fam ? fmt(r.fv, fp.unit) : cvv.name;
-          addRuns(r.ys[j], nm, color, dash, fam && j === s.ys.findIndex((q, i) => cvs[i] && cvs[i].u === axisU));
+          // with a family, the curve the circuit is on now stands out (the others lighter)
+          const dim = fam && act >= 0 ? fi !== act : undefined;
+          addRuns(r.ys[j], nm, color, dash, fam && j === s.ys.findIndex((q, i) => cvs[i] && cvs[i].u === axisU), dim);
           // the way back, when it is another curve (hysteresis)
           if (r.back && r.back[j]) {
-            addRuns(r.back[j], nm, color, dash, false);
+            addRuns(r.back[j], nm, color, dash, false, dim);
             jumps.push({ ys: r.ys[j], up: true, color }, { ys: r.back[j], up: false, color });
           }
           if (!fam && isFinite(vals[j]) && inRange) points.push({ v: xv, i: vals[j], small: true, color });
         });
       });
       // with a family, the point of the circuit now (between the curves when its value is not one of them)
-      if (fam && inRange) s.ys.forEach((y, j) => { if (cvs[j] && cvs[j].u === axisU && isFinite(vals[j])) points.push({ v: xv, i: vals[j], small: true, color: col.fg }); });
+      if (fam && inRange) s.ys.forEach((y, j) => { if (cvs[j] && cvs[j].u === axisU && isFinite(vals[j])) points.push({ v: xv, i: vals[j], small: true, color: act >= 0 ? DCS.iv.slot(act) : col.fg }); });
       if (!isFinite(lo)) { lo = -1; hi = 1; }
       let span = hi - lo;
       if (span < 1e-12 * Math.max(1, Math.abs(hi))) { const m = Math.abs(hi) * 0.1 || 1; lo -= m; hi += m; span = hi - lo; }
@@ -722,7 +784,11 @@
       drag = { id: e.pointerId, c: xcomp(), key: sw().x.key, moved: false };
       app.checkpoint();
       try { cv.setPointerCapture(e.pointerId); } catch (_) {}
-      setVal(valueAt(e));
+      // with a family, a press on (or near) another curve puts its value in the circuit
+      const k = nearFam(e);
+      const fc = fcomp(), s = sw();
+      if (k >= 0 && k !== activeFam()) { fc.props[s.f.key] = data.runs[k].fv; drag.moved = true; }
+      if (!setVal(valueAt(e)) && drag.moved) app.circuitChanged(true);
     });
     cv.addEventListener('pointermove', (e) => { if (drag && drag.id === e.pointerId) setVal(valueAt(e)); });
     const endDrag = (e) => {
@@ -733,10 +799,33 @@
     };
     cv.addEventListener('pointerup', endDrag); cv.addEventListener('pointercancel', endDrag);
     function setVal(v) {
-      if (!drag || drag.c.props[drag.key] === v) return;
+      if (!drag || drag.c.props[drag.key] === v) return false;
       drag.c.props[drag.key] = v; drag.moved = true;
       app.liveMark(drag.c.id, 0);
       app.circuitChanged(true);
+      return true;
+    }
+    // the curve of the family under the pointer (within 14 px), or −1
+    function nearFam(e) {
+      const s = sw();
+      if (!spec || !data || data.runs.length < 2 || data.runs[0].fv === null) return -1;
+      const b = cv.getBoundingClientRect(), px = e.clientX - b.left, py = e.clientY - b.top;
+      const xs = data.runs[0].xs, x = DCS.iv.xInv(spec, cv.clientWidth, px);
+      let kx = 0;
+      for (let k = 1; k < xs.length; k++) if (Math.abs(xs[k] - x) < Math.abs(xs[kx] - x)) kx = k;
+      const P = DCS.iv.PAD, w = spec.win, H = cv.clientHeight;
+      const Y = (v) => H - P.B - (v - w.i0) / (w.i1 - w.i0) * (H - P.T - P.B);
+      const cvs = s.ys.map(y => curve(y, app.circuit, app.net));
+      let best = -1, bd = 14;
+      data.runs.forEach((r, fi) => s.ys.forEach((y, j) => {
+        if (!cvs[j] || cvs[j].u !== axisU) return;
+        for (const ys of [r.ys[j], r.back && r.back[j]]) {
+          if (!ys || !isFinite(ys[kx])) continue;
+          const d = Math.abs(Y(ys[kx]) - py);
+          if (d < bd) { bd = d; best = fi; }
+        }
+      }));
+      return best;
     }
 
     function exportCSV() {

@@ -538,3 +538,7 @@ html.layout-mobile .sw-cv{height:130px}
 .swmon.max .sw-cv{flex:1 1 auto; height:auto !important; min-height:120px}
 .swmon.max .mon-grip{display:none}
 .swmon.max .mon-head{cursor:default}
+.sw-legend .sw-fv{cursor:pointer; border-radius:6px; padding:0 4px}
+.sw-legend .sw-fv:hover{background:var(--hover, rgba(127,127,127,.12))}
+.sw-legend .sw-fv.on{font-weight:700; text-decoration:underline; text-underline-offset:3px}
+.sw-slope{color:var(--muted)}
