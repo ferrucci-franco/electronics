@@ -22,6 +22,8 @@
   const lang = () => I.getLang();
   const L = (o) => (o == null ? '' : typeof o === 'string' ? o : (o[lang()] != null ? o[lang()] : o.fr != null ? o.fr : o.en));
   const pick = (a) => a[Math.floor(Math.random() * a.length)];
+  // "VCC = 10 V" never broken across lines: no break around "=" nor between a number and its unit
+  const keep = (html) => String(html).replace(/ = /g, '\u00a0=\u00a0').replace(/(\d) (?=[a-zA-ZµΩ°%])/g, '$1\u00a0');
   // helpers given to the texts: value with unit, the usual junction voltages written in the language
   const helpers = () => {
     const comma = lang() !== 'en';
@@ -187,7 +189,7 @@
       bar.appendChild(fill);
       card.appendChild(el('div', { class: 'quiz-pos' }, t('quiz_pos', { i: st.pos + 1, n: st.total }) + (q.title ? ' · ' + L(q.title) : '')));   // (titles are written by the deck: HTML)
       card.appendChild(bar);
-      card.appendChild(el('div', { class: 'quiz-text' }, L(q.text)(c.p, h)));
+      card.appendChild(el('div', { class: 'quiz-text' }, keep(L(q.text)(c.p, h))));
       if (a.kind === 'choice') {
         const opts = L(a.options);
         const box = el('div', { class: 'quiz-choices' });
@@ -218,7 +220,6 @@
         if (!c.revealed) row.appendChild(btn(t('quiz_check'), go, 'primary'));
         inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
         card.appendChild(row);
-        if (!c.revealed) card.appendChild(el('div', { class: 'hint' }, t('quiz_units')));
         if (!c.revealed) requestAnimationFrame(() => { if (!document.documentElement.classList.contains('layout-mobile')) inp.focus(); });
       }
       if (c.revealed) {
@@ -226,7 +227,7 @@
         const shown = a.kind === 'choice' ? esc(L(a.options)[c.want]) : h.f(c.want, a.unit);
         fb.innerHTML = (c.right ? '✓ ' + t('quiz_right') : '✗ ' + t('quiz_wrong') + (a.kind === 'num' ? ' · ' + t('quiz_answer', { a: shown }) : ''));
         card.appendChild(fb);
-        card.appendChild(el('div', { class: 'quiz-explain' }, L(q.explain)(c.p, c.sol, h)));
+        card.appendChild(el('div', { class: 'quiz-explain' }, keep(L(q.explain)(c.p, c.sol, h))));
         card.appendChild(el('div', { class: 'hint' }, t('quiz_play')));
         const row = el('div', { class: 'btnrow' });
         row.appendChild(btn(st.pos + 1 < st.total ? t('quiz_next') + ' →' : t('quiz_finish'), next, 'primary'));
