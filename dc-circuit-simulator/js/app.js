@@ -12,7 +12,7 @@
 
   const DEFAULT_SETTINGS = {
     style: 'us', ivLoad: false, reqSteps: false, wheelDir: 'auto', flowScale: 'lin', realDir: false, rubber: true, showWireI: false, showV: true, showI: true, showP: false, showNodes: false, animate: false, colorV: false,
-    showNames: true, showValues: true, showState: true, grid: true, digits: 3, tempC: 27, defModel: 'cvd'
+    showNames: true, showValues: true, showState: true, grid: true, digits: 3, tempC: 27, defModel: 'cvd', opSupplies: true
   };
 
   const app = {
@@ -422,6 +422,15 @@
           seg([[x, 0], [x, -1.3], [0, -1.3], [0, -2]], iOut);
         }
       } else if (inner[c.type]) ts.forEach((t, j) => { const q = C.toWorld(c, inner[c.type][j][0], inner[c.type][j][1]); segs.push({ x1: t[0], y1: t[1], x2: q[0], y2: q[1], i: r.tc[j] }); });
+      // the op-amp output current comes from V+ (sourcing) or goes to V− (sinking): along the drawn stub and
+      // through the body to the output
+      if (c.type === 'opamp' && app.settings.opSupplies !== false && r.iout != null) {
+        const io = r.iout, side = (io >= 0 ? 1 : -1) * C.opampUp(c);
+        const e = C.toWorld(c, C.SUP_X, side * C.SUP_END), b = C.toWorld(c, C.SUP_X, side * C.SUP_Y0), o = C.toWorld(c, 2, 0);
+        const ia = Math.abs(io);
+        if (io >= 0) { segs.push({ x1: e[0], y1: e[1], x2: b[0], y2: b[1], i: ia }, { x1: b[0], y1: b[1], x2: o[0], y2: o[1], i: ia }); }
+        else { segs.push({ x1: o[0], y1: o[1], x2: b[0], y2: b[1], i: ia }, { x1: b[0], y1: b[1], x2: e[0], y2: e[1], i: ia }); }
+      }
     }
     // the reference for the speed is the largest current, but never below 10 µA: a circuit where everything is
     // off and only leakage flows (nanoamperes in a cut-off transistor, a reverse-biased junction) shows (almost)

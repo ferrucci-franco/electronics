@@ -290,7 +290,7 @@
       fs.addEventListener('change', () => { s.flowScale = fs.value; changed(true); });
       const dg = row(t('set_digits'), select([[3, '3'], [4, '4'], [5, '5']], s.digits));
       dg.addEventListener('change', () => { s.digits = +dg.value; changed(); });
-      for (const [k, lab] of [['ivLoad', 'set_ivload'], ['showWireI', 'set_wirei'], ['rubber', 'set_rubber'], ['realDir', 'set_realdir'], ['showNames', 'set_names'], ['showValues', 'set_values'], ['showState', 'set_state'], ['grid', 'set_grid'], ['colorV', 'colorV']]) {
+      for (const [k, lab] of [['ivLoad', 'set_ivload'], ['showWireI', 'set_wirei'], ['rubber', 'set_rubber'], ['realDir', 'set_realdir'], ['showNames', 'set_names'], ['showValues', 'set_values'], ['showState', 'set_state'], ['opSupplies', 'set_opsup'], ['grid', 'set_grid'], ['colorV', 'colorV']]) {
         const c = row(t(lab), check(s[k]));
         c.addEventListener('change', () => { s[k] = c.checked; changed(); });
       }
@@ -445,6 +445,16 @@
         const r = res.el[h.comp.id];
         if (!r) { tip.hidden = true; return; }
         html = `<b>${esc(h.comp.name || app.tp('c_' + h.comp.type))}</b>`;
+        // over a supply stub of an op-amp: what it is (it cannot be wired)
+        if (h.comp.type === 'opamp' && app.settings.opSupplies !== false && p && p.x !== undefined) {
+          const [lx, ly] = C.toLocal(h.comp, p.x, p.y), cp = h.comp.props;
+          if (Math.abs(lx - C.SUP_X) < 0.6 && Math.abs(ly) > C.SUP_Y0 - 0.1) {
+            const upper = Math.sign(ly) === C.opampUp(h.comp);
+            const rv = cp.sat ? (upper ? Math.max(cp.Vpos, cp.Vneg) : Math.min(cp.Vpos, cp.Vneg)) : null;
+            html += ' · ' + t('op_sup_tip', { r: rv == null ? (upper ? 'V+' : 'V−') : (rv > 0 ? '+' : '') + fmt(rv, 'V') });
+            tip.innerHTML = html; tip.hidden = false;
+          }
+        }
         if (r.v !== undefined) html += ` · V ${fmt(r.v, 'V')} · I ${fmt(r.i, 'A')} · P ${fmt(r.p, 'W')}`;
         if (h.comp.type === 'opamp') html += ` · Vo ${fmt(r.vout, 'V')}`;
         if (h.comp.type === 'bjt') html += ` · I<sub>C</sub> ${fmt(r.ic, 'A')} · V<sub>CE</sub> ${fmt(r.vce, 'V')}`;
@@ -946,6 +956,16 @@
         html = `<dt>${t('vout')}</dt><dd class="v">${fmt(r.vout, 'V')}</dd><dt>${t('iout')}</dt><dd class="i">${fmt(r.iout, 'A')}</dd>` +
           `<dt>${t('vdiff')}</dt><dd>${fmt(r.vd, 'V')}</dd><dt>${t('res_state')}</dt><dd>${r.state === 'lin' ? 'linear' : r.state === 'sp' ? 'SAT +' : 'SAT −'}</dd>` +
           `<dt>${t('supply_p')}</dt><dd class="pg">${fmt(-r.p, 'W')}</dd>`;
+        // the output current comes from V+ (sourcing) or goes to V− (sinking): that supply's current and power,
+        // and what the op-amp itself dissipates
+        if (c.props.sat) {
+          const io = r.iout, vp = Math.max(c.props.Vpos, c.props.Vneg), vn = Math.min(c.props.Vpos, c.props.Vneg);
+          const src = io >= 0, rail = src ? vp : vn, ia = Math.abs(io);
+          const railTxt = (rail > 0 ? '+' : '') + fmt(rail, 'V');
+          html += `<dt>${t(src ? 'op_from' : 'op_to', { r: railTxt })}</dt><dd class="i">${fmt(ia, 'A')}</dd>` +
+            `<dt>${t('op_psup', { r: railTxt })}</dt><dd class="pg">${fmt(Math.abs(rail) * ia, 'W')}</dd>` +
+            `<dt>${t('op_pdiss')}</dt><dd class="pa">${fmt(Math.abs(rail - r.vout) * ia, 'W')}</dd>`;
+        }
       } else if (c.type === 'pot') {
         const f = C.potFrac(c);
         html = `<dt>R<sub>AW</sub> / R<sub>WB</sub></dt><dd>${fmt(c.props.R * f, 'Ω')} / ${fmt(c.props.R * (1 - f), 'Ω')}</dd>` +
