@@ -556,3 +556,15 @@ html.layout-mobile .swpick-q{font-size:13.5px}
 .quiz-suffix{font-size:13px; color:var(--muted); line-height:1.6; margin-top:6px}
 .quiz-suffix b{color:var(--fg); font-size:14px; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace}
 .quiz-suffix span{white-space:nowrap}
+/* dialogs of the app (confirm / prompt) */
+.dlg-backdrop{position:fixed; inset:0; z-index:80; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(15,18,34,.35); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); animation:dlgIn .12s ease-out}
+.dlg{width:min(420px, 100%); background:var(--card); border:1px solid var(--border); border-radius:16px; box-shadow:0 24px 80px rgba(0,0,0,.28); padding:18px 18px 14px; display:flex; flex-direction:column; gap:12px}
+.dlg h3{margin:0; font-size:17px}
+.dlg p{margin:0; font-size:15px; line-height:1.45}
+.dlg-in{width:100%; border:1px solid var(--border); background:var(--bg); color:var(--fg); border-radius:10px; padding:9px 10px; font:inherit; font-size:15px}
+.dlg-in:focus{outline:2px solid var(--accent); outline-offset:1px}
+.dlg-btns{display:flex; justify-content:flex-end; gap:8px; margin-top:2px}
+.dlg-btns .btn{min-width:92px; justify-content:center; padding:8px 14px}
+.btn.danger-solid{background:var(--c-err); color:#fff; border-color:var(--c-err)}
+@keyframes dlgIn{from{opacity:0; transform:scale(.98)} to{opacity:1; transform:none}}
+html.layout-mobile .dlg-in{font-size:16px}
