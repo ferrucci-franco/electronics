@@ -438,6 +438,7 @@
       if (!h || !p || (!res && h.kind !== 'mark') || isMobile()) { tip.hidden = true; return; }
       let html = '';
       if (h.kind === 'mark') html = esc(app.tp('tip_flip'));
+      else if (h.kind === 'node') html = `${t('node')} ${esc(app.net.nodes[h.node].name)}: <b>${fmt(res.v[h.node], 'V')}</b>`;
       else if (h.kind === 'wire' || h.kind === 'wend') {
         const nd = app.net.wireNode.get(h.wire.id);
         html = `${t('node')} ${esc(app.net.nodes[nd].name)}: <b>${fmt(res.v[nd], 'V')}</b>`;

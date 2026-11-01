@@ -878,6 +878,14 @@
       cursor = h ? 'pointer' : 'default';
       if (h && (h.kind === 'term' || h.kind === 'wend')) { app.overlay.snap = h.pt; app.overlay.snapHot = true; }
       else if (h) app.hover = { id: h.comp ? h.comp.id : h.wire.id };
+    } else if (app.renderer.nodeTagAt && app.renderer.nodeTagAt(p.sx, p.sy) != null) {
+      // the tag of a node (also when it lies over a component): its wires light up and the tip gives its voltage
+      const nd = app.renderer.nodeTagAt(p.sx, p.sy);
+      app.hover = { node: nd };
+      this.cv.style.cursor = 'default';
+      app.tip({ kind: 'node', node: nd }, p);
+      app.requestRender();
+      return;
     } else if (app.renderer.markAt(p.sx, p.sy, 1) && app.sel.has(app.renderer.markAt(p.sx, p.sy, 1).id) && !this.onBody(h, p)) {
       cursor = 'pointer';
       app.tip({ kind: 'mark' }, p);
@@ -887,11 +895,13 @@
     } else if (h) {
       if (h.kind === 'term') { cursor = 'crosshair'; app.overlay.snap = h.pt; app.overlay.snapHot = true; }
       else if (h.kind === 'wend' && this.isLooseEnd(h.pt)) { cursor = 'crosshair'; app.overlay.snap = h.pt; app.overlay.snapHot = true; }
-      else if (h.kind === 'wend') { cursor = 'move'; app.overlay.snap = h.pt; app.overlay.snapHot = false; }
+      else if (h.kind === 'wend') { cursor = 'move'; app.overlay.snap = h.pt; app.overlay.snapHot = false; app.hover = { id: h.wire.id }; }
       else if (h.kind === 'comp' && h.comp.type === 'pot' && this.onKnob(h.comp, p)) { cursor = 'grab'; app.hover = { id: h.comp.id }; }
       else if (h.kind === 'comp' && h.comp.type === 'pot' && this.onWiper(h.comp, p)) { cursor = (h.comp.rot || 0) % 2 ? 'ns-resize' : 'ew-resize'; app.hover = { id: h.comp.id }; }
       else { cursor = 'move'; app.hover = { id: h.comp ? h.comp.id : h.wire.id }; }
     }
+    // a wire: the whole node it belongs to
+    if (app.hover && h && h.wire && app.net) app.hover.node = app.net.wireNode.get(h.wire.id);
     this.cv.style.cursor = cursor;
     app.tip(h, p);
     app.requestRender();
