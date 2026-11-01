@@ -197,6 +197,8 @@
       return;
     }
     if (e.button > 0 && e.pointerType === 'mouse') { this.g = null; return; }
+    // quiz question open: the circuit can only be looked at (pan), not edited nor selected
+    if (app.quizHidden && app.quizHidden()) { g.mode = 'pan'; g.view0 = Object.assign({}, app.view); g.locked = true; return; }
     const h = this.hit(p.x, p.y, e.pointerType);
     g.hit = h;
     const tool = app.tool;
@@ -433,6 +435,7 @@
       case 'pan':
         if (g.moved) break;
         if (g.rclick) break;
+        if (g.locked) break;
         this.tap(g, p, e);
         break;
       case 'band': {
@@ -1013,6 +1016,7 @@
     const tag = (e.target && e.target.tagName) || '';
     if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
     if (app.modalOpen()) { if (e.key === 'Escape') app.closeModal(); return; }
+    if (app.quizHidden && app.quizHidden()) return;
     const mod = e.ctrlKey || e.metaKey;
     const k = e.key;
     if (k === ' ' && !mod) { this.space = true; window.addEventListener('keyup', (ev) => { if (ev.key === ' ') this.space = false; }, { once: true }); }
@@ -1083,6 +1087,7 @@
     let st = null;
     btn.addEventListener('pointerdown', (e) => {
       if (e.button > 0) return;
+      if (app.quizHidden && app.quizHidden()) return;
       st = { id: e.pointerId, x: e.clientX, y: e.clientY, drag: false, touch: e.pointerType !== 'mouse' };
       if (!st.touch) try { btn.setPointerCapture(e.pointerId); } catch (_) {}
     });

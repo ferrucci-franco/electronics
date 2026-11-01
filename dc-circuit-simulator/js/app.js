@@ -687,10 +687,12 @@
     const s = Math.max(app.minScale, Math.min(maxScale || 34, w / bw, h / bh));
     return { scale: s, ox: w / 2 - (b[0] + b[2]) / 2 * s, oy: h / 2 - (b[1] + b[3]) / 2 * s };
   };
-  app.fit = function () {
+  app.fit = function (opts) {
     const R = app.renderer;
+    // inset: pixels hidden at the bottom of the circuit area (phone: the panel sheet over it, in a quiz)
+    const inset = (opts && opts.bottom) || 0;
     // leave room for the chips at the top and the buttons at the bottom
-    const v = app.fitView(app.circuit, R.w, Math.max(80, R.h - 70), 3.5);
+    const v = app.fitView(app.circuit, R.w, Math.max(80, R.h - 70 - inset), 3.5);
     v.oy += 30;
     app.view = v;
     // the labels (values, readings) have a fixed size on screen: once drawn, the view is reduced and centred
@@ -704,7 +706,7 @@
       }
       // (desktop: clear of the ‹ › tabs on the side edges)
       const side = document.documentElement.classList.contains('layout-mobile') ? 8 : 30;
-      const left = side, right = R.w - side, top = 52, bottom = R.h - 64;
+      const left = side, right = R.w - side, top = 52, bottom = Math.max(top + 60, R.h - 64 - inset);
       const f = Math.min(1, (right - left) / Math.max(1, x1 - x0), (bottom - top) / Math.max(1, y1 - y0));
       const wcx = ((x0 + x1) / 2 - v.ox) / v.scale, wcy = ((y0 + y1) / 2 - v.oy) / v.scale;
       const s2 = Math.max(app.minScale, v.scale * (f < 1 ? f * 0.98 : 1));
@@ -731,7 +733,7 @@
   function stateForRender() {
     return {
       circuit: app.circuit, view: app.view, settings: app.settings, sel: app.sel, hover: app.hover, net: app.net,
-      result: app.result, overlay: app.overlay, port: app.port, flow: app.flow, wireCur: app.wireCur, hiNode: app.hiNode, badIds: app.badIds, tr: app.tp
+      result: app.quizHidden && app.quizHidden() ? null : app.result, overlay: app.overlay, port: app.port, flow: app.flow, wireCur: app.wireCur, hiNode: app.hiNode, badIds: app.badIds, tr: app.tp
     };
   }
   app.stateForRender = stateForRender;
@@ -879,6 +881,9 @@
     } catch (e) { return false; }
   };
   async function loadFromHash() {
+    // a quiz deck: #quiz=<id>
+    const mq = /#quiz=([\w-]+)/.exec(location.hash);
+    if (mq) { history.replaceState(null, '', location.href.split('#')[0]); return app.ui.quiz.start(mq[1]); }
     const ok = await app.openShared(location.hash);
     if (ok) history.replaceState(null, '', location.href.split('#')[0]);
     return ok;

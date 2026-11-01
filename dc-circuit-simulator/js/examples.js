@@ -225,5 +225,5 @@
     c.show = e.show || null;
     return c;
   }
-  DCS.examples = { list, get, keys: Object.keys(L) };
+  DCS.examples = { list, get, make, keys: Object.keys(L) };
 })(window);

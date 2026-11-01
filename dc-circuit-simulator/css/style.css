@@ -456,3 +456,28 @@ html.layout-mobile .mon2{left:6px; top:auto; bottom:6px}
 .help-text{align-self:stretch}
 .help-text .heq{text-align:center; margin:6px 0 10px; font-size:16px; font-weight:600}
 .help-text sub, .help-text sup{font-size:.72em}
+
+/* ===== quiz ===== */
+.quiz{display:flex; flex-direction:column; gap:10px}
+.quiz-head{display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:15px}
+.quiz-head .quiz-x{padding:2px 10px; min-height:28px}
+.quiz-pos{font-size:13px; color:var(--muted)}
+.quiz-bar{height:6px; border-radius:3px; background:var(--border); overflow:hidden}
+.quiz-bar span{display:block; height:100%; background:var(--accent); transition:width .3s}
+.quiz-text{font-size:15px; line-height:1.55}
+.quiz-choices{display:flex; flex-direction:column; gap:6px}
+.quiz-choices .btn{justify-content:flex-start; text-align:left; min-height:42px; font-size:15px}
+.quiz-choices .btn.right{border-color:var(--c-pgen); background:color-mix(in srgb, var(--c-pgen) 18%, transparent); color:var(--fg)}
+.quiz-choices .btn.wrong{border-color:var(--c-err); background:color-mix(in srgb, var(--c-err) 15%, transparent); color:var(--fg)}
+.quiz-choices .btn:disabled{opacity:1; cursor:default}
+.quiz-answer{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+.quiz-answer .unit-in{flex:1 1 150px; min-width:0; display:flex; align-items:center; gap:6px}
+.quiz-answer .unit-in span{flex:none; font-weight:600}
+.quiz-answer input{font-size:16px; min-height:40px; flex:1; min-width:0; width:auto}
+.quiz-fb{font-weight:700; font-size:15px; padding:8px 10px; border-radius:10px}
+.quiz-fb.right{color:var(--c-pgen); background:color-mix(in srgb, var(--c-pgen) 12%, transparent)}
+.quiz-fb.wrong{color:var(--c-err); background:color-mix(in srgb, var(--c-err) 10%, transparent)}
+.quiz-explain{font-size:14px; line-height:1.6; border-left:3px solid var(--accent); padding-left:10px}
+.quiz-score{font-size:22px; font-weight:700; text-align:center; padding:10px 0}
+.quiz-card .quiz-prog{color:var(--accent); font-size:12.5px}
+.quiz-card .btnrow{margin-top:4px}
