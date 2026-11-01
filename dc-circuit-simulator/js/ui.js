@@ -1459,10 +1459,42 @@
       const mclose = button('✕', () => { app.monitors[slot] = null; ui.updateMonitor(); });
       mhead.appendChild(mtitle); mhead.appendChild(mswap); mhead.appendChild(mreset); mhead.appendChild(mclose);
       const mcv = el('canvas', { class: 'mon-cv' });
-      mon.appendChild(mhead); mon.appendChild(mcv);
+      // the corner at the bottom right changes the size of the window (mouse or finger); the size is kept
+      const grip = el('div', { class: 'mon-grip', title: plainText(t('mon_resize')) });
+      mon.appendChild(mhead); mon.appendChild(mcv); mon.appendChild(grip);
       $('stage').appendChild(mon);
       dragByHead(mon, mhead);
-      return { mon, mtitle, mswap, mreset, mclose, mcv };
+      const W = { mon, mtitle, mswap, mreset, mclose, mcv };
+      const applySize = (sz) => {
+        if (!sz) return;
+        mon.style.width = sz.w + 'px'; mon.style.right = 'auto';
+        mcv.style.height = sz.h + 'px';
+      };
+      try { applySize(JSON.parse(app.LS.get('dcs.monSize' + slot) || 'null')); } catch (e) { /* none */ }
+      let rs = null;
+      grip.addEventListener('pointerdown', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        const r = mon.getBoundingClientRect(), st = $('stage').getBoundingClientRect();
+        // the window keeps its top left corner where it is
+        Object.assign(mon.style, { left: (r.left - st.left) + 'px', top: (r.top - st.top) + 'px', right: 'auto', bottom: 'auto' });
+        rs = { id: e.pointerId, x0: e.clientX, y0: e.clientY, w0: mon.offsetWidth, h0: mcv.offsetHeight, st, left: r.left, top: r.top };
+        try { grip.setPointerCapture(e.pointerId); } catch (_) {}
+      });
+      grip.addEventListener('pointermove', (e) => {
+        if (!rs || rs.id !== e.pointerId) return;
+        const maxW = rs.st.right - rs.left - 4, maxH = rs.st.bottom - rs.top - (mon.offsetHeight - mcv.offsetHeight) - 4;
+        const w = Math.max(220, Math.min(maxW, rs.w0 + e.clientX - rs.x0));
+        const h = Math.max(110, Math.min(maxH, rs.h0 + e.clientY - rs.y0));
+        applySize({ w, h });
+        ui.updateMonitor();
+      });
+      const end = (e) => {
+        if (!rs || rs.id !== e.pointerId) return;
+        rs = null;
+        app.LS.set('dcs.monSize' + slot, JSON.stringify({ w: mon.offsetWidth, h: mcv.offsetHeight }));
+      };
+      grip.addEventListener('pointerup', end); grip.addEventListener('pointercancel', end);
+      return W;
     }
     // a floating window can be moved by its title bar
     function dragByHead(win, head) {
