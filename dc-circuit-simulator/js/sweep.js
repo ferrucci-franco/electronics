@@ -341,7 +341,7 @@
     const banner = el('div', 'swpick');
     banner.hidden = true;
     stage.appendChild(banner);
-    function startPick(what) { picking = what; app.sweepPicking = true; if (!inUpdate) update(false); }
+    function startPick(what) { picking = what; app.sweepPicking = true; app.sel.clear(); app.requestRender(); if (!inUpdate) update(false); }
     function stopPick() { picking = null; app.sweepPicking = false; banner.hidden = true; }
     function cancelPick() {
       const s = sw();
@@ -376,6 +376,7 @@
         if (s.f && s.f.id === c.id && s.f.key === p.key) delete s.f;
       }
       stopPick();
+      app.sel.clear();   // the tap chose the component; it does not select it
       app.commit();
       return true;
     }
@@ -571,7 +572,7 @@
       if (s.x && !xcomp()) s.x = null;
       if (s.f && (!fcomp() || !fparam())) delete s.f;
       if (!s.x && picking !== 'x') { inUpdate = true; startPick('x'); inUpdate = false; }
-      if (picking) { win.hidden = true; showBanner(s.ys.map(y => curve(y, app.circuit, net))); return; }
+      if (picking) { win.hidden = true; closeMenu(); document.getElementById('selbar').hidden = true; showBanner(s.ys.map(y => curve(y, app.circuit, net))); return; }
       banner.hidden = true;
       const wasHidden = win.hidden;
       win.hidden = false;

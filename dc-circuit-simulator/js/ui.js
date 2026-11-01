@@ -379,7 +379,8 @@
       const bar = $('selbar');
       const cs = app.selectedComps();
       const placing = app.tool === 'place';
-      bar.hidden = !((app.tool === 'select' && app.sel.size) || placing);
+      // (not while the component that varies in a DC sweep is being chosen: a tap there is not a selection)
+      bar.hidden = !((app.tool === 'select' && app.sel.size) || placing) || !!app.sweepPicking;
       // a switch that is being opened and closed: the toolbar gets out of the way (a long press brings it back)
       if (!placing && app.selbarQuiet && app.sel.size === 1 && app.sel.has(app.selbarQuiet)) bar.hidden = true;
       bar.querySelector('[data-act=cancel]').hidden = !placing;
