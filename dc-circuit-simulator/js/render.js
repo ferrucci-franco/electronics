@@ -367,6 +367,25 @@
       }
     }
 
+    // DC sweep probes: the nodes whose voltage is plotted, a dot and a flag with the name of the node, in the
+    // colour of the curve
+    if (S.probes && S.probes.length) {
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.font = `700 ${fontPx}px ui-sans-serif, system-ui, sans-serif`;
+      ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
+      for (const pr of S.probes) {
+        const sx = pr.pt[0] * s + view.ox, sy = pr.pt[1] * s + view.oy;
+        const w = Math.max(fontPx + 6, ctx.measureText(pr.name).width + 10), h = fontPx + 6;
+        const fx = sx + 7, fy = sy - 9 - h;
+        ctx.strokeStyle = pr.color; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(fx + 3, fy + h); ctx.stroke();
+        ctx.fillStyle = col.bg; ctx.beginPath(); ctx.arc(sx, sy, 5.5, 0, 2 * Math.PI); ctx.fill();
+        ctx.fillStyle = pr.color; ctx.beginPath(); ctx.arc(sx, sy, 4, 0, 2 * Math.PI); ctx.fill();
+        roundRect(ctx, fx, fy, w, h, 5); ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.fillText(pr.name, fx + w / 2, fy + h / 2 + 0.5);
+      }
+    }
+
     // Thevenin port; the wire pieces cut away from the side looked into are shown dashed
     if (S.port && S.port.cut) {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);

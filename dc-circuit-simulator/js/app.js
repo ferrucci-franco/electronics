@@ -748,7 +748,8 @@
   function stateForRender() {
     return {
       circuit: app.circuit, view: app.view, settings: app.settings, sel: app.sel, hover: app.hover, net: app.net,
-      result: app.quizHidden && app.quizHidden() ? null : app.result, overlay: app.overlay, port: app.port, flow: app.flow, wireCur: app.wireCur, hiNode: app.hiNode, badIds: app.badIds, tr: app.tp
+      result: app.quizHidden && app.quizHidden() ? null : app.result, overlay: app.overlay, port: app.port, flow: app.flow, wireCur: app.wireCur, hiNode: app.hiNode, badIds: app.badIds, tr: app.tp,
+      probes: app.ui && app.ui.sweep ? app.ui.sweep.probes() : null
     };
   }
   app.stateForRender = stateForRender;
@@ -846,6 +847,15 @@
     }
     clean.nodeNames = (circuit.nodeNames || []).filter(nn => nn && isFinite(nn.x) && isFinite(nn.y) && nn.name).map(nn => ({ x: Math.round(nn.x), y: Math.round(nn.y), name: String(nn.name).slice(0, 12) }));
     for (const w of circuit.wires) clean.wires.push({ id: String(w.id), x1: Math.round(+w.x1), y1: Math.round(+w.y1), x2: Math.round(+w.x2), y2: Math.round(+w.y2) });
+    // the DC sweep (what is plotted against what)
+    const sw = circuit.sweep;
+    if (sw && Array.isArray(sw.ys)) {
+      const ids = new Set(clean.comps.map(c => c.id));
+      const ys = sw.ys.filter(y => y && ((Array.isArray(y.n) && isFinite(y.n[0]) && isFinite(y.n[1])) || (ids.has(String(y.id)) && typeof y.q === 'string'))).slice(0, 8)
+        .map((y, k) => Object.assign(y.n ? { n: [Math.round(y.n[0]), Math.round(y.n[1])] } : { id: String(y.id), q: y.q }, { c: isFinite(y.c) ? Math.abs(Math.round(y.c)) % 8 : k }));
+      const x = sw.x && ids.has(String(sw.x.id)) && typeof sw.x.key === 'string' && isFinite(sw.x.from) && isFinite(sw.x.to) ? { id: String(sw.x.id), key: sw.x.key, from: +sw.x.from, to: +sw.x.to, log: !!sw.x.log } : null;
+      if (ys.length) clean.sweep = { x, ys };
+    }
     app.circuit = clean;
     app.sel.clear();
     app.prevStates = {}; app.prevV = null;
@@ -867,11 +877,26 @@
   };
   function compact() {
     // short form: comps as arrays, wires as flat arrays
-    return JSON.stringify({ v: 1, c: app.circuit.comps.map(c => [c.type, c.name, c.x, c.y, c.rot, c.flip ? 1 : 0, c.props, c.refV, c.refI]), w: app.circuit.wires.map(w => [w.x1, w.y1, w.x2, w.y2]), n: (app.circuit.nodeNames || []).map(nn => [nn.x, nn.y, nn.name]) });
+    const o = { v: 1, c: app.circuit.comps.map(c => [c.type, c.name, c.x, c.y, c.rot, c.flip ? 1 : 0, c.props, c.refV, c.refI]), w: app.circuit.wires.map(w => [w.x1, w.y1, w.x2, w.y2]), n: (app.circuit.nodeNames || []).map(nn => [nn.x, nn.y, nn.name]) };
+    // the DC sweep, with the components by their place in the list
+    const sw = app.circuit.sweep;
+    if (sw) {
+      const ix = (id) => app.circuit.comps.findIndex(c => c.id === id);
+      o.s = { x: sw.x ? [ix(sw.x.id), sw.x.key, sw.x.from, sw.x.to, sw.x.log ? 1 : 0] : null, y: sw.ys.map(y => (y.n ? [y.n[0], y.n[1], y.c] : [ix(y.id), y.q, y.c])) };
+    }
+    return JSON.stringify(o);
   }
   function expand(o) {
     let k = 0;
-    return { comps: o.c.map(a => ({ id: 'c' + (++k), type: a[0], name: a[1], x: a[2], y: a[3], rot: a[4], flip: !!a[5], props: a[6], refV: a[7], refI: a[8] })), wires: o.w.map(a => ({ id: 'w' + (++k), x1: a[0], y1: a[1], x2: a[2], y2: a[3] })), nodeNames: (o.n || []).map(a => ({ x: a[0], y: a[1], name: a[2] })) };
+    const out = { comps: o.c.map(a => ({ id: 'c' + (++k), type: a[0], name: a[1], x: a[2], y: a[3], rot: a[4], flip: !!a[5], props: a[6], refV: a[7], refI: a[8] })), wires: o.w.map(a => ({ id: 'w' + (++k), x1: a[0], y1: a[1], x2: a[2], y2: a[3] })), nodeNames: (o.n || []).map(a => ({ x: a[0], y: a[1], name: a[2] })) };
+    if (o.s && Array.isArray(o.s.y)) {
+      const id = (i) => (out.comps[i] ? out.comps[i].id : null);
+      out.sweep = {
+        x: o.s.x ? { id: id(o.s.x[0]), key: o.s.x[1], from: o.s.x[2], to: o.s.x[3], log: !!o.s.x[4] } : null,
+        ys: o.s.y.map(a => (typeof a[1] === 'string' ? { id: id(a[0]), q: a[1], c: a[2] } : { n: [a[0], a[1]], c: a[2] }))
+      };
+    }
+    return out;
   }
   async function streamBytes(bytes, stream) {
     const s = new Blob([bytes]).stream().pipeThrough(stream);
