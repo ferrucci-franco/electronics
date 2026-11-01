@@ -953,7 +953,8 @@
       if (C.meterKind(c) === 'A') html = `<dt>${t('reading')}</dt><dd class="i big">${fmt(r.i, 'A', 4)}</dd>`;
       else if (C.meterKind(c) === 'V') html = `<dt>${t('reading')}</dt><dd class="v big">${fmt(r.v, 'V', 4)}</dd>`;
       else if (c.type === 'opamp') {
-        html = `<dt>${t('vout')}</dt><dd class="v">${fmt(r.vout, 'V')}</dd><dt>${t('iout')}</dt><dd class="i">${fmt(r.iout, 'A')}</dd>` +
+        html = `<dt>${t('vin_p')}</dt><dd class="v">${fmt(r.vp, 'V')}</dd><dt>${t('vin_m')}</dt><dd class="v">${fmt(r.vm, 'V')}</dd>` +
+          `<dt>${t('vout')}</dt><dd class="v">${fmt(r.vout, 'V')}</dd><dt>${t('iout')}</dt><dd class="i">${fmt(r.iout, 'A')}</dd>` +
           `<dt>${t('vdiff')}</dt><dd>${fmt(r.vd, 'V')}</dd><dt>${t('res_state')}</dt><dd>${r.state === 'lin' ? 'linear' : r.state === 'sp' ? 'SAT +' : 'SAT −'}</dd>` +
           `<dt>${t('supply_p')}</dt><dd class="pg">${fmt(-r.p, 'W')}</dd>`;
         // the output current comes from V+ (sourcing) or goes to V− (sinking): that supply's current and power,

@@ -564,9 +564,14 @@
       const sup = this.showSupplies;
       const results = [blk(1.6, 1.1, 0, 1, lines), blk(1.6, -1.1, 0, -1, lines), blk(3.3, 0.4, 1, 0, lines), blk(-0.6, 2.3, 0, 1, lines), blk(-0.6, -2.3, 0, -1, lines)]
         .concat(sup ? [blk(0.25, -1.55, 1, 0, lines), blk(0.25, 1.55, 1, 0, lines)] : []);
+      // the voltage of each input (to ground), written next to its own pin, outside the triangle: above the
+      // upper lead, below the lower one (equal while the op-amp is linear: the virtual short)
+      const ins = r && st.showV ? [blk(-2.15, -1.2, -1, 0, [{ text: fmt(r.vm, 'V'), color: col.volt, mono: true }]), blk(-2.15, 1.2, -1, 0, [{ text: fmt(r.vp, 'V'), color: col.volt, mono: true }])] : [];
+      // (the blocks are placed above / below the lead: lifted off it by half a line)
+      for (const b of ins) { const off = worldDir(c, 0, Math.sign(b === ins[0] ? -1 : 1) * 0.28); b.wx += off[0]; b.wy += off[1]; }
       names.forEach((nb, i) => results.forEach((rb, j) => {
         if ((i === 0 && j === 4) || (i === 1 && j === 3) || (i === 2 && j === 1)) return;
-        opts.push({ blocks: [nb, rb], marks, penalty: (i + j) * 0.3 });
+        opts.push({ blocks: [nb, rb].concat(ins), marks, penalty: (i + j) * 0.3 });
       }));
       return opts;
     }
