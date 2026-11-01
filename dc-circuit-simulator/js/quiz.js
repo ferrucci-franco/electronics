@@ -129,6 +129,18 @@
         right = isFinite(given) && Math.abs(given - want) <= Math.max(tol * Math.abs(want), abs);
       }
       c.given = given; c.right = right; c.want = want; c.revealed = true;
+      // a limit value asked for: the circuit's own value is set just on the asked side of it, so that the
+      // simulation shows the edge (the student can then move it across)
+      if (c.q.reveal) {
+        const rv = c.q.reveal, p2 = Object.assign({}, c.p);
+        p2[rv.param] = rv.value(c.p, want);
+        const spec = c.q.circuit(p2), sol2 = solveSpec(spec);
+        if (sol2.ok) {
+          c.p = p2; c.sol = sol2;
+          c.setNote = { label: rv.label, v: helpers().f(p2[rv.param], rv.unit), st: sol2.el('Q1') ? sol2.el('Q1').state : null };
+          app.loadCircuit(DCS.examples.make(spec));
+        }
+      }
       if (right) st.score++; else st.wrong.push(c.qi);
       // progress: a question is mastered after two right answers in a row
       const pr = loadProg(app, st.deck.id);
@@ -228,7 +240,7 @@
         // just ✓, or ✗ with the right value
         fb.innerHTML = c.right ? '✓' : '✗' + (a.kind === 'num' ? ' ' + shown : '');
         card.appendChild(fb);
-        card.appendChild(el('div', { class: 'quiz-explain' }, keep(L(q.explain)(c.p, c.sol, h))));
+        card.appendChild(el('div', { class: 'quiz-explain' }, keep(L(q.explain)(c.p, c.sol, h) + (c.setNote ? '<br>' + t('quiz_set', { what: c.setNote.label, v: c.setNote.v, st: c.setNote.st ? t('region_' + c.setNote.st) : '' }) : ''))));
         const row = el('div', { class: 'btnrow' });
         row.appendChild(btn(st.pos + 1 < st.total ? t('quiz_next') + ' →' : t('quiz_finish'), next, 'primary'));
         card.appendChild(row);
