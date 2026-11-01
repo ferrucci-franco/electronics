@@ -168,7 +168,7 @@ select{-webkit-appearance:none; appearance:none; min-width:0; max-width:100%; ov
 select, .field select{padding-right:28px}
 select option{color:var(--fg); background:var(--bg)}
 .field input.bad{border-color:var(--c-err); box-shadow:0 0 0 1px var(--c-err)}
-.field .unit-in{display:flex; align-items:center; gap:4px}
+.field .unit-in{display:flex; align-items:center; gap:8px}
 .field .unit-in span{color:var(--muted); font-size:13px; min-width:14px}
 .field input[type=checkbox]{width:20px; height:20px; accent-color:var(--accent); justify-self:start}
 .kv{display:grid; grid-template-columns:auto 1fr; gap:4px 12px; font-size:14px; margin:0}
@@ -471,7 +471,7 @@ html.layout-mobile .mon2{left:6px; top:auto; bottom:6px}
 .quiz-choices .btn.wrong{border-color:var(--c-err); background:color-mix(in srgb, var(--c-err) 15%, transparent); color:var(--fg)}
 .quiz-choices .btn:disabled{opacity:1; cursor:default}
 .quiz-answer{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
-.quiz-answer .unit-in{flex:1 1 150px; min-width:0; display:flex; align-items:center; gap:6px}
+.quiz-answer .unit-in{flex:1 1 150px; min-width:0; display:flex; align-items:center; gap:9px}
 .quiz-answer .unit-in span{flex:none; font-weight:600}
 .quiz-answer input{font-size:16px; min-height:40px; flex:1; min-width:0; width:auto; border:1px solid var(--border); background-color:var(--bg); color:var(--fg); border-radius:8px; padding:7px 10px}
 .quiz-answer input::placeholder{color:var(--muted); opacity:.8}
@@ -522,7 +522,7 @@ html.layout-mobile .monitor.swmon{left:6px; right:6px; width:auto; top:auto; bot
 .swmenu-t{width:100%; font-size:12px; color:var(--muted); padding:0 2px 2px}
 .swmenu .btn{gap:0}
 html.layout-mobile .sw-cv{height:130px}
-.sw-field{display:inline-flex; align-items:center; gap:3px}
+.sw-field{display:inline-flex; align-items:center; gap:7px; margin-right:4px}
 .sw-unit{color:var(--muted); font-size:12px}
 .sw-in.wide{width:150px}
 .sw-opt:empty{display:none}
