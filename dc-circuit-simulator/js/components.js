@@ -53,6 +53,7 @@
     lamp: {
       prefix: 'LP', terms: [[-2, 0], [2, 0]], box: [-2, -2.1, 2, 1.0],
       props: [
+        { key: 'lmodel', type: 'select', options: ['lamp_lin', 'lamp_real'], def: 'lin', vals: ['lin', 'real'], help: 'lamp_help' },
         { key: 'Vn', unit: 'V', def: 12, min: 0.1, max: 1e4 },
         { key: 'Pn', unit: 'W', def: 5, min: 1e-3, max: 1e5 },
         { key: 'look', type: 'select', options: ['lamp_sym', 'lamp_bulb'], def: 'lamp_sym' }
@@ -217,7 +218,7 @@
   const lampState = (c, r) => {
     if (!r) return null;
     const b = Math.abs(r.p) / Math.max(1e-12, c.props.Pn);
-    return { b, state: b > 1.21 ? 'hot' : b > 0.5 ? 'on' : b > 0.02 ? 'dim' : 'off' };
+    return { b, state: Math.abs(r.v) > 1.1 * c.props.Vn ? 'hot' : b > 0.5 ? 'on' : b > 0.02 ? 'dim' : 'off' };
   };
   function refs(c) {
     let d = defRef(c.type);

@@ -21,7 +21,7 @@ Copia pública: https://ferrucci-franco.github.io/electronics/dc-circuit-simulat
 | LED RGB | cátodo común o ánodo común, Vγ por canal; el brillo mezcla los tres colores según la corriente de cada canal |
 | Amplificador operacional | ideal (ganancia infinita, sin corriente de entrada, R_out = 0), saturación opcional en ±Vsat |
 | Transistor bipolar NPN / PNP | simple (ideal): corte, activa (V_BE = 0,7 V, I_C = βI_B) o saturación (V_CE = V_CE,sat); o real: Ebers-Moll con efecto Early (I_S, β_F, β_R, V_A), junturas exponenciales y saturación suave |
-| Lámpara (incandescente) | una resistencia V_n²/P_n (p. ej. 12 V / 5 W = 28,8 Ω), constante; dibujo a elegir: símbolo (USA: filamento en un círculo; IEC: círculo con cruz) o bombilla con su zócalo. Se ilumina en amarillo según P/P_n: APAGADA (< 2 %), TENUE (< 50 %), ENCENDIDA; por encima de 1,1·V_n (P > 121 % de P_n) se pone roja, «¡RECALENTADA!», con un aviso de que se quemaría. Ejemplo «Transistor que enciende una lámpara» (corte / saturación) |
+| Lámpara (incandescente) | dos modelos (botón ? con la explicación): lineal, una resistencia constante V_n²/P_n (p. ej. 12 V / 5 W = 28,8 Ω), o filamento real, no lineal, I = I_n (V/V_n)^0,55 (la resistencia del tungsteno crece con la temperatura; en frío 1/12 de la resistencia en caliente; a media tensión consume ~68 % de I_n), resuelto por Newton; dibujo a elegir: símbolo (USA: filamento en un círculo; IEC: círculo con cruz) o bombilla con su zócalo. Se ilumina en amarillo según P/P_n: APAGADA (< 2 %), TENUE (< 50 %), ENCENDIDA; por encima de 1,1·V_n se pone roja, «¡RECALENTADA!», con un aviso de que se quemaría. Ejemplo «Transistor que enciende una lámpara» (corte / saturación) |
 | Masa | nodo de referencia |
 
 Símbolos USA (por defecto) o IEC/europeos.

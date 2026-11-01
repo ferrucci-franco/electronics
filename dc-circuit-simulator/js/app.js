@@ -314,7 +314,7 @@
       return { comps, wires: ws, names: comps.filter(c => c.type !== 'ground').map(c => c.name || app.tp('c_' + c.type)), cut: pairs[1 - k].filter(h => !h.term), look };
     });
     // by default the side that has an equivalent (no diode, transistor or saturating op-amp), else the larger one
-    const lin = sides.map(s => !s.comps.some(c => C.isDiode(c) || c.type === 'rgbled' || c.type === 'bjt' || (c.type === 'opamp' && c.props.sat)));
+    const lin = sides.map(s => !s.comps.some(c => C.isDiode(c) || (c.type === 'lamp' && c.props.lmodel === 'real') || c.type === 'rgbled' || c.type === 'bjt' || (c.type === 'opamp' && c.props.sat)));
     const n = sides.map(s => s.names.length);
     return { sides, def: lin[0] !== lin[1] ? (lin[1] ? 1 : 0) : n[1] > n[0] ? 1 : 0 };
   }

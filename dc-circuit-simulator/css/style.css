@@ -447,3 +447,12 @@ html.layout-mobile .mon2{left:6px; top:auto; bottom:6px}
 .ref-title{font-weight:600}
 .refbox .hint{margin:0}
 .card-actions{border-top:1px solid var(--border); padding-top:10px; margin-top:4px}
+
+/* a small ? next to a property: opens its explanation */
+.help-q{display:inline-grid; place-items:center; width:20px; height:20px; margin-left:6px; padding:0; border:1px solid var(--border); border-radius:50%; background:var(--btn); color:var(--muted); font-size:12px; font-weight:700; cursor:pointer; vertical-align:middle}
+.help-q:hover{color:var(--fg)}
+.help-text{line-height:1.5}
+.help-text p{margin:0 0 10px}
+.help-text{align-self:stretch}
+.help-text .heq{text-align:center; margin:6px 0 10px; font-size:16px; font-weight:600}
+.help-text sub, .help-text sup{font-size:.72em}

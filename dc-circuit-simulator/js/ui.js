@@ -678,11 +678,13 @@
               if (c.props.ctrl === m.name) opt.selected = true;
               s.appendChild(opt);
             }
-          } else for (const o of d.options) {
-            const opt = el('option', { value: o }, d.key === 'model' ? plainText(t('model_' + o)) : t(o));
-            if (c.props[d.key] === o) opt.selected = true;
+          } else d.options.forEach((o, k) => {
+            // (d.vals: the stored values, when they differ from the names of the options)
+            const v = d.vals ? d.vals[k] : o;
+            const opt = el('option', { value: v }, d.key === 'model' ? plainText(t('model_' + o)) : t(o));
+            if (c.props[d.key] === v) opt.selected = true;
             s.appendChild(opt);
-          }
+          });
           s.addEventListener('change', () => {
             app.checkpoint();
             c.props[d.key] = s.value;
@@ -691,6 +693,13 @@
             app.commit();
           });
           field(propLabel(c, d), s);
+          if (d.help) {
+            // a ? next to the label opens an explanation of the choice
+            const lab = card.lastChild.querySelector('label');
+            const q = el('button', { type: 'button', class: 'help-q', title: plainText(t('help')), 'aria-label': plainText(t('help')) }, '?');
+            q.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); openModal(t(d.help + '_title'), `<div class="help-text">${t(d.help)}</div>`); });
+            lab.appendChild(q);
+          }
         } else if (d.type === 'slider') {
           // potentiometer position: the circuit follows the slider while it moves
           const w = el('div', { class: 'slider-row' });
@@ -953,7 +962,7 @@
         if (C.isDiode(c) && r.state) html += `<dt>${t('res_state')}</dt><dd>${t('state_' + r.state)}</dd>`;
         if (c.type === 'led') html += `<dt>${t('brightness')}</dt><dd>${Math.round(100 * Math.max(0, Math.min(1, r.i / c.props.Imax)))} %</dd>`;
         if (c.type === 'resistor') html += `<dt>V/R</dt><dd>${fmt(r.v / c.props.R, 'A')}</dd>`;
-        if (c.type === 'lamp') { const ls = C.lampState(c, r); html += `<dt>${t('lamp_r')}</dt><dd>${fmt(c.props.Vn * c.props.Vn / c.props.Pn, 'Ω')}</dd><dt>${t('lamp_bright')}</dt><dd>${Math.round(ls.b * 100)} %</dd><dt>${t('res_state')}</dt><dd>${t('lamp_' + ls.state)}</dd>`; }
+        if (c.type === 'lamp') { const ls = C.lampState(c, r), real = c.props.lmodel === 'real'; html += real ? `<dt>${t('lamp_rvi')}</dt><dd>${Math.abs(r.i) > 1e-12 ? fmt(r.v / r.i, 'Ω') : '—'}</dd><dt>${t('lamp_r')}</dt><dd>${fmt(c.props.Vn * c.props.Vn / c.props.Pn, 'Ω')}</dd>` : `<dt>${t('lamp_r')}</dt><dd>${fmt(c.props.Vn * c.props.Vn / c.props.Pn, 'Ω')}</dd>`; html += `<dt>${t('lamp_bright')}</dt><dd>${Math.round(ls.b * 100)} %</dd><dt>${t('res_state')}</dt><dd>${t('lamp_' + ls.state)}</dd>`; }
       }
       card.appendChild(el('dl', { class: 'kv' }, html));
       return card;

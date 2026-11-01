@@ -14,7 +14,7 @@
     const net = th.net || app.net, r = th.res;   // th.net: the side looked into, when A–B cuts the circuit
     const exclude = new Set(th.loadId ? net.ckt.elements.filter(el => el.id.split('#')[0] === th.loadId).map(el => el.id) : []);
     const els = net.ckt.elements.filter(el => !exclude.has(el.id));
-    if (els.some(el => el.type === 'D')) return { kind: 'nonlinear' };
+    if (els.some(el => el.type === 'D' || el.type === 'LMP')) return { kind: 'nonlinear' };
     // the same network with the independent sources set to zero, for the test source
     const ckt0 = { nodeCount: net.ckt.nodeCount, elements: els.map(el => (el.type === 'V' ? Object.assign({}, el, { V: 0 }) : el.type === 'I' ? Object.assign({}, el, { I: 0 }) : el)) };
     const t0 = S.thevenin(ckt0, r.a, r.b, { tempC: app.settings.tempC });
