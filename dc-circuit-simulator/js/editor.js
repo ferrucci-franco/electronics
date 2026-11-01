@@ -274,7 +274,8 @@
     if (this.g !== g || g.moved) return;
     const app = this.app;
     const h = g.hit;
-    const quick = h && h.kind === 'comp' && g.mode === 'move' && app.tool === 'select' && app.valueKey(h.comp);
+    // (no value slider while the component that varies in a DC sweep is being chosen)
+    const quick = h && h.kind === 'comp' && g.mode === 'move' && app.tool === 'select' && !app.sweepPicking && app.valueKey(h.comp);
     // a long press on a switch that is being operated, also with a mouse: no toggle, its toolbar comes back
     if (g.swToggle && h && h.comp === g.swToggle) {
       g.long = true; g.swToggle = null;
