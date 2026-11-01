@@ -107,6 +107,7 @@
       document.querySelectorAll('.app-header [data-lang]').forEach((b) => b.classList.toggle('active', b.dataset.lang === l));
       syncLayoutBtn();
       drawPalette();
+      if (ui.quiz) ui.quiz.render();   // the quiz pane is drawn by the quiz itself
     }
     $('themeBtn').addEventListener('click', () => {
       const h = document.documentElement;
