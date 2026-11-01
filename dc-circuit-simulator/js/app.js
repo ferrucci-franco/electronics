@@ -423,8 +423,12 @@
         }
       } else if (inner[c.type]) ts.forEach((t, j) => { const q = C.toWorld(c, inner[c.type][j][0], inner[c.type][j][1]); segs.push({ x1: t[0], y1: t[1], x2: q[0], y2: q[1], i: r.tc[j] }); });
     }
+    // the reference for the speed is the largest current, but never below 10 µA: a circuit where everything is
+    // off and only leakage flows (nanoamperes in a cut-off transistor, a reverse-biased junction) shows (almost)
+    // still dots, not a full-speed flow
     let imax = 0;
     for (const s of segs) imax = Math.max(imax, Math.abs(s.i));
+    imax = Math.max(imax, 1e-5);
     const old = app.flow ? app.flow.segs : [];
     segs.forEach((s, k) => {
       s.len = Math.hypot(s.x2 - s.x1, s.y2 - s.y1);
@@ -433,7 +437,7 @@
       // through slower branches); logarithmic: currents down to 1/10000 of the largest one still move
       // no dots where there is practically no current: an open branch (diode off, open switch) keeps only the
       // solver's leakage (picoamperes), which must not leave frozen dots behind
-      if (imax <= 0 || a < 1e-10) s.speed = 0;
+      if (a < 1e-10) s.speed = 0;
       else if (app.settings.flowScale === 'log') s.speed = a < imax * 1e-4 ? 0 : Math.sign(s.i) * (1.2 + 4.8 * (Math.log10(a / imax) + 4) / 4);
       else s.speed = a < imax * 1e-3 ? 0 : Math.sign(s.i) * 6 * a / imax;
       s.phase = old[k] ? old[k].phase : 0;
