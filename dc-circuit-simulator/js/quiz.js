@@ -4,6 +4,8 @@
  *     circuit(p) -> example-like spec { c, w }, text: { fr|es|en: (p, h) -> html },
  *     answer: { kind: 'num', unit, value(p, sol), tol } | { kind: 'choice', options: { fr|es|en: [..] }, value(p, sol) -> index },
  *     explain: { fr|es|en: (p, sol, h) -> html } }
+ * Every numeric answer field shows, right under it, the accepted prefixes (k, m, u, n, p, meg: i18n
+ * 'quiz_suffix'), so new numeric questions get it with nothing to add.
  * While a question is open the simulated values are hidden and the circuit is locked; once answered they are
  * shown and the circuit can be played with. Progress (best score, questions mastered) is kept in the browser. */
 (function (root) {
@@ -232,6 +234,8 @@
         if (!c.revealed) row.appendChild(btn(t('quiz_check'), go, 'primary'));
         inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
         card.appendChild(row);
+        // the prefixes that can be typed (for every numeric question)
+        if (!c.revealed) card.appendChild(el('div', { class: 'quiz-suffix' }, t('quiz_suffix')));
         if (!c.revealed) requestAnimationFrame(() => { if (!document.documentElement.classList.contains('layout-mobile')) inp.focus(); });
       }
       if (c.revealed) {

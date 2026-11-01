@@ -433,7 +433,8 @@
     };
     app.tip = function (h, p) {
       const tip = $('tip');
-      const res = app.result && app.result.ok ? app.result : null;
+      // (an open quiz question: the simulated values stay hidden, also here)
+      const res = app.result && app.result.ok && !(app.quizHidden && app.quizHidden()) ? app.result : null;
       if (!h || !p || (!res && h.kind !== 'mark') || isMobile()) { tip.hidden = true; return; }
       let html = '';
       if (h.kind === 'mark') html = esc(app.tp('tip_flip'));

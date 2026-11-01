@@ -552,3 +552,6 @@ html.layout-mobile .sw-cv{height:130px}
 .swpick-x{grid-column:2; grid-row:1 / span 2; padding:4px 10px; min-height:32px; cursor:pointer}
 html.layout-mobile .swpick{bottom:auto; top:58px; left:8px; right:8px; transform:none; max-width:none; padding:6px 8px 6px 12px}
 html.layout-mobile .swpick-q{font-size:13.5px}
+/* quiz: the prefixes that can be typed, under every numeric answer */
+.quiz-suffix{font-size:13px; color:var(--muted); line-height:1.6; margin-top:6px}
+.quiz-suffix b{color:var(--fg); font-size:14px; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace}
