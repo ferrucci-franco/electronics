@@ -300,5 +300,18 @@ const Q = (id, b, c, e, pnp) => ({ type: 'Q', id, n: [b, c, e], pnp: !!pnp, beta
   near('open base: VCE ~ VCC', r.el.Q1.vce, 5, 0.01);
 }
 
+// 32. lamp, real filament: I = I_n (V/V_n)^0.55
+{
+  const L = (V) => S.solve({ nodeCount: 2, elements: [{ type: 'V', id: 'V1', n: [1, 0], V }, { type: 'LMP', id: 'L1', n: [1, 0], Vn: 12, Pn: 5 }] });
+  near('lamp at V_n', L(12).el.L1.i, 5 / 12, 1e-6);
+  near('lamp at V_n/2: 68 % of I_n', L(6).el.L1.i, 5 / 12 * Math.pow(0.5, 0.55), 1e-6);
+  near('lamp reversed', L(-12).el.L1.i, -5 / 12, 1e-6);
+  near('lamp cold resistance', L(0.01).el.L1.i, 0.01 / (12 * 12 / 5 / 12), 1e-6);
+  // in series with a resistor (Newton)
+  const r = S.solve({ nodeCount: 3, elements: [V('V1', 1, 0, 12), R('R1', 1, 2, 10), { type: 'LMP', id: 'L1', n: [2, 0], Vn: 12, Pn: 5 }] });
+  truthy('lamp + R solves', r.ok); near('lamp + R: KVL', r.el.L1.v + r.el.R1.v, 12, 1e-9);
+  near('lamp + R: law', r.el.L1.i, 5 / 12 * Math.pow(r.el.L1.v / 12, 0.55), 1e-6);
+}
+
 console.log(`${count - fails}/${count} checks passed`);
 process.exit(fails ? 1 : 0);

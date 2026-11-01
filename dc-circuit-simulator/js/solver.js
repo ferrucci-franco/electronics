@@ -11,6 +11,8 @@
  *        breakdown voltage (Zener / avalanche, > 0) or none, rz: resistance in breakdown (cvd)
  *   { type:'OA', id, n:[inp,inn,out], sat, Vpos, Vneg } ideal op-amp, optional output saturation
  *   { type:'Q',  id, n:[b,c,e], pnp, beta, Vbe, Vcesat }  simple BJT (cutoff / active / saturation)
+ *   { type:'LMP', id, n:[a,b], Vn, Pn }   incandescent lamp, real filament: I = I_n (|V|/V_n)^0.55 (R grows with
+ *        the temperature, R ∝ V^0.45), with the cold resistance R_n/12 as a floor near 0 V
  *   linear dependent sources (controlled by the voltage between two nodes cn, or by the current of the
  *   ammeter-like element whose id is ctrl, entering its first terminal):
  *   { type:'E', id, n:[p,m], cn:[cp,cm], k }   v(p) − v(m) = k·v_x          (VCVS)
@@ -139,7 +141,28 @@
     };
   }
 
+  // tungsten filament: I = I_n (|v|/V_n)^LAMP_EXP, R never below the cold resistance R_hot / LAMP_COLD
+  const LAMP_EXP = 0.55, LAMP_COLD = 12;
+  function lampIV(el, v) {
+    const Vn = el.Vn, In = el.Pn / el.Vn, Rhot = Vn / In, Rcold = Rhot / LAMP_COLD;
+    const v0 = Vn * Math.pow(1 / LAMP_COLD, 1 / (1 - LAMP_EXP));   // where the power law meets the cold resistance
+    const a = Math.abs(v), s = v < 0 ? -1 : 1;
+    if (a <= v0) return { i: v / Rcold, g: 1 / Rcold };
+    const x = a / Vn;
+    return { i: s * In * Math.pow(x, LAMP_EXP), g: In * LAMP_EXP * Math.pow(x, LAMP_EXP - 1) / Vn };
+  }
+
   const DEV = {
+    LMP: {
+      stamp(S, el) {
+        const a = el.n[0], c = el.n[1];
+        const v = S.vguess[a] - S.vguess[c];
+        const d = lampIV(el, v);
+        S.g(a, c, d.g);
+        S.i(a, c, d.i - d.g * v);
+      },
+      tc(el, st, sol) { const i = lampIV(el, sol.v[el.n[0]] - sol.v[el.n[1]]).i; return [i, -i]; }
+    },
     R: {
       stamp(S, el) { S.g(el.n[0], el.n[1], 1 / el.R); },
       tc(el, st, sol) { const i = (sol.v[el.n[0]] - sol.v[el.n[1]]) / el.R; return [i, -i]; }
@@ -388,7 +411,7 @@
       if (skip.has(el)) continue;
       const n = el.n;
       switch (el.type) {
-        case 'R': case 'V': case 'AM': case 'D': case 'VT': case 'E': case 'H': con.union(n[0], n[1]); break;
+        case 'R': case 'V': case 'AM': case 'D': case 'VT': case 'E': case 'H': case 'LMP': con.union(n[0], n[1]); break;
         case 'Q': con.union(n[0], n[2]); con.union(n[1], n[2]); break;
         case 'OA': con.union(n[2], 0); break;
         default: break;
@@ -648,7 +671,7 @@
     const N = ckt.nodeCount;
     const Vt = thermalVoltage(opts.tempC);
     const topo = analyseTopology(ckt);
-    const ctx = { noHuge: !!opts.noHuge, Vt, skip: topo.skip, floating: topo.floating, hasExact: ckt.elements.some(el => (el.type === 'D' && el.model === 'exact') || (el.type === 'Q' && el.model === 'em')) };
+    const ctx = { noHuge: !!opts.noHuge, Vt, skip: topo.skip, floating: topo.floating, hasExact: ckt.elements.some(el => (el.type === 'D' && el.model === 'exact') || (el.type === 'Q' && el.model === 'em') || el.type === 'LMP') };
     const result = { ok: false, issues: topo.issues.slice(), Vt };
     if (topo.issues.some(i => i.level === 'error')) return result;
 
@@ -771,7 +794,7 @@
     const base = ckt.elements.filter(el => !exclude.has(el.id));
     const out = { a, b };
     if (a === b) { out.error = 'samenode'; return out; }
-    const nl = base.filter(el => el.type === 'D' || el.type === 'Q' || (el.type === 'OA' && el.sat));
+    const nl = base.filter(el => el.type === 'D' || el.type === 'Q' || el.type === 'LMP' || (el.type === 'OA' && el.sat));
     const nonlinear = nl.length > 0;
     out.nonlinear = nonlinear;
     out.nonlinearIds = nl.map(el => el.id);
@@ -819,7 +842,7 @@
     return out;
   }
 
-  const api = { solve, thevenin, luSolve, thermalVoltage, bjtEM, GMIN };
+  const api = { lampIV, solve, thevenin, luSolve, thermalVoltage, bjtEM, GMIN };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else (root.DCS = root.DCS || {}).solver = api;
 })(typeof window !== 'undefined' ? window : globalThis);

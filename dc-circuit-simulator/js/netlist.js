@@ -88,7 +88,10 @@
       switch (c.type) {
         case 'resistor': elements.push({ type: 'R', id: c.id, n, R: pr.R }); break;
         // lamp: its hot resistance V_n² / P_n (a constant, for the cut-off / saturation exercises)
-        case 'lamp': elements.push({ type: 'R', id: c.id, n, R: Math.max(1e-6, pr.Vn * pr.Vn / pr.Pn) }); break;
+        case 'lamp':
+          if (pr.lmodel === 'real') elements.push({ type: 'LMP', id: c.id, n, Vn: pr.Vn, Pn: pr.Pn });
+          else elements.push({ type: 'R', id: c.id, n, R: Math.max(1e-6, pr.Vn * pr.Vn / pr.Pn) });
+          break;
         case 'vsource': elements.push({ type: 'V', id: c.id, n, V: pr.V }); break;
         case 'isource': elements.push({ type: 'I', id: c.id, n, I: pr.I }); break;
         case 'ammeter': case 'isense': elements.push({ type: 'AM', id: c.id, n }); break;
