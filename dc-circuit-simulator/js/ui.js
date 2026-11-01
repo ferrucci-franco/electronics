@@ -270,6 +270,9 @@
       }
       openModal(t('ex_title'), g);
     });
+    // quiz: the decks, and the quiz itself (a tab of the panel)
+    ui.quiz = DCS.quiz.create(app);
+    $('quizBtn').addEventListener('click', () => ui.quiz.chooser());
     $('settingsBtn').addEventListener('click', () => openModal(t('set_title'), settingsForm()));
 
     function settingsForm() {
@@ -488,7 +491,7 @@
       if (name !== 'thev' && app.overlay.hl) { app.overlay.hl = null; app.requestRender(); }
       if (open && !isMobile()) ui.setPanelHidden('side', false);
       document.querySelectorAll('.tabs [data-tab]').forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
-      for (const n of ['props', 'results', 'thev']) $('pane-' + n).hidden = n !== name;
+      for (const n of ['props', 'results', 'thev', 'quiz']) $('pane-' + n).hidden = n !== name;
       if (open && isMobile()) $('side').classList.add('open');
       ui.update();
     };
@@ -782,6 +785,7 @@
       card.appendChild(row);
       pane.appendChild(card);
 
+      if (quizHidden()) return;
       // results of this element
       if (res && res.el[c.id] && c.type !== 'ground') pane.appendChild(resultsCard(c, res.el[c.id], res));
       ivCard(pane);
@@ -977,7 +981,11 @@
     }
 
     /* ---------- results pane ---------- */
+    // during a quiz question the simulated values stay hidden
+    const quizHidden = () => !!(app.quizHidden && app.quizHidden());
+    const hiddenNote = (pane) => { pane.innerHTML = ''; pane.appendChild(el('div', { class: 'card' }, `<div class="hint">${t('quiz_hidden')}</div>`)); };
     function renderResults() {
+      if (quizHidden()) { hiddenNote($('pane-results')); return; }
       const pane = $('pane-results');
       pane.innerHTML = '';
       issuesInto(pane);
@@ -1122,6 +1130,7 @@
 
     /* ---------- Thévenin pane ---------- */
     function renderThev() {
+      if (quizHidden()) { hiddenNote($('pane-thev')); return; }
       const pane = $('pane-thev');
       pane.innerHTML = '';
       if (app.overlay.hl) { app.overlay.hl = null; app.requestRender(); }
@@ -1337,7 +1346,8 @@
       ui.updateHistory();
       if (tab === 'props') renderProps();
       else if (tab === 'results') renderResults();
-      else renderThev();
+      else if (tab === 'thev') renderThev();
+      // (the quiz pane draws itself, so that an answer being typed is not lost)
       ui.updateMonitor();
       ui.updateThevMon();
       qsCheck();
@@ -1500,6 +1510,7 @@
     // the whole window moves it (not only its title); ✕ closes it
     dragByHead(tmon, tmon);
     ui.updateThevMon = function () {
+      if (quizHidden()) { tmon.hidden = true; return; }
       if (!app.thevPinned || !app.thev) { tmon.hidden = true; if (!app.thev) app.thevPinned = false; return; }
       const r = app.thev.res;
       tmon.hidden = false;
@@ -1529,6 +1540,7 @@
       ui.updateMonitor();
     };
     ui.updateMonitor = function () {
+      if (quizHidden()) { monWins.forEach(w => { w.mon.hidden = true; }); return; }
       const ms = app.monitors;
       for (let k = 0; k < MAXMON; k++) if (ms[k] && !ms[k].ids.every(id => app.circuit.comps.some(c => c.id === id))) ms[k] = null;
       monWins.forEach((w, k) => updateMonWin(w, app.monitors[k]));

@@ -50,12 +50,12 @@
     for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) ctx.fillRect((c + quiet) * m, (r + quiet) * m, m, m);
   }
 
-  async function showQR(app, ui) {
+  async function showQR(app, ui, url0, name0) {
     const t = app.t;
-    const url = await app.shareLink();
+    const url = url0 || await app.shareLink();
     try { await loadScript('js/vendor/qrcode.js'); } catch (e) { app.toast(t('qr_libfail')); return; }
     const q = makeQR(url);
-    const name = (app.tabs && app.tabs[app.tabIdx] && app.tabs[app.tabIdx].name) || '';
+    const name = name0 || (app.tabs && app.tabs[app.tabIdx] && app.tabs[app.tabIdx].name) || '';
     const box = el('div', { class: 'qrbox' });
     if (!q) {
       box.appendChild(el('p', null, t('qr_toolong')));
@@ -197,5 +197,5 @@
     tick();
   }
 
-  DCS.share = { showQR, scan, makeQR };
+  DCS.share = { showQR, showQRFor: (app, ui, url, name) => showQR(app, ui, url, name), scan, makeQR };
 })(window);

@@ -38,6 +38,7 @@
       </div>
       <div class="hdr-group">
         <button id="examplesBtn" type="button"><svg viewBox="0 0 24 24"><path d="M4 19.5V5a2 2 0 0 1 2-2h14v16H6a2 2 0 0 0-2 2z"/><path d="M8 7h8"/></svg><span data-i18n="examples">Examples</span></button>
+        <button id="quizBtn" type="button"><svg viewBox="0 0 24 24"><path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c3 2 9 2 12 0v-5"/><path d="M22 9v6"/></svg><span data-i18n="quiz">Quiz</span></button>
         <button id="fileBtn" type="button"><svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg><span data-i18n="file">File</span></button>
         <button id="settingsBtn" class="icon" type="button" data-i18n-title="settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span class="mlabel" data-i18n="settings">Settings</span></button>
         <button id="helpBtn" class="icon" type="button" data-i18n-title="help"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M9.2 9.3a3 3 0 0 1 5.6 1c0 2-3 2.6-3 4.2"/><circle cx="12" cy="17.6" r=".6" fill="currentColor"/></svg><span class="mlabel" data-i18n="help">Help</span></button>
@@ -116,10 +117,12 @@
       <button type="button" data-tab="props" data-i18n="tab_props">Element</button>
       <button type="button" data-tab="results" data-i18n="tab_results">Results</button>
       <button type="button" data-tab="thev" data-i18n="tab_thev">Thévenin &amp; R<sub>eq</sub></button>
+      <button type="button" data-tab="quiz" data-i18n="quiz" hidden>Quiz</button>
     </div>
     <div class="pane" id="pane-props"></div>
     <div class="pane" id="pane-results" hidden></div>
     <div class="pane" id="pane-thev" hidden></div>
+    <div class="pane" id="pane-quiz" hidden></div>
     <div class="muted copyright">
       © 2026 Franco Ferrucci ·
       <a href="https://ferrucci-franco.github.io/electronics/" target="_blank" rel="noopener">ferrucci-franco.github.io/electronics</a>
@@ -159,6 +162,8 @@
 <script src="js/req.js"></script>
 <script src="js/ivplot.js"></script>
 <script src="js/share.js"></script>
+<script src="js/quiz.js"></script>
+<script src="js/decks/transistor.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/app.js"></script>
 </body>
