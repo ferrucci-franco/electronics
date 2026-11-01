@@ -335,9 +335,30 @@
     };
 
     /* ---------- what varies (x), the family (f): a tap on a component ---------- */
-    let picking = null;
-    function startPick(what) { picking = what; app.sweepPicking = true; app.hint(t(what === 'f' ? 'sw_pick_f' : 'sw_pick')); render(); }
-    function stopPick() { picking = null; app.sweepPicking = false; app.hint(null); }
+    // while a component is being chosen the plot is put away: only a small banner with the question and ✕, so
+    // that the whole circuit is there to tap on; the plot comes (back) once the component is chosen
+    let picking = null, inUpdate = false;
+    const banner = el('div', 'swpick');
+    banner.hidden = true;
+    stage.appendChild(banner);
+    function startPick(what) { picking = what; app.sweepPicking = true; if (!inUpdate) update(false); }
+    function stopPick() { picking = null; app.sweepPicking = false; banner.hidden = true; }
+    function cancelPick() {
+      const s = sw();
+      if (s && !s.x) { stopPick(); app.checkpoint(); delete app.circuit.sweep; app.commit(); return; }   // nothing to plot yet: no sweep
+      stopPick(); update(false);
+    }
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && picking && !banner.hidden) { e.stopPropagation(); cancelPick(); } }, true);
+    function showBanner(cvs) {
+      banner.innerHTML = '';
+      const names = cvs.filter(Boolean).map(q => sub(q.name)).join(', ');
+      if (names) banner.appendChild(el('div', 'swpick-what', esc(tp('sw_title')) + ' · ' + names));
+      banner.appendChild(el('div', 'swpick-q', esc(t(picking === 'f' ? 'sw_pick_f' : 'sw_pick'))));
+      const x = btn('✕', cancelPick, 'swpick-x');
+      x.title = tp('cancel_esc');
+      banner.appendChild(x);
+      banner.hidden = false;
+    }
     // the editor hands over the component tapped while picking; true when it was taken
     function pick(c) {
       const s = sw();
@@ -539,7 +560,7 @@
       const s = sw();
       const hidden = (app.quizHidden && app.quizHidden());
       if (!s || hidden) {
-        win.hidden = true; closeMenu();
+        win.hidden = true; banner.hidden = true; closeMenu();
         if (!s && app.sweepPicking) stopPick();
         return;
       }
@@ -549,7 +570,9 @@
       if (!s.ys.length) { delete app.circuit.sweep; win.hidden = true; stopPick(); return; }
       if (s.x && !xcomp()) s.x = null;
       if (s.f && (!fcomp() || !fparam())) delete s.f;
-      if (!s.x && picking !== 'x') startPick('x');
+      if (!s.x && picking !== 'x') { inUpdate = true; startPick('x'); inUpdate = false; }
+      if (picking) { win.hidden = true; showBanner(s.ys.map(y => curve(y, app.circuit, net))); return; }
+      banner.hidden = true;
       const wasHidden = win.hidden;
       win.hidden = false;
       if (wasHidden) requestAnimationFrame(() => { ui.clampFloats(); makeRoom(); });
@@ -865,7 +888,7 @@
     // the probes drawn on the circuit: the nodes measured, with their letter in the colour of the curve
     function probes() {
       const s = sw();
-      if (!s || win.hidden || !app.net) return null;
+      if (!s || (win.hidden && banner.hidden) || !app.net) return null;
       const out = [];
       const fam = !!fcomp();
       for (const y of s.ys) {
