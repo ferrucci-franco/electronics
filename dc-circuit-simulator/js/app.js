@@ -798,11 +798,15 @@
     app.tabs.push({ name: name || tabName(), circuit: JSON.stringify(circuit || JSON.parse(EMPTY)) });
     showTab(app.tabs.length - 1);
   };
-  app.closeTab = function (k) {
+  app.closeTab = async function (k) {
     const t = app.tabs[k];
     let c = null;
     try { c = k === app.tabIdx ? app.circuit : JSON.parse(t.circuit || EMPTY); } catch (e) { /* ignore */ }
-    if (c && c.comps && c.comps.length && !confirm(app.tp('tab_close_confirm', { name: t.name }))) return;
+    if (c && c.comps && c.comps.length) {
+      const esc = (s) => String(s).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+      const ok = await app.ui.confirm(esc(app.tp('tab_close_confirm', { name: t.name })), { ok: app.tp('dlg_close'), danger: true });
+      if (!ok || app.tabs[k] !== t) return;
+    }
     keepCurrent();
     app.tabs.splice(k, 1);
     if (!app.tabs.length) app.tabs.push({ name: tabName(), circuit: EMPTY });

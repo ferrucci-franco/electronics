@@ -193,6 +193,45 @@
     $('modalClose').addEventListener('click', closeModal);
     modal.addEventListener('pointerdown', (e) => { if (e.target === modal) closeModal(); });
 
+    /* ---------- dialogs of the app (instead of the browser's confirm / prompt): a small card over everything;
+     * Enter = OK, Esc or a tap outside = cancel. They return a promise. ---------- */
+    function dialog(opts) {
+      return new Promise((resolve) => {
+        const back = el('div', { class: 'dlg-backdrop' });
+        const card = el('div', { class: 'dlg', role: 'dialog', 'aria-modal': 'true' });
+        if (opts.title) card.appendChild(el('h3', null, opts.title));
+        if (opts.message) card.appendChild(el('p', null, opts.message));
+        let inp = null;
+        if (opts.input != null) {
+          inp = el('input', { type: 'text', class: 'dlg-in', spellcheck: 'false', maxlength: String(opts.maxlength || 40) });
+          inp.value = opts.input;
+          card.appendChild(inp);
+        }
+        const row = el('div', { class: 'dlg-btns' });
+        const done = (ok) => {
+          document.removeEventListener('keydown', key, true);
+          back.remove();
+          resolve(ok ? (inp ? inp.value : true) : (inp ? null : false));
+        };
+        const cancel = button(opts.cancel || t('dlg_cancel'), () => done(false));
+        const okB = button(opts.ok || t('dlg_ok'), () => done(true), opts.danger ? 'danger-solid' : 'primary');
+        row.appendChild(cancel); row.appendChild(okB);
+        card.appendChild(row);
+        back.appendChild(card);
+        document.body.appendChild(back);
+        back.addEventListener('pointerdown', (e) => { if (e.target === back) done(false); });
+        const key = (e) => {
+          if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); done(false); }
+          else if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); done(true); }
+          else e.stopPropagation();   // (no shortcut of the editor while the dialog is open)
+        };
+        document.addEventListener('keydown', key, true);
+        requestAnimationFrame(() => { if (inp) { inp.focus(); inp.select(); } else okB.focus(); });
+      });
+    }
+    ui.confirm = (message, opts) => dialog(Object.assign({ message }, opts || {}));
+    ui.prompt = (title, value, opts) => dialog(Object.assign({ title, input: value || '' }, opts || {}));
+
     /* ---------- circuit tabs ---------- */
     ui.updateTabs = function () {
       const bar = $('tabbar');
@@ -206,8 +245,7 @@
         b.addEventListener('click', (e) => { if (!x.contains(e.target)) app.switchTab(k); });
         b.addEventListener('dblclick', (e) => {
           if (x.contains(e.target)) return;
-          const n = prompt(app.tp('tab_rename'), tb.name);
-          if (n && n.trim()) app.renameTab(k, n.trim().slice(0, 40));
+          ui.prompt(esc(app.tp('tab_rename')), tb.name).then((n) => { if (n && n.trim()) app.renameTab(k, n.trim().slice(0, 40)); });
         });
         x.addEventListener('click', (e) => { e.stopPropagation(); app.closeTab(k); });
         bar.appendChild(b);
