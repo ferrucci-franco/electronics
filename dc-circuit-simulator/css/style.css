@@ -555,3 +555,4 @@ html.layout-mobile .swpick-q{font-size:13.5px}
 /* quiz: the prefixes that can be typed, under every numeric answer */
 .quiz-suffix{font-size:13px; color:var(--muted); line-height:1.6; margin-top:6px}
 .quiz-suffix b{color:var(--fg); font-size:14px; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace}
+.quiz-suffix span{white-space:nowrap}
