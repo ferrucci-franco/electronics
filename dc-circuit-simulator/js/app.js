@@ -314,7 +314,7 @@
       return { comps, wires: ws, names: comps.filter(c => c.type !== 'ground').map(c => c.name || app.tp('c_' + c.type)), cut: pairs[1 - k].filter(h => !h.term), look };
     });
     // by default the side that has an equivalent (no diode, transistor or saturating op-amp), else the larger one
-    const lin = sides.map(s => !s.comps.some(c => C.isDiode(c) || (c.type === 'lamp' && c.props.lmodel === 'real') || c.type === 'rgbled' || c.type === 'bjt' || (c.type === 'opamp' && c.props.sat)));
+    const lin = sides.map(s => !s.comps.some(c => C.isDiode(c) || (c.type === 'lamp' && c.props.lmodel === 'real') || c.type === 'rgbled' || c.type === 'bjt' || c.type === 'mosfet' || (c.type === 'opamp' && c.props.sat)));
     const n = sides.map(s => s.names.length);
     return { sides, def: lin[0] !== lin[1] ? (lin[1] ? 1 : 0) : n[1] > n[0] ? 1 : 0 };
   }
@@ -390,7 +390,7 @@
     if (!res || !res.ok || !app.settings.animate) { app.flow = null; return; }
     const segs = [];
     for (const pieces of app.wireCur.values()) for (const p of pieces) segs.push({ x1: p.x1, y1: p.y1, x2: p.x2, y2: p.y2, i: p.i });
-    const inner = { opamp: [[-2, 1], [-2, -1], [2, 0]], bjt: [[-0.45, 0], [1, -1.15], [1, 1.15]], rgbled: [[-1.25, -1.1], [-1.25, 0], [-1.25, 1.1], [0.95, 0]] };
+    const inner = { opamp: [[-2, 1], [-2, -1], [2, 0]], bjt: [[-0.45, 0], [1, -1.15], [1, 1.15]], mosfet: [[-0.8, 0], [1, -0.78], [1, 0.78]], rgbled: [[-1.25, -1.1], [-1.25, 0], [-1.25, 1.1], [0.95, 0]] };
     for (const c of app.circuit.comps) {
       const r = res.el[c.id];
       if (!r) continue;
@@ -532,7 +532,7 @@
   // direction of the wheel for values: +1 classic (wheel up = dy < 0), −1 "natural" scrolling (macOS default)
   const isMac = /Mac|iPhone|iPad/.test(navigator.platform || '') || /Mac OS X/.test(navigator.userAgent || '');
   app.wheelSign = () => (app.settings.wheelDir === 'normal' ? 1 : app.settings.wheelDir === 'inverted' ? -1 : (isMac ? -1 : 1));
-  app.valueKey = (c) => ({ resistor: 'R', vsource: 'V', isource: 'I', pot: 'alpha', bjt: 'beta', depv: 'k', depi: 'k' })[c.type] || null;
+  app.valueKey = (c) => ({ resistor: 'R', vsource: 'V', isource: 'I', pot: 'alpha', bjt: 'beta', mosfet: 'Vth', depv: 'k', depi: 'k' })[c.type] || null;
   let adjustT = 0;
   app.adjustValue = function (c, up) {
     const key = app.valueKey(c);
@@ -649,7 +649,7 @@
       const type = opts.type;
       const dm = app.settings.defModel;
       const props = Object.assign(C.defaults(type), (type === 'diode' || type === 'schottky' || type === 'zener') ? { model: dm } : (type === 'led' || type === 'rgbled') && dm === 'exact' ? { model: 'exact' } : {}, opts.props || {});
-      app.place = { type, props, rot: C.TYPES[type].defRot || 0, flip: type === 'bjt' && props.pol === 'pnp' };
+      app.place = { type, props, rot: C.TYPES[type].defRot || 0, flip: (type === 'bjt' && props.pol === 'pnp') || (type === 'mosfet' && props.pol === 'pmos') };
     } else app.place = null;
     if (tool !== 'select') app.sel.clear();
     // phone: get the bottom sheet out of the way while placing, wiring or picking the Thévenin terminals

@@ -11,6 +11,11 @@
  *        breakdown voltage (Zener / avalanche, > 0) or none, rz: resistance in breakdown (cvd)
  *   { type:'OA', id, n:[inp,inn,out], sat, Vpos, Vneg } ideal op-amp, optional output saturation
  *   { type:'Q',  id, n:[b,c,e], pnp, beta, Vbe, Vcesat }  simple BJT (cutoff / active / saturation)
+ *   { type:'M',  id, n:[g,d,s], pmos, model, Vth, Ron, K, lambda }  enhancement MOSFET, body tied to the source,
+ *        no gate current. model 'sw': a switch, open below V_th, R_on above (piecewise linear);
+ *        model 'sq': square law, I_D = 0 (cut-off), K[2(V_GS−V_th)V_DS − V_DS²](1+λV_DS) (ohmic, V_DS < V_GS−V_th),
+ *        K(V_GS−V_th)²(1+λV_DS) (saturation, constant current); symmetric (drain and source swap when V_DS < 0).
+ *        PMOS: the same with every voltage and current reversed (V_th > 0 is the magnitude)
  *   { type:'LMP', id, n:[a,b], Vn, Pn }   incandescent lamp, real filament: I = I_n (|V|/V_n)^0.55 (R grows with
  *        the temperature, R ∝ V^0.45), with the cold resistance R_n/12 as a floor near 0 V
  *   linear dependent sources (controlled by the voltage between two nodes cn, or by the current of the
@@ -150,6 +155,31 @@
     if (a <= v0) return { i: v / Rcold, g: 1 / Rcold };
     const x = a / Vn;
     return { i: s * In * Math.pow(x, LAMP_EXP), g: In * LAMP_EXP * Math.pow(x, LAMP_EXP - 1) / Vn };
+  }
+
+  /* square-law MOSFET (n-channel signs): drain current and its derivatives gm = ∂I/∂V_GS, gds = ∂I/∂V_DS */
+  function mosSq(el, vgs, vds) {
+    if (vds < 0) {
+      // drain and source swap: I(vgs, vds) = −f(vgs − vds, −vds)
+      const r = mosSq(el, vgs - vds, -vds);
+      return { id: -r.id, gm: -r.gm, gds: r.gm + r.gds };
+    }
+    const K = el.K, lam = el.lambda || 0, vov = vgs - el.Vth;
+    if (vov <= 0) return { id: 0, gm: 0, gds: 0 };
+    const cl = 1 + lam * vds;
+    if (vds < vov) {
+      const f = 2 * vov * vds - vds * vds;
+      return { id: K * f * cl, gm: 2 * K * vds * cl, gds: K * (2 * vov - 2 * vds) * cl + K * f * lam };
+    }
+    return { id: K * vov * vov * cl, gm: 2 * K * vov * cl, gds: K * vov * vov * lam };
+  }
+  // region of a MOSFET from its (n-channel signed) voltages
+  function mosRegion(el, vgs, vds) {
+    const a = vds >= 0 ? vgs : vgs - vds;   // gate to the terminal acting as source
+    const vov = a - el.Vth;
+    if (vov <= 0) return 'off';
+    if (el.model === 'sw') return 'ohm';
+    return Math.abs(vds) < vov ? 'ohm' : 'sat';
   }
 
   const DEV = {
@@ -371,6 +401,54 @@
     }
   };
 
+  DEV.M = {
+    states(el) { return el.model === 'sq' ? null : ['off', 'on']; },
+    stamp(S, el, st, br, k) {
+      // the gate is insulated: no conductance at all (a gate left floating gets the leakage of floating nodes)
+      const [g, d, s] = el.n;
+      if (el.model !== 'sq') {
+        if (st === 'on') S.g(d, s, 1 / el.Ron);
+        else S.g(d, s, GMIN * 1e-3);
+        return;
+      }
+      // Newton linearisation; the steps of V_GS and V_DS are limited so that a jump far into another region
+      // cannot run away
+      const sg = el.pmos ? -1 : 1;
+      const old = S.dv[k];
+      let vgs = sg * (S.vguess[g] - S.vguess[s]), vds = sg * (S.vguess[d] - S.vguess[s]);
+      if (old) {
+        const lim = (x, o) => Math.max(o - 2, Math.min(o + 2, x));
+        const a = lim(vgs, old.gs), b = lim(vds, old.ds);
+        if (a !== vgs || b !== vds) S.limited = true;
+        vgs = a; vds = b;
+      }
+      S.dv[k] = { gs: vgs, ds: vds };
+      const m = mosSq(el, vgs, vds);
+      const A = m.gm, B = m.gds, I0 = sg * (m.id - m.gm * vgs - m.gds * vds);
+      // current into the drain: A(V_G − V_S) + B(V_D − V_S) + I0, out of the source
+      S.mat(d, g, A); S.mat(d, d, B); S.mat(d, s, -A - B); S.inj(d, -I0);
+      S.mat(s, g, -A); S.mat(s, d, -B); S.mat(s, s, A + B); S.inj(s, I0);
+      S.g(d, s, GMIN);
+    },
+    check(el, st, sol) {
+      if (el.model === 'sq') return null;
+      const [g, d, s] = el.n, sg = el.pmos ? -1 : 1, v = sol.v;
+      const vds = sg * (v[d] - v[s]);
+      const a = vds >= 0 ? sg * (v[g] - v[s]) : sg * (v[g] - v[d]);
+      if (st === 'off' && a > el.Vth + VTOL) return { next: 'on', mag: a - el.Vth };
+      if (st === 'on' && a < el.Vth - VTOL) return { next: 'off', mag: el.Vth - a };
+      return null;
+    },
+    tc(el, st, sol) {
+      const [g, d, s] = el.n, v = sol.v, sg = el.pmos ? -1 : 1;
+      const ig = 0;
+      let idr;
+      if (el.model === 'sq') idr = sg * mosSq(el, sg * (v[g] - v[s]), sg * (v[d] - v[s])).id + GMIN * (v[d] - v[s]);
+      else idr = (v[d] - v[s]) * (st === 'on' ? 1 / el.Ron : GMIN * 1e-3);
+      return [ig, idr, -(ig + idr)];
+    }
+  };
+
   /* ---------- topology checks ---------- */
   function makeDSU(n) {
     const p = new Int32Array(n);
@@ -413,6 +491,7 @@
       switch (el.type) {
         case 'R': case 'V': case 'AM': case 'D': case 'VT': case 'E': case 'H': case 'LMP': con.union(n[0], n[1]); break;
         case 'Q': con.union(n[0], n[2]); con.union(n[1], n[2]); break;
+        case 'M': con.union(n[1], n[2]); break;
         case 'OA': con.union(n[2], 0); break;
         default: break;
       }
@@ -671,7 +750,7 @@
     const N = ckt.nodeCount;
     const Vt = thermalVoltage(opts.tempC);
     const topo = analyseTopology(ckt);
-    const ctx = { noHuge: !!opts.noHuge, Vt, skip: topo.skip, floating: topo.floating, hasExact: ckt.elements.some(el => (el.type === 'D' && el.model === 'exact') || (el.type === 'Q' && el.model === 'em') || el.type === 'LMP') };
+    const ctx = { noHuge: !!opts.noHuge, Vt, skip: topo.skip, floating: topo.floating, hasExact: ckt.elements.some(el => (el.type === 'D' && el.model === 'exact') || (el.type === 'Q' && el.model === 'em') || (el.type === 'M' && el.model === 'sq') || el.type === 'LMP') };
     const result = { ok: false, issues: topo.issues.slice(), Vt };
     if (topo.issues.some(i => i.level === 'error')) return result;
 
@@ -775,6 +854,12 @@
           r.state = r.vbe < 0.45 && Math.abs(r.ic) < 1e-6 ? 'off' : vbc > 0.45 ? 'sat' : 'act';
         }
       }
+      if (el.type === 'M') {
+        const [g, d, s] = el.n, sg = el.pmos ? -1 : 1;
+        r.vgs = sg * (sol.v[g] - sol.v[s]); r.vds = sg * (sol.v[d] - sol.v[s]); r.vgd = r.vgs - r.vds;
+        r.id = sg * tc[1];
+        r.state = mosRegion(el, r.vgs, r.vds);
+      }
       if (el.type === 'OA') { r.vout = sol.v[el.n[2]]; r.iout = -tc[2]; r.vd = sol.v[el.n[0]] - sol.v[el.n[1]]; r.vp = sol.v[el.n[0]]; r.vm = sol.v[el.n[1]]; }
       result.el[el.id] = r;
       pSum += p; pAbs += Math.abs(p);
@@ -802,12 +887,12 @@
     const base = ckt.elements.filter(el => !exclude.has(el.id));
     const out = { a, b };
     if (a === b) { out.error = 'samenode'; return out; }
-    const nl = base.filter(el => el.type === 'D' || el.type === 'Q' || el.type === 'LMP' || (el.type === 'OA' && el.sat));
+    const nl = base.filter(el => el.type === 'D' || el.type === 'Q' || el.type === 'M' || el.type === 'LMP' || (el.type === 'OA' && el.sat));
     const nonlinear = nl.length > 0;
     out.nonlinear = nonlinear;
     out.nonlinearIds = nl.map(el => el.id);
     // piecewise-linear only (ideal / constant-drop diodes, simple transistor, saturating op-amp): linear between breakpoints
-    out.pwl = nonlinear && nl.every(el => (el.type === 'D' && el.model !== 'exact') || (el.type === 'Q' && el.model !== 'em') || el.type === 'OA');
+    out.pwl = nonlinear && nl.every(el => (el.type === 'D' && el.model !== 'exact') || (el.type === 'Q' && el.model !== 'em') || (el.type === 'M' && el.model !== 'sq') || el.type === 'OA');
     const prevStates = opts.prevStates;
     // test solves may legitimately reach large voltages (a test current into a large resistance)
     const sopts = { prevStates, tempC: opts.tempC, prevV: opts.prevV, noHuge: !nonlinear };
@@ -850,7 +935,7 @@
     return out;
   }
 
-  const api = { lampIV, solve, thevenin, luSolve, thermalVoltage, bjtEM, GMIN };
+  const api = { lampIV, solve, thevenin, luSolve, thermalVoltage, bjtEM, mosSq, mosRegion, GMIN };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else (root.DCS = root.DCS || {}).solver = api;
 })(typeof window !== 'undefined' ? window : globalThis);

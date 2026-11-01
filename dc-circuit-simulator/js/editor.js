@@ -8,7 +8,7 @@
   const EDGE_MODES = new Set(['move', 'wire', 'band', 'endpoint']);
   const LONG_MS = 200;
   // keyboard: a letter takes a component (W is the wire tool, F mirrors)
-  const SHORTCUTS = { g: 'ground', r: 'resistor', v: 'vsource', i: 'isource', a: 'opamp', d: 'diode', z: 'zener', t: 'bjt', s: 'switch' };
+  const SHORTCUTS = { g: 'ground', r: 'resistor', v: 'vsource', i: 'isource', a: 'opamp', d: 'diode', z: 'zener', t: 'bjt', m: 'mosfet', s: 'switch' };
   const DBL_TOUCH_MS = 700;   // background: a second touch this soon after a tap starts a selection window (also slow)
   const DBL_ELEM_MS = { mouse: 380, touch: 420 };   // double click / quick double tap on an element = properties
 
@@ -155,7 +155,7 @@
       const ts = C.terminals(c);
       for (let j = 0; j < ts.length; j++) {
         if (ts[j][0] !== p[0] || ts[j][1] !== p[1]) continue;
-        const alongX = c.type === 'ground' ? false : c.type === 'bjt' ? j === 0 : true;
+        const alongX = c.type === 'ground' ? false : (c.type === 'bjt' || c.type === 'mosfet') ? j === 0 : true;
         return (((c.rot || 0) % 2 === 0) === alongX) ? 'h' : 'v';
       }
     }
@@ -1061,6 +1061,7 @@
       // T takes an NPN transistor; T again while placing it switches to PNP and back
       let props;
       if (take === 'bjt') props = { pol: app.tool === 'place' && app.place && app.place.type === 'bjt' && app.place.props.pol === 'npn' ? 'pnp' : 'npn' };
+      if (take === 'mosfet') props = { pol: app.tool === 'place' && app.place && app.place.type === 'mosfet' && app.place.props.pol === 'nmos' ? 'pmos' : 'nmos' };
       app.setTool('place', { type: take, props });
       if (this.lastMouse) { this.placeGhost(this.lastMouse); app.requestRender(); }
       return;

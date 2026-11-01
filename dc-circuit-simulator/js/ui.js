@@ -10,7 +10,8 @@
     { type: 'switch', key: 'switch' }, { type: 'button', key: 'button' },
     { type: 'depv', key: 'depv' }, { type: 'depi', key: 'depi' }, { type: 'isense', key: 'isense' }, { type: 'vsense', key: 'vsense' },
     { type: 'diode', key: 'diode' }, { type: 'zener', key: 'zener' }, { type: 'schottky', key: 'schottky' }, { type: 'led', key: 'led' }, { type: 'lamp', key: 'lamp' }, { type: 'rgbled', key: 'rgbled' }, { type: 'opamp', key: 'opamp' },
-    { type: 'bjt', key: 'npn', props: { pol: 'npn' } }, { type: 'bjt', key: 'pnp', props: { pol: 'pnp' } }
+    { type: 'bjt', key: 'npn', props: { pol: 'npn' } }, { type: 'bjt', key: 'pnp', props: { pol: 'pnp' } },
+    { type: 'mosfet', key: 'nmos', props: { pol: 'nmos' } }, { type: 'mosfet', key: 'pmos', props: { pol: 'pmos' } }
   ];
 
   const $ = (id) => document.getElementById(id);
@@ -460,6 +461,7 @@
         if (r.v !== undefined) html += ` · V ${fmt(r.v, 'V')} · I ${fmt(r.i, 'A')} · P ${fmt(r.p, 'W')}`;
         if (h.comp.type === 'opamp') html += ` · Vo ${fmt(r.vout, 'V')}`;
         if (h.comp.type === 'bjt') html += ` · I<sub>C</sub> ${fmt(r.ic, 'A')} · V<sub>CE</sub> ${fmt(r.vce, 'V')}`;
+        if (h.comp.type === 'mosfet') html += ` · I<sub>D</sub> ${fmt(r.id, 'A')} · V<sub>DS</sub> ${fmt(r.vds, 'V')} · ${t('mos_' + r.state)}`;
       }
       if (!html) { tip.hidden = true; return; }
       tip.innerHTML = html;
@@ -659,7 +661,7 @@
       }
       const c = cs[0];
       const T = C.TYPES[c.type];
-      const typeKey = c.type === 'bjt' ? (c.props.pol === 'pnp' ? 'pnp' : 'npn') : c.type;
+      const typeKey = c.type === 'bjt' ? (c.props.pol === 'pnp' ? 'pnp' : 'npn') : c.type === 'mosfet' ? (c.props.pol === 'pmos' ? 'pmos' : 'nmos') : c.type;
       const card = el('div', { class: 'card' });
       const h3 = el('h3');
       const icon = el('canvas');
@@ -977,6 +979,13 @@
           `<dt>I<sub>W</sub> (${t('wiper')})</dt><dd class="i">${fmt(r.tc[2], 'A')}</dd>` + pRow(r.p);
       } else if (c.type === 'rgbled') {
         html = ['R', 'G', 'B'].map((n, k) => { const q = r.ch[k]; return `<dt>${n}: V / I</dt><dd><span class="v">${fmt(q.v, 'V')}</span> · <span class="i">${fmt(q.i, 'A')}</span> · ${Math.round(100 * Math.max(0, Math.min(1, q.i / c.props.Imax)))} %</dd>`; }).join('') + pRow(r.p);
+      } else if (c.type === 'mosfet') {
+        const pm = c.props.pol === 'pmos';
+        html = `<dt>${t('res_region')}</dt><dd>${t('mos_' + r.state)}</dd>` +
+          `<dt>${t('mos_id')}</dt><dd class="i">${fmt(r.id, 'A')}</dd><dt>${t('mos_ig')}</dt><dd class="i">0 A</dd>` +
+          `<dt>${t(pm ? 'mos_vsg' : 'mos_vgs')}</dt><dd class="v">${fmt(r.vgs, 'V')}</dd><dt>${t(pm ? 'mos_vsd' : 'mos_vds')}</dt><dd class="v">${fmt(r.vds, 'V')}</dd>` +
+          (c.props.model === 'sq' && r.state === 'ohm' && Math.abs(r.id) > 1e-12 ? `<dt>R<sub>DS</sub> = V<sub>DS</sub>/I<sub>D</sub></dt><dd>${fmt(r.vds / r.id, 'Ω')}</dd>` : '') +
+          (c.props.model === 'sq' && r.state === 'sat' ? `<dt>g<sub>m</sub></dt><dd>${fmt(2 * c.props.K * (r.vgs - c.props.Vth) * (1 + c.props.lambda * r.vds), 'S')}</dd>` : '') + pRow(r.p);
       } else if (c.type === 'bjt') {
         const pnp = c.props.pol === 'pnp';
         html = `<dt>${t('res_region')}</dt><dd>${t('region_' + r.state)}</dd>` +
@@ -993,6 +1002,7 @@
         if (c.type === 'lamp') { const ls = C.lampState(c, r), real = c.props.lmodel === 'real'; html += real ? `<dt>${t('lamp_rvi')}</dt><dd>${Math.abs(r.i) > 1e-12 ? fmt(r.v / r.i, 'Ω') : '—'}</dd><dt>${t('lamp_r')}</dt><dd>${fmt(c.props.Vn * c.props.Vn / c.props.Pn, 'Ω')}</dd>` : `<dt>${t('lamp_r')}</dt><dd>${fmt(c.props.Vn * c.props.Vn / c.props.Pn, 'Ω')}</dd>`; html += `<dt>${t('lamp_bright')}</dt><dd>${Math.round(ls.b * 100)} %</dd><dt>${t('res_state')}</dt><dd>${t('lamp_' + ls.state)}</dd>`; }
       }
       card.appendChild(el('dl', { class: 'kv' }, html));
+      if (c.type === 'mosfet') card.appendChild(el('div', { class: 'hint' }, t('mos_region_note')));
       return card;
     }
 
@@ -1032,7 +1042,7 @@
       nd.appendChild(el('div', { class: 'hint' }, t('nodes_hint')));
       nd.appendChild(nt);
       pane.appendChild(nd);
-      const order = ['vsource', 'isource', 'resistor', 'pot', 'lamp', 'diode', 'zener', 'schottky', 'led', 'rgbled', 'bjt', 'opamp', 'depv', 'depi', 'ammeter', 'voltmeter', 'isense', 'vsense'];
+      const order = ['vsource', 'isource', 'resistor', 'pot', 'lamp', 'diode', 'zener', 'schottky', 'led', 'rgbled', 'bjt', 'mosfet', 'opamp', 'depv', 'depi', 'ammeter', 'voltmeter', 'isense', 'vsense'];
       const comps = app.circuit.comps.filter(c => c.type !== 'ground').sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type) || String(a.name).localeCompare(String(b.name), undefined, { numeric: true }));
       const tbl = el('table', { class: 'res' });
       let rows = `<tr><th>${t('tbl_comp')}</th><th>${t('tbl_v')}</th><th>${t('tbl_i')}</th><th>${t('tbl_p')}</th></tr>`;
@@ -1044,6 +1054,7 @@
         if (!app.settings.realDir && C.flippable(c)) { const sg = C.signed(c, r); v = sg.v; i = sg.i; }
         if (c.type === 'opamp') { v = r.vout; i = r.iout; p = r.p; }
         if (c.type === 'bjt') { v = r.vce; i = r.ic; }
+        if (c.type === 'mosfet') { v = r.vds; i = r.id; }
         if (c.type === 'rgbled') { v = NaN; i = r.tc[3]; }
         if (c.type === 'pot') { v = r.aw.v + r.wb.v; i = r.tc[0]; }
         if (c.type === 'opamp') { if (p > 0) pAbs += p; else pGen -= p; }
@@ -1093,6 +1104,10 @@
           const from = f.refI ? n[1] : n[0], to = f.refI ? n[0] : n[1];
           if (C.meterKind(c) !== 'V') { addI(from, 1, sub('I', c.name), sg.i); addI(to, -1, sub('I', c.name), sg.i); }
           branches.push({ c, plus: f.refV ? n[1] : n[0], minus: f.refV ? n[0] : n[1], v: sg.v });
+        } else if (c.type === 'mosfet') {
+          multi = true;
+          const s = c.props.pol === 'pmos' ? -1 : 1;
+          addI(n[1], s, sub('I', 'D,' + c.name), r.id); addI(n[2], -s, sub('I', 'D,' + c.name), r.id);
         } else if (c.type === 'bjt') {
           multi = true;
           const s = c.props.pol === 'pnp' ? -1 : 1;

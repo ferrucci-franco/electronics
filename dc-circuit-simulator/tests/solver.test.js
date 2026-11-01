@@ -313,5 +313,42 @@ const Q = (id, b, c, e, pnp) => ({ type: 'Q', id, n: [b, c, e], pnp: !!pnp, beta
   near('lamp + R: law', r.el.L1.i, 5 / 12 * Math.pow(r.el.L1.v / 12, 0.55), 1e-6);
 }
 
+// MOSFET (enhancement, body tied to the source)
+{
+  const M = (id, g, d, s, extra) => Object.assign({ type: 'M', id, n: [g, d, s], pmos: false, model: 'sq', Vth: 2, Ron: 1, K: 1e-3, lambda: 0 }, extra || {});
+  // switch model: on (V_GS = 5 V > V_th): R_on in series with R_D
+  let r = S.solve({ nodeCount: 4, elements: [V('VDD', 1, 0, 5), R('RD', 1, 2, 100), V('VG', 3, 0, 5), M('M1', 3, 2, 0, { model: 'sw' })] });
+  near('mos sw on I_D', r.el.M1.id, 5 / 101, 1e-6); truthy('mos sw on region', r.el.M1.state === 'ohm');
+  r = S.solve({ nodeCount: 4, elements: [V('VDD', 1, 0, 5), R('RD', 1, 2, 100), V('VG', 3, 0, 1), M('M1', 3, 2, 0, { model: 'sw' })] });
+  near('mos sw off I_D', r.el.M1.id, 0, 1e-9); near('mos sw off V_DS', r.el.M1.vds, 5, 1e-6); truthy('mos sw off region', r.el.M1.state === 'off');
+  // square law, saturation: V_GS = 3 V → I_D = K·1² = 1 mA, V_DS = 10 − 1 = 9 V
+  r = S.solve({ nodeCount: 4, elements: [V('VDD', 1, 0, 10), R('RD', 1, 2, 1000), V('VG', 3, 0, 3), M('M1', 3, 2, 0)] });
+  near('mos sat I_D', r.el.M1.id, 1e-3, 1e-6); near('mos sat V_DS', r.el.M1.vds, 9, 1e-6); truthy('mos sat region', r.el.M1.state === 'sat');
+  near('mos gate current', r.el.M1.tc[0], 0, 1e-9);
+  // ohmic: V_GS = 5 V, V_ov = 3: V_DS² − 7 V_DS + 10 = 0 → V_DS = 2 V, I_D = 8 mA
+  r = S.solve({ nodeCount: 4, elements: [V('VDD', 1, 0, 10), R('RD', 1, 2, 1000), V('VG', 3, 0, 5), M('M1', 3, 2, 0)] });
+  near('mos ohmic V_DS', r.el.M1.vds, 2, 1e-6); near('mos ohmic I_D', r.el.M1.id, 8e-3, 1e-6); truthy('mos ohmic region', r.el.M1.state === 'ohm');
+  // cut-off
+  r = S.solve({ nodeCount: 4, elements: [V('VDD', 1, 0, 10), R('RD', 1, 2, 1000), V('VG', 3, 0, 1.5), M('M1', 3, 2, 0)] });
+  near('mos off I_D', r.el.M1.id, 0, 1e-9); truthy('mos off region', r.el.M1.state === 'off');
+  // channel-length modulation: I_D = K·1²·(1 + λ V_DS), V_DS = 10 − 1000 I_D
+  r = S.solve({ nodeCount: 4, elements: [V('VDD', 1, 0, 10), R('RD', 1, 2, 1000), V('VG', 3, 0, 3), M('M1', 3, 2, 0, { lambda: 0.02 })] });
+  near('mos lambda', r.el.M1.id, 1e-3 * (1 + 0.02 * r.el.M1.vds), 1e-6); near('mos lambda KVL', r.el.M1.vds, 10 - 1000 * r.el.M1.id, 1e-6);
+  // PMOS: source at 10 V, gate at 7 V (V_SG = 3 V), drain to ground through 1 kΩ: 1 mA from source to drain
+  r = S.solve({ nodeCount: 4, elements: [V('VDD', 1, 0, 10), V('VG', 3, 0, 7), M('M1', 3, 2, 1, { pmos: true }), R('RD', 2, 0, 1000)] });
+  near('pmos I_D', r.el.M1.id, 1e-3, 1e-6); near('pmos V_D', r.v[2], 1, 1e-6); near('pmos V_SD', r.el.M1.vds, 9, 1e-6); truthy('pmos sat', r.el.M1.state === 'sat');
+  // PMOS switch driving a load from the supply
+  r = S.solve({ nodeCount: 4, elements: [V('VDD', 1, 0, 12), V('VG', 3, 0, 0), M('M1', 3, 2, 1, { pmos: true, model: 'sw', Ron: 0.5 }), R('RL', 2, 0, 11.5)] });
+  near('pmos sw I', r.el.RL.i, 1, 1e-6);
+  // CMOS inverter: rails at the ends; at V_in = V_DD/2 (equal K and λ) the output is V_DD/2 by symmetry
+  const inv = (vin) => S.solve({ nodeCount: 4, elements: [V('VDD', 1, 0, 10), V('VIN', 2, 0, vin), M('MN', 2, 3, 0, { lambda: 0.01 }), M('MP', 2, 3, 1, { pmos: true, lambda: 0.01 })] });
+  near('cmos in 0', inv(0).v[3], 10, 1e-6); near('cmos in 10', inv(10).v[3], 0, 1e-6); near('cmos mid', inv(5).v[3], 5, 1e-6);
+  r = inv(4); near('cmos KCL', r.el.MN.id, r.el.MP.id, 1e-6);
+  // Thevenin sees the MOSFET as nonlinear (piecewise-linear with the switch model)
+  const th = S.thevenin({ nodeCount: 4, elements: [V('VDD', 1, 0, 5), R('RD', 1, 2, 100), V('VG', 3, 0, 5), M('M1', 3, 2, 0, { model: 'sw' })] }, 2, 0);
+  truthy('thev mos nonlinear', th.nonlinear && th.pwl);
+  near('thev mos sw', th.rth, 100 * 1 / 101, 1e-6);
+}
+
 console.log(`${count - fails}/${count} checks passed`);
 process.exit(fails ? 1 : 0);

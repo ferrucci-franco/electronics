@@ -8,8 +8,12 @@
   const subHtml = (s) => esc(s).replace(/_([A-Za-z0-9+−]+)/g, '<sub>$1</sub>');
   // the same on the canvas, from the alphabetic baseline yb; returns the width (draw = false only measures)
   function subText(ctx, s, x, yb, align, px, weight, draw) {
-    const m = /^([^_]*)_([A-Za-z0-9+−]+)(.*)$/.exec(s);
-    const parts = m ? [[m[1], px, 0], [m[2], Math.round(px * 0.74), Math.round(px * 0.3)], [m[3], px, 0]] : [[s, px, 0]];
+    // every "_xx" is a subscript ("V_GS ≥ V_th")
+    const parts = [];
+    const re = /_([A-Za-z0-9+−]+)/g;
+    let last = 0, m;
+    while ((m = re.exec(s))) { parts.push([s.slice(last, m.index), px, 0], [m[1], Math.round(px * 0.74), Math.round(px * 0.3)]); last = re.lastIndex; }
+    parts.push([s.slice(last), px, 0]);
     const font = (sz) => `${weight} ${sz}px ui-sans-serif, system-ui, sans-serif`;
     let wd = 0;
     for (const [t, sz] of parts) { ctx.font = font(sz); wd += ctx.measureText(t).width; }
@@ -65,6 +69,7 @@
     // dependent sources and their sensors have no characteristic of their own
     if (sel.some(c => C.isDep(c) || c.type === 'isense' || c.type === 'vsense')) return null;
     if (sel.length === 1 && sel[0].type === 'bjt') return { kind: 'bjt', c: sel[0], r: res.el[sel[0].id] };
+    if (sel.length === 1 && sel[0].type === 'mosfet') return { kind: 'mos', c: sel[0], r: res.el[sel[0].id] };
     if (sel.length === 1 && sel[0].type === 'opamp') return { kind: 'opamp', c: sel[0], r: res.el[sel[0].id] };
     const two = sel.filter(c => C.TYPES[c.type].terms.length === 2);
     if (!two.length || two.length !== sel.length) return null;
@@ -159,6 +164,7 @@
     const t = app.tp, tempC = app.settings.tempC;
     const spec = { kind: A.kind, series: [], lines: [], points: [], xlab: 'V', ylab: 'I', xu: 'V', yu: 'A' };
     if (A.kind === 'bjt') return bjtSpecs(app, A, t, tempC, opts, winOf);
+    if (A.kind === 'mos') return mosSpecs(app, A, t, tempC, opts, winOf);
     if (A.kind === 'opamp') {
       const c = A.c, r = A.r, p = c.props;
       const vp = p.sat ? Math.max(p.Vpos, p.Vneg) : Math.max(15, Math.abs(r.vout) * 1.3), vn = p.sat ? Math.min(p.Vpos, p.Vneg) : -vp;
@@ -362,6 +368,67 @@
     outSpec.titleHtml = app.t('iv_bjt');   // already written with <sub>
     outSpec.note = app.t((em ? 'iv_bjt_note_em' : 'iv_bjt_note') + (showLoad ? '' : '_q'));
     return [inSpec, outSpec];
+  }
+
+  /* MOSFET: transfer characteristic I_D(V_GS) at the operating V_DS, and output characteristics I_D(V_DS) for a
+   * few V_GS around the operating one, with the border between the ohmic region and saturation (square law),
+   * the operating point and (optional) the load line of the drain circuit (Thévenin of the rest). */
+  function mosSpecs(app, A, t, tempC, opts, winOf) {
+    const c = A.c, r = A.r, p = c.props, pm = p.pol === 'pmos', sq = p.model === 'sq';
+    const net = app.net, [, nd, ns] = net.compNodes.get(c.id);
+    const elM = net.ckt.elements.find(e => e.id === c.id);
+    const idOf = (vgs, vds) => (sq ? S.mosSq(elM, vgs, vds).id : (vgs >= p.Vth ? vds / p.Ron : 0));
+    const showLoad = !!app.settings.ivLoad;
+    let line = null;
+    {
+      const th = S.thevenin(net.ckt, pm ? ns : nd, pm ? nd : ns, { exclude: [c.id], tempC });
+      if (!th.error && isFinite(th.rth) && th.rth > 0 && isFinite(th.vth)) line = { p1: [th.vth, 0], p2: [0, th.vth / th.rth], voc: th.vth, isc: th.vth / th.rth };
+    }
+    const GS = pm ? 'V_SG' : 'V_GS', DS = pm ? 'V_SD' : 'V_DS';
+    /* ----- output ----- */
+    const vovQ = r.vgs - p.Vth;
+    const cut = !(vovQ > 1e-9);
+    const vov0 = !cut ? vovQ : Math.max(0.5, p.Vth / 2);
+    const levels = opts.levels || (sq ? [0.5, 1, 1.5, 2].map(f => p.Vth + f * vov0) : [p.Vth + vov0]);
+    const vdMax = Math.max(Math.abs(r.vds) * 1.3, line && line.voc > 0 && line.voc < 1e4 ? line.voc : 0, 1);
+    // switch: the closed channel is a steep line (1/R_on); the window is that of the circuit (Q, short-circuit current)
+    let idMax = sq ? Math.max(Math.abs(r.id) * 1.2, ...levels.map(v => idOf(v, vdMax))) : Math.max(Math.abs(r.id) * 1.3, 1e-3);
+    if (line && line.isc > 0 && (sq ? line.isc < idMax * 3 : line.isc < 1e3)) idMax = Math.max(idMax, line.isc * (sq ? 1 : 1.1));
+    const winOut = winOf(1, { v0: -0.05 * vdMax, v1: vdMax * 1.12, i0: -0.06 * idMax, i1: idMax * 1.12 });
+    const outSpec = { kind: 'mos-out', series: [], lines: [], points: [], regions: [], xu: 'V', yu: 'A', win: winOut, levels };
+    levels.forEach((vg, k) => {
+      const pts = [];
+      for (let j = 0; j <= 160; j++) { const v = winOut.v1 * j / 160; pts.push([v, idOf(vg, v)]); }
+      const on = Math.abs(vg - r.vgs) < 1e-9 * Math.max(1, Math.abs(vg));
+      outSpec.series.push({ name: (sq ? GS + ' = ' + U.format(vg, 'V') : GS + ' ≥ V_th (R_on)'), color: slot(k), pts, width: on || !sq ? 2.6 : 1.6, inline: sq, dim: cut });
+    });
+    // V_GS below the threshold: no current (the cut-off curve), bold when the transistor is off
+    outSpec.series.unshift({ name: GS + ' < V_th', color: slot(4), pts: [[0, 0], [winOut.v1, 0]], width: cut ? 3 : 1.4, inline: true });
+    if (sq) {
+      // the border V_DS = V_GS − V_th, where I_D = K·V_DS² (λ = 0): ohmic on its left, saturation on its right
+      const pts = [];
+      for (let j = 0; j <= 80; j++) { const v = winOut.v1 * j / 80, i = p.K * v * v * (1 + (p.lambda || 0) * v); if (i > winOut.i1 * 1.2) break; pts.push([v, i]); }
+      outSpec.lines.push({ name: t('iv_mos_border'), pts });
+    }
+    if (line && showLoad) outSpec.lines.push({ name: t('iv_load_mos'), p1: line.p1, p2: line.p2 });
+    outSpec.points.push({ name: 'Q', v: r.vds, i: r.id, label: `Q (${U.format(r.vds, 'V')}, ${U.format(r.id, 'A')}) · ${t('mos_' + r.state)}` });
+    outSpec.xlab = DS; outSpec.ylab = 'I_D';
+    outSpec.title = t('iv_mos_out', { ds: DS });
+    outSpec.note = app.t(sq ? 'iv_mos_note_sq' : 'iv_mos_note_sw');
+    /* ----- transfer ----- */
+    const vgMax = Math.max(r.vgs * 1.3, p.Vth * 2, levels[levels.length - 1] * 1.05, 1);
+    const vdT = Math.abs(r.vds) > 1e-6 ? r.vds : Math.max(1, vdMax / 2);
+    const pts = [];
+    for (let j = 0; j <= 160; j++) { const v = vgMax * j / 160; pts.push([v, idOf(v, vdT)]); }
+    let itMax = Math.max(Math.abs(r.id) * 1.3, idOf(vgMax, vdT), 1e-6);
+    const winTr = winOf(0, { v0: -0.05 * vgMax, v1: vgMax * 1.05, i0: -0.06 * itMax, i1: itMax * 1.12 });
+    const trSpec = { kind: 'mos-tr', series: [], lines: [{ name: 'V_th', vt: p.Vth }], points: [], regions: [], xu: 'V', yu: 'A', win: winTr };
+    trSpec.series.push({ name: t('iv_mos_at', { ds: DS, v: U.format(vdT, 'V') }), color: slot(0), pts, width: 2.6 });
+    trSpec.points.push({ name: 'Q', v: r.vgs, i: r.id, label: `Q (${U.format(r.vgs, 'V')}, ${U.format(r.id, 'A')})` });
+    trSpec.xlab = GS; trSpec.ylab = 'I_D';
+    trSpec.title = t('iv_mos_tr', { gs: GS });
+    trSpec.note = app.t('iv_mos_tr_note');
+    return [trSpec, outSpec];
   }
 
   /* ---------- plot ---------- */
