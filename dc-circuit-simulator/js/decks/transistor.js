@@ -337,9 +337,9 @@
     title: { fr: 'Transistor bipolaire en continu', es: 'Transistor bipolar en continua', en: 'Bipolar transistor in DC' },
     short: { fr: 'Transistor', es: 'Transistor', en: 'Transistor' },
     desc: {
-      fr: '15 questions, valeurs tirées au hasard : courant de base, IC, puissances, VCE, régimes, polarisation, une seule alimentation, commutation, LED et lampe.',
-      es: '15 preguntas, valores al azar: corriente de base, IC, potencias, VCE, regiones, polarización, una sola fuente, conmutación, LED y lámpara.',
-      en: '15 questions with random values: base current, IC, powers, VCE, regions, bias, single supply, switching, LED and lamp.'
+      fr: 'Polarisation, régimes et commutation (LED, lampe).',
+      es: 'Polarización, regiones y conmutación (LED, lámpara).',
+      en: 'Bias, regions and switching (LED, lamp).'
     },
     questions
   });

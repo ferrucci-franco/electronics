@@ -259,7 +259,7 @@
         const card = el('div', { class: 'ex-card quiz-card' });
         card.appendChild(el('b', null, esc(L(d.title))));
         card.appendChild(el('span', null, esc(L(d.desc))));
-        card.appendChild(el('span', { class: 'quiz-prog' }, t('quiz_prog', { n: d.questions.length, m: mastered }) + (pr.best != null ? ' · ' + t('quiz_best', { s: pr.best, n: pr.n }) : '')));
+        card.appendChild(el('span', { class: 'quiz-prog' }, t('quiz_prog', { n: d.questions.length }) + (pr.best != null ? ' · ' + t('quiz_best', { s: pr.best, n: pr.n }) : '')));
         const row = el('div', { class: 'btnrow' });
         row.appendChild(btn(t('quiz_start'), () => { app.closeModal(); Q.start(d.id); }, 'primary'));
         row.appendChild(btn('QR', () => DCS.share.showQRFor(app, app.ui, location.href.split('#')[0] + '#quiz=' + d.id, L(d.title))));
