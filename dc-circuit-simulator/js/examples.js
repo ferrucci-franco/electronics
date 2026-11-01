@@ -190,6 +190,26 @@
         w: [[[0, 7], [0, 6]], [[11, 0], [16, 0], [16, 4]]]
       }
     },
+    mosswitch: {
+      t: { en: 'MOSFET switching a lamp', fr: 'MOSFET commandant une lampe', es: 'MOSFET que enciende una lámpara' },
+      d: { en: 'Switch model. S1 closed: V_GS = 5 V > V_th = 2 V, the channel is a 0.1 Ω switch (I_D ≈ 0.41 A, V_DS ≈ 41 mV). The gate draws no current: RG only carries the 50 µA of RGS. Open S1: RGS pulls the gate to 0 V and the MOSFET is off.', fr: 'Modèle interrupteur. S1 fermé : V_GS = 5 V > V_th = 2 V, le canal est un interrupteur de 0,1 Ω (I_D ≈ 0,41 A, V_DS ≈ 41 mV). La grille ne consomme pas de courant : RG ne porte que les 50 µA de RGS. S1 ouvert : RGS ramène la grille à 0 V et le MOSFET est bloqué.', es: 'Modelo interruptor. S1 cerrado: V_GS = 5 V > V_th = 2 V, el canal es una llave de 0,1 Ω (I_D ≈ 0,41 A, V_DS ≈ 41 mV). La compuerta no consume corriente: por RG solo pasan los 50 µA de RGS. S1 abierto: RGS lleva la compuerta a 0 V y el MOSFET se corta.' },
+      s: {
+        c: [['vsource', 'Vin', 0, 9, 1, { V: 5 }], ['switch', 'S1', 2, 6, 0, { closed: true }], ['resistor', 'RG', 6, 6, 0, { R: 100 }], ['mosfet', 'M1', 10, 6, 0, { Ron: 0.1 }],
+          ['resistor', 'RGS', 8, 9, 1, { R: 100000 }], ['lamp', 'LP1', 11, 2, 1, { Vn: 12, Pn: 5, look: 'lamp_bulb' }], ['vsource', 'VCC', 19, 6, 1, { V: 12 }],
+          ['ground', '', 0, 11, 0], ['ground', '', 8, 11, 0], ['ground', '', 11, 8, 0], ['ground', '', 19, 8, 0]],
+        w: [[[0, 7], [0, 6]], [[8, 6], [8, 7]], [[11, 0], [19, 0], [19, 4]]]
+      }
+    },
+    mosamp: {
+      t: { en: 'MOSFET: common-source stage', fr: 'MOSFET : montage source commune', es: 'MOSFET: etapa fuente común' },
+      d: { en: 'Square-law model, K = 1 mA/V², V_th = 2 V. VG = 3 V: I_D = K(V_GS − V_th)² = 1 mA, V_DS = 9.8 V, saturation (a current source). Raise VG: I_D grows with the square of V_GS − V_th, until V_DS < V_GS − V_th (ohmic). Try a DC sweep of V_DS against VG.', fr: 'Modèle quadratique, K = 1 mA/V², V_th = 2 V. VG = 3 V : I_D = K(V_GS − V_th)² = 1 mA, V_DS = 9,8 V, régime saturé (une source de courant). Augmentez VG : I_D croît comme le carré de V_GS − V_th, jusqu’à V_DS < V_GS − V_th (ohmique). Essayez un balayage DC de V_DS en fonction de VG.', es: 'Modelo cuadrático, K = 1 mA/V², V_th = 2 V. VG = 3 V: I_D = K(V_GS − V_th)² = 1 mA, V_DS = 9,8 V, saturación (una fuente de corriente). Suba VG: I_D crece con el cuadrado de V_GS − V_th, hasta que V_DS < V_GS − V_th (óhmica). Pruebe un barrido DC de V_DS en función de VG.' },
+      s: {
+        c: [['vsource', 'VG', 0, 9, 1, { V: 3 }], ['resistor', 'RG', 4, 6, 0, { R: 10000 }], ['mosfet', 'M1', 10, 6, 0, { model: 'sq', K: 0.001 }],
+          ['resistor', 'RD', 11, 2, 1, { R: 2200 }], ['vsource', 'VDD', 19, 6, 1, { V: 12 }],
+          ['ground', '', 0, 11, 0], ['ground', '', 11, 8, 0], ['ground', '', 19, 8, 0]],
+        w: [[[0, 7], [0, 6], [2, 6]], [[6, 6], [8, 6]], [[11, 0], [19, 0], [19, 4]]]
+      }
+    },
     pnp: {
       t: { en: 'PNP current source', fr: 'Source de courant à PNP', es: 'Fuente de corriente con PNP' },
       d: { en: 'The PNP transistor keeps the load current almost constant: change RL between 100 Ω and 4 kΩ.', fr: 'Le transistor PNP maintient le courant de charge presque constant : faites varier RL entre 100 Ω et 4 kΩ.', es: 'El transistor PNP mantiene casi constante la corriente de carga: varíe RL entre 100 Ω y 4 kΩ.' },

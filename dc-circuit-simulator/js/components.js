@@ -186,6 +186,19 @@
         { key: 'VA', unit: 'V', def: 100, min: 0, max: 1e4, show: c => c.props.model === 'em' }
       ],
       valueText: (c, f, t) => 'β = ' + c.props.beta + (c.props.model === 'em' ? ' · ' + t('model_em_short') : '')
+    },
+    // enhancement MOSFET, body tied to the source (3 terminals); a switch (R_on) or the square law
+    mosfet: {
+      prefix: 'M', terms: [[-2, 0], [1, -2], [1, 2]], termNames: ['G', 'D', 'S'], box: [-2, -2, 1.8, 2],
+      props: [
+        { key: 'pol', type: 'select', options: ['nmos', 'pmos'], def: 'nmos' },
+        { key: 'model', type: 'select', options: ['sw', 'sq'], def: 'sw', help: 'mos_help' },
+        { key: 'Vth', unit: 'V', def: 2, min: 0, max: 100 },
+        { key: 'Ron', unit: 'Ω', def: 1, min: 1e-3, max: 1e6, show: c => c.props.model !== 'sq' },
+        { key: 'K', unit: 'A/V²', def: 0.05, min: 1e-9, max: 1e3, show: c => c.props.model === 'sq' },
+        { key: 'lambda', unit: '1/V', def: 0, min: 0, max: 1, show: c => c.props.model === 'sq' }
+      ],
+      valueText: (c, f) => 'Vth = ' + f(c.props.Vth, 'V')
     }
   };
 
@@ -535,6 +548,20 @@
         }
         P.tint(null);
       }
+    },
+    mosfet(P, c, us) {
+      const pmos = c.props.pol === 'pmos';
+      if (us) P.circle(0.3, 0, 1.4, false);
+      // gate, insulated from the channel; the channel broken in three (enhancement); body joined to the source
+      P.line([[-2, 0], [-0.8, 0]]);
+      P.line([[-0.8, -0.85], [-0.8, 0.85]]);
+      for (const [y0, y1] of [[-1.05, -0.5], [-0.25, 0.25], [0.5, 1.05]]) P.thick([[-0.35, y0], [-0.35, y1]]);
+      P.line([[-0.35, -0.78], [1, -0.78], [1, -2]]);
+      P.line([[-0.35, 0.78], [1, 0.78], [1, 2]]);
+      P.line([[-0.35, 0], [1, 0], [1, 0.78]]);
+      // the arrow on the body: into the channel (N), out of it (P)
+      if (!pmos) P.head(0.7, 0, -0.3, 0, 0.36);
+      else P.head(-0.3, 0, 0.75, 0, 0.36);
     },
     bjt(P, c, us) {
       const pnp = c.props.pol === 'pnp';

@@ -18,7 +18,7 @@
   // the names of the values, written for the axis (the part after _ is a subscript)
   const PNAME = {
     R: 'R', V: 'V', I: 'I', beta: 'β', alpha: 'α', k: 'k', Vf: 'V_γ', rd: 'r_d', Is: 'I_S', N: 'n', Vbr: 'V_BR', Vz: 'V_Z', rz: 'r_z',
-    Imax: 'I_max', Vn: 'V_n', Pn: 'P_n', Vbe: 'V_BE', Vcesat: 'V_CEsat', betaR: 'β_R', VA: 'V_A', Vpos: '+V_sat', Vneg: '−V_sat',
+    Imax: 'I_max', Vn: 'V_n', Pn: 'P_n', Vth: 'V_th', Ron: 'R_on', K: 'K', lambda: 'λ', Vbe: 'V_BE', Vcesat: 'V_CEsat', betaR: 'β_R', VA: 'V_A', Vpos: '+V_sat', Vneg: '−V_sat',
     VfR: 'V_γR', VfG: 'V_γG', VfB: 'V_γB'
   };
   // the values of a component that can be swept: its numeric properties shown now (the main one first)
@@ -71,6 +71,11 @@
         return [q('vbe', (p ? 'V_EB' : 'V_BE') + ' (' + n + ')', 'V'), q('vce', (p ? 'V_EC' : 'V_CE') + ' (' + n + ')', 'V'),
           q('ib', 'I_B (' + n + ')', 'A'), q('ic', 'I_C (' + n + ')', 'A'), q('p', 'P_' + n, 'W')];
       }
+      case 'mosfet': {
+        const p = c.props.pol === 'pmos';
+        return [q('vgs', (p ? 'V_SG' : 'V_GS') + ' (' + n + ')', 'V'), q('vds', (p ? 'V_SD' : 'V_DS') + ' (' + n + ')', 'V'),
+          q('id', 'I_D (' + n + ')', 'A'), q('p', 'P_' + n, 'W')];
+      }
       case 'opamp': return [q('vout', 'V_o (' + n + ')', 'V'), q('iout', 'I_o (' + n + ')', 'A'), q('vp', 'V_+ (' + n + ')', 'V'), q('vm', 'V_− (' + n + ')', 'V'), q('vd', 'V_d (' + n + ')', 'V')];
       case 'voltmeter': case 'vsense': return [q('v', 'V_' + n, 'V')];
       case 'ammeter': case 'isense': return [q('i', 'I_' + n, 'A')];
@@ -103,9 +108,10 @@
   }
 
   // the components whose regions can be shown, and the regions they go through
-  const zoneable = (c) => !!c && (c.type === 'bjt' || c.type === 'opamp' || C.isDiode(c));
+  const zoneable = (c) => !!c && (c.type === 'bjt' || c.type === 'mosfet' || c.type === 'opamp' || C.isDiode(c));
   const ZONES = {
     bjt: { off: ['region_off', 'muted'], act: ['region_act', 2], sat: ['region_sat', 'err'] },
+    mosfet: { off: ['mos_off', 'muted'], ohm: ['mos_ohm', 'err'], sat: ['mos_sat', 2] },
     opamp: { lin: ['sw_z_lin', 2], sp: ['sw_z_sp', 'err'], sn: ['sw_z_sn', 6] },
     diode: { off: ['sw_z_off', 'muted'], on: ['sw_z_on', 2], bd: ['sw_z_bd', 3] }
   };

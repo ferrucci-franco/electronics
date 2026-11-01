@@ -135,6 +135,7 @@
         case 'zener':
           elements.push({ type: 'D', id: c.id, n, model: pr.model, Vf: pr.Vf, rd: pr.rd, Is: pr.Is, N: pr.N, bv: pr.Vz, rz: pr.rz }); break;
         case 'opamp': elements.push({ type: 'OA', id: c.id, n, sat: !!pr.sat, Vpos: Math.max(pr.Vpos, pr.Vneg), Vneg: Math.min(pr.Vpos, pr.Vneg) }); break;
+        case 'mosfet': elements.push({ type: 'M', id: c.id, n, pmos: pr.pol === 'pmos', model: pr.model === 'sq' ? 'sq' : 'sw', Vth: pr.Vth, Ron: pr.Ron, K: pr.K, lambda: pr.lambda }); break;
         case 'bjt': elements.push({ type: 'Q', id: c.id, n, pnp: pr.pol === 'pnp', model: pr.model === 'em' ? 'em' : 'simple', beta: pr.beta, Vbe: pr.Vbe, Vcesat: pr.Vcesat, Is: pr.Is, betaR: pr.betaR, VA: pr.VA }); break;
         default: break;
       }

@@ -632,6 +632,39 @@
       return opts;
     }
 
+    if (c.type === 'mosfet') {
+      const lines = nameLines.slice(), pm = c.props.pol === 'pmos';
+      if (r) {
+        if (st.showI) lines.push({ text: 'ID ' + fmt(r.id, 'A'), color: col.cur, mono: true });
+        if (st.showV) {
+          lines.push({ text: (pm ? 'VSG ' : 'VGS ') + fmt(r.vgs, 'V'), color: col.volt, mono: true });
+          lines.push({ text: (pm ? 'VSD ' : 'VDS ') + fmt(r.vds, 'V'), color: col.volt, mono: true });
+        }
+        if (st.showP) lines.push({ text: 'P ' + fmt(r.p, 'W'), color: col.pabs, mono: true });
+        lines.push({ text: tr('mos_' + r.state), color: r.state === 'off' ? col.err : col.muted, bold: true });
+      }
+      const marks = [];
+      if (r && st.showI) marks.push(() => {
+        const arr = (l1, l2, positive) => {
+          const a = C.toWorld(c, l1[0], l1[1]), b = C.toWorld(c, l2[0], l2[1]);
+          if (positive) arrowScreen(this, S.view, a[0], a[1], b[0], b[1], col.cur, 1.6);
+          else arrowScreen(this, S.view, b[0], b[1], a[0], a[1], col.cur, 1.6);
+        };
+        // I_D: into the drain and out of the source (N), the other way (P); the value carries the sign
+        const real = !!st.realDir;
+        if (!real || Math.abs(r.id) > 1e-12) {
+          const fw = real ? (r.id > 0) !== pm : !pm;
+          arr([1.35, -1.95], [1.35, -1.25], fw);
+          arr([1.35, 1.25], [1.35, 1.95], fw);
+        }
+      });
+      for (const [lx, ly, dx, dy] of [[2.0, 0, 1, 0], [-1.2, -1.0, -1, 0], [-1.2, 1.0, -1, 0]]) {
+        const p = C.toWorld(c, lx, ly);
+        opts.push({ blocks: [{ wx: p[0], wy: p[1], dir: worldDir(c, dx, dy), lines }], marks });
+      }
+      return opts;
+    }
+
     if (c.type === 'bjt') {
       const lines = nameLines.slice();
       if (r) {
