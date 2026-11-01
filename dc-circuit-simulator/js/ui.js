@@ -366,6 +366,7 @@
         case 'dup': app.duplicateSel(); break;
         case 'del': app.deleteSel(); break;
         case 'thev': { const c = app.selectedComps()[0]; if (c) app.portFromComp(c); break; }
+        case 'sweep': ui.sweep.fromSelection(b); break;
         case 'swop': {
           const c = app.selectedComps()[0];
           if (c && c.type === 'switch') { app.checkpoint(); c.props.closed = !c.props.closed; app.commit(); }
@@ -383,6 +384,7 @@
       bar.querySelector('[data-act=cancel]').hidden = !placing;
       for (const a of ['edit', 'thev', 'dup', 'del', 'rubber']) bar.querySelector(`[data-act=${a}]`).hidden = placing;
       bar.querySelector('[data-act=rubber]').classList.toggle('off', !app.settings.rubber);
+      bar.querySelector('[data-act=sweep]').hidden = placing || !(ui.sweep && ui.sweep.canMeasure());
       if (placing) {
         bar.querySelector('[data-act=rotate]').hidden = false;
         bar.querySelector('[data-act=flip]').hidden = false;
@@ -1372,12 +1374,13 @@
       // (the quiz pane draws itself, so that an answer being typed is not lost)
       ui.updateMonitor();
       ui.updateThevMon();
+      ui.sweep.update(false);
       qsCheck();
     };
     // light refresh while dragging: status and pinned plot only, the panel follows on release
     let thevRaf = 0;
     ui.updateLive = function () {
-      syncStatus(); ui.updateMonitor(); ui.updateThevMon(); qsCheck();
+      syncStatus(); ui.updateMonitor(); ui.updateThevMon(); ui.sweep.update(true); qsCheck();
       // the Thévenin / R_eq tab follows a value being dragged (slider, wheel), once per frame
       if (tab === 'thev' && app.thev && !thevRaf) thevRaf = requestAnimationFrame(() => { thevRaf = 0; renderThev(); });
     };
@@ -1535,13 +1538,16 @@
       head.addEventListener('pointerup', () => { d = null; });
     }
     for (let k = 0; k < MAXMON; k++) monWins.push(makeMonWin(k));
+    ui.dragByHead = dragByHead;
+    ui.floats = [];   // other floating windows kept inside the circuit area (DC sweep)
+    ui.sweep = DCS.sweep.init(app, ui);
     // the floating windows stay inside the circuit area when it gets narrower (side panel shown again, window
     // resized): a window that would be covered slides back in
     ui.clampFloats = function () {
       const st = $('stage');
       const W = st.clientWidth, H = st.clientHeight;
       let wins;
-      try { wins = [qs, tmon].concat(monWins.map(m => m.mon)); } catch (e) { return; }   // (not all built yet)
+      try { wins = [qs, tmon].concat(monWins.map(m => m.mon), ui.floats); } catch (e) { return; }   // (not all built yet)
       for (const w of wins) {
         if (!w || w.hidden) continue;
         const x = w.offsetLeft, y = w.offsetTop, ww = w.offsetWidth, hh = w.offsetHeight;

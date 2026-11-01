@@ -5,10 +5,10 @@
   const S = DCS.solver, U = DCS.units, C = DCS.comp;
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   // "I_C", "V_CE", "I_B = 10 µA": the letters after _ are a subscript
-  const subHtml = (s) => esc(s).replace(/_([A-Za-z0-9]+)/g, '<sub>$1</sub>');
+  const subHtml = (s) => esc(s).replace(/_([A-Za-z0-9+−]+)/g, '<sub>$1</sub>');
   // the same on the canvas, from the alphabetic baseline yb; returns the width (draw = false only measures)
   function subText(ctx, s, x, yb, align, px, weight, draw) {
-    const m = /^([^_]*)_([A-Za-z0-9]+)(.*)$/.exec(s);
+    const m = /^([^_]*)_([A-Za-z0-9+−]+)(.*)$/.exec(s);
     const parts = m ? [[m[1], px, 0], [m[2], Math.round(px * 0.74), Math.round(px * 0.3)], [m[3], px, 0]] : [[s, px, 0]];
     const font = (sz) => `${weight} ${sz}px ui-sans-serif, system-ui, sans-serif`;
     let wd = 0;
@@ -371,6 +371,14 @@
     return (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10) * e;
   }
 
+  const PAD = { L: 52, R: 10, T: 24, B: 30 };   // T leaves room above the plot for the name of the y axis
+  // the x value under a point of the canvas (css px from its left side), inside the window
+  function xInv(spec, W, px) {
+    const w = spec.win, { L, R } = PAD;
+    const f = Math.max(0, Math.min(1, (px - L) / (W - L - R)));
+    if (spec.xlog && w.v0 > 0 && w.v1 > w.v0) return Math.pow(10, Math.log10(w.v0) + f * (Math.log10(w.v1) - Math.log10(w.v0)));
+    return w.v0 + f * (w.v1 - w.v0);
+  }
   function draw(cv, spec, hover) {
     const dpr = Math.min(3, window.devicePixelRatio || 1);
     const W = cv.clientWidth, H = cv.clientHeight;
@@ -381,8 +389,11 @@
     const col = DCS.render.colors();
     ctx.fillStyle = col.bg; ctx.fillRect(0, 0, W, H);
     const w = spec.win;
-    const L = 52, R = 10, T = 24, B = 30;   // T leaves room above the plot for the name of the y axis
-    const X = (v) => L + (v - w.v0) / (w.v1 - w.v0) * (W - L - R);
+    const { L, R, T, B } = PAD;
+    // x: linear, or logarithmic (spec.xlog, a DC sweep of a resistance over decades)
+    const lg = !!spec.xlog && w.v0 > 0 && w.v1 > w.v0;
+    const fx = lg ? Math.log10 : (v) => v;
+    const X = (v) => L + (fx(v) - fx(w.v0)) / (fx(w.v1) - fx(w.v0)) * (W - L - R);
     const Y = (i) => H - B - (i - w.i0) / (w.i1 - w.i0) * (H - T - B);
     const fmt = (v, u) => U.format(v, u, { digits: 3, trim: true });
     // grid and ticks
@@ -394,11 +405,19 @@
     const xlabLeft = W - R - subText(ctx, spec.xlab, 0, 0, 'left', 12, 600, false) - 8;
     ctx.font = '11px ui-sans-serif, system-ui, sans-serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-    for (let v = Math.ceil(w.v0 / sx) * sx; v <= w.v1 + 1e-12; v += sx) {
+    const xt = [];
+    if (lg) {
+      const d0 = Math.floor(Math.log10(w.v0)), d1 = Math.ceil(Math.log10(w.v1));
+      const mul = d1 - d0 <= 2 ? [1, 2, 5] : [1];
+      for (let d = d0; d <= d1; d++) for (const m of mul) { const v = m * Math.pow(10, d); if (v >= w.v0 * (1 - 1e-9) && v <= w.v1 * (1 + 1e-9)) xt.push(v); }
+    } else for (let v = Math.ceil(w.v0 / sx) * sx; v <= w.v1 + 1e-12; v += sx) xt.push(Math.abs(v) < sx * 1e-6 ? 0 : v);
+    let lastR = -1e9;   // a value that would touch the previous one is left out
+    for (const v of xt) {
       const x = Math.round(X(v)) + 0.5;
       ctx.strokeStyle = col.grid; ctx.beginPath(); ctx.moveTo(x, T); ctx.lineTo(x, H - B); ctx.stroke();
-      const txt = fmt(Math.abs(v) < sx * 1e-6 ? 0 : v, spec.xu), half = ctx.measureText(txt).width / 2;
-      if (x + half > xlabLeft || x - half < 2) continue;
+      const txt = fmt(v, spec.xu), half = ctx.measureText(txt).width / 2;
+      if (x + half > xlabLeft || x - half < 2 || x - half < lastR + 6) continue;
+      lastR = x + half;
       ctx.fillStyle = col.muted; ctx.fillText(txt, x, H - B + 5);
     }
     ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
@@ -409,11 +428,11 @@
     }
     // axes through the origin
     ctx.strokeStyle = col.muted; ctx.lineWidth = 1.2;
-    if (w.v0 < 0 && w.v1 > 0) { const x = Math.round(X(0)) + 0.5; ctx.beginPath(); ctx.moveTo(x, T); ctx.lineTo(x, H - B); ctx.stroke(); }
+    if (!lg && w.v0 < 0 && w.v1 > 0) { const x = Math.round(X(0)) + 0.5; ctx.beginPath(); ctx.moveTo(x, T); ctx.lineTo(x, H - B); ctx.stroke(); }
     if (w.i0 < 0 && w.i1 > 0) { const y = Math.round(Y(0)) + 0.5; ctx.beginPath(); ctx.moveTo(L, y); ctx.lineTo(W - R, y); ctx.stroke(); }
     ctx.fillStyle = col.fg;
     subText(ctx, spec.xlab, W - R, H - B + 15, 'right', 12, 600);
-    subText(ctx, spec.ylab, w.v0 < 0 && w.v1 > 0 ? X(0) : L, T - 9, 'center', 12, 600);
+    subText(ctx, spec.ylab, !lg && w.v0 < 0 && w.v1 > 0 ? X(0) : L, T - 9, 'center', 12, 600);
     // plot area clip
     ctx.save();
     ctx.beginPath(); ctx.rect(L, T, W - L - R, H - T - B); ctx.clip();
@@ -565,5 +584,5 @@
     return { redraw };
   }
 
-  DCS.iv = { build, mount, analyse, trace, portSpec, nlNames, subHtml, draw };
+  DCS.iv = { build, mount, analyse, trace, portSpec, nlNames, subHtml, draw, xInv, slot, PAD };
 })(window);

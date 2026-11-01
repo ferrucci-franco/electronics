@@ -550,6 +550,8 @@
       if (dbl) { app.fit(); this.lastTap = null; }
       return;
     }
+    // DC sweep: the component that varies is being chosen
+    if (app.sweepPicking && h.comp && app.ui.sweep.pick(h.comp)) return;
     if (g.shift && id) { app.toggleSel(id); return; }
     if (id) app.select([id]);
     if (dbl && id) { app.openProps(true); this.lastTap = null; }
