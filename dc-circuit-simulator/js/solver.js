@@ -775,7 +775,7 @@
           r.state = r.vbe < 0.45 && Math.abs(r.ic) < 1e-6 ? 'off' : vbc > 0.45 ? 'sat' : 'act';
         }
       }
-      if (el.type === 'OA') { r.vout = sol.v[el.n[2]]; r.iout = -tc[2]; r.vd = sol.v[el.n[0]] - sol.v[el.n[1]]; }
+      if (el.type === 'OA') { r.vout = sol.v[el.n[2]]; r.iout = -tc[2]; r.vd = sol.v[el.n[0]] - sol.v[el.n[1]]; r.vp = sol.v[el.n[0]]; r.vm = sol.v[el.n[1]]; }
       result.el[el.id] = r;
       pSum += p; pAbs += Math.abs(p);
     });
