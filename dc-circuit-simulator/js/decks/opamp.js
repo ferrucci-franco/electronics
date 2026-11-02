@@ -402,6 +402,55 @@
         es: (p, s, h) => `Entrada + (divisor, i<sub>+</sub> = 0): v<sub>+</sub> = V<sub>2</sub>·R<sub>2</sub>/(R<sub>1</sub> + R<sub>2</sub>) = ${sv(p.V2 * p.R2 / (p.R1 + p.R2), h)}.<br>LKC en la entrada − con v<sub>−</sub> = v<sub>+</sub>: (V<sub>1</sub> − v<sub>−</sub>)/R<sub>1</sub> + (Vs − v<sub>−</sub>)/R<sub>2</sub> = 0<br>Vs = (R<sub>2</sub>/R<sub>1</sub>)·(V<sub>2</sub> − V<sub>1</sub>) = ${ratio(p.R2, p.R1, h)} × (${h.f(p.V2, 'V')} − ${h.f(p.V1, 'V')}) = <b>${sv(u(s).vout, h)}</b>.`,
         en: (p, s, h) => `+ input (divider, i<sub>+</sub> = 0): v<sub>+</sub> = V<sub>2</sub>·R<sub>2</sub>/(R<sub>1</sub> + R<sub>2</sub>) = ${sv(p.V2 * p.R2 / (p.R1 + p.R2), h)}.<br>KCL at the − input with v<sub>−</sub> = v<sub>+</sub>: (V<sub>1</sub> − v<sub>−</sub>)/R<sub>1</sub> + (Vs − v<sub>−</sub>)/R<sub>2</sub> = 0<br>Vs = (R<sub>2</sub>/R<sub>1</sub>)·(V<sub>2</sub> − V<sub>1</sub>) = ${ratio(p.R2, p.R1, h)} × (${h.f(p.V2, 'V')} − ${h.f(p.V1, 'V')}) = <b>${sv(u(s).vout, h)}</b>.`
       }
+    },
+    {
+      id: 'd2', title: L3('Soustracteur : entrée non inverseuse', 'Restador: entrada no inversora', 'Difference: non-inverting input'),
+      params: { V1: [0.5, 1, 2], V2: [1, 1.5, 3, 0.2], R1: [10 * k, 22 * k], R2: [10 * k, 22 * k, 47 * k], Vsat: VSAT },
+      ok: (p, s) => lin(s) && Math.abs(p.V2 - p.V1) > 0.1, circuit: (p) => difference(p),
+      text: {
+        fr: (p, h) => `Soustracteur : V1 = ${h.f(p.V1, 'V')}, V2 = ${h.f(p.V2, 'V')}, R1 = R3 = ${h.f(p.R1, 'Ω')}, R2 = R4 = ${h.f(p.R2, 'Ω')}. ${hyp.fr(p, h)}<br><b>Quelle est la tension v<sub>+</sub> de l’entrée non inverseuse ?</b>`,
+        es: (p, h) => `Restador: V1 = ${h.f(p.V1, 'V')}, V2 = ${h.f(p.V2, 'V')}, R1 = R3 = ${h.f(p.R1, 'Ω')}, R2 = R4 = ${h.f(p.R2, 'Ω')}. ${hyp.es(p, h)}<br><b>¿Cuál es la tensión v<sub>+</sub> de la entrada no inversora?</b>`,
+        en: (p, h) => `Difference amplifier: V1 = ${h.f(p.V1, 'V')}, V2 = ${h.f(p.V2, 'V')}, R1 = R3 = ${h.f(p.R1, 'Ω')}, R2 = R4 = ${h.f(p.R2, 'Ω')}. ${hyp.en(p, h)}<br><b>What is the voltage v<sub>+</sub> of the non-inverting input?</b>`
+      },
+      answer: { kind: 'num', unit: 'V', value: (p, s) => u(s).vp },
+      explain: {
+        fr: (p, s, h) => `L’entrée + ne consomme pas de courant (i<sub>+</sub> = 0) : R<sub>3</sub> et R<sub>4</sub> forment un simple diviseur de V<sub>2</sub>.<br>v<sub>+</sub> = V<sub>2</sub>·R<sub>4</sub>/(R<sub>3</sub> + R<sub>4</sub>) = ${h.f(p.V2, 'V')} × ${h.f(p.R2, 'Ω')} / (${h.f(p.R1, 'Ω')} + ${h.f(p.R2, 'Ω')}) = <b>${sv(u(s).vp, h)}</b>.<br>En régime linéaire, v<sub>−</sub> a la même valeur.`,
+        es: (p, s, h) => `La entrada + no consume corriente (i<sub>+</sub> = 0): R<sub>3</sub> y R<sub>4</sub> forman un simple divisor de V<sub>2</sub>.<br>v<sub>+</sub> = V<sub>2</sub>·R<sub>4</sub>/(R<sub>3</sub> + R<sub>4</sub>) = ${h.f(p.V2, 'V')} × ${h.f(p.R2, 'Ω')} / (${h.f(p.R1, 'Ω')} + ${h.f(p.R2, 'Ω')}) = <b>${sv(u(s).vp, h)}</b>.<br>En régimen lineal, v<sub>−</sub> tiene el mismo valor.`,
+        en: (p, s, h) => `The + input draws no current (i<sub>+</sub> = 0): R<sub>3</sub> and R<sub>4</sub> are a plain divider of V<sub>2</sub>.<br>v<sub>+</sub> = V<sub>2</sub>·R<sub>4</sub>/(R<sub>3</sub> + R<sub>4</sub>) = ${h.f(p.V2, 'V')} × ${h.f(p.R2, 'Ω')} / (${h.f(p.R1, 'Ω')} + ${h.f(p.R2, 'Ω')}) = <b>${sv(u(s).vp, h)}</b>.<br>In linear operation, v<sub>−</sub> has the same value.`
+      }
+    },
+    {
+      id: 'd3', title: L3('Soustracteur : mode commun', 'Restador: modo común', 'Difference: common mode'),
+      params: { Vc: [1, 2, 3, -2], R1: [10 * k, 22 * k], R2: [10 * k, 22 * k, 47 * k], Vsat: VSAT },
+      ok: (p, s) => lin(s), circuit: (p) => difference(Object.assign({}, p, { V1: p.Vc, V2: p.Vc })),
+      text: {
+        fr: (p, h) => `Soustracteur avec la même tension sur les deux entrées : V1 = V2 = ${h.f(p.Vc, 'V')}. R1 = R3 = ${h.f(p.R1, 'Ω')}, R2 = R4 = ${h.f(p.R2, 'Ω')}. ${hyp.fr(p, h)}<br><b>Calculez Vs.</b>`,
+        es: (p, h) => `Restador con la misma tensión en las dos entradas: V1 = V2 = ${h.f(p.Vc, 'V')}. R1 = R3 = ${h.f(p.R1, 'Ω')}, R2 = R4 = ${h.f(p.R2, 'Ω')}. ${hyp.es(p, h)}<br><b>Calcule Vs.</b>`,
+        en: (p, h) => `Difference amplifier with the same voltage on both inputs: V1 = V2 = ${h.f(p.Vc, 'V')}. R1 = R3 = ${h.f(p.R1, 'Ω')}, R2 = R4 = ${h.f(p.R2, 'Ω')}. ${hyp.en(p, h)}<br><b>Find Vs.</b>`
+      },
+      answer: { kind: 'num', unit: 'V', value: (p, s) => u(s).vout },
+      explain: {
+        fr: (p, s, h) => `Vs = (R<sub>2</sub>/R<sub>1</sub>)·(V<sub>2</sub> − V<sub>1</sub>) = ${ratio(p.R2, p.R1, h)} × 0 = <b>0 V</b>.<br>Le soustracteur n’amplifie que la différence : une tension commune aux deux entrées (mode commun) est rejetée, même si v<sub>+</sub> = v<sub>−</sub> = ${sv(u(s).vp, h)} ≠ 0.`,
+        es: (p, s, h) => `Vs = (R<sub>2</sub>/R<sub>1</sub>)·(V<sub>2</sub> − V<sub>1</sub>) = ${ratio(p.R2, p.R1, h)} × 0 = <b>0 V</b>.<br>El restador solo amplifica la diferencia: una tensión común a las dos entradas (modo común) se rechaza, aunque v<sub>+</sub> = v<sub>−</sub> = ${sv(u(s).vp, h)} ≠ 0.`,
+        en: (p, s, h) => `Vs = (R<sub>2</sub>/R<sub>1</sub>)·(V<sub>2</sub> − V<sub>1</sub>) = ${ratio(p.R2, p.R1, h)} × 0 = <b>0 V</b>.<br>The difference amplifier only amplifies the difference: a voltage common to both inputs (common mode) is rejected, even though v<sub>+</sub> = v<sub>−</sub> = ${sv(u(s).vp, h)} ≠ 0.`
+      }
+    },
+    {
+      id: 'd4', title: L3('Soustracteur : plage d’entrée', 'Restador: rango de entrada', 'Difference: input range'),
+      params: { V1: [0.5, 1, 2], V2: [0.1], R1: [10 * k], R2: [22 * k, 47 * k, 100 * k], Vsat: VSAT },
+      ok: (p) => p.V1 + p.Vsat * p.R1 / p.R2 < 12, circuit: (p) => difference(p),
+      text: {
+        fr: (p, h) => `Soustracteur : V1 = ${h.f(p.V1, 'V')} fixe, R1 = R3 = ${h.f(p.R1, 'Ω')}, R2 = R4 = ${h.f(p.R2, 'Ω')}. ${hyp.fr(p, h)}<br><b>V2 augmente : jusqu’à quelle valeur de V2 la sortie reste-t-elle linéaire ?</b>`,
+        es: (p, h) => `Restador: V1 = ${h.f(p.V1, 'V')} fija, R1 = R3 = ${h.f(p.R1, 'Ω')}, R2 = R4 = ${h.f(p.R2, 'Ω')}. ${hyp.es(p, h)}<br><b>V2 crece: ¿hasta qué valor de V2 la salida sigue siendo lineal?</b>`,
+        en: (p, h) => `Difference amplifier: V1 = ${h.f(p.V1, 'V')} fixed, R1 = R3 = ${h.f(p.R1, 'Ω')}, R2 = R4 = ${h.f(p.R2, 'Ω')}. ${hyp.en(p, h)}<br><b>V2 rises: up to what value of V2 does the output stay linear?</b>`
+      },
+      answer: { kind: 'num', unit: 'V', value: (p) => p.V1 + p.Vsat * p.R1 / p.R2 },
+      reveal: { param: 'V2', value: (p, want) => inside(want), note: setNote('V2') },
+      explain: {
+        fr: (p, s, h) => `Vs = (R<sub>2</sub>/R<sub>1</sub>)·(V<sub>2</sub> − V<sub>1</sub>) atteint V<sub>sat</sub> pour V<sub>2</sub> − V<sub>1</sub> = V<sub>sat</sub>·R<sub>1</sub>/R<sub>2</sub> = ${h.f(p.Vsat, 'V')} / ${ratio(p.R2, p.R1, h)} = ${h.f(p.Vsat * p.R1 / p.R2, 'V')}.<br>V<sub>2,max</sub> = V<sub>1</sub> + ${h.f(p.Vsat * p.R1 / p.R2, 'V')} = <b>${h.f(p.V1 + p.Vsat * p.R1 / p.R2, 'V')}</b>.`,
+        es: (p, s, h) => `Vs = (R<sub>2</sub>/R<sub>1</sub>)·(V<sub>2</sub> − V<sub>1</sub>) llega a V<sub>sat</sub> con V<sub>2</sub> − V<sub>1</sub> = V<sub>sat</sub>·R<sub>1</sub>/R<sub>2</sub> = ${h.f(p.Vsat, 'V')} / ${ratio(p.R2, p.R1, h)} = ${h.f(p.Vsat * p.R1 / p.R2, 'V')}.<br>V<sub>2,máx</sub> = V<sub>1</sub> + ${h.f(p.Vsat * p.R1 / p.R2, 'V')} = <b>${h.f(p.V1 + p.Vsat * p.R1 / p.R2, 'V')}</b>.`,
+        en: (p, s, h) => `Vs = (R<sub>2</sub>/R<sub>1</sub>)·(V<sub>2</sub> − V<sub>1</sub>) reaches V<sub>sat</sub> for V<sub>2</sub> − V<sub>1</sub> = V<sub>sat</sub>·R<sub>1</sub>/R<sub>2</sub> = ${h.f(p.Vsat, 'V')} / ${ratio(p.R2, p.R1, h)} = ${h.f(p.Vsat * p.R1 / p.R2, 'V')}.<br>V<sub>2,max</sub> = V<sub>1</sub> + ${h.f(p.Vsat * p.R1 / p.R2, 'V')} = <b>${h.f(p.V1 + p.Vsat * p.R1 / p.R2, 'V')}</b>.`
+      }
     }
   ];
 
