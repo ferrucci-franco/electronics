@@ -1539,7 +1539,10 @@
       const mswap = button('⇄', () => { const m = cur(); if (m) { m.idx = m.idx ? 0 : 1; ui.updateMonitor(); } });
       const mreset = button('⟲', () => { const m = cur(); if (m) { m.win = []; m.levels = null; ui.updateMonitor(); } });
       const mclose = button('✕', () => { app.monitors[slot] = null; ui.updateMonitor(); });
-      mhead.appendChild(mtitle); mhead.appendChild(mswap); mhead.appendChild(mreset); mhead.appendChild(mclose);
+      // see-through: the circuit behind the window shows (the window comes back while the pointer is over it)
+      const mghost = button('◐', () => { const on = mon.classList.toggle('ghost'); mghost.classList.toggle('on', on); });
+      mghost.title = plainText(t('mon_ghost'));
+      mhead.appendChild(mtitle); mhead.appendChild(mswap); mhead.appendChild(mreset); mhead.appendChild(mghost); mhead.appendChild(mclose);
       const mcv = el('canvas', { class: 'mon-cv' });
       // the corner at the bottom right changes the size of the window (mouse or finger); the size is kept
       const grip = el('div', { class: 'mon-grip', title: plainText(t('mon_resize')) });
