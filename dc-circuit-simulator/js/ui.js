@@ -1251,8 +1251,9 @@
         // the port line, with the pin that keeps V_Th, R_Th and I_N over the circuit while values change
         const top = el('div', { class: 'ivhead' });
         top.appendChild(el('div', { class: 'hint' }, load ? t('thev_load', { name: `<b>${esc(load.name)}</b>`}) : t('thev_port')));
-        const pin = el('button', { type: 'button', class: 'btn', title: plainText(t('thev_pin')) }, '📌');
-        pin.addEventListener('click', () => { app.thevPinned = true; ui.updateThevMon(); });
+        // a toggle, like the 📌 of the I–V plots: pressed while the values are pinned over the circuit
+        const pin = el('button', { type: 'button', class: 'btn thev-pin', title: plainText(t('thev_pin')) }, '📌');
+        pin.addEventListener('click', () => { app.thevPinned = !app.thevPinned; ui.updateThevMon(); });
         top.appendChild(pin);
         card.appendChild(top);
       }
@@ -1642,6 +1643,11 @@
     // the whole window moves it (not only its title); ✕ closes it
     dragByHead(tmon, tmon);
     ui.updateThevMon = function () {
+      requestAnimationFrame(() => document.querySelectorAll('.thev-pin').forEach((b) => {
+        const on = !!(app.thevPinned && app.thev);
+        b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false');
+        b.title = plainText(t(on ? 'thev_unpin' : 'thev_pin'));
+      }));
       if (quizHidden()) { tmon.hidden = true; return; }
       if (!app.thevPinned || !app.thev) { tmon.hidden = true; if (!app.thev) app.thevPinned = false; return; }
       const r = app.thev.res;
