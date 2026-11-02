@@ -849,7 +849,7 @@
       if (c.refI === 0 || c.refI === 1) n.refI = c.refI;
       clean.comps.push(n);
     }
-    clean.nodeNames = (circuit.nodeNames || []).filter(nn => nn && isFinite(nn.x) && isFinite(nn.y) && nn.name).map(nn => ({ x: Math.round(nn.x), y: Math.round(nn.y), name: String(nn.name).slice(0, 12) }));
+    clean.nodeNames = (circuit.nodeNames || []).filter(nn => nn && isFinite(nn.x) && isFinite(nn.y) && nn.name).map(nn => Object.assign({ x: Math.round(nn.x), y: Math.round(nn.y), name: String(nn.name).slice(0, 12) }, nn.tag ? { tag: true } : {}));
     for (const w of circuit.wires) clean.wires.push({ id: String(w.id), x1: Math.round(+w.x1), y1: Math.round(+w.y1), x2: Math.round(+w.x2), y2: Math.round(+w.y2) });
     // the DC sweep (what is plotted against what)
     const sw = circuit.sweep;
@@ -887,7 +887,7 @@
   };
   function compact() {
     // short form: comps as arrays, wires as flat arrays
-    const o = { v: 1, c: app.circuit.comps.map(c => [c.type, c.name, c.x, c.y, c.rot, c.flip ? 1 : 0, c.props, c.refV, c.refI]), w: app.circuit.wires.map(w => [w.x1, w.y1, w.x2, w.y2]), n: (app.circuit.nodeNames || []).map(nn => [nn.x, nn.y, nn.name]) };
+    const o = { v: 1, c: app.circuit.comps.map(c => [c.type, c.name, c.x, c.y, c.rot, c.flip ? 1 : 0, c.props, c.refV, c.refI]), w: app.circuit.wires.map(w => [w.x1, w.y1, w.x2, w.y2]), n: (app.circuit.nodeNames || []).map(nn => (nn.tag ? [nn.x, nn.y, nn.name, 1] : [nn.x, nn.y, nn.name])) };
     // the DC sweep, with the components by their place in the list
     const sw = app.circuit.sweep;
     if (sw) {
@@ -900,7 +900,7 @@
   }
   function expand(o) {
     let k = 0;
-    const out = { comps: o.c.map(a => ({ id: 'c' + (++k), type: a[0], name: a[1], x: a[2], y: a[3], rot: a[4], flip: !!a[5], props: a[6], refV: a[7], refI: a[8] })), wires: o.w.map(a => ({ id: 'w' + (++k), x1: a[0], y1: a[1], x2: a[2], y2: a[3] })), nodeNames: (o.n || []).map(a => ({ x: a[0], y: a[1], name: a[2] })) };
+    const out = { comps: o.c.map(a => ({ id: 'c' + (++k), type: a[0], name: a[1], x: a[2], y: a[3], rot: a[4], flip: !!a[5], props: a[6], refV: a[7], refI: a[8] })), wires: o.w.map(a => ({ id: 'w' + (++k), x1: a[0], y1: a[1], x2: a[2], y2: a[3] })), nodeNames: (o.n || []).map(a => Object.assign({ x: a[0], y: a[1], name: a[2] }, a[3] ? { tag: true } : {})) };
     if (o.s && Array.isArray(o.s.y)) {
       const id = (i) => (out.comps[i] ? out.comps[i].id : null);
       out.sweep = {

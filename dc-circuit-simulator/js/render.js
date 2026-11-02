@@ -370,6 +370,28 @@
       }
     }
 
+    // named nodes drawn as a flag (the output Vs of a quiz circuit): the name only, so that a question can
+    // refer to it while the values are hidden; with the node tags on (and values shown) the tag already says it
+    const named = (S.circuit.nodeNames || []).filter(nn => nn.tag);
+    if (named.length && !(res && st.showNodes)) {
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.font = `700 ${fontPx}px ui-sans-serif, system-ui, sans-serif`;
+      ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
+      for (const nn of named) {
+        const sx = nn.x * s + view.ox, sy = nn.y * s + view.oy;
+        const w = Math.max(fontPx + 6, ctx.measureText(nn.name).width + 12), h = fontPx + 7;
+        const fx = sx + 7, fy = sy - 9 - h;
+        ctx.strokeStyle = col.accent; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(fx + 3, fy + h); ctx.stroke();
+        ctx.fillStyle = col.bg; ctx.beginPath(); ctx.arc(sx, sy, 5.5, 0, 2 * Math.PI); ctx.fill();
+        ctx.fillStyle = col.accent; ctx.beginPath(); ctx.arc(sx, sy, 4, 0, 2 * Math.PI); ctx.fill();
+        roundRect(ctx, fx, fy, w, h, 5); ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.fillText(nn.name, fx + w / 2, fy + h / 2 + 0.5);
+        const nd = net && net.nodeOf(nn.x, nn.y);
+        if (nd != null) this.nodeTags.push({ node: nd, r: [fx, fy, fx + w, fy + h] });
+      }
+    }
+
     // DC sweep probes: the nodes whose voltage is plotted, a dot and a flag with the name of the node, in the
     // colour of the curve
     if (S.probes && S.probes.length) {
