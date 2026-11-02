@@ -794,6 +794,8 @@
     app.ui.updateTabs(); app.ui.update(); app.requestRender();
     // the value sliders that were open in this tab come back
     for (const id of t.sliders || []) { const c = app.circuit.comps.find(q => q.id === id); if (c) app.ui.showQuick(c); }
+    // the Quiz tab of the panel only on the quiz's own circuit tab
+    if (app.ui.quiz && app.ui.quiz.syncTab) app.ui.quiz.syncTab();
     storeTabs();
   }
   function tabName() {

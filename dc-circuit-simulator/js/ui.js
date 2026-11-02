@@ -543,6 +543,7 @@
     $('sideToggle').addEventListener('click', () => ui.setPanelHidden('side', !document.documentElement.classList.contains('hide-side')));
     syncEdgeBtns();
 
+    ui.currentTab = () => tab;
     ui.showTab = function (name, open) {
       tab = name;
       if (name !== 'thev' && app.overlay.hl) { app.overlay.hl = null; app.requestRender(); }
