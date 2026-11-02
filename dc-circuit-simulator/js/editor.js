@@ -87,7 +87,7 @@
   };
   // the pointer over a selected switch, where a click opens / closes it (a push button: presses it): a small
   // toggle instead of the hand
-  const TOGGLE_CURSOR = 'url("data:image/svg+xml,' + encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' width='30' height='30'><rect x='3' y='9' width='24' height='12' rx='6' fill='white' stroke='black' stroke-width='1.8'/><circle cx='9' cy='15' r='3.6' fill='black' opacity='.35'/><circle cx='21' cy='15' r='4.2' fill='black'/><path d='M12.5 15h5' stroke='black' stroke-width='1.4' stroke-dasharray='1.5 1.5'/></svg>") + '") 15 15, pointer';
+  const TOGGLE_CURSOR = 'url("data:image/svg+xml,' + encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><rect x='4' y='10' width='24' height='12' rx='6' fill='#fff' stroke='#111' stroke-width='2'/><circle cx='22' cy='16' r='4' fill='#2f6fdb'/><circle cx='10' cy='16' r='2' fill='#9aa3b2'/></svg>") + '") 16 16, pointer';
 
   // rotary potentiometer: anywhere on the round symbol turns the wiper
   Editor.prototype.onKnob = function (c, p) {
