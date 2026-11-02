@@ -116,6 +116,8 @@
         app.fit({ bottom: inset });
       });
     }
+    // the circuit framed again (double click / double tap on it while a question is open)
+    Q.fit = () => { if (document.documentElement.classList.contains('layout-mobile')) fitVisible(); else app.fit(); };
     function check(given) {
       const c = st.cur, a = c.q.answer;
       let want = a.value(c.p, c.sol);
