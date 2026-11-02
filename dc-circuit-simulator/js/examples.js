@@ -15,6 +15,8 @@
     }
     const out = { comps, wires };
     if (spec.load) out.thevLoad = comps.find(c => c.name === spec.load).id;
+    // named nodes: [x, y, name] (a point of the node)
+    if (spec.n) out.nodeNames = spec.n.map(([x, y, name]) => ({ x, y, name }));
     return out;
   }
 
