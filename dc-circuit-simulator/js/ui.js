@@ -133,6 +133,7 @@
       h.classList.toggle('layout-mobile', mob); h.classList.toggle('layout-desktop', !mob);
       app.LS.set('dcs.layout', mob ? 'mobile' : 'desktop');
       $('side').classList.remove('open');
+      if (ui.syncDock) ui.syncDock();   // (touch layout on a large screen: the docked panel shows)
       syncLayoutBtn();
       requestAnimationFrame(() => { drawPalette(); syncPalFade(); app.renderer.resize(); app.fit(); });
     });
@@ -548,15 +549,62 @@
       if (open && !isMobile()) ui.setPanelHidden('side', false);
       document.querySelectorAll('.tabs [data-tab]').forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
       for (const n of ['props', 'results', 'thev', 'quiz']) $('pane-' + n).hidden = n !== name;
-      if (open && isMobile()) $('side').classList.add('open');
+      if (open && isMobile()) { $('side').classList.add('open'); if (ui.isDocked && ui.isDocked()) app.LS.set('dcs.dockOpen', '1'); }
       ui.update();
     };
-    $('sheetBtn').addEventListener('click', () => $('side').classList.toggle('open'));
-    // phone: close the bottom sheet (button, tap on the grip, drag it down, tap on the empty circuit)
-    ui.closeSheet = function () {
+    /* touch layout on a large screen (tablet, touch monitor): the panel is docked on the right of the circuit
+     * instead of a sheet from the bottom; its width is dragged on its left edge (kept), ⌃ widens it, ⌄ hides it */
+    const DOCK = window.matchMedia('(min-width: 900px) and (min-height: 521px)');
+    ui.isDocked = () => isMobile() && DOCK.matches;
+    $('sheetBtn').addEventListener('click', () => { $('side').classList.toggle('open'); if (ui.isDocked()) app.LS.set('dcs.dockOpen', $('side').classList.contains('open') ? '1' : '0'); });
+    // phone: close the bottom sheet (button, tap on the grip, drag it down, tap on the empty circuit);
+    // auto (a tap on the circuit, a tool chosen): not the docked panel, which covers nothing
+    ui.closeSheet = function (auto) {
+      if (auto && ui.isDocked()) return;
       const s = $('side');
       s.classList.remove('open', 'dragging'); s.style.transform = '';
+      if (ui.isDocked()) app.LS.set('dcs.dockOpen', '0');
     };
+    {
+      const side = $('side'), MINW = 300;
+      const maxW = () => Math.round(window.innerWidth * 0.62);
+      let w = parseFloat(app.LS.get('dcs.dockW')) || 0;
+      const setW = (x) => { if (x) side.style.setProperty('--dock-w', Math.round(x) + 'px'); else side.style.removeProperty('--dock-w'); };
+      setW(w ? Math.min(maxW(), w) : 0);
+      // docked: open at start unless it was hidden
+      const syncDock = () => { if (ui.isDocked() && app.LS.get('dcs.dockOpen') !== '0') side.classList.add('open'); };
+      syncDock();
+      ui.syncDock = syncDock;
+      (DOCK.addEventListener ? DOCK.addEventListener('change', syncDock) : DOCK.addListener(syncDock));
+      ui.dockToggleMax = function () {
+        const maxed = side.classList.toggle('maxed');
+        setW(maxed ? maxW() : (w ? Math.min(maxW(), w) : 0));
+      };
+      let d = null;
+      const h = $('dockHandle');
+      h.addEventListener('pointerdown', (e) => {
+        if (!ui.isDocked()) return;
+        e.preventDefault();
+        d = { id: e.pointerId, x0: e.clientX, w0: side.offsetWidth };
+        side.classList.add('dragging');
+        try { h.setPointerCapture(e.pointerId); } catch (_) {}
+      });
+      h.addEventListener('pointermove', (e) => {
+        if (!d || d.id !== e.pointerId) return;
+        side.classList.remove('maxed');
+        setW(Math.max(MINW, Math.min(maxW(), d.w0 - (e.clientX - d.x0))));
+      });
+      const end = (e) => {
+        if (!d || d.id !== e.pointerId) return;
+        const nw = d.w0 - (e.clientX - d.x0);
+        d = null;
+        side.classList.remove('dragging');
+        // dragged far to the right: hidden
+        if (nw < MINW - 80) { setW(w ? Math.min(maxW(), w) : 0); ui.closeSheet(); return; }
+        w = Math.max(MINW, Math.min(maxW(), nw)); app.LS.set('dcs.dockW', String(w));
+      };
+      h.addEventListener('pointerup', end); h.addEventListener('pointercancel', end);
+    }
     $('sheetClose').addEventListener('click', (e) => { e.stopPropagation(); ui.closeSheet(); });
     {
       // the height of the sheet: dragging its grip or its tab bar up or down resizes it (kept, as a fraction of
@@ -573,12 +621,13 @@
       const keep = (h) => { frac = h / window.innerHeight; app.LS.set('dcs.sheetFrac', String(frac)); };
       $('sheetMax').addEventListener('click', (e) => {
         e.stopPropagation();
+        if (ui.isDocked()) { ui.dockToggleMax(); return; }
         if (side.classList.contains('maxed')) { setH(before > 0 ? before : 0); if (before > 0) keep(before); else { frac = 0; app.LS.set('dcs.sheetFrac', ''); } }
         else { before = frac ? side.offsetHeight : 0; setH(maxH()); keep(maxH()); }
       });
       let d = null;
       const start = (e, el, isGrip) => {
-        if (!isMobile() || e.target.closest('.sheet-close')) return;
+        if (!isMobile() || ui.isDocked() || e.target.closest('.sheet-close')) return;
         d = { id: e.pointerId, y0: e.clientY, dy: 0, el, isGrip, drag: false, h0: side.offsetHeight };
       };
       const move = (e) => {

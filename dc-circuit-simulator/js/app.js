@@ -653,7 +653,7 @@
     } else app.place = null;
     if (tool !== 'select') app.sel.clear();
     // phone: get the bottom sheet out of the way while placing, wiring or picking the Thévenin terminals
-    if (tool !== 'select' && app.ui && app.ui.closeSheet) app.ui.closeSheet();
+    if (tool !== 'select' && app.ui && app.ui.closeSheet) app.ui.closeSheet(true);
     app.hint(tool === 'port' ? app.t((app.thev && app.thev.a && !app.thev.b && !app.thev.loadId) ? 'thev_pickB' : 'thev_pickA') : null);
     if (tool === 'port') { app.thev = null; app.port = null; }
     app.ui.update();
