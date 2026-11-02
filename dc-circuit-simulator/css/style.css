@@ -247,7 +247,7 @@ html.layout-mobile .app-header button{padding:6px 8px; min-height:38px}
 html.layout-mobile .seg button{padding:6px 8px; min-height:36px}
 /* phone: one header row (tabs + ☰); Prettify, Examples, File, Settings, Help, language, layout and theme in the menu */
 #moreBtn, .mlabel{display:none}
-html.layout-mobile .app-header{flex-wrap:nowrap; position:relative; z-index:30}
+html.layout-mobile .app-header{flex-wrap:nowrap; position:relative; z-index:45}   /* (its ⋯ menu above the panel: sheet or docked, z-index 40) */
 html.layout-mobile #moreBtn{display:inline-flex; flex:none}
 html.layout-mobile #moreBtn svg{width:22px; height:22px; fill:currentColor; stroke:none}
 html.layout-mobile .app-header.menu-open #moreBtn{background:var(--accent); border-color:var(--accent); color:#fff}
