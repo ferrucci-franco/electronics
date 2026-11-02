@@ -1685,7 +1685,9 @@
     const thead = el('div', { class: 'mon-head' });
     const ttitle = el('span', { class: 'mon-title' });
     const tclose = button('✕', () => { app.thevPinned = false; ui.updateThevMon(); });
-    thead.appendChild(ttitle); thead.appendChild(tclose);
+    // A–B cuts the circuit in two: look into the other side, from the window itself
+    const tflip = button('⇄', () => { const th = app.thev; if (th && th.cut) app.setThevSide(1 - (th.side || 0)); });
+    thead.appendChild(ttitle); thead.appendChild(tflip); thead.appendChild(tclose);
     const tbody = el('dl', { class: 'kv' });
     tmon.appendChild(thead); tmon.appendChild(tbody);
     $('stage').appendChild(tmon);
@@ -1704,6 +1706,15 @@
       tclose.title = t('close');
       const load = app.thev.loadId ? app.circuit.comps.find(c => c.id === app.thev.loadId) : null;
       ttitle.innerHTML = load ? 'Thévenin · ' + esc(load.name) : 'Thévenin A–B';
+      // the side looked into, and the button that turns to the other one
+      const cut = !load && app.thev.cut;
+      const sideNames = (k) => { const sd = cut.sides[k]; return sd.names.length ? sd.names.slice(0, 3).map(esc).join(', ') + (sd.names.length > 3 ? '…' : '') : t('thev_side_empty'); };
+      tflip.hidden = !cut;
+      if (cut) {
+        const k = app.thev.side || 0;
+        ttitle.innerHTML += ` <span class="sw-vs">→ ${sideNames(k)}</span>`;
+        tflip.title = plainText(t('thev_flip', { to: sideNames(1 - k) }));
+      }
       const fin = (x) => x !== undefined && isFinite(x);
       const vth = I.getLang() === 'fr' ? 'E<sub>Th</sub>' : 'V<sub>Th</sub>';
       let kv;
