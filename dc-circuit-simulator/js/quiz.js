@@ -139,7 +139,8 @@
         const spec = c.q.circuit(p2), sol2 = solveSpec(spec);
         if (sol2.ok) {
           c.p = p2; c.sol = sol2;
-          c.setNote = { label: rv.label, v: helpers().f(p2[rv.param], rv.unit), st: sol2.el('Q1') ? sol2.el('Q1').state : null };
+          // (a deck may give its own note: rv.note[lang](p, sol, h))
+          c.setNote = rv.note ? { html: L(rv.note)(p2, sol2, helpers()) } : { label: rv.label, v: helpers().f(p2[rv.param], rv.unit), st: sol2.el('Q1') ? sol2.el('Q1').state : null };
           app.loadCircuit(DCS.examples.make(spec));
         }
       }
@@ -244,7 +245,7 @@
         // just ✓, or ✗ with the right value
         fb.innerHTML = c.right ? '✓' : '✗' + (a.kind === 'num' ? ' ' + shown : '');
         card.appendChild(fb);
-        card.appendChild(el('div', { class: 'quiz-explain' }, keep(L(q.explain)(c.p, c.sol, h) + (c.setNote ? '<br>' + t('quiz_set', { what: c.setNote.label, v: c.setNote.v, st: c.setNote.st ? t('region_' + c.setNote.st) : '' }) : ''))));
+        card.appendChild(el('div', { class: 'quiz-explain' }, keep(L(q.explain)(c.p, c.sol, h) + (c.setNote ? '<br>' + (c.setNote.html || t('quiz_set', { what: c.setNote.label, v: c.setNote.v, st: c.setNote.st ? t('region_' + c.setNote.st) : '' })) : ''))));
         const row = el('div', { class: 'btnrow' });
         row.appendChild(btn(st.pos + 1 < st.total ? t('quiz_next') + ' →' : t('quiz_finish'), next, 'primary'));
         card.appendChild(row);

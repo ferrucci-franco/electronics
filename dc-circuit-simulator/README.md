@@ -48,6 +48,8 @@ Botón **Quiz** del encabezado (en el teléfono, en el menú ⋯): mazos de preg
 
 - **Transistor bipolar en continua** (15 preguntas, modelo simple V_BE = 0,7 V, V_CE,sat = 0,2 V): corriente de base, I_C, potencia de la fuente de colector y del transistor (sin R_C); V_CE, potencia y región con R_C; señal en serie con la polarización (I_C, Vin de saturación); una sola fuente (I_C, R_B de saturación); conmutación corte / saturación (región, V_CE); LED (corriente); lámpara (R_B máxima para saturar).
 
+- **AOP ideal en continua** (19 preguntas, régimen lineal y saturación en ±V_sat = ±12 V o ±15 V; explicaciones con LKC en la entrada inversora): inversor (V_s, ganancia, masa virtual v₋ = 0, corriente de entrada, saturación, rango de entrada sin saturar), no inversor (V_s, cortocircuito virtual v₋ = V_e, corriente de entrada nula, rango de entrada, corriente de salida del AOP con carga, saturación), seguidor con carga, sumador inversor, función afín V_s = m·V_e + b (sumador con una entrada constante V_ref y un inversor de ganancia −1: pendiente, ordenada al origen, V_s, rango de entrada), restador. En las preguntas de rango de entrada, al responder, el circuito queda justo antes del límite para cruzarlo y ver la saturación.
+
 Los mazos son archivos JavaScript en `js/decks/` (una pregunta = parámetros a sortear, circuito, texto, respuesta calculada con el simulador y explicación); en una pregunta numérica no hace falta explicar los prefijos en el texto).
 
 ## Uso
