@@ -213,7 +213,9 @@
       requestAnimationFrame(() => { draw(); if (!on) ui.clampFloats(); });
     }
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && win.classList.contains('max') && !win.hidden) { e.stopPropagation(); setMax(false); } }, true);
-    head.appendChild(title); head.appendChild(csvB); head.appendChild(maxB); head.appendChild(closeB);
+    const ghostB = btn('◐', () => { const on = win.classList.toggle('ghost'); ghostB.classList.toggle('on', on); });
+    ghostB.title = tp('mon_ghost');
+    head.appendChild(title); head.appendChild(csvB); head.appendChild(maxB); head.appendChild(ghostB); head.appendChild(closeB);
     const xrow = el('div', 'sw-x');
     const orow = el('div', 'sw-x sw-opt');
     const legend = el('div', 'sw-legend');
