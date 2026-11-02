@@ -72,6 +72,16 @@
       if (k >= 0) app.switchTab(k); else app.openInTab({ comps: [], wires: [] }, st.tabName);
     }
     app.quizActive = () => !!st;
+    // the Quiz tab of the panel belongs to the circuit tab of the quiz: shown (and chosen) there, hidden on the
+    // other circuits; closing the quiz's circuit tab ends the quiz
+    Q.syncTab = function () {
+      if (!st) return;
+      if (!app.tabs.some(tb => tb.name === st.tabName)) { Q.quit(); return; }
+      const here = onQuizTab();
+      tabBtn().hidden = !here;
+      if (here) { if (app.ui.currentTab() !== 'quiz') app.ui.showTab('quiz', false); }
+      else if (app.ui.currentTab() === 'quiz') app.ui.showTab('props', false);
+    };
     const pane = () => document.getElementById('pane-quiz');
     const tabBtn = () => document.querySelector('.tabs [data-tab=quiz]');
 

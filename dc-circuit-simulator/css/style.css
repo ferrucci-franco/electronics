@@ -601,14 +601,24 @@ html.layout-mobile .side .pane{padding:4px 10px 12px}
   html.layout-mobile .dock-handle{display:flex; align-items:center; justify-content:center; position:absolute; left:-11px; top:0; bottom:0; width:20px; cursor:ew-resize; touch-action:none; z-index:3}
   html.layout-mobile .dock-handle span{width:6px; height:52px; border-radius:3px; background:var(--muted); opacity:.45}
   html.layout-mobile .dock-handle:hover span, html.layout-mobile .side.dragging .dock-handle span{opacity:.85; background:var(--accent)}
-  /* the header: the tab control with the widen / hide buttons on its right */
-  html.layout-mobile .sheet-grip{position:absolute; top:8px; right:8px; min-height:0; padding:0; width:84px; height:36px; cursor:default}
+  /* the header: a slim row with the widen / hide buttons, then the tab control across the whole width */
+  html.layout-mobile .sheet-grip{min-height:40px; padding:0; cursor:default}
   html.layout-mobile .sheet-grip > span{display:none}
-  html.layout-mobile .sheet-close{top:2px; right:0}
-  html.layout-mobile .sheet-max{right:42px}
+  html.layout-mobile .sheet-close{top:6px; right:8px}
+  html.layout-mobile .sheet-max{right:50px}
   html.layout-mobile .sheet-close svg{transform:rotate(-90deg)}
-  html.layout-mobile .side .tabs{margin:8px 96px 8px 10px; touch-action:auto}
+  html.layout-mobile .side .tabs{margin:0 10px 8px; touch-action:auto}
   html.layout-mobile .side .copyright{padding:6px 12px}
   /* the "Panel" button only while the panel is hidden */
   html.layout-mobile .app:has(.side.open) .sheet-btn{display:none}
 }
+
+/* panel tabs: they share the width and a long name goes on two lines (Thévenin y R_eq, Résultats…),
+   instead of running out of the bar in narrow panels and longer languages */
+.tabs button{flex:1 1 auto; min-width:min-content; white-space:normal; line-height:1.2; padding-left:5px; padding-right:5px}
+.tabs{align-items:stretch; overflow-x:auto; scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+@media (max-width:1000px){ html.layout-desktop .tabs button{font-size:12px; padding-left:3px; padding-right:3px} }
+/* a narrow panel (docked panel made narrow, small desktop column): smaller tab names */
+.side{container-type:inline-size; container-name:side}
+@container side (max-width:330px){ html .side .tabs button{font-size:12px !important; padding-left:3px !important; padding-right:3px !important} }
