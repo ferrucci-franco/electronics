@@ -244,6 +244,9 @@ html.layout-mobile .hdr{gap:5px}
 html.layout-mobile .hdr-group{gap:4px}
 html.layout-mobile .app-header button span{display:none}
 html.layout-mobile .app-header button{padding:6px 8px; min-height:38px}
+html.layout-mobile .app-header > button{min-height:36px}
+html.layout-mobile .app-header .ctab-add, html.layout-mobile .app-header .ctab-list{min-height:34px; padding-top:0; padding-bottom:0}
+html.layout-mobile .app-header .ctab-x{min-height:0; padding:0}   /* (the × inside a tab must not make it taller) */
 html.layout-mobile .seg button{padding:6px 8px; min-height:36px}
 /* phone: one header row (tabs + ☰); Prettify, Examples, File, Settings, Help, language, layout and theme in the menu */
 #moreBtn, .mlabel{display:none}
