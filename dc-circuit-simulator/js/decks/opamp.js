@@ -68,8 +68,8 @@
   const VSAT = [12, 15];
   // the assumptions, in one line
   const hyp = {
-    fr: (p, h) => `AOP idéal, sortie saturée à ±V<sub>sat</sub> = ±${h.f(p.Vsat, 'V')}.`,
-    es: (p, h) => `AO ideal, salida saturada en ±V<sub>sat</sub> = ±${h.f(p.Vsat, 'V')}.`,
+    fr: (p, h) => `AOP idéal ; la sortie sature à ±V<sub>sat</sub> = ±${h.f(p.Vsat, 'V')}.`,
+    es: (p, h) => `AO ideal; la salida satura en ±V<sub>sat</sub> = ±${h.f(p.Vsat, 'V')}.`,
     en: (p, h) => `Ideal op-amp, output saturating at ±V<sub>sat</sub> = ±${h.f(p.Vsat, 'V')}.`
   };
   const ratio = (a, b, h) => h.num(a / b);
@@ -78,7 +78,7 @@
   // input range kept linear, set just inside the limit after the answer
   const inside = (want) => Number((want - Math.max(0.005, 0.02 * Math.abs(want))).toPrecision(3));
   const setNote = (name) => ({
-    fr: (p, s, h) => `Dans le circuit, ${name} est maintenant réglée à ${h.f(p[name], 'V')}, juste avant la limite : Vs = ${sv(u(s, s.el('U2') ? 'U2' : 'U1').vout, h)}, encore linéaire. Dépassez la limite pour voir la sortie se bloquer à V<sub>sat</sub>.`,
+    fr: (p, s, h) => `Dans le circuit, ${name} est maintenant réglée à ${h.f(p[name], 'V')}, juste avant la limite : Vs = ${sv(u(s, s.el('U2') ? 'U2' : 'U1').vout, h)}, encore linéaire. Au-delà de la limite, la sortie reste bloquée à V<sub>sat</sub>.`,
     es: (p, s, h) => `En el circuito, ${name} quedó ahora en ${h.f(p[name], 'V')}, justo antes del límite: Vs = ${sv(u(s, s.el('U2') ? 'U2' : 'U1').vout, h)}, todavía lineal. Pase el límite para ver la salida clavarse en V<sub>sat</sub>.`,
     en: (p, s, h) => `In the circuit, ${name} is now set to ${h.f(p[name], 'V')}, just inside the limit: Vs = ${sv(u(s, s.el('U2') ? 'U2' : 'U1').vout, h)}, still linear. Go past the limit to see the output stuck at V<sub>sat</sub>.`
   });
@@ -104,7 +104,7 @@
   const affOk = (p, s) => lin(s, 'U1') && lin(s, 'U2');
   const m = (p) => p.Rf / p.R1, b = (p) => p.Rf / p.R2 * p.Vref;
   const affText = {
-    fr: (p, h) => `Premier AOP : sommateur inverseur, avec l’entrée Ve (par R1 = ${h.f(p.R1, 'Ω')}) et une tension constante Vref = ${h.f(p.Vref, 'V')} (par R2 = ${h.f(p.R2, 'Ω')}), Rf = ${h.f(p.Rf, 'Ω')}. Second AOP : inverseur de gain −1 (R3 = R4 = 10 kΩ). Le montage réalise Vs = m·Ve + b. ${hyp.fr(p, h)}`,
+    fr: (p, h) => `Premier AOP : sommateur inverseur, avec l’entrée Ve (à travers R1 = ${h.f(p.R1, 'Ω')}) et une tension constante Vref = ${h.f(p.Vref, 'V')} (à travers R2 = ${h.f(p.R2, 'Ω')}), Rf = ${h.f(p.Rf, 'Ω')}. Second AOP : inverseur de gain −1 (R3 = R4 = 10 kΩ). Le montage réalise Vs = m·Ve + b. ${hyp.fr(p, h)}`,
     es: (p, h) => `Primer AO: sumador inversor, con la entrada Ve (por R1 = ${h.f(p.R1, 'Ω')}) y una tensión constante Vref = ${h.f(p.Vref, 'V')} (por R2 = ${h.f(p.R2, 'Ω')}), Rf = ${h.f(p.Rf, 'Ω')}. Segundo AO: inversor de ganancia −1 (R3 = R4 = 10 kΩ). El circuito realiza Vs = m·Ve + b. ${hyp.es(p, h)}`,
     en: (p, h) => `First op-amp: inverting summer, with the input Ve (through R1 = ${h.f(p.R1, 'Ω')}) and a constant voltage Vref = ${h.f(p.Vref, 'V')} (through R2 = ${h.f(p.R2, 'Ω')}), Rf = ${h.f(p.Rf, 'Ω')}. Second op-amp: inverter of gain −1 (R3 = R4 = 10 kΩ). The circuit gives Vs = m·Ve + b. ${hyp.en(p, h)}`
   };
@@ -141,7 +141,7 @@
       },
       answer: { kind: 'num', unit: 'V/V', value: (p) => -p.R2 / p.R1 },
       explain: {
-        fr: (p, s, h) => `${kclInv.fr(p, h)}, donc Vs/Ve = −R<sub>2</sub>/R<sub>1</sub> = −${h.f(p.R2, 'Ω')} / ${h.f(p.R1, 'Ω')} = <b>−${ratio(p.R2, p.R1, h)}</b>.<br>Le signe − : la sortie est en opposition avec l’entrée.`,
+        fr: (p, s, h) => `${kclInv.fr(p, h)}, donc Vs/Ve = −R<sub>2</sub>/R<sub>1</sub> = −${h.f(p.R2, 'Ω')} / ${h.f(p.R1, 'Ω')} = <b>−${ratio(p.R2, p.R1, h)}</b>.<br>Le signe − : la sortie est de signe opposé à l’entrée.`,
         es: (p, s, h) => `${kclInv.es(p, h)}, entonces Vs/Ve = −R<sub>2</sub>/R<sub>1</sub> = −${h.f(p.R2, 'Ω')} / ${h.f(p.R1, 'Ω')} = <b>−${ratio(p.R2, p.R1, h)}</b>.<br>El signo −: la salida está invertida respecto de la entrada.`,
         en: (p, s, h) => `${kclInv.en(p, h)}, so Vs/Ve = −R<sub>2</sub>/R<sub>1</sub> = −${h.f(p.R2, 'Ω')} / ${h.f(p.R1, 'Ω')} = <b>−${ratio(p.R2, p.R1, h)}</b>.<br>The − sign: the output is inverted.`
       }
@@ -171,7 +171,7 @@
       },
       answer: { kind: 'num', unit: 'A', value: (p) => p.Ve / p.R1 },
       explain: {
-        fr: (p, s, h) => `Le courant de la source traverse R<sub>1</sub>, dont l’autre borne est à la masse virtuelle (v<sub>−</sub> = 0) : I = (Ve − 0)/R<sub>1</sub> = ${h.f(p.Ve, 'V')} / ${h.f(p.R1, 'Ω')} = <b>${h.f(p.Ve / p.R1, 'A')}</b>.<br>Comme i<sub>−</sub> = 0, ce courant continue dans R<sub>2</sub> jusqu’à la sortie. La source voit une résistance d’entrée R<sub>1</sub>.`,
+        fr: (p, s, h) => `Le courant de la source traverse R<sub>1</sub>, dont l’autre borne est à la masse virtuelle (v<sub>−</sub> = 0) : I = (Ve − 0)/R<sub>1</sub> = ${h.f(p.Ve, 'V')} / ${h.f(p.R1, 'Ω')} = <b>${h.f(p.Ve / p.R1, 'A')}</b>.<br>Comme i<sub>−</sub> = 0, ce courant traverse ensuite R<sub>2</sub> jusqu’à la sortie. La résistance d’entrée du montage vaut R<sub>1</sub>.`,
         es: (p, s, h) => `La corriente de la fuente atraviesa R<sub>1</sub>, cuyo otro extremo está en la masa virtual (v<sub>−</sub> = 0): I = (Ve − 0)/R<sub>1</sub> = ${h.f(p.Ve, 'V')} / ${h.f(p.R1, 'Ω')} = <b>${h.f(p.Ve / p.R1, 'A')}</b>.<br>Como i<sub>−</sub> = 0, esa corriente sigue por R<sub>2</sub> hasta la salida. La fuente ve una resistencia de entrada R<sub>1</sub>.`,
         en: (p, s, h) => `The source current flows through R<sub>1</sub>, whose other end is at the virtual ground (v<sub>−</sub> = 0): I = (Ve − 0)/R<sub>1</sub> = ${h.f(p.Ve, 'V')} / ${h.f(p.R1, 'Ω')} = <b>${h.f(p.Ve / p.R1, 'A')}</b>.<br>Since i<sub>−</sub> = 0, it goes on through R<sub>2</sub> to the output. The source sees an input resistance R<sub>1</sub>.`
       }
@@ -206,7 +206,7 @@
       answer: { kind: 'num', unit: 'V', value: (p) => p.Vsat * p.R1 / p.R2 },
       reveal: { param: 'Ve', value: (p, want) => inside(want), note: setNote('Ve') },
       explain: {
-        fr: (p, s, h) => `En linéaire Vs = −(R<sub>2</sub>/R<sub>1</sub>)·Ve = −${ratio(p.R2, p.R1, h)}·Ve. La sortie sature quand |Vs| atteint V<sub>sat</sub> :<br>Ve<sub>max</sub> = V<sub>sat</sub>·R<sub>1</sub>/R<sub>2</sub> = ${h.f(p.Vsat, 'V')} / ${ratio(p.R2, p.R1, h)} = <b>${h.f(p.Vsat * p.R1 / p.R2, 'V')}</b>.<br>Plage linéaire : −${h.f(p.Vsat * p.R1 / p.R2, 'V')} &lt; Ve &lt; ${h.f(p.Vsat * p.R1 / p.R2, 'V')}.`,
+        fr: (p, s, h) => `En régime linéaire, Vs = −(R<sub>2</sub>/R<sub>1</sub>)·Ve = −${ratio(p.R2, p.R1, h)}·Ve. La sortie sature quand |Vs| atteint V<sub>sat</sub> :<br>Ve<sub>max</sub> = V<sub>sat</sub>·R<sub>1</sub>/R<sub>2</sub> = ${h.f(p.Vsat, 'V')} / ${ratio(p.R2, p.R1, h)} = <b>${h.f(p.Vsat * p.R1 / p.R2, 'V')}</b>.<br>Plage linéaire : −${h.f(p.Vsat * p.R1 / p.R2, 'V')} &lt; Ve &lt; ${h.f(p.Vsat * p.R1 / p.R2, 'V')}.`,
         es: (p, s, h) => `En lineal Vs = −(R<sub>2</sub>/R<sub>1</sub>)·Ve = −${ratio(p.R2, p.R1, h)}·Ve. La salida satura cuando |Vs| llega a V<sub>sat</sub>:<br>Ve<sub>máx</sub> = V<sub>sat</sub>·R<sub>1</sub>/R<sub>2</sub> = ${h.f(p.Vsat, 'V')} / ${ratio(p.R2, p.R1, h)} = <b>${h.f(p.Vsat * p.R1 / p.R2, 'V')}</b>.<br>Rango lineal: −${h.f(p.Vsat * p.R1 / p.R2, 'V')} &lt; Ve &lt; ${h.f(p.Vsat * p.R1 / p.R2, 'V')}.`,
         en: (p, s, h) => `Linear: Vs = −(R<sub>2</sub>/R<sub>1</sub>)·Ve = −${ratio(p.R2, p.R1, h)}·Ve. The output saturates when |Vs| reaches V<sub>sat</sub>:<br>Ve<sub>max</sub> = V<sub>sat</sub>·R<sub>1</sub>/R<sub>2</sub> = ${h.f(p.Vsat, 'V')} / ${ratio(p.R2, p.R1, h)} = <b>${h.f(p.Vsat * p.R1 / p.R2, 'V')}</b>.<br>Linear range: −${h.f(p.Vsat * p.R1 / p.R2, 'V')} &lt; Ve &lt; ${h.f(p.Vsat * p.R1 / p.R2, 'V')}.`
       }
@@ -304,7 +304,7 @@
       },
       answer: { kind: 'num', unit: 'V', value: (p, s) => u(s).vout },
       explain: {
-        fr: (p, s, h) => `En linéaire : Vs = (1 + R<sub>2</sub>/R<sub>1</sub>)·Ve = ${sv((1 + p.R2 / p.R1) * p.Ve, h)}, au-delà de V<sub>sat</sub> : la sortie <b>sature</b> à <b>${sv(u(s).vout, h)}</b>.`,
+        fr: (p, s, h) => `En régime linéaire, on aurait Vs = (1 + R<sub>2</sub>/R<sub>1</sub>)·Ve = ${sv((1 + p.R2 / p.R1) * p.Ve, h)}, au-delà de V<sub>sat</sub> : impossible, la sortie <b>sature</b> à <b>${sv(u(s).vout, h)}</b>.`,
         es: (p, s, h) => `En lineal: Vs = (1 + R<sub>2</sub>/R<sub>1</sub>)·Ve = ${sv((1 + p.R2 / p.R1) * p.Ve, h)}, más allá de V<sub>sat</sub>: la salida <b>satura</b> en <b>${sv(u(s).vout, h)}</b>.`,
         en: (p, s, h) => `Linear: Vs = (1 + R<sub>2</sub>/R<sub>1</sub>)·Ve = ${sv((1 + p.R2 / p.R1) * p.Ve, h)}, beyond V<sub>sat</sub>: the output <b>saturates</b> at <b>${sv(u(s).vout, h)}</b>.`
       }
@@ -333,7 +333,7 @@
       params: { V1: [0.5, 1, -0.5, 2], V2: [0.2, 1, -1, 1.5], R1: [10 * k, 22 * k], R2: [10 * k, 47 * k], Rf: [10 * k, 22 * k, 47 * k], Vsat: VSAT },
       ok: (p, s) => lin(s) && Math.abs(u(s).vout) > 0.2, circuit: (p) => summer2(p),
       text: {
-        fr: (p, h) => `Sommateur inverseur : V1 = ${h.f(p.V1, 'V')} par R1 = ${h.f(p.R1, 'Ω')}, V2 = ${h.f(p.V2, 'V')} par R2 = ${h.f(p.R2, 'Ω')}, Rf = ${h.f(p.Rf, 'Ω')}. ${hyp.fr(p, h)}<br><b>Calculez Vs.</b>`,
+        fr: (p, h) => `Sommateur inverseur : V1 = ${h.f(p.V1, 'V')} à travers R1 = ${h.f(p.R1, 'Ω')}, V2 = ${h.f(p.V2, 'V')} à travers R2 = ${h.f(p.R2, 'Ω')}, Rf = ${h.f(p.Rf, 'Ω')}. ${hyp.fr(p, h)}<br><b>Calculez Vs.</b>`,
         es: (p, h) => `Sumador inversor: V1 = ${h.f(p.V1, 'V')} por R1 = ${h.f(p.R1, 'Ω')}, V2 = ${h.f(p.V2, 'V')} por R2 = ${h.f(p.R2, 'Ω')}, Rf = ${h.f(p.Rf, 'Ω')}. ${hyp.es(p, h)}<br><b>Calcule Vs.</b>`,
         en: (p, h) => `Inverting summer: V1 = ${h.f(p.V1, 'V')} through R1 = ${h.f(p.R1, 'Ω')}, V2 = ${h.f(p.V2, 'V')} through R2 = ${h.f(p.R2, 'Ω')}, Rf = ${h.f(p.Rf, 'Ω')}. ${hyp.en(p, h)}<br><b>Find Vs.</b>`
       },
@@ -392,7 +392,7 @@
       params: { V1: [0.5, 1, 2], V2: [1, 1.5, 3, 0.2], R1: [10 * k, 22 * k], R2: [10 * k, 22 * k, 47 * k], Vsat: VSAT },
       ok: (p, s) => lin(s) && Math.abs(p.V2 - p.V1) > 0.1, circuit: (p) => difference(p),
       text: {
-        fr: (p, h) => `Soustracteur : V1 = ${h.f(p.V1, 'V')} sur l’entrée − par R1 = ${h.f(p.R1, 'Ω')} (contre-réaction R2 = ${h.f(p.R2, 'Ω')}) ; V2 = ${h.f(p.V2, 'V')} sur l’entrée + par le diviseur R3 = R1, R4 = R2. ${hyp.fr(p, h)}<br><b>Calculez Vs.</b>`,
+        fr: (p, h) => `Soustracteur : V1 = ${h.f(p.V1, 'V')} est appliquée à l’entrée − à travers R1 = ${h.f(p.R1, 'Ω')} (contre-réaction R2 = ${h.f(p.R2, 'Ω')}) ; V2 = ${h.f(p.V2, 'V')} est appliquée à l’entrée + à travers le diviseur R3 = R1, R4 = R2. ${hyp.fr(p, h)}<br><b>Calculez Vs.</b>`,
         es: (p, h) => `Restador: V1 = ${h.f(p.V1, 'V')} a la entrada − por R1 = ${h.f(p.R1, 'Ω')} (realimentación R2 = ${h.f(p.R2, 'Ω')}); V2 = ${h.f(p.V2, 'V')} a la entrada + por el divisor R3 = R1, R4 = R2. ${hyp.es(p, h)}<br><b>Calcule Vs.</b>`,
         en: (p, h) => `Difference amplifier: V1 = ${h.f(p.V1, 'V')} to the − input through R1 = ${h.f(p.R1, 'Ω')} (feedback R2 = ${h.f(p.R2, 'Ω')}); V2 = ${h.f(p.V2, 'V')} to the + input through the divider R3 = R1, R4 = R2. ${hyp.en(p, h)}<br><b>Find Vs.</b>`
       },
