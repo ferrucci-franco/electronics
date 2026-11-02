@@ -554,7 +554,7 @@
     if (!h) {
       if (!g.shift) app.select([]);
       // phone: a tap on the empty circuit puts the bottom sheet away
-      if (document.documentElement.classList.contains('layout-mobile') && app.ui.closeSheet) app.ui.closeSheet();
+      if (document.documentElement.classList.contains('layout-mobile') && app.ui.closeSheet) app.ui.closeSheet(true);
       // double click / double tap on the background: fit the circuit
       if (dbl) { app.fit(); this.lastTap = null; }
       return;

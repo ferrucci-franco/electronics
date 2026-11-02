@@ -111,6 +111,8 @@
     // phone: the panel sheet covers the lower part of the circuit area, the circuit is framed above it
     function fitVisible() {
       if (!document.documentElement.classList.contains('layout-mobile')) return;
+      // (a panel docked on the right of a large touch screen does not cover the circuit)
+      if (app.ui.isDocked && app.ui.isDocked()) { requestAnimationFrame(() => app.fit()); return; }
       requestAnimationFrame(() => {
         const side = document.getElementById('side'), cv = document.getElementById('cv');
         if (!side.classList.contains('open')) { app.fit(); return; }
