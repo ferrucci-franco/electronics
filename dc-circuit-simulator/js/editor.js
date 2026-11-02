@@ -436,7 +436,15 @@
       case 'pan':
         if (g.moved) break;
         if (g.rclick) break;
-        if (g.locked) break;
+        if (g.locked) {
+          // quiz question open: nothing can be selected, but a double click / double tap still fits the circuit
+          const now = performance.now(), touch = g.type !== 'mouse', lt = this.lastLockTap;
+          if (lt && now - lt.t < (touch ? DBL_TOUCH_MS : 380) && Math.hypot(p.sx - lt.sx, p.sy - lt.sy) < (touch ? 36 : 24)) {
+            this.lastLockTap = null;
+            if (app.ui.quiz && app.ui.quiz.fit) app.ui.quiz.fit(); else app.fit();
+          } else this.lastLockTap = { t: now, sx: p.sx, sy: p.sy };
+          break;
+        }
         this.tap(g, p, e);
         break;
       case 'band': {
