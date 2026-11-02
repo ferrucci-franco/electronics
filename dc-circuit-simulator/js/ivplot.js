@@ -643,7 +643,11 @@
       if (r) { tip.hidden = false; tip.innerHTML = subHtml(r.text); tip.style.left = Math.min(cv.clientWidth - tip.offsetWidth - 4, r.x + 10) + 'px'; tip.style.top = Math.max(0, r.y - 30) + 'px'; }
       else tip.hidden = true;
     };
-    requestAnimationFrame(() => redraw(null));
+    // drawn again whenever the canvas gets its size (panel shown again, resized): drawn hidden it would stay blank
+    let raf = 0;
+    const later = () => { if (raf) return; raf = requestAnimationFrame(() => { raf = 0; if (cv.isConnected && cv.clientWidth) redraw(null); }); };
+    later();
+    if (typeof ResizeObserver !== 'undefined') { const ro = new ResizeObserver(() => { if (!cv.isConnected) { ro.disconnect(); return; } later(); }); ro.observe(cv); }
     const pos = (e) => { const b = cv.getBoundingClientRect(); return [e.clientX - b.left, e.clientY - b.top]; };
     cv.addEventListener('pointermove', (e) => redraw(pos(e)));
     cv.addEventListener('pointerdown', (e) => redraw(pos(e)));

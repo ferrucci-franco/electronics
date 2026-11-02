@@ -1327,14 +1327,14 @@
       d1.appendChild(el('h4', null, t('thevenin')));
       if (r.rth !== Infinity && fin(r.vth)) {
         const cv = el('canvas'); d1.appendChild(cv);
-        requestAnimationFrame(() => drawEquivalent(cv, 'thev', r, lab));
+        drawSized(cv, () => drawEquivalent(cv, 'thev', r, lab));
       } else d1.appendChild(el('div', { class: 'hint' }, t('thev_none')));
       eq.appendChild(d1);
       const d2 = el('div');
       d2.appendChild(el('h4', null, t('norton')));
       if (r.rth !== 0 && fin(r.in)) {
         const cv = el('canvas'); d2.appendChild(cv);
-        requestAnimationFrame(() => drawEquivalent(cv, 'norton', r, lab));
+        drawSized(cv, () => drawEquivalent(cv, 'norton', r, lab));
       } else d2.appendChild(el('div', { class: 'hint' }, t('thev_nonorton')));
       eq.appendChild(d2);
       card.appendChild(eq);
@@ -1389,7 +1389,7 @@
       const cv = el('canvas', { class: 'req-cv' });
       card.appendChild(cv);
       const redraw = (hl) => drawPassive(cv, th, hl);
-      requestAnimationFrame(() => redraw(null));
+      drawSized(cv, () => redraw(null));
       card.appendChild(el('div', { class: 'hint' }, '<b>2.</b> ' + t(q.steps.length ? 'req_reduce' : 'req_reduce_none')));
       const list = el('ol', { class: 'req-steps' });
       let on = null;
@@ -1442,6 +1442,18 @@
       });
     }
 
+    // a drawing in the panel is made again whenever its canvas gets its size (a panel shown again, docked,
+    // resized): drawn while hidden it would stay blank or stretched
+    function drawSized(cv, fn) {
+      let raf = 0;
+      const go = () => { if (raf) return; raf = requestAnimationFrame(() => { raf = 0; if (cv.isConnected && cv.clientWidth && cv.clientHeight) fn(); }); };
+      go();
+      if (typeof ResizeObserver !== 'undefined') {
+        const ro = new ResizeObserver(() => { if (!cv.isConnected) { ro.disconnect(); return; } go(); });
+        ro.observe(cv);
+      }
+    }
+    ui.drawSized = drawSized;
     function drawEquivalent(cv, kind, r, lab) {
       const mk = (type, name, x, y, rot, props) => ({ id: name, type, name, x, y, rot, flip: false, props: Object.assign(C.defaults(type), props) });
       let circuit;
