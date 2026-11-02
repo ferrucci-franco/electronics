@@ -625,3 +625,80 @@ html.layout-mobile .side .pane{padding:4px 10px 12px}
 /* a narrow panel (docked panel made narrow, small desktop column): smaller tab names */
 .side{container-type:inline-size; container-name:side}
 @container side (max-width:330px){ html .side .tabs button{font-size:12px !important; padding-left:3px !important; padding-right:3px !important} }
+
+/* ---------- guide (Help): animated demos of each feature, played by the simulator in a frame ---------- */
+.tour-back{position:fixed; inset:0; z-index:200; display:flex; align-items:center; justify-content:center; padding:16px; background:rgba(8,12,24,.5); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); opacity:0; transition:opacity .2s}
+.tour-back.open{opacity:1}
+.tour{width:min(1240px, 100%); height:min(820px, 100%); display:flex; flex-direction:column; background:var(--paper); color:var(--fg); border:1px solid var(--border); border-radius:16px; box-shadow:0 30px 80px rgba(0,0,0,.35); overflow:hidden; overflow:clip}
+.tour-head{flex:none; display:flex; align-items:center; gap:10px; padding:10px 12px 10px 16px; border-bottom:1px solid var(--border)}
+.tour-logo{width:24px; height:24px; flex:none; fill:none; stroke:var(--accent); stroke-width:1.8; color:var(--accent)}
+.tour-head h2{margin:0; flex:1; font-size:17px; font-weight:700}
+.tour-ref{border:1px solid var(--border); background:var(--btn); color:var(--fg); border-radius:9px; padding:7px 11px; font-size:13px; font-weight:600; cursor:pointer}
+.tour-ref:hover, .tour-x:hover, .tour-nav:hover, .tour-item:hover{filter:brightness(.97)}
+.tour-x{width:36px; height:36px; flex:none; display:grid; place-items:center; border:1px solid var(--border); background:var(--btn); color:var(--fg); border-radius:10px; cursor:pointer; padding:0}
+.tour-x svg{width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round}
+.tour-body{flex:1; min-height:0; display:flex}
+.tour-list{flex:none; width:232px; overflow-y:auto; padding:8px 8px 14px; border-right:1px solid var(--border); background:var(--panel); scrollbar-width:thin}
+.tour-group{padding:12px 10px 4px; font-size:11px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--muted)}
+.tour-item{display:flex; align-items:center; gap:10px; width:100%; padding:7px 10px; border:0; border-radius:9px; background:transparent; color:var(--fg); font-size:14px; line-height:1.25; text-align:left; cursor:pointer}
+.tour-item:hover{background:var(--btn-hover); filter:none}
+.tour-item.on{background:var(--accent); color:#fff}
+.tour-ico{flex:none; width:22px; text-align:center; font-size:15px; line-height:1}
+.tour-main{flex:1; min-width:0; display:flex; flex-direction:column; gap:12px; padding:14px 16px 14px}
+.tour-stagewrap{flex:1 1 0; min-height:0; min-width:0; overflow:hidden; overflow:clip; display:flex; align-items:center; justify-content:center}
+.tour-screen{position:relative; overflow:hidden; overflow:clip; flex:none; border-radius:12px; border:1px solid var(--border); background:var(--bg); box-shadow:0 8px 28px rgba(15,25,50,.16)}
+.tour-cam{position:absolute; left:0; top:0; transform-origin:0 0}
+.tour-cam iframe{display:block; border:0; pointer-events:none; background:var(--bg)}
+.tour-veil{position:absolute; inset:0; display:grid; place-items:center; background:var(--bg); color:var(--muted); font-size:13px; opacity:0; pointer-events:none; transition:opacity .3s}
+.tour-veil.on{opacity:1; transition:none}
+.tour-cap{position:absolute; left:50%; bottom:14px; max-width:min(88%, 560px); padding:8px 15px; border-radius:11px; background:rgba(15,20,36,.9); color:#fff; font-size:15px; font-weight:500; line-height:1.35; text-align:center; box-shadow:0 6px 20px rgba(0,0,0,.3); opacity:0; transform:translate(-50%, 8px); transition:opacity .2s, transform .2s; pointer-events:none}
+.tour-cap.on{opacity:1; transform:translate(-50%, 0)}
+.tour-cap b{color:#9cc0ff}
+.tour-keys{position:absolute; top:12px; right:12px; display:flex; gap:6px; pointer-events:none}
+.tour-keys kbd{min-width:36px; height:36px; padding:0 9px; display:grid; place-items:center; border-radius:8px; border:1px solid #b9bfcc; background:#fff; color:#111; font:700 16px/1 ui-sans-serif,system-ui,sans-serif; box-shadow:0 3px 0 #9aa1b0, 0 8px 18px rgba(0,0,0,.25); animation:tkey .16s ease-out; transition:opacity .35s, transform .35s}
+.tour-keys kbd.soft{border-radius:50%; font-size:18px}
+.tour-keys kbd.out{opacity:0; transform:translateY(-8px)}
+@keyframes tkey{from{transform:scale(.6); opacity:0}}
+.tour-prog{position:absolute; left:0; right:0; bottom:0; height:3px; background:rgba(127,127,127,.18); pointer-events:none}
+.tour-prog i{display:block; width:0; height:100%; background:var(--accent)}
+.tour-foot{flex:none; display:flex; align-items:center; gap:12px}
+.tour-info{flex:1; min-width:0}
+.tour-info h3{margin:0 0 3px; font-size:16.5px; font-weight:700}
+.tour-n{margin-right:6px; color:var(--muted); font-size:12.5px; font-weight:600}
+.tour-info p{margin:0; color:var(--muted); font-size:14px; line-height:1.45}
+.tour-info p b{color:var(--fg)}
+.tour-nav{flex:none; width:44px; height:44px; display:grid; place-items:center; padding:0; border:1px solid var(--border); border-radius:50%; background:var(--btn); color:var(--fg); cursor:pointer}
+.tour-nav svg{width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:2.3; stroke-linecap:round; stroke-linejoin:round}
+.tour-next{background:var(--accent); border-color:var(--accent); color:#fff}
+.tour-pp .i-play{display:none}
+.tour-pp.paused .i-play{display:block}
+.tour-pp.paused .i-pause{display:none}
+.tour-pp .i-play path{fill:currentColor; stroke:none}
+@media (max-width:760px){
+  .tour-back{padding:0}
+  .tour{width:100%; height:100%; border-radius:0; border:0}
+  .tour-head{padding:8px 8px 8px 12px}
+  .tour-body{flex-direction:column}
+  .tour-list{width:auto; display:flex; gap:6px; overflow-x:auto; overflow-y:hidden; padding:8px; border-right:0; border-bottom:1px solid var(--border); scrollbar-width:none}
+  .tour-list::-webkit-scrollbar{display:none}
+  .tour-group{display:none}
+  .tour-item{flex:none; width:auto; white-space:nowrap; padding:6px 11px 6px 8px; gap:6px; border:1px solid var(--border); background:var(--btn); font-size:13px}
+  .tour-main{padding:10px 10px calc(10px + env(safe-area-inset-bottom)); gap:10px}
+  .tour-cap{font-size:13.5px; bottom:10px; padding:6px 11px}
+  .tour-info h3{font-size:15px}
+  .tour-info p{font-size:13px}
+  .tour-nav{width:40px; height:40px}
+}
+@media (max-height:560px) and (min-width:761px){
+  .tour-back{padding:6px}
+  .tour-main{padding:8px 12px; gap:8px}
+  .tour-info p{font-size:13px}
+}
+html.demo .app-header h1{display:none}   /* (the simulator inside the guide: one row of header) */
+html.demo .toast{bottom:auto; top:18%}   /* (the captions of the guide go at the bottom) */
+html.demo .app-header .hdr-group:last-child{display:none}
+/* the guide not opened yet: a small pulsing dot on Help (and on ⋯, where Help is in the touch layout) */
+html.tour-new #helpBtn, html.tour-new.layout-mobile #moreBtn{position:relative}
+html.tour-new #helpBtn::after, html.tour-new.layout-mobile #moreBtn::after{content:""; position:absolute; top:3px; right:3px; width:9px; height:9px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 2px var(--paper); animation:tnew 1.8s ease-in-out infinite}
+html.tour-new.layout-mobile .hdr #helpBtn::after{top:50%; right:12px; margin-top:-4.5px}
+@keyframes tnew{50%{transform:scale(1.35); opacity:.65}}

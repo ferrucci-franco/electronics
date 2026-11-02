@@ -4,7 +4,12 @@
   const DCS = root.DCS;
   const C = DCS.comp, N = DCS.netlist, S = DCS.solver, U = DCS.units, I = DCS.i18n;
 
-  const LS = {
+  const DEMO = root.DCS_DEMO || null;   // inside the guide: nothing is read from or kept in this browser
+  const mem = {};
+  const LS = DEMO ? {
+    get(k) { return Object.prototype.hasOwnProperty.call(mem, k) ? mem[k] : null; },
+    set(k, v) { mem[k] = String(v); }
+  } : {
     get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
     set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* private mode */ } }
   };
@@ -937,7 +942,7 @@
     let code;
     if (typeof CompressionStream !== 'undefined') code = 'z' + b64u.enc(await streamBytes(json, new CompressionStream('deflate-raw')));
     else code = 'j' + b64u.enc(json);
-    return location.href.split('#')[0] + '#c=' + code;
+    return (app.demo ? location.origin + location.pathname : location.href.split('#')[0]) + '#c=' + code;
   };
   // a shared circuit (#c=… of a share link, from the address bar or from a scanned QR code) opens in a new tab
   app.openShared = async function (text) {
@@ -1003,6 +1008,7 @@
     const saved = LS.get('dcs.settings');
     if (saved) { try { Object.assign(app.settings, JSON.parse(saved)); } catch (e) { /* ignore */ } }
     app.settings.animate = false;
+    if (DEMO) { app.demo = true; app.settings.style = DEMO.sym === 'iec' ? 'iec' : 'us'; LS.set('dcs.lang', DEMO.lang); }
     let lang = LS.get('dcs.lang');
     if (!lang) { const n = (navigator.language || 'en').slice(0, 2).toLowerCase(); lang = ['en', 'fr', 'es'].includes(n) ? n : 'en'; }
     I.setLang(lang);
@@ -1031,17 +1037,21 @@
         active = Math.max(0, Math.min(app.tabs.length - 1, +o.active || 0));
       }
     } catch (e) { app.tabs = []; }
+    if (DEMO) app.tabs = [{ name: app.tp('tab_name', { n: 1 }), circuit: EMPTY }];
     if (!app.tabs.length) {
       let c = LS.get('dcs.circuit');
       try { const o = JSON.parse(c || 'null'); if (!o || !o.comps || !o.comps.length) c = null; } catch (e) { c = null; }
       app.tabs = [{ name: app.tp('tab_name', { n: 1 }), circuit: c || JSON.stringify(DCS.examples.get('divider')) }];
     }
     showTab(active);
-    // a shared circuit opens in its own tab
-    await loadFromHash();
-    // a share link opened while the simulator is already open in this tab
-    window.addEventListener('hashchange', () => { loadFromHash(); });
+    if (!DEMO) {
+      // a shared circuit opens in its own tab
+      await loadFromHash();
+      // a share link opened while the simulator is already open in this tab
+      window.addEventListener('hashchange', () => { loadFromHash(); });
+    }
     app.fit();
+    app.ready = true;
     new ResizeObserver(() => { const w = app.renderer.w, h = app.renderer.h; app.renderer.resize(); if (!w || !h) app.fit(); app.requestRender(); }).observe(cv);
   }
 

@@ -34,7 +34,7 @@
     const palComps = $('palComps');
     const palButtons = [];
     for (const it of PALETTE) {
-      const b = el('button', { type: 'button', class: 'comp' });
+      const b = el('button', { type: 'button', class: 'comp', 'data-key': it.key });
       const cv = el('canvas');
       const span = el('span');
       b.appendChild(cv); b.appendChild(span);
@@ -297,7 +297,15 @@
     });
     document.addEventListener('pointerdown', (e) => { if (!tabMenu.hidden && !tabMenu.contains(e.target) && !$('tabList').contains(e.target)) tabMenu.hidden = true; });
 
-    $('helpBtn').addEventListener('click', () => openModal(t('help_title'), t('help_html')));
+    // Help: the guide with animated demos (the text reference is a button in it)
+    ui.tour = DCS.tour ? DCS.tour.create(app) : null;
+    $('helpBtn').addEventListener('click', () => {
+      document.documentElement.classList.remove('tour-new');
+      app.LS.set('dcs.tourSeen', '1');
+      if (ui.tour && DCS.tourChapters) ui.tour.open(); else openModal(t('help_title'), t('help_html'));
+    });
+    // until the guide has been opened once, a small dot on the Help button (and on ⋯ in the touch layout)
+    if (!app.demo && !app.LS.get('dcs.tourSeen')) document.documentElement.classList.add('tour-new');
     $('examplesBtn').addEventListener('click', () => {
       const g = el('div', { class: 'ex-grid' });
       for (const ex of DCS.examples.list(I.getLang())) {
@@ -1651,7 +1659,7 @@
         if (e.target.closest('button') || win.classList.contains('max')) return;
         const r = win.getBoundingClientRect(), s = $('stage').getBoundingClientRect();
         d = { id: e.pointerId, dx: e.clientX - r.left, dy: e.clientY - r.top, s };
-        head.setPointerCapture(e.pointerId);
+        try { head.setPointerCapture(e.pointerId); } catch (_) { /* (a pointer of the guide's demo) */ }
       });
       head.addEventListener('pointermove', (e) => {
         if (!d || d.id !== e.pointerId) return;
