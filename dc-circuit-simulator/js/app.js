@@ -765,7 +765,15 @@
   }
   function keepCurrent() {
     const t = app.tabs[app.tabIdx];
-    if (t) { t.circuit = snap(); t.view = Object.assign({}, app.view); t.undo = app.undoStack; t.redo = app.redoStack; t.sliders = app.ui && app.ui.quickIds ? app.ui.quickIds() : []; }
+    if (t) {
+      t.circuit = snap(); t.view = Object.assign({}, app.view); t.undo = app.undoStack; t.redo = app.redoStack; t.sliders = app.ui && app.ui.quickIds ? app.ui.quickIds() : [];
+      // what is open on this circuit comes back with it: pinned plots, the Thévenin analysis (and its pinned
+      // window), the selection
+      t.monitors = app.monitors.map(m => (m ? { ids: m.ids.slice(), idx: m.idx, win: (m.win || []).map(w => w && Object.assign({}, w)), levels: m.levels, t: m.t } : null));
+      t.thev = app.thev ? { loadId: app.thev.loadId, a: app.thev.a, b: app.thev.b, side: app.thev.side } : null;
+      t.thevPinned = !!app.thevPinned;
+      t.sel = Array.from(app.sel);
+    }
   }
   function showTab(k) {
     const t = app.tabs[k];
@@ -777,6 +785,12 @@
     app.loadCircuit(c);
     app.undoStack = t.undo || []; app.redoStack = t.redo || [];
     if (t.view) { app.view = Object.assign({}, t.view); app.viewChanged(); } else app.fit();
+    // the analyses and windows that were open on this circuit
+    if (t.monitors) app.monitors = t.monitors.map(m => m && Object.assign({}, m, { win: (m.win || []).map(w => w && Object.assign({}, w)) }));
+    if (t.thev) { app.thev = Object.assign({}, t.thev); if (!app.thev.loadId && !(app.thev.a && app.thev.b)) app.port = { a: app.thev.a, b: app.thev.b }; }
+    app.thevPinned = !!t.thevPinned;
+    if (t.sel) { const live = new Set(app.circuit.comps.map(c => c.id).concat(app.circuit.wires.map(w => w.id))); app.sel.clear(); for (const id of t.sel) if (live.has(id)) app.sel.add(id); }
+    if (t.thev || t.sel) app.circuitChanged();
     app.ui.updateTabs(); app.ui.update(); app.requestRender();
     // the value sliders that were open in this tab come back
     for (const id of t.sliders || []) { const c = app.circuit.comps.find(q => q.id === id); if (c) app.ui.showQuick(c); }
