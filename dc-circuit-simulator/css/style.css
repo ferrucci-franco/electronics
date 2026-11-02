@@ -331,8 +331,8 @@ html.layout-mobile .field input[type=text], html.layout-mobile .field select{fon
 .modal .field .btnrow select{flex:1; min-width:0}
 
 /* I–V characteristic */
-.ivhead{display:flex; align-items:center; justify-content:space-between; gap:8px}
-.ivhead h3{font-size:14.5px}
+.ivhead{display:flex; align-items:center; gap:8px}   /* the title takes the room, the buttons (📌, ⤢) together on the right */
+.ivhead h3{font-size:14.5px; flex:1; min-width:0}
 .ivwrap{position:relative}
 .ivplot{display:block; width:100%; height:240px; border:1px solid var(--border); border-radius:10px; background:var(--canvas); touch-action:pan-y; cursor:crosshair}
 .ivplot.big{height:min(68vh, 560px)}
