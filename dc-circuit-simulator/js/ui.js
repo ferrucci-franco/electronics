@@ -967,9 +967,11 @@
         head.appendChild(big);
         // pin: the plot stays over the circuit and follows the changes of any value, live
         if (k !== undefined) {
-          const pin = el('button', { type: 'button', class: 'btn', title: plainText(t('iv_pin')) }, '📌');
-          pin.addEventListener('click', () => app.pinPlot(k));
+          // a toggle: pressed while this plot is pinned; a second click takes it away
+          const pin = el('button', { type: 'button', class: 'btn iv-pin', 'data-k': String(k), title: plainText(t('iv_pin')) }, '📌');
+          pin.addEventListener('click', () => { if (app.isPinned(k)) app.unpinPlot(k); else app.pinPlot(k); syncPins(); });
           head.insertBefore(pin, big);
+          requestAnimationFrame(syncPins);
         }
         DCS.iv.mount(card, spec);
       }
@@ -1655,6 +1657,20 @@
       tbody.innerHTML = kv;
     };
 
+    // the pinned window of the selection's plot k (same components, same plot), if any
+    const pinKey = () => app.selectedComps().map(c => c.id).sort().join(',');
+    const pinnedSlot = (k) => app.monitors.findIndex(m => m && m.idx === (k || 0) && m.ids.slice().sort().join(',') === pinKey());
+    app.isPinned = (k) => pinnedSlot(k) >= 0;
+    app.unpinPlot = function (k) { const s = pinnedSlot(k); if (s >= 0) { app.monitors[s] = null; ui.updateMonitor(); } };
+    // the 📌 buttons of the I–V cards show whether their plot is pinned
+    function syncPins() {
+      document.querySelectorAll('.iv-pin').forEach((b) => {
+        const on = app.isPinned(+b.dataset.k);
+        b.classList.toggle('on', on);
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+        b.title = plainText(t(on ? 'iv_unpin' : 'iv_pin'));
+      });
+    }
     app.pinPlot = function (k) {
       const ids = app.selectedComps().map(c => c.id), key = ids.slice().sort().join(','), idx = k || 0;
       // the same plot again: nothing new; otherwise a free window, or the oldest one is reused
@@ -1671,6 +1687,7 @@
       const ms = app.monitors;
       for (let k = 0; k < MAXMON; k++) if (ms[k] && !ms[k].ids.every(id => app.circuit.comps.some(c => c.id === id))) ms[k] = null;
       monWins.forEach((w, k) => updateMonWin(w, app.monitors[k]));
+      syncPins();
     };
     function updateMonWin(W, m) {
       const { mon, mtitle, mswap, mreset, mclose, mcv } = W;
