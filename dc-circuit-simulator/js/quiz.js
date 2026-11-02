@@ -60,7 +60,9 @@
   function Quiz(app) {
     const t = app.t;
     const Q = {};
-    let st = null;   // { deck, order, pos, score, wrong, cur: { q, p, sol, revealed, given, right } }
+    // { deck, order, pos, items: [one per question: { q, qi, p, sol, revealed, given, right }], cur = items[pos] }
+    // (a question can be skipped and come back to: Previous / Skip)
+    let st = null;
     const onQuizTab = () => !!(st && app.tabs[app.tabIdx] && app.tabs[app.tabIdx].name === st.tabName);
     // the simulated values are hidden (and the circuit locked) only on the quiz's own tab, while a question is open
     app.quizHidden = () => !!(st && st.cur && !st.cur.revealed && onQuizTab());
@@ -79,7 +81,7 @@
       if (!deck) return false;
       const order = only ? only.slice() : deck.questions.map((_, k) => k);
       // a tab of its own for the circuits of the quiz
-      st = { deck, order, pos: 0, score: 0, wrong: [], total: order.length, tabName: 'Quiz · ' + L(deck.short || deck.title) };
+      st = { deck, order, pos: 0, items: [], score: 0, wrong: [], skipped: 0, total: order.length, tabName: 'Quiz · ' + L(deck.short || deck.title) };
       ensureTab();
       tabBtn().hidden = false;
       loadQuestion();
@@ -96,11 +98,12 @@
     function loadQuestion() {
       const qi = st.order[st.pos];
       const q = st.deck.questions[qi];
-      const d = draw(q);
       ensureTab();
-      st.cur = { q, qi, p: d.p, sol: d.sol, revealed: false, given: null, right: null };
+      // a question already seen (Previous, or skipped) comes back as it was left: same values, its answer if any
+      if (!st.items[st.pos]) { const d = draw(q); st.items[st.pos] = { q, qi, p: d.p, sol: d.sol, revealed: false, given: null, right: null }; }
+      st.cur = st.items[st.pos];
       app.sel.clear();
-      app.loadCircuit(DCS.examples.make(q.circuit(d.p)), { fit: true });
+      app.loadCircuit(DCS.examples.make(q.circuit(st.cur.p)), { fit: true });
       fitVisible();
       app.undoStack = []; app.redoStack = []; app.ui.updateHistory();
       render();
@@ -146,7 +149,6 @@
           app.loadCircuit(DCS.examples.make(spec));
         }
       }
-      if (right) st.score++; else st.wrong.push(c.qi);
       // progress: a question is mastered after two right answers in a row
       const pr = loadProg(app, st.deck.id);
       pr.q = pr.q || {};
@@ -156,8 +158,10 @@
       app.requestRender();
       render();
     }
-    function next() {
-      st.pos++;
+    // to another question (+1: next or skip, −1: previous)
+    function go(dir) {
+      st.pos += dir;
+      if (st.pos < 0) st.pos = 0;
       if (st.pos >= st.order.length) { finish(); return; }
       loadQuestion();
       // phone: the panel goes back up for the next question
@@ -166,6 +170,11 @@
     }
     function finish() {
       st.cur = null;
+      // the score: the questions answered right; the others (wrong, or skipped) can be done again
+      const done = st.order.map((qi, k) => st.items[k]);
+      st.score = done.filter(c => c && c.revealed && c.right).length;
+      st.skipped = done.filter(c => !c || !c.revealed).length;
+      st.wrong = st.order.filter((qi, k) => !(done[k] && done[k].revealed && done[k].right));
       const pr = loadProg(app, st.deck.id);
       if (st.total === st.deck.questions.length) pr.best = Math.max(pr.best || 0, st.score), pr.n = st.total;
       saveProg(app, st.deck.id, pr);
@@ -189,9 +198,10 @@
         // the end of the session
         card.appendChild(el('div', { class: 'quiz-score' }, t('quiz_score', { s: st.score, n: st.total })));
         const pr = loadProg(app, st.deck.id);
+        if (st.skipped) card.appendChild(el('div', { class: 'hint' }, t('quiz_skipped', { n: st.skipped })));
         if (pr.best != null) card.appendChild(el('div', { class: 'hint' }, t('quiz_best', { s: pr.best, n: pr.n })));
         const row = el('div', { class: 'btnrow' });
-        if (st.wrong.length) row.appendChild(btn(t('quiz_retry_wrong', { n: st.wrong.length }), () => { const w = st.wrong.slice(); Q.start(st.deck.id, w); }, 'primary'));
+        if (st.wrong.length) row.appendChild(btn(t(st.skipped ? 'quiz_retry_left' : 'quiz_retry_wrong', { n: st.wrong.length }), () => { const w = st.wrong.slice(); Q.start(st.deck.id, w); }, 'primary'));
         row.appendChild(btn(t('quiz_restart'), () => Q.start(st.deck.id)));
         row.appendChild(btn(t('quiz_quit'), () => Q.quit()));
         card.appendChild(row);
@@ -202,7 +212,7 @@
       // progress bar
       const bar = el('div', { class: 'quiz-bar' });
       const fill = el('span');
-      fill.style.width = (100 * (st.pos + (c.revealed ? 1 : 0)) / st.total) + '%';
+      fill.style.width = (100 * st.items.filter(x => x && x.revealed).length / st.total) + '%';
       bar.appendChild(fill);
       card.appendChild(el('div', { class: 'quiz-pos' }, t('quiz_pos', { i: st.pos + 1, n: st.total }) + (q.title ? ' · ' + L(q.title) : '')));   // (titles are written by the deck: HTML)
       card.appendChild(bar);
@@ -249,10 +259,13 @@
         fb.innerHTML = c.right ? '✓' : '✗' + (a.kind === 'num' ? ' ' + shown : '');
         card.appendChild(fb);
         card.appendChild(el('div', { class: 'quiz-explain' }, keep(L(q.explain)(c.p, c.sol, h) + (c.setNote ? '<br>' + (c.setNote.html || t('quiz_set', { what: c.setNote.label, v: c.setNote.v, st: c.setNote.st ? t('region_' + c.setNote.st) : '' })) : ''))));
-        const row = el('div', { class: 'btnrow' });
-        row.appendChild(btn(st.pos + 1 < st.total ? t('quiz_next') + ' →' : t('quiz_finish'), next, 'primary'));
-        card.appendChild(row);
       }
+      // navigation: Previous, and Skip (not answered) or Next (answered)
+      const nav = el('div', { class: 'btnrow quiz-nav' });
+      if (st.pos > 0) nav.appendChild(btn('← ' + t('quiz_prev'), () => go(-1), 'quiz-prev'));
+      if (c.revealed) nav.appendChild(btn(st.pos + 1 < st.total ? t('quiz_next') + ' →' : t('quiz_finish'), () => go(1), 'primary'));
+      else nav.appendChild(btn(st.pos + 1 < st.total ? t('quiz_skip') + ' →' : t('quiz_finish'), () => go(1), 'quiz-skip'));
+      card.appendChild(nav);
       P.appendChild(card);
     }
     Q.render = render;
