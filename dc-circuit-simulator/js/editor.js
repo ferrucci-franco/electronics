@@ -82,8 +82,12 @@
 
   // pressing the body itself (an inner box) or a terminal, as opposed to its edge where the marks sit
   Editor.prototype.onBody = function (h, p) {
-    return !!h && (h.kind === 'term' || (h.kind === 'comp' && C.hit(h.comp, p.x, p.y, -0.25)));
+    // (a switch is thin: its whole drawing counts, so that a click on it operates it rather than a mark)
+    return !!h && (h.kind === 'term' || (h.kind === 'comp' && C.hit(h.comp, p.x, p.y, C.isSwitch(h.comp) ? 0.05 : -0.25)));
   };
+  // the pointer over a selected switch, where a click opens / closes it (a push button: presses it): a small
+  // toggle instead of the hand
+  const TOGGLE_CURSOR = 'url("data:image/svg+xml,' + encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' width='30' height='30'><rect x='3' y='9' width='24' height='12' rx='6' fill='white' stroke='black' stroke-width='1.8'/><circle cx='9' cy='15' r='3.6' fill='black' opacity='.35'/><circle cx='21' cy='15' r='4.2' fill='black'/><path d='M12.5 15h5' stroke='black' stroke-width='1.4' stroke-dasharray='1.5 1.5'/></svg>") + '") 15 15, pointer';
 
   // rotary potentiometer: anywhere on the round symbol turns the wiper
   Editor.prototype.onKnob = function (c, p) {
@@ -892,6 +896,13 @@
       app.hover = { node: nd };
       this.cv.style.cursor = 'default';
       app.tip({ kind: 'node', node: nd }, p);
+      app.requestRender();
+      return;
+    } else if (h && h.kind === 'comp' && C.isSwitch(h.comp) && app.sel.has(h.comp.id) && this.onBody(h, p)) {
+      // a selected switch: a click changes its state
+      app.hover = { id: h.comp.id };
+      this.cv.style.cursor = TOGGLE_CURSOR;
+      app.tip(h, p);
       app.requestRender();
       return;
     } else if (app.renderer.markAt(p.sx, p.sy, 1) && app.sel.has(app.renderer.markAt(p.sx, p.sy, 1).id) && !this.onBody(h, p)) {
