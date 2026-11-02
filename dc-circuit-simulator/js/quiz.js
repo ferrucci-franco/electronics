@@ -25,7 +25,7 @@
   const L = (o) => (o == null ? '' : typeof o === 'string' ? o : (o[lang()] != null ? o[lang()] : o.fr != null ? o.fr : o.en));
   const pick = (a) => a[Math.floor(Math.random() * a.length)];
   // "VCC = 10 V" never broken across lines: no break around "=" nor between a number and its unit
-  const keep = (html) => String(html).replace(/ = /g, '\u00a0=\u00a0').replace(/(\d) (?=[a-zA-ZµΩ°%])/g, '$1\u00a0');
+  const keep = (html) => String(html).replace(/ = /g, '\u00a0=\u00a0').replace(/ \+ /g, '\u00a0+\u00a0').replace(/(\d) (?=[a-zA-ZµΩ°%])/g, '$1\u00a0');
   // helpers given to the texts: value with unit, the usual junction voltages written in the language
   const helpers = () => {
     const comma = lang() !== 'en';
@@ -263,7 +263,7 @@
         const mastered = Object.values(pr.q || {}).filter(v => v >= 2).length;
         const card = el('div', { class: 'ex-card quiz-card' });
         card.appendChild(el('b', null, esc(L(d.title))));
-        card.appendChild(el('span', null, esc(L(d.desc))));
+        card.appendChild(el('span', null, keep(esc(L(d.desc)))));
         card.appendChild(el('span', { class: 'quiz-prog' }, t('quiz_prog', { n: d.questions.length }) + (pr.best != null ? ' · ' + t('quiz_best', { s: pr.best, n: pr.n }) : '')));
         const row = el('div', { class: 'btnrow' });
         row.appendChild(btn(t('quiz_start'), () => { app.closeModal(); Q.start(d.id); }, 'primary'));

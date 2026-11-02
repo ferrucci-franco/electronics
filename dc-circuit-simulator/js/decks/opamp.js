@@ -410,9 +410,9 @@
     title: { fr: 'AOP idéal en continu', es: 'Amplificador operacional ideal en continua', en: 'Ideal op-amp in DC' },
     short: { fr: 'AOP', es: 'AO', en: 'Op-amp' },
     desc: {
-      fr: 'Inverseur, non inverseur, suiveur, sommateur, soustracteur, y = m·x + b ; saturation.',
-      es: 'Inversor, no inversor, seguidor, sumador, restador, y = m·x + b; saturación.',
-      en: 'Inverting, non-inverting, follower, summer, difference, y = m·x + b; saturation.'
+      fr: 'Inverseur, non inverseur, suiveur, sommateur, soustracteur, y = m·x + b ; saturation.',
+      es: 'Inversor, no inversor, seguidor, sumador, restador, y = m·x + b; saturación.',
+      en: 'Inverting, non-inverting, follower, summer, difference, y = m·x + b; saturation.'
     },
     questions
   });
