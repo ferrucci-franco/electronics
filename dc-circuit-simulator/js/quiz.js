@@ -237,7 +237,8 @@
         card.appendChild(row);
         // the prefixes that can be typed (for every numeric question)
         if (!c.revealed) card.appendChild(el('div', { class: 'quiz-suffix' }, t('quiz_suffix')));
-        if (!c.revealed) requestAnimationFrame(() => { if (!document.documentElement.classList.contains('layout-mobile')) inp.focus(); });
+        // (no automatic focus: a caret blinking in a field the student did not choose is misleading when the
+        // page itself does not have the keyboard; the field takes it when tapped or clicked)
       }
       if (c.revealed) {
         const fb = el('div', { class: 'quiz-fb ' + (c.right ? 'right' : 'wrong') });
