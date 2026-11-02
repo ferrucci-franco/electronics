@@ -1604,12 +1604,23 @@
       const W = st.clientWidth, H = st.clientHeight;
       let wins;
       try { wins = [qs, tmon].concat(monWins.map(m => m.mon), ui.floats); } catch (e) { return; }   // (not all built yet)
+      let resized = false;
       for (const w of wins) {
         if (!w || w.hidden || w.classList.contains('max')) continue;
+        // a window larger than the room there is (a size kept from a bigger screen, the panels shown again)
+        // shrinks to fit: narrower, and a shorter plot
+        if (w.offsetWidth > W - 8) { Object.assign(w.style, { width: (W - 8) + 'px', right: 'auto' }); resized = true; }
+        const pc = w.querySelector('.mon-cv');
+        if (pc && w.offsetHeight > H - 8) {
+          pc.style.height = Math.max(90, pc.offsetHeight - (w.offsetHeight - (H - 8))) + 'px';
+          resized = true;
+        }
         const x = w.offsetLeft, y = w.offsetTop, ww = w.offsetWidth, hh = w.offsetHeight;
         const nx = Math.max(4, Math.min(W - ww - 4, x)), ny = Math.max(4, Math.min(H - hh - 4, y));
         if (nx !== x || ny !== y) Object.assign(w.style, { left: nx + 'px', top: ny + 'px', right: 'auto', bottom: 'auto' });
       }
+      // the plots are drawn again at their new size
+      if (resized) requestAnimationFrame(() => { ui.updateMonitor(); if (ui.sweep) ui.sweep.update(false); });
     };
     window.addEventListener('resize', () => requestAnimationFrame(ui.clampFloats));
     /* pinned Thévenin values: a small window over the circuit with V_Th, R_Th = R_eq and I_N (or V_oc and I_sc
