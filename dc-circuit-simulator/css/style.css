@@ -55,9 +55,9 @@ html.layout-desktop.hide-pal .app{grid-template-columns:minmax(0,1fr) var(--side
 html.layout-desktop.hide-side .app{grid-template-columns:var(--pal-w) minmax(0,1fr); grid-template-areas:"head head" "pal stage"}
 html.layout-desktop.hide-pal.hide-side .app{grid-template-columns:minmax(0,1fr); grid-template-areas:"head" "stage"}
 /* the tabs that hide / show the side bars: amber, so that they are noticed (both themes) */
-:root{--edge-bg:#ffd451; --edge-bd:#e2a800; --edge-fg:#5a4200; --edge-hover:#ffc61a}
-html.dark{--edge-bg:#e3b23c; --edge-bd:#b98a1c; --edge-fg:#2b2000; --edge-hover:#f2c14e}
-.edge-btn{position:absolute; top:50%; transform:translateY(-50%); width:18px; height:58px; padding:0; display:flex; align-items:center; justify-content:center; border:1px solid var(--edge-bd); background:var(--edge-bg); color:var(--edge-fg); box-shadow:0 2px 8px rgba(120,80,0,.25); cursor:pointer; z-index:12; transition:background .15s, width .15s}
+:root{--edge-bg:#f8e7b0; --edge-bd:#e2c779; --edge-fg:#7a5c12; --edge-hover:#f4dc92}
+html.dark{--edge-bg:#4a3f22; --edge-bd:#6b5a2c; --edge-fg:#e8c66e; --edge-hover:#5a4c27}
+.edge-btn{position:absolute; top:50%; transform:translateY(-50%); width:18px; height:58px; padding:0; display:flex; align-items:center; justify-content:center; border:1px solid var(--edge-bd); background:var(--edge-bg); color:var(--edge-fg); box-shadow:0 2px 6px rgba(80,60,10,.15); cursor:pointer; z-index:12; transition:background .15s, width .15s}
 .edge-btn:hover{background:var(--edge-hover); width:20px}
 .edge-btn svg{width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:2.8; stroke-linecap:round; stroke-linejoin:round; transition:transform .15s}
 .edge-btn.left{left:-1px; border-radius:0 9px 9px 0}
