@@ -68,6 +68,12 @@ body.loop-collapsed #sidebar{height:calc(100% - 45px);margin-top:45px}
    panneaux (padding 8 px) cède son bord gauche, sinon on cumulait 19 px. */
 #sb-edge{flex:0 0 7px;display:flex;align-items:center;justify-content:center;
          background:var(--app-bg)}
+/* La gouttière suit le haut du panneau latéral : le schéma de la boucle couvre
+   la bande du dessus, la languette se centre donc dans l'espace qui reste, et
+   suit le schéma quand on le replie ou le redimensionne. Panneau replié, la
+   gouttière reprend toute la hauteur. */
+body:not(.sb-hidden) #sb-edge{margin-top:calc(var(--loop-h) + 15px);transition:margin-top .18s}
+body.loop-collapsed:not(.sb-hidden) #sb-edge{margin-top:45px}
 /* La languette est pleine et bleue, pas discrète : elle doit se repérer d'un
    coup d'œil, panneau ouvert comme replié. Le chevron prend la couleur du fond
    des panneaux, ce qui donne du blanc sur bleu foncé en thème clair et du
