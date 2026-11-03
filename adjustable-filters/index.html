@@ -333,6 +333,11 @@
           <label for="showPhase" id="showPhaseLabel" class="grow">Show phase</label>
           <input id="showPhase" type="checkbox" />
         </div>
+        <div class="row">
+          <label for="showSpectrum" id="showSpectrumLabel" class="grow">Show harmonics (spectral lines)</label>
+          <input id="showSpectrum" type="checkbox" />
+        </div>
+        <div class="muted hint" id="spectrumHint" hidden></div>
       </div>
       <div class="card">
         <h3 id="otherOptionsTitle">Other options</h3>
@@ -406,7 +411,10 @@ document.addEventListener('DOMContentLoaded', () => {
       wave:'Type', waveOpt:{sin:'Sine',square:'Square',triangle:'Triangle',saw:'Sawtooth',trap:'Trapezoid'},
       freq:'Frequency f', nmax:'Cycles N<sub>max</sub>', hint:'Amplitude = 1. Time window is t ∈ [0, N<sub>max</sub>/f].',
       order:'Order', cutoff:'Cutoff frequency f<sub>c</sub>',
-      fc1:'Filter 1', fc2:'Filter 2', fcCascade:'Cascade', f1Enabled:'Enable filter 1', f2Enabled:'Enable filter 2', filterType:'Type', layoutCard:'Layout', showTimePlot:'Show time response', showBodePlot:'Show Bode plot', bodeCard:'Bode plot', otherOptions:'Other options', bodeXScale:'X scale', bodeScale:'Y scale', bodeXLinear:'Linear', bodeXLog:'Log', bodeYLinear:'Linear', bodeYDb:'dB (log)', showPhase:'Show phase', cascadeFilters:'Cascade filters', cascadeHint:'Both filter 1 and 2 must be enabled to use this feature.',
+      fc1:'Filter 1', fc2:'Filter 2', fcCascade:'Cascade', f1Enabled:'Enable filter 1', f2Enabled:'Enable filter 2', filterType:'Type', layoutCard:'Layout', showTimePlot:'Show time response', showBodePlot:'Show Bode plot', bodeCard:'Bode plot', otherOptions:'Other options', bodeXScale:'X scale', bodeScale:'Y scale', bodeXLinear:'Linear', bodeXLog:'Log', bodeYLinear:'Linear', bodeYDb:'dB (log)', showPhase:'Show phase', showSpectrum:'Show harmonics (spectral lines)',
+      spectrumHint:'Steady-state lines of the periodic input, x(t) = Σ A<sub>k</sub> sin(2πkft + φ<sub>k</sub>). Each output line is A<sub>k</sub>·|H(kf)| (in dB: A<sub>k</sub> + |H|<sub>dB</sub>) with phase φ<sub>k</sub> + ∠H(kf).',
+      specIn:'Input harmonics', specY1:'Output 1 harmonics', specY2:'Output 2 harmonics', specYdB:'|H|, A<sub>k</sub> (dB)', specYlin:'|H|, A<sub>k</sub> (linear)', specPhaseY:'∠H, φ<sub>k</sub> (°)',
+      cascadeFilters:'Cascade filters', cascadeHint:'Both filter 1 and 2 must be enabled to use this feature.',
       infoBtn:'Filter information', infoTitle:'Filter equations', close:'Close', theme:'Toggle theme', language:'Language', resetView:'Reset view',
       infoType:'Type', infoCutoff:'Cutoff frequency', infoDiffEq:'Differential equation', infoTf:'Transfer function',
       infoDisabledNote:'This filter is disabled in the plots. The equations below correspond to its configured parameters.',
@@ -418,7 +426,10 @@ document.addEventListener('DOMContentLoaded', () => {
       wave:'Type', waveOpt:{sin:'Sinusoïdal',square:'Carré',triangle:'Triangulaire',saw:'Dent de scie',trap:'Trapézoïdal'},
       freq:'Fréquence f', nmax:'Cycles N<sub>max</sub>', hint:'Amplitude = 1. Fenêtre temporelle t ∈ [0, N<sub>max</sub>/f].',
       order:'Ordre', cutoff:'Fréquence de coupure f<sub>c</sub>',
-      fc1:'Filtre 1', fc2:'Filtre 2', fcCascade:'Cascade', f1Enabled:'Activer le filtre 1', f2Enabled:'Activer le filtre 2', filterType:'Type', layoutCard:'Disposition', showTimePlot:'Afficher la réponse temporelle', showBodePlot:'Afficher le diagramme de Bode', bodeCard:'Diagramme de Bode', otherOptions:'Autres options', bodeXScale:'Échelle X', bodeScale:'Échelle Y', bodeXLinear:'Linéaire', bodeXLog:'Log', bodeYLinear:'Linéaire', bodeYDb:'dB (log)', showPhase:'Afficher la phase', cascadeFilters:'Mettre les filtres en cascade', cascadeHint:'Les filtres 1 et 2 doivent être activés pour utiliser cette fonction.',
+      fc1:'Filtre 1', fc2:'Filtre 2', fcCascade:'Cascade', f1Enabled:'Activer le filtre 1', f2Enabled:'Activer le filtre 2', filterType:'Type', layoutCard:'Disposition', showTimePlot:'Afficher la réponse temporelle', showBodePlot:'Afficher le diagramme de Bode', bodeCard:'Diagramme de Bode', otherOptions:'Autres options', bodeXScale:'Échelle X', bodeScale:'Échelle Y', bodeXLinear:'Linéaire', bodeXLog:'Log', bodeYLinear:'Linéaire', bodeYDb:'dB (log)', showPhase:'Afficher la phase', showSpectrum:'Afficher les harmoniques (raies spectrales)',
+      spectrumHint:'Raies en régime permanent de l’entrée périodique, x(t) = Σ A<sub>k</sub> sin(2πkft + φ<sub>k</sub>). Chaque raie de sortie vaut A<sub>k</sub>·|H(kf)| (en dB : A<sub>k</sub> + |H|<sub>dB</sub>) avec la phase φ<sub>k</sub> + ∠H(kf).',
+      specIn:'Harmoniques entrée', specY1:'Harmoniques sortie 1', specY2:'Harmoniques sortie 2', specYdB:'|H|, A<sub>k</sub> (dB)', specYlin:'|H|, A<sub>k</sub> (linéaire)', specPhaseY:'∠H, φ<sub>k</sub> (°)',
+      cascadeFilters:'Mettre les filtres en cascade', cascadeHint:'Les filtres 1 et 2 doivent être activés pour utiliser cette fonction.',
       infoBtn:'Informations du filtre', infoTitle:'Équations du filtre', close:'Fermer', theme:'Changer de thème', language:'Langue', resetView:'Réinitialiser la vue',
       infoType:'Type', infoCutoff:'Fréquence de coupure', infoDiffEq:'Équation différentielle', infoTf:'Fonction de transfert',
       infoDisabledNote:'Ce filtre est désactivé dans les graphiques. Les équations ci-dessous correspondent à ses paramètres configurés.',
@@ -430,7 +441,10 @@ document.addEventListener('DOMContentLoaded', () => {
       wave:'Tipo', waveOpt:{sin:'Seno',square:'Cuadrada',triangle:'Triangular',saw:'Diente de sierra',trap:'Trapezoidal'},
       freq:'Frecuencia f', nmax:'Ciclos N<sub>max</sub>', hint:'Amplitud = 1. Ventana temporal t ∈ [0, N<sub>max</sub>/f].',
       order:'Orden', cutoff:'Frecuencia de corte f<sub>c</sub>',
-      fc1:'Filtro 1', fc2:'Filtro 2', fcCascade:'Cascada', f1Enabled:'Activar filtro 1', f2Enabled:'Activar filtro 2', filterType:'Tipo', layoutCard:'Disposición', showTimePlot:'Mostrar respuesta temporal', showBodePlot:'Mostrar diagrama de Bode', bodeCard:'Diagrama de Bode', otherOptions:'Otras opciones', bodeXScale:'Escala X', bodeScale:'Escala Y', bodeXLinear:'Lineal', bodeXLog:'Log', bodeYLinear:'Lineal', bodeYDb:'dB (log)', showPhase:'Mostrar fase', cascadeFilters:'Filtros en cascada', cascadeHint:'Los filtros 1 y 2 deben estar activados para usar esta función.',
+      fc1:'Filtro 1', fc2:'Filtro 2', fcCascade:'Cascada', f1Enabled:'Activar filtro 1', f2Enabled:'Activar filtro 2', filterType:'Tipo', layoutCard:'Disposición', showTimePlot:'Mostrar respuesta temporal', showBodePlot:'Mostrar diagrama de Bode', bodeCard:'Diagrama de Bode', otherOptions:'Otras opciones', bodeXScale:'Escala X', bodeScale:'Escala Y', bodeXLinear:'Lineal', bodeXLog:'Log', bodeYLinear:'Lineal', bodeYDb:'dB (log)', showPhase:'Mostrar fase', showSpectrum:'Mostrar armónicos (líneas espectrales)',
+      spectrumHint:'Líneas en régimen permanente de la entrada periódica, x(t) = Σ A<sub>k</sub> sen(2πkft + φ<sub>k</sub>). Cada línea de salida vale A<sub>k</sub>·|H(kf)| (en dB: A<sub>k</sub> + |H|<sub>dB</sub>) con fase φ<sub>k</sub> + ∠H(kf).',
+      specIn:'Armónicos entrada', specY1:'Armónicos salida 1', specY2:'Armónicos salida 2', specYdB:'|H|, A<sub>k</sub> (dB)', specYlin:'|H|, A<sub>k</sub> (lineal)', specPhaseY:'∠H, φ<sub>k</sub> (°)',
+      cascadeFilters:'Filtros en cascada', cascadeHint:'Los filtros 1 y 2 deben estar activados para usar esta función.',
       infoBtn:'Información del filtro', infoTitle:'Ecuaciones del filtro', close:'Cerrar', theme:'Cambiar tema', language:'Idioma', resetView:'Restablecer vista',
       infoType:'Tipo', infoCutoff:'Frecuencia de corte', infoDiffEq:'Ecuación diferencial', infoTf:'Función de transferencia',
       infoDisabledNote:'Este filtro está desactivado en las gráficas. Las ecuaciones siguientes corresponden a sus parámetros configurados.',
@@ -468,6 +482,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let timeBuilt=false, bodeMagBuilt=false, bodePhaseBuilt=false;
   let bodeCache1=null, bodeCache2=null, bodeCacheCascade=null;
+  let specCache=[];
   let _syncing=false;
   let infoFilterFocus = 1;
   let infoOpener = null;
@@ -480,7 +495,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fc1:250, fc2:150, f1type:'lp', f2type:'lp',
     order1:4, order2:4,
     y1:null, y2:null,
-    bodeDb:true, xLog:true, showPhase:false, showTimePlot:true, showBodePlot:true, f1Enabled:true, f2Enabled:false, cascadeFilters:false
+    bodeDb:true, xLog:true, showPhase:false, showSpectrum:false, showTimePlot:true, showBodePlot:true, f1Enabled:true, f2Enabled:false, cascadeFilters:false
   };
 
   const getFs = () => state.fs;
@@ -522,10 +537,17 @@ document.addEventListener('DOMContentLoaded', () => {
     ['xaxis','yaxis'].forEach(ax => Object.keys(a).forEach(k => { if(k!=='automargin') out[`${ax}.${k}`] = a[k]; }));
     return out;
   }
+  // Bode legend with the harmonic entries can wrap to a second row: make room above the plot
+  function legendExtraTop(id){
+    if(!(id === 'bodeMag' || id === 'bodePhase') || !state.showSpectrum) return 0;
+    const n = [filter1Visible(), filter2Visible(), cascadeBodeVisible()].filter(Boolean).length
+            + stemVisible().filter(Boolean).length;
+    return n > (isNarrowPlot(id) ? 3 : 4) ? 22 : 0;
+  }
   function sizeLayout(id){
     const narrow = isNarrowPlot(id);
     return {
-      margin:{l: narrow ? 52 : 64, r: narrow ? 10 : 16, t: narrow ? 64 : 76, b: narrow ? 42 : 48},
+      margin:{l: narrow ? 52 : 64, r: narrow ? 10 : 16, t: (narrow ? 64 : 76) + legendExtraTop(id), b: narrow ? 42 : 48},
       // narrow plots: title on the left so the mode bar (always shown on touch) does not cover it
       'title.x': narrow ? 0.03 : 0.5, 'title.xanchor': narrow ? 'left' : 'center',
       'title.font.size': narrow ? 15 : 18,
@@ -568,6 +590,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const bodeColors = {'line.color':[COLORS.f1, COLORS.f2, COLORS.cascade]};
       if(bodeMagBuilt) Plotly.update('bodeMag', bodeColors, {...themed, shapes:cursorShapes()}, [0,1,2]);
       if(bodePhaseBuilt) Plotly.update('bodePhase', bodeColors, {...themed, shapes:cursorShapes()}, [0,1,2]);
+      if(bodeMagBuilt) restyleStems('bodeMag', 'mag');
+      if(bodePhaseBuilt) restyleStems('bodePhase', 'phase');
     });
   })();
 
@@ -588,7 +612,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.title = t.title;
     [['title', t.title], ['inCardTitle', t.inCard], ['waveLbl', t.wave],
      ['freqLbl', t.freq], ['nmaxLbl', t.nmax], ['inHint', t.hint],
-     ['fc1Label', t.fc1], ['fc2Label', t.fc2], ['f1EnabledLabel', t.f1Enabled], ['f2EnabledLabel', t.f2Enabled], ['type1Label', t.filterType], ['type2Label', t.filterType], ['cut1Label', t.cutoff], ['cut2Label', t.cutoff], ['layoutCardTitle', t.layoutCard], ['showTimePlotLabel', t.showTimePlot], ['showBodePlotLabel', t.showBodePlot], ['bodeCardTitle', t.bodeCard], ['otherOptionsTitle', t.otherOptions], ['bodeXScaleLabel', t.bodeXScale], ['bodeScaleLabel', t.bodeScale], ['bodeXLinearLabel', t.bodeXLinear], ['bodeXLogLabel', t.bodeXLog], ['bodeLinLabel', t.bodeYLinear], ['bodeDbLabel', t.bodeYDb], ['showPhaseLabel', t.showPhase], ['cascadeFiltersLabel', t.cascadeFilters],
+     ['fc1Label', t.fc1], ['fc2Label', t.fc2], ['f1EnabledLabel', t.f1Enabled], ['f2EnabledLabel', t.f2Enabled], ['type1Label', t.filterType], ['type2Label', t.filterType], ['cut1Label', t.cutoff], ['cut2Label', t.cutoff], ['layoutCardTitle', t.layoutCard], ['showTimePlotLabel', t.showTimePlot], ['showBodePlotLabel', t.showBodePlot], ['bodeCardTitle', t.bodeCard], ['otherOptionsTitle', t.otherOptions], ['bodeXScaleLabel', t.bodeXScale], ['bodeScaleLabel', t.bodeScale], ['bodeXLinearLabel', t.bodeXLinear], ['bodeXLogLabel', t.bodeXLog], ['bodeLinLabel', t.bodeYLinear], ['bodeDbLabel', t.bodeYDb], ['showPhaseLabel', t.showPhase], ['showSpectrumLabel', t.showSpectrum], ['spectrumHint', t.spectrumHint], ['cascadeFiltersLabel', t.cascadeFilters],
      ['order1Label', t.order], ['order2Label', t.order]
     ].forEach(([id,txt])=>{ const el=$('#'+id); if(el) el.innerHTML=txt; });
     [['infoBtn1', t.infoBtn], ['infoBtn2', t.infoBtn], ['infoModalTitle', t.infoTitle],
@@ -610,11 +634,11 @@ document.addEventListener('DOMContentLoaded', () => {
         {'title.text':'<b>'+t.timeTitle+'</b>', 'yaxis.title.text':t.amplitude}, [0,1,2]);
     }
     if(window.Plotly && bodeMagBuilt){
-      Plotly.relayout('bodeMag', {'title.text':'<b>'+t.bodeTitle+'</b>', 'xaxis.title.text':t.bodeX, 'yaxis.title.text': state.bodeDb ? t.bodeYdB : t.bodeYlin});
+      Plotly.relayout('bodeMag', {'title.text':'<b>'+t.bodeTitle+'</b>', 'xaxis.title.text':t.bodeX, 'yaxis.title.text': magYTitle()});
       applyBodeMode();
     }
     if(window.Plotly && bodePhaseBuilt){
-      Plotly.relayout('bodePhase', {'title.text':'<b>'+t.bodePhaseTitle+'</b>', 'xaxis.title.text':t.bodeX, 'yaxis.title.text': t.phaseY});
+      Plotly.relayout('bodePhase', {'title.text':'<b>'+t.bodePhaseTitle+'</b>', 'xaxis.title.text':t.bodeX, 'yaxis.title.text': phaseYTitle()});
       ensurePhasePlot();
     }
     document.querySelectorAll('.modebar-btn[data-reset-view]').forEach(b => b.setAttribute('data-title', t.resetView));
@@ -634,6 +658,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function updateFsFromFreq(){ state.fs = Math.min(Math.max(SPP * state.freq, FS_MIN), FS_MAX); }
 
   // ========= Señal de entrada =========
+  const TRAP_RISE = 0.20;   // trapezoid: rise and fall each take this fraction of the period
   function buildInput(){
     updateFsFromFreq();
     state.duration = viewWindowSec();
@@ -653,7 +678,7 @@ document.addEventListener('DOMContentLoaded', () => {
         else if(state.wave==='triangle'){ const tri = 1 - Math.abs((u*2)%2 - 1); arr[n] = 2*tri - 1; }
         else if(state.wave==='saw'){ arr[n] = 2*u - 1; }
         else{
-          const r = Math.min(0.499, Math.max(0.001, 0.20));
+          const r = Math.min(0.499, Math.max(0.001, TRAP_RISE));
           const f = (1 - 2*r)/2;
           if(u < r){ arr[n] = -1 + (u/r)*2; }
           else if(u < r+f){ arr[n] =  1; }
@@ -831,9 +856,11 @@ document.addEventListener('DOMContentLoaded', () => {
       ? {
           f: bodeCache1.f,
           mag: bodeCache1.mag.map((m, i) => m * bodeCache2.mag[i]),
-          ph: bodeCache1.ph.map((p, i) => p + bodeCache2.ph[i])
+          ph: bodeCache1.ph.map((p, i) => p + bodeCache2.ph[i]),
+          secs: bodeCache1.secs.concat(bodeCache2.secs)
         }
       : null;
+    rebuildSpectrum();
   }
   function updateFilterUI(cardId, enabled, ids){
     const card = $(cardId);
@@ -908,38 +935,37 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ========= Bode (mag + phase) =========
+  // the same digital sections as the time simulation, so the Bode matches the plotted outputs
+  function discreteSections(fc, kind, N){
+    return butterSections(N).map(secSpec => secSpec.order===1
+      ? ((kind==='hp') ? firstOrderHPButter(fc) : firstOrderLPButter(fc))
+      : ((kind==='hp') ? biquadHPButter(fc,secSpec.Q) : biquadLPButter(fc,secSpec.Q)));
+  }
+  // H(e^{jω}) of a chain of sections at frequency ff (Hz), as [re, im]
+  function evalH(secs, ff){
+    const w=2*Math.PI*ff/getFs(), z1r=Math.cos(-w),z1i=Math.sin(-w), z2r=Math.cos(-2*w),z2i=Math.sin(-2*w);
+    let hr=1, hi=0;
+    for(const s of secs){
+      const nr=s.b0+s.b1*z1r+s.b2*z2r, ni=s.b1*z1i+s.b2*z2i;
+      const dr=1+s.a1*z1r+s.a2*z2r, di=s.a1*z1i+s.a2*z2i;
+      const den=dr*dr+di*di;
+      const sr=(nr*dr+ni*di)/den, si=(ni*dr-nr*di)/den;
+      const rr = hr*sr - hi*si, ii = hr*si + hi*sr;
+      hr=rr; hi=ii;
+    }
+    return [hr,hi];
+  }
   function bodeFor(fc, kind, N, nPts=512){
-    const fs = getFs();
     const fmin = BODE_FMIN;
-    const fmax = Math.min(fs/2, BODE_FMAX);
-    const sections = butterSections(N);
+    const fmax = bodeCurrentFMax();
+    const secs = discreteSections(fc, kind, N);
     const f=new Array(nPts), mag=new Array(nPts), ph=new Array(nPts);
 
     const logfmin = Math.log10(fmin), logfmax = Math.log10(fmax);
     let prev = 0;
     for(let i=0;i<nPts;i++){
       const a=i/(nPts-1), ff=pow10(logfmin + a*(logfmax-logfmin));
-      const w=2*Math.PI*ff/fs, z1r=Math.cos(-w),z1i=Math.sin(-w), z2r=Math.cos(-2*w),z2i=Math.sin(-2*w);
-
-      function Hsec(secSpec){
-        const s = secSpec.order===1
-          ? ((kind==='hp') ? firstOrderHPButter(fc) : firstOrderLPButter(fc))
-          : ((kind==='hp') ? biquadHPButter(fc,secSpec.Q) : biquadLPButter(fc,secSpec.Q));
-        const nr=s.b0+s.b1*z1r+s.b2*z2r, ni=s.b1*z1i+s.b2*z2i;
-        const dr=1+s.a1*z1r+s.a2*z2r, di=s.a1*z1i+s.a2*z2i;
-        const den=dr*dr+di*di;
-        const hr=(nr*dr+ni*di)/den, hi=(ni*dr-nr*di)/den;
-        return [hr,hi];
-      }
-
-      let hr=1, hi=0;
-      for(const secSpec of sections){
-        const h=Hsec(secSpec);
-        const rr = hr*h[0] - hi*h[1];
-        const ii = hr*h[1] + hi*h[0];
-        hr=rr; hi=ii;
-      }
-
+      const [hr,hi] = evalH(secs, ff);
       const m = Math.hypot(hr,hi);
       let ang = Math.atan2(hi,hr);
       let diff = ang - prev;
@@ -949,7 +975,119 @@ document.addEventListener('DOMContentLoaded', () => {
 
       f[i]=ff; mag[i]=m; ph[i]=rad2deg(ang);
     }
-    return {f, mag, ph};
+    return {f, mag, ph, secs};
+  }
+
+  // ========= Spectral lines of the periodic input =========
+  // Fourier series of the waveforms built in buildInput (amplitude 1), sine reference:
+  //   x(t) = Σ A_k sin(2π k f t + φ_k)
+  // In steady state the filter turns each line into A_k·|H(kf)| with phase φ_k + ∠H(kf).
+  function inputHarmonics(wave, kmax){
+    const out = [];
+    const wrap = d => { const w = ((d + 180) % 360 + 360) % 360 - 180; return w === -180 ? 180 : w; };
+    for(let k=1;k<=kmax;k++){
+      let A = 0, ph = 0;
+      if(wave==='sin'){ if(k===1) A = 1; }
+      else if(wave==='square'){ if(k%2) A = 4/(Math.PI*k); }
+      else if(wave==='triangle'){ if(k%2){ A = 8/(Math.PI*Math.PI*k*k); ph = -90; } }
+      else if(wave==='saw'){ A = 2/(Math.PI*k); ph = 180; }
+      else if(k%2){
+        // trapezoid = square wave delayed by TRAP_RISE/2 periods, then averaged over TRAP_RISE periods
+        const u = Math.PI*k*TRAP_RISE, sinc = Math.sin(u)/u;
+        A = 4/(Math.PI*k)*Math.abs(sinc);
+        ph = -180*k*TRAP_RISE + (sinc < 0 ? 180 : 0);
+      }
+      if(A > 1e-9) out.push({k, A, ph:wrap(ph)});
+    }
+    return out;
+  }
+  // value of a Bode curve at ff, interpolated on its log-spaced grid
+  function curveAt(curve, arr, ff){
+    const n = curve.f.length, l0 = Math.log10(curve.f[0]), l1 = Math.log10(curve.f[n-1]);
+    const p = clamp((Math.log10(ff) - l0)/(l1 - l0)*(n-1), 0, n-1);
+    const i = Math.min(n-2, Math.floor(p)), a = p - i;
+    return arr[i]*(1-a) + arr[i+1]*a;
+  }
+  // exact response at a line; the phase takes the same 360° branch as the unwrapped curve
+  function lineResponse(curve, ff){
+    const [hr,hi] = evalH(curve.secs, ff);
+    let ph = rad2deg(Math.atan2(hi,hr));
+    ph += 360*Math.round((curveAt(curve, curve.ph, ff) - ph)/360);
+    return {mag:Math.hypot(hr,hi), ph};
+  }
+  function rebuildSpectrum(){
+    const kmax = Math.floor(bodeCurrentFMax()/state.freq + 1e-9);
+    const c2 = state.cascadeFilters && bodeCacheCascade ? bodeCacheCascade : bodeCache2;
+    specCache = inputHarmonics(state.wave, kmax).map(l => {
+      const f = l.k*state.freq, h1 = lineResponse(bodeCache1, f), h2 = lineResponse(c2, f);
+      return {k:l.k, f, A:l.A, ph:l.ph,
+              out1:{A:l.A*h1.mag, ph:l.ph + h1.ph},
+              out2:{A:l.A*h2.mag, ph:l.ph + h2.ph}};
+    });
+  }
+  function stemVisible(){
+    const on = !!state.showSpectrum;
+    return [on, on && filter1Visible(), on && filter2Visible()];
+  }
+  // dB stems need a floor: just below everything drawn on the magnitude plot
+  function magDbFloor(){
+    let m = 0;
+    const scan = a => { if(a > 0){ const d = 20*log10(a); if(d < m) m = d; } };
+    if(filter1Visible()) bodeCache1.mag.forEach(scan);
+    if(filter2Visible()) bodeCache2.mag.forEach(scan);
+    if(cascadeBodeVisible()) bodeCacheCascade.mag.forEach(scan);
+    const vis = stemVisible();
+    specCache.forEach(l => { if(vis[0]) scan(l.A); if(vis[1]) scan(l.out1.A); if(vis[2]) scan(l.out2.A); });
+    return Math.max(-400, Math.floor(m/10)*10 - 10);
+  }
+  function magLinTop(){
+    if(!state.showSpectrum) return 1;
+    let m = 1;
+    const vis = stemVisible();
+    specCache.forEach(l => { if(vis[0]) m = Math.max(m, l.A); if(vis[1]) m = Math.max(m, l.out1.A); if(vis[2]) m = Math.max(m, l.out2.A); });
+    return m*1.06;
+  }
+  const fmtAmp = a => a >= 1e-3 ? a.toPrecision(3) : a.toExponential(2);
+  // six traces per Bode plot: three stem-line traces (no hover), then three marker traces
+  const STEM_IDX = [3,4,5,6,7,8];
+  function stemTraceList(){
+    const lines = [0,1,2].map(i => ({type:'scatter', mode:'lines', x:[], y:[], visible:false, showlegend:false,
+      legendgroup:'spec'+i, hoverinfo:'skip', line:{width: i ? 2 : 1.5}}));
+    const marks = [0,1,2].map(i => ({type:'scatter', mode:'markers', x:[], y:[], visible:false, legendgroup:'spec'+i,
+      text:[], hovertemplate:'%{text}<extra></extra>',
+      marker: i ? {symbol:'circle', size:7} : {symbol:'circle-open', size:11, line:{width:2}}}));
+    return lines.concat(marks);
+  }
+  function stemData(plot){
+    const t = TXT[LANG], vis = stemVisible(), colors = [COLORS.input, COLORS.f1, output2Color()];
+    const names = [t.specIn, t.specY1, t.specY2];
+    const pick = [l => l, l => l.out1, l => l.out2];
+    const dB = plot === 'mag' && state.bodeDb;
+    const base = plot === 'phase' ? 0 : (dB ? magDbFloor() : 0);
+    const lx=[], ly=[], mx=[], my=[], mt=[];
+    for(let s=0;s<3;s++){
+      const X=[], Y=[], PX=[], PY=[], T=[];
+      if(vis[s]) specCache.forEach(l => {
+        const r = pick[s](l);
+        const v = plot === 'phase' ? r.ph : (dB ? 20*log10(r.A) : r.A);
+        if(!Number.isFinite(v)) return;
+        X.push(l.f, l.f, null); Y.push(base, v, null);
+        PX.push(l.f); PY.push(v);
+        const val = plot === 'phase' ? `φ = ${r.ph.toFixed(1)}°` : `A = ${fmtAmp(r.A)} (${(20*log10(r.A)).toFixed(1)} dB)`;
+        T.push(`<b>${names[s]}</b><br>k = ${l.k} · ${fmtHz(l.f)}<br>${val}`);
+      });
+      lx.push(X); ly.push(Y); mx.push(PX); my.push(PY); mt.push(T);
+    }
+    return {
+      x: lx.concat(mx), y: ly.concat(my), text: [[],[],[]].concat(mt),
+      visible: vis.concat(vis), name: names.concat(names),
+      'line.color': colors.concat(colors), 'marker.color': colors.concat(colors)
+    };
+  }
+  function restyleStems(id, plot){
+    const gd = document.getElementById(id);
+    if(!(window.Plotly && gd && gd.data && gd.data.length >= 9)) return Promise.resolve();
+    return Plotly.restyle(gd, stemData(plot), STEM_IDX);
   }
 
   // ========= Plotly helpers =========
@@ -994,10 +1132,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  function magYTitle(){
+    const t = TXT[LANG];
+    return state.showSpectrum ? (state.bodeDb ? t.specYdB : t.specYlin) : (state.bodeDb ? t.bodeYdB : t.bodeYlin);
+  }
+  function phaseYTitle(){ return state.showSpectrum ? TXT[LANG].specPhaseY : TXT[LANG].phaseY; }
   function magYLayout(){
     return state.bodeDb
-      ? {'yaxis.type':'linear', 'yaxis.autorange':true, 'yaxis.rangemode':'normal', 'yaxis.title.text':TXT[LANG].bodeYdB}
-      : {'yaxis.type':'linear', 'yaxis.autorange':false, 'yaxis.rangemode':'tozero', 'yaxis.range':[0, 1], 'yaxis.title.text':TXT[LANG].bodeYlin};
+      ? {'yaxis.type':'linear', 'yaxis.autorange':true, 'yaxis.rangemode':'normal', 'yaxis.title.text':magYTitle()}
+      : {'yaxis.type':'linear', 'yaxis.autorange':false, 'yaxis.rangemode':'tozero', 'yaxis.range':[0, magLinTop()], 'yaxis.title.text':magYTitle()};
   }
   function enforceMagYAxis(){
     return Plotly.relayout('bodeMag', magYLayout());
@@ -1067,7 +1210,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   function bodeTraceList(tr){
     const widths = [2, 2, 2.5], colors = [COLORS.f1, COLORS.f2, COLORS.cascade];
-    return [0,1,2].map(i => ({type:'scatter', mode:'lines', name:tr.name[i], x:tr.x[i], y:tr.y[i], visible:tr.visible[i], line:{color:colors[i], width:widths[i]}}));
+    return [0,1,2].map(i => ({type:'scatter', mode:'lines', name:tr.name[i], x:tr.x[i], y:tr.y[i], visible:tr.visible[i], line:{color:colors[i], width:widths[i]}}))
+      .concat(stemTraceList());
   }
   function bodeLayout(id, title, yTitle){
     const t = TXT[LANG], s = sizeLayout(id);
@@ -1110,9 +1254,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Bode MAG
     rebuildBodeCaches();
     await safeNewPlot('bodeMag', bodeTraceList(magTraces()),
-      bodeLayout('bodeMag', t.bodeTitle, state.bodeDb ? t.bodeYdB : t.bodeYlin),
+      bodeLayout('bodeMag', t.bodeTitle, magYTitle()),
       plotConfig(() => { resetBodeView(); }));
     bodeMagBuilt=true;
+    await restyleStems('bodeMag', 'mag');
     setupCursorDrag(document.getElementById('bodeMag'));
     setupTouchZoom(document.getElementById('bodeMag'), () => { resetBodeView(); });
 
@@ -1132,15 +1277,17 @@ document.addEventListener('DOMContentLoaded', () => {
       section.classList.add('with-phase');
       if(!bodePhaseBuilt){
         await safeNewPlot('bodePhase', bodeTraceList(phaseTraces()),
-          bodeLayout('bodePhase', t.bodePhaseTitle, t.phaseY),
+          bodeLayout('bodePhase', t.bodePhaseTitle, phaseYTitle()),
           plotConfig(() => { resetBodeView(); }));
         bodePhaseBuilt=true;
+        await restyleStems('bodePhase', 'phase');
         setupCursorDrag(document.getElementById('bodePhase'));
         setupTouchZoom(document.getElementById('bodePhase'), () => { resetBodeView(); });
         setupBodeLinking();
         setupBodeDoubleClick();
       }else{
-        Plotly.update('bodePhase', phaseTraces(), {shapes:cursorShapes(), ...currentBodeMagXLayout()}, [0,1,2]);
+        Plotly.update('bodePhase', phaseTraces(), {shapes:cursorShapes(), ...currentBodeMagXLayout(), 'yaxis.title.text':phaseYTitle(), 'margin.t':sizeLayout('bodePhase').margin.t}, [0,1,2]);
+        restyleStems('bodePhase', 'phase');
         return;
       }
       Plotly.relayout('bodePhase', currentBodeMagXLayout());
@@ -1196,7 +1343,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function applyBodeMode(){
     if(!(window.Plotly && bodeCache1 && bodeCache2 && bodeMagBuilt)) return;
-    Plotly.update('bodeMag', magTraces(), {shapes:cursorShapes(), ...magYLayout()}, [0,1,2]);
+    Plotly.update('bodeMag', magTraces(), {shapes:cursorShapes(), ...magYLayout(), 'margin.t':sizeLayout('bodeMag').margin.t}, [0,1,2]);
+    restyleStems('bodeMag', 'mag');
   }
 
   function refreshAll(){
@@ -1428,6 +1576,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const bodeLin=$('#bodeLin');
   const bodeDb=$('#bodeDb');
   const showPhase=$('#showPhase');
+  const showSpectrum=$('#showSpectrum');
   const cascadeFilters=$('#cascadeFilters');
   const waveSel=$('#waveSel'), freqEl=$('#freq'), nmaxEl=$('#nmax');
   const freqVal=$('#freqVal'), nmaxVal=$('#nmaxVal');
@@ -1462,6 +1611,8 @@ document.addEventListener('DOMContentLoaded', () => {
   bodeLin.checked = !state.bodeDb;
   bodeDb.checked = state.bodeDb;
   showPhase.checked = state.showPhase;
+  showSpectrum.checked = state.showSpectrum;
+  $('#spectrumHint').hidden = !state.showSpectrum;
   cascadeFilters.checked = state.cascadeFilters;
   order1Sel.value = String(state.order1);
   order2Sel.value = String(state.order2);
@@ -1527,6 +1678,12 @@ document.addEventListener('DOMContentLoaded', () => {
   bodeDb.addEventListener('change', ()=>{ if(bodeDb.checked){ state.bodeDb=true; applyBodeMode(); } });
 
   showPhase.addEventListener('change', ()=>{ state.showPhase=showPhase.checked; if(bodeMagBuilt) ensurePhasePlot(); });
+  showSpectrum.addEventListener('change', ()=>{
+    state.showSpectrum = showSpectrum.checked;
+    $('#spectrumHint').hidden = !state.showSpectrum;
+    applyBodeMode();
+    if(bodeMagBuilt) ensurePhasePlot();
+  });
 
   function sanitizeInputs(){
     let f=Math.round(freqSliderValToHz(freqEl.value||freqHzToSliderVal(350))), N=Math.round(+nmaxEl.value||10);
