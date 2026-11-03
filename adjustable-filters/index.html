@@ -112,6 +112,7 @@
   body.panning, body.panning *{cursor:grabbing !important}
   .plotwrap{touch-action:manipulation}
   /* touch zoom selection (slow double tap + drag) */
+  .plotly-notifier{display:none !important}
   .zoom-sel{position:fixed; display:none; pointer-events:none; z-index:40; border:1px solid var(--accent); background:color-mix(in srgb, var(--accent) 16%, transparent)}
 
   .card{border:1px solid var(--border);border-radius:12px;padding:10px 12px;background:var(--paper);display:flex;flex-direction:column;gap:6px}
@@ -421,7 +422,7 @@ document.addEventListener('DOMContentLoaded', () => {
       spectrumHint:'Steady-state lines of the periodic input, x(t) = Σ A<sub>k</sub> sin(2πkft + φ<sub>k</sub>). Each output line is A<sub>k</sub>·|H(kf)| (in dB: A<sub>k</sub> + |H|<sub>dB</sub>) with phase φ<sub>k</sub> + ∠H(kf).',
       specIn:'Input harmonics', specY1:'Output 1 harmonics', specY2:'Output 2 harmonics', specYdB:'|H|, A<sub>k</sub> (dB)', specYlin:'|H|, A<sub>k</sub> (linear)', specPhaseY:'∠H, φ<sub>k</sub> (°)',
       cascadeFilters:'Cascade filters', bodeFmax:'Bode max frequency', cascadeHint:'Both filter 1 and 2 must be enabled to use this feature.',
-      infoBtn:'Filter information', infoTitle:'Filter equations', close:'Close', theme:'Toggle theme', language:'Language', resetView:'Reset view',
+      infoBtn:'Filter information', infoTitle:'Filter equations', close:'Close', theme:'Toggle theme', language:'Language',
       infoType:'Type', infoCutoff:'Cutoff frequency', infoDiffEq:'Differential equation', infoTf:'Transfer function',
       infoDisabledNote:'This filter is disabled in the plots. The equations below correspond to its configured parameters.',
       timeTitle:'Time response', bodeTitle:'Bode — Magnitude', bodePhaseTitle:'Bode — Phase',
@@ -436,7 +437,7 @@ document.addEventListener('DOMContentLoaded', () => {
       spectrumHint:'Raies en régime permanent de l’entrée périodique, x(t) = Σ A<sub>k</sub> sin(2πkft + φ<sub>k</sub>). Chaque raie de sortie vaut A<sub>k</sub>·|H(kf)| (en dB : A<sub>k</sub> + |H|<sub>dB</sub>) avec la phase φ<sub>k</sub> + ∠H(kf).',
       specIn:'Harmoniques entrée', specY1:'Harmoniques sortie 1', specY2:'Harmoniques sortie 2', specYdB:'|H|, A<sub>k</sub> (dB)', specYlin:'|H|, A<sub>k</sub> (linéaire)', specPhaseY:'∠H, φ<sub>k</sub> (°)',
       cascadeFilters:'Mettre les filtres en cascade', bodeFmax:'Fréquence max. du Bode', cascadeHint:'Les filtres 1 et 2 doivent être activés pour utiliser cette fonction.',
-      infoBtn:'Informations du filtre', infoTitle:'Équations du filtre', close:'Fermer', theme:'Changer de thème', language:'Langue', resetView:'Réinitialiser la vue',
+      infoBtn:'Informations du filtre', infoTitle:'Équations du filtre', close:'Fermer', theme:'Changer de thème', language:'Langue',
       infoType:'Type', infoCutoff:'Fréquence de coupure', infoDiffEq:'Équation différentielle', infoTf:'Fonction de transfert',
       infoDisabledNote:'Ce filtre est désactivé dans les graphiques. Les équations ci-dessous correspondent à ses paramètres configurés.',
       timeTitle:'Réponse temporelle', bodeTitle:'Bode — Module', bodePhaseTitle:'Bode — Phase',
@@ -451,7 +452,7 @@ document.addEventListener('DOMContentLoaded', () => {
       spectrumHint:'Líneas en régimen permanente de la entrada periódica, x(t) = Σ A<sub>k</sub> sen(2πkft + φ<sub>k</sub>). Cada línea de salida vale A<sub>k</sub>·|H(kf)| (en dB: A<sub>k</sub> + |H|<sub>dB</sub>) con fase φ<sub>k</sub> + ∠H(kf).',
       specIn:'Armónicos entrada', specY1:'Armónicos salida 1', specY2:'Armónicos salida 2', specYdB:'|H|, A<sub>k</sub> (dB)', specYlin:'|H|, A<sub>k</sub> (lineal)', specPhaseY:'∠H, φ<sub>k</sub> (°)',
       cascadeFilters:'Filtros en cascada', bodeFmax:'Frecuencia máx. del Bode', cascadeHint:'Los filtros 1 y 2 deben estar activados para usar esta función.',
-      infoBtn:'Información del filtro', infoTitle:'Ecuaciones del filtro', close:'Cerrar', theme:'Cambiar tema', language:'Idioma', resetView:'Restablecer vista',
+      infoBtn:'Información del filtro', infoTitle:'Ecuaciones del filtro', close:'Cerrar', theme:'Cambiar tema', language:'Idioma',
       infoType:'Tipo', infoCutoff:'Frecuencia de corte', infoDiffEq:'Ecuación diferencial', infoTf:'Función de transferencia',
       infoDisabledNote:'Este filtro está desactivado en las gráficas. Las ecuaciones siguientes corresponden a sus parámetros configurados.',
       timeTitle:'Respuesta temporal', bodeTitle:'Bode — Módulo', bodePhaseTitle:'Bode — Fase',
@@ -521,7 +522,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const bodeXAxisLayout = () => state.xLog
     ? {type:'log', range: bodeDefaultXRangeExp()}
     : {type:'linear', range: bodeDefaultXRangeLinear()};
-  const fmtHz = hz => new Intl.NumberFormat(LOCALES[LANG] || 'en-US').format(hz) + ' Hz';
+  const numFmts = {};   // building an Intl.NumberFormat is slow: one per language
+  const fmtNumLocale = v => (numFmts[LANG] ||= new Intl.NumberFormat(LOCALES[LANG] || 'en-US')).format(v);
+  const fmtHz = hz => fmtNumLocale(hz) + ' Hz';
 
   // ========= Plot styling (theme + size aware) =========
   function isNarrowPlot(id){
@@ -650,7 +653,6 @@ document.addEventListener('DOMContentLoaded', () => {
       Plotly.relayout('bodePhase', {'title.text':'<b>'+t.bodePhaseTitle+'</b>', 'xaxis.title.text':t.bodeX, 'yaxis.title.text': phaseYTitle()});
       ensurePhasePlot();
     }
-    document.querySelectorAll('.modebar-btn[data-reset-view]').forEach(b => b.setAttribute('data-title', t.resetView));
     langBtns.forEach(btn => {
       const isActive = (btn.dataset.lang === LANG);
       btn.classList.toggle('active', isActive);
@@ -1056,39 +1058,64 @@ document.addEventListener('DOMContentLoaded', () => {
     specCache.forEach(l => { if(vis[0]) m = Math.max(m, l.A); if(vis[1]) m = Math.max(m, l.out1.A); if(vis[2]) m = Math.max(m, l.out2.A); });
     return m*1.06;
   }
-  const fmtAmp = a => a >= 1e-3 ? a.toPrecision(3) : a.toExponential(2);
-  // six traces per Bode plot: three stem-line traces (no hover), then three marker traces
+  // six traces per Bode plot: three stem-line traces (no hover), then three marker traces.
+  // Hover labels are only formatted on hover (customdata + hovertemplate).
   const STEM_IDX = [3,4,5,6,7,8];
   function stemTraceList(){
     const lines = [0,1,2].map(i => ({type:'scatter', mode:'lines', x:[], y:[], visible:false, showlegend:false,
       legendgroup:'spec'+i, hoverinfo:'skip', line:{width: i ? 2 : 1.5}}));
     const marks = [0,1,2].map(i => ({type:'scatter', mode:'markers', x:[], y:[], visible:false, legendgroup:'spec'+i,
-      text:[], hovertemplate:'%{text}<extra></extra>',
+      customdata:[],
       marker: i ? {symbol:'circle', size:7} : {symbol:'circle-open', size:11, line:{width:2}}}));
     return lines.concat(marks);
   }
-  function stemData(plot){
+  // A low input frequency gives thousands of lines, far more than pixels. Lines that fall
+  // in the same pixel column are drawn as one segment covering all of them (the same
+  // picture), with markers at the extreme values. Zoom or pan redraws them at the new scale.
+  function stemData(plot, gd){
+    const fl = gd && gd._fullLayout, xa = fl && fl.xaxis;
+    const binned = !!(xa && xa._length > 20 && typeof xa.c2p === 'function');
     const t = TXT[LANG], vis = stemVisible(), colors = [COLORS.input, COLORS.f1, output2Color()];
     const names = [t.specIn, t.specY1, t.specY2];
     const pick = [l => l, l => l.out1, l => l.out2];
     const dB = plot === 'mag' && state.bodeDb;
     const base = plot === 'phase' ? 0 : (dB ? magDbFloor() : 0);
-    const lx=[], ly=[], mx=[], my=[], mt=[];
+    const lx=[], ly=[], mx=[], my=[], cd=[];
     for(let s=0;s<3;s++){
-      const X=[], Y=[], PX=[], PY=[], T=[];
-      if(vis[s]) specCache.forEach(l => {
+      const X=[], Y=[], PX=[], PY=[], C=[];
+      let col = null;   // lines of the current pixel column
+      const mark = (l, r, v) => { PX.push(l.f); PY.push(v); C.push([l.k, r.A, 20*log10(r.A), r.ph]); };
+      const flush = () => {
+        if(!col) return;
+        const lo = Math.min(base, col.lo.v), hi = Math.max(base, col.hi.v);
+        X.push(col.hi.l.f, col.hi.l.f, null); Y.push(lo, hi, null);
+        mark(col.hi.l, col.hi.r, col.hi.v);
+        if(col.lo.l !== col.hi.l) mark(col.lo.l, col.lo.r, col.lo.v);
+        col = null;
+      };
+      if(vis[s]) for(const l of specCache){
         const r = pick[s](l);
         const v = plot === 'phase' ? r.ph : (dB ? 20*log10(r.A) : r.A);
-        if(!Number.isFinite(v)) return;
-        X.push(l.f, l.f, null); Y.push(base, v, null);
-        PX.push(l.f); PY.push(v);
-        const val = plot === 'phase' ? `φ = ${r.ph.toFixed(1)}°` : `A = ${fmtAmp(r.A)} (${(20*log10(r.A)).toFixed(1)} dB)`;
-        T.push(`<b>${names[s]}</b><br>k = ${l.k} · ${fmtHz(l.f)}<br>${val}`);
-      });
-      lx.push(X); ly.push(Y); mx.push(PX); my.push(PY); mt.push(T);
+        if(!Number.isFinite(v)) continue;
+        if(!binned){ X.push(l.f, l.f, null); Y.push(base, v, null); mark(l, r, v); continue; }
+        const px = xa.c2p(l.f);
+        if(!Number.isFinite(px) || px < -8 || px > xa._length + 8) continue;   // off screen
+        const c = Math.round(px);
+        if(col && col.c !== c) flush();
+        if(!col) col = {c, lo:{l, r, v}, hi:{l, r, v}};
+        else{
+          if(v < col.lo.v) col.lo = {l, r, v};
+          if(v > col.hi.v) col.hi = {l, r, v};
+        }
+      }
+      flush();
+      lx.push(X); ly.push(Y); mx.push(PX); my.push(PY); cd.push(C);
     }
+    const val = plot === 'phase' ? 'φ = %{customdata[3]:.1f}°' : 'A = %{customdata[1]:.3g} (%{customdata[2]:.1f} dB)';
+    const tmpl = names.map(n => `<b>${n}</b><br>k = %{customdata[0]} · %{x:,.0f} Hz<br>${val}<extra></extra>`);
     return {
-      x: lx.concat(mx), y: ly.concat(my), text: [[],[],[]].concat(mt),
+      x: lx.concat(mx), y: ly.concat(my), customdata: [[],[],[]].concat(cd),
+      hovertemplate: [null,null,null].concat(tmpl),
       visible: vis.concat(vis), name: names.concat(names),
       'line.color': colors.concat(colors), 'marker.color': colors.concat(colors)
     };
@@ -1096,8 +1123,19 @@ document.addEventListener('DOMContentLoaded', () => {
   function restyleStems(id, plot){
     const gd = document.getElementById(id);
     if(!(window.Plotly && gd && gd.data && gd.data.length >= 9)) return Promise.resolve();
-    return Plotly.restyle(gd, stemData(plot), STEM_IDX);
+    return Plotly.restyle(gd, stemData(plot, gd), STEM_IDX);
   }
+  // after a zoom, pan or resize the pixel columns change: redraw the lines (once per frame)
+  const stemRedrawPending = {};
+  function redrawStemsSoon(id){
+    if(!state.showSpectrum || stemRedrawPending[id]) return;
+    stemRedrawPending[id] = requestAnimationFrame(() => {
+      stemRedrawPending[id] = 0;
+      if(id === 'bodePhase' && !(state.showPhase && bodePhaseBuilt)) return;
+      restyleStems(id, id === 'bodeMag' ? 'mag' : 'phase');
+    });
+  }
+  const changesStemScale = ev => Object.keys(ev || {}).some(k => /^(xaxis|margin|width|height|autosize)/.test(k));
 
   // ========= Plotly helpers =========
   function exists(id){ const el = document.getElementById(id); if(!el){ console.warn('Plot container not found:', id); } return el; }
@@ -1109,14 +1147,10 @@ document.addEventListener('DOMContentLoaded', () => {
     for(let i=0;i<n;i++){ const xi=+x[i], yi=+y[i]; if(Number.isFinite(xi)&&Number.isFinite(yi)){ outX.push(xi); outY.push(yi);} }
     tr.x=outX; tr.y=outY; return tr;
   }
-  function plotConfig(onReset){
-    return {
-      displaylogo:false, editable:false, staticPlot:false, doubleClick:false, responsive:false, showTips:false,
-      // on touch, zoom is the double-tap gesture, so the zoom / pan mode buttons would do nothing
-      modeBarButtonsToRemove:['select2d','lasso2d','autoScale2d','resetScale2d','zoomIn2d','zoomOut2d','toggleSpikelines','hoverClosestCartesian','hoverCompareCartesian']
-        .concat(COARSE_MQ.matches ? ['zoom2d','pan2d'] : []),
-      modeBarButtonsToAdd:[{name:'resetView', title:TXT[LANG].resetView, icon:Plotly.Icons.home, attr:'data-reset-view', val:'1', click:onReset}]
-    };
+  // no mode bar and no Plotly tips: zoom = drag (mouse) or slow double tap + drag (touch),
+  // pan = right / middle drag, reset = double click / double tap
+  function plotConfig(){
+    return {displaylogo:false, displayModeBar:false, editable:false, staticPlot:false, doubleClick:false, responsive:false, showTips:false};
   }
   function safeNewPlot(id, data, layout, config){
     const gd = exists(id);
@@ -1131,10 +1165,7 @@ document.addEventListener('DOMContentLoaded', () => {
       function go(){
         const rect=gd.getBoundingClientRect();
         if((rect.width>20 && rect.height>20) || ++tries>=20){
-          Plotly.newPlot(gd, clean, layout || {}, config || {}).then(()=>{
-            gd.querySelectorAll('.modebar-btn[data-attr="data-reset-view"]').forEach(b => b.setAttribute('data-reset-view','1'));
-            resolve();
-          });
+          Plotly.newPlot(gd, clean, layout || {}, config || {}).then(resolve);
         }else{ requestAnimationFrame(go); }
       }
       requestAnimationFrame(go);
@@ -1251,7 +1282,7 @@ document.addEventListener('DOMContentLoaded', () => {
       showlegend:true, legend:legendLayout('timePlot'),
       title:titleLayout(t.timeTitle, 'timePlot'),
       uirevision:'keep'
-    }, plotConfig(resetTimeView));
+    }, plotConfig());
     timeBuilt=true;
 
     const timeGd = document.getElementById('timePlot');
@@ -1265,7 +1296,7 @@ document.addEventListener('DOMContentLoaded', () => {
     rebuildBodeCaches();
     await safeNewPlot('bodeMag', bodeTraceList(magTraces()),
       bodeLayout('bodeMag', t.bodeTitle, magYTitle()),
-      plotConfig(() => { resetBodeView(); }));
+      plotConfig());
     bodeMagBuilt=true;
     await restyleStems('bodeMag', 'mag');
     setupCursorDrag(document.getElementById('bodeMag'));
@@ -1289,7 +1320,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if(!bodePhaseBuilt){
         await safeNewPlot('bodePhase', bodeTraceList(phaseTraces()),
           bodeLayout('bodePhase', t.bodePhaseTitle, phaseYTitle()),
-          plotConfig(() => { resetBodeView(); }));
+          plotConfig());
         bodePhaseBuilt=true;
         await restyleStems('bodePhase', 'phase');
         setupCursorDrag(document.getElementById('bodePhase'));
@@ -1331,11 +1362,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     mag.removeAllListeners && mag.removeAllListeners('plotly_relayout');
-    mag.on('plotly_relayout', ev => { if(state.showPhase && bodePhaseBuilt) sync('bodePhase',ev); });
+    mag.on('plotly_relayout', ev => {
+      if(changesStemScale(ev)) redrawStemsSoon('bodeMag');
+      if(state.showPhase && bodePhaseBuilt) sync('bodePhase',ev);
+    });
 
     if(ph && ph.on){
       ph.removeAllListeners && ph.removeAllListeners('plotly_relayout');
-      ph.on('plotly_relayout', ev => { sync('bodeMag',ev); });
+      ph.on('plotly_relayout', ev => {
+        if(changesStemScale(ev)) redrawStemsSoon('bodePhase');
+        sync('bodeMag',ev);
+      });
     }
   }
 
@@ -1658,7 +1695,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fc2Val.textContent = fmtHz(state.fc2);
     freqVal.textContent = fmtHz(state.freq);
     nmaxVal.textContent = String(state.nmax);
-    bodeFmaxVal.textContent = new Intl.NumberFormat(LOCALES[LANG] || 'en-US').format(state.bodeFmax/1000) + ' kHz';
+    bodeFmaxVal.textContent = fmtNumLocale(state.bodeFmax/1000) + ' kHz';
   }
 
   // === Aplicar constantes al slider ===
