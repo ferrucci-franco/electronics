@@ -535,11 +535,13 @@ html.demo .tip{transition:none}`;
     const m = this.mode();
     const changed = !this.m || m.layout !== this.m.layout || m.VW !== this.m.VW;
     this.m = m; this.VW = m.VW; this.VH = m.VH;
-    const aw = this.stagewrap.clientWidth, ah = this.stagewrap.clientHeight;
+    // (room for the padding and the bezel of the screen)
+    const B = parseFloat(getComputedStyle(this.screen).borderTopWidth) || 0;
+    const aw = this.stagewrap.clientWidth - 20 - 2 * B, ah = this.stagewrap.clientHeight - 20 - 2 * B;
     const s = Math.max(0.2, Math.min(aw / m.VW, ah / m.VH));
     this.s0 = s;
     this.FW = Math.round(m.VW * s); this.FH = Math.round(m.VH * s);
-    this.screen.style.width = this.FW + 'px'; this.screen.style.height = this.FH + 'px';
+    this.screen.style.width = (this.FW + 2 * B) + 'px'; this.screen.style.height = (this.FH + 2 * B) + 'px';
     this.camEl.style.width = m.VW + 'px'; this.camEl.style.height = m.VH + 'px';
     this.frame.style.width = m.VW + 'px'; this.frame.style.height = m.VH + 'px';
     this.applyCam(false);

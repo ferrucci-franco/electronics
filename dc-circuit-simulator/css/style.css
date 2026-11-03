@@ -645,8 +645,11 @@ html.layout-mobile .side .pane{padding:4px 10px 12px}
 .tour-item.on{background:var(--accent); color:#fff}
 .tour-ico{flex:none; width:22px; text-align:center; font-size:15px; line-height:1}
 .tour-main{flex:1; min-width:0; display:flex; flex-direction:column; gap:12px; padding:14px 16px 14px}
-.tour-stagewrap{flex:1 1 0; min-height:0; min-width:0; overflow:hidden; overflow:clip; display:flex; align-items:center; justify-content:center}
-.tour-screen{position:relative; overflow:hidden; overflow:clip; flex:none; border-radius:12px; border:1px solid var(--border); background:var(--bg); box-shadow:0 8px 28px rgba(15,25,50,.16)}
+.tour-stagewrap{flex:1 1 0; min-height:0; min-width:0; overflow:hidden; overflow:clip; display:flex; align-items:center; justify-content:center; padding:10px}
+/* the demo screen: a bezel (border + ring) so that it reads as a screen, not as part of the guide */
+.tour-screen{--bez:3px; position:relative; overflow:hidden; overflow:clip; flex:none; border-radius:14px; border:var(--bez) solid var(--tour-bezel); background:var(--bg); box-shadow:0 0 0 1px var(--tour-ring), 0 0 0 6px var(--tour-halo), 0 10px 30px rgba(15,25,50,.22)}
+:root{--tour-bezel:#8fa3c7; --tour-ring:rgba(20,40,80,.18); --tour-halo:rgba(47,111,222,.10)}
+html.dark{--tour-bezel:#4a5c86; --tour-ring:rgba(0,0,0,.5); --tour-halo:rgba(109,156,255,.12)}
 .tour-cam{position:absolute; left:0; top:0; transform-origin:0 0}
 .tour-cam iframe{display:block; border:0; pointer-events:none; background:var(--bg)}
 .tour-veil{position:absolute; inset:0; display:grid; place-items:center; background:var(--bg); color:var(--muted); font-size:13px; opacity:0; pointer-events:none; transition:opacity .3s}
