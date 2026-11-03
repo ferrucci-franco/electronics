@@ -345,6 +345,11 @@
           <label for="cascadeFilters" id="cascadeFiltersLabel" class="grow">Cascade filters</label>
           <input id="cascadeFilters" type="checkbox" />
         </div>
+        <div class="row" style="margin-top:2px">
+          <label for="bodeFmaxSel" id="bodeFmaxLabel" class="grow">Bode max frequency</label>
+          <span id="bodeFmaxVal" class="pill">10 kHz</span>
+        </div>
+        <input id="bodeFmaxSel" type="range" min="0" max="2" step="1" value="0" />
       </div>
       <div class="muted copyright">
         © 2025 Franco Ferrucci<br>
@@ -414,7 +419,7 @@ document.addEventListener('DOMContentLoaded', () => {
       fc1:'Filter 1', fc2:'Filter 2', fcCascade:'Cascade', f1Enabled:'Enable filter 1', f2Enabled:'Enable filter 2', filterType:'Type', layoutCard:'Layout', showTimePlot:'Show time response', showBodePlot:'Show Bode plot', bodeCard:'Bode plot', otherOptions:'Other options', bodeXScale:'X scale', bodeScale:'Y scale', bodeXLinear:'Linear', bodeXLog:'Log', bodeYLinear:'Linear', bodeYDb:'dB (log)', showPhase:'Show phase', showSpectrum:'Show harmonics (spectral lines)',
       spectrumHint:'Steady-state lines of the periodic input, x(t) = Σ A<sub>k</sub> sin(2πkft + φ<sub>k</sub>). Each output line is A<sub>k</sub>·|H(kf)| (in dB: A<sub>k</sub> + |H|<sub>dB</sub>) with phase φ<sub>k</sub> + ∠H(kf).',
       specIn:'Input harmonics', specY1:'Output 1 harmonics', specY2:'Output 2 harmonics', specYdB:'|H|, A<sub>k</sub> (dB)', specYlin:'|H|, A<sub>k</sub> (linear)', specPhaseY:'∠H, φ<sub>k</sub> (°)',
-      cascadeFilters:'Cascade filters', cascadeHint:'Both filter 1 and 2 must be enabled to use this feature.',
+      cascadeFilters:'Cascade filters', bodeFmax:'Bode max frequency', cascadeHint:'Both filter 1 and 2 must be enabled to use this feature.',
       infoBtn:'Filter information', infoTitle:'Filter equations', close:'Close', theme:'Toggle theme', language:'Language', resetView:'Reset view',
       infoType:'Type', infoCutoff:'Cutoff frequency', infoDiffEq:'Differential equation', infoTf:'Transfer function',
       infoDisabledNote:'This filter is disabled in the plots. The equations below correspond to its configured parameters.',
@@ -429,7 +434,7 @@ document.addEventListener('DOMContentLoaded', () => {
       fc1:'Filtre 1', fc2:'Filtre 2', fcCascade:'Cascade', f1Enabled:'Activer le filtre 1', f2Enabled:'Activer le filtre 2', filterType:'Type', layoutCard:'Disposition', showTimePlot:'Afficher la réponse temporelle', showBodePlot:'Afficher le diagramme de Bode', bodeCard:'Diagramme de Bode', otherOptions:'Autres options', bodeXScale:'Échelle X', bodeScale:'Échelle Y', bodeXLinear:'Linéaire', bodeXLog:'Log', bodeYLinear:'Linéaire', bodeYDb:'dB (log)', showPhase:'Afficher la phase', showSpectrum:'Afficher les harmoniques (raies spectrales)',
       spectrumHint:'Raies en régime permanent de l’entrée périodique, x(t) = Σ A<sub>k</sub> sin(2πkft + φ<sub>k</sub>). Chaque raie de sortie vaut A<sub>k</sub>·|H(kf)| (en dB : A<sub>k</sub> + |H|<sub>dB</sub>) avec la phase φ<sub>k</sub> + ∠H(kf).',
       specIn:'Harmoniques entrée', specY1:'Harmoniques sortie 1', specY2:'Harmoniques sortie 2', specYdB:'|H|, A<sub>k</sub> (dB)', specYlin:'|H|, A<sub>k</sub> (linéaire)', specPhaseY:'∠H, φ<sub>k</sub> (°)',
-      cascadeFilters:'Mettre les filtres en cascade', cascadeHint:'Les filtres 1 et 2 doivent être activés pour utiliser cette fonction.',
+      cascadeFilters:'Mettre les filtres en cascade', bodeFmax:'Fréquence max. du Bode', cascadeHint:'Les filtres 1 et 2 doivent être activés pour utiliser cette fonction.',
       infoBtn:'Informations du filtre', infoTitle:'Équations du filtre', close:'Fermer', theme:'Changer de thème', language:'Langue', resetView:'Réinitialiser la vue',
       infoType:'Type', infoCutoff:'Fréquence de coupure', infoDiffEq:'Équation différentielle', infoTf:'Fonction de transfert',
       infoDisabledNote:'Ce filtre est désactivé dans les graphiques. Les équations ci-dessous correspondent à ses paramètres configurés.',
@@ -444,7 +449,7 @@ document.addEventListener('DOMContentLoaded', () => {
       fc1:'Filtro 1', fc2:'Filtro 2', fcCascade:'Cascada', f1Enabled:'Activar filtro 1', f2Enabled:'Activar filtro 2', filterType:'Tipo', layoutCard:'Disposición', showTimePlot:'Mostrar respuesta temporal', showBodePlot:'Mostrar diagrama de Bode', bodeCard:'Diagrama de Bode', otherOptions:'Otras opciones', bodeXScale:'Escala X', bodeScale:'Escala Y', bodeXLinear:'Lineal', bodeXLog:'Log', bodeYLinear:'Lineal', bodeYDb:'dB (log)', showPhase:'Mostrar fase', showSpectrum:'Mostrar armónicos (líneas espectrales)',
       spectrumHint:'Líneas en régimen permanente de la entrada periódica, x(t) = Σ A<sub>k</sub> sen(2πkft + φ<sub>k</sub>). Cada línea de salida vale A<sub>k</sub>·|H(kf)| (en dB: A<sub>k</sub> + |H|<sub>dB</sub>) con fase φ<sub>k</sub> + ∠H(kf).',
       specIn:'Armónicos entrada', specY1:'Armónicos salida 1', specY2:'Armónicos salida 2', specYdB:'|H|, A<sub>k</sub> (dB)', specYlin:'|H|, A<sub>k</sub> (lineal)', specPhaseY:'∠H, φ<sub>k</sub> (°)',
-      cascadeFilters:'Filtros en cascada', cascadeHint:'Los filtros 1 y 2 deben estar activados para usar esta función.',
+      cascadeFilters:'Filtros en cascada', bodeFmax:'Frecuencia máx. del Bode', cascadeHint:'Los filtros 1 y 2 deben estar activados para usar esta función.',
       infoBtn:'Información del filtro', infoTitle:'Ecuaciones del filtro', close:'Cerrar', theme:'Cambiar tema', language:'Idioma', resetView:'Restablecer vista',
       infoType:'Tipo', infoCutoff:'Frecuencia de corte', infoDiffEq:'Ecuación diferencial', infoTf:'Función de transferencia',
       infoDisabledNote:'Este filtro está desactivado en las gráficas. Las ecuaciones siguientes corresponden a sus parámetros configurados.',
@@ -456,7 +461,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const LOCALES = {en:'en-US', fr:'fr-FR', es:'es-ES'};
 
   // ========= Estado & Config =========
-  const FS_MIN = 100000;
+  // the simulation runs at least 10x faster than the top of the Bode plot, so the
+  // digital (bilinear) filters match the analog ones over the whole visible range
+  const FS_PER_BODE_FMAX = 10;
   const FS_MAX = 1000000;
   const SPP    = 256;
   const FREQ_MIN = 10;
@@ -465,7 +472,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Límites f para Bode (home)
   const BODE_FMIN = 10;
-  const BODE_FMAX = 10000;
+  const BODE_FMAX_OPTS = [10000, 50000, 100000];
 
   const NMAX_MIN = 1;
   const NMAX_MAX = 20;
@@ -490,7 +497,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const state = {
     wave:'sin', freq:350, nmax:10, duration:10/350,
-    fs: Math.min(Math.max(SPP*350, FS_MIN), FS_MAX),
+    fs: Math.min(Math.max(SPP*350, FS_PER_BODE_FMAX*BODE_FMAX_OPTS[0]), FS_MAX),
+    bodeFmax: BODE_FMAX_OPTS[0],
     x:null,
     fc1:250, fc2:150, f1type:'lp', f2type:'lp',
     order1:4, order2:4,
@@ -506,7 +514,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const freqSliderValToHz = v => Math.round(pow10(parseFloat(v)));
   const hzToSliderVal = hz => log10(Math.min(10000, Math.max(20, hz)));
   const sliderValToHz = v  => Math.round(pow10(parseFloat(v)));
-  const bodeCurrentFMax = () => Math.min(getFs()/2, BODE_FMAX);
+  const bodeCurrentFMax = () => Math.min(getFs()/2, state.bodeFmax);
   const bodeDefaultXRangeExp = () => [Math.log10(BODE_FMIN), Math.log10(bodeCurrentFMax())];
   const bodeDefaultXRangeLinear = () => [BODE_FMIN, bodeCurrentFMax()];
   const bodeXAxisLayout = () => state.xLog
@@ -612,7 +620,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.title = t.title;
     [['title', t.title], ['inCardTitle', t.inCard], ['waveLbl', t.wave],
      ['freqLbl', t.freq], ['nmaxLbl', t.nmax], ['inHint', t.hint],
-     ['fc1Label', t.fc1], ['fc2Label', t.fc2], ['f1EnabledLabel', t.f1Enabled], ['f2EnabledLabel', t.f2Enabled], ['type1Label', t.filterType], ['type2Label', t.filterType], ['cut1Label', t.cutoff], ['cut2Label', t.cutoff], ['layoutCardTitle', t.layoutCard], ['showTimePlotLabel', t.showTimePlot], ['showBodePlotLabel', t.showBodePlot], ['bodeCardTitle', t.bodeCard], ['otherOptionsTitle', t.otherOptions], ['bodeXScaleLabel', t.bodeXScale], ['bodeScaleLabel', t.bodeScale], ['bodeXLinearLabel', t.bodeXLinear], ['bodeXLogLabel', t.bodeXLog], ['bodeLinLabel', t.bodeYLinear], ['bodeDbLabel', t.bodeYDb], ['showPhaseLabel', t.showPhase], ['showSpectrumLabel', t.showSpectrum], ['spectrumHint', t.spectrumHint], ['cascadeFiltersLabel', t.cascadeFilters],
+     ['fc1Label', t.fc1], ['fc2Label', t.fc2], ['f1EnabledLabel', t.f1Enabled], ['f2EnabledLabel', t.f2Enabled], ['type1Label', t.filterType], ['type2Label', t.filterType], ['cut1Label', t.cutoff], ['cut2Label', t.cutoff], ['layoutCardTitle', t.layoutCard], ['showTimePlotLabel', t.showTimePlot], ['showBodePlotLabel', t.showBodePlot], ['bodeCardTitle', t.bodeCard], ['otherOptionsTitle', t.otherOptions], ['bodeXScaleLabel', t.bodeXScale], ['bodeScaleLabel', t.bodeScale], ['bodeXLinearLabel', t.bodeXLinear], ['bodeXLogLabel', t.bodeXLog], ['bodeLinLabel', t.bodeYLinear], ['bodeDbLabel', t.bodeYDb], ['showPhaseLabel', t.showPhase], ['showSpectrumLabel', t.showSpectrum], ['spectrumHint', t.spectrumHint], ['cascadeFiltersLabel', t.cascadeFilters], ['bodeFmaxLabel', t.bodeFmax],
      ['order1Label', t.order], ['order2Label', t.order]
     ].forEach(([id,txt])=>{ const el=$('#'+id); if(el) el.innerHTML=txt; });
     [['infoBtn1', t.infoBtn], ['infoBtn2', t.infoBtn], ['infoModalTitle', t.infoTitle],
@@ -655,7 +663,7 @@ document.addEventListener('DOMContentLoaded', () => {
   langBtns.forEach(b=> b.addEventListener('click', ()=> setLang(b.dataset.lang)));
 
   // ========= fs dinámico =========
-  function updateFsFromFreq(){ state.fs = Math.min(Math.max(SPP * state.freq, FS_MIN), FS_MAX); }
+  function updateFsFromFreq(){ state.fs = Math.min(Math.max(SPP * state.freq, FS_PER_BODE_FMAX * state.bodeFmax), FS_MAX); }
 
   // ========= Señal de entrada =========
   const TRAP_RISE = 0.20;   // trapezoid: rise and fall each take this fraction of the period
@@ -1578,6 +1586,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const showPhase=$('#showPhase');
   const showSpectrum=$('#showSpectrum');
   const cascadeFilters=$('#cascadeFilters');
+  const bodeFmaxSel=$('#bodeFmaxSel'), bodeFmaxVal=$('#bodeFmaxVal');
   const waveSel=$('#waveSel'), freqEl=$('#freq'), nmaxEl=$('#nmax');
   const freqVal=$('#freqVal'), nmaxVal=$('#nmaxVal');
   const infoBtn1=$('#infoBtn1'), infoBtn2=$('#infoBtn2'), infoBackdrop=$('#infoModalBackdrop'), infoCloseBtn=$('#infoCloseBtn');
@@ -1587,6 +1596,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fc2Val.textContent = fmtHz(state.fc2);
     freqVal.textContent = fmtHz(state.freq);
     nmaxVal.textContent = String(state.nmax);
+    bodeFmaxVal.textContent = new Intl.NumberFormat(LOCALES[LANG] || 'en-US').format(state.bodeFmax/1000) + ' kHz';
   }
 
   // === Aplicar constantes al slider ===
@@ -1614,6 +1624,7 @@ document.addEventListener('DOMContentLoaded', () => {
   showSpectrum.checked = state.showSpectrum;
   $('#spectrumHint').hidden = !state.showSpectrum;
   cascadeFilters.checked = state.cascadeFilters;
+  bodeFmaxSel.value = String(BODE_FMAX_OPTS.indexOf(state.bodeFmax));
   order1Sel.value = String(state.order1);
   order2Sel.value = String(state.order2);
   applyPlotLayout();
@@ -1677,6 +1688,14 @@ document.addEventListener('DOMContentLoaded', () => {
   bodeLin.addEventListener('change', ()=>{ if(bodeLin.checked){ state.bodeDb=false; applyBodeMode(); } });
   bodeDb.addEventListener('change', ()=>{ if(bodeDb.checked){ state.bodeDb=true; applyBodeMode(); } });
 
+  bodeFmaxSel.addEventListener('input', ()=>{
+    const f = BODE_FMAX_OPTS[clamp(Math.round(+bodeFmaxSel.value), 0, BODE_FMAX_OPTS.length-1)];
+    if(f === state.bodeFmax) return;
+    state.bodeFmax = f;
+    updateHzBadges();
+    rebuildInputAndOutputs();   // new sampling rate: re-simulate, then rebuild the Bode
+    applyBodeXAxis();           // and show the new full frequency range
+  });
   showPhase.addEventListener('change', ()=>{ state.showPhase=showPhase.checked; if(bodeMagBuilt) ensurePhasePlot(); });
   showSpectrum.addEventListener('change', ()=>{
     state.showSpectrum = showSpectrum.checked;
