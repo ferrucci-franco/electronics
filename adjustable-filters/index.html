@@ -109,6 +109,7 @@
   /* the red frequency cursor on the Bode plots can be dragged */
   .cursor-hover .nsewdrag, .cursor-hover .draglayer .drag, body.cursor-dragging, body.cursor-dragging *{cursor:ew-resize !important}
   body.cursor-dragging{user-select:none; -webkit-user-select:none}
+  body.panning, body.panning *{cursor:grabbing !important}
   .plotwrap{touch-action:manipulation}
   /* touch zoom selection (slow double tap + drag) */
   .zoom-sel{position:fixed; display:none; pointer-events:none; z-index:40; border:1px solid var(--accent); background:color-mix(in srgb, var(--accent) 16%, transparent)}
@@ -1258,6 +1259,7 @@ document.addEventListener('DOMContentLoaded', () => {
       timeGd.on('plotly_doubleclick', () => { if(lastPointerType !== 'touch') resetTimeView(); return false; });
     }
     setupTouchZoom(timeGd, resetTimeView);
+    setupMousePan(timeGd);
 
     // Bode MAG
     rebuildBodeCaches();
@@ -1268,6 +1270,7 @@ document.addEventListener('DOMContentLoaded', () => {
     await restyleStems('bodeMag', 'mag');
     setupCursorDrag(document.getElementById('bodeMag'));
     setupTouchZoom(document.getElementById('bodeMag'), () => { resetBodeView(); });
+    setupMousePan(document.getElementById('bodeMag'));
 
     // Bode PHASE (si está activo)
     await ensurePhasePlot();
@@ -1291,6 +1294,7 @@ document.addEventListener('DOMContentLoaded', () => {
         await restyleStems('bodePhase', 'phase');
         setupCursorDrag(document.getElementById('bodePhase'));
         setupTouchZoom(document.getElementById('bodePhase'), () => { resetBodeView(); });
+        setupMousePan(document.getElementById('bodePhase'));
         setupBodeLinking();
         setupBodeDoubleClick();
       }else{
@@ -1545,6 +1549,64 @@ document.addEventListener('DOMContentLoaded', () => {
     // while zooming, no page scroll and nothing for Plotly
     const block = e => { if(zoom){ e.stopPropagation(); if(e.cancelable) e.preventDefault(); } };
     ['touchstart','touchmove'].forEach(type => gd.addEventListener(type, block, {capture:true, passive:false}));
+  }
+
+  // ========= Pan with the right (or middle) mouse button =========
+  // Plotly would treat a right-button drag as a zoom box it never draws, and on release
+  // zoom to a zero-size box (both axes collapse to a point). Those buttons never reach
+  // Plotly: they pan the plot instead, and the left button keeps the usual zoom box.
+  function setupMousePan(gd){
+    if(!gd || gd.dataset.mousePan) return;
+    gd.dataset.mousePan = '1';
+    let pan = null, raf = 0;
+    const isPanButton = e => e.pointerType !== 'touch' && (e.button === 1 || e.button === 2);
+
+    // ranges are linear in pixels (log axes: in decades), so a pan is a plain shift
+    function apply(){
+      raf = 0;
+      if(!pan) return;
+      const {x0, y0, kx, ky, dx, dy} = pan;
+      Plotly.relayout(gd, {
+        'xaxis.autorange': false, 'xaxis.range': [x0[0] - dx*kx, x0[1] - dx*kx],
+        'yaxis.autorange': false, 'yaxis.range': [y0[0] + dy*ky, y0[1] + dy*ky]
+      });
+    }
+    gd.addEventListener('pointerdown', e => {
+      if(pan || !isPanButton(e)) return;
+      const fl = gd._fullLayout;
+      if(!fl || !fl.xaxis || !fl.yaxis || !fl.xaxis._length) return;
+      const xa = fl.xaxis, ya = fl.yaxis, r = gd.getBoundingClientRect();
+      const px = e.clientX - r.left - xa._offset, py = e.clientY - r.top - ya._offset;
+      if(px < 0 || px > xa._length || py < 0 || py > ya._length) return;
+      e.preventDefault(); e.stopPropagation();
+      const x0 = xa.range.map(Number), y0 = ya.range.map(Number);
+      pan = {id:e.pointerId, sx:e.clientX, sy:e.clientY, dx:0, dy:0, x0, y0,
+             kx:(x0[1]-x0[0])/xa._length, ky:(y0[1]-y0[0])/ya._length};
+      try{ gd.setPointerCapture(e.pointerId); }catch(_){}
+      if(Plotly.Fx) Plotly.Fx.unhover(gd);
+      document.body.classList.add('panning');
+    }, true);
+    gd.addEventListener('pointermove', e => {
+      if(!pan || e.pointerId !== pan.id) return;
+      e.preventDefault(); e.stopPropagation();
+      pan.dx = e.clientX - pan.sx; pan.dy = e.clientY - pan.sy;
+      if(!raf) raf = requestAnimationFrame(apply);
+    }, true);
+    const end = e => {
+      if(!pan || e.pointerId !== pan.id) return;
+      e.stopPropagation();
+      if(raf){ cancelAnimationFrame(raf); apply(); }
+      pan = null;
+      try{ gd.releasePointerCapture(e.pointerId); }catch(_){}
+      document.body.classList.remove('panning');
+    };
+    gd.addEventListener('pointerup', end, true);
+    gd.addEventListener('pointercancel', end, true);
+    gd.addEventListener('lostpointercapture', end, true);
+    // the matching mouse events must not start Plotly's drag either (middle click: no autoscroll)
+    ['mousedown','mouseup','auxclick'].forEach(type => gd.addEventListener(type, e => {
+      if(e.button === 1 || e.button === 2){ e.stopPropagation(); if(e.cancelable) e.preventDefault(); }
+    }, true));
   }
 
   // ========= Resize =========
