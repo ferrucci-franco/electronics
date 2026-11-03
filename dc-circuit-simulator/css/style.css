@@ -54,9 +54,12 @@ html.layout-desktop.hide-pal .palette, html.layout-desktop.hide-side .side{displ
 html.layout-desktop.hide-pal .app{grid-template-columns:minmax(0,1fr) var(--side-w); grid-template-areas:"head head" "stage side"}
 html.layout-desktop.hide-side .app{grid-template-columns:var(--pal-w) minmax(0,1fr); grid-template-areas:"head head" "pal stage"}
 html.layout-desktop.hide-pal.hide-side .app{grid-template-columns:minmax(0,1fr); grid-template-areas:"head" "stage"}
-.edge-btn{position:absolute; top:50%; transform:translateY(-50%); width:16px; height:56px; padding:0; display:flex; align-items:center; justify-content:center; border:1px solid var(--border); background:var(--btn); color:var(--muted); box-shadow:var(--shadow); cursor:pointer; opacity:.75; z-index:12}
-.edge-btn:hover{opacity:1; color:var(--fg)}
-.edge-btn svg{width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; transition:transform .15s}
+/* the tabs that hide / show the side bars: amber, so that they are noticed (both themes) */
+:root{--edge-bg:#ffd451; --edge-bd:#e2a800; --edge-fg:#5a4200; --edge-hover:#ffc61a}
+html.dark{--edge-bg:#e3b23c; --edge-bd:#b98a1c; --edge-fg:#2b2000; --edge-hover:#f2c14e}
+.edge-btn{position:absolute; top:50%; transform:translateY(-50%); width:18px; height:58px; padding:0; display:flex; align-items:center; justify-content:center; border:1px solid var(--edge-bd); background:var(--edge-bg); color:var(--edge-fg); box-shadow:0 2px 8px rgba(120,80,0,.25); cursor:pointer; z-index:12; transition:background .15s, width .15s}
+.edge-btn:hover{background:var(--edge-hover); width:20px}
+.edge-btn svg{width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:2.8; stroke-linecap:round; stroke-linejoin:round; transition:transform .15s}
 .edge-btn.left{left:-1px; border-radius:0 9px 9px 0}
 .edge-btn.right{right:-1px; border-radius:9px 0 0 9px}
 html.hide-pal .edge-btn.left svg, html.hide-side .edge-btn.right svg{transform:scaleX(-1)}
