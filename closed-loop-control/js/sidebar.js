@@ -149,15 +149,17 @@ const Sidebar = (() => {
   kSign.addEventListener('click', () => Model.setK(-Model.gainOf(Model.ui.activeBlock)));
 
   // ---------- préférences et réinitialisation (cahier §3 et §8, jalon J7) ----------
-  const langSel = document.getElementById('lang-sel');
-  const themeChk = document.getElementById('theme-chk');
+  const langSeg = document.getElementById('lang-seg');
+  const langBtns = [...langSeg.querySelectorAll('button[data-lang]')];
+  const themeBtn = document.getElementById('theme-btn');
   const resetBtn = document.getElementById('btn-reset');
-  langSel.addEventListener('change', () => {
-    Model.state.view.lang = langSel.value;
-    setLang(langSel.value);                     // applique la langue en direct
-  });
-  themeChk.addEventListener('change', () =>
-    Model.setView({ theme: themeChk.checked ? 'dark' : 'light' }));
+  for (const b of langBtns)
+    b.addEventListener('click', () => {
+      Model.state.view.lang = b.dataset.lang;
+      setLang(b.dataset.lang);                  // applique la langue en direct
+    });
+  themeBtn.addEventListener('click', () =>
+    Model.setView({ theme: Model.state.view.theme === 'dark' ? 'light' : 'dark' }));
   resetBtn.addEventListener('click', () => App.resetAll());
 
   // infobulles non balisées data-i18n : réécrites au changement de langue
@@ -165,6 +167,8 @@ const Sidebar = (() => {
     kSign.title = t('kSignHint');
     h0Value.title = t('dcGainHint');
     resetBtn.title = t('resetHint');
+    themeBtn.title = t('dark');
+    langSeg.setAttribute('aria-label', t('lang'));
     delayInput.title = t('delayHint');
     pidNSlider.title = t('pidFilterHint');
     pidNInput.title = t('pidFilterHint');
@@ -434,9 +438,14 @@ const Sidebar = (() => {
   function render(){
     // thème : une classe sur <body>, toute la palette suit en variables CSS ;
     // les panneaux 3D relisent ces variables à chaque rendu, donc ils suivent aussi
-    document.body.classList.toggle('dark', Model.state.view.theme === 'dark');
-    themeChk.checked = Model.state.view.theme === 'dark';
-    langSel.value = LANG;
+    const dark = Model.state.view.theme === 'dark';
+    document.body.classList.toggle('dark', dark);
+    themeBtn.setAttribute('aria-pressed', String(dark));
+    for (const b of langBtns){
+      const on = b.dataset.lang === LANG;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', String(on));
+    }
 
     if (document.activeElement !== delayInput)
       delayInput.value = String(Number(Model.state.delay.toPrecision(4)));

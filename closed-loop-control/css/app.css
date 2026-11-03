@@ -162,6 +162,20 @@ body.sb-hidden #sb-toggle svg{transform:scaleX(-1)}
 .chk{display:flex;align-items:center;gap:7px;padding:3px 2px;cursor:pointer;font-size:13.5px}
 .chk input{accent-color:var(--upf-blue)}
 .slider-row{display:flex;align-items:center;gap:6px;font-size:13px;margin-top:5px}
+/* préférences : langue en boutons segmentés (EN | FR | ES | IT) et thème en bouton icône,
+   même disposition que les autres applications du site */
+.prefs-row{display:flex;align-items:center;gap:6px}
+.seg{display:flex;flex:1;min-width:0;border:1px solid var(--border);border-radius:7px;overflow:hidden;background:var(--btn-bg)}
+.seg button{flex:1;min-width:0;border:0;border-radius:0;background:transparent;color:var(--muted);
+            padding:5px 0;font-size:12px;font-weight:600;min-height:30px;cursor:pointer}
+.seg button + button{border-left:1px solid var(--border)}
+.seg button:hover{background:var(--upf-blue-soft);color:var(--ink)}
+.seg button.active{background:var(--upf-blue);color:#fff}
+.icon-btn{display:inline-flex;align-items:center;justify-content:center;min-width:34px;min-height:30px;padding:4px 6px;
+          border:1px solid var(--border);border-radius:7px;background:var(--btn-bg);color:var(--ink);
+          font-size:16px;line-height:1;cursor:pointer}
+.icon-btn:hover{background:var(--upf-blue-soft);border-color:var(--upf-blue)}
+.icon-btn[aria-pressed="true"]{border-color:var(--upf-blue);box-shadow:inset 0 -2px var(--upf-blue)}
 .slider-row input[type=range]{flex:1;accent-color:var(--upf-blue);min-width:0}
 .kv{font-family:Consolas,monospace;font-size:12.5px;color:var(--muted)}
 input[type=number]{background:var(--btn-bg);color:var(--ink);border:1px solid var(--border);border-radius:3px}

@@ -153,16 +153,15 @@
 
     <div class="sb-section">
       <h4 data-i18n="prefs">Préférences</h4>
-      <div class="slider-row"><span data-i18n="lang">Langue</span>
-        <select id="lang-sel" style="flex:1">
-          <option value="fr" selected>Français</option>
-          <option value="en">English</option>
-          <option value="es">Español</option>
-          <option value="it">Italiano</option>
-        </select>
+      <div class="prefs-row">
+        <div class="seg" id="lang-seg" role="group" aria-label="Langue">
+          <button type="button" data-lang="en" aria-pressed="false">EN</button>
+          <button type="button" data-lang="fr" aria-pressed="true" class="active">FR</button>
+          <button type="button" data-lang="es" aria-pressed="false">ES</button>
+          <button type="button" data-lang="it" aria-pressed="false">IT</button>
+        </div>
+        <button type="button" class="icon-btn" id="theme-btn" aria-pressed="false" title="Thème sombre">🌗</button>
       </div>
-      <label class="chk" style="margin-top:5px"><input type="checkbox" id="theme-chk">
-        <span data-i18n="dark">Thème sombre</span></label>
     </div>
 
     <div class="sb-section" style="margin-top:auto">
