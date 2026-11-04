@@ -105,6 +105,14 @@
       app.ui.showTab('props', false);
       app.circuitChanged();
     };
+    // a network with its two terminals (spec.ab: [A, B], an equivalent-resistance deck): once answered, the
+    // analysis between A and B is opened, so the Thévenin & R_eq tab shows the reduction step by step
+    function openPort(c) {
+      const spec = c.q.circuit(c.p);
+      if (!spec.ab) return;
+      app.thev = { a: spec.ab[0].slice(), b: spec.ab[1].slice() };
+      app.port = { a: app.thev.a, b: app.thev.b };
+    }
     function loadQuestion() {
       const qi = st.order[st.pos];
       const q = st.deck.questions[qi];
@@ -113,7 +121,10 @@
       if (!st.items[st.pos]) { const d = draw(q); st.items[st.pos] = { q, qi, p: d.p, sol: d.sol, revealed: false, given: null, right: null }; }
       st.cur = st.items[st.pos];
       app.sel.clear();
+      // (no analysis left from another question: it would give its answer away)
+      app.thev = null; app.port = null;
       app.loadCircuit(DCS.examples.make(q.circuit(st.cur.p)), { fit: true });
+      if (st.cur.revealed) openPort(st.cur);
       fitVisible();
       app.undoStack = []; app.redoStack = []; app.ui.updateHistory();
       render();
@@ -166,6 +177,7 @@
       pr.q = pr.q || {};
       pr.q[c.q.id] = right ? Math.min(5, (pr.q[c.q.id] || 0) + 1) : 0;
       saveProg(app, st.deck.id, pr);
+      openPort(c);
       app.circuitChanged();      // the hidden values come back on the circuit
       app.requestRender();
       render();

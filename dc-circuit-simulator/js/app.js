@@ -213,7 +213,9 @@
     if (!res) return out;
     const name = (id) => { const base = String(id).split('#')[0]; const c = app.circuit.comps.find(x => x.id === base); return c ? (c.name || app.tp('c_' + c.type)) : id; };
     for (const iss of res.issues) out.push({ level: iss.level, text: app.t('iss_' + iss.code, { ids: iss.ids.map(name).join(', ') }), ids: iss.ids });
-    if (app.net && app.net.noGround) out.push({ level: 'warn', text: app.t('iss_noground'), ids: [] });
+    // (a network of resistors only, e.g. for its equivalent resistance, needs no reference)
+    const resOnly = app.circuit.comps.every(c => c.type === 'resistor' || c.type === 'pot');
+    if (app.net && app.net.noGround && !resOnly) out.push({ level: 'warn', text: app.t('iss_noground'), ids: [] });
     for (const c of app.circuit.comps) if (C.isDep(c) && !C.ctrlOf(c, app.circuit)) out.push({ level: 'warn', text: app.t('iss_noctrl', { ids: c.name }), ids: [c.id] });
     if (res.ok) for (const c of app.circuit.comps) {
       const r = res.el[c.id];
