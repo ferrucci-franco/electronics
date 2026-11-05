@@ -397,7 +397,10 @@
                 <option value="trapezoid" data-i18n="trapezoid">Échelon trapézoïdal</option>
                 <option value="impulse" id="input-impulse" data-i18n="impulse">Impulsion</option>
                 <option value="sine" data-i18n="sine">Sinusoïdale</option>
+                <option value="initial" id="input-initial" data-i18n="initialCondition" hidden>Condition initiale</option>
               </select>
+              <span id="y0-wrap" class="hidden"><span class="time-param-symbol">y<sub>0</sub></span> :
+                <input type="number" id="input-y0" class="knum" step="0.1" data-adaptive-number></span>
               <span id="input-amplitude-wrap"><span class="time-param-symbol">A</span> :
                 <input type="number" id="input-amplitude" class="knum" step="0.1" data-adaptive-number></span>
               <span id="rise-wrap" class="hidden"><span class="time-param-symbol">t<sub>r</sub></span> :

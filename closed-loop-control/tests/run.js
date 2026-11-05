@@ -610,6 +610,64 @@ cas('essai de plante : l’impulsion conserve son aire malgré la saturation glo
   proche(sim.signals.y[0], 2, 1e-12);
 });
 
+const plantePseudoOscillante = () => {
+  vide();
+  Model.state.poles.push({ id: 'pp', owner: 'plant', type: 'pair', sigma: -1, omega: 4.9, mult: 1 });
+  Model.state.view.timeExperiment = 'plant';
+  Model.state.view.timeT = 5;
+};
+// Réponse libre de 1/(s² + 2s + 25,01) depuis y(0) = 1, ẏ(0) = 0.
+const libre = tv => Math.exp(-tv) * (Math.cos(4.9 * tv) + Math.sin(4.9 * tv) / 4.9);
+const indexAt = (sim, tv) => {
+  let i = 0;
+  while (i + 1 < sim.t.length && sim.t[i + 1] <= tv) i++;
+  return i;
+};
+
+cas('condition initiale : réponse libre exacte de 1/(s²+2s+25,01), u ≡ 0', () => {
+  plantePseudoOscillante();
+  Model.setInput({ type: 'initial', y0: 1 });
+  const sim = TimeResp.simulate();
+  eq(sim.type, 'initial');
+  proche(sim.signals.y[0], 1, 1e-12, 'y(0)');
+  for (const tv of [0.3, 1, 1.28, 2.5, 4]){
+    const i = indexAt(sim, tv);
+    proche(sim.signals.y[i], libre(sim.t[i]), 1e-6, `y(${tv})`);
+    eq(sim.signals.r[i], 0, `u(${tv})`);
+  }
+});
+
+cas('condition initiale : y0 met la réponse à l’échelle, le retard ne la décale pas', () => {
+  plantePseudoOscillante();
+  Model.setDelay(1);
+  Model.setInput({ type: 'initial', y0: -2.5 });
+  const sim = TimeResp.simulate();
+  proche(sim.signals.y[0], -2.5, 1e-12);
+  const i = indexAt(sim, 0.5);
+  proche(sim.signals.y[i], -2.5 * libre(sim.t[i]), 1e-6);
+});
+
+cas('condition initiale : réservée à la plante seule', () => {
+  plantePseudoOscillante();
+  Model.setInput({ type: 'initial' });
+  eq(Model.state.input.type, 'initial');
+  Model.setView({ timeExperiment: 'closed' });
+  eq(Model.state.input.type, 'step');
+  Model.setInput({ type: 'initial' });
+  eq(Model.state.input.type, 'step');
+});
+
+cas('condition initiale : grisée et sans courbe si la plante a des zéros', () => {
+  plantePseudoOscillante();
+  Model.setInput({ type: 'initial', y0: 1 });
+  Model.state.zeros.push({ id: 'zp', owner: 'plant', type: 'real', sigma: -2, mult: 1 });
+  TimeResp.render();
+  eq(fakeEl('input-initial').disabled, true);
+  eq(fakeEl('input-initial').title, 'initialZeros');
+  eq(fakeEl('time-warning').textContent, 'initialZeros');
+  eq(fakeEl('time-svg').innerHTML, '');
+});
+
 cas('saturation : les limites invalides sont refusées sans modifier l’état', () => {
   vide();
   const before = { ...Model.state.saturation };

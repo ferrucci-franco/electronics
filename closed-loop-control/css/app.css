@@ -584,7 +584,7 @@ svg text{font-family:"Segoe UI",sans-serif;user-select:none}
 #time-input-group{gap:5px;min-width:0}
 #input-type{width:156px;min-width:112px}
 #time-final-group{margin-left:auto;gap:5px}
-#rise-wrap,#win-wrap,#input-amplitude-wrap,#second-step-options>span,#time-final-group>span{
+#rise-wrap,#win-wrap,#input-amplitude-wrap,#y0-wrap,#second-step-options>span,#time-final-group>span{
   display:inline-flex;align-items:center;gap:3px;white-space:nowrap}
 .time-param-symbol{display:inline;white-space:nowrap;color:var(--ink);font-family:Consolas,monospace;
   font-size:12.5px;font-weight:700;font-style:normal;line-height:1}

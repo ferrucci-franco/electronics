@@ -33,7 +33,8 @@ const Model = (() => {
     saturation: { enabled: false, min: -10, max: 10 },
     input: {
       type: 'step', omegaIn: 1, riseTime: 1, amplitude: 1,
-      secondEnabled: false, secondTime: 5, secondValue: 0
+      secondEnabled: false, secondTime: 5, secondValue: 0,
+      y0: 1                               // condition initiale y(0) (essai de plante seule)
     },
     exploration: { kappa: 1 },           // gain exploratoire du lieu, sans effet sur C(s)
     view: {
@@ -1103,6 +1104,9 @@ const Model = (() => {
     Object.assign(state.view, next);
     if (state.view.timeExperiment !== 'plant' && state.saturation.enabled && state.input.type === 'impulse')
       state.input.type = 'step';
+    // La condition initiale n'existe que pour la plante seule.
+    if (state.view.timeExperiment !== 'plant' && state.input.type === 'initial')
+      state.input.type = 'step';
     notify();
   }
 
@@ -1117,13 +1121,14 @@ const Model = (() => {
   }
   function setInput(patch){
     const next = { ...patch };
-    if (next.type && !['step', 'trapezoid', 'impulse', 'sine'].includes(next.type)) delete next.type;
+    if (next.type && !['step', 'trapezoid', 'impulse', 'sine', 'initial'].includes(next.type)) delete next.type;
+    if (next.type === 'initial' && state.view.timeExperiment !== 'plant') next.type = 'step';
     if (Object.prototype.hasOwnProperty.call(next, 'riseTime')){
       next.riseTime = Number(next.riseTime);
       if (!(next.riseTime > 0) || !isFinite(next.riseTime)) delete next.riseTime;
       else next.riseTime = Math.min(Math.max(next.riseTime, 1e-3), 1e5);
     }
-    for (const key of ['amplitude', 'secondValue']) if (Object.prototype.hasOwnProperty.call(next, key)){
+    for (const key of ['amplitude', 'secondValue', 'y0']) if (Object.prototype.hasOwnProperty.call(next, key)){
       next[key] = Number(next[key]);
       if (!isFinite(next[key])) delete next[key];
       else next[key] = Math.min(Math.max(next[key], -1e6), 1e6);
@@ -1167,7 +1172,8 @@ const Model = (() => {
     state.omegaEval = 2;
     state.input = {
       type: 'step', omegaIn: 1, riseTime: 1, amplitude: 1,
-      secondEnabled: false, secondTime: 5, secondValue: 0
+      secondEnabled: false, secondTime: 5, secondValue: 0,
+      y0: 1                               // condition initiale y(0) (essai de plante seule)
     };
     state.exploration = { kappa: 1 };
     Object.assign(state.view, {
