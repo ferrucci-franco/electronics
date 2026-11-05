@@ -84,6 +84,28 @@ const TimeResp = (() => {
   });
   riseInput.addEventListener('keydown', ev => { if (ev.key === 'Enter') riseInput.blur(); });
 
+  // Condition initiale (plante seule) : u ≡ 0, y(0) = y0, dérivées nulles.
+  // Dans la réalisation commandable, y = c₀x₀ quand P n'a pas de zéro : il
+  // suffit alors de poser x₀ = y0/c₀. Avec des zéros, l'option est grisée.
+  const initialOption = document.getElementById('input-initial');
+  const amplitudeWrap = document.getElementById('input-amplitude-wrap');
+  const y0Wrap = document.getElementById('y0-wrap');
+  const y0Input = document.getElementById('input-y0');
+  y0Input.addEventListener('change', () => {
+    const value = Number(y0Input.value);
+    if (isFinite(value)) Model.setInput({ y0: value });
+    else App.render();
+  });
+  y0Input.addEventListener('keydown', ev => { if (ev.key === 'Enter') y0Input.blur(); });
+  function initialIssue(){
+    const P = Model.transferPolys('P');
+    let i = 0;
+    while (i < P.num.length - 1 && Math.abs(P.num[i]) < 1e-12) i++;
+    if (P.num.length - i > 1) return 'initialZeros';
+    if (P.den.length < 2 || !(Math.abs(P.num[i]) > 1e-12)) return 'initialUnavailable';
+    return '';
+  }
+
   const amplitudeInput = document.getElementById('input-amplitude');
   amplitudeInput.addEventListener('change', () => {
     const value = Number(amplitudeInput.value);
@@ -154,6 +176,7 @@ const TimeResp = (() => {
     winNum.title = t('winHint');
     riseInput.title = t('riseTimeHint');
     amplitudeInput.title = t('amplitudeHint');
+    y0Input.title = t('initialValueHint');
     secondEnableWrap.title = t('secondStep');
     secondTimeInput.title = t('secondTimeHint');
     secondValueInput.title = t('secondValueHint');
@@ -336,6 +359,8 @@ const TimeResp = (() => {
 
     const x = new Array(n).fill(0);
     if (type === 'impulse' && n > 0) x[n - 1] = input.amplitude;
+    if (type === 'initial' && n > 0 && plantExperiment() && !initialIssue())
+      x[0] = input.y0 / params.y.c[0];
     const alpha = a.slice(1).reverse();
     const deriv = (tv, xs, out) => {
       for (let i = 0; i < n - 1; i++) out[i] = xs[i + 1];
@@ -375,8 +400,11 @@ const TimeResp = (() => {
     }
     // Approximation temporaire du retard : il est placé sur la sortie de la
     // plante. Le traitement exact de la rétroaction retardée demandera une DDE.
-    signals.y = retarde(tValues, signals.y);
-    signals.ym = retarde(tValues, signals.ym);
+    // Réponse libre : u ≡ 0, le retard d'entrée n'a rien à décaler.
+    if (type !== 'initial'){
+      signals.y = retarde(tValues, signals.y);
+      signals.ym = retarde(tValues, signals.ym);
+    }
     return finish({ T, type, isSine, wIn, res, tTrans, steadyOnly,
       t: tValues, signals, direct, steady, frequency });
   }
@@ -660,6 +688,15 @@ const TimeResp = (() => {
     });
     impulseOption.disabled = saturated;
     impulseOption.title = saturated ? t('impulseSatDisabled') : '';
+    const isInitial = Model.state.input.type === 'initial';
+    const initialProblem = plantOnly ? initialIssue() : '';
+    initialOption.hidden = !plantOnly;
+    initialOption.disabled = !plantOnly || !!initialProblem;
+    initialOption.title = initialProblem ? t(initialProblem) : '';
+    y0Wrap.classList.toggle('hidden', !isInitial);
+    amplitudeWrap.classList.toggle('hidden', isInitial);
+    if (document.activeElement !== y0Input)
+      y0Input.value = String(Number(Model.state.input.y0.toPrecision(8)));
     document.getElementById('time-u-label').title = saturated ? '' : t('timeUSame');
     const timeIssue = sim.diverged
       ? t('timeDiverged')
@@ -685,6 +722,15 @@ const TimeResp = (() => {
       secondValueInput.value = String(Number(Model.state.input.secondValue.toPrecision(8)));
     if (document.activeElement !== tInput) tInput.value = String(Number(sim.T.toPrecision(3)));
     tAutoChk.checked = Model.state.view.timeT === null;
+    if (isInitial && initialProblem){
+      // Pas de courbe fausse : on signale l'indisponibilité et on ne trace rien.
+      timeWarning.classList.remove('hidden');
+      timeWarning.textContent = t(initialProblem);
+      svg.innerHTML = '';
+      boxEl = null;
+      vc = null;
+      return;
+    }
 
     svg.innerHTML = '';
     boxEl = null;
