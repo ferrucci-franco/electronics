@@ -135,8 +135,9 @@
     .view[hidden] { display: none; }
     canvas { display: block; width: 100%; }
     #wheel { height: clamp(260px, calc(100vh - 430px), 640px); border-radius: 12px; }
-    #plot { height: clamp(220px, calc(100vh - 580px), 520px); }
-    #faxis { height: 140px; }
+    #plot { height: clamp(200px, calc((100vh - 440px) * .55), 480px); }
+    #faxis { height: clamp(200px, calc((100vh - 470px) * .45), 400px); }
+    .fold-legend { margin-top: 14px; }
     .subrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 8px; color: var(--muted); font-size: .95rem; }
     .subrow select {
       font: inherit; font-weight: 700; color: var(--ink); background: var(--screen);
@@ -171,6 +172,7 @@
       .buttons .sep { margin-left: 0; width: 100%; }
       #wheel { height: auto; aspect-ratio: 4 / 3; }
       #plot { height: auto; aspect-ratio: 1.5 / 1; }
+      #faxis { height: auto; aspect-ratio: 1.2 / 1; }
       .tabs { margin-left: 6px; }
       .tabs button { font-size: 1rem; padding: 8px 12px; }
     }
@@ -247,6 +249,10 @@
           <span id="legend-alias"><i class="sw sw-alias"></i><span data-i18n-html="legendAlias"></span></span>
         </div>
         <canvas id="plot" role="img" data-i18n-aria="plotAria"></canvas>
+        <div class="legend fold-legend">
+          <span><i class="sw sw-dot" style="background: var(--accent)"></i><span data-i18n="legendOk"></span></span>
+          <span><i class="sw sw-dot" style="background: var(--orange)"></i><span data-i18n="legendAliased"></span></span>
+        </div>
         <canvas id="faxis" role="img" data-i18n-aria="faxisAria"></canvas>
         <p class="readout" id="sine-readout" aria-live="polite"></p>
         <p class="readout small" id="sine-rule"></p>
@@ -294,13 +300,14 @@
         appAmbig: '(sens indéterminé : un demi-tour par image)',
         panelB: 'Sinusoïde échantillonnée',
         plotAria: 'Sinusoïde continue, échantillons et sinusoïde à la fréquence apparente.',
-        faxisAria: 'Axe des fréquences de 0 à 2 Fs.',
+        faxisAria: 'Fréquence apparente signée f* en fonction de f : dent de scie entre −Fs/2 et Fs/2.',
+        foldY: 'f* (Hz)', legendOk: 'sans repliement', legendAliased: 'avec repliement',
         legendX: 'x(t) = cos(2π f t)',
         legendN: 'x[n] = cos(2π f n / Fs)',
         legendAlias: 'cos(2π <i>f</i><sub>app</sub> t)',
         readoutB: 'f = {f} Hz, Fs = {fs} Hz, fréquence apparente = <span class="{cls}">{fa} Hz</span>',
         ruleLow: 'r = f mod Fs = {r} Hz ≤ Fs/2 ⇒ <i>f</i><sub>app</sub> = r = {fa} Hz',
-        ruleHigh: 'r = f mod Fs = {r} Hz > Fs/2 ⇒ <i>f</i><sub>app</sub> = Fs − r = {fa} Hz',
+        ruleHigh: 'r = f mod Fs = {r} Hz > Fs/2 ⇒ <i>f</i><sub>app</sub> = Fs − r = {fa} Hz  (f* = r − Fs = {fst} Hz)',
         tAxis: 't (ms)'
       },
       en: {
@@ -333,13 +340,14 @@
         appAmbig: '(direction undefined: half a turn per frame)',
         panelB: 'Sampled sinusoid',
         plotAria: 'Continuous sinusoid, samples and sinusoid at the apparent frequency.',
-        faxisAria: 'Frequency axis from 0 to 2 Fs.',
+        faxisAria: 'Signed apparent frequency f* versus f: a sawtooth between −Fs/2 and Fs/2.',
+        foldY: 'f* (Hz)', legendOk: 'no aliasing', legendAliased: 'with aliasing',
         legendX: 'x(t) = cos(2π f t)',
         legendN: 'x[n] = cos(2π f n / Fs)',
         legendAlias: 'cos(2π <i>f</i><sub>app</sub> t)',
         readoutB: 'f = {f} Hz, Fs = {fs} Hz, apparent frequency = <span class="{cls}">{fa} Hz</span>',
         ruleLow: 'r = f mod Fs = {r} Hz ≤ Fs/2 ⇒ <i>f</i><sub>app</sub> = r = {fa} Hz',
-        ruleHigh: 'r = f mod Fs = {r} Hz > Fs/2 ⇒ <i>f</i><sub>app</sub> = Fs − r = {fa} Hz',
+        ruleHigh: 'r = f mod Fs = {r} Hz > Fs/2 ⇒ <i>f</i><sub>app</sub> = Fs − r = {fa} Hz  (f* = r − Fs = {fst} Hz)',
         tAxis: 't (ms)'
       },
       es: {
@@ -372,13 +380,14 @@
         appAmbig: '(sentido indeterminado: media vuelta por imagen)',
         panelB: 'Sinusoide muestreada',
         plotAria: 'Sinusoide continua, muestras y sinusoide a la frecuencia aparente.',
-        faxisAria: 'Eje de frecuencias de 0 a 2 Fs.',
+        faxisAria: 'Frecuencia aparente con signo f* en función de f: diente de sierra entre −Fs/2 y Fs/2.',
+        foldY: 'f* (Hz)', legendOk: 'sin aliasing', legendAliased: 'con aliasing',
         legendX: 'x(t) = cos(2π f t)',
         legendN: 'x[n] = cos(2π f n / Fs)',
         legendAlias: 'cos(2π <i>f</i><sub>app</sub> t)',
         readoutB: 'f = {f} Hz, Fs = {fs} Hz, frecuencia aparente = <span class="{cls}">{fa} Hz</span>',
         ruleLow: 'r = f mod Fs = {r} Hz ≤ Fs/2 ⇒ <i>f</i><sub>app</sub> = r = {fa} Hz',
-        ruleHigh: 'r = f mod Fs = {r} Hz > Fs/2 ⇒ <i>f</i><sub>app</sub> = Fs − r = {fa} Hz',
+        ruleHigh: 'r = f mod Fs = {r} Hz > Fs/2 ⇒ <i>f</i><sub>app</sub> = Fs − r = {fa} Hz  (f* = r − Fs = {fst} Hz)',
         tAxis: 't (ms)'
       }
     };
@@ -716,78 +725,90 @@
       }
     }
 
-    function drawFAxis() {
+    // Apparent-frequency diagram (same idea as the "Spectral diagram" of the DSP lab, step 2):
+    // signed apparent frequency f* ∈ [−Fs/2, Fs/2] as a function of f — a sawtooth.
+    // |f*| is the course's f_app; the sign of f* is the wheel's apparent direction.
+    function drawFold() {
       const { w, h } = prepCanvas(faxisCanvas, actx);
       const ctx = actx;
       const { f, Fs } = state;
-      const { fApp } = fold(f, Fs);
-      const fs = clamp(w / 52, 12, 17);
-      const m = { l: fs * 1.8, r: fs * 2.6 };
-      const fMax = 2 * Fs;
-      const X = (v) => m.l + (v / fMax) * (w - m.l - m.r);
-      const yAxis = h - fs * 1.9;
-      const yTop = fs * 1.35;
+      const { r } = fold(f, Fs);
+      const fStar = r <= Fs / 2 ? r : r - Fs;
+      const fs = clamp(w / 55, 12, 17);
+      const m = { l: fs * 4.4, r: fs * 3.8, t: fs * 2.0, b: fs * 2.2 };
+      const pw = w - m.l - m.r, ph = h - m.t - m.b;
+      const yr = 0.6 * Fs;
+      const X = (v) => m.l + (v / (2 * Fs)) * pw;
+      const Y = (v) => m.t + (1 - (v + yr) / (2 * yr)) * ph;
+      const x0 = X(0), y0 = Y(0), xEnd = X(2 * Fs);
+      const aliased = f > Fs / 2;
 
-      // Baseband [0, Fs/2]
+      // Zone without aliasing: 0 ≤ f ≤ Fs/2
       ctx.fillStyle = C.tint;
-      ctx.fillRect(X(0), yTop, X(Fs / 2) - X(0), yAxis - yTop);
+      ctx.fillRect(x0, Y(yr), X(Fs / 2) - x0, Y(-yr) - Y(yr));
 
-      // Reference lines at Fs and 3Fs/2 (light), Fs/2 (strong, labelled)
-      ctx.setLineDash([4, 5]); ctx.lineWidth = 1.2; ctx.strokeStyle = C.axis;
+      // Guides: ±Fs/2 (horizontal), k·Fs/2 (vertical)
+      ctx.setLineDash([3, 4]); ctx.lineWidth = 1; ctx.strokeStyle = C.axis;
       ctx.beginPath();
-      for (const v of [Fs, 1.5 * Fs]) { ctx.moveTo(X(v), yTop); ctx.lineTo(X(v), yAxis); }
+      for (const v of [Fs / 2, -Fs / 2]) { ctx.moveTo(x0, Y(v)); ctx.lineTo(xEnd, Y(v)); }
+      for (let k = 1; k <= 4; k++) { ctx.moveTo(X(k * Fs / 2), Y(yr)); ctx.lineTo(X(k * Fs / 2), Y(-yr)); }
       ctx.stroke(); ctx.setLineDash([]);
-      ctx.strokeStyle = C.accent; ctx.lineWidth = 2.5;
-      ctx.beginPath(); ctx.moveTo(X(Fs / 2), yTop - fs * 0.15); ctx.lineTo(X(Fs / 2), yAxis); ctx.stroke();
 
-      ctx.textBaseline = 'bottom'; ctx.textAlign = 'center';
-      ctx.fillStyle = C.accent; ctx.font = `800 ${fs}px system-ui, sans-serif`;
-      ctx.fillText('Fs/2', X(Fs / 2), yTop - fs * 0.2);
-      ctx.fillStyle = C.muted; ctx.font = `600 ${fs * 0.9}px system-ui, sans-serif`;
-      ctx.fillText('Fs', X(Fs), yTop - fs * 0.2);
-      ctx.fillText('3Fs/2', X(1.5 * Fs), yTop - fs * 0.2);
-      ctx.fillText('2Fs', X(2 * Fs), yTop - fs * 0.2);
+      // Axes
+      ctx.strokeStyle = C.ink; ctx.fillStyle = C.ink; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(xEnd + fs * 0.8, y0); ctx.moveTo(x0, Y(-yr)); ctx.lineTo(x0, Y(yr) - fs * 0.4); ctx.stroke();
+      arrowHead(ctx, xEnd + fs * 1.1, y0, 1, 0, fs * 0.7);
+      arrowHead(ctx, x0, Y(yr) - fs * 0.7, 0, -1, fs * 0.7);
 
-      // Axis and ticks
-      ctx.strokeStyle = C.ink; ctx.lineWidth = 1.6;
-      ctx.beginPath(); ctx.moveTo(X(0), yAxis); ctx.lineTo(X(fMax) + fs * 0.6, yAxis); ctx.stroke();
-      ctx.fillStyle = C.ink; arrowHead(ctx, X(fMax) + fs * 0.9, yAxis, 1, 0, fs * 0.7);
-      ctx.lineWidth = 1.2;
-      ctx.fillStyle = C.muted; ctx.font = `500 ${fs * 0.88}px system-ui, sans-serif`; ctx.textBaseline = 'top';
-      for (let i = 0; i <= 8; i++) {
-        const v = fMax * i / 8, x = X(v);
-        ctx.beginPath(); ctx.moveTo(x, yAxis); ctx.lineTo(x, yAxis + (i % 2 ? fs * 0.25 : fs * 0.45)); ctx.stroke();
-        if (i % 2 === 0) { ctx.textAlign = i === 0 ? 'left' : 'center'; ctx.fillText(fmt(v) + (i === 8 ? ' Hz' : ''), i === 0 ? x - fs * 0.25 : x, yAxis + fs * 0.55); }
+      // Labels: y values on the left, symbolic ±Fs/2 at the right end, k·Fs/2 on top, Hz at the bottom
+      ctx.font = `500 ${fs * 0.9}px system-ui, sans-serif`; ctx.fillStyle = C.muted;
+      ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+      ctx.fillText(fmt(Fs / 2), x0 - fs * 0.5, Y(Fs / 2));
+      ctx.fillText('0', x0 - fs * 0.5, y0);
+      ctx.fillText(fmt(-Fs / 2), x0 - fs * 0.5, Y(-Fs / 2));
+      ctx.textAlign = 'left';
+      ctx.fillText('Fs/2', xEnd + fs * 0.3, Y(Fs / 2));
+      ctx.fillText('−Fs/2', xEnd + fs * 0.3, Y(-Fs / 2));
+      ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+      ['Fs/2', 'Fs', '3Fs/2', '2Fs'].forEach((lab, i) => ctx.fillText(lab, X((i + 1) * Fs / 2), Y(yr) - fs * 0.15));
+      ctx.textBaseline = 'top';
+      for (let k = 0; k <= 4; k++) {
+        const lab = fmt(k * Fs / 2) + (k === 4 ? ' Hz' : '');
+        ctx.textAlign = k === 0 ? 'left' : k === 4 ? 'right' : 'center';
+        ctx.fillText(lab, X(k * Fs / 2) + (k === 4 ? fs * 0.8 : 0), Y(-yr) + fs * 0.3);
       }
-
-      // Fold arrow f → f_app
-      const tri = fs * 0.8;
-      const xf = X(f), xa = X(fApp);
-      const yM = yAxis - tri - 2;
-      if (fApp !== f) {
-        const dist = Math.abs(xf - xa);
-        const peak = Math.max(yTop + fs * 2.4, yM - Math.max(fs * 1.2, dist * 0.35));
-        const yc = 2 * peak - yM, xc = (xf + xa) / 2;
-        ctx.strokeStyle = C.orange; ctx.lineWidth = 2; ctx.setLineDash([6, 5]);
-        const lift = fs * 2.0;
-        ctx.beginPath(); ctx.moveTo(xf, yM - lift); ctx.quadraticCurveTo(xc, yc - lift, xa, yM - lift); ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.fillStyle = C.orange;
-        arrowHead(ctx, xa, yM - lift + 2, xa - xc, (yM - lift) - (yc - lift), fs * 0.8);
-      }
-
-      // Markers (downward triangles touching the axis)
-      const marker = (x, color) => {
-        ctx.fillStyle = color;
-        ctx.beginPath(); ctx.moveTo(x, yAxis - 1); ctx.lineTo(x - tri * 0.6, yAxis - tri - 1); ctx.lineTo(x + tri * 0.6, yAxis - tri - 1); ctx.closePath(); ctx.fill();
-      };
+      ctx.fillStyle = C.ink; ctx.textBaseline = 'alphabetic';
+      ctx.font = `700 ${fs}px system-ui, sans-serif`; ctx.textAlign = 'right';
+      ctx.fillText(t('foldY'), x0 - fs * 0.6, Y(yr) - fs * 0.35);
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.fillText('f', xEnd + fs * 1.7, y0);
       ctx.textBaseline = 'alphabetic';
-      if (fApp !== f) {
-        marker(xa, C.orange); ctx.fillStyle = C.orange; subText(ctx, 'f', 'app', xa, yM - fs * 0.55, fs * 1.05);
-        marker(xf, C.accent); ctx.fillStyle = C.accent; subText(ctx, 'f', '', xf, yM - fs * 0.55, fs * 1.05);
-      } else {
-        marker(xf, C.accent); ctx.fillStyle = C.accent; subText(ctx, 'f = f', 'app', xf, yM - fs * 0.55, fs * 1.05);
-      }
+
+      // Sawtooth f* = f − k·Fs on [(k − ½)Fs, (k + ½)Fs], with faint jumps
+      ctx.strokeStyle = C.accent; ctx.lineWidth = 3; ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(X(0), Y(0)); ctx.lineTo(X(Fs / 2), Y(Fs / 2));
+      ctx.moveTo(X(Fs / 2), Y(-Fs / 2)); ctx.lineTo(X(1.5 * Fs), Y(Fs / 2));
+      ctx.moveTo(X(1.5 * Fs), Y(-Fs / 2)); ctx.lineTo(X(2 * Fs), Y(0));
+      ctx.stroke();
+      ctx.setLineDash([2, 5]); ctx.lineWidth = 1.5; ctx.globalAlpha = 0.6;
+      ctx.beginPath();
+      for (const v of [Fs / 2, 1.5 * Fs]) { ctx.moveTo(X(v), Y(Fs / 2)); ctx.lineTo(X(v), Y(-Fs / 2)); }
+      ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
+
+      // Current point with crosshairs to both axes
+      const px = X(f), py = Y(fStar);
+      const col = aliased ? C.orange : C.accent;
+      ctx.strokeStyle = col; ctx.lineWidth = 1.6; ctx.setLineDash([5, 4]);
+      ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px, y0); ctx.moveTo(px, py); ctx.lineTo(x0, py); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = col; ctx.strokeStyle = C.panel; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.arc(px, py, Math.max(6, fs * 0.45), 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+      // f* value next to the y axis
+      ctx.font = `800 ${fs}px system-ui, sans-serif`; ctx.fillStyle = col;
+      ctx.textAlign = 'left'; ctx.textBaseline = fStar >= 0 ? 'bottom' : 'top';
+      const sgn = fStar > 0 ? '+' : '';
+      ctx.fillText(`f* = ${sgn}${fmt(fStar)} Hz`, x0 + fs * 0.5, py + (fStar >= 0 ? -fs * 0.25 : fs * 0.25));
     }
 
     // ------------------------------------------------------------------
@@ -808,7 +829,7 @@
       $('#wheel-app').innerHTML = `${t('appLabel')} ${app}`;
 
       $('#sine-readout').innerHTML = t('readoutB', { f: fmt(f), fs: fmt(Fs), fa: fmt(fApp), cls: fApp === f ? 'same' : 'app' });
-      $('#sine-rule').innerHTML = t(r <= Fs / 2 ? 'ruleLow' : 'ruleHigh', { r: fmt(r), fa: fmt(fApp) });
+      $('#sine-rule').innerHTML = t(r <= Fs / 2 ? 'ruleLow' : 'ruleHigh', { r: fmt(r), fa: fmt(fApp), fst: fmt(r - Fs) });
       $('#legend-alias').classList.toggle('hidden', fApp === f);
 
       const k = slowFactor();
@@ -941,7 +962,7 @@
       if (dirty) {
         dirty = false;
         updateReadouts();
-        if (!viewB.hidden) { drawPlot(); drawFAxis(); }
+        if (!viewB.hidden) { drawPlot(); drawFold(); }
       }
       requestAnimationFrame(frame);
     }
