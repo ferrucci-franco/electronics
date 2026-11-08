@@ -1,0 +1,919 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Échantillonnage et repliement</title>
+  <meta name="description" content="Sampling and aliasing: stroboscopic wheel and sampled sinusoid, two synchronized views." />
+  <!-- Contador de visitas (GoatCounter, sin cookies ni datos personales). No cuenta en localhost ni desde file://. -->
+  <script data-goatcounter="https://ferrucci-franco.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+  <style>
+    /* ---------- Tokens (light / dark follow prefers-color-scheme) ---------- */
+    :root {
+      color-scheme: light dark;
+      --bg: #eef2f6;
+      --panel: #ffffff;
+      --ink: #18212d;
+      --muted: #5a6676;
+      --border: #d5dce5;
+      --accent: #004987;          /* course accent (lines, markers) */
+      --accent-ui: #004987;       /* filled buttons */
+      --accent-soft: #e3edf7;
+      --orange: #e67e22;          /* secondary: alias / apparent frequency */
+      --orange-ink: #b35a00;      /* orange used as text on light backgrounds */
+      --red: #d62828;             /* marker spoke */
+      --spoke: #3b4757;
+      --grid: rgba(24, 33, 45, .10);
+      --axis: rgba(24, 33, 45, .50);
+      --tint: rgba(0, 73, 135, .08);
+      --screen: #f4f7fa;
+      --shadow: 0 8px 28px rgba(23, 36, 56, .08);
+      --radius: 18px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0d1218;
+        --panel: #161d27;
+        --ink: #e6ecf3;
+        --muted: #9aa7b7;
+        --border: #2b3644;
+        --accent: #62a8e8;
+        --accent-ui: #1d64a8;
+        --accent-soft: #1b2a3c;
+        --orange: #f0954a;
+        --orange-ink: #f5a865;
+        --red: #ff5c5c;
+        --spoke: #c3cdd9;
+        --grid: rgba(230, 236, 243, .10);
+        --axis: rgba(230, 236, 243, .50);
+        --tint: rgba(98, 168, 232, .12);
+        --screen: #10161f;
+        --shadow: 0 10px 30px rgba(0, 0, 0, .45);
+      }
+    }
+
+    * { box-sizing: border-box; }
+    html { font-size: 18px; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, "Noto Sans", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.4;
+    }
+    .page { max-width: 1760px; margin: 0 auto; padding: 14px clamp(12px, 2vw, 28px) 10px; }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    /* ---------- Header ---------- */
+    .app-header { display: flex; align-items: center; gap: 16px; padding: 8px 6px 12px; }
+    .app-header .titles { flex: 1; min-width: 0; }
+    h1 { margin: 0; font-size: clamp(1.35rem, 2.4vw, 1.9rem); letter-spacing: .2px; }
+    .subtitle { margin: 2px 0 0; color: var(--muted); font-size: 1rem; }
+
+    /* Language: « FR ▾ » pill and a small menu with the three languages (same pattern as the other apps). */
+    .language-switch { position: relative; align-self: flex-start; }
+    #language-trigger {
+      display: inline-flex; height: 44px; align-items: center; gap: 6px;
+      border: 1px solid var(--border); border-radius: 999px; padding: 0 14px;
+      background: var(--panel); color: var(--ink); cursor: pointer; font-size: .9rem; font-weight: 800;
+    }
+    #language-trigger > i { width: 6px; height: 6px; margin-top: -3px; border-right: 1.8px solid currentColor; border-bottom: 1.8px solid currentColor; transform: rotate(45deg); }
+    #language-trigger:hover, #language-trigger[aria-expanded="true"] { border-color: var(--accent); }
+    .language-menu {
+      position: absolute; z-index: 20; top: calc(100% + 5px); right: 0; display: flex; padding: 3px;
+      border: 1px solid var(--border); border-radius: 16px; background: var(--panel); box-shadow: var(--shadow);
+    }
+    .language-menu[hidden] { display: none; }
+    .language-menu button {
+      width: 44px; height: 44px; padding: 0; border: 0; border-radius: 13px; background: transparent;
+      color: var(--muted); cursor: pointer; font-size: .86rem; font-weight: 800;
+    }
+    .language-menu button:hover { color: var(--accent); }
+    .language-menu button[aria-pressed="true"] { background: var(--accent-soft); color: var(--ink); }
+    :focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
+
+    /* ---------- Controls ---------- */
+    .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 28px; padding: 14px 20px; margin-bottom: 14px; }
+    .ctrl { display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 12px; min-width: 0; }
+    .ctrl label { font-weight: 700; font-size: 1.05rem; white-space: nowrap; cursor: help; }
+    .ctrl label .info {
+      display: inline-grid; place-items: center; width: 1.2em; height: 1.2em; margin-left: 4px;
+      border: 1.5px solid var(--muted); border-radius: 50%; color: var(--muted); font-size: .72em; font-weight: 800; vertical-align: 2px;
+    }
+    input[type="range"] { width: 100%; min-width: 120px; height: 32px; accent-color: var(--accent); cursor: pointer; }
+    input[type="number"] {
+      width: 6.2em; padding: 6px 8px; font: inherit; font-size: 1.1rem; font-weight: 700; text-align: right;
+      color: var(--ink); background: var(--screen); border: 1px solid var(--border); border-radius: 10px;
+      font-variant-numeric: tabular-nums;
+    }
+    .unit { color: var(--muted); font-weight: 600; }
+    .buttons { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+    .buttons .sep { color: var(--muted); font-weight: 600; margin-left: 10px; }
+    .btn {
+      font: inherit; font-size: 1rem; font-weight: 700; padding: 9px 16px; min-height: 44px;
+      border-radius: 12px; border: 1px solid var(--border); background: var(--panel); color: var(--ink); cursor: pointer;
+    }
+    .btn:hover { border-color: var(--accent); }
+    .btn-primary { background: var(--accent-ui); border-color: var(--accent-ui); color: #fff; min-width: 9em; }
+    .btn-primary:hover { filter: brightness(1.12); }
+    .btn-primary[aria-pressed="true"] { background: var(--orange); border-color: var(--orange); color: #1a1205; }
+
+    /* ---------- Views ---------- */
+    .views { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+    .view { padding: 12px 16px 14px; min-width: 0; }
+    .view h2 { margin: 0 0 8px; font-size: 1.3rem; color: var(--accent); }
+    canvas { display: block; width: 100%; }
+    #wheel { aspect-ratio: 16 / 9; border-radius: 12px; }
+    #plot { aspect-ratio: 2.5 / 1; }
+    #faxis { height: 140px; }
+    .subrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 8px; color: var(--muted); font-size: .95rem; }
+    .subrow select {
+      font: inherit; font-weight: 700; color: var(--ink); background: var(--screen);
+      border: 1px solid var(--border); border-radius: 10px; padding: 5px 8px;
+    }
+    .warn { color: var(--orange-ink); font-weight: 600; }
+    .readout { margin: 10px 0 0; font-size: 1.3rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .readout.small { margin-top: 4px; font-size: 1rem; font-weight: 500; color: var(--muted); }
+    .readout .app { color: var(--orange-ink); }
+    .readout .same { color: var(--accent); }
+    .legend { display: flex; flex-wrap: wrap; gap: 6px 22px; margin: 4px 0 6px; font-size: .95rem; color: var(--muted); }
+    .legend > span { display: inline-flex; align-items: center; gap: 8px; }
+    .sw { display: inline-block; width: 30px; height: 0; }
+    .sw-x { border-top: 2px solid var(--accent); }
+    .sw-alias { border-top: 3px dashed var(--orange); }
+    .sw-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--ink); }
+    .legend .hidden { opacity: .35; }
+    sub { font-size: .7em; }
+
+    footer { margin-top: 12px; text-align: center; color: var(--muted); font-size: .85rem; }
+
+    @media (max-width: 1100px) {
+      .views { grid-template-columns: 1fr; }
+      .controls { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 560px) {
+      html { font-size: 16px; }
+      .ctrl { grid-template-columns: 1fr auto auto; }
+      .ctrl label { grid-column: 1 / -1; }
+      .readout { font-size: 1.1rem; }
+      .buttons .sep { margin-left: 0; width: 100%; }
+      #wheel { aspect-ratio: 4 / 3; }
+      #plot { aspect-ratio: 1.5 / 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="app-header">
+      <div class="titles">
+        <h1 data-i18n="title"></h1>
+        <p class="subtitle" data-i18n="subtitle"></p>
+      </div>
+      <div class="language-switch">
+        <button id="language-trigger" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="language-menu" data-i18n-aria="languageAria"><span id="language-current">FR</span><i aria-hidden="true"></i></button>
+        <div id="language-menu" class="language-menu" role="group" data-i18n-aria="languageAria" hidden>
+          <button type="button" data-lang="fr" aria-pressed="true">FR</button>
+          <button type="button" data-lang="en" aria-pressed="false">EN</button>
+          <button type="button" data-lang="es" aria-pressed="false">ES</button>
+        </div>
+      </div>
+    </header>
+
+    <section class="panel controls" aria-label="Controls">
+      <div class="ctrl" data-i18n-title="fTip">
+        <label for="f-range"><span data-i18n="fLabel"></span><span class="info" aria-hidden="true">i</span></label>
+        <input type="range" id="f-range" min="0" max="2000" step="1" value="300" />
+        <input type="number" id="f-num" min="0" max="2000" step="1" value="300" data-i18n-aria="fLabel" />
+        <span class="unit">Hz</span>
+      </div>
+      <div class="ctrl" data-i18n-title="fsTip">
+        <label for="fs-range"><span data-i18n="fsLabel"></span><span class="info" aria-hidden="true">i</span></label>
+        <input type="range" id="fs-range" min="100" max="2000" step="10" value="1000" />
+        <input type="number" id="fs-num" min="100" max="2000" step="10" value="1000" data-i18n-aria="fsLabel" />
+        <span class="unit">Hz</span>
+      </div>
+      <div class="buttons">
+        <button type="button" class="btn btn-primary" id="sweep" aria-pressed="false" data-i18n-title="sweepTip"></button>
+        <span class="sep" data-i18n="presets"></span>
+        <button type="button" class="btn" data-preset="300"></button>
+        <button type="button" class="btn" data-preset="700"></button>
+        <button type="button" class="btn" data-preset="1200"></button>
+        <button type="button" class="btn" data-preset="wheel"></button>
+      </div>
+    </section>
+
+    <main class="views">
+      <section class="panel view" aria-labelledby="title-a">
+        <h2 id="title-a" data-i18n="panelA"></h2>
+        <canvas id="wheel" role="img" data-i18n-aria="wheelAria"></canvas>
+        <div class="subrow">
+          <label><span data-i18n="slowLabel"></span>
+            <select id="slow">
+              <option value="auto"></option>
+              <option value="1">×1</option>
+              <option value="2">×1/2</option>
+              <option value="5">×1/5</option>
+              <option value="10">×1/10</option>
+              <option value="20">×1/20</option>
+            </select>
+          </label>
+          <span id="slow-note"></span>
+        </div>
+        <p class="readout small" id="wheel-real" aria-live="polite"></p>
+        <p class="readout" id="wheel-app" aria-live="polite"></p>
+      </section>
+
+      <section class="panel view" aria-labelledby="title-b">
+        <h2 id="title-b" data-i18n="panelB"></h2>
+        <div class="legend">
+          <span><i class="sw sw-x"></i><span data-i18n="legendX"></span></span>
+          <span><i class="sw sw-dot"></i><span data-i18n="legendN"></span></span>
+          <span id="legend-alias"><i class="sw sw-alias"></i><span data-i18n-html="legendAlias"></span></span>
+        </div>
+        <canvas id="plot" role="img" data-i18n-aria="plotAria"></canvas>
+        <canvas id="faxis" role="img" data-i18n-aria="faxisAria"></canvas>
+        <p class="readout" id="sine-readout" aria-live="polite"></p>
+        <p class="readout small" id="sine-rule"></p>
+      </section>
+    </main>
+
+    <footer>© Franco — HTML + JavaScript</footer>
+  </div>
+
+  <script>
+  (() => {
+    'use strict';
+
+    // ------------------------------------------------------------------
+    // UI strings (fr, en, es). {name} placeholders are filled by t().
+    // ------------------------------------------------------------------
+    const I18N = {
+      fr: {
+        title: 'Échantillonnage et repliement (aliasing)',
+        subtitle: 'Échantillonnées à Fs, des fréquences différentes deviennent indiscernables.',
+        languageAria: 'Langue',
+        fLabel: 'Fréquence f',
+        fsLabel: 'Échantillonnage Fs',
+        fTip: 'Fréquence f de la sinusoïde (Hz). La roue tourne à f/10 tr/s et la caméra prend Fs/10 images/s : le rapport f/Fs est le même, donc le repliement aussi. (Échelle ÷10 pour que la roue reste visible.)',
+        fsTip: 'Fs échantillons par seconde pour la sinusoïde ; la caméra qui filme la roue prend Fs/10 images/s.',
+        sweep: 'Balayage', stop: 'Stop',
+        sweepTip: 'Fait varier f de 0 à 2·Fs en 20 s environ.',
+        presets: 'Exemples :',
+        presetF: 'f = {f} Hz',
+        presetWheel: 'roue : 24 tr/s à 25 images/s',
+        panelA: 'Roue filmée',
+        wheelAria: 'À gauche la roue réelle, à droite l’image de la caméra.',
+        real: 'roue réelle', camera: 'caméra',
+        camRate: 'Fs = {v} images/s',
+        rotUnit: 'tr/s',
+        slowLabel: 'Ralenti :', auto: 'auto',
+        slowNote: 'à l’écran : roue ×1/{k}, caméra {c} images/s',
+        slowNone: 'à l’écran : temps réel, caméra {c} images/s',
+        screenWarn: '— plus de 30 images/s à l’écran : le moniteur peut lui-même replier le mouvement',
+        realSpeed: 'vitesse réelle : {v} tr/s  ·  caméra : {c} images/s',
+        appLabel: 'vitesse apparente :',
+        appStill: 'immobile',
+        appReverse: '(sens inverse)',
+        appAmbig: '(sens indéterminé : un demi-tour par image)',
+        panelB: 'Sinusoïde échantillonnée',
+        plotAria: 'Sinusoïde continue, échantillons et sinusoïde à la fréquence apparente.',
+        faxisAria: 'Axe des fréquences de 0 à 2 Fs.',
+        legendX: 'x(t) = cos(2π f t)',
+        legendN: 'x[n] = cos(2π f n / Fs)',
+        legendAlias: 'cos(2π <i>f</i><sub>app</sub> t)',
+        readoutB: 'f = {f} Hz, Fs = {fs} Hz, fréquence apparente = <span class="{cls}">{fa} Hz</span>',
+        ruleLow: 'r = f mod Fs = {r} Hz ≤ Fs/2 ⇒ <i>f</i><sub>app</sub> = r = {fa} Hz',
+        ruleHigh: 'r = f mod Fs = {r} Hz > Fs/2 ⇒ <i>f</i><sub>app</sub> = Fs − r = {fa} Hz',
+        tAxis: 't (ms)'
+      },
+      en: {
+        title: 'Sampling and aliasing',
+        subtitle: 'Sampled at Fs, different frequencies become indistinguishable.',
+        languageAria: 'Language',
+        fLabel: 'Frequency f',
+        fsLabel: 'Sampling rate Fs',
+        fTip: 'Frequency f of the sinusoid (Hz). The wheel turns at f/10 rev/s and the camera takes Fs/10 frames/s: the ratio f/Fs is the same, so is the aliasing. (Scaled ÷10 so the wheel stays visible.)',
+        fsTip: 'Fs samples per second for the sinusoid; the camera filming the wheel takes Fs/10 frames/s.',
+        sweep: 'Sweep', stop: 'Stop',
+        sweepTip: 'Sweeps f from 0 to 2·Fs in about 20 s.',
+        presets: 'Examples:',
+        presetF: 'f = {f} Hz',
+        presetWheel: 'wheel: 24 rev/s at 25 frames/s',
+        panelA: 'Filmed wheel',
+        wheelAria: 'Left: the real wheel. Right: the camera image.',
+        real: 'real wheel', camera: 'camera',
+        camRate: 'Fs = {v} frames/s',
+        rotUnit: 'rev/s',
+        slowLabel: 'Slow motion:', auto: 'auto',
+        slowNote: 'on screen: wheel ×1/{k}, camera {c} frames/s',
+        slowNone: 'on screen: real time, camera {c} frames/s',
+        screenWarn: '— over 30 frames/s on screen: the monitor itself may alias the motion',
+        realSpeed: 'real speed: {v} rev/s  ·  camera: {c} frames/s',
+        appLabel: 'apparent speed:',
+        appStill: 'stationary',
+        appReverse: '(reversed)',
+        appAmbig: '(direction undefined: half a turn per frame)',
+        panelB: 'Sampled sinusoid',
+        plotAria: 'Continuous sinusoid, samples and sinusoid at the apparent frequency.',
+        faxisAria: 'Frequency axis from 0 to 2 Fs.',
+        legendX: 'x(t) = cos(2π f t)',
+        legendN: 'x[n] = cos(2π f n / Fs)',
+        legendAlias: 'cos(2π <i>f</i><sub>app</sub> t)',
+        readoutB: 'f = {f} Hz, Fs = {fs} Hz, apparent frequency = <span class="{cls}">{fa} Hz</span>',
+        ruleLow: 'r = f mod Fs = {r} Hz ≤ Fs/2 ⇒ <i>f</i><sub>app</sub> = r = {fa} Hz',
+        ruleHigh: 'r = f mod Fs = {r} Hz > Fs/2 ⇒ <i>f</i><sub>app</sub> = Fs − r = {fa} Hz',
+        tAxis: 't (ms)'
+      },
+      es: {
+        title: 'Muestreo y aliasing (solapamiento)',
+        subtitle: 'Muestreadas a Fs, frecuencias distintas se vuelven indistinguibles.',
+        languageAria: 'Idioma',
+        fLabel: 'Frecuencia f',
+        fsLabel: 'Muestreo Fs',
+        fTip: 'Frecuencia f de la sinusoide (Hz). La rueda gira a f/10 rev/s y la cámara toma Fs/10 imágenes/s: la razón f/Fs es la misma, y por lo tanto también el aliasing. (Escala ÷10 para que la rueda siga siendo visible.)',
+        fsTip: 'Fs muestras por segundo para la sinusoide; la cámara que filma la rueda toma Fs/10 imágenes/s.',
+        sweep: 'Barrido', stop: 'Detener',
+        sweepTip: 'Hace variar f de 0 a 2·Fs en unos 20 s.',
+        presets: 'Ejemplos:',
+        presetF: 'f = {f} Hz',
+        presetWheel: 'rueda: 24 rev/s a 25 imágenes/s',
+        panelA: 'Rueda filmada',
+        wheelAria: 'A la izquierda la rueda real, a la derecha la imagen de la cámara.',
+        real: 'rueda real', camera: 'cámara',
+        camRate: 'Fs = {v} imágenes/s',
+        rotUnit: 'rev/s',
+        slowLabel: 'Cámara lenta:', auto: 'auto',
+        slowNote: 'en pantalla: rueda ×1/{k}, cámara {c} imágenes/s',
+        slowNone: 'en pantalla: tiempo real, cámara {c} imágenes/s',
+        screenWarn: '— más de 30 imágenes/s en pantalla: el propio monitor puede producir aliasing',
+        realSpeed: 'velocidad real: {v} rev/s  ·  cámara: {c} imágenes/s',
+        appLabel: 'velocidad aparente:',
+        appStill: 'inmóvil',
+        appReverse: '(sentido inverso)',
+        appAmbig: '(sentido indeterminado: media vuelta por imagen)',
+        panelB: 'Sinusoide muestreada',
+        plotAria: 'Sinusoide continua, muestras y sinusoide a la frecuencia aparente.',
+        faxisAria: 'Eje de frecuencias de 0 a 2 Fs.',
+        legendX: 'x(t) = cos(2π f t)',
+        legendN: 'x[n] = cos(2π f n / Fs)',
+        legendAlias: 'cos(2π <i>f</i><sub>app</sub> t)',
+        readoutB: 'f = {f} Hz, Fs = {fs} Hz, frecuencia aparente = <span class="{cls}">{fa} Hz</span>',
+        ruleLow: 'r = f mod Fs = {r} Hz ≤ Fs/2 ⇒ <i>f</i><sub>app</sub> = r = {fa} Hz',
+        ruleHigh: 'r = f mod Fs = {r} Hz > Fs/2 ⇒ <i>f</i><sub>app</sub> = Fs − r = {fa} Hz',
+        tAxis: 't (ms)'
+      }
+    };
+    const LOCALES = { fr: 'fr-FR', en: 'en-US', es: 'es-ES' };
+    const MINUS = '−';
+
+    // ------------------------------------------------------------------
+    // State
+    // ------------------------------------------------------------------
+    const FS_MIN = 100, FS_MAX = 2000, SWEEP_SECONDS = 20;
+    const WHEEL_SCALE = 10;               // wheel: f/10 tr/s, camera: Fs/10 images/s
+    const SCREEN_MAX_RATE = 30;           // auto slow motion keeps the camera ≤ 30 images/s on screen
+    const SLOW_STEPS = [1, 2, 5, 10, 20];
+    const state = { f: 300, Fs: 1000, lang: 'fr', sweeping: false, sweepF: 0, slow: 'auto' };
+
+    const $ = (s) => document.querySelector(s);
+    const fRange = $('#f-range'), fNum = $('#f-num'), fsRange = $('#fs-range'), fsNum = $('#fs-num');
+    const sweepBtn = $('#sweep'), slowSel = $('#slow');
+    const wheelCanvas = $('#wheel'), plotCanvas = $('#plot'), faxisCanvas = $('#faxis');
+    const wctx = wheelCanvas.getContext('2d'), pctx = plotCanvas.getContext('2d'), actx = faxisCanvas.getContext('2d');
+
+    // ------------------------------------------------------------------
+    // The course rule (kept exactly):
+    //   r = f mod Fs  (0 ≤ r < Fs)
+    //   f_app = r if r ≤ Fs/2 else Fs − r
+    //   sign: +1 if r < Fs/2, −1 if r > Fs/2, 0 if r == 0 (NaN when r == Fs/2: undefined)
+    // ------------------------------------------------------------------
+    function fold(f, Fs) {
+      const r = ((f % Fs) + Fs) % Fs;
+      const half = Fs / 2;
+      const fApp = r <= half ? r : Fs - r;
+      const sign = r === 0 ? 0 : r < half ? 1 : r > half ? -1 : NaN;
+      return { r, fApp, sign };
+    }
+
+    // ------------------------------------------------------------------
+    // Formatting
+    // ------------------------------------------------------------------
+    const fmtCache = {};
+    function fmt(x, dec = 0) {
+      const key = state.lang + dec;
+      if (!fmtCache[key]) fmtCache[key] = new Intl.NumberFormat(LOCALES[state.lang], { maximumFractionDigits: dec, minimumFractionDigits: 0 });
+      const s = fmtCache[key].format(Math.abs(x) < 1e-9 ? 0 : x);
+      return s.replace('-', MINUS);
+    }
+    function t(key, vars) {
+      let s = (I18N[state.lang] && I18N[state.lang][key]) ?? I18N.fr[key] ?? key;
+      if (vars) for (const k in vars) s = s.split('{' + k + '}').join(vars[k]);
+      return s;
+    }
+    const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+    const frac = (x) => x - Math.floor(x);
+
+    // ------------------------------------------------------------------
+    // Colors from CSS tokens (re-read when the color scheme changes)
+    // ------------------------------------------------------------------
+    const C = {};
+    function readColors() {
+      const s = getComputedStyle(document.documentElement);
+      for (const k of ['panel', 'ink', 'muted', 'border', 'accent', 'orange', 'red', 'spoke', 'grid', 'axis', 'tint', 'screen'])
+        C[k] = s.getPropertyValue('--' + k).trim();
+    }
+
+    // ------------------------------------------------------------------
+    // Canvas helpers
+    // ------------------------------------------------------------------
+    function prepCanvas(c, ctx) {
+      const rect = c.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 3);
+      const W = Math.max(1, Math.round(rect.width * dpr)), H = Math.max(1, Math.round(rect.height * dpr));
+      if (c.width !== W || c.height !== H) { c.width = W; c.height = H; }
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, rect.width, rect.height);
+      return { w: rect.width, h: rect.height };
+    }
+    // Text "f" with a subscript "app" (or any main + sub)
+    function subText(ctx, main, sub, x, y, size, align = 'center') {
+      ctx.font = `italic 700 ${size}px system-ui, sans-serif`;
+      const wm = ctx.measureText(main).width;
+      ctx.font = `600 ${size * 0.68}px system-ui, sans-serif`;
+      const ws = sub ? ctx.measureText(sub).width : 0;
+      const total = wm + ws + (sub ? 1 : 0);
+      let x0 = align === 'center' ? x - total / 2 : align === 'right' ? x - total : x;
+      ctx.textAlign = 'left';
+      ctx.font = `italic 700 ${size}px system-ui, sans-serif`;
+      ctx.fillText(main, x0, y);
+      if (sub) { ctx.font = `600 ${size * 0.68}px system-ui, sans-serif`; ctx.fillText(sub, x0 + wm + 1, y + size * 0.28); }
+    }
+    function arrowHead(ctx, x, y, dx, dy, size) {
+      const L = Math.hypot(dx, dy) || 1; dx /= L; dy /= L;
+      const nx = -dy, ny = dx;
+      ctx.beginPath();
+      ctx.moveTo(x + dx * size * 0.5, y + dy * size * 0.5);
+      ctx.lineTo(x - dx * size * 0.6 + nx * size * 0.55, y - dy * size * 0.6 + ny * size * 0.55);
+      ctx.lineTo(x - dx * size * 0.6 - nx * size * 0.55, y - dy * size * 0.6 - ny * size * 0.55);
+      ctx.closePath(); ctx.fill();
+    }
+
+    // ------------------------------------------------------------------
+    // Panel A — stroboscopic wheel
+    // ------------------------------------------------------------------
+    const wheel = { tau: 0, phase: 0, camPhase: 0, lastK: -1, lastFc: 0, flashUntil: 0, smear: 0 };
+
+    function slowFactor() {
+      const Fc = state.Fs / WHEEL_SCALE;
+      if (state.slow !== 'auto') return Number(state.slow);
+      for (const k of SLOW_STEPS) if (Fc / k <= SCREEN_MAX_RATE) return k;
+      return SLOW_STEPS[SLOW_STEPS.length - 1];
+    }
+
+    // Advance the wheel by dt seconds of real (wall-clock) time.
+    function stepWheel(dt, now) {
+      const k = slowFactor();
+      const dTau = dt / k;                    // wheel time (slow motion keeps the ratio f/Fs)
+      const fRot = state.f / WHEEL_SCALE;     // turns per second
+      const Fc = state.Fs / WHEEL_SCALE;      // camera images per second
+      const tauPrev = wheel.tau, phasePrev = wheel.phase;
+      wheel.tau += dTau;
+      wheel.phase = frac(phasePrev + fRot * dTau);
+      wheel.smear = fRot * dTau;              // turns travelled during this display frame
+      if (Fc !== wheel.lastFc) { wheel.lastFc = Fc; wheel.lastK = -1; }
+      const kNow = Math.floor(wheel.tau * Fc);
+      if (kNow !== wheel.lastK) {
+        // Sample-and-hold: angle at the latest camera instant k/Fc (inside this frame).
+        const tk = kNow / Fc;
+        wheel.camPhase = frac(phasePrev + fRot * (tk - tauPrev));
+        wheel.lastK = kNow;
+        wheel.flashUntil = now + 70;
+      }
+    }
+
+    function drawWheel(ctx, cx, cy, R, phase, smear) {
+      // Tire and rim
+      ctx.globalAlpha = 1;
+      ctx.lineWidth = R * 0.085; ctx.strokeStyle = C.ink;
+      ctx.beginPath(); ctx.arc(cx, cy, R * 0.955, 0, 2 * Math.PI); ctx.stroke();
+      ctx.lineWidth = Math.max(1, R * 0.015); ctx.strokeStyle = C.spoke;
+      ctx.beginPath(); ctx.arc(cx, cy, R * 0.89, 0, 2 * Math.PI); ctx.stroke();
+
+      // Spokes. If the wheel moves a lot during one display frame, draw a motion blur
+      // (several faint copies spread over the angle travelled), like a real eye would see.
+      const spokeSpacing = 1 / 8;
+      let K = 1, span = 0;
+      if (smear > 0.15 * spokeSpacing) { span = Math.min(smear, 1); K = Math.min(48, Math.ceil(span * 64) + 1); }
+      const alpha = K === 1 ? 1 : Math.min(1, 3 / K);
+      const r0 = R * 0.13, r1 = R * 0.88;
+      ctx.lineCap = 'round';
+      for (const red of [false, true]) {
+        ctx.strokeStyle = red ? C.red : C.spoke;
+        ctx.lineWidth = red ? R * 0.065 : R * 0.04;
+        ctx.globalAlpha = alpha;
+        for (let j = 0; j < K; j++) {
+          const ph = phase - (K === 1 ? 0 : span * j / (K - 1));
+          ctx.beginPath();
+          for (let i = red ? 0 : 1; i < (red ? 1 : 8); i++) {
+            const a = 2 * Math.PI * (ph + i / 8);           // counter-clockwise = positive
+            const c = Math.cos(a), s = -Math.sin(a);
+            ctx.moveTo(cx + r0 * c, cy + r0 * s);
+            ctx.lineTo(cx + r1 * c, cy + r1 * s);
+          }
+          ctx.stroke();
+        }
+      }
+      ctx.globalAlpha = 1;
+      // Hub
+      ctx.fillStyle = C.ink;
+      ctx.beginPath(); ctx.arc(cx, cy, R * 0.14, 0, 2 * Math.PI); ctx.fill();
+      ctx.fillStyle = C.panel;
+      ctx.beginPath(); ctx.arc(cx, cy, R * 0.05, 0, 2 * Math.PI); ctx.fill();
+    }
+
+    // Small arc arrow above a wheel: dir = +1 counter-clockwise, −1 clockwise.
+    function rotationArrow(ctx, cx, cy, r, dir, color) {
+      const a0 = Math.PI / 3, a1 = 2 * Math.PI / 3;
+      ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = Math.max(2, r * 0.03); ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.arc(cx, cy, r, -a1 + (dir < 0 ? 0.12 : 0), -a0 - (dir > 0 ? 0.12 : 0)); ctx.stroke();
+      const aEnd = dir > 0 ? a1 : a0;
+      const px = cx + r * Math.cos(aEnd), py = cy - r * Math.sin(aEnd);
+      arrowHead(ctx, px, py, -Math.sin(aEnd) * dir, -Math.cos(aEnd) * dir, Math.max(10, r * 0.13));
+    }
+
+    function cameraIcon(ctx, x, y, s, flash) {
+      // x, y: left/vertical-centre of the icon; s: height
+      const w = s * 1.45, h = s * 0.9;
+      ctx.fillStyle = C.ink;
+      ctx.beginPath();
+      ctx.roundRect ? ctx.roundRect(x, y - h / 2, w, h, s * 0.14) : ctx.rect(x, y - h / 2, w, h);
+      ctx.fill();
+      ctx.fillRect(x + w * 0.18, y - h / 2 - s * 0.16, w * 0.3, s * 0.18);   // viewfinder bump
+      ctx.fillStyle = flash ? C.orange : C.panel;
+      ctx.beginPath(); ctx.arc(x + w * 0.52, y + s * 0.02, s * 0.27, 0, 2 * Math.PI); ctx.fill();
+      ctx.fillStyle = C.ink;
+      ctx.beginPath(); ctx.arc(x + w * 0.52, y + s * 0.02, s * 0.13, 0, 2 * Math.PI); ctx.fill();
+      return w;
+    }
+
+    function drawWheelPanel(now) {
+      const { w, h } = prepCanvas(wheelCanvas, wctx);
+      const ctx = wctx;
+      const fs = clamp(w / 36, 13, 22);
+      const top = fs * 2.0;
+      const R = Math.max(10, Math.min(w / 4 - fs, (h - top) / 2 - fs * 1.4));
+      const cy = top + (h - top) / 2 + fs * 0.3;
+      const cxL = w / 4, cxR = 3 * w / 4;
+      const { sign } = fold(state.f, state.Fs);
+      const Fc = state.Fs / WHEEL_SCALE;
+
+      // Camera side: a "screen" with viewfinder corners
+      const pad = fs * 0.4;
+      ctx.fillStyle = C.screen;
+      ctx.beginPath();
+      const sx = w / 2 + pad, sy = pad, sw = w / 2 - 2 * pad, sh = h - 2 * pad;
+      ctx.roundRect ? ctx.roundRect(sx, sy, sw, sh, 12) : ctx.rect(sx, sy, sw, sh);
+      ctx.fill();
+      ctx.strokeStyle = C.muted; ctx.lineWidth = 2.5;
+      const L = fs * 1.2, m = fs * 0.5;
+      for (const [x, y, dx, dy] of [[sx + m, sy + m, 1, 1], [sx + sw - m, sy + m, -1, 1], [sx + m, sy + sh - m, 1, -1], [sx + sw - m, sy + sh - m, -1, -1]]) {
+        ctx.beginPath(); ctx.moveTo(x, y + dy * L); ctx.lineTo(x, y); ctx.lineTo(x + dx * L, y); ctx.stroke();
+      }
+
+      // Labels
+      ctx.textBaseline = 'middle'; ctx.fillStyle = C.ink;
+      ctx.font = `700 ${fs}px system-ui, sans-serif`; ctx.textAlign = 'center';
+      ctx.fillText(t('real'), cxL, top * 0.55);
+      const label = t('camRate', { v: fmt(Fc, 1) });
+      let lfs = fs;
+      while (lfs > 9 && ctx.measureText(label).width + lfs * 2.2 > sw - 2 * (m + L + 4)) {
+        lfs -= 0.5; ctx.font = `700 ${lfs}px system-ui, sans-serif`;
+      }
+      const iconS = lfs * 1.05;
+      const tw = ctx.measureText(label).width;
+      const iconW = iconS * 1.45, gap = lfs * 0.5;
+      const x0 = cxR - (iconW + gap + tw) / 2;
+      cameraIcon(ctx, x0, top * 0.55, iconS, now < wheel.flashUntil);
+      ctx.fillStyle = C.ink; ctx.textAlign = 'left';
+      ctx.fillText(label, x0 + iconW + gap, top * 0.55);
+
+      // Wheels
+      drawWheel(ctx, cxL, cy, R, wheel.phase, wheel.smear);
+      drawWheel(ctx, cxR, cy, R, wheel.camPhase, 0);
+
+      // Direction arrows
+      const ra = R + fs * 0.7;
+      if (state.f > 0) rotationArrow(ctx, cxL, cy, ra, 1, C.accent);
+      if (sign === 1) rotationArrow(ctx, cxR, cy, ra, 1, C.accent);
+      else if (sign === -1) rotationArrow(ctx, cxR, cy, ra, -1, C.orange);
+    }
+
+    // ------------------------------------------------------------------
+    // Panel B — sampled sinusoid + frequency axis
+    // ------------------------------------------------------------------
+    // Time window: smallest 1-2-5 duration holding ≥ 25 samples (50 ms at Fs = 1000 Hz).
+    function windowDuration(Fs) {
+      for (const T of [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1]) if (T * Fs >= 25 - 1e-9) return T;
+      return 1;
+    }
+
+    function drawPlot() {
+      const { w, h } = prepCanvas(plotCanvas, pctx);
+      const ctx = pctx;
+      const { f, Fs } = state;
+      const { fApp } = fold(f, Fs);
+      const fs = clamp(w / 50, 12, 17);
+      const m = { l: fs * 2.8, r: fs * 1.0, t: fs * 0.7, b: fs * 2.5 };
+      const pw = w - m.l - m.r, ph = h - m.t - m.b;
+      const T = windowDuration(Fs);
+      const X = (tt) => m.l + (tt / T) * pw;
+      const Y = (v) => m.t + (1 - (v + 1.15) / 2.3) * ph;
+
+      // Grid and axes
+      ctx.lineWidth = 1; ctx.strokeStyle = C.grid;
+      ctx.beginPath();
+      for (let i = 0; i <= 10; i++) { const x = X(T * i / 10); ctx.moveTo(x, Y(1.15)); ctx.lineTo(x, Y(-1.15)); }
+      for (const v of [-1, -0.5, 0.5, 1]) { ctx.moveTo(X(0), Y(v)); ctx.lineTo(X(T), Y(v)); }
+      ctx.stroke();
+      ctx.strokeStyle = C.axis; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(X(0), Y(0)); ctx.lineTo(X(T), Y(0)); ctx.moveTo(X(0), Y(1.15)); ctx.lineTo(X(0), Y(-1.15)); ctx.stroke();
+
+      ctx.fillStyle = C.muted; ctx.font = `500 ${fs}px system-ui, sans-serif`;
+      ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+      for (const v of [-1, 0, 1]) ctx.fillText(fmt(v), X(0) - fs * 0.75, Y(v));
+      ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      for (let i = 0; i <= 5; i++) ctx.fillText(fmt(T * 1000 * i / 5, 1), X(T * i / 5), Y(-1.15) + fs * 0.35);
+      ctx.textAlign = 'right';
+      ctx.fillText(t('tAxis'), X(T), Y(-1.15) + fs * 1.4);
+
+      ctx.save();
+      ctx.beginPath(); ctx.rect(m.l, m.t, pw, ph); ctx.clip();
+
+      // Continuous x(t) — thin line
+      const periods = f * T;
+      const N = clamp(Math.ceil(Math.max(pw * 2, periods * 32)), 200, 80000);
+      ctx.strokeStyle = C.accent; ctx.lineWidth = 1.4; ctx.globalAlpha = 0.9;
+      ctx.beginPath();
+      for (let i = 0; i <= N; i++) {
+        const tt = T * i / N;
+        const y = Y(Math.cos(2 * Math.PI * f * tt));
+        i ? ctx.lineTo(X(tt), y) : ctx.moveTo(X(tt), y);
+      }
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+
+      // Alias cosine at f_app (dashed), hidden when f_app == f
+      if (fApp !== f) {
+        const Na = clamp(Math.ceil(Math.max(pw, fApp * T * 32)), 200, 20000);
+        ctx.strokeStyle = C.orange; ctx.lineWidth = 3; ctx.setLineDash([11, 7]);
+        ctx.beginPath();
+        for (let i = 0; i <= Na; i++) {
+          const tt = T * i / Na;
+          const y = Y(Math.cos(2 * Math.PI * fApp * tt));
+          i ? ctx.lineTo(X(tt), y) : ctx.moveTo(X(tt), y);
+        }
+        ctx.stroke(); ctx.setLineDash([]);
+      }
+      ctx.restore();
+
+      // Samples x[n] = cos(2π f n / Fs): stems + filled dots.
+      // (f·n) mod Fs is computed exactly on integers, so the dots are exact.
+      const nMax = Math.floor(T * Fs + 1e-9);
+      const spacing = pw / (T * Fs);
+      const rd = clamp(spacing * 0.3, 2.5, 7);
+      ctx.strokeStyle = C.ink; ctx.lineWidth = clamp(spacing * 0.12, 1.2, 2.4);
+      ctx.beginPath();
+      const pts = [];
+      for (let n = 0; n <= nMax; n++) {
+        const v = Math.cos(2 * Math.PI * (((f * n) % Fs) / Fs));
+        const x = X(n / Fs), y = Y(v);
+        pts.push([x, y]);
+        ctx.moveTo(x, Y(0)); ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      for (const [x, y] of pts) {
+        ctx.fillStyle = C.panel; ctx.beginPath(); ctx.arc(x, y, rd + 1.6, 0, 2 * Math.PI); ctx.fill();
+        ctx.fillStyle = C.ink; ctx.beginPath(); ctx.arc(x, y, rd, 0, 2 * Math.PI); ctx.fill();
+      }
+    }
+
+    function drawFAxis() {
+      const { w, h } = prepCanvas(faxisCanvas, actx);
+      const ctx = actx;
+      const { f, Fs } = state;
+      const { fApp } = fold(f, Fs);
+      const fs = clamp(w / 52, 12, 17);
+      const m = { l: fs * 1.8, r: fs * 2.6 };
+      const fMax = 2 * Fs;
+      const X = (v) => m.l + (v / fMax) * (w - m.l - m.r);
+      const yAxis = h - fs * 1.9;
+      const yTop = fs * 1.35;
+
+      // Baseband [0, Fs/2]
+      ctx.fillStyle = C.tint;
+      ctx.fillRect(X(0), yTop, X(Fs / 2) - X(0), yAxis - yTop);
+
+      // Reference lines at Fs and 3Fs/2 (light), Fs/2 (strong, labelled)
+      ctx.setLineDash([4, 5]); ctx.lineWidth = 1.2; ctx.strokeStyle = C.axis;
+      ctx.beginPath();
+      for (const v of [Fs, 1.5 * Fs]) { ctx.moveTo(X(v), yTop); ctx.lineTo(X(v), yAxis); }
+      ctx.stroke(); ctx.setLineDash([]);
+      ctx.strokeStyle = C.accent; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.moveTo(X(Fs / 2), yTop - fs * 0.15); ctx.lineTo(X(Fs / 2), yAxis); ctx.stroke();
+
+      ctx.textBaseline = 'bottom'; ctx.textAlign = 'center';
+      ctx.fillStyle = C.accent; ctx.font = `800 ${fs}px system-ui, sans-serif`;
+      ctx.fillText('Fs/2', X(Fs / 2), yTop - fs * 0.2);
+      ctx.fillStyle = C.muted; ctx.font = `600 ${fs * 0.9}px system-ui, sans-serif`;
+      ctx.fillText('Fs', X(Fs), yTop - fs * 0.2);
+      ctx.fillText('3Fs/2', X(1.5 * Fs), yTop - fs * 0.2);
+      ctx.fillText('2Fs', X(2 * Fs), yTop - fs * 0.2);
+
+      // Axis and ticks
+      ctx.strokeStyle = C.ink; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.moveTo(X(0), yAxis); ctx.lineTo(X(fMax) + fs * 0.6, yAxis); ctx.stroke();
+      ctx.fillStyle = C.ink; arrowHead(ctx, X(fMax) + fs * 0.9, yAxis, 1, 0, fs * 0.7);
+      ctx.lineWidth = 1.2;
+      ctx.fillStyle = C.muted; ctx.font = `500 ${fs * 0.88}px system-ui, sans-serif`; ctx.textBaseline = 'top';
+      for (let i = 0; i <= 8; i++) {
+        const v = fMax * i / 8, x = X(v);
+        ctx.beginPath(); ctx.moveTo(x, yAxis); ctx.lineTo(x, yAxis + (i % 2 ? fs * 0.25 : fs * 0.45)); ctx.stroke();
+        if (i % 2 === 0) { ctx.textAlign = i === 0 ? 'left' : 'center'; ctx.fillText(fmt(v) + (i === 8 ? ' Hz' : ''), i === 0 ? x - fs * 0.25 : x, yAxis + fs * 0.55); }
+      }
+
+      // Fold arrow f → f_app
+      const tri = fs * 0.8;
+      const xf = X(f), xa = X(fApp);
+      const yM = yAxis - tri - 2;
+      if (fApp !== f) {
+        const dist = Math.abs(xf - xa);
+        const peak = Math.max(yTop + fs * 2.4, yM - Math.max(fs * 1.2, dist * 0.35));
+        const yc = 2 * peak - yM, xc = (xf + xa) / 2;
+        ctx.strokeStyle = C.orange; ctx.lineWidth = 2; ctx.setLineDash([6, 5]);
+        const lift = fs * 2.0;
+        ctx.beginPath(); ctx.moveTo(xf, yM - lift); ctx.quadraticCurveTo(xc, yc - lift, xa, yM - lift); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = C.orange;
+        arrowHead(ctx, xa, yM - lift + 2, xa - xc, (yM - lift) - (yc - lift), fs * 0.8);
+      }
+
+      // Markers (downward triangles touching the axis)
+      const marker = (x, color) => {
+        ctx.fillStyle = color;
+        ctx.beginPath(); ctx.moveTo(x, yAxis - 1); ctx.lineTo(x - tri * 0.6, yAxis - tri - 1); ctx.lineTo(x + tri * 0.6, yAxis - tri - 1); ctx.closePath(); ctx.fill();
+      };
+      ctx.textBaseline = 'alphabetic';
+      if (fApp !== f) {
+        marker(xa, C.orange); ctx.fillStyle = C.orange; subText(ctx, 'f', 'app', xa, yM - fs * 0.55, fs * 1.05);
+        marker(xf, C.accent); ctx.fillStyle = C.accent; subText(ctx, 'f', '', xf, yM - fs * 0.55, fs * 1.05);
+      } else {
+        marker(xf, C.accent); ctx.fillStyle = C.accent; subText(ctx, 'f = f', 'app', xf, yM - fs * 0.55, fs * 1.05);
+      }
+    }
+
+    // ------------------------------------------------------------------
+    // Readouts
+    // ------------------------------------------------------------------
+    function updateReadouts() {
+      const { f, Fs } = state;
+      const { r, fApp, sign } = fold(f, Fs);
+      const fRot = f / WHEEL_SCALE, Fc = Fs / WHEEL_SCALE, vApp = fApp / WHEEL_SCALE;
+      const unit = t('rotUnit');
+
+      $('#wheel-real').textContent = t('realSpeed', { v: fmt(fRot, 1), c: fmt(Fc, 1) });
+      let app;
+      if (sign === 0) app = `<span class="app">${t('appStill')}</span>`;
+      else if (sign === 1) app = `<span class="${fApp === f ? 'same' : 'app'}">+${fmt(vApp, 1)} ${unit}</span>`;
+      else if (sign === -1) app = `<span class="app">${MINUS}${fmt(vApp, 1)} ${unit} ${t('appReverse')}</span>`;
+      else app = `<span class="app">±${fmt(vApp, 1)} ${unit} ${t('appAmbig')}</span>`;
+      $('#wheel-app').innerHTML = `${t('appLabel')} ${app}`;
+
+      $('#sine-readout').innerHTML = t('readoutB', { f: fmt(f), fs: fmt(Fs), fa: fmt(fApp), cls: fApp === f ? 'same' : 'app' });
+      $('#sine-rule').innerHTML = t(r <= Fs / 2 ? 'ruleLow' : 'ruleHigh', { r: fmt(r), fa: fmt(fApp) });
+      $('#legend-alias').classList.toggle('hidden', fApp === f);
+
+      const k = slowFactor();
+      const shown = Fc / k;
+      let note = k === 1 ? t('slowNone', { c: fmt(shown, 1) }) : t('slowNote', { k: k, c: fmt(shown, 1) });
+      if (shown > SCREEN_MAX_RATE) note += ` <span class="warn">${t('screenWarn')}</span>`;
+      $('#slow-note').innerHTML = note;
+    }
+
+    // ------------------------------------------------------------------
+    // State changes
+    // ------------------------------------------------------------------
+    let dirty = true;
+    function setF(v, fromSweep = false) {
+      if (!fromSweep && state.sweeping) stopSweep();
+      v = Math.round(clamp(Number.isFinite(v) ? v : 0, 0, 2 * state.Fs));
+      state.f = v;
+      fRange.value = v;
+      if (document.activeElement !== fNum || fromSweep) fNum.value = v;
+      dirty = true;
+    }
+    function setFs(v) {
+      v = clamp(Math.round((Number.isFinite(v) ? v : 1000) / 10) * 10, FS_MIN, FS_MAX);
+      state.Fs = v;
+      fsRange.value = v;
+      if (document.activeElement !== fsNum) fsNum.value = v;
+      fRange.max = fNum.max = 2 * v;
+      if (state.f > 2 * v) setF(2 * v, true);
+      if (state.sweeping) state.sweepF = Math.min(state.sweepF, 2 * v);
+      dirty = true;
+    }
+    function startSweep() {
+      state.sweeping = true; state.sweepF = 0; setF(0, true);
+      sweepBtn.setAttribute('aria-pressed', 'true'); sweepBtn.textContent = t('stop');
+    }
+    function stopSweep() {
+      state.sweeping = false;
+      sweepBtn.setAttribute('aria-pressed', 'false'); sweepBtn.textContent = t('sweep');
+    }
+
+    fRange.addEventListener('input', () => setF(Number(fRange.value)));
+    fNum.addEventListener('input', () => { if (fNum.value !== '') setF(Number(fNum.value)); });
+    fNum.addEventListener('change', () => { setF(Number(fNum.value)); fNum.value = state.f; });
+    fsRange.addEventListener('input', () => setFs(Number(fsRange.value)));
+    fsNum.addEventListener('change', () => { setFs(Number(fsNum.value)); fsNum.value = state.Fs; });
+    sweepBtn.addEventListener('click', () => (state.sweeping ? stopSweep() : startSweep()));
+    slowSel.addEventListener('change', () => { state.slow = slowSel.value; dirty = true; });
+    document.querySelectorAll('[data-preset]').forEach((b) => b.addEventListener('click', () => {
+      stopSweep();
+      const p = b.dataset.preset;
+      if (p === 'wheel') { setFs(250); setF(240); }
+      else { setFs(1000); setF(Number(p)); }
+    }));
+
+    // ------------------------------------------------------------------
+    // Language
+    // ------------------------------------------------------------------
+    const langTrigger = $('#language-trigger'), langMenu = $('#language-menu');
+    const langButtons = [...langMenu.querySelectorAll('[data-lang]')];
+    function setLanguage(lang) {
+      if (!I18N[lang]) lang = 'fr';
+      state.lang = lang;
+      document.documentElement.lang = lang;
+      document.title = t('title');
+      document.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = t(el.dataset.i18n); });
+      document.querySelectorAll('[data-i18n-html]').forEach((el) => { el.innerHTML = t(el.dataset.i18nHtml); });
+      document.querySelectorAll('[data-i18n-title]').forEach((el) => { el.title = t(el.dataset.i18nTitle); });
+      document.querySelectorAll('[data-i18n-aria]').forEach((el) => { el.setAttribute('aria-label', t(el.dataset.i18nAria)); });
+      document.querySelectorAll('[data-preset]').forEach((b) => {
+        b.textContent = b.dataset.preset === 'wheel' ? t('presetWheel') : t('presetF', { f: fmt(Number(b.dataset.preset)) });
+      });
+      slowSel.options[0].textContent = t('auto');
+      sweepBtn.textContent = state.sweeping ? t('stop') : t('sweep');
+      $('#language-current').textContent = lang.toUpperCase();
+      langButtons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.lang === lang)));
+      try { localStorage.setItem('samplingAliasing.lang', lang); } catch (_) { /* storage blocked (file://, private mode) */ }
+      dirty = true;
+    }
+    const setLangMenu = (open) => { langMenu.hidden = !open; langTrigger.setAttribute('aria-expanded', String(open)); };
+    langTrigger.addEventListener('click', () => setLangMenu(langMenu.hidden));
+    langButtons.forEach((b) => b.addEventListener('click', () => { setLanguage(b.dataset.lang); setLangMenu(false); langTrigger.focus(); }));
+    document.addEventListener('click', (e) => { if (!langMenu.hidden && !e.target.closest('.language-switch')) setLangMenu(false); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !langMenu.hidden) { setLangMenu(false); langTrigger.focus(); } });
+
+    // ------------------------------------------------------------------
+    // Resize, theme, main loop
+    // ------------------------------------------------------------------
+    new ResizeObserver(() => { dirty = true; }).observe(document.body);
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const onScheme = () => { readColors(); dirty = true; };
+    mq.addEventListener ? mq.addEventListener('change', onScheme) : mq.addListener(onScheme);
+
+    let last = performance.now();
+    function frame(now) {
+      const dt = Math.min(0.1, Math.max(0, (now - last) / 1000));
+      last = now;
+      if (state.sweeping) {
+        state.sweepF += (2 * state.Fs / SWEEP_SECONDS) * dt;
+        if (state.sweepF >= 2 * state.Fs) { state.sweepF = 2 * state.Fs; setF(state.sweepF, true); stopSweep(); }
+        else if (Math.round(state.sweepF) !== state.f) setF(state.sweepF, true);
+      }
+      stepWheel(dt, now);
+      drawWheelPanel(now);
+      if (dirty) { dirty = false; drawPlot(); drawFAxis(); updateReadouts(); }
+      requestAnimationFrame(frame);
+    }
+
+    // Initial language: ?lang=xx, then the last choice, then French.
+    let lang = 'fr';
+    try { const saved = localStorage.getItem('samplingAliasing.lang'); if (saved && I18N[saved]) lang = saved; } catch (_) { /* ignore */ }
+    const q = new URLSearchParams(location.search).get('lang');
+    if (q && I18N[q]) lang = q;
+
+    readColors();
+    setLanguage(lang);
+    setFs(state.Fs);
+    setF(state.f);
+    requestAnimationFrame(frame);
+  })();
+  </script>
+</body>
+</html>
