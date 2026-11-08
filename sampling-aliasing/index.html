@@ -123,13 +123,19 @@
     .btn-primary:hover { filter: brightness(1.12); }
     .btn-primary[aria-pressed="true"] { background: var(--orange); border-color: var(--orange); color: #1a1205; }
 
-    /* ---------- Views ---------- */
-    .views { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
-    .view { padding: 12px 16px 14px; min-width: 0; }
-    .view h2 { margin: 0 0 8px; font-size: 1.3rem; color: var(--accent); }
+    /* ---------- Tabs (one view at a time) ---------- */
+    .tabs { display: flex; gap: 6px; margin: 0 0 -1px 14px; position: relative; z-index: 1; }
+    .tabs button {
+      font: inherit; font-size: 1.15rem; font-weight: 700; padding: 10px 22px; min-height: 48px; cursor: pointer;
+      color: var(--muted); background: transparent; border: 1px solid transparent; border-bottom: 0; border-radius: 14px 14px 0 0;
+    }
+    .tabs button:hover { color: var(--accent); }
+    .tabs button[aria-selected="true"] { color: var(--accent); background: var(--panel); border-color: var(--border); box-shadow: inset 0 3px 0 var(--accent); }
+    .view { padding: 14px 18px 16px; min-width: 0; }
+    .view[hidden] { display: none; }
     canvas { display: block; width: 100%; }
-    #wheel { aspect-ratio: 16 / 9; border-radius: 12px; }
-    #plot { aspect-ratio: 2.5 / 1; }
+    #wheel { height: clamp(260px, calc(100vh - 430px), 640px); border-radius: 12px; }
+    #plot { height: clamp(220px, calc(100vh - 580px), 520px); }
     #faxis { height: 140px; }
     .subrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 8px; color: var(--muted); font-size: .95rem; }
     .subrow select {
@@ -150,10 +156,11 @@
     .legend .hidden { opacity: .35; }
     sub { font-size: .7em; }
 
-    footer { margin-top: 12px; text-align: center; color: var(--muted); font-size: .85rem; }
+    footer { margin-top: 12px; text-align: center; color: var(--muted); font-size: .9rem; }
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
 
     @media (max-width: 1100px) {
-      .views { grid-template-columns: 1fr; }
       .controls { grid-template-columns: 1fr; }
     }
     @media (max-width: 560px) {
@@ -162,8 +169,10 @@
       .ctrl label { grid-column: 1 / -1; }
       .readout { font-size: 1.1rem; }
       .buttons .sep { margin-left: 0; width: 100%; }
-      #wheel { aspect-ratio: 4 / 3; }
-      #plot { aspect-ratio: 1.5 / 1; }
+      #wheel { height: auto; aspect-ratio: 4 / 3; }
+      #plot { height: auto; aspect-ratio: 1.5 / 1; }
+      .tabs { margin-left: 6px; }
+      .tabs button { font-size: 1rem; padding: 8px 12px; }
     }
   </style>
 </head>
@@ -207,9 +216,12 @@
       </div>
     </section>
 
+    <div class="tabs" role="tablist" data-i18n-aria="tabsAria">
+      <button type="button" role="tab" id="tab-a" data-tab="a" aria-controls="view-a" aria-selected="true" data-i18n="panelA"></button>
+      <button type="button" role="tab" id="tab-b" data-tab="b" aria-controls="view-b" aria-selected="false" tabindex="-1" data-i18n="panelB"></button>
+    </div>
     <main class="views">
-      <section class="panel view" aria-labelledby="title-a">
-        <h2 id="title-a" data-i18n="panelA"></h2>
+      <section class="panel view" id="view-a" role="tabpanel" aria-labelledby="tab-a">
         <canvas id="wheel" role="img" data-i18n-aria="wheelAria"></canvas>
         <div class="subrow">
           <label><span data-i18n="slowLabel"></span>
@@ -228,8 +240,7 @@
         <p class="readout" id="wheel-app" aria-live="polite"></p>
       </section>
 
-      <section class="panel view" aria-labelledby="title-b">
-        <h2 id="title-b" data-i18n="panelB"></h2>
+      <section class="panel view" id="view-b" role="tabpanel" aria-labelledby="tab-b" hidden>
         <div class="legend">
           <span><i class="sw sw-x"></i><span data-i18n="legendX"></span></span>
           <span><i class="sw sw-dot"></i><span data-i18n="legendN"></span></span>
@@ -242,7 +253,7 @@
       </section>
     </main>
 
-    <footer>© Franco — HTML + JavaScript</footer>
+    <footer>Franco FERRUCCI &nbsp;·&nbsp; <a href="https://ferrucci-franco.github.io/electronics/" target="_blank" rel="noopener">ferrucci-franco.github.io</a></footer>
   </div>
 
   <script>
@@ -257,6 +268,7 @@
         title: 'Échantillonnage et repliement (aliasing)',
         subtitle: 'Échantillonnées à Fs, des fréquences différentes deviennent indiscernables.',
         languageAria: 'Langue',
+        tabsAria: 'Vues',
         fLabel: 'Fréquence f',
         fsLabel: 'Échantillonnage Fs',
         fTip: 'Fréquence f de la sinusoïde (Hz). La roue tourne à f/10 tr/s et la caméra prend Fs/10 images/s : le rapport f/Fs est le même, donc le repliement aussi. (Échelle ÷10 pour que la roue reste visible.)',
@@ -295,6 +307,7 @@
         title: 'Sampling and aliasing',
         subtitle: 'Sampled at Fs, different frequencies become indistinguishable.',
         languageAria: 'Language',
+        tabsAria: 'Views',
         fLabel: 'Frequency f',
         fsLabel: 'Sampling rate Fs',
         fTip: 'Frequency f of the sinusoid (Hz). The wheel turns at f/10 rev/s and the camera takes Fs/10 frames/s: the ratio f/Fs is the same, so is the aliasing. (Scaled ÷10 so the wheel stays visible.)',
@@ -333,6 +346,7 @@
         title: 'Muestreo y aliasing (solapamiento)',
         subtitle: 'Muestreadas a Fs, frecuencias distintas se vuelven indistinguibles.',
         languageAria: 'Idioma',
+        tabsAria: 'Vistas',
         fLabel: 'Frecuencia f',
         fsLabel: 'Muestreo Fs',
         fTip: 'Frecuencia f de la sinusoide (Hz). La rueda gira a f/10 rev/s y la cámara toma Fs/10 imágenes/s: la razón f/Fs es la misma, y por lo tanto también el aliasing. (Escala ÷10 para que la rueda siga siendo visible.)',
@@ -880,6 +894,32 @@
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !langMenu.hidden) { setLangMenu(false); langTrigger.focus(); } });
 
     // ------------------------------------------------------------------
+    // Tabs: one view at a time (the wheel keeps turning in the background)
+    // ------------------------------------------------------------------
+    const tabs = [...document.querySelectorAll('[role="tab"]')];
+    const viewA = $('#view-a'), viewB = $('#view-b');
+    function setTab(id) {
+      if (id !== 'a' && id !== 'b') id = 'a';
+      tabs.forEach((b) => {
+        const on = b.dataset.tab === id;
+        b.setAttribute('aria-selected', String(on));
+        b.tabIndex = on ? 0 : -1;
+      });
+      viewA.hidden = id !== 'a';
+      viewB.hidden = id !== 'b';
+      try { localStorage.setItem('samplingAliasing.tab', id); } catch (_) { /* ignore */ }
+      dirty = true;
+    }
+    tabs.forEach((b) => {
+      b.addEventListener('click', () => setTab(b.dataset.tab));
+      b.addEventListener('keydown', (e) => {
+        if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+        const next = tabs[(tabs.indexOf(b) + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+        setTab(next.dataset.tab); next.focus(); e.preventDefault();
+      });
+    });
+
+    // ------------------------------------------------------------------
     // Resize, theme, main loop
     // ------------------------------------------------------------------
     new ResizeObserver(() => { dirty = true; }).observe(document.body);
@@ -897,8 +937,12 @@
         else if (Math.round(state.sweepF) !== state.f) setF(state.sweepF, true);
       }
       stepWheel(dt, now);
-      drawWheelPanel(now);
-      if (dirty) { dirty = false; drawPlot(); drawFAxis(); updateReadouts(); }
+      if (!viewA.hidden) drawWheelPanel(now);
+      if (dirty) {
+        dirty = false;
+        updateReadouts();
+        if (!viewB.hidden) { drawPlot(); drawFAxis(); }
+      }
       requestAnimationFrame(frame);
     }
 
@@ -908,7 +952,13 @@
     const q = new URLSearchParams(location.search).get('lang');
     if (q && I18N[q]) lang = q;
 
+    let tab = 'a';
+    try { tab = localStorage.getItem('samplingAliasing.tab') || 'a'; } catch (_) { /* ignore */ }
+    const qt = new URLSearchParams(location.search).get('tab');
+    if (qt) tab = qt;
+
     readColors();
+    setTab(tab);
     setLanguage(lang);
     setFs(state.Fs);
     setF(state.f);
