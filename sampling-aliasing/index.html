@@ -213,6 +213,10 @@
       overflow:hidden;
     }
 
+    .sidebar-main, .sidebar-extra { display:flex; flex-direction:column; gap:16px; }
+    .sidebar-extra { flex:1 1 auto; }
+    .wheel-cell .card-title { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
     .card-title { font-size:0.92rem; font-weight:500; margin-bottom:8px; color:var(--accent); }
 
     .control-group { display:flex; flex-direction:column; gap:6px; }
@@ -363,6 +367,29 @@
       .step2-temporal { grid-column:1; grid-row:auto; height:300px; }
       .step2-spectral { grid-column:1; grid-row:auto; grid-template-columns:1fr; min-height:400px; }
       .wheel-pair { gap:6px; }
+
+      /* Phone: sliders, examples and sweep right above the wheels / the graph,
+         interpolation, note and credits at the bottom. */
+      .step2-sidebar { display:contents; }
+      .sidebar-main, .sidebar-extra { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:14px; }
+      .sidebar-main { order:1; }
+      .step2-temporal { order:2; }
+      .step2-spectral { order:3; }
+      .sidebar-extra { order:4; }
+      .step2-temporal[data-only="wheel"] { height:auto; }
+      .wheel-cell .canvas-box { flex:none; aspect-ratio:1 / 1; }
+      .step2-container, .step2-container.wheel-mode { grid-template-rows:none; grid-auto-rows:auto; height:auto; align-items:start; }
+      .control-group label span:first-child { max-width:none; }
+      .step-card { padding:8px; }
+      main { padding:8px; }
+
+      /* Compact header: title and selectors on one row, the two tabs below */
+      header { padding:8px 10px 6px; gap:6px 10px; }
+      .app-title-sub { display:none; }
+      .app-title-main { font-size:1rem; }
+      .top-right { order:2; margin-left:auto; }
+      .steps-nav { order:3; flex:1 1 100%; flex-wrap:nowrap; }
+      .step-tab { padding:6px 10px; font-size:0.85rem; }
     }
   </style>
 </head>
@@ -409,6 +436,7 @@
 
         <!-- Sidebar: shared controls -->
         <div class="step2-sidebar">
+          <div class="sidebar-main">
           <div class="control-group" data-only="sine">
             <label for="fSlider">
               <span data-i18n="fLabelSine"></span>
@@ -465,7 +493,9 @@
               <button type="button" class="preset-btn wide" id="sweepBtn" aria-pressed="false"></button>
             </div>
           </div>
+          </div>
 
+          <div class="sidebar-extra">
           <div class="control-group" data-only="sine">
             <label style="display:block; font-weight:500;" data-i18n="interpLabel"></label>
             <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-start;">
@@ -492,6 +522,7 @@
           <div class="sidebar-credits">
             Franco FERRUCCI<br>
             <a href="https://ferrucci-franco.github.io/electronics/" target="_blank" rel="noopener">ferrucci-franco.github.io</a>
+          </div>
           </div>
         </div>
 
@@ -562,7 +593,7 @@
       noteLinear: 'La <strong>interpolación lineal</strong> conecta las muestras con líneas rectas. Es causal y simple de implementar.',
       noteWheel: 'A la izquierda, lo que ve el ojo: la llanta se vuelve borrosa en cuanto gira rápido. A la derecha, la cámara: una imagen nítida cada 1/Fs s; entre dos imágenes la rueda gira f/Fs vuelta. Seguí la <strong>marca amarilla</strong> del neumático: casi una vuelta por imagen y parece retroceder, exactamente una y parece inmóvil.',
       temporal: 'Evolución Temporal', spectral: 'Diagrama Espectral', theory: 'Teorema de Muestreo',
-      realWheel: 'Rueda real', camera: 'Imagen de la cámara',
+      realWheel: 'Rueda real', camera: 'Cámara',
       f0: 'Frecuencia f<sub>IN</sub>', Fs: 'Frecuencia Fs', fNyquist: 'Frecuencia de Nyquist', condition: 'Condición',
       fAlias: 'Frecuencia aparente (f*<sub>IN</sub>)',
       wReal: 'Velocidad real f', wFs: 'Cámara Fs', wNyq: 'Nyquist Fs/2', wApp: 'Velocidad aparente f*',
@@ -591,7 +622,7 @@
       noteLinear: 'L\'<strong>interpolation linéaire</strong> connecte les échantillons avec des lignes droites. Elle est causale et simple à implémenter.',
       noteWheel: 'À gauche, ce que voit l\'œil : la jante devient floue dès qu\'elle tourne vite. À droite, la caméra : une image nette toutes les 1/Fs s ; entre deux images la roue tourne de f/Fs tour. Suivez la <strong>marque jaune</strong> du pneu : presque un tour par image, elle semble reculer ; exactement un tour, elle semble immobile.',
       temporal: 'Évolution Temporelle', spectral: 'Diagramme Spectral', theory: 'Théorème d\'Échantillonnage',
-      realWheel: 'Roue réelle', camera: 'Image de la caméra',
+      realWheel: 'Roue réelle', camera: 'Caméra',
       f0: 'Fréquence f<sub>IN</sub>', Fs: 'Fréquence Fs', fNyquist: 'Fréquence de Nyquist', condition: 'Condition',
       fAlias: 'Fréquence apparente (f*<sub>IN</sub>)',
       wReal: 'Vitesse réelle f', wFs: 'Caméra Fs', wNyq: 'Nyquist Fs/2', wApp: 'Vitesse apparente f*',
@@ -620,7 +651,7 @@
       noteLinear: 'The <strong>linear interpolation</strong> connects samples with straight lines. It is causal and simple to implement.',
       noteWheel: 'Left, what the eye sees: the rim blurs as soon as it spins fast. Right, the camera: one sharp image every 1/Fs s; between two images the wheel turns f/Fs of a turn. Follow the <strong>yellow mark</strong> on the tyre: almost one turn per image and it seems to go backwards, exactly one turn and it stands still.',
       temporal: 'Temporal Evolution', spectral: 'Spectral Diagram', theory: 'Sampling Theorem',
-      realWheel: 'Real wheel', camera: 'Camera image',
+      realWheel: 'Real wheel', camera: 'Camera',
       f0: 'Frequency f<sub>IN</sub>', Fs: 'Frequency Fs', fNyquist: 'Nyquist Frequency', condition: 'Condition',
       fAlias: 'Apparent frequency (f*<sub>IN</sub>)',
       wReal: 'Real speed f', wFs: 'Camera Fs', wNyq: 'Nyquist Fs/2', wApp: 'Apparent speed f*',
@@ -640,7 +671,7 @@
   const state = { lang: 'fr', tab: 'sine', f: 10, Fs: 50, wf: 24, wFs: 25, periods: 3, interpType: 'ideal', sweeping: false, sweepF: 0 };
   // (f, Fs) of the active tab: the sinusoid and the wheel have their own settings.
   const cur = () => (state.tab === 'wheel' ? { f: state.wf, Fs: state.wFs } : { f: state.f, Fs: state.Fs });
-  const SWEEP_SECONDS = 20;
+  const SWEEP_SECONDS = { sine: 40, wheel: 90 };
 
   // Wheel on screen. The animation is locked to the display: the camera film is played at one
   // image per display frame (60 images/s on a 60 Hz screen: as smooth as the screen allows), and
@@ -1093,7 +1124,7 @@
   // so it is computed once per speed and then simply rotated.
   const blur = { canvas: document.createElement('canvas'), key: '' };
   function blurredSprite(smear) {
-    const span = Math.min(Math.abs(smear), 1) * Math.sign(smear);
+    const span = Math.round(Math.min(Math.abs(smear), 1) * Math.sign(smear) * 200) / 200;
     const M = Math.min(48, Math.max(1, Math.ceil(Math.abs(span) * 60)));
     if (M === 1) return sprite.canvas;
     const key = sprite.size + ':' + span.toFixed(3);
@@ -1122,7 +1153,7 @@
     ctx.fillRect(0, 0, width, height);
 
     const dpr = window.devicePixelRatio || 1;
-    const R = Math.max(10, Math.min(width, height) / 2 - 18);
+    const R = Math.max(10, 0.4 * Math.min(width, height));
     const cx = width / 2, cy = height / 2 - 4;
     const need = Math.ceil(2 * R * dpr) + 2;
     if (Math.abs(sprite.size - need) > 2) renderSprite(need);
@@ -1159,12 +1190,13 @@
       for (const [x, y, dx, dy] of [[m, m, 1, 1], [width - m, m, -1, 1], [m, height - m, 1, -1], [width - m, height - m, -1, -1]]) {
         ctx.beginPath(); ctx.moveTo(x, y + dy * L); ctx.lineTo(x, y); ctx.lineTo(x + dx * L, y); ctx.stroke();
       }
+      const yRec = m + 14;
       ctx.fillStyle = '#ef4444';
-      ctx.beginPath(); ctx.arc(m + 16, m + 22, 5, 0, 2 * Math.PI); ctx.fill();
-      ctx.fillStyle = P.text; ctx.font = '600 12px system-ui'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.fillText('REC', m + 26, m + 22);
-      ctx.textAlign = 'right';
-      ctx.fillText('#' + wheel.image, width - m - 6, m + 22);
+      ctx.beginPath(); ctx.arc(m + 14, yRec, 4.5, 0, 2 * Math.PI); ctx.fill();
+      if (width >= 260) {
+        ctx.fillStyle = P.text; ctx.font = '600 12px system-ui'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.fillText('REC', m + 23, yRec);
+      }
     }
   }
 
@@ -1332,7 +1364,7 @@
       const Fs = wheelTab ? state.wFs : state.Fs;
       const set = wheelTab ? setWF : setF;
       const before = wheelTab ? state.wf : state.f;
-      state.sweepF += (2 * Fs / SWEEP_SECONDS) * dt;
+      state.sweepF += (2 * Fs / SWEEP_SECONDS[state.tab]) * dt;
       if (state.sweepF >= 2 * Fs) { set(2 * Fs); stopSweep(); redraw(); }
       else { set(state.sweepF); if ((wheelTab ? state.wf : state.f) !== before) redraw(); }
     }
