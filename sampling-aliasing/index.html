@@ -269,6 +269,9 @@
         #38bdf8 37.5%, #38bdf8 62.5%,
         #fb7185 62.5%, #fb7185 100%);
     }
+    #wSlider {
+      background:linear-gradient(to right, #38bdf8 0%, #38bdf8 25%, #fb7185 25%, #fb7185 100%);
+    }
     .control-group:has(#fSlider) { position:relative; }
     .control-group:has(#fSlider)::after {
       content:'';
@@ -406,19 +409,33 @@
 
         <!-- Sidebar: shared controls -->
         <div class="step2-sidebar">
-          <div class="control-group">
+          <div class="control-group" data-only="sine">
             <label for="fSlider">
-              <span id="fLabel"></span>
+              <span data-i18n="fLabelSine"></span>
               <span class="value" id="fValue"></span>
             </label>
             <input type="range" id="fSlider" min="-100" max="100" value="10" step="1">
           </div>
-          <div class="control-group">
+          <div class="control-group" data-only="sine">
             <label for="FsSlider">
-              <span id="FsLabel"></span>
+              <span data-i18n="FsLabelSine"></span>
               <span class="value" id="FsValue"></span>
             </label>
             <input type="range" id="FsSlider" min="2" max="500" value="50" step="1">
+          </div>
+          <div class="control-group" data-only="wheel" hidden>
+            <label for="wSlider">
+              <span data-i18n="fLabelWheel"></span>
+              <span class="value" id="wValue"></span>
+            </label>
+            <input type="range" id="wSlider" min="0" max="50" value="24" step="0.1">
+          </div>
+          <div class="control-group" data-only="wheel" hidden>
+            <label for="FcSlider">
+              <span data-i18n="FsLabelWheel"></span>
+              <span class="value" id="FcValue"></span>
+            </label>
+            <input type="range" id="FcSlider" min="10" max="60" value="25" step="1">
           </div>
           <div class="control-group" data-only="sine">
             <label for="periodsSlider">
@@ -430,12 +447,21 @@
 
           <div class="control-group">
             <label style="display:block;" data-i18n="presetsLabel"></label>
-            <div class="preset-buttons">
+            <div class="preset-buttons" data-only="sine">
               <button type="button" class="preset-btn" data-f="30" data-fs="100"></button>
               <button type="button" class="preset-btn" data-f="70" data-fs="100"></button>
               <button type="button" class="preset-btn" data-f="120" data-fs="100"></button>
               <button type="button" class="preset-btn" data-f="100" data-fs="100"></button>
-              <button type="button" class="preset-btn wide" data-f="24" data-fs="25" data-i18n="presetWheel"></button>
+            </div>
+            <div class="preset-buttons" data-only="wheel" hidden>
+              <button type="button" class="preset-btn" data-wf="5" data-wfs="25"></button>
+              <button type="button" class="preset-btn" data-wf="12.5" data-wfs="25"></button>
+              <button type="button" class="preset-btn" data-wf="24" data-wfs="25"></button>
+              <button type="button" class="preset-btn" data-wf="25" data-wfs="25"></button>
+              <button type="button" class="preset-btn" data-wf="25.5" data-wfs="25"></button>
+              <button type="button" class="preset-btn" data-wf="49" data-wfs="25"></button>
+            </div>
+            <div class="preset-buttons">
               <button type="button" class="preset-btn wide" id="sweepBtn" aria-pressed="false"></button>
             </div>
           </div>
@@ -527,7 +553,6 @@
       FsLabelSine: 'Frecuencia de muestreo Fs', FsLabelWheel: 'Imágenes de la cámara Fs',
       periodsLabel: 'Períodos mostrados',
       presetsLabel: 'Ejemplos',
-      presetWheel: 'Rueda: 24 rev/s a 25 imágenes/s',
       sweep: 'Barrido 0 → 2·Fs', stop: 'Detener el barrido',
       interpLabel: 'Tipo de interpolación',
       interpIdeal: 'Ideal (sinc)', interpZOH: 'ZOH (escalera)', interpLinear: 'Lineal',
@@ -557,7 +582,6 @@
       FsLabelSine: 'Fréquence d\'échantillonnage Fs', FsLabelWheel: 'Images de la caméra Fs',
       periodsLabel: 'Périodes affichées',
       presetsLabel: 'Exemples',
-      presetWheel: 'Roue : 24 tr/s à 25 images/s',
       sweep: 'Balayage 0 → 2·Fs', stop: 'Arrêter le balayage',
       interpLabel: 'Type d\'interpolation',
       interpIdeal: 'Idéale (sinc)', interpZOH: 'ZOH (escalier)', interpLinear: 'Linéaire',
@@ -587,7 +611,6 @@
       FsLabelSine: 'Sampling frequency Fs', FsLabelWheel: 'Camera frames Fs',
       periodsLabel: 'Periods shown',
       presetsLabel: 'Examples',
-      presetWheel: 'Wheel: 24 rev/s at 25 frames/s',
       sweep: 'Sweep 0 → 2·Fs', stop: 'Stop the sweep',
       interpLabel: 'Interpolation type',
       interpIdeal: 'Ideal (sinc)', interpZOH: 'ZOH (staircase)', interpLinear: 'Linear',
@@ -614,16 +637,17 @@
   // =====================================================================
   // STATE
   // =====================================================================
-  const state = { lang: 'fr', tab: 'sine', f: 10, Fs: 50, periods: 3, interpType: 'ideal', sweeping: false, sweepF: 0 };
+  const state = { lang: 'fr', tab: 'sine', f: 10, Fs: 50, wf: 24, wFs: 25, periods: 3, interpType: 'ideal', sweeping: false, sweepF: 0 };
+  // (f, Fs) of the active tab: the sinusoid and the wheel have their own settings.
+  const cur = () => (state.tab === 'wheel' ? { f: state.wf, Fs: state.wFs } : { f: state.f, Fs: state.Fs });
   const SWEEP_SECONDS = 20;
 
-  // Wheel on screen. The animation is locked to the display: the camera takes one image every
-  // N display frames (N = 2 at 60 Hz, so its film plays at 30 images/s, without judder), and
+  // Wheel on screen. The animation is locked to the display: the camera film is played at one
+  // image per display frame (60 images/s on a 60 Hz screen: as smooth as the screen allows), and
   // between two images the wheel turns exactly f/Fs of a turn. The real wheel is drawn with a
   // motion blur averaged over the whole display frame (what the eye sees on a fast wheel): this
   // time average filters the motion before the monitor samples it, so the monitor cannot alias.
-  const CAMERA_SCREEN_RATE = 30;
-
+  
   const $ = (id) => document.getElementById(id);
   const t = () => TEXTS[state.lang];
   const fmtCache = {};
@@ -817,7 +841,8 @@
     const { ctx, width, height } = setupCanvas(canvas);
     const tx = t();
     const P = palette();
-    const { f, Fs } = state;
+    const { f, Fs } = cur();
+    const kMin = state.tab === 'wheel' ? 0 : -2;
     const unit = state.tab === 'wheel' ? tx.rev : 'Hz';
 
     const padding = 50;
@@ -829,7 +854,7 @@
     ctx.fillStyle = P.bg;
     ctx.fillRect(0, 0, width, height);
 
-    const xMin = -2 * Fs, xMax = 2 * Fs;
+    const xMin = kMin * Fs, xMax = 2 * Fs;
     const yMin = -Fs / 2, yMax = Fs / 2;
     const f0ToX = (v) => padding + ((v - xMin) / (xMax - xMin)) * graphWidth;
     const f0StarToY = (v) => height - bottomPadding - ((v - yMin) / (yMax - yMin)) * graphHeight;
@@ -854,7 +879,7 @@
     ctx.strokeStyle = P.grid;
     ctx.lineWidth = 1;
     ctx.setLineDash([2, 2]);
-    for (let k = -2; k <= 2; k++) {
+    for (let k = kMin; k <= 2; k++) {
       const x = f0ToX(k * Fs);
       ctx.beginPath();
       ctx.moveTo(x, padding);
@@ -913,11 +938,9 @@
     ctx.fillStyle = P.text;
     ctx.font = '14px system-ui';
     ctx.textAlign = 'center';
-    ctx.fillText(fmt(-2 * Fs, 1), f0ToX(-2 * Fs), yZero + 22);
-    ctx.fillText(fmt(-Fs, 1), f0ToX(-Fs), yZero + 22);
-    ctx.fillText('0', f0ToX(0) + 15, yZero + 22);
-    ctx.fillText(fmt(Fs, 1), f0ToX(Fs), yZero + 22);
-    ctx.fillText(fmt(2 * Fs, 1), f0ToX(2 * Fs), yZero + 22);
+    for (let k = kMin; k <= 2; k++) {
+      ctx.fillText(k === 0 ? '0' : fmt(k * Fs, 1), f0ToX(k * Fs) + (k === 0 ? 15 : 0), yZero + 22);
+    }
     ctx.font = 'bold 16px system-ui';
     ctx.textAlign = 'right';
     ctx.fillText(`f${state.tab === 'wheel' ? '' : 'ᵢₙ'} (${unit})`, width - padding - 10, height - bottomPadding + 45);
@@ -953,27 +976,27 @@
   // =====================================================================
   // FILMED WHEEL (a car wheel: tyre, 5-spoke alloy rim, brake disc)
   // =====================================================================
-  const display = { dts: [], N: 2, rate: CAMERA_SCREEN_RATE };
+  const display = { dts: [], N: 1, rate: 60 };
   const wheel = { frame: 0, phase: 0, smear: 0, camPhase: 0, image: 0 };
 
-  // Measure the refresh rate during the first frames and pick N so that fps/N ≈ 30.
+  // Measure the refresh rate during the first frames (for the playback factor shown in the panel).
   function measureDisplay(dt) {
     if (display.dts.length >= 40 || dt <= 0) return;
     display.dts.push(dt);
     if (display.dts.length === 40) {
       const sorted = display.dts.slice().sort((a, b) => a - b);
       const fps = 1 / sorted[20];
-      display.N = Math.max(1, Math.round(fps / CAMERA_SCREEN_RATE));
-      display.rate = fps / display.N;
+      display.N = 1;
+      display.rate = fps;
       updatePanel();
     }
   }
   // Playback factor of the wheel animation (screen time / real time).
-  const playback = () => display.rate / state.Fs;
+  const playback = () => display.rate / state.wFs;
 
   // One display frame. The camera image is taken on the frames whose count is a multiple of N.
   function stepWheel() {
-    const { f, Fs } = state;
+    const f = state.wf, Fs = state.wFs;
     const perFrame = f / (display.N * Fs);        // turns per display frame
     wheel.phase = ((wheel.phase + perFrame) % 1 + 1) % 1;
     wheel.smear = perFrame;
@@ -1073,7 +1096,7 @@
     const span = Math.min(Math.abs(smear), 1) * Math.sign(smear);
     const M = Math.min(48, Math.max(1, Math.ceil(Math.abs(span) * 60)));
     if (M === 1) return sprite.canvas;
-    const key = sprite.size + ':' + span.toFixed(5);
+    const key = sprite.size + ':' + span.toFixed(3);
     if (blur.key === key) return blur.canvas;
     blur.key = key;
     const c = blur.canvas, S = sprite.size;
@@ -1150,17 +1173,17 @@
   // =====================================================================
   function updatePanel() {
     const tx = t();
-    const { f, Fs, periods } = state;
+    const { f, Fs } = cur();
     const wheelTab = state.tab === 'wheel';
     const unit = wheelTab ? tx.rev : 'Hz';
     const fStar = apparent(f, Fs);
 
-    $('fLabel').innerHTML = wheelTab ? tx.fLabelWheel : tx.fLabelSine;
-    $('FsLabel').innerHTML = wheelTab ? tx.FsLabelWheel : tx.FsLabelSine;
-    $('fValue').textContent = `${fmt(f, 0)} ${unit}`;
-    $('FsValue').textContent = wheelTab ? `${fmt(Fs, 0)} ${tx.img}` : `${fmt(Fs, 0)} Hz`;
-    $('periodsValue').textContent = periods;
-    $('cameraTitle').textContent = `${tx.camera} · ${fmt(Fs, 0)} ${tx.img}`;
+    $('fValue').textContent = `${fmt(state.f, 0)} Hz`;
+    $('FsValue').textContent = `${fmt(state.Fs, 0)} Hz`;
+    $('wValue').textContent = `${fmt(state.wf, 1)} ${tx.rev}`;
+    $('FcValue').textContent = `${fmt(state.wFs, 0)} ${tx.img}`;
+    $('periodsValue').textContent = state.periods;
+    $('cameraTitle').textContent = `${tx.camera} · ${fmt(state.wFs, 0)} ${tx.img}`;
 
     const row = (label, value) => `<div class="info-row"><span class="info-label">${label}:</span><span class="info-value">${value}</span></div>`;
     let rows;
@@ -1170,7 +1193,7 @@
         + row(tx.wFs, `${fmt(Fs, 1)} ${tx.img}`)
         + row(tx.wNyq, `${fmt(Fs / 2, 1)} ${unit}`)
         + row(tx.wApp, `${signed(fStar, 1)} ${unit}${dir}`)
-        + row(tx.wSlow, `×${fmt(playback(), 2)} (${playback() < 1 ? tx.slower : tx.faster})`);
+        + row(tx.wSlow, `×${fmt(playback(), 1)} (${fmt(display.rate, 0)} ${tx.img})`);
     } else {
       rows = row(tx.f0, `${fmt(f, 1)} Hz`)
         + row(tx.Fs, `${fmt(Fs, 1)} Hz`)
@@ -1190,7 +1213,10 @@
       : { ideal: tx.noteIdeal, zoh: tx.noteZOH, linear: tx.noteLinear }[state.interpType];
 
     document.querySelectorAll('.preset-btn[data-f]').forEach((b) => {
-      b.classList.toggle('active', Number(b.dataset.f) === f && Number(b.dataset.fs) === Fs);
+      b.classList.toggle('active', Number(b.dataset.f) === state.f && Number(b.dataset.fs) === state.Fs);
+    });
+    document.querySelectorAll('.preset-btn[data-wf]').forEach((b) => {
+      b.classList.toggle('active', Math.abs(Number(b.dataset.wf) - state.wf) < 1e-9 && Number(b.dataset.wfs) === state.wFs);
     });
   }
 
@@ -1217,8 +1243,26 @@
     state.f = Math.round(Math.max(-2 * state.Fs, Math.min(2 * state.Fs, v)));
     fSlider.value = state.f;
   }
+  const wSlider = $('wSlider'), FcSlider = $('FcSlider');
+  function setWFs(v) {
+    state.wFs = Math.round(Math.min(60, Math.max(10, v)));
+    FcSlider.value = state.wFs;
+    wSlider.max = 2 * state.wFs;
+    if (state.wf > 2 * state.wFs) state.wf = 2 * state.wFs;
+    wSlider.value = state.wf;
+  }
+  function setWF(v) {
+    state.wf = Math.round(Math.max(0, Math.min(2 * state.wFs, v)) * 10) / 10;
+    wSlider.value = state.wf;
+  }
+  wSlider.addEventListener('input', () => { stopSweep(); setWF(Number(wSlider.value)); redraw(); });
+  FcSlider.addEventListener('input', () => { setWFs(Number(FcSlider.value)); redraw(); });
+  document.querySelectorAll('.preset-btn[data-wf]').forEach((b) => b.addEventListener('click', () => {
+    stopSweep(); setWFs(Number(b.dataset.wfs)); setWF(Number(b.dataset.wf)); redraw();
+  }));
+
   function stopSweep() { state.sweeping = false; sweepBtn.classList.remove('active'); sweepBtn.setAttribute('aria-pressed', 'false'); sweepBtn.textContent = t().sweep; }
-  function startSweep() { state.sweeping = true; state.sweepF = 0; setF(0); sweepBtn.classList.add('active'); sweepBtn.setAttribute('aria-pressed', 'true'); sweepBtn.textContent = t().stop; redraw(); }
+  function startSweep() { state.sweeping = true; state.sweepF = 0; if (state.tab === 'wheel') setWF(0); else setF(0); sweepBtn.classList.add('active'); sweepBtn.setAttribute('aria-pressed', 'true'); sweepBtn.textContent = t().stop; redraw(); }
 
   fSlider.addEventListener('input', () => { stopSweep(); setF(Number(fSlider.value)); redraw(); });
   FsSlider.addEventListener('input', () => { setFs(Number(FsSlider.value)); redraw(); });
@@ -1232,6 +1276,7 @@
   // Tabs
   const tabs = document.querySelectorAll('.step-tab');
   function setTab(tab) {
+    if (state.sweeping) stopSweep();
     state.tab = tab === 'wheel' ? 'wheel' : 'sine';
     tabs.forEach((b) => { const on = b.dataset.tab === state.tab; b.classList.toggle('active', on); b.setAttribute('aria-selected', String(on)); });
     document.querySelectorAll('[data-only]').forEach((el) => { el.hidden = el.dataset.only !== state.tab; });
@@ -1256,6 +1301,7 @@
       if (b.dataset.i18n) return;
       b.textContent = `f=${b.dataset.f} · Fs=${b.dataset.fs}`;
     });
+    document.querySelectorAll('.preset-btn[data-wf]').forEach((b) => { b.textContent = `${fmt(Number(b.dataset.wf), 1)} ${tx.rev}`; });
     sweepBtn.textContent = state.sweeping ? tx.stop : tx.sweep;
     try { localStorage.setItem('samplingAliasing.lang', state.lang); } catch (_) { /* ignore */ }
     redraw();
@@ -1282,9 +1328,13 @@
     const dt = Math.min(0.1, Math.max(0, (now - last) / 1000));
     last = now;
     if (state.sweeping) {
-      state.sweepF += (2 * state.Fs / SWEEP_SECONDS) * dt;
-      if (state.sweepF >= 2 * state.Fs) { setF(2 * state.Fs); stopSweep(); redraw(); }
-      else if (Math.round(state.sweepF) !== state.f) { setF(state.sweepF); redraw(); }
+      const wheelTab = state.tab === 'wheel';
+      const Fs = wheelTab ? state.wFs : state.Fs;
+      const set = wheelTab ? setWF : setF;
+      const before = wheelTab ? state.wf : state.f;
+      state.sweepF += (2 * Fs / SWEEP_SECONDS) * dt;
+      if (state.sweepF >= 2 * Fs) { set(2 * Fs); stopSweep(); redraw(); }
+      else { set(state.sweepF); if ((wheelTab ? state.wf : state.f) !== before) redraw(); }
     }
     measureDisplay(dt);
     stepWheel();
@@ -1309,6 +1359,8 @@
 
   setFs(state.Fs);
   setF(state.f);
+  setWFs(state.wFs);
+  setWF(state.wf);
   document.documentElement.setAttribute('data-theme', window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
   themeSelect.value = isDark() ? 'dark' : 'light';
   state.lang = TEXTS[lang] ? lang : 'fr';
