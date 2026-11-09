@@ -464,11 +464,18 @@
             <input type="range" id="FsSlider" min="2" max="500" value="50" step="1">
           </div>
           <div class="control-group" data-only="wheel" hidden>
+            <label style="display:block;" data-i18n="wheelModel"></label>
+            <div class="preset-buttons" role="group" data-i18n-aria="wheelModel">
+              <button type="button" class="preset-btn" data-wheel-type="rim" aria-pressed="true" data-i18n="modelRim"></button>
+              <button type="button" class="preset-btn" data-wheel-type="dot" aria-pressed="false" data-i18n="modelDot"></button>
+            </div>
+          </div>
+          <div class="control-group" data-only="wheel" hidden>
             <label for="wSlider">
               <span data-i18n="fLabelWheel"></span>
               <span class="value" id="wValue"></span>
             </label>
-            <input type="range" id="wSlider" min="0" max="10" value="0.5" step="0.02">
+            <input type="range" id="wSlider" min="0" max="10" value="0.5" step="0.01">
           </div>
           <div class="control-group" data-only="wheel" hidden>
             <label for="FcSlider">
@@ -494,12 +501,12 @@
               <button type="button" class="preset-btn" data-f="100" data-fs="100"></button>
             </div>
             <div class="preset-buttons" data-only="wheel" hidden>
-              <button type="button" class="preset-btn" data-wf="1" data-wfs="25"></button>
-              <button type="button" class="preset-btn" data-wf="2.5" data-wfs="25"></button>
-              <button type="button" class="preset-btn" data-wf="4.8" data-wfs="25"></button>
-              <button type="button" class="preset-btn" data-wf="5" data-wfs="25"></button>
-              <button type="button" class="preset-btn" data-wf="5.1" data-wfs="25"></button>
-              <button type="button" class="preset-btn" data-wf="9.8" data-wfs="25"></button>
+              <button type="button" class="preset-btn" data-wfreq="5" data-wfs="25"></button>
+              <button type="button" class="preset-btn" data-wfreq="12.5" data-wfs="25"></button>
+              <button type="button" class="preset-btn" data-wfreq="24" data-wfs="25"></button>
+              <button type="button" class="preset-btn" data-wfreq="25" data-wfs="25"></button>
+              <button type="button" class="preset-btn" data-wfreq="25.5" data-wfs="25"></button>
+              <button type="button" class="preset-btn" data-wfreq="49" data-wfs="25"></button>
             </div>
             <div class="preset-buttons">
               <button type="button" class="preset-btn wide" id="sweepBtn" aria-pressed="false"></button>
@@ -589,7 +596,7 @@
   const TEXTS = {
     es: {
       title: 'Muestreo y aliasing',
-      subtitle: 'Señal muestreada y rueda filmada - Franco FERRUCCI',
+      subtitle: 'Señal muestreada y rueda filmada',
       tabSine: 'Sinusoide muestreada', tabWheel: 'Rueda filmada',
       languageAria: 'Idioma', themeDark: 'Activar el tema oscuro', themeLight: 'Activar el tema claro',
       fLabelSine: 'Frecuencia de entrada f<sub>IN</sub>', fLabelWheel: 'Velocidad de la rueda v',
@@ -603,6 +610,8 @@
       noteIdeal: 'La <strong>interpolación ideal</strong> usando función sinc es no causal (requiere muestras futuras), por lo que no se puede usar en tiempo real, solo off-line.',
       noteZOH: 'El <strong>Zero-Order Hold</strong> mantiene el valor de cada muestra hasta la siguiente. Es causal y se usa en tiempo real.',
       noteLinear: 'La <strong>interpolación lineal</strong> conecta las muestras con líneas rectas. Es causal y simple de implementar.',
+      wheelModel: 'Modelo de rueda', modelRim: 'Llanta 5 rayos', modelDot: 'Disco + agujero',
+      noteDot: 'Un solo punto de referencia (el agujero blanco): la señal que muestrea la cámara es la <strong>rotación misma, f = v</strong>, un fasor e<sup>j2πvt</sup> muestreado. Mientras v &lt; Fs/2 se ve girar en el sentido correcto; más allá parece retroceder (v* = v − Fs), y con v = Fs parece inmóvil.',
       noteWheel: 'A la izquierda, lo que ve el ojo: la llanta se vuelve borrosa en cuanto gira rápido. A la derecha, la cámara: una imagen nítida cada 1/Fs s. Los 5 rayos son idénticos: la llanta se ve igual cada 1/5 de vuelta, así que la señal que muestrea la cámara es el <strong>paso de los rayos, f = 5·v</strong>. Mientras f &lt; Fs/2 (v &lt; Fs/10) el giro se ve en el sentido correcto; más allá parece retroceder, y con f = Fs parece inmóvil.',
       temporal: 'Evolución Temporal', spectral: 'Diagrama Espectral', theory: 'Teorema de Muestreo',
       realWheel: 'Rueda real', camera: 'Cámara',
@@ -618,7 +627,7 @@
     },
     fr: {
       title: 'Échantillonnage et repliement',
-      subtitle: 'Signal échantillonné et roue filmée - Franco FERRUCCI',
+      subtitle: 'Signal échantillonné et roue filmée',
       tabSine: 'Sinusoïde échantillonnée', tabWheel: 'Roue filmée',
       languageAria: 'Langue', themeDark: 'Activer le thème sombre', themeLight: 'Activer le thème clair',
       fLabelSine: 'Fréquence d\'entrée f<sub>IN</sub>', fLabelWheel: 'Vitesse de la roue v',
@@ -632,6 +641,8 @@
       noteIdeal: 'L\'<strong>interpolation idéale</strong> utilisant la fonction sinc est non causale (nécessite des échantillons futurs), donc inutilisable en temps réel, seulement hors ligne.',
       noteZOH: 'Le <strong>Zero-Order Hold</strong> maintient la valeur de chaque échantillon jusqu\'au suivant. Elle est causale et utilisée en temps réel.',
       noteLinear: 'L\'<strong>interpolation linéaire</strong> connecte les échantillons avec des lignes droites. Elle est causale et simple à implémenter.',
+      wheelModel: 'Modèle de roue', modelRim: 'Jante 5 rayons', modelDot: 'Disque + trou',
+      noteDot: 'Un seul repère (le trou blanc) : le signal échantillonné par la caméra est la <strong>rotation elle-même, f = v</strong>, un phaseur e<sup>j2πvt</sup> échantillonné. Tant que v &lt; Fs/2 il tourne dans le bon sens ; au-delà il semble reculer (v* = v − Fs), et pour v = Fs il semble immobile.',
       noteWheel: 'À gauche, ce que voit l\'œil : la jante devient floue dès qu\'elle tourne vite. À droite, la caméra : une image nette toutes les 1/Fs s. Les 5 rayons sont identiques : la jante se retrouve pareille tous les 1/5 de tour, donc le signal échantillonné par la caméra est le <strong>passage des rayons, f = 5·v</strong>. Tant que f &lt; Fs/2 (v &lt; Fs/10) la rotation est vue dans le bon sens ; au-delà elle semble reculer, et pour f = Fs elle semble immobile.',
       temporal: 'Évolution Temporelle', spectral: 'Diagramme Spectral', theory: 'Théorème d\'Échantillonnage',
       realWheel: 'Roue réelle', camera: 'Caméra',
@@ -647,7 +658,7 @@
     },
     en: {
       title: 'Sampling and aliasing',
-      subtitle: 'Sampled signal and filmed wheel - Franco FERRUCCI',
+      subtitle: 'Sampled signal and filmed wheel',
       tabSine: 'Sampled sinusoid', tabWheel: 'Filmed wheel',
       languageAria: 'Language', themeDark: 'Switch to dark theme', themeLight: 'Switch to light theme',
       fLabelSine: 'Input frequency f<sub>IN</sub>', fLabelWheel: 'Wheel speed v',
@@ -661,6 +672,8 @@
       noteIdeal: 'The <strong>ideal interpolation</strong> using sinc function is non-causal (requires future samples), so it cannot be used in real-time, only offline.',
       noteZOH: 'The <strong>Zero-Order Hold</strong> maintains each sample value until the next. It is causal and used in real-time.',
       noteLinear: 'The <strong>linear interpolation</strong> connects samples with straight lines. It is causal and simple to implement.',
+      wheelModel: 'Wheel model', modelRim: '5-spoke rim', modelDot: 'Disc + hole',
+      noteDot: 'A single reference (the white hole): the signal the camera samples is the <strong>rotation itself, f = v</strong>, a sampled phasor e<sup>j2πvt</sup>. As long as v &lt; Fs/2 it turns in the right direction; beyond, it seems to go backwards (v* = v − Fs), and at v = Fs it stands still.',
       noteWheel: 'Left, what the eye sees: the rim blurs as soon as it spins fast. Right, the camera: one sharp image every 1/Fs s. The 5 spokes are identical: the rim looks the same every 1/5 turn, so the signal the camera samples is the <strong>spoke passage, f = 5·v</strong>. As long as f &lt; Fs/2 (v &lt; Fs/10) the rotation is seen in the right direction; beyond, it seems to go backwards, and at f = Fs it stands still.',
       temporal: 'Temporal Evolution', spectral: 'Spectral Diagram', theory: 'Sampling Theorem',
       realWheel: 'Real wheel', camera: 'Camera',
@@ -680,12 +693,16 @@
   // =====================================================================
   // STATE
   // =====================================================================
-  const state = { lang: 'fr', tab: 'sine', f: 10, Fs: 50, wf: 0.5, wFs: 25, periods: 3, interpType: 'ideal', sweeping: false, sweepF: 0 };
+  const state = { lang: 'fr', tab: 'sine', f: 10, Fs: 50, wf: 0.5, wFs: 25, wheelType: 'rim', periods: 3, interpType: 'ideal', sweeping: false, sweepF: 0 };
   // (f, Fs) of the active tab: the sinusoid and the wheel have their own settings.
-  // Wheel: v = state.wf turns/s; with SPOKES identical spokes the sampled signal is the spoke
-  // passage f = SPOKES·v (it looks the same every 1/SPOKES turn).
-  const SPOKES = 5;
-  const cur = () => (state.tab === 'wheel' ? { f: SPOKES * state.wf, Fs: state.wFs } : { f: state.f, Fs: state.Fs });
+  // Wheel: v = state.wf turns/s. Two models:
+  //  - 'rim': 5 identical spokes; it looks the same every 1/5 turn, so the sampled signal is the
+  //    spoke passage f = 5·v;
+  //  - 'dot': a black disc with one white hole; the sampled signal is the rotation itself, f = v
+  //    (a sampled phasor e^{j2πvt}).
+  const SPOKES = 5;                                  // rim geometry
+  const nSym = () => (state.wheelType === 'dot' ? 1 : SPOKES);
+  const cur = () => (state.tab === 'wheel' ? { f: nSym() * state.wf, Fs: state.wFs } : { f: state.f, Fs: state.Fs });
   const SWEEP_SECONDS = { sine: 40, wheel: 90 };
 
   // Wheel on screen. The animation is locked to the display: the camera film is played at one
@@ -890,7 +907,7 @@
     const { f, Fs } = cur();
     const kMin = state.tab === 'wheel' ? 0 : -2;
     const unit = state.tab === 'wheel' ? tx.rev : 'Hz';
-    const sc = state.tab === 'wheel' ? 1 / SPOKES : 1;   // wheel: axes in turns/s (v = f/5)
+    const sc = state.tab === 'wheel' ? 1 / nSym() : 1;   // wheel: axes in turns/s (v = f/n)
 
     const padding = 50;
     const bottomPadding = 60;
@@ -1076,6 +1093,8 @@
     const c = sprite.canvas;
     c.width = c.height = sizePx;
     sprite.size = sizePx;
+    sprite.type = state.wheelType;
+    if (state.wheelType === 'dot') { renderDotSprite(c, sizePx); return; }
     const g = c.getContext('2d');
     const R = sizePx / 2 - 1;
     g.clearRect(0, 0, sizePx, sizePx);
@@ -1142,6 +1161,26 @@
     g.restore();
   }
 
+  // Black disc with one small white hole near the edge: the only thing that turns visibly.
+  function renderDotSprite(c, sizePx) {
+    const g = c.getContext('2d');
+    const R = sizePx / 2 - 1;
+    g.clearRect(0, 0, sizePx, sizePx);
+    g.save();
+    g.translate(sizePx / 2, sizePx / 2);
+    const disc = g.createRadialGradient(0, 0, 0, 0, 0, R);
+    disc.addColorStop(0, '#202227'); disc.addColorStop(0.92, '#131418'); disc.addColorStop(1, '#08090b');
+    g.fillStyle = disc; g.beginPath(); g.arc(0, 0, R, 0, 2 * Math.PI); g.fill();
+    g.strokeStyle = '#5a606a'; g.lineWidth = Math.max(1.5, R * 0.025);
+    g.beginPath(); g.arc(0, 0, R - g.lineWidth / 2, 0, 2 * Math.PI); g.stroke();
+    // axle
+    g.fillStyle = '#3a3e45'; g.beginPath(); g.arc(0, 0, 0.06 * R, 0, 2 * Math.PI); g.fill();
+    // the hole
+    g.fillStyle = '#ffffff';
+    g.beginPath(); g.arc(0.78 * R, 0, 0.075 * R, 0, 2 * Math.PI); g.fill();
+    g.restore();
+  }
+
   // Motion blur: average of the wheel over the angle swept during one display frame (exact running
   // average, copy i drawn with alpha 1/(i+1)). It only depends on that angle, not on the phase,
   // so it is computed once per speed and then simply rotated.
@@ -1149,11 +1188,11 @@
   // Anti-aliasing for the real wheel. The monitor shows one image per display frame, so it
   // samples the real wheel with the same ratio f/Fs as the camera: a one-frame blur is not enough
   // (at f = 0.6·Fs about half of the spoke contrast would remain and be seen going backwards).
-  // A blur lasting exactly one spoke period (1/SPOKES turn) gives a uniform disc, with nothing
+  // A blur lasting exactly one pattern period (1/n turn) gives a uniform disc, with nothing
   // left that can alias. So: plain one-frame blur while the spokes move less than 0.2 spacing per
   // frame, then a longer blur, reaching one full spoke period at 0.4 spacing per frame.
   function antiAliasSpan(smear) {
-    const spacing = 1 / SPOKES;
+    const spacing = 1 / nSym();
     const sp = Math.abs(smear) / spacing;              // spoke spacings per display frame
     let L;                                             // blur length, in spoke spacings
     if (sp <= 0.2) L = sp;
@@ -1166,7 +1205,7 @@
     const span = Math.round(Math.min(Math.abs(smear), 1) * Math.sign(smear) * 1000) / 1000;
     const M = Math.min(96, Math.max(1, Math.ceil(Math.abs(span) * 240)));   // ≤ 1.5° between copies
     if (M === 1) return sprite.canvas;
-    const key = sprite.size + ':' + span.toFixed(3);
+    const key = sprite.size + ':' + sprite.type + ':' + span.toFixed(3);
     if (blur.key === key) return blur.canvas;
     blur.key = key;
     const c = blur.canvas, S = sprite.size;
@@ -1202,9 +1241,9 @@
     const R = Math.max(10, 0.4 * Math.min(width, height));
     const cx = width / 2, cy = height / 2 - 4;
     const need = Math.ceil(2 * R * dpr) + 2;
-    if (Math.abs(sprite.size - need) > 2) renderSprite(need);
+    if (Math.abs(sprite.size - need) > 2 || sprite.type !== state.wheelType) renderSprite(need);
 
-    const key = `${width}x${height}@${dpr}:${P.dark}:${isCamera}`;
+    const key = `${width}x${height}@${dpr}:${P.dark}:${isCamera}:${state.wheelType}`;
     if (canvas._layersKey !== key) {
       canvas._layersKey = key;
       // Fixed background (colour, ground shadow, viewfinder, REC) as the canvas CSS background
@@ -1255,7 +1294,7 @@
     ctx.rotate(-2 * Math.PI * phase);             // counter-clockwise = positive
     ctx.drawImage(img, -R, -R, 2 * R, 2 * R);
     ctx.restore();
-    ctx.drawImage(canvas._light, cx - R, cy - R, 2 * R, 2 * R);
+    if (state.wheelType !== 'dot') ctx.drawImage(canvas._light, cx - R, cy - R, 2 * R, 2 * R);   // a flat disc gets no highlight
   }
 
 
@@ -1280,15 +1319,22 @@
     const row = (label, value) => `<div class="info-row"><span class="info-label">${label}:</span><span class="info-value">${value}</span></div>`;
     let rows;
     if (wheelTab) {
-      const v = state.wf, vStar = fStar / SPOKES;
+      const v = state.wf, vStar = fStar / nSym();
       const dir = fStar === 0 ? ` (${tx.still})` : (v !== 0 && Math.sign(vStar) !== Math.sign(v) ? ` (${tx.reverse})` : '');
-      rows = row(tx.wReal, `${fmt(v, 2)} ${tx.rev}`)
-        + row(tx.wSpoke, `${fmt(f, 2)} Hz`)
-        + row(tx.wFs, `${fmt(Fs, 1)} ${tx.img}`)
-        + row(tx.wNyq, `${fmt(Fs / 2, 2)} Hz`)
-        + row(tx.wApp, `${signed(fStar, 2)} Hz`)
-        + row(tx.wAppSpeed, `${signed(vStar, 2)} ${tx.rev}${dir}`)
-        + row(tx.wSlow, `×${fmt(playback(), 1)} (${fmt(display.rate, 0)} ${tx.img})`);
+      if (state.wheelType === 'dot') {
+        rows = row(tx.wReal, `${fmt(v, 2)} ${tx.rev}`)
+          + row(tx.wFs, `${fmt(Fs, 1)} ${tx.img}`)
+          + row(tx.wNyq, `${fmt(Fs / 2, 2)} ${tx.rev}`)
+          + row(tx.wAppSpeed, `${signed(vStar, 2)} ${tx.rev}${dir}`);
+      } else {
+        rows = row(tx.wReal, `${fmt(v, 2)} ${tx.rev}`)
+          + row(tx.wSpoke, `${fmt(f, 2)} Hz`)
+          + row(tx.wFs, `${fmt(Fs, 1)} ${tx.img}`)
+          + row(tx.wNyq, `${fmt(Fs / 2, 2)} Hz`)
+          + row(tx.wApp, `${signed(fStar, 2)} Hz`)
+          + row(tx.wAppSpeed, `${signed(vStar, 2)} ${tx.rev}${dir}`);
+      }
+      rows += row(tx.wSlow, `×${fmt(playback(), 1)} (${fmt(display.rate, 0)} ${tx.img})`);
     } else {
       rows = row(tx.f0, `${fmt(f, 1)} Hz`)
         + row(tx.Fs, `${fmt(Fs, 1)} Hz`)
@@ -1305,14 +1351,20 @@
     else if (ratio >= 2.0) { status.className = 'status-indicator status-warning'; status.textContent = tx.statusNyquist; }
     else { status.className = 'status-indicator status-error'; status.textContent = tx.statusAlias; }
 
-    $('noteText').innerHTML = wheelTab ? tx.noteWheel
+    $('noteText').innerHTML = wheelTab ? (state.wheelType === 'dot' ? tx.noteDot : tx.noteWheel)
       : { ideal: tx.noteIdeal, zoh: tx.noteZOH, linear: tx.noteLinear }[state.interpType];
 
     document.querySelectorAll('.preset-btn[data-f]').forEach((b) => {
       b.classList.toggle('active', Number(b.dataset.f) === state.f && Number(b.dataset.fs) === state.Fs);
     });
-    document.querySelectorAll('.preset-btn[data-wf]').forEach((b) => {
-      b.classList.toggle('active', Math.abs(Number(b.dataset.wf) - state.wf) < 1e-9 && Number(b.dataset.wfs) === state.wFs);
+    document.querySelectorAll('.preset-btn[data-wfreq]').forEach((b) => {
+      b.textContent = `${fmt(Number(b.dataset.wfreq) / nSym(), 2)} ${tx.rev}`;
+      b.classList.toggle('active', Math.abs(Number(b.dataset.wfreq) / nSym() - state.wf) < 1e-6 && Number(b.dataset.wfs) === state.wFs);
+    });
+    document.querySelectorAll('[data-wheel-type]').forEach((b) => {
+      const on = b.dataset.wheelType === state.wheelType;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', String(on));
     });
   }
 
@@ -1343,18 +1395,29 @@
   function setWFs(v) {
     state.wFs = Math.round(Math.min(60, Math.max(10, v)));
     FcSlider.value = state.wFs;
-    wSlider.max = 2 * state.wFs / SPOKES;
-    if (state.wf > 2 * state.wFs / SPOKES) state.wf = 2 * state.wFs / SPOKES;
+    wSlider.max = 2 * state.wFs / nSym();
+    if (state.wf > 2 * state.wFs / nSym()) state.wf = 2 * state.wFs / nSym();
     wSlider.value = state.wf;
   }
   function setWF(v) {
-    state.wf = Math.round(Math.max(0, Math.min(2 * state.wFs / SPOKES, v)) * 100) / 100;
+    state.wf = Math.round(Math.max(0, Math.min(2 * state.wFs / nSym(), v)) * 100) / 100;
     wSlider.value = state.wf;
   }
   wSlider.addEventListener('input', () => { stopSweep(); setWF(Number(wSlider.value)); redraw(); });
   FcSlider.addEventListener('input', () => { setWFs(Number(FcSlider.value)); redraw(); });
-  document.querySelectorAll('.preset-btn[data-wf]').forEach((b) => b.addEventListener('click', () => {
-    stopSweep(); setWFs(Number(b.dataset.wfs)); setWF(Number(b.dataset.wf)); redraw();
+  document.querySelectorAll('.preset-btn[data-wfreq]').forEach((b) => b.addEventListener('click', () => {
+    stopSweep(); setWFs(Number(b.dataset.wfs)); setWF(Number(b.dataset.wfreq) / nSym()); redraw();
+  }));
+  // Wheel model: keep the same sampled frequency f, so the point on the sawtooth does not move.
+  document.querySelectorAll('[data-wheel-type]').forEach((b) => b.addEventListener('click', () => {
+    if (b.dataset.wheelType === state.wheelType) return;
+    stopSweep();
+    const f = nSym() * state.wf;
+    state.wheelType = b.dataset.wheelType;
+    setWFs(state.wFs);
+    setWF(f / nSym());
+    try { localStorage.setItem('samplingAliasing.wheelType', state.wheelType); } catch (_) { /* ignore */ }
+    redraw();
   }));
 
   function stopSweep() { state.sweeping = false; sweepBtn.classList.remove('active'); sweepBtn.setAttribute('aria-pressed', 'false'); sweepBtn.textContent = t().sweep; }
@@ -1403,7 +1466,6 @@
       if (b.dataset.i18n) return;
       b.textContent = `f=${b.dataset.f} · Fs=${b.dataset.fs}`;
     });
-    document.querySelectorAll('.preset-btn[data-wf]').forEach((b) => { b.textContent = `${fmt(Number(b.dataset.wf), 2)} ${tx.rev}`; });
     sweepBtn.textContent = state.sweeping ? tx.stop : tx.sweep;
     try { localStorage.setItem('samplingAliasing.lang', state.lang); } catch (_) { /* ignore */ }
     redraw();
@@ -1435,7 +1497,7 @@
     last = now;
     if (state.sweeping) {
       const wheelTab = state.tab === 'wheel';
-      const Fs = wheelTab ? state.wFs / SPOKES : state.Fs;   // sweep 0 → 2·Fs (sinusoid) or 0 → 2·Fs/5 (wheel speed)
+      const Fs = wheelTab ? state.wFs / nSym() : state.Fs;   // sweep 0 → 2·Fs (sinusoid) or 0 → 2·Fs/n (wheel speed)
       const set = wheelTab ? setWF : setF;
       const before = wheelTab ? state.wf : state.f;
       state.sweepF += (2 * Fs / SWEEP_SECONDS[state.tab]) * dt;
@@ -1465,6 +1527,7 @@
 
   setFs(state.Fs);
   setF(state.f);
+  try { if (localStorage.getItem('samplingAliasing.wheelType') === 'dot') state.wheelType = 'dot'; } catch (_) { /* ignore */ }
   setWFs(state.wFs);
   setWF(state.wf);
   state.lang = TEXTS[lang] ? lang : 'fr';
