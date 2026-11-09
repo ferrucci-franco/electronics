@@ -226,9 +226,12 @@
       border-radius:8px;
       padding:12px 12px 4px;
       display:grid;
-      grid-template-columns:70% 30%;
+      grid-template-columns:minmax(0, 1fr) minmax(290px, 30%);
       gap:12px;
       overflow:hidden;
+    }
+    @media (max-width: 1300px) and (min-width: 901px) {
+      .info-panel { font-size:0.8rem; gap:6px; padding-right:4px; }
     }
 
     .sidebar-main, .sidebar-extra { display:flex; flex-direction:column; gap:16px; }
@@ -403,6 +406,8 @@
       /* Phone: sliders, examples and sweep right above the wheels / the graph,
          interpolation, note and credits at the bottom. */
       .step2-sidebar { display:contents; }
+      .sidebar-main { gap:12px; }
+      .preset-buttons[data-only="wheel"] { grid-template-columns:repeat(3, 1fr); }
       .sidebar-main, .sidebar-extra { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:14px; }
       .sidebar-main { order:1; }
       .step2-temporal { order:2; }
