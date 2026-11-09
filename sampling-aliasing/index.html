@@ -176,6 +176,8 @@
       min-height:0;
     }
 
+    .step2-container.wheel-mode { grid-template-rows:minmax(300px, 1.6fr) minmax(300px, 1fr); }
+
     .step2-sidebar {
       grid-row:1 / 3;
       background:var(--card);
@@ -533,13 +535,14 @@
       noteIdeal: 'La <strong>interpolación ideal</strong> usando función sinc es no causal (requiere muestras futuras), por lo que no se puede usar en tiempo real, solo off-line.',
       noteZOH: 'El <strong>Zero-Order Hold</strong> mantiene el valor de cada muestra hasta la siguiente. Es causal y se usa en tiempo real.',
       noteLinear: 'La <strong>interpolación lineal</strong> conecta las muestras con líneas rectas. Es causal y simple de implementar.',
-      noteWheel: 'La cámara solo ve la rueda <strong>Fs veces por segundo</strong>. Entre dos imágenes la rueda gira f/Fs vuelta: si es casi una vuelta entera, parece retroceder; si es exactamente una, parece inmóvil. La animación está <strong>ralentizada</strong> para que el monitor no agregue su propio aliasing.',
+      noteWheel: 'A la izquierda, lo que ve el ojo: la llanta se vuelve borrosa en cuanto gira rápido. A la derecha, la cámara: una imagen nítida cada 1/Fs s; entre dos imágenes la rueda gira f/Fs vuelta. Seguí la <strong>marca amarilla</strong> del neumático: casi una vuelta por imagen y parece retroceder, exactamente una y parece inmóvil.',
       temporal: 'Evolución Temporal', spectral: 'Diagrama Espectral', theory: 'Teorema de Muestreo',
       realWheel: 'Rueda real', camera: 'Imagen de la cámara',
       f0: 'Frecuencia f<sub>IN</sub>', Fs: 'Frecuencia Fs', fNyquist: 'Frecuencia de Nyquist', condition: 'Condición',
       fAlias: 'Frecuencia aparente (f*<sub>IN</sub>)',
-      wReal: 'Velocidad real f', wFs: 'Cámara Fs', wNyq: 'Nyquist Fs/2', wApp: 'Velocidad aparente f*', wSlow: 'Animación',
-      slow: 'ralentí ×{k}', reverse: 'sentido inverso', still: 'inmóvil',
+      wReal: 'Velocidad real f', wFs: 'Cámara Fs', wNyq: 'Nyquist Fs/2', wApp: 'Velocidad aparente f*',
+      wSlow: 'Reproducción en pantalla',
+      slower: 'cámara lenta', faster: 'acelerada', reverse: 'sentido inverso', still: 'inmóvil',
       statusOk: '✓ Muestreo correcto', statusNyquist: '⚠ Límite de Nyquist', statusAlias: '✗ Aliasing detectado',
       legend_continuous: 'Continua', legend_samples: 'Muestras', legend_reconstructed: 'Reconstruida', legend_time: 'Tiempo (s)',
       legend_no_aliasing: 'Sin aliasing', legend_aliasing: 'Con aliasing',
@@ -562,13 +565,14 @@
       noteIdeal: 'L\'<strong>interpolation idéale</strong> utilisant la fonction sinc est non causale (nécessite des échantillons futurs), donc inutilisable en temps réel, seulement hors ligne.',
       noteZOH: 'Le <strong>Zero-Order Hold</strong> maintient la valeur de chaque échantillon jusqu\'au suivant. Elle est causale et utilisée en temps réel.',
       noteLinear: 'L\'<strong>interpolation linéaire</strong> connecte les échantillons avec des lignes droites. Elle est causale et simple à implémenter.',
-      noteWheel: 'La caméra ne voit la roue que <strong>Fs fois par seconde</strong>. Entre deux images la roue tourne de f/Fs tour : presque un tour entier, elle semble reculer ; exactement un tour, elle semble immobile. L\'animation est <strong>ralentie</strong> pour que l\'écran n\'ajoute pas son propre repliement.',
+      noteWheel: 'À gauche, ce que voit l\'œil : la jante devient floue dès qu\'elle tourne vite. À droite, la caméra : une image nette toutes les 1/Fs s ; entre deux images la roue tourne de f/Fs tour. Suivez la <strong>marque jaune</strong> du pneu : presque un tour par image, elle semble reculer ; exactement un tour, elle semble immobile.',
       temporal: 'Évolution Temporelle', spectral: 'Diagramme Spectral', theory: 'Théorème d\'Échantillonnage',
       realWheel: 'Roue réelle', camera: 'Image de la caméra',
       f0: 'Fréquence f<sub>IN</sub>', Fs: 'Fréquence Fs', fNyquist: 'Fréquence de Nyquist', condition: 'Condition',
       fAlias: 'Fréquence apparente (f*<sub>IN</sub>)',
-      wReal: 'Vitesse réelle f', wFs: 'Caméra Fs', wNyq: 'Nyquist Fs/2', wApp: 'Vitesse apparente f*', wSlow: 'Animation',
-      slow: 'ralenti ×{k}', reverse: 'sens inverse', still: 'immobile',
+      wReal: 'Vitesse réelle f', wFs: 'Caméra Fs', wNyq: 'Nyquist Fs/2', wApp: 'Vitesse apparente f*',
+      wSlow: 'Lecture à l\'écran',
+      slower: 'ralentie', faster: 'accélérée', reverse: 'sens inverse', still: 'immobile',
       statusOk: '✓ Échantillonnage correct', statusNyquist: '⚠ Limite de Nyquist', statusAlias: '✗ Repliement détecté',
       legend_continuous: 'Continue', legend_samples: 'Échantillons', legend_reconstructed: 'Reconstruite', legend_time: 'Temps (s)',
       legend_no_aliasing: 'Sans repliement', legend_aliasing: 'Avec repliement',
@@ -591,13 +595,14 @@
       noteIdeal: 'The <strong>ideal interpolation</strong> using sinc function is non-causal (requires future samples), so it cannot be used in real-time, only offline.',
       noteZOH: 'The <strong>Zero-Order Hold</strong> maintains each sample value until the next. It is causal and used in real-time.',
       noteLinear: 'The <strong>linear interpolation</strong> connects samples with straight lines. It is causal and simple to implement.',
-      noteWheel: 'The camera sees the wheel only <strong>Fs times per second</strong>. Between two frames the wheel turns f/Fs of a turn: almost a full turn and it seems to go backwards; exactly one turn and it seems to stand still. The animation is <strong>slowed down</strong> so that the screen does not add aliasing of its own.',
+      noteWheel: 'Left, what the eye sees: the rim blurs as soon as it spins fast. Right, the camera: one sharp image every 1/Fs s; between two images the wheel turns f/Fs of a turn. Follow the <strong>yellow mark</strong> on the tyre: almost one turn per image and it seems to go backwards, exactly one turn and it stands still.',
       temporal: 'Temporal Evolution', spectral: 'Spectral Diagram', theory: 'Sampling Theorem',
       realWheel: 'Real wheel', camera: 'Camera image',
       f0: 'Frequency f<sub>IN</sub>', Fs: 'Frequency Fs', fNyquist: 'Nyquist Frequency', condition: 'Condition',
       fAlias: 'Apparent frequency (f*<sub>IN</sub>)',
-      wReal: 'Real speed f', wFs: 'Camera Fs', wNyq: 'Nyquist Fs/2', wApp: 'Apparent speed f*', wSlow: 'Animation',
-      slow: 'slow motion ×{k}', reverse: 'reversed', still: 'stationary',
+      wReal: 'Real speed f', wFs: 'Camera Fs', wNyq: 'Nyquist Fs/2', wApp: 'Apparent speed f*',
+      wSlow: 'On-screen playback',
+      slower: 'slow motion', faster: 'sped up', reverse: 'reversed', still: 'stationary',
       statusOk: '✓ Correct sampling', statusNyquist: '⚠ Nyquist limit', statusAlias: '✗ Aliasing detected',
       legend_continuous: 'Continuous', legend_samples: 'Samples', legend_reconstructed: 'Reconstructed', legend_time: 'Time (s)',
       legend_no_aliasing: 'No aliasing', legend_aliasing: 'With aliasing',
@@ -612,11 +617,12 @@
   const state = { lang: 'fr', tab: 'sine', f: 10, Fs: 50, periods: 3, interpType: 'ideal', sweeping: false, sweepF: 0 };
   const SWEEP_SECONDS = 20;
 
-  // Wheel on screen: the fastest wheel (|f| = 2·Fs) turns at WHEEL_MAX_SCREEN turns/s on the
-  // monitor. With 6 spokes this is ≤ 0.3 spoke spacing per 60 Hz frame, so the monitor never
-  // aliases the motion. The camera then shows WHEEL_MAX_SCREEN/2 images per second on screen.
-  const WHEEL_MAX_SCREEN = 3;
-  const SPOKES = 6;
+  // Wheel on screen. The animation is locked to the display: the camera takes one image every
+  // N display frames (N = 2 at 60 Hz, so its film plays at 30 images/s, without judder), and
+  // between two images the wheel turns exactly f/Fs of a turn. The real wheel is drawn with a
+  // motion blur averaged over the whole display frame (what the eye sees on a fast wheel): this
+  // time average filters the motion before the monitor samples it, so the monitor cannot alias.
+  const CAMERA_SCREEN_RATE = 30;
 
   const $ = (id) => document.getElementById(id);
   const t = () => TEXTS[state.lang];
@@ -945,80 +951,198 @@
   }
 
   // =====================================================================
-  // FILMED WHEEL
+  // FILMED WHEEL (a car wheel: tyre, 5-spoke alloy rim, brake disc)
   // =====================================================================
-  const wheel = { tau: 0, phase: 0, camPhase: 0, lastK: null, lastFs: 0, flashUntil: 0 };
+  const display = { dts: [], N: 2, rate: CAMERA_SCREEN_RATE };
+  const wheel = { frame: 0, phase: 0, smear: 0, camPhase: 0, image: 0 };
 
-  // Slow-motion factor: depends only on Fs, so dragging f never changes the time scale.
-  const slowFactor = () => (2 * state.Fs) / WHEEL_MAX_SCREEN;
-
-  function stepWheel(dt, now) {
-    const k = slowFactor();
-    const dTau = dt / k;                          // wheel (real) time elapsed during this frame
-    const { f, Fs } = state;
-    const tauPrev = wheel.tau, phasePrev = wheel.phase;
-    wheel.tau += dTau;
-    wheel.phase = ((phasePrev + f * dTau) % 1 + 1) % 1;
-    if (Fs !== wheel.lastFs) { wheel.lastFs = Fs; wheel.lastK = null; }
-    const kNow = Math.floor(wheel.tau * Fs);
-    if (kNow !== wheel.lastK) {
-      // Sample-and-hold: the camera keeps the angle at its latest instant k/Fs.
-      const tk = kNow / Fs;
-      wheel.camPhase = ((phasePrev + f * (tk - tauPrev)) % 1 + 1) % 1;
-      wheel.lastK = kNow;
-      wheel.flashUntil = now + 90;
+  // Measure the refresh rate during the first frames and pick N so that fps/N ≈ 30.
+  function measureDisplay(dt) {
+    if (display.dts.length >= 40 || dt <= 0) return;
+    display.dts.push(dt);
+    if (display.dts.length === 40) {
+      const sorted = display.dts.slice().sort((a, b) => a - b);
+      const fps = 1 / sorted[20];
+      display.N = Math.max(1, Math.round(fps / CAMERA_SCREEN_RATE));
+      display.rate = fps / display.N;
+      updatePanel();
     }
   }
+  // Playback factor of the wheel animation (screen time / real time).
+  const playback = () => display.rate / state.Fs;
 
-  function drawWheel(canvas, phase, isCamera, now) {
+  // One display frame. The camera image is taken on the frames whose count is a multiple of N.
+  function stepWheel() {
+    const { f, Fs } = state;
+    const perFrame = f / (display.N * Fs);        // turns per display frame
+    wheel.phase = ((wheel.phase + perFrame) % 1 + 1) % 1;
+    wheel.smear = perFrame;
+    wheel.frame++;
+    if (wheel.frame % display.N === 0) { wheel.camPhase = wheel.phase; wheel.image++; }
+  }
+
+  // The wheel is drawn once into a sprite (opaque inside the tyre), then rotated.
+  const sprite = { canvas: document.createElement('canvas'), size: 0 };
+
+  function renderSprite(sizePx) {
+    const c = sprite.canvas;
+    c.width = c.height = sizePx;
+    sprite.size = sizePx;
+    const g = c.getContext('2d');
+    const R = sizePx / 2 - 1;
+    g.clearRect(0, 0, sizePx, sizePx);
+    g.save();
+    g.translate(sizePx / 2, sizePx / 2);
+    const circle = (r, fill) => { g.fillStyle = fill; g.beginPath(); g.arc(0, 0, r, 0, 2 * Math.PI); g.fill(); };
+    const ring = (r0, r1, fill) => { g.fillStyle = fill; g.beginPath(); g.arc(0, 0, r1, 0, 2 * Math.PI); g.arc(0, 0, r0, 0, 2 * Math.PI, true); g.fill(); };
+    const radial = (r0, r1, stops) => { const gr = g.createRadialGradient(0, 0, r0, 0, 0, r1); stops.forEach(([o, col]) => gr.addColorStop(o, col)); return gr; };
+
+    // Tyre: sidewall with a soft bulge, tread edge
+    ring(0.70 * R, R, radial(0.70 * R, R, [[0, '#141518'], [0.35, '#2a2c31'], [0.7, '#1d1f23'], [1, '#0c0d0f']]));
+    ring(0.965 * R, R, '#0a0b0c');
+    // Fine ribs on the sidewall (all around, subtle)
+    g.strokeStyle = 'rgba(255,255,255,0.05)'; g.lineWidth = Math.max(1, R * 0.006);
+    for (let i = 0; i < 72; i++) {
+      const a = (i / 72) * 2 * Math.PI;
+      g.beginPath(); g.moveTo(0.93 * R * Math.cos(a), 0.93 * R * Math.sin(a)); g.lineTo(0.955 * R * Math.cos(a), 0.955 * R * Math.sin(a)); g.stroke();
+    }
+    // The marker: one yellow band on the sidewall (one per turn)
+    g.strokeStyle = '#f5c518'; g.lineCap = 'round'; g.lineWidth = R * 0.055;
+    g.beginPath(); g.arc(0, 0, 0.845 * R, -0.42, 0.42); g.stroke();
+    g.lineWidth = R * 0.02;
+    g.beginPath(); g.arc(0, 0, 0.775 * R, -0.3, 0.3); g.stroke();
+
+    // Rim lip (polished)
+    ring(0.64 * R, 0.70 * R, radial(0.64 * R, 0.70 * R, [[0, '#7d848c'], [0.45, '#e9ecef'], [1, '#9aa1a9']]));
+    ring(0.635 * R, 0.645 * R, '#4b5056');
+
+    // Inside of the rim, brake disc with drilled holes, hub hat
+    circle(0.635 * R, radial(0, 0.635 * R, [[0, '#30343a'], [1, '#16181b']]));
+    circle(0.52 * R, radial(0.2 * R, 0.52 * R, [[0, '#8a9097'], [0.8, '#6c7279'], [1, '#4d5257']]));
+    g.fillStyle = '#2a2d31';
+    for (let i = 0; i < 24; i++) {
+      const a = (i / 24) * 2 * Math.PI, r = i % 2 ? 0.43 * R : 0.37 * R;
+      g.beginPath(); g.arc(r * Math.cos(a), r * Math.sin(a), 0.014 * R, 0, 2 * Math.PI); g.fill();
+    }
+    circle(0.25 * R, '#3c4045');
+
+    // Five tapered spokes, each split by a groove (light alloy)
+    for (let k = 0; k < 5; k++) {
+      g.save();
+      g.rotate((k / 5) * 2 * Math.PI);
+      const grad = g.createLinearGradient(0, -0.1 * R, 0, 0.1 * R);
+      grad.addColorStop(0, '#b9c0c7'); grad.addColorStop(0.5, '#eef1f4'); grad.addColorStop(1, '#a3aab2');
+      g.fillStyle = grad;
+      g.beginPath();
+      g.moveTo(0.16 * R, -0.115 * R);
+      g.bezierCurveTo(0.35 * R, -0.07 * R, 0.5 * R, -0.075 * R, 0.655 * R, -0.13 * R);
+      g.lineTo(0.655 * R, 0.13 * R);
+      g.bezierCurveTo(0.5 * R, 0.075 * R, 0.35 * R, 0.07 * R, 0.16 * R, 0.115 * R);
+      g.closePath();
+      g.fill();
+      g.strokeStyle = '#6f767e'; g.lineWidth = Math.max(1, R * 0.008); g.stroke();
+      g.strokeStyle = 'rgba(40,44,49,0.55)'; g.lineWidth = Math.max(1, R * 0.012);
+      g.beginPath(); g.moveTo(0.24 * R, 0); g.lineTo(0.62 * R, 0); g.stroke();
+      g.restore();
+    }
+
+    // Hub, five lug nuts, centre cap
+    circle(0.2 * R, radial(0, 0.2 * R, [[0, '#f1f3f5'], [0.8, '#c3c9cf'], [1, '#8e959d']]));
+    for (let k = 0; k < 5; k++) {
+      const a = (k / 5) * 2 * Math.PI + Math.PI / 5;
+      const x = 0.125 * R * Math.cos(a), y = 0.125 * R * Math.sin(a);
+      g.fillStyle = '#5b6168'; g.beginPath(); g.arc(x, y, 0.03 * R, 0, 2 * Math.PI); g.fill();
+      g.fillStyle = '#9aa1a8'; g.beginPath(); g.arc(x, y, 0.017 * R, 0, 2 * Math.PI); g.fill();
+    }
+    circle(0.07 * R, radial(0, 0.07 * R, [[0, '#3b4148'], [1, '#1d2125']]));
+    g.strokeStyle = '#aab1b8'; g.lineWidth = Math.max(1, R * 0.008);
+    g.beginPath(); g.arc(0, 0, 0.05 * R, 0, 2 * Math.PI); g.stroke();
+
+    // Valve stem, between two spokes
+    const av = Math.PI / 5;
+    g.fillStyle = '#1b1d20';
+    g.beginPath(); g.arc(0.6 * R * Math.cos(av), 0.6 * R * Math.sin(av), 0.022 * R, 0, 2 * Math.PI); g.fill();
+    g.restore();
+  }
+
+  // Motion blur: average of the wheel over the angle swept during one display frame (exact running
+  // average, copy i drawn with alpha 1/(i+1)). It only depends on that angle, not on the phase,
+  // so it is computed once per speed and then simply rotated.
+  const blur = { canvas: document.createElement('canvas'), key: '' };
+  function blurredSprite(smear) {
+    const span = Math.min(Math.abs(smear), 1) * Math.sign(smear);
+    const M = Math.min(48, Math.max(1, Math.ceil(Math.abs(span) * 60)));
+    if (M === 1) return sprite.canvas;
+    const key = sprite.size + ':' + span.toFixed(5);
+    if (blur.key === key) return blur.canvas;
+    blur.key = key;
+    const c = blur.canvas, S = sprite.size;
+    c.width = c.height = S;
+    const g = c.getContext('2d');
+    g.clearRect(0, 0, S, S);
+    for (let i = 0; i < M; i++) {
+      g.globalAlpha = 1 / (i + 1);
+      g.save();
+      g.translate(S / 2, S / 2);
+      g.rotate(2 * Math.PI * span * (i / (M - 1)));   // copies behind the current position
+      g.drawImage(sprite.canvas, -S / 2, -S / 2);
+      g.restore();
+    }
+    return c;
+  }
+
+  function drawWheel(canvas, phase, smear, isCamera) {
     const { ctx, width, height } = setupCanvas(canvas);
     const P = palette();
     ctx.clearRect(0, 0, width, height);
     ctx.fillStyle = P.bg;
     ctx.fillRect(0, 0, width, height);
 
-    const cx = width / 2, cy = height / 2;
-    const R = Math.max(10, Math.min(width, height) / 2 - 22);
+    const dpr = window.devicePixelRatio || 1;
+    const R = Math.max(10, Math.min(width, height) / 2 - 18);
+    const cx = width / 2, cy = height / 2 - 4;
+    const need = Math.ceil(2 * R * dpr) + 2;
+    if (Math.abs(sprite.size - need) > 2) renderSprite(need);
 
-    // Camera: viewfinder corners and a dot that flashes at each image
+    // Ground shadow
+    ctx.save();
+    ctx.translate(cx, cy + R);
+    ctx.scale(1, 0.12);
+    const sh = ctx.createRadialGradient(0, 0, 0, 0, 0, R * 1.1);
+    sh.addColorStop(0, P.dark ? 'rgba(0,0,0,0.55)' : 'rgba(0,0,0,0.22)');
+    sh.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = sh; ctx.beginPath(); ctx.arc(0, 0, R * 1.1, 0, 2 * Math.PI); ctx.fill();
+    ctx.restore();
+
+    // Exposure = the whole display frame for the eye (motion blur), very short for the camera.
+    const img = isCamera ? sprite.canvas : blurredSprite(smear);
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(-2 * Math.PI * phase);             // counter-clockwise = positive
+    ctx.drawImage(img, -R, -R, 2 * R, 2 * R);
+    ctx.restore();
+
+    // Fixed light from the top left (does not turn with the wheel)
+    const hl = ctx.createRadialGradient(cx - 0.45 * R, cy - 0.5 * R, 0, cx - 0.45 * R, cy - 0.5 * R, 1.3 * R);
+    hl.addColorStop(0, 'rgba(255,255,255,0.18)');
+    hl.addColorStop(0.5, 'rgba(255,255,255,0.03)');
+    hl.addColorStop(1, 'rgba(0,0,0,0.18)');
+    ctx.fillStyle = hl; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 2 * Math.PI); ctx.fill();
+
     if (isCamera) {
+      // Viewfinder, REC and image counter
       ctx.strokeStyle = P.text; ctx.lineWidth = 2;
       const m = 10, L = 18;
       for (const [x, y, dx, dy] of [[m, m, 1, 1], [width - m, m, -1, 1], [m, height - m, 1, -1], [width - m, height - m, -1, -1]]) {
         ctx.beginPath(); ctx.moveTo(x, y + dy * L); ctx.lineTo(x, y); ctx.lineTo(x + dx * L, y); ctx.stroke();
       }
-      const flash = now < wheel.flashUntil;
-      ctx.fillStyle = flash ? P.alias : P.grid;
-      ctx.beginPath(); ctx.arc(width - m - 10, m + 28, 5, 0, 2 * Math.PI); ctx.fill();
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath(); ctx.arc(m + 16, m + 22, 5, 0, 2 * Math.PI); ctx.fill();
+      ctx.fillStyle = P.text; ctx.font = '600 12px system-ui'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.fillText('REC', m + 26, m + 22);
+      ctx.textAlign = 'right';
+      ctx.fillText('#' + wheel.image, width - m - 6, m + 22);
     }
-
-    // Rim
-    ctx.strokeStyle = P.rim;
-    ctx.lineWidth = Math.max(3, R * 0.07);
-    ctx.beginPath(); ctx.arc(cx, cy, R, 0, 2 * Math.PI); ctx.stroke();
-
-    // Spokes (counter-clockwise = positive), the first one is the red marker
-    ctx.lineCap = 'round';
-    for (let i = SPOKES - 1; i >= 0; i--) {
-      const a = 2 * Math.PI * (phase + i / SPOKES);
-      const c = Math.cos(a), s = -Math.sin(a);
-      ctx.strokeStyle = i === 0 ? P.marker : P.spoke;
-      ctx.lineWidth = i === 0 ? Math.max(3, R * 0.06) : Math.max(2, R * 0.035);
-      ctx.beginPath();
-      ctx.moveTo(cx + R * 0.12 * c, cy + R * 0.12 * s);
-      ctx.lineTo(cx + R * 0.93 * c, cy + R * 0.93 * s);
-      ctx.stroke();
-    }
-    // Marker dot on the rim (easy to follow from the back of the room)
-    const a0 = 2 * Math.PI * phase;
-    ctx.fillStyle = P.marker;
-    ctx.beginPath(); ctx.arc(cx + R * Math.cos(a0), cy - R * Math.sin(a0), Math.max(5, R * 0.07), 0, 2 * Math.PI); ctx.fill();
-
-    // Hub
-    ctx.fillStyle = P.rim;
-    ctx.beginPath(); ctx.arc(cx, cy, Math.max(4, R * 0.12), 0, 2 * Math.PI); ctx.fill();
-    ctx.fillStyle = P.bg;
-    ctx.beginPath(); ctx.arc(cx, cy, Math.max(2, R * 0.04), 0, 2 * Math.PI); ctx.fill();
   }
 
   // =====================================================================
@@ -1046,7 +1170,7 @@
         + row(tx.wFs, `${fmt(Fs, 1)} ${tx.img}`)
         + row(tx.wNyq, `${fmt(Fs / 2, 1)} ${unit}`)
         + row(tx.wApp, `${signed(fStar, 1)} ${unit}${dir}`)
-        + row(tx.wSlow, tx.slow.replace('{k}', fmt(slowFactor(), 1)));
+        + row(tx.wSlow, `×${fmt(playback(), 2)} (${playback() < 1 ? tx.slower : tx.faster})`);
     } else {
       rows = row(tx.f0, `${fmt(f, 1)} Hz`)
         + row(tx.Fs, `${fmt(Fs, 1)} Hz`)
@@ -1111,6 +1235,7 @@
     state.tab = tab === 'wheel' ? 'wheel' : 'sine';
     tabs.forEach((b) => { const on = b.dataset.tab === state.tab; b.classList.toggle('active', on); b.setAttribute('aria-selected', String(on)); });
     document.querySelectorAll('[data-only]').forEach((el) => { el.hidden = el.dataset.only !== state.tab; });
+    document.querySelector('.step2-container').classList.toggle('wheel-mode', state.tab === 'wheel');
     try { localStorage.setItem('samplingAliasing.tab', state.tab); } catch (_) { /* ignore */ }
     redraw();
   }
@@ -1161,10 +1286,11 @@
       if (state.sweepF >= 2 * state.Fs) { setF(2 * state.Fs); stopSweep(); redraw(); }
       else if (Math.round(state.sweepF) !== state.f) { setF(state.sweepF); redraw(); }
     }
-    stepWheel(dt, now);
+    measureDisplay(dt);
+    stepWheel();
     if (state.tab === 'wheel') {
-      drawWheel($('realWheelCanvas'), wheel.phase, false, now);
-      drawWheel($('cameraCanvas'), wheel.camPhase, true, now);
+      drawWheel($('realWheelCanvas'), wheel.phase, wheel.smear, false);
+      drawWheel($('cameraCanvas'), wheel.camPhase, 0, true);
     }
     requestAnimationFrame(frame);
   }
