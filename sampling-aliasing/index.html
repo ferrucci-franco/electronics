@@ -468,7 +468,7 @@
               <span data-i18n="fLabelWheel"></span>
               <span class="value" id="wValue"></span>
             </label>
-            <input type="range" id="wSlider" min="0" max="10" value="4.8" step="0.02">
+            <input type="range" id="wSlider" min="0" max="10" value="0.5" step="0.02">
           </div>
           <div class="control-group" data-only="wheel" hidden>
             <label for="FcSlider">
@@ -680,7 +680,7 @@
   // =====================================================================
   // STATE
   // =====================================================================
-  const state = { lang: 'fr', tab: 'sine', f: 10, Fs: 50, wf: 4.8, wFs: 25, periods: 3, interpType: 'ideal', sweeping: false, sweepF: 0 };
+  const state = { lang: 'fr', tab: 'sine', f: 10, Fs: 50, wf: 0.5, wFs: 25, periods: 3, interpType: 'ideal', sweeping: false, sweepF: 0 };
   // (f, Fs) of the active tab: the sinusoid and the wheel have their own settings.
   // Wheel: v = state.wf turns/s; with SPOKES identical spokes the sampled signal is the spoke
   // passage f = SPOKES·v (it looks the same every 1/SPOKES turn).
