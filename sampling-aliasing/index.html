@@ -611,7 +611,7 @@
       wReal: 'Velocidad real v', wSpoke: 'Paso de los rayos f = 5·v', wFs: 'Cámara Fs', wNyq: 'Nyquist Fs/2', wApp: 'Frecuencia aparente f*', wAppSpeed: 'Velocidad aparente v*',
       wSlow: 'Reproducción en pantalla',
       slower: 'cámara lenta', faster: 'acelerada', reverse: 'sentido inverso', still: 'inmóvil',
-      statusOk: '✓ Muestreo correcto', statusNyquist: '⚠ Límite de Nyquist', statusAlias: '✗ Aliasing detectado',
+      statusOk: '✓ Muestreo correcto', statusNyquist: '⚠ Límite de Nyquist', statusAmbiguous: '⚠ Cerca de Fs/2: sentido ambiguo', statusAlias: '✗ Aliasing detectado',
       legend_continuous: 'Continua', legend_samples: 'Muestras', legend_reconstructed: 'Reconstruida', legend_time: 'Tiempo (s)',
       legend_no_aliasing: 'Sin aliasing', legend_aliasing: 'Con aliasing',
       rev: 'rev/s', img: 'imágenes/s'
@@ -640,7 +640,7 @@
       wReal: 'Vitesse réelle v', wSpoke: 'Passage des rayons f = 5·v', wFs: 'Caméra Fs', wNyq: 'Nyquist Fs/2', wApp: 'Fréquence apparente f*', wAppSpeed: 'Vitesse apparente v*',
       wSlow: 'Lecture à l\'écran',
       slower: 'ralentie', faster: 'accélérée', reverse: 'sens inverse', still: 'immobile',
-      statusOk: '✓ Échantillonnage correct', statusNyquist: '⚠ Limite de Nyquist', statusAlias: '✗ Repliement détecté',
+      statusOk: '✓ Échantillonnage correct', statusNyquist: '⚠ Limite de Nyquist', statusAmbiguous: '⚠ Proche de Fs/2 : sens ambigu', statusAlias: '✗ Repliement détecté',
       legend_continuous: 'Continue', legend_samples: 'Échantillons', legend_reconstructed: 'Reconstruite', legend_time: 'Temps (s)',
       legend_no_aliasing: 'Sans repliement', legend_aliasing: 'Avec repliement',
       rev: 'tr/s', img: 'images/s'
@@ -669,7 +669,7 @@
       wReal: 'Real speed v', wSpoke: 'Spoke passage f = 5·v', wFs: 'Camera Fs', wNyq: 'Nyquist Fs/2', wApp: 'Apparent frequency f*', wAppSpeed: 'Apparent speed v*',
       wSlow: 'On-screen playback',
       slower: 'slow motion', faster: 'sped up', reverse: 'reversed', still: 'stationary',
-      statusOk: '✓ Correct sampling', statusNyquist: '⚠ Nyquist limit', statusAlias: '✗ Aliasing detected',
+      statusOk: '✓ Correct sampling', statusNyquist: '⚠ Nyquist limit', statusAmbiguous: '⚠ Near Fs/2: direction ambiguous', statusAlias: '✗ Aliasing detected',
       legend_continuous: 'Continuous', legend_samples: 'Samples', legend_reconstructed: 'Reconstructed', legend_time: 'Time (s)',
       legend_no_aliasing: 'No aliasing', legend_aliasing: 'With aliasing',
       rev: 'rev/s', img: 'frames/s'
@@ -1173,29 +1173,68 @@
     return c;
   }
 
+  // Static layers (background, ground shadow, viewfinder / fixed light) drawn once per size and
+  // theme, then copied each frame: per frame there are only three image copies to draw.
+  function staticLayer(w, h, dpr, draw) {
+    const c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(w * dpr)); c.height = Math.max(1, Math.round(h * dpr));
+    const g = c.getContext('2d');
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    draw(g);
+    return c;
+  }
+
   function drawWheel(canvas, phase, smear, isCamera) {
     const { ctx, width, height } = setupCanvas(canvas);
     const P = palette();
-    ctx.clearRect(0, 0, width, height);
-    ctx.fillStyle = P.bg;
-    ctx.fillRect(0, 0, width, height);
-
     const dpr = window.devicePixelRatio || 1;
     const R = Math.max(10, 0.4 * Math.min(width, height));
     const cx = width / 2, cy = height / 2 - 4;
     const need = Math.ceil(2 * R * dpr) + 2;
     if (Math.abs(sprite.size - need) > 2) renderSprite(need);
 
-    // Ground shadow
-    ctx.save();
-    ctx.translate(cx, cy + R);
-    ctx.scale(1, 0.12);
-    const sh = ctx.createRadialGradient(0, 0, 0, 0, 0, R * 1.1);
-    sh.addColorStop(0, P.dark ? 'rgba(0,0,0,0.55)' : 'rgba(0,0,0,0.22)');
-    sh.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = sh; ctx.beginPath(); ctx.arc(0, 0, R * 1.1, 0, 2 * Math.PI); ctx.fill();
-    ctx.restore();
+    const key = `${width}x${height}@${dpr}:${P.dark}:${isCamera}`;
+    if (canvas._layersKey !== key) {
+      canvas._layersKey = key;
+      canvas._under = staticLayer(width, height, dpr, (g) => {
+        g.fillStyle = P.bg;
+        g.fillRect(0, 0, width, height);
+        // Ground shadow
+        g.save();
+        g.translate(cx, cy + R);
+        g.scale(1, 0.12);
+        const sh = g.createRadialGradient(0, 0, 0, 0, 0, R * 1.1);
+        sh.addColorStop(0, P.dark ? 'rgba(0,0,0,0.55)' : 'rgba(0,0,0,0.22)');
+        sh.addColorStop(1, 'rgba(0,0,0,0)');
+        g.fillStyle = sh; g.beginPath(); g.arc(0, 0, R * 1.1, 0, 2 * Math.PI); g.fill();
+        g.restore();
+      });
+      canvas._over = staticLayer(width, height, dpr, (g) => {
+        // Fixed light from the top left (does not turn with the wheel)
+        const hl = g.createRadialGradient(cx - 0.45 * R, cy - 0.5 * R, 0, cx - 0.45 * R, cy - 0.5 * R, 1.3 * R);
+        hl.addColorStop(0, 'rgba(255,255,255,0.18)');
+        hl.addColorStop(0.5, 'rgba(255,255,255,0.03)');
+        hl.addColorStop(1, 'rgba(0,0,0,0.18)');
+        g.fillStyle = hl; g.beginPath(); g.arc(cx, cy, R, 0, 2 * Math.PI); g.fill();
+        if (isCamera) {
+          // Viewfinder and REC
+          g.strokeStyle = P.text; g.lineWidth = 2;
+          const m = 10, L = 18;
+          for (const [x, y, dx, dy] of [[m, m, 1, 1], [width - m, m, -1, 1], [m, height - m, 1, -1], [width - m, height - m, -1, -1]]) {
+            g.beginPath(); g.moveTo(x, y + dy * L); g.lineTo(x, y); g.lineTo(x + dx * L, y); g.stroke();
+          }
+          const yRec = m + 14;
+          g.fillStyle = '#ef4444';
+          g.beginPath(); g.arc(m + 14, yRec, 4.5, 0, 2 * Math.PI); g.fill();
+          if (width >= 260) {
+            g.fillStyle = P.text; g.font = '600 12px system-ui'; g.textAlign = 'left'; g.textBaseline = 'middle';
+            g.fillText('REC', m + 23, yRec);
+          }
+        }
+      });
+    }
 
+    ctx.drawImage(canvas._under, 0, 0, width, height);
     // Exposure = the whole display frame for the eye (motion blur), very short for the camera.
     const img = isCamera ? sprite.canvas : blurredSprite(antiAliasSpan(smear));
     ctx.save();
@@ -1203,30 +1242,9 @@
     ctx.rotate(-2 * Math.PI * phase);             // counter-clockwise = positive
     ctx.drawImage(img, -R, -R, 2 * R, 2 * R);
     ctx.restore();
-
-    // Fixed light from the top left (does not turn with the wheel)
-    const hl = ctx.createRadialGradient(cx - 0.45 * R, cy - 0.5 * R, 0, cx - 0.45 * R, cy - 0.5 * R, 1.3 * R);
-    hl.addColorStop(0, 'rgba(255,255,255,0.18)');
-    hl.addColorStop(0.5, 'rgba(255,255,255,0.03)');
-    hl.addColorStop(1, 'rgba(0,0,0,0.18)');
-    ctx.fillStyle = hl; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 2 * Math.PI); ctx.fill();
-
-    if (isCamera) {
-      // Viewfinder, REC and image counter
-      ctx.strokeStyle = P.text; ctx.lineWidth = 2;
-      const m = 10, L = 18;
-      for (const [x, y, dx, dy] of [[m, m, 1, 1], [width - m, m, -1, 1], [m, height - m, 1, -1], [width - m, height - m, -1, -1]]) {
-        ctx.beginPath(); ctx.moveTo(x, y + dy * L); ctx.lineTo(x, y); ctx.lineTo(x + dx * L, y); ctx.stroke();
-      }
-      const yRec = m + 14;
-      ctx.fillStyle = '#ef4444';
-      ctx.beginPath(); ctx.arc(m + 14, yRec, 4.5, 0, 2 * Math.PI); ctx.fill();
-      if (width >= 260) {
-        ctx.fillStyle = P.text; ctx.font = '600 12px system-ui'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-        ctx.fillText('REC', m + 23, yRec);
-      }
-    }
+    ctx.drawImage(canvas._over, 0, 0, width, height);
   }
+
 
   // =====================================================================
   // PANELS, LABELS, STATUS
@@ -1268,7 +1286,8 @@
 
     const status = $('statusIndicator');
     const ratio = f === 0 ? Infinity : Fs / Math.abs(f);
-    if (ratio > 2.1) { status.className = 'status-indicator status-ok'; status.textContent = tx.statusOk; }
+    if (wheelTab && f !== 0 && Math.abs(fStar) >= 0.4 * Fs) { status.className = 'status-indicator status-warning'; status.textContent = tx.statusAmbiguous; }
+    else if (ratio > 2.1) { status.className = 'status-indicator status-ok'; status.textContent = tx.statusOk; }
     else if (ratio >= 2.0) { status.className = 'status-indicator status-warning'; status.textContent = tx.statusNyquist; }
     else { status.className = 'status-indicator status-error'; status.textContent = tx.statusAlias; }
 
