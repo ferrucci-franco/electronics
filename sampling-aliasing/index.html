@@ -1030,7 +1030,7 @@
   // FILMED WHEEL (a car wheel: tyre, 5-spoke alloy rim)
   // =====================================================================
   const display = { dts: [], N: 1, rate: 60 };
-  const wheel = { frame: 0, phase: 0, smear: 0, camPhase: 0, image: 0 };
+  const wheel = { acc: 0, phase: 0, smear: 0, camPhase: 0, image: 0 };
 
   // Measure the refresh rate during the first frames (for the playback factor shown in the panel).
   // Rolling median of the last 60 frame intervals, refreshed every 60 frames (the first frames,
@@ -1049,14 +1049,25 @@
   const playback = () => display.rate / state.wFs;
 
   // One display frame. The camera image is taken on the frames whose count is a multiple of N.
-  function stepWheel() {
-    const f = state.wf, Fs = state.wFs;
-    const perFrame = f / (display.N * Fs);        // turns per display frame
-    wheel.phase = ((wheel.phase + perFrame) % 1 + 1) % 1;
-    wheel.smear = perFrame;
-    wheel.frame++;
-    if (wheel.frame % display.N === 0) { wheel.camPhase = wheel.phase; wheel.image++; }
+  // Image clock driven by time, not by the number of frames: the camera film plays at
+  // display.rate images/s (the measured refresh rate, so normally one image per frame). If a frame
+  // comes late, the clock advances by the images it owes (rounded, so frame-to-frame jitter never
+  // adds or drops an image): the speed stays constant even when the browser skips frames.
+  // Between two images the wheel turns exactly v/Fs of a turn.
+  function stepWheel(dt) {
+    wheel.acc += dt * display.rate;
+    const steps = Math.min(4, Math.max(0, Math.round(wheel.acc)));
+    wheel.acc -= steps;
+    if (Math.abs(wheel.acc) > 2) wheel.acc = 0;       // after a pause (hidden tab…)
+    const perImage = state.wf / state.wFs;            // turns per camera image
+    wheel.smear = perImage * Math.max(1, steps);      // what the eye integrates during this frame
+    if (steps > 0) {
+      wheel.phase = ((wheel.phase + perImage * steps) % 1 + 1) % 1;
+      wheel.camPhase = wheel.phase;
+      wheel.image += steps;
+    }
   }
+
 
   // The wheel is drawn once into a sprite (opaque inside the tyre), then rotated.
   const sprite = { canvas: document.createElement('canvas'), size: 0 };
@@ -1173,8 +1184,8 @@
     return c;
   }
 
-  // Static layers (background, ground shadow, viewfinder / fixed light) drawn once per size and
-  // theme, then copied each frame: per frame there are only three image copies to draw.
+  // Static layers drawn once per size and theme (fixed background as the canvas CSS background,
+  // fixed light over the wheel): per frame only the wheel square is redrawn.
   function staticLayer(w, h, dpr, draw) {
     const c = document.createElement('canvas');
     c.width = Math.max(1, Math.round(w * dpr)); c.height = Math.max(1, Math.round(h * dpr));
@@ -1196,10 +1207,10 @@
     const key = `${width}x${height}@${dpr}:${P.dark}:${isCamera}`;
     if (canvas._layersKey !== key) {
       canvas._layersKey = key;
-      canvas._under = staticLayer(width, height, dpr, (g) => {
+      // Fixed background (colour, ground shadow, viewfinder, REC) as the canvas CSS background
+      const under = staticLayer(width, height, dpr, (g) => {
         g.fillStyle = P.bg;
         g.fillRect(0, 0, width, height);
-        // Ground shadow
         g.save();
         g.translate(cx, cy + R);
         g.scale(1, 0.12);
@@ -1208,16 +1219,7 @@
         sh.addColorStop(1, 'rgba(0,0,0,0)');
         g.fillStyle = sh; g.beginPath(); g.arc(0, 0, R * 1.1, 0, 2 * Math.PI); g.fill();
         g.restore();
-      });
-      canvas._over = staticLayer(width, height, dpr, (g) => {
-        // Fixed light from the top left (does not turn with the wheel)
-        const hl = g.createRadialGradient(cx - 0.45 * R, cy - 0.5 * R, 0, cx - 0.45 * R, cy - 0.5 * R, 1.3 * R);
-        hl.addColorStop(0, 'rgba(255,255,255,0.18)');
-        hl.addColorStop(0.5, 'rgba(255,255,255,0.03)');
-        hl.addColorStop(1, 'rgba(0,0,0,0.18)');
-        g.fillStyle = hl; g.beginPath(); g.arc(cx, cy, R, 0, 2 * Math.PI); g.fill();
         if (isCamera) {
-          // Viewfinder and REC
           g.strokeStyle = P.text; g.lineWidth = 2;
           const m = 10, L = 18;
           for (const [x, y, dx, dy] of [[m, m, 1, 1], [width - m, m, -1, 1], [m, height - m, 1, -1], [width - m, height - m, -1, -1]]) {
@@ -1232,9 +1234,20 @@
           }
         }
       });
+      canvas.style.background = `url(${under.toDataURL()}) 0 0 / 100% 100% no-repeat`;
+      // Fixed light from the top left, only over the wheel (does not turn with it)
+      canvas._light = staticLayer(2 * R, 2 * R, dpr, (g) => {
+        const hl = g.createRadialGradient(0.55 * R, 0.5 * R, 0, 0.55 * R, 0.5 * R, 1.3 * R);
+        hl.addColorStop(0, 'rgba(255,255,255,0.18)');
+        hl.addColorStop(0.5, 'rgba(255,255,255,0.03)');
+        hl.addColorStop(1, 'rgba(0,0,0,0.18)');
+        g.fillStyle = hl; g.beginPath(); g.arc(R, R, R, 0, 2 * Math.PI); g.fill();
+      });
+      ctx.clearRect(0, 0, width, height);
     }
 
-    ctx.drawImage(canvas._under, 0, 0, width, height);
+    // Per frame: clear the wheel square, draw the turned wheel, then the fixed light.
+    ctx.clearRect(cx - R - 2, cy - R - 2, 2 * R + 4, 2 * R + 4);
     // Exposure = the whole display frame for the eye (motion blur), very short for the camera.
     const img = isCamera ? sprite.canvas : blurredSprite(antiAliasSpan(smear));
     ctx.save();
@@ -1242,8 +1255,9 @@
     ctx.rotate(-2 * Math.PI * phase);             // counter-clockwise = positive
     ctx.drawImage(img, -R, -R, 2 * R, 2 * R);
     ctx.restore();
-    ctx.drawImage(canvas._over, 0, 0, width, height);
+    ctx.drawImage(canvas._light, cx - R, cy - R, 2 * R, 2 * R);
   }
+
 
 
   // =====================================================================
@@ -1429,7 +1443,7 @@
       else { set(state.sweepF); if ((wheelTab ? state.wf : state.f) !== before) redraw(); }
     }
     measureDisplay(dt);
-    stepWheel();
+    stepWheel(dt);
     if (state.tab === 'wheel') {
       drawWheel($('realWheelCanvas'), wheel.phase, wheel.smear, false);
       drawWheel($('cameraCanvas'), wheel.camPhase, 0, true);
