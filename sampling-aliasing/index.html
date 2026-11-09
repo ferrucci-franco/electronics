@@ -105,7 +105,25 @@
     .step-tab:hover:not(.active) { color:var(--accent); border-color:var(--accent-soft); background:rgba(148,163,253,0.05); }
 
     .top-right { display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:0.78rem; color:var(--muted); }
-    .top-right label { display:flex; align-items:center; gap:4px; }
+
+    /* Language: « FR ▾ » pill and a small menu with the three languages, theme button
+       (same as step-response, pid-tuning, power-converters). */
+    .language-switch { position:relative; }
+    #language-trigger { display:inline-flex; height:44px; align-items:center; gap:6px; border:1px solid var(--border); border-radius:999px; padding:0 13px; background:var(--card); color:var(--fg); cursor:pointer; font-family:inherit; font-size:.9rem; font-weight:800; }
+    #language-trigger > i { width:6px; height:6px; margin-top:-3px; border-right:1.8px solid currentColor; border-bottom:1.8px solid currentColor; transform:rotate(45deg); }
+    #language-trigger:hover, #language-trigger[aria-expanded="true"] { border-color:var(--accent); }
+    #language-trigger:focus-visible, .language-menu button:focus-visible, .icon-button:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+    .language-menu { position:absolute; z-index:20; top:calc(100% + 5px); right:0; display:flex; padding:3px; border:1px solid #dce1e7; border-radius:16px; background:var(--card); box-shadow:0 10px 24px #17243824; }
+    .language-menu button { width:44px; height:44px; padding:0; border:0; border-radius:13px; background:transparent; color:#59657a; cursor:pointer; font-family:inherit; font-size:.86rem; font-weight:850; }
+    .language-menu button:hover { color:var(--accent); }
+    .language-menu button[aria-pressed="true"] { background:#eef1f3; color:#101827; }
+    :root[data-theme="dark"] .language-menu { border-color:#94a3b847; }
+    :root[data-theme="dark"] .language-menu button { color:#aeb9c9; }
+    :root[data-theme="dark"] .language-menu button[aria-pressed="true"] { background:#314158; color:#fff; }
+    .icon-button { display:grid; width:44px; height:44px; padding:0; place-items:center; border:1px solid var(--border); border-radius:13px; background:var(--card); cursor:pointer; }
+    .icon-button:hover { border-color:var(--accent); }
+    .theme-glyph { width:18px; height:18px; border:1.5px solid #1f2b3e; border-radius:50%; background:linear-gradient(90deg, #ffbd45 0 50%, #172438 50% 100%); box-shadow:0 1px 4px #17243825; transform:rotate(-18deg); }
+    :root[data-theme="dark"] .theme-glyph { border-color:#e5edf6; background:linear-gradient(90deg, #ffcc61 0 50%, #26364c 50% 100%); box-shadow:0 0 8px #ffcc6138; transform:rotate(18deg); }
 
     select {
       background:var(--card);
@@ -411,21 +429,15 @@
   </nav>
 
   <div class="top-right">
-    <label>
-      🌐
-      <select id="langSelect" aria-label="Language">
-        <option value="es">ES</option>
-        <option value="fr" selected>FR</option>
-        <option value="en">EN</option>
-      </select>
-    </label>
-    <label>
-      💡
-      <select id="themeSelect" aria-label="Theme">
-        <option value="light" data-i18n="light"></option>
-        <option value="dark" data-i18n="dark"></option>
-      </select>
-    </label>
+    <div class="language-switch">
+      <button id="language-trigger" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="language-menu"><span id="language-current">FR</span><i aria-hidden="true"></i></button>
+      <div id="language-menu" class="language-menu" role="group" hidden>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+        <button type="button" data-lang="fr" aria-pressed="true">FR</button>
+        <button type="button" data-lang="es" aria-pressed="false">ES</button>
+      </div>
+    </div>
+    <button id="theme-toggle" class="icon-button" type="button" aria-pressed="false"><span class="theme-glyph" aria-hidden="true"></span></button>
   </div>
 </header>
 
@@ -579,7 +591,7 @@
       title: 'Muestreo y aliasing',
       subtitle: 'Señal muestreada y rueda filmada - Franco FERRUCCI',
       tabSine: 'Sinusoide muestreada', tabWheel: 'Rueda filmada',
-      light: 'Claro', dark: 'Oscuro',
+      languageAria: 'Idioma', themeDark: 'Activar el tema oscuro', themeLight: 'Activar el tema claro',
       fLabelSine: 'Frecuencia de entrada f<sub>IN</sub>', fLabelWheel: 'Velocidad de la rueda',
       FsLabelSine: 'Frecuencia de muestreo Fs', FsLabelWheel: 'Imágenes de la cámara Fs',
       periodsLabel: 'Períodos mostrados',
@@ -608,7 +620,7 @@
       title: 'Échantillonnage et repliement',
       subtitle: 'Signal échantillonné et roue filmée - Franco FERRUCCI',
       tabSine: 'Sinusoïde échantillonnée', tabWheel: 'Roue filmée',
-      light: 'Clair', dark: 'Sombre',
+      languageAria: 'Langue', themeDark: 'Activer le thème sombre', themeLight: 'Activer le thème clair',
       fLabelSine: 'Fréquence d\'entrée f<sub>IN</sub>', fLabelWheel: 'Vitesse de la roue',
       FsLabelSine: 'Fréquence d\'échantillonnage Fs', FsLabelWheel: 'Images de la caméra Fs',
       periodsLabel: 'Périodes affichées',
@@ -637,7 +649,7 @@
       title: 'Sampling and aliasing',
       subtitle: 'Sampled signal and filmed wheel - Franco FERRUCCI',
       tabSine: 'Sampled sinusoid', tabWheel: 'Filmed wheel',
-      light: 'Light', dark: 'Dark',
+      languageAria: 'Language', themeDark: 'Switch to dark theme', themeLight: 'Switch to light theme',
       fLabelSine: 'Input frequency f<sub>IN</sub>', fLabelWheel: 'Wheel speed',
       FsLabelSine: 'Sampling frequency Fs', FsLabelWheel: 'Camera frames Fs',
       periodsLabel: 'Periods shown',
@@ -1319,10 +1331,16 @@
   tabs.forEach((b) => b.addEventListener('click', () => setTab(b.dataset.tab)));
 
   // Language
-  const langSelect = $('langSelect');
+  const themeButton = $('theme-toggle');
+  const languageTrigger = $('language-trigger'), languageMenu = $('language-menu');
+  const languageButtons = [...languageMenu.querySelectorAll('[data-lang]')];
   function setLanguage(lang) {
     state.lang = TEXTS[lang] ? lang : 'fr';
-    langSelect.value = state.lang;
+    $('language-current').textContent = state.lang.toUpperCase();
+    languageButtons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.lang === state.lang)));
+    languageTrigger.setAttribute('aria-label', TEXTS[state.lang].languageAria);
+    languageMenu.setAttribute('aria-label', TEXTS[state.lang].languageAria);
+    themeButton.setAttribute('aria-label', isDark() ? TEXTS[state.lang].themeLight : TEXTS[state.lang].themeDark);
     document.documentElement.lang = state.lang;
     const tx = t();
     document.title = tx.title;
@@ -1338,16 +1356,20 @@
     try { localStorage.setItem('samplingAliasing.lang', state.lang); } catch (_) { /* ignore */ }
     redraw();
   }
-  langSelect.addEventListener('change', () => setLanguage(langSelect.value));
+  const setLanguageMenu = (open) => { languageMenu.hidden = !open; languageTrigger.setAttribute('aria-expanded', String(open)); };
+  languageTrigger.addEventListener('click', () => setLanguageMenu(languageMenu.hidden));
+  languageButtons.forEach((b) => b.addEventListener('click', () => { setLanguage(b.dataset.lang); setLanguageMenu(false); languageTrigger.focus(); }));
+  document.addEventListener('click', (e) => { if (!languageMenu.hidden && !e.target.closest('.language-switch')) setLanguageMenu(false); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !languageMenu.hidden) { setLanguageMenu(false); languageTrigger.focus(); } });
 
-  // Theme
-  const themeSelect = $('themeSelect');
-  function applyTheme(val) {
-    document.documentElement.setAttribute('data-theme', val === 'dark' ? 'dark' : 'light');
-    themeSelect.value = val === 'dark' ? 'dark' : 'light';
+  // Theme (light/dark button; starts from the system setting)
+  function setTheme(dark) {
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    themeButton.setAttribute('aria-pressed', String(dark));
+    themeButton.setAttribute('aria-label', dark ? t().themeLight : t().themeDark);
     redraw();
   }
-  themeSelect.addEventListener('change', () => applyTheme(themeSelect.value));
+  themeButton.addEventListener('click', () => setTheme(!isDark()));
 
   let resizeTimeout;
   window.addEventListener('resize', () => { clearTimeout(resizeTimeout); resizeTimeout = setTimeout(redraw, 100); });
@@ -1393,9 +1415,8 @@
   setF(state.f);
   setWFs(state.wFs);
   setWF(state.wf);
-  document.documentElement.setAttribute('data-theme', window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-  themeSelect.value = isDark() ? 'dark' : 'light';
   state.lang = TEXTS[lang] ? lang : 'fr';
+  setTheme(window.matchMedia('(prefers-color-scheme: dark)').matches);
   setTab(tab);
   setLanguage(state.lang);
   requestAnimationFrame(frame);
