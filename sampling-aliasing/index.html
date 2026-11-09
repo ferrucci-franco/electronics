@@ -367,7 +367,7 @@
       padding-right:10px;
     }
     .info-row { display:flex; justify-content:space-between; gap:8px; padding:4px 0; }
-    .info-label { color:var(--muted); }
+    .info-label { color:var(--muted); min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .info-value { font-weight:600; color:var(--fg); text-align:right; white-space:nowrap; }
 
     .status-indicator { padding:6px 12px; border-radius:6px; text-align:center; font-weight:600; font-size:0.9rem; }
@@ -608,7 +608,7 @@
       realWheel: 'Rueda real', camera: 'Cámara',
       f0: 'Frecuencia f<sub>IN</sub>', Fs: 'Frecuencia Fs', fNyquist: 'Frecuencia de Nyquist', condition: 'Condición',
       fAlias: 'Frecuencia aparente (f*<sub>IN</sub>)',
-      wReal: 'Velocidad real v', wSpoke: 'Paso de los rayos f = 5·v', wFs: 'Cámara Fs', wNyq: 'Nyquist Fs/2', wApp: 'Frecuencia aparente f*', wAppSpeed: 'Velocidad aparente v* = f*/5',
+      wReal: 'Velocidad real v', wSpoke: 'Paso de los rayos f = 5·v', wFs: 'Cámara Fs', wNyq: 'Nyquist Fs/2', wApp: 'Frecuencia aparente f*', wAppSpeed: 'Velocidad aparente v*',
       wSlow: 'Reproducción en pantalla',
       slower: 'cámara lenta', faster: 'acelerada', reverse: 'sentido inverso', still: 'inmóvil',
       statusOk: '✓ Muestreo correcto', statusNyquist: '⚠ Límite de Nyquist', statusAlias: '✗ Aliasing detectado',
@@ -637,7 +637,7 @@
       realWheel: 'Roue réelle', camera: 'Caméra',
       f0: 'Fréquence f<sub>IN</sub>', Fs: 'Fréquence Fs', fNyquist: 'Fréquence de Nyquist', condition: 'Condition',
       fAlias: 'Fréquence apparente (f*<sub>IN</sub>)',
-      wReal: 'Vitesse réelle v', wSpoke: 'Passage des rayons f = 5·v', wFs: 'Caméra Fs', wNyq: 'Nyquist Fs/2', wApp: 'Fréquence apparente f*', wAppSpeed: 'Vitesse apparente v* = f*/5',
+      wReal: 'Vitesse réelle v', wSpoke: 'Passage des rayons f = 5·v', wFs: 'Caméra Fs', wNyq: 'Nyquist Fs/2', wApp: 'Fréquence apparente f*', wAppSpeed: 'Vitesse apparente v*',
       wSlow: 'Lecture à l\'écran',
       slower: 'ralentie', faster: 'accélérée', reverse: 'sens inverse', still: 'immobile',
       statusOk: '✓ Échantillonnage correct', statusNyquist: '⚠ Limite de Nyquist', statusAlias: '✗ Repliement détecté',
@@ -666,7 +666,7 @@
       realWheel: 'Real wheel', camera: 'Camera',
       f0: 'Frequency f<sub>IN</sub>', Fs: 'Frequency Fs', fNyquist: 'Nyquist Frequency', condition: 'Condition',
       fAlias: 'Apparent frequency (f*<sub>IN</sub>)',
-      wReal: 'Real speed v', wSpoke: 'Spoke passage f = 5·v', wFs: 'Camera Fs', wNyq: 'Nyquist Fs/2', wApp: 'Apparent frequency f*', wAppSpeed: 'Apparent speed v* = f*/5',
+      wReal: 'Real speed v', wSpoke: 'Spoke passage f = 5·v', wFs: 'Camera Fs', wNyq: 'Nyquist Fs/2', wApp: 'Apparent frequency f*', wAppSpeed: 'Apparent speed v*',
       wSlow: 'On-screen playback',
       slower: 'slow motion', faster: 'sped up', reverse: 'reversed', still: 'stationary',
       statusOk: '✓ Correct sampling', statusNyquist: '⚠ Nyquist limit', statusAlias: '✗ Aliasing detected',
@@ -988,9 +988,15 @@
     for (let k = kMin; k <= 2; k++) {
       ctx.fillText(k === 0 ? '0' : fmt(k * Fs * sc, 2), f0ToX(k * Fs) + (k === 0 ? 15 : 0), yZero + 22);
     }
+    // x-axis title: on the legend's line if there is room, otherwise just under the plot
+    const xTitle = state.tab === 'wheel' ? `v (${unit})` : `fᵢₙ (${unit})`;
+    ctx.font = '13px system-ui';
+    const legendWidth = [tx.legend_no_aliasing, tx.legend_aliasing].reduce((a, s2) => a + 10 + ctx.measureText(s2).width, 0) + 40;
     ctx.font = 'bold 16px system-ui';
+    const titleLeft = width - padding - 10 - ctx.measureText(xTitle).width;
+    const titleY = (width / 2 + legendWidth / 2 + 12 > titleLeft) ? height - bottomPadding + 24 : height - bottomPadding + 45;
     ctx.textAlign = 'right';
-    ctx.fillText(state.tab === 'wheel' ? `v (${unit})` : `fᵢₙ (${unit})`, width - padding - 10, height - bottomPadding + 45);
+    ctx.fillText(xTitle, width - padding - 10, titleY);
 
     // Y labels
     ctx.textAlign = 'right';
@@ -1027,15 +1033,16 @@
   const wheel = { frame: 0, phase: 0, smear: 0, camPhase: 0, image: 0 };
 
   // Measure the refresh rate during the first frames (for the playback factor shown in the panel).
+  // Rolling median of the last 60 frame intervals, refreshed every 60 frames (the first frames,
+  // while the page loads, are slower than the real refresh rate).
   function measureDisplay(dt) {
-    if (display.dts.length >= 40 || dt <= 0) return;
+    if (dt <= 0) return;
     display.dts.push(dt);
-    if (display.dts.length === 40) {
+    if (display.dts.length > 60) display.dts.shift();
+    if (display.dts.length === 60 && (display.count = (display.count || 0) + 1) % 60 === 0) {
       const sorted = display.dts.slice().sort((a, b) => a - b);
-      const fps = 1 / sorted[20];
-      display.N = 1;
-      display.rate = fps;
-      updatePanel();
+      const fps = 1 / sorted[30];
+      if (Math.abs(fps - display.rate) > 1) { display.rate = fps; updatePanel(); }
     }
   }
   // Playback factor of the wheel animation (screen time / real time).
