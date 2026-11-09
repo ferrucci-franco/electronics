@@ -1079,9 +1079,8 @@
     circle(0.52 * R, radial(0.2 * R, 0.52 * R, [[0, '#8a9097'], [0.8, '#6c7279'], [1, '#4d5257']]));
 
     // Five identical wedge spokes, each half of the spacing wide (36° of 72°), between a plain
-    // outer ring and a plain hub. Their angular profile is a symmetric trapezoid (50 % duty cycle,
-    // soft edges of 0.18 spacing): no even harmonics at all, and a small 3rd harmonic. The rim's
-    // pattern is then close to a pure 5-period sinusoid, so the camera shows the spoke passage
+    // outer ring and a plain hub. Their angular profile is a square wave with 50 % duty cycle
+    // (sharp, antialiased edges): it has no even harmonics, so the camera shows the spoke passage
     // f = 5·v without a "10-spoke" component (2f) that would alias in another direction.
     // No groove, no nuts, no valve: nothing breaks or doubles the 5-fold pattern.
     const alloy = radial(0.2 * R, 0.645 * R, [[0, '#f2f4f6'], [0.55, '#d3d8dd'], [1, '#a9b0b8']]);
@@ -1093,7 +1092,7 @@
     o.fillStyle = radial(0.2 * R, 0.645 * R, [[0, '#f2f4f6'], [0.55, '#d3d8dd'], [1, '#a9b0b8']]);
     o.beginPath(); o.arc(0, 0, 0.6 * R, 0, 2 * Math.PI); o.arc(0, 0, 0.2 * R, 0, 2 * Math.PI, true); o.fill();
     o.globalCompositeOperation = 'destination-in';
-    const half = 180 / SPOKES / 2, ramp = 0.18 * 360 / SPOKES, start = -2 * half;   // degrees
+    const half = 180 / SPOKES / 2, ramp = 0.025 * 360 / SPOKES, start = -2 * half;  // degrees (ramp ≈ 1.8°: just antialiasing)
     if (typeof o.createConicGradient === 'function') {
       const mask = o.createConicGradient(start * Math.PI / 180, 0, 0);
       const stop = (deg, alpha) => mask.addColorStop((deg - start) / 360, `rgba(0,0,0,${alpha})`);
