@@ -235,6 +235,20 @@
     .sidebar-extra { flex:1 1 auto; }
     .wheel-cell .card-title { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
+    /* The spectral diagram fills the height of its card (at least 230 px) */
+    .spectral-plot { display:flex; flex-direction:column; min-height:0; }
+    .spectral-box { flex:1 1 auto; min-height:230px; width:100%; position:relative; }
+
+    /* Native scrollbars follow the theme; slim themed scrollbar for the sidebar */
+    :root[data-theme="light"] { color-scheme:light; }
+    :root[data-theme="dark"] { color-scheme:dark; }
+    .step2-sidebar, .step-card { scrollbar-width:thin; scrollbar-color:#94a3b8 transparent; }
+    :root[data-theme="dark"] .step2-sidebar, :root[data-theme="dark"] .step-card { scrollbar-color:#64748b transparent; }
+    .step2-sidebar::-webkit-scrollbar, .step-card::-webkit-scrollbar { width:8px; }
+    .step2-sidebar::-webkit-scrollbar-thumb, .step-card::-webkit-scrollbar-thumb { background:#94a3b8; border-radius:4px; }
+    :root[data-theme="dark"] .step2-sidebar::-webkit-scrollbar-thumb, :root[data-theme="dark"] .step-card::-webkit-scrollbar-thumb { background:#64748b; }
+    .step2-sidebar::-webkit-scrollbar-track, .step-card::-webkit-scrollbar-track { background:transparent; }
+
     .card-title { font-size:0.92rem; font-weight:500; margin-bottom:8px; color:var(--accent); }
 
     .control-group { display:flex; flex-direction:column; gap:6px; }
@@ -568,9 +582,9 @@
 
         <!-- Row 2: spectral diagram (sawtooth) + sampling theorem panel -->
         <div class="step2-spectral">
-          <div>
+          <div class="spectral-plot">
             <div class="card-title" data-i18n="spectral"></div>
-            <div style="width:100%; height:230px; position:relative;">
+            <div class="spectral-box">
               <canvas id="spectralCanvas"></canvas>
             </div>
           </div>
