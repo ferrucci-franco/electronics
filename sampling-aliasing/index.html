@@ -1077,41 +1077,51 @@
     // Inside of the rim and brake disc (plain: rotationally uniform)
     circle(0.635 * R, radial(0, 0.635 * R, [[0, '#30343a'], [1, '#16181b']]));
     circle(0.52 * R, radial(0.2 * R, 0.52 * R, [[0, '#8a9097'], [0.8, '#6c7279'], [1, '#4d5257']]));
-    circle(0.25 * R, '#3c4045');
 
-    // Five identical tapered spokes, each split by a groove (light alloy).
-    // Nothing else breaks the 5-fold symmetry (no valve, no mark): the wheel looks the same
-    // every 1/5 turn, so what the camera samples is the passage of the spokes, f = 5·v.
-    for (let k = 0; k < SPOKES; k++) {
-      g.save();
-      g.rotate((k / SPOKES) * 2 * Math.PI);
-      const grad = g.createLinearGradient(0, -0.1 * R, 0, 0.1 * R);
-      grad.addColorStop(0, '#b9c0c7'); grad.addColorStop(0.5, '#eef1f4'); grad.addColorStop(1, '#a3aab2');
-      g.fillStyle = grad;
-      g.beginPath();
-      g.moveTo(0.16 * R, -0.115 * R);
-      g.bezierCurveTo(0.35 * R, -0.07 * R, 0.5 * R, -0.075 * R, 0.655 * R, -0.13 * R);
-      g.lineTo(0.655 * R, 0.13 * R);
-      g.bezierCurveTo(0.5 * R, 0.075 * R, 0.35 * R, 0.07 * R, 0.16 * R, 0.115 * R);
-      g.closePath();
-      g.fill();
-      g.strokeStyle = '#6f767e'; g.lineWidth = Math.max(1, R * 0.008); g.stroke();
-      g.strokeStyle = 'rgba(40,44,49,0.55)'; g.lineWidth = Math.max(1, R * 0.012);
-      g.beginPath(); g.moveTo(0.24 * R, 0); g.lineTo(0.62 * R, 0); g.stroke();
-      g.restore();
+    // Five identical wedge spokes, each half of the spacing wide (36° of 72°), between a plain
+    // outer ring and a plain hub. Their angular profile is a symmetric trapezoid (50 % duty cycle,
+    // soft edges of 0.18 spacing): no even harmonics at all, and a small 3rd harmonic. The rim's
+    // pattern is then close to a pure 5-period sinusoid, so the camera shows the spoke passage
+    // f = 5·v without a "10-spoke" component (2f) that would alias in another direction.
+    // No groove, no nuts, no valve: nothing breaks or doubles the 5-fold pattern.
+    const alloy = radial(0.2 * R, 0.645 * R, [[0, '#f2f4f6'], [0.55, '#d3d8dd'], [1, '#a9b0b8']]);
+    ring(0.585 * R, 0.645 * R, alloy);
+    const off = document.createElement('canvas');
+    off.width = off.height = sizePx;
+    const o = off.getContext('2d');
+    o.translate(sizePx / 2, sizePx / 2);
+    o.fillStyle = radial(0.2 * R, 0.645 * R, [[0, '#f2f4f6'], [0.55, '#d3d8dd'], [1, '#a9b0b8']]);
+    o.beginPath(); o.arc(0, 0, 0.6 * R, 0, 2 * Math.PI); o.arc(0, 0, 0.2 * R, 0, 2 * Math.PI, true); o.fill();
+    o.globalCompositeOperation = 'destination-in';
+    const half = 180 / SPOKES / 2, ramp = 0.18 * 360 / SPOKES, start = -2 * half;   // degrees
+    if (typeof o.createConicGradient === 'function') {
+      const mask = o.createConicGradient(start * Math.PI / 180, 0, 0);
+      const stop = (deg, alpha) => mask.addColorStop((deg - start) / 360, `rgba(0,0,0,${alpha})`);
+      stop(start, 0);
+      for (let k = 0; k < SPOKES; k++) {
+        const a = k * 360 / SPOKES;
+        stop(a - half - ramp / 2, 0); stop(a - half + ramp / 2, 1);
+        stop(a + half - ramp / 2, 1); stop(a + half + ramp / 2, 0);
+      }
+      stop(start + 360, 0);
+      o.fillStyle = mask;
+      o.fillRect(-sizePx / 2, -sizePx / 2, sizePx, sizePx);
+    } else {
+      // Older browsers: sharp sectors (still no even harmonics)
+      o.fillStyle = '#000';
+      o.beginPath();
+      for (let k = 0; k < SPOKES; k++) {
+        const a = (k / SPOKES) * 2 * Math.PI, h = Math.PI / SPOKES / 2;
+        o.moveTo(0, 0); o.arc(0, 0, R, a - h, a + h); o.closePath();
+      }
+      o.fill();
     }
+    g.drawImage(off, -sizePx / 2, -sizePx / 2);
 
-    // Hub, five lug nuts, centre cap
-    circle(0.2 * R, radial(0, 0.2 * R, [[0, '#f1f3f5'], [0.8, '#c3c9cf'], [1, '#8e959d']]));
-    for (let k = 0; k < SPOKES; k++) {
-      const a = (k / SPOKES) * 2 * Math.PI + Math.PI / SPOKES;
-      const x = 0.125 * R * Math.cos(a), y = 0.125 * R * Math.sin(a);
-      g.fillStyle = '#5b6168'; g.beginPath(); g.arc(x, y, 0.03 * R, 0, 2 * Math.PI); g.fill();
-      g.fillStyle = '#9aa1a8'; g.beginPath(); g.arc(x, y, 0.017 * R, 0, 2 * Math.PI); g.fill();
-    }
-    circle(0.07 * R, radial(0, 0.07 * R, [[0, '#3b4148'], [1, '#1d2125']]));
-    g.strokeStyle = '#aab1b8'; g.lineWidth = Math.max(1, R * 0.008);
-    g.beginPath(); g.arc(0, 0, 0.05 * R, 0, 2 * Math.PI); g.stroke();
+    circle(0.27 * R, radial(0, 0.27 * R, [[0, '#f5f6f8'], [0.75, '#cdd2d8'], [1, '#9aa1a9']]));
+    circle(0.1 * R, radial(0, 0.1 * R, [[0, '#4a5058'], [1, '#262a2f']]));
+    g.strokeStyle = '#b8bec5'; g.lineWidth = Math.max(1, R * 0.008);
+    g.beginPath(); g.arc(0, 0, 0.075 * R, 0, 2 * Math.PI); g.stroke();
     g.restore();
   }
 
