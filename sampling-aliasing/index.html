@@ -1119,9 +1119,25 @@
   // average, copy i drawn with alpha 1/(i+1)). It only depends on that angle, not on the phase,
   // so it is computed once per speed and then simply rotated.
   const blur = { canvas: document.createElement('canvas'), key: '' };
+  // Anti-aliasing for the real wheel. The monitor shows one image per display frame, so it
+  // samples the real wheel with the same ratio f/Fs as the camera: a one-frame blur is not enough
+  // (at f = 0.6·Fs about half of the spoke contrast would remain and be seen going backwards).
+  // A blur lasting exactly one spoke period (1/SPOKES turn) gives a uniform disc, with nothing
+  // left that can alias. So: plain one-frame blur while the spokes move less than 0.2 spacing per
+  // frame, then a longer blur, reaching one full spoke period at 0.4 spacing per frame.
+  function antiAliasSpan(smear) {
+    const spacing = 1 / SPOKES;
+    const sp = Math.abs(smear) / spacing;              // spoke spacings per display frame
+    let L;                                             // blur length, in spoke spacings
+    if (sp <= 0.2) L = sp;
+    else if (sp >= 0.4) L = 1;
+    else { const u = (sp - 0.2) / 0.2; L = sp + (1 - sp) * u * u * (3 - 2 * u); }
+    return Math.sign(smear) * L * spacing;
+  }
+
   function blurredSprite(smear) {
-    const span = Math.round(Math.min(Math.abs(smear), 1) * Math.sign(smear) * 200) / 200;
-    const M = Math.min(48, Math.max(1, Math.ceil(Math.abs(span) * 60)));
+    const span = Math.round(Math.min(Math.abs(smear), 1) * Math.sign(smear) * 1000) / 1000;
+    const M = Math.min(96, Math.max(1, Math.ceil(Math.abs(span) * 240)));   // ≤ 1.5° between copies
     if (M === 1) return sprite.canvas;
     const key = sprite.size + ':' + span.toFixed(3);
     if (blur.key === key) return blur.canvas;
@@ -1134,7 +1150,7 @@
       g.globalAlpha = 1 / (i + 1);
       g.save();
       g.translate(S / 2, S / 2);
-      g.rotate(2 * Math.PI * span * (i / (M - 1)));   // copies behind the current position
+      g.rotate(2 * Math.PI * span * (i / M));         // copies behind the current position (a full period averages exactly)
       g.drawImage(sprite.canvas, -S / 2, -S / 2);
       g.restore();
     }
@@ -1165,7 +1181,7 @@
     ctx.restore();
 
     // Exposure = the whole display frame for the eye (motion blur), very short for the camera.
-    const img = isCamera ? sprite.canvas : blurredSprite(smear);
+    const img = isCamera ? sprite.canvas : blurredSprite(antiAliasSpan(smear));
     ctx.save();
     ctx.translate(cx, cy);
     ctx.rotate(-2 * Math.PI * phase);             // counter-clockwise = positive
