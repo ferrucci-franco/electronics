@@ -603,7 +603,7 @@
       noteIdeal: 'La <strong>interpolación ideal</strong> usando función sinc es no causal (requiere muestras futuras), por lo que no se puede usar en tiempo real, solo off-line.',
       noteZOH: 'El <strong>Zero-Order Hold</strong> mantiene el valor de cada muestra hasta la siguiente. Es causal y se usa en tiempo real.',
       noteLinear: 'La <strong>interpolación lineal</strong> conecta las muestras con líneas rectas. Es causal y simple de implementar.',
-      noteWheel: 'A la izquierda, lo que ve el ojo: la llanta se vuelve borrosa en cuanto gira rápido. A la derecha, la cámara: una imagen nítida cada 1/Fs s; entre dos imágenes la rueda gira f/Fs vuelta. Seguí la <strong>marca amarilla</strong> del neumático: casi una vuelta por imagen y parece retroceder, exactamente una y parece inmóvil.',
+      noteWheel: 'A la izquierda, lo que ve el ojo: la llanta se vuelve borrosa en cuanto gira rápido. A la derecha, la cámara: una imagen nítida cada 1/Fs s; entre dos imágenes la rueda gira f/Fs vuelta. Seguí la <strong>marca amarilla</strong>: hasta media vuelta por imagen (f &lt; Fs/2) avanza; casi una vuelta por imagen y parece retroceder; exactamente una y parece inmóvil. El tapacubos es liso a propósito: con 5 rayos iguales la inversión aparecería ya en Fs/10.',
       temporal: 'Evolución Temporal', spectral: 'Diagrama Espectral', theory: 'Teorema de Muestreo',
       realWheel: 'Rueda real', camera: 'Cámara',
       f0: 'Frecuencia f<sub>IN</sub>', Fs: 'Frecuencia Fs', fNyquist: 'Frecuencia de Nyquist', condition: 'Condición',
@@ -632,7 +632,7 @@
       noteIdeal: 'L\'<strong>interpolation idéale</strong> utilisant la fonction sinc est non causale (nécessite des échantillons futurs), donc inutilisable en temps réel, seulement hors ligne.',
       noteZOH: 'Le <strong>Zero-Order Hold</strong> maintient la valeur de chaque échantillon jusqu\'au suivant. Elle est causale et utilisée en temps réel.',
       noteLinear: 'L\'<strong>interpolation linéaire</strong> connecte les échantillons avec des lignes droites. Elle est causale et simple à implémenter.',
-      noteWheel: 'À gauche, ce que voit l\'œil : la jante devient floue dès qu\'elle tourne vite. À droite, la caméra : une image nette toutes les 1/Fs s ; entre deux images la roue tourne de f/Fs tour. Suivez la <strong>marque jaune</strong> du pneu : presque un tour par image, elle semble reculer ; exactement un tour, elle semble immobile.',
+      noteWheel: 'À gauche, ce que voit l\'œil : la jante devient floue dès qu\'elle tourne vite. À droite, la caméra : une image nette toutes les 1/Fs s ; entre deux images la roue tourne de f/Fs tour. Suivez la <strong>marque jaune</strong> : jusqu\'à un demi-tour par image (f &lt; Fs/2) elle avance ; presque un tour par image, elle semble reculer ; exactement un tour, elle semble immobile. L\'enjoliveur est lisse exprès : avec 5 rayons identiques, l\'inversion apparaîtrait dès Fs/10.',
       temporal: 'Évolution Temporelle', spectral: 'Diagramme Spectral', theory: 'Théorème d\'Échantillonnage',
       realWheel: 'Roue réelle', camera: 'Caméra',
       f0: 'Fréquence f<sub>IN</sub>', Fs: 'Fréquence Fs', fNyquist: 'Fréquence de Nyquist', condition: 'Condition',
@@ -661,7 +661,7 @@
       noteIdeal: 'The <strong>ideal interpolation</strong> using sinc function is non-causal (requires future samples), so it cannot be used in real-time, only offline.',
       noteZOH: 'The <strong>Zero-Order Hold</strong> maintains each sample value until the next. It is causal and used in real-time.',
       noteLinear: 'The <strong>linear interpolation</strong> connects samples with straight lines. It is causal and simple to implement.',
-      noteWheel: 'Left, what the eye sees: the rim blurs as soon as it spins fast. Right, the camera: one sharp image every 1/Fs s; between two images the wheel turns f/Fs of a turn. Follow the <strong>yellow mark</strong> on the tyre: almost one turn per image and it seems to go backwards, exactly one turn and it stands still.',
+      noteWheel: 'Left, what the eye sees: the rim blurs as soon as it spins fast. Right, the camera: one sharp image every 1/Fs s; between two images the wheel turns f/Fs of a turn. Follow the <strong>yellow mark</strong>: up to half a turn per image (f &lt; Fs/2) it moves forward; almost one turn per image and it seems to go backwards; exactly one turn and it stands still. The hubcap is plain on purpose: with 5 identical spokes the reversal would already appear at Fs/10.',
       temporal: 'Temporal Evolution', spectral: 'Spectral Diagram', theory: 'Sampling Theorem',
       realWheel: 'Real wheel', camera: 'Camera',
       f0: 'Frequency f<sub>IN</sub>', Fs: 'Frequency Fs', fNyquist: 'Nyquist Frequency', condition: 'Condition',
@@ -1017,7 +1017,7 @@
   }
 
   // =====================================================================
-  // FILMED WHEEL (a car wheel: tyre, 5-spoke alloy rim, brake disc)
+  // FILMED WHEEL (a car wheel: tyre, polished rim, full hubcap)
   // =====================================================================
   const display = { dts: [], N: 1, rate: 60 };
   const wheel = { frame: 0, phase: 0, smear: 0, camPhase: 0, image: 0 };
@@ -1066,12 +1066,6 @@
     // Tyre: sidewall with a soft bulge, tread edge
     ring(0.70 * R, R, radial(0.70 * R, R, [[0, '#141518'], [0.35, '#2a2c31'], [0.7, '#1d1f23'], [1, '#0c0d0f']]));
     ring(0.965 * R, R, '#0a0b0c');
-    // Fine ribs on the sidewall (all around, subtle)
-    g.strokeStyle = 'rgba(255,255,255,0.05)'; g.lineWidth = Math.max(1, R * 0.006);
-    for (let i = 0; i < 72; i++) {
-      const a = (i / 72) * 2 * Math.PI;
-      g.beginPath(); g.moveTo(0.93 * R * Math.cos(a), 0.93 * R * Math.sin(a)); g.lineTo(0.955 * R * Math.cos(a), 0.955 * R * Math.sin(a)); g.stroke();
-    }
     // The marker: one yellow band on the sidewall (one per turn)
     g.strokeStyle = '#f5c518'; g.lineCap = 'round'; g.lineWidth = R * 0.055;
     g.beginPath(); g.arc(0, 0, 0.845 * R, -0.42, 0.42); g.stroke();
@@ -1082,50 +1076,22 @@
     ring(0.64 * R, 0.70 * R, radial(0.64 * R, 0.70 * R, [[0, '#7d848c'], [0.45, '#e9ecef'], [1, '#9aa1a9']]));
     ring(0.635 * R, 0.645 * R, '#4b5056');
 
-    // Inside of the rim, brake disc with drilled holes, hub hat
-    circle(0.635 * R, radial(0, 0.635 * R, [[0, '#30343a'], [1, '#16181b']]));
-    circle(0.52 * R, radial(0.2 * R, 0.52 * R, [[0, '#8a9097'], [0.8, '#6c7279'], [1, '#4d5257']]));
-    g.fillStyle = '#2a2d31';
-    for (let i = 0; i < 24; i++) {
-      const a = (i / 24) * 2 * Math.PI, r = i % 2 ? 0.43 * R : 0.37 * R;
-      g.beginPath(); g.arc(r * Math.cos(a), r * Math.sin(a), 0.014 * R, 0, 2 * Math.PI); g.fill();
-    }
-    circle(0.25 * R, '#3c4045');
+    // Full hubcap (enjoliveur plein). Everything that turns is rotationally uniform except the
+    // yellow marks and the valve: no n-fold pattern (spokes, holes, nuts) that would alias at
+    // Fs/(2n), so the apparent motion follows the course rule up to Fs/2.
+    circle(0.635 * R, radial(0, 0.635 * R, [[0, '#f3f5f7'], [0.55, '#cfd5db'], [0.85, '#aab2ba'], [1, '#7e868e']]));
+    g.strokeStyle = 'rgba(70,78,86,0.45)'; g.lineWidth = Math.max(1, R * 0.01);
+    for (const r of [0.56, 0.44, 0.24]) { g.beginPath(); g.arc(0, 0, r * R, 0, 2 * Math.PI); g.stroke(); }
+    ring(0.44 * R, 0.56 * R, 'rgba(120,128,136,0.18)');
+    circle(0.16 * R, radial(0, 0.16 * R, [[0, '#59616a'], [0.75, '#3a4047'], [1, '#2a2f34']]));
+    circle(0.06 * R, '#c9cfd5');
 
-    // Five tapered spokes, each split by a groove (light alloy)
-    for (let k = 0; k < 5; k++) {
-      g.save();
-      g.rotate((k / 5) * 2 * Math.PI);
-      const grad = g.createLinearGradient(0, -0.1 * R, 0, 0.1 * R);
-      grad.addColorStop(0, '#b9c0c7'); grad.addColorStop(0.5, '#eef1f4'); grad.addColorStop(1, '#a3aab2');
-      g.fillStyle = grad;
-      g.beginPath();
-      g.moveTo(0.16 * R, -0.115 * R);
-      g.bezierCurveTo(0.35 * R, -0.07 * R, 0.5 * R, -0.075 * R, 0.655 * R, -0.13 * R);
-      g.lineTo(0.655 * R, 0.13 * R);
-      g.bezierCurveTo(0.5 * R, 0.075 * R, 0.35 * R, 0.07 * R, 0.16 * R, 0.115 * R);
-      g.closePath();
-      g.fill();
-      g.strokeStyle = '#6f767e'; g.lineWidth = Math.max(1, R * 0.008); g.stroke();
-      g.strokeStyle = 'rgba(40,44,49,0.55)'; g.lineWidth = Math.max(1, R * 0.012);
-      g.beginPath(); g.moveTo(0.24 * R, 0); g.lineTo(0.62 * R, 0); g.stroke();
-      g.restore();
-    }
+    // One yellow stripe on the hubcap, in line with the mark on the tyre
+    g.strokeStyle = '#f5c518'; g.lineCap = 'round'; g.lineWidth = R * 0.06;
+    g.beginPath(); g.moveTo(0.22 * R, 0); g.lineTo(0.6 * R, 0); g.stroke();
 
-    // Hub, five lug nuts, centre cap
-    circle(0.2 * R, radial(0, 0.2 * R, [[0, '#f1f3f5'], [0.8, '#c3c9cf'], [1, '#8e959d']]));
-    for (let k = 0; k < 5; k++) {
-      const a = (k / 5) * 2 * Math.PI + Math.PI / 5;
-      const x = 0.125 * R * Math.cos(a), y = 0.125 * R * Math.sin(a);
-      g.fillStyle = '#5b6168'; g.beginPath(); g.arc(x, y, 0.03 * R, 0, 2 * Math.PI); g.fill();
-      g.fillStyle = '#9aa1a8'; g.beginPath(); g.arc(x, y, 0.017 * R, 0, 2 * Math.PI); g.fill();
-    }
-    circle(0.07 * R, radial(0, 0.07 * R, [[0, '#3b4148'], [1, '#1d2125']]));
-    g.strokeStyle = '#aab1b8'; g.lineWidth = Math.max(1, R * 0.008);
-    g.beginPath(); g.arc(0, 0, 0.05 * R, 0, 2 * Math.PI); g.stroke();
-
-    // Valve stem, between two spokes
-    const av = Math.PI / 5;
+    // Valve stem
+    const av = Math.PI / 2.5;
     g.fillStyle = '#1b1d20';
     g.beginPath(); g.arc(0.6 * R * Math.cos(av), 0.6 * R * Math.sin(av), 0.022 * R, 0, 2 * Math.PI); g.fill();
     g.restore();
