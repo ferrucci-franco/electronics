@@ -50,6 +50,7 @@
     }
 
     * { box-sizing:border-box; }
+    body { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; -webkit-tap-highlight-color:transparent; }
 
     html, body {
       margin:0;
@@ -414,6 +415,7 @@
       .step2-spectral { order:3; }
       .sidebar-extra { order:4; }
       .step2-temporal[data-only="wheel"] { height:auto; }
+      .step2-temporal[data-only="sine"] { height:clamp(220px, 34vh, 300px); }
       .wheel-cell .canvas-box { flex:none; aspect-ratio:1 / 1; }
       .step2-container, .step2-container.wheel-mode { grid-template-rows:none; grid-auto-rows:auto; height:auto; align-items:start; }
       .control-group label span:first-child { max-width:none; }
@@ -891,28 +893,40 @@
     ctx.font = '14px system-ui';
     ctx.textAlign = 'center';
     ctx.fillText('0', padding, height - padding + 16);
-    ctx.fillText(fmt(duration, 3) + ' s', width - padding, height - padding + 16);
+    const durLabel = fmt(duration, 3) + ' s';
+    ctx.fillText(durLabel, width - padding, height - padding + 16);
     ctx.font = 'bold 16px system-ui';
     ctx.textAlign = 'right';
-    ctx.fillText(tx.legend_time, width - padding, height - padding + 32);
+    if (height >= 220) ctx.fillText(tx.legend_time, width - padding, height - padding + 32);
+    else {   // low canvas (small phones): title on the line of the tick labels, left of the duration
+      ctx.font = '14px system-ui'; const dw = ctx.measureText(durLabel).width;
+      ctx.font = 'bold 15px system-ui';
+      ctx.fillText(tx.legend_time, width - padding - dw / 2 - 14, height - padding + 16);
+    }
 
-    // Legend
-    const legendY = padding - 18;
-    ctx.font = '13px system-ui';
+    // Legend (font shrinks on narrow screens; the last item goes to a second line if needed)
+    const items = [tx.legend_continuous, tx.legend_samples, tx.legend_reconstructed];
+    const avail = width - padding - 8;
+    let fsz = 13, rowW;
+    const measure = () => { ctx.font = `${fsz}px system-ui`; return 25 + ctx.measureText(items[0]).width + 22 + 12 + ctx.measureText(items[1]).width + 22 + 27 + ctx.measureText(items[2]).width; };
+    while ((rowW = measure()) > avail && fsz > 10) fsz -= 0.5;
+    const twoLines = rowW > avail;
+    let legendY = padding - (twoLines ? 26 : 18);
     ctx.textAlign = 'left';
     let lx = padding;
     ctx.strokeStyle = P.signal; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(lx, legendY); ctx.lineTo(lx + 20, legendY); ctx.stroke();
-    ctx.fillStyle = P.text; ctx.fillText(tx.legend_continuous, lx + 25, legendY + 4);
-    lx += 25 + ctx.measureText(tx.legend_continuous).width + 22;
+    ctx.fillStyle = P.text; ctx.fillText(items[0], lx + 25, legendY + 4);
+    lx += 25 + ctx.measureText(items[0]).width + 22;
     ctx.fillStyle = P.sample;
     ctx.beginPath(); ctx.arc(lx + 4, legendY, 3, 0, 2 * Math.PI); ctx.fill();
-    ctx.fillStyle = P.text; ctx.fillText(tx.legend_samples, lx + 12, legendY + 4);
-    lx += 12 + ctx.measureText(tx.legend_samples).width + 22;
+    ctx.fillStyle = P.text; ctx.fillText(items[1], lx + 12, legendY + 4);
+    lx += 12 + ctx.measureText(items[1]).width + 22;
+    if (twoLines) { lx = padding; legendY += fsz + 5; }
     ctx.strokeStyle = P.reconstruct; ctx.setLineDash([4, 4]);
     ctx.beginPath(); ctx.moveTo(lx, legendY); ctx.lineTo(lx + 20, legendY); ctx.stroke();
     ctx.setLineDash([]);
-    ctx.fillStyle = P.text; ctx.fillText(tx.legend_reconstructed, lx + 27, legendY + 4);
+    ctx.fillStyle = P.text; ctx.fillText(items[2], lx + 27, legendY + 4);
   }
 
   // =====================================================================
@@ -1503,6 +1517,9 @@
     redraw();
   }
   themeButton.addEventListener('click', () => setTheme(!isDark()));
+
+  // No context menu (right click / long press): it only gets in the way, mostly on touch screens.
+  document.addEventListener('contextmenu', (e) => e.preventDefault());
 
   let resizeTimeout;
   window.addEventListener('resize', () => { clearTimeout(resizeTimeout); resizeTimeout = setTimeout(redraw, 100); });
