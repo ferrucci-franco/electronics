@@ -1,0 +1,1578 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <title>Échantillonnage et repliement</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Sampling and aliasing: sampled sinusoid and filmed wheel (stroboscopic effect).">
+  <!-- Contador de visitas (GoatCounter, sin cookies ni datos personales). No cuenta en localhost ni desde file://. -->
+  <script data-goatcounter="https://ferrucci-franco.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+
+  <!-- Look and feel taken from the "Aliasing & Fs" step of the DSP lab (dsp-with-arduino-and-esp32). -->
+  <style>
+    :root {
+      --bg:#050816;
+      --fg:#e5e7eb;
+      --muted:#9ca3af;
+      --card:#0b1020;
+      --border:#111827;
+      --accent:#38bdf8;
+      --accent-soft:rgba(56,189,248,0.16);
+      --accent2:#fb7185;
+      --radius:12px;
+      --font:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      --shadow:0 14px 40px rgba(15,23,42,0.5);
+    }
+
+    :root[data-theme="light"] {
+      --bg:#ffffff;
+      --fg:#111827;
+      --muted:#6b7280;
+      --card:#f7f8fb;
+      --border:#e5e7eb;
+      --accent:#2563eb;
+      --accent-soft:rgba(37,99,235,0.10);
+      --accent2:#dc2626;
+      --shadow:0 10px 30px rgba(15,23,42,0.12);
+    }
+
+    :root[data-theme="dark"] {
+      --bg:#1e293b;
+      --fg:#e5e7eb;
+      --muted:#94a3b8;
+      --card:#334155;
+      --border:#475569;
+      --accent:#38bdf8;
+      --accent-soft:rgba(56,189,248,0.25);
+      --accent2:#fb7185;
+      --shadow:0 18px 50px rgba(15,23,42,0.5);
+      --bg-soft:#293548;
+    }
+
+    * { box-sizing:border-box; }
+    body { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; -webkit-tap-highlight-color:transparent; }
+
+    html, body {
+      margin:0;
+      padding:0;
+      height:100vh;
+      background:var(--bg);
+      color:var(--fg);
+      font-family:var(--font);
+      display:flex;
+      flex-direction:column;
+    }
+
+    /* HEADER */
+
+    header {
+      flex:0 0 auto;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:10px 16px 8px;
+      border-bottom:1px solid var(--border);
+      gap:16px;
+      background:linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
+    }
+
+    :root[data-theme="dark"] header {
+      background:linear-gradient(135deg, #1e3a5f 0%, #1e293b 100%);
+    }
+
+    .app-left { display:flex; flex-direction:column; gap:3px; }
+    .app-title-main { font-size:1.12rem; font-weight:600; letter-spacing:0.01em; }
+    .app-title-sub { font-size:0.72rem; color:var(--muted); }
+
+    .steps-nav { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+
+    .step-tab {
+      padding:7px 14px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      font-size:0.9rem;
+      font-family:inherit;
+      color:var(--muted);
+      cursor:pointer;
+      background:var(--bg-soft);
+      display:flex;
+      align-items:center;
+      gap:6px;
+      transition:all .16s ease;
+      white-space:nowrap;
+    }
+    .step-tab span.num { font-weight:600; font-size:0.9rem; opacity:0.9; }
+    .step-tab.active { color:var(--accent); border-color:var(--accent); background:var(--accent-soft); }
+    .step-tab:hover:not(.active) { color:var(--accent); border-color:var(--accent-soft); background:rgba(148,163,253,0.05); }
+
+    .top-right { display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:0.78rem; color:var(--muted); }
+
+    /* Language: « FR ▾ » pill and a small menu with the three languages, theme button
+       (same as step-response, pid-tuning, power-converters). */
+    .language-switch { position:relative; }
+    #language-trigger { display:inline-flex; height:44px; align-items:center; gap:6px; border:1px solid var(--border); border-radius:999px; padding:0 13px; background:var(--card); color:var(--fg); cursor:pointer; font-family:inherit; font-size:.9rem; font-weight:800; }
+    #language-trigger > i { width:6px; height:6px; margin-top:-3px; border-right:1.8px solid currentColor; border-bottom:1.8px solid currentColor; transform:rotate(45deg); }
+    #language-trigger:hover, #language-trigger[aria-expanded="true"] { border-color:var(--accent); }
+    #language-trigger:focus-visible, .language-menu button:focus-visible, .icon-button:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+    .language-menu { position:absolute; z-index:20; top:calc(100% + 5px); right:0; display:flex; padding:3px; border:1px solid #dce1e7; border-radius:16px; background:var(--card); box-shadow:0 10px 24px #17243824; }
+    .language-menu button { width:44px; height:44px; padding:0; border:0; border-radius:13px; background:transparent; color:#59657a; cursor:pointer; font-family:inherit; font-size:.86rem; font-weight:850; }
+    .language-menu button:hover { color:var(--accent); }
+    .language-menu button[aria-pressed="true"] { background:#eef1f3; color:#101827; }
+    :root[data-theme="dark"] .language-menu { border-color:#94a3b847; }
+    :root[data-theme="dark"] .language-menu button { color:#aeb9c9; }
+    :root[data-theme="dark"] .language-menu button[aria-pressed="true"] { background:#314158; color:#fff; }
+    .icon-button { display:grid; width:44px; height:44px; padding:0; place-items:center; border:1px solid var(--border); border-radius:13px; background:var(--card); cursor:pointer; }
+    .icon-button:hover { border-color:var(--accent); }
+    .theme-glyph { width:18px; height:18px; border:1.5px solid #1f2b3e; border-radius:50%; background:linear-gradient(90deg, #ffbd45 0 50%, #172438 50% 100%); box-shadow:0 1px 4px #17243825; transform:rotate(-18deg); }
+    :root[data-theme="dark"] .theme-glyph { border-color:#e5edf6; background:linear-gradient(90deg, #ffcc61 0 50%, #26364c 50% 100%); box-shadow:0 0 8px #ffcc6138; transform:rotate(18deg); }
+
+    select {
+      background:var(--card);
+      color:var(--fg);
+      border-radius:8px;
+      border:1px solid var(--border);
+      padding:5px 24px 5px 8px;
+      font-size:0.8rem;
+      outline:none;
+      cursor:pointer;
+      -webkit-appearance:none;
+      -moz-appearance:none;
+      appearance:none;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%236b7280' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+      background-repeat:no-repeat;
+      background-position:right 6px center;
+    }
+    select:focus { border-color:var(--accent); }
+    select option { background:var(--card); color:var(--fg); padding:8px; }
+
+    input[type="radio"] { width:16px; height:16px; cursor:pointer; accent-color:var(--accent); }
+
+    @media (max-width: 900px) {
+      header { flex-wrap:wrap; align-items:flex-start; }
+      .steps-nav { order:2; flex:1 1 100%; }
+      .top-right { order:3; }
+    }
+
+    /* MAIN AREA */
+
+    main {
+      flex:1 1 auto;
+      padding:10px 16px;
+      display:flex;
+      justify-content:center;
+      align-items:stretch;
+      overflow:hidden;
+      min-height:0;
+    }
+
+    .step-wrapper { width:100%; max-width:1800px; display:flex; flex-direction:column; height:100%; }
+
+    .step-card {
+      background:#ffffff;
+      border-radius:var(--radius);
+      border:1px solid var(--border);
+      padding:14px;
+      box-shadow:var(--shadow);
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      flex:1 1 auto;
+      min-height:0;
+      overflow:auto;
+    }
+    :root[data-theme="dark"] .step-card { background:var(--card); }
+
+    /* Layout (same as step 2 "Aliasing & Fs") */
+
+    .step2-container {
+      display:grid;
+      grid-template-columns:250px 1fr;
+      grid-template-rows:minmax(300px, 1fr) minmax(300px, 1.5fr);
+      gap:6px;
+      width:100%;
+      height:100%;
+      flex:1 1 auto;
+      min-height:0;
+    }
+
+    .step2-container.wheel-mode { grid-template-rows:minmax(300px, 1.6fr) minmax(300px, 1fr); }
+
+    .step2-sidebar {
+      grid-row:1 / 3;
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:8px;
+      padding:14px;
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+      overflow:auto;
+    }
+
+    .step2-temporal {
+      grid-column:2;
+      grid-row:1;
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:8px;
+      padding:12px;
+      min-height:0;
+    }
+
+    .step2-spectral {
+      grid-column:2;
+      grid-row:2;
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:8px;
+      padding:12px 12px 4px;
+      display:grid;
+      grid-template-columns:minmax(0, 1fr) minmax(290px, 30%);
+      gap:12px;
+      overflow:hidden;
+    }
+    @media (max-width: 1300px) and (min-width: 901px) {
+      .info-panel { font-size:0.8rem; gap:6px; padding-right:4px; }
+    }
+
+    .sidebar-main, .sidebar-extra { display:flex; flex-direction:column; gap:16px; }
+    .sidebar-extra { flex:1 1 auto; }
+    .wheel-cell .card-title { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+    /* The spectral diagram fills the height of its card (at least 230 px) */
+    .spectral-plot { display:flex; flex-direction:column; min-height:0; }
+    .spectral-box { flex:1 1 auto; min-height:230px; width:100%; position:relative; }
+
+    /* Native scrollbars follow the theme; slim themed scrollbar for the sidebar */
+    :root[data-theme="light"] { color-scheme:light; }
+    :root[data-theme="dark"] { color-scheme:dark; }
+    .step2-sidebar, .step-card { scrollbar-width:thin; scrollbar-color:#94a3b8 transparent; }
+    :root[data-theme="dark"] .step2-sidebar, :root[data-theme="dark"] .step-card { scrollbar-color:#64748b transparent; }
+    .step2-sidebar::-webkit-scrollbar, .step-card::-webkit-scrollbar { width:8px; }
+    .step2-sidebar::-webkit-scrollbar-thumb, .step-card::-webkit-scrollbar-thumb { background:#94a3b8; border-radius:4px; }
+    :root[data-theme="dark"] .step2-sidebar::-webkit-scrollbar-thumb, :root[data-theme="dark"] .step-card::-webkit-scrollbar-thumb { background:#64748b; }
+    .step2-sidebar::-webkit-scrollbar-track, .step-card::-webkit-scrollbar-track { background:transparent; }
+
+    .card-title { font-size:0.92rem; font-weight:500; margin-bottom:8px; color:var(--accent); }
+
+    .control-group { display:flex; flex-direction:column; gap:6px; }
+
+    .control-group label {
+      font-size:0.9rem;
+      font-weight:500;
+      color:var(--fg);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+    }
+
+    .control-group label span:first-child {
+      display:inline-block;
+      max-width:120px;
+      white-space:normal;
+      line-height:1.35;
+    }
+
+    .control-group .value { color:var(--accent); font-weight:600; white-space:nowrap; }
+
+    .control-group input[type="range"] {
+      width:100%;
+      height:6px;
+      border-radius:3px;
+      background:var(--border);
+      outline:none;
+      -webkit-appearance:none;
+    }
+    .control-group input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance:none;
+      appearance:none;
+      width:16px;
+      height:16px;
+      border-radius:50%;
+      background:var(--accent);
+      cursor:pointer;
+    }
+    .control-group input[type="range"]::-moz-range-thumb {
+      width:16px;
+      height:16px;
+      border-radius:50%;
+      background:var(--accent);
+      cursor:pointer;
+      border:none;
+    }
+
+    /* Slider f: red (aliasing) / blue (no aliasing) with a mark at zero.
+       The range is −2Fs … 2Fs, so |f| ≤ Fs/2 is always the 37.5 % – 62.5 % band. */
+    #fSlider {
+      background:linear-gradient(to right,
+        #fb7185 0%, #fb7185 37.5%,
+        #38bdf8 37.5%, #38bdf8 62.5%,
+        #fb7185 62.5%, #fb7185 100%);
+    }
+    #wSlider {
+      background:linear-gradient(to right, #38bdf8 0%, #38bdf8 25%, #fb7185 25%, #fb7185 100%);
+    }
+    .control-group:has(#fSlider) { position:relative; }
+    .control-group:has(#fSlider)::after {
+      content:'';
+      position:absolute;
+      left:50%;
+      bottom:0px;
+      width:2px;
+      height:12px;
+      background:var(--fg);
+      transform:translateX(-50%);
+      pointer-events:none;
+      z-index:1;
+    }
+
+    .preset-buttons { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+
+    .preset-btn {
+      padding:6px 10px;
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:6px;
+      color:var(--fg);
+      font-size:0.78rem;
+      font-family:inherit;
+      cursor:pointer;
+      transition:all 0.15s;
+    }
+    .preset-btn:hover, .preset-btn.active {
+      background:var(--accent-soft);
+      border-color:var(--accent);
+      color:var(--accent);
+    }
+    .preset-btn.wide { grid-column:1 / -1; }
+    .preset-btn[data-f]:not(.wide) { padding:6px 4px; white-space:nowrap; }
+
+    .note-box {
+      padding:10px;
+      background:var(--accent-soft);
+      border-radius:8px;
+      font-size:0.82rem;
+      line-height:1.5;
+      color:var(--fg);
+    }
+    .note-box .note-title { font-weight:600; margin-bottom:4px; color:var(--accent); }
+
+    .sidebar-credits {
+      margin-top:auto;
+      padding-top:8px;
+      border-top:1px solid var(--border);
+      font-size:0.78rem;
+      color:var(--muted);
+      text-align:center;
+    }
+    .sidebar-credits a { color:var(--accent); text-decoration:none; }
+    .sidebar-credits a:hover { text-decoration:underline; }
+
+    canvas { width:100%; height:100%; max-height:100%; border-radius:6px; display:block; }
+
+    .canvas-box { width:100%; height:calc(100% - 30px); position:relative; }
+
+    .wheel-pair { display:grid; grid-template-columns:1fr 1fr; gap:12px; height:100%; }
+    .wheel-cell { display:flex; flex-direction:column; min-height:0; }
+    .wheel-cell .canvas-box { flex:1 1 auto; height:auto; min-height:0; }
+
+    .info-panel {
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      font-size:0.85rem;
+      justify-content:flex-start;
+      padding-right:10px;
+    }
+    .info-row { display:flex; justify-content:space-between; gap:8px; padding:4px 0; }
+    .info-label { color:var(--muted); min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .info-value { font-weight:600; color:var(--fg); text-align:right; white-space:nowrap; }
+
+    .status-indicator { padding:6px 12px; border-radius:6px; text-align:center; font-weight:600; font-size:0.9rem; }
+    .status-ok { background:rgba(34,197,94,0.15); color:#22c55e; border:1px solid rgba(34,197,94,0.3); }
+    .status-warning { background:rgba(251,146,60,0.15); color:#fb923c; border:1px solid rgba(251,146,60,0.3); }
+    .status-error { background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.3); }
+
+    [hidden] { display:none !important; }
+
+    @media (max-width: 900px) {
+      html, body { height:auto; min-height:100vh; }
+      main { overflow:visible; }
+      .step2-container { grid-template-columns:1fr; grid-template-rows:auto; }
+      .step2-sidebar { grid-row:auto; grid-column:1; }
+      .step2-temporal { grid-column:1; grid-row:auto; height:300px; }
+      .step2-spectral { grid-column:1; grid-row:auto; grid-template-columns:1fr; min-height:400px; }
+      .wheel-pair { gap:6px; }
+
+      /* Phone: sliders, examples and sweep right above the wheels / the graph,
+         interpolation, note and credits at the bottom. */
+      .step2-sidebar { display:contents; }
+      .sidebar-main { gap:12px; }
+      .preset-buttons[data-only="wheel"] { grid-template-columns:repeat(3, 1fr); }
+      .sidebar-main, .sidebar-extra { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:14px; }
+      .sidebar-main { order:1; }
+      .step2-temporal { order:2; }
+      .step2-spectral { order:3; }
+      .sidebar-extra { order:4; }
+      .step2-temporal[data-only="wheel"] { height:auto; }
+      .step2-temporal[data-only="sine"] { height:clamp(220px, 34vh, 300px); }
+      .wheel-cell .canvas-box { flex:none; aspect-ratio:1 / 1; }
+      .step2-container, .step2-container.wheel-mode { grid-template-rows:none; grid-auto-rows:auto; height:auto; align-items:start; }
+      .control-group label span:first-child { max-width:none; }
+      .step-card { padding:8px; }
+      main { padding:8px; }
+
+      /* Compact header: title and selectors on one row, the two tabs below */
+      header { padding:8px 10px 6px; gap:6px 10px; }
+      .app-title-sub { display:none; }
+      .app-title-main { font-size:1rem; }
+      .top-right { order:2; margin-left:auto; }
+      .steps-nav { order:3; flex:1 1 100%; flex-wrap:nowrap; }
+      .step-tab { padding:6px 10px; font-size:0.85rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="app-left">
+    <div class="app-title-main" id="appTitle"></div>
+    <div class="app-title-sub" id="appSubtitle"></div>
+  </div>
+
+  <nav class="steps-nav" id="tabsNav" role="tablist">
+    <button class="step-tab active" data-tab="sine" role="tab" aria-selected="true">
+      <span class="num">1</span><span data-i18n="tabSine"></span>
+    </button>
+    <button class="step-tab" data-tab="wheel" role="tab" aria-selected="false">
+      <span class="num">2</span><span data-i18n="tabWheel"></span>
+    </button>
+  </nav>
+
+  <div class="top-right">
+    <div class="language-switch">
+      <button id="language-trigger" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="language-menu"><span id="language-current">FR</span><i aria-hidden="true"></i></button>
+      <div id="language-menu" class="language-menu" role="group" hidden>
+        <button type="button" data-lang="en" aria-pressed="false">EN</button>
+        <button type="button" data-lang="fr" aria-pressed="true">FR</button>
+        <button type="button" data-lang="es" aria-pressed="false">ES</button>
+      </div>
+    </div>
+    <button id="theme-toggle" class="icon-button" type="button" aria-pressed="false"><span class="theme-glyph" aria-hidden="true"></span></button>
+  </div>
+</header>
+
+<main>
+  <div class="step-wrapper">
+    <div class="step-card">
+      <div class="step2-container">
+
+        <!-- Sidebar: shared controls -->
+        <div class="step2-sidebar">
+          <div class="sidebar-main">
+          <div class="control-group" data-only="sine">
+            <label for="fSlider">
+              <span data-i18n="fLabelSine"></span>
+              <span class="value" id="fValue"></span>
+            </label>
+            <input type="range" id="fSlider" min="-100" max="100" value="10" step="1">
+          </div>
+          <div class="control-group" data-only="sine">
+            <label for="FsSlider">
+              <span data-i18n="FsLabelSine"></span>
+              <span class="value" id="FsValue"></span>
+            </label>
+            <input type="range" id="FsSlider" min="2" max="500" value="50" step="1">
+          </div>
+          <div class="control-group" data-only="wheel" hidden>
+            <label style="display:block;" data-i18n="wheelModel"></label>
+            <div class="preset-buttons" role="group" data-i18n-aria="wheelModel">
+              <button type="button" class="preset-btn" data-wheel-type="rim" aria-pressed="true" data-i18n="modelRim"></button>
+              <button type="button" class="preset-btn" data-wheel-type="dot" aria-pressed="false" data-i18n="modelDot"></button>
+            </div>
+          </div>
+          <div class="control-group" data-only="wheel" hidden>
+            <label for="wSlider">
+              <span data-i18n="fLabelWheel"></span>
+              <span class="value" id="wValue"></span>
+            </label>
+            <input type="range" id="wSlider" min="0" max="10" value="0.5" step="0.01">
+          </div>
+          <div class="control-group" data-only="wheel" hidden>
+            <label for="FcSlider">
+              <span data-i18n="FsLabelWheel"></span>
+              <span class="value" id="FcValue"></span>
+            </label>
+            <input type="range" id="FcSlider" min="10" max="60" value="25" step="1">
+          </div>
+          <div class="control-group" data-only="sine">
+            <label for="periodsSlider">
+              <span data-i18n="periodsLabel"></span>
+              <span class="value" id="periodsValue"></span>
+            </label>
+            <input type="range" id="periodsSlider" min="1" max="10" value="3" step="1">
+          </div>
+
+          <div class="control-group">
+            <label style="display:block;" data-i18n="presetsLabel"></label>
+            <div class="preset-buttons" data-only="sine">
+              <button type="button" class="preset-btn" data-f="30" data-fs="100"></button>
+              <button type="button" class="preset-btn" data-f="70" data-fs="100"></button>
+              <button type="button" class="preset-btn" data-f="120" data-fs="100"></button>
+              <button type="button" class="preset-btn" data-f="100" data-fs="100"></button>
+            </div>
+            <div class="preset-buttons" data-only="wheel" hidden>
+              <button type="button" class="preset-btn" data-wfreq="5" data-wfs="25"></button>
+              <button type="button" class="preset-btn" data-wfreq="12.5" data-wfs="25"></button>
+              <button type="button" class="preset-btn" data-wfreq="24" data-wfs="25"></button>
+              <button type="button" class="preset-btn" data-wfreq="25" data-wfs="25"></button>
+              <button type="button" class="preset-btn" data-wfreq="25.5" data-wfs="25"></button>
+              <button type="button" class="preset-btn" data-wfreq="49" data-wfs="25"></button>
+            </div>
+            <div class="preset-buttons">
+              <button type="button" class="preset-btn wide" id="sweepBtn" aria-pressed="false"></button>
+            </div>
+          </div>
+          </div>
+
+          <div class="sidebar-extra">
+          <div class="control-group" data-only="sine">
+            <label style="display:block; font-weight:500;" data-i18n="interpLabel"></label>
+            <div style="display:flex; flex-direction:column; gap:6px; align-items:flex-start;">
+              <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                <input type="radio" name="interpType" value="ideal" checked>
+                <span style="font-size:0.9rem;" data-i18n="interpIdeal"></span>
+              </label>
+              <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                <input type="radio" name="interpType" value="zoh">
+                <span style="font-size:0.9rem;" data-i18n="interpZOH"></span>
+              </label>
+              <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                <input type="radio" name="interpType" value="linear">
+                <span style="font-size:0.9rem;" data-i18n="interpLinear"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="note-box">
+            <div class="note-title" data-i18n="noteTitle"></div>
+            <div id="noteText"></div>
+          </div>
+
+          <div class="sidebar-credits">
+            Franco FERRUCCI<br>
+            <a href="https://ferrucci-franco.github.io/electronics/" target="_blank" rel="noopener">ferrucci-franco.github.io</a>
+          </div>
+          </div>
+        </div>
+
+        <!-- Row 1: temporal evolution (tab 1) or the filmed wheel (tab 2) -->
+        <div class="step2-temporal" data-only="sine">
+          <div class="card-title" data-i18n="temporal"></div>
+          <div class="canvas-box">
+            <canvas id="temporalCanvas"></canvas>
+          </div>
+        </div>
+
+        <div class="step2-temporal" data-only="wheel" hidden>
+          <div class="wheel-pair">
+            <div class="wheel-cell">
+              <div class="card-title" data-i18n="realWheel"></div>
+              <div class="canvas-box"><canvas id="realWheelCanvas"></canvas></div>
+            </div>
+            <div class="wheel-cell">
+              <div class="card-title" id="cameraTitle"></div>
+              <div class="canvas-box"><canvas id="cameraCanvas"></canvas></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Row 2: spectral diagram (sawtooth) + sampling theorem panel -->
+        <div class="step2-spectral">
+          <div class="spectral-plot">
+            <div class="card-title" data-i18n="spectral"></div>
+            <div class="spectral-box">
+              <canvas id="spectralCanvas"></canvas>
+            </div>
+          </div>
+          <div class="info-panel">
+            <div class="card-title" style="font-size:0.9rem; margin-bottom:4px;" data-i18n="theory"></div>
+            <div id="infoRows"></div>
+            <div class="status-indicator status-ok" id="statusIndicator"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+(() => {
+  'use strict';
+
+  // =====================================================================
+  // TEXTS
+  // =====================================================================
+  const TEXTS = {
+    es: {
+      title: 'Muestreo y aliasing',
+      subtitle: 'Señal muestreada y rueda filmada',
+      tabSine: 'Sinusoide muestreada', tabWheel: 'Rueda filmada',
+      languageAria: 'Idioma', themeDark: 'Activar el tema oscuro', themeLight: 'Activar el tema claro',
+      fLabelSine: 'Frecuencia de entrada f<sub>IN</sub>', fLabelWheel: 'Velocidad de la rueda v',
+      FsLabelSine: 'Frecuencia de muestreo Fs', FsLabelWheel: 'Imágenes de la cámara Fs',
+      periodsLabel: 'Períodos mostrados',
+      presetsLabel: 'Ejemplos',
+      sweep: 'Barrido 0 → 2·Fs', stop: 'Detener el barrido',
+      interpLabel: 'Tipo de interpolación',
+      interpIdeal: 'Ideal (sinc)', interpZOH: 'ZOH (escalera)', interpLinear: 'Lineal',
+      noteTitle: 'Nota',
+      noteIdeal: 'La <strong>interpolación ideal</strong> usando función sinc es no causal (requiere muestras futuras), por lo que no se puede usar en tiempo real, solo off-line.',
+      noteZOH: 'El <strong>Zero-Order Hold</strong> mantiene el valor de cada muestra hasta la siguiente. Es causal y se usa en tiempo real.',
+      noteLinear: 'La <strong>interpolación lineal</strong> conecta las muestras con líneas rectas. Es causal y simple de implementar.',
+      wheelModel: 'Modelo de rueda', modelRim: 'Llanta 5 rayos', modelDot: 'Disco + agujero',
+      noteDot: 'Un solo punto de referencia (el agujero blanco): la señal que muestrea la cámara es la <strong>rotación misma, f = v</strong>, un fasor e<sup>j2πvt</sup> muestreado. Mientras v &lt; Fs/2 se ve girar en el sentido correcto; más allá parece retroceder (v* = v − Fs), y con v = Fs parece inmóvil.',
+      noteWheel: 'A la izquierda, lo que ve el ojo: la llanta se vuelve borrosa en cuanto gira rápido. A la derecha, la cámara: una imagen nítida cada 1/Fs s. Los 5 rayos son idénticos: la llanta se ve igual cada 1/5 de vuelta, así que la señal que muestrea la cámara es el <strong>paso de los rayos, f = 5·v</strong>. Mientras f &lt; Fs/2 (v &lt; Fs/10) el giro se ve en el sentido correcto; más allá parece retroceder, y con f = Fs parece inmóvil.',
+      temporal: 'Evolución Temporal', spectral: 'Diagrama Espectral', theory: 'Teorema de Muestreo',
+      realWheel: 'Rueda real', camera: 'Cámara',
+      f0: 'Frecuencia f<sub>IN</sub>', Fs: 'Frecuencia Fs', fNyquist: 'Frecuencia de Nyquist', condition: 'Condición',
+      fAlias: 'Frecuencia aparente (f*<sub>IN</sub>)',
+      wReal: 'Velocidad real v', wSpoke: 'Paso de los rayos f = 5·v', wFs: 'Cámara Fs', wNyq: 'Nyquist Fs/2', wApp: 'Frecuencia aparente f*', wAppSpeed: 'Velocidad aparente v*',
+      wSlow: 'Reproducción en pantalla',
+      slower: 'cámara lenta', faster: 'acelerada', reverse: 'sentido inverso', still: 'inmóvil',
+      statusOk: '✓ Muestreo correcto', statusNyquist: '⚠ Límite de Nyquist', statusAmbiguous: '⚠ Cerca de Fs/2: sentido ambiguo', statusAlias: '✗ Aliasing detectado',
+      legend_continuous: 'Continua', legend_samples: 'Muestras', legend_reconstructed: 'Reconstruida', legend_time: 'Tiempo (s)',
+      legend_no_aliasing: 'Sin aliasing', legend_aliasing: 'Con aliasing',
+      rev: 'rev/s', img: 'imágenes/s'
+    },
+    fr: {
+      title: 'Échantillonnage et repliement',
+      subtitle: 'Signal échantillonné et roue filmée',
+      tabSine: 'Sinusoïde échantillonnée', tabWheel: 'Roue filmée',
+      languageAria: 'Langue', themeDark: 'Activer le thème sombre', themeLight: 'Activer le thème clair',
+      fLabelSine: 'Fréquence d\'entrée f<sub>IN</sub>', fLabelWheel: 'Vitesse de la roue v',
+      FsLabelSine: 'Fréquence d\'échantillonnage Fs', FsLabelWheel: 'Images de la caméra Fs',
+      periodsLabel: 'Périodes affichées',
+      presetsLabel: 'Exemples',
+      sweep: 'Balayage 0 → 2·Fs', stop: 'Arrêter le balayage',
+      interpLabel: 'Type d\'interpolation',
+      interpIdeal: 'Idéale (sinc)', interpZOH: 'ZOH (escalier)', interpLinear: 'Linéaire',
+      noteTitle: 'Nota bene',
+      noteIdeal: 'L\'<strong>interpolation idéale</strong> utilisant la fonction sinc est non causale (nécessite des échantillons futurs), donc inutilisable en temps réel, seulement hors ligne.',
+      noteZOH: 'Le <strong>Zero-Order Hold</strong> maintient la valeur de chaque échantillon jusqu\'au suivant. Elle est causale et utilisée en temps réel.',
+      noteLinear: 'L\'<strong>interpolation linéaire</strong> connecte les échantillons avec des lignes droites. Elle est causale et simple à implémenter.',
+      wheelModel: 'Modèle de roue', modelRim: 'Jante 5 rayons', modelDot: 'Disque + trou',
+      noteDot: 'Un seul repère (le trou blanc) : le signal échantillonné par la caméra est la <strong>rotation elle-même, f = v</strong>, un phaseur e<sup>j2πvt</sup> échantillonné. Tant que v &lt; Fs/2 il tourne dans le bon sens ; au-delà il semble reculer (v* = v − Fs), et pour v = Fs il semble immobile.',
+      noteWheel: 'À gauche, ce que voit l\'œil : la jante devient floue dès qu\'elle tourne vite. À droite, la caméra : une image nette toutes les 1/Fs s. Les 5 rayons sont identiques : la jante se retrouve pareille tous les 1/5 de tour, donc le signal échantillonné par la caméra est le <strong>passage des rayons, f = 5·v</strong>. Tant que f &lt; Fs/2 (v &lt; Fs/10) la rotation est vue dans le bon sens ; au-delà elle semble reculer, et pour f = Fs elle semble immobile.',
+      temporal: 'Évolution Temporelle', spectral: 'Diagramme Spectral', theory: 'Théorème d\'Échantillonnage',
+      realWheel: 'Roue réelle', camera: 'Caméra',
+      f0: 'Fréquence f<sub>IN</sub>', Fs: 'Fréquence Fs', fNyquist: 'Fréquence de Nyquist', condition: 'Condition',
+      fAlias: 'Fréquence apparente (f*<sub>IN</sub>)',
+      wReal: 'Vitesse réelle v', wSpoke: 'Passage des rayons f = 5·v', wFs: 'Caméra Fs', wNyq: 'Nyquist Fs/2', wApp: 'Fréquence apparente f*', wAppSpeed: 'Vitesse apparente v*',
+      wSlow: 'Lecture à l\'écran',
+      slower: 'ralentie', faster: 'accélérée', reverse: 'sens inverse', still: 'immobile',
+      statusOk: '✓ Échantillonnage correct', statusNyquist: '⚠ Limite de Nyquist', statusAmbiguous: '⚠ Proche de Fs/2 : sens ambigu', statusAlias: '✗ Repliement détecté',
+      legend_continuous: 'Continue', legend_samples: 'Échantillons', legend_reconstructed: 'Reconstruite', legend_time: 'Temps (s)',
+      legend_no_aliasing: 'Sans repliement', legend_aliasing: 'Avec repliement',
+      rev: 'tr/s', img: 'images/s'
+    },
+    en: {
+      title: 'Sampling and aliasing',
+      subtitle: 'Sampled signal and filmed wheel',
+      tabSine: 'Sampled sinusoid', tabWheel: 'Filmed wheel',
+      languageAria: 'Language', themeDark: 'Switch to dark theme', themeLight: 'Switch to light theme',
+      fLabelSine: 'Input frequency f<sub>IN</sub>', fLabelWheel: 'Wheel speed v',
+      FsLabelSine: 'Sampling frequency Fs', FsLabelWheel: 'Camera frames Fs',
+      periodsLabel: 'Periods shown',
+      presetsLabel: 'Examples',
+      sweep: 'Sweep 0 → 2·Fs', stop: 'Stop the sweep',
+      interpLabel: 'Interpolation type',
+      interpIdeal: 'Ideal (sinc)', interpZOH: 'ZOH (staircase)', interpLinear: 'Linear',
+      noteTitle: 'Note',
+      noteIdeal: 'The <strong>ideal interpolation</strong> using sinc function is non-causal (requires future samples), so it cannot be used in real-time, only offline.',
+      noteZOH: 'The <strong>Zero-Order Hold</strong> maintains each sample value until the next. It is causal and used in real-time.',
+      noteLinear: 'The <strong>linear interpolation</strong> connects samples with straight lines. It is causal and simple to implement.',
+      wheelModel: 'Wheel model', modelRim: '5-spoke rim', modelDot: 'Disc + hole',
+      noteDot: 'A single reference (the white hole): the signal the camera samples is the <strong>rotation itself, f = v</strong>, a sampled phasor e<sup>j2πvt</sup>. As long as v &lt; Fs/2 it turns in the right direction; beyond, it seems to go backwards (v* = v − Fs), and at v = Fs it stands still.',
+      noteWheel: 'Left, what the eye sees: the rim blurs as soon as it spins fast. Right, the camera: one sharp image every 1/Fs s. The 5 spokes are identical: the rim looks the same every 1/5 turn, so the signal the camera samples is the <strong>spoke passage, f = 5·v</strong>. As long as f &lt; Fs/2 (v &lt; Fs/10) the rotation is seen in the right direction; beyond, it seems to go backwards, and at f = Fs it stands still.',
+      temporal: 'Temporal Evolution', spectral: 'Spectral Diagram', theory: 'Sampling Theorem',
+      realWheel: 'Real wheel', camera: 'Camera',
+      f0: 'Frequency f<sub>IN</sub>', Fs: 'Frequency Fs', fNyquist: 'Nyquist Frequency', condition: 'Condition',
+      fAlias: 'Apparent frequency (f*<sub>IN</sub>)',
+      wReal: 'Real speed v', wSpoke: 'Spoke passage f = 5·v', wFs: 'Camera Fs', wNyq: 'Nyquist Fs/2', wApp: 'Apparent frequency f*', wAppSpeed: 'Apparent speed v*',
+      wSlow: 'On-screen playback',
+      slower: 'slow motion', faster: 'sped up', reverse: 'reversed', still: 'stationary',
+      statusOk: '✓ Correct sampling', statusNyquist: '⚠ Nyquist limit', statusAmbiguous: '⚠ Near Fs/2: direction ambiguous', statusAlias: '✗ Aliasing detected',
+      legend_continuous: 'Continuous', legend_samples: 'Samples', legend_reconstructed: 'Reconstructed', legend_time: 'Time (s)',
+      legend_no_aliasing: 'No aliasing', legend_aliasing: 'With aliasing',
+      rev: 'rev/s', img: 'frames/s'
+    }
+  };
+  const LOCALES = { es: 'es-ES', fr: 'fr-FR', en: 'en-US' };
+
+  // =====================================================================
+  // STATE
+  // =====================================================================
+  const state = { lang: 'fr', tab: 'sine', f: 10, Fs: 50, wf: 0.5, wFs: 25, wheelType: 'rim', periods: 3, interpType: 'ideal', sweeping: false, sweepF: 0 };
+  // (f, Fs) of the active tab: the sinusoid and the wheel have their own settings.
+  // Wheel: v = state.wf turns/s. Two models:
+  //  - 'rim': 5 identical spokes; it looks the same every 1/5 turn, so the sampled signal is the
+  //    spoke passage f = 5·v;
+  //  - 'dot': a black disc with one white hole; the sampled signal is the rotation itself, f = v
+  //    (a sampled phasor e^{j2πvt}).
+  const SPOKES = 5;                                  // rim geometry
+  const nSym = () => (state.wheelType === 'dot' ? 1 : SPOKES);
+  const cur = () => (state.tab === 'wheel' ? { f: nSym() * state.wf, Fs: state.wFs } : { f: state.f, Fs: state.Fs });
+  const SWEEP_SECONDS = { sine: 40, wheel: 90 };
+
+  // Wheel on screen. The animation is locked to the display: the camera film is played at one
+  // image per display frame (60 images/s on a 60 Hz screen: as smooth as the screen allows), and
+  // between two images the wheel turns exactly f/Fs of a turn. The real wheel is drawn with a
+  // motion blur averaged over the whole display frame (what the eye sees on a fast wheel): this
+  // time average filters the motion before the monitor samples it, so the monitor cannot alias.
+  
+  const $ = (id) => document.getElementById(id);
+  const t = () => TEXTS[state.lang];
+  const fmtCache = {};
+  function fmt(x, dec = 1) {
+    const key = state.lang + dec;
+    if (!fmtCache[key]) fmtCache[key] = new Intl.NumberFormat(LOCALES[state.lang], { maximumFractionDigits: dec, minimumFractionDigits: 0 });
+    return fmtCache[key].format(Math.abs(x) < 1e-9 ? 0 : x).replace('-', '−');
+  }
+  const signed = (x, dec = 1) => (x > 0 ? '+' : '') + fmt(x, dec);
+
+  // Signed apparent frequency f* ∈ [−Fs/2, Fs/2] (same algorithm as the spectral diagram).
+  function apparent(f, Fs) {
+    let fs = f % Fs;
+    if (fs > Fs / 2) fs -= Fs;
+    if (fs < -Fs / 2) fs += Fs;
+    return fs;
+  }
+
+  function isDark() { return document.documentElement.getAttribute('data-theme') === 'dark'; }
+  function palette() {
+    const dark = isDark();
+    return {
+      dark,
+      bg: dark ? '#0b1020' : '#f7f8fb',
+      grid: dark ? '#1f2937' : '#e5e7eb',
+      text: dark ? '#9ca3af' : '#6b7280',
+      fg: dark ? '#e5e7eb' : '#111827',
+      signal: '#38bdf8',
+      sample: '#fb7185',
+      reconstruct: '#22c55e',
+      accent: '#38bdf8',
+      alias: '#fb7185',
+      spoke: dark ? '#94a3b8' : '#64748b',
+      rim: dark ? '#e5e7eb' : '#1f2937',
+      marker: dark ? '#fb7185' : '#dc2626'
+    };
+  }
+
+  function setupCanvas(canvas) {
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    const width = rect.width, height = rect.height;
+    const W = Math.max(1, Math.round(width * dpr)), H = Math.max(1, Math.round(height * dpr));
+    if (canvas.width !== W || canvas.height !== H) { canvas.width = W; canvas.height = H; }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx, width, height };
+  }
+
+  // =====================================================================
+  // TEMPORAL GRAPH (from step 2)
+  // =====================================================================
+  function drawTemporalGraph() {
+    const canvas = $('temporalCanvas');
+    const { ctx, width, height } = setupCanvas(canvas);
+    const tx = t();
+    const P = palette();
+    const { f, Fs, periods } = state;
+
+    // f = 0: show the same number of samples as for f = Fs/20
+    const fRef = Math.max(Math.abs(f), Fs / 20);
+    const T0 = 1 / fRef;
+    const duration = periods * T0;
+    const padding = 40;
+    const graphWidth = width - 2 * padding;
+    const graphHeight = height - 2 * padding;
+
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = P.bg;
+    ctx.fillRect(0, 0, width, height);
+
+    // Horizontal centre axis
+    ctx.strokeStyle = P.grid;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(padding, padding + graphHeight / 2);
+    ctx.lineTo(width - padding, padding + graphHeight / 2);
+    ctx.stroke();
+
+    // Vertical lines (one per period)
+    ctx.setLineDash([2, 2]);
+    for (let i = 0; i <= periods; i++) {
+      const x = padding + (i / periods) * graphWidth;
+      ctx.beginPath();
+      ctx.moveTo(x, padding);
+      ctx.lineTo(x, height - padding);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+
+    const X = (tt) => padding + (tt / duration) * graphWidth;
+    const Y = (v) => padding + graphHeight / 2 - v * (graphHeight / 2.5);
+
+    // Continuous signal
+    ctx.strokeStyle = P.signal;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    const numPoints = 1000;
+    for (let i = 0; i <= numPoints; i++) {
+      const tt = (i / numPoints) * duration;
+      const y = Y(Math.sin(2 * Math.PI * f * tt));
+      if (i === 0) ctx.moveTo(X(tt), y); else ctx.lineTo(X(tt), y);
+    }
+    ctx.stroke();
+
+    // Samples
+    const Ts = 1 / Fs;
+    const samples = [];
+    const numSamples = Math.floor(duration / Ts + 1e-9) + 1;
+    for (let i = 0; i < numSamples; i++) {
+      const tt = i * Ts;
+      if (tt > duration + 1e-12) break;
+      const v = Math.sin(2 * Math.PI * ((f * i) % Fs) / Fs);
+      samples.push({ x: X(tt), y: Y(v), t: tt, value: v });
+    }
+
+    // Reconstruction (the ideal one is the sinusoid at the signed apparent frequency f*:
+    // sin(2π f* t) passes exactly through the samples)
+    const fStar = apparent(f, Fs);
+    if (samples.length > 1) {
+      ctx.strokeStyle = P.reconstruct;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      if (state.interpType === 'ideal') {
+        for (let i = 0; i <= numPoints; i++) {
+          const tt = (i / numPoints) * duration;
+          const y = Y(Math.sin(2 * Math.PI * fStar * tt));
+          if (i === 0) ctx.moveTo(X(tt), y); else ctx.lineTo(X(tt), y);
+        }
+      } else if (state.interpType === 'zoh') {
+        for (let i = 0; i < samples.length; i++) {
+          const s = samples[i];
+          const nextT = (i < samples.length - 1) ? samples[i + 1].t : duration;
+          if (i === 0) ctx.moveTo(s.x, s.y);
+          ctx.lineTo(X(nextT), s.y);
+          if (i < samples.length - 1) ctx.lineTo(X(nextT), samples[i + 1].y);
+        }
+      } else {
+        samples.forEach((s, i) => (i === 0 ? ctx.moveTo(s.x, s.y) : ctx.lineTo(s.x, s.y)));
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Sample dots
+    samples.forEach((s) => {
+      ctx.fillStyle = P.sample;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, 4, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.strokeStyle = P.dark ? '#0b1020' : '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    });
+
+    // Axis labels
+    ctx.fillStyle = P.text;
+    ctx.font = '14px system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('0', padding, height - padding + 16);
+    const durLabel = fmt(duration, 3) + ' s';
+    ctx.fillText(durLabel, width - padding, height - padding + 16);
+    ctx.font = 'bold 16px system-ui';
+    ctx.textAlign = 'right';
+    if (height >= 220) ctx.fillText(tx.legend_time, width - padding, height - padding + 32);
+    else {   // low canvas (small phones): title on the line of the tick labels, left of the duration
+      ctx.font = '14px system-ui'; const dw = ctx.measureText(durLabel).width;
+      ctx.font = 'bold 15px system-ui';
+      ctx.fillText(tx.legend_time, width - padding - dw / 2 - 14, height - padding + 16);
+    }
+
+    // Legend (font shrinks on narrow screens; the last item goes to a second line if needed)
+    const items = [tx.legend_continuous, tx.legend_samples, tx.legend_reconstructed];
+    const avail = width - padding - 8;
+    let fsz = 13, rowW;
+    const measure = () => { ctx.font = `${fsz}px system-ui`; return 25 + ctx.measureText(items[0]).width + 22 + 12 + ctx.measureText(items[1]).width + 22 + 27 + ctx.measureText(items[2]).width; };
+    while ((rowW = measure()) > avail && fsz > 10) fsz -= 0.5;
+    const twoLines = rowW > avail;
+    let legendY = padding - (twoLines ? 26 : 18);
+    ctx.textAlign = 'left';
+    let lx = padding;
+    ctx.strokeStyle = P.signal; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(lx, legendY); ctx.lineTo(lx + 20, legendY); ctx.stroke();
+    ctx.fillStyle = P.text; ctx.fillText(items[0], lx + 25, legendY + 4);
+    lx += 25 + ctx.measureText(items[0]).width + 22;
+    ctx.fillStyle = P.sample;
+    ctx.beginPath(); ctx.arc(lx + 4, legendY, 3, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = P.text; ctx.fillText(items[1], lx + 12, legendY + 4);
+    lx += 12 + ctx.measureText(items[1]).width + 22;
+    if (twoLines) { lx = padding; legendY += fsz + 5; }
+    ctx.strokeStyle = P.reconstruct; ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(lx, legendY); ctx.lineTo(lx + 20, legendY); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = P.text; ctx.fillText(items[2], lx + 27, legendY + 4);
+  }
+
+  // =====================================================================
+  // SPECTRAL DIAGRAM (from step 2): sawtooth f*(f) on −2Fs … 2Fs
+  // =====================================================================
+  function drawSpectralGraph() {
+    const canvas = $('spectralCanvas');
+    const { ctx, width, height } = setupCanvas(canvas);
+    const tx = t();
+    const P = palette();
+    const { f, Fs } = cur();
+    const kMin = state.tab === 'wheel' ? 0 : -2;
+    const unit = state.tab === 'wheel' ? tx.rev : 'Hz';
+    const sc = state.tab === 'wheel' ? 1 / nSym() : 1;   // wheel: axes in turns/s (v = f/n)
+
+    const padding = 50;
+    const bottomPadding = 60;
+    const graphWidth = width - 2 * padding;
+    const graphHeight = height - padding - bottomPadding;
+
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = P.bg;
+    ctx.fillRect(0, 0, width, height);
+
+    const xMin = kMin * Fs, xMax = 2 * Fs;
+    const yMin = -Fs / 2, yMax = Fs / 2;
+    const f0ToX = (v) => padding + ((v - xMin) / (xMax - xMin)) * graphWidth;
+    const f0StarToY = (v) => height - bottomPadding - ((v - yMin) / (yMax - yMin)) * graphHeight;
+
+    // X axis (y = 0)
+    const yZero = f0StarToY(0);
+    ctx.strokeStyle = P.text;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(padding, yZero);
+    ctx.lineTo(width - padding, yZero);
+    ctx.stroke();
+
+    // Y axis (x = 0)
+    const xZero = f0ToX(0);
+    ctx.beginPath();
+    ctx.moveTo(xZero, padding);
+    ctx.lineTo(xZero, height - bottomPadding);
+    ctx.stroke();
+
+    // Vertical guides −2Fs, −Fs, 0, Fs, 2Fs
+    ctx.strokeStyle = P.grid;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([2, 2]);
+    for (let k = kMin; k <= 2; k++) {
+      const x = f0ToX(k * Fs);
+      ctx.beginPath();
+      ctx.moveTo(x, padding);
+      ctx.lineTo(x, height - bottomPadding);
+      ctx.stroke();
+    }
+
+    // Nyquist lines (+Fs/2, −Fs/2)
+    const yNyquistPos = f0StarToY(Fs / 2);
+    const yNyquistNeg = f0StarToY(-Fs / 2);
+    ctx.beginPath();
+    ctx.moveTo(padding, yNyquistPos);
+    ctx.lineTo(width - padding, yNyquistPos);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(padding, yNyquistNeg);
+    ctx.lineTo(width - padding, yNyquistNeg);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Sawtooth
+    ctx.strokeStyle = P.accent;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    const numPoints = 1000;
+    for (let i = 0; i <= numPoints; i++) {
+      const v = xMin + (i / numPoints) * (xMax - xMin);
+      const x = f0ToX(v), y = f0StarToY(apparent(v, Fs));
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Current point
+    const fStar = apparent(f, Fs);
+    const xF0 = f0ToX(f);
+    const yF0 = f0StarToY(fStar);
+    const pointColor = (Math.abs(f) > Fs / 2) ? P.alias : P.accent;
+
+    // Crosshairs to the axes
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = pointColor;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(xF0, yF0); ctx.lineTo(xF0, yZero); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(xF0, yF0); ctx.lineTo(xZero, yF0); ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = pointColor;
+    ctx.beginPath();
+    ctx.arc(xF0, yF0, 5, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.strokeStyle = P.dark ? '#0b1020' : '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // X labels
+    ctx.fillStyle = P.text;
+    ctx.font = '14px system-ui';
+    ctx.textAlign = 'center';
+    for (let k = kMin; k <= 2; k++) {
+      ctx.fillText(k === 0 ? '0' : fmt(k * Fs * sc, 2), f0ToX(k * Fs) + (k === 0 ? 15 : 0), yZero + 22);
+    }
+    // x-axis title: on the legend's line if there is room, otherwise just under the plot
+    const xTitle = state.tab === 'wheel' ? `v (${unit})` : `fᵢₙ (${unit})`;
+    ctx.font = '13px system-ui';
+    const legendWidth = [tx.legend_no_aliasing, tx.legend_aliasing].reduce((a, s2) => a + 10 + ctx.measureText(s2).width, 0) + 40;
+    ctx.font = 'bold 16px system-ui';
+    const titleLeft = width - padding - 10 - ctx.measureText(xTitle).width;
+    const titleY = (width / 2 + legendWidth / 2 + 12 > titleLeft) ? height - bottomPadding + 24 : height - bottomPadding + 45;
+    ctx.textAlign = 'right';
+    ctx.fillText(xTitle, width - padding - 10, titleY);
+
+    // Y labels
+    ctx.textAlign = 'right';
+    ctx.font = '14px system-ui';
+    ctx.fillText(fmt(-Fs / 2 * sc, 2), xZero - 8, yNyquistNeg + 4);
+    ctx.fillText('0', xZero - 8, yZero - 10);
+    ctx.fillText(fmt(Fs / 2 * sc, 2), xZero - 8, yNyquistPos + 4);
+
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 16px system-ui';
+    ctx.fillText(state.tab === 'wheel' ? `v* (${unit})` : `f*ᵢₙ (${unit})`, xZero, padding - 15);
+
+    // Legend
+    ctx.font = '13px system-ui';
+    const legendY = height - 12;
+    const items = [[P.accent, tx.legend_no_aliasing], [P.alias, tx.legend_aliasing]];
+    const gap = 40;
+    const total = items.reduce((a, [, s]) => a + 10 + ctx.measureText(s).width, 0) + gap;
+    let lx = width / 2 - total / 2;
+    ctx.textAlign = 'left';
+    for (const [c, s] of items) {
+      ctx.fillStyle = c;
+      ctx.beginPath(); ctx.arc(lx, legendY - 4, 4, 0, 2 * Math.PI); ctx.fill();
+      ctx.fillStyle = P.text;
+      ctx.fillText(s, lx + 10, legendY);
+      lx += 10 + ctx.measureText(s).width + gap;
+    }
+  }
+
+  // =====================================================================
+  // FILMED WHEEL (a car wheel: tyre, 5-spoke alloy rim)
+  // =====================================================================
+  const display = { dts: [], N: 1, rate: 60 };
+  const wheel = { acc: 0, phase: 0, smear: 0, camPhase: 0, image: 0 };
+
+  // Measure the refresh rate during the first frames (for the playback factor shown in the panel).
+  // Rolling median of the last 60 frame intervals, refreshed every 60 frames (the first frames,
+  // while the page loads, are slower than the real refresh rate).
+  function measureDisplay(dt) {
+    if (dt <= 0) return;
+    display.dts.push(dt);
+    if (display.dts.length > 60) display.dts.shift();
+    if (display.dts.length === 60 && (display.count = (display.count || 0) + 1) % 60 === 0) {
+      const sorted = display.dts.slice().sort((a, b) => a - b);
+      const fps = 1 / sorted[30];
+      if (Math.abs(fps - display.rate) > 1) { display.rate = fps; updatePanel(); }
+    }
+  }
+  // Playback factor of the wheel animation (screen time / real time).
+  const playback = () => display.rate / state.wFs;
+
+  // One display frame. The camera image is taken on the frames whose count is a multiple of N.
+  // Image clock driven by time, not by the number of frames: the camera film plays at
+  // display.rate images/s (the measured refresh rate, so normally one image per frame). If a frame
+  // comes late, the clock advances by the images it owes (rounded, so frame-to-frame jitter never
+  // adds or drops an image): the speed stays constant even when the browser skips frames.
+  // Between two images the wheel turns exactly v/Fs of a turn.
+  function stepWheel(dt) {
+    wheel.acc += dt * display.rate;
+    const steps = Math.min(4, Math.max(0, Math.round(wheel.acc)));
+    wheel.acc -= steps;
+    if (Math.abs(wheel.acc) > 2) wheel.acc = 0;       // after a pause (hidden tab…)
+    const perImage = state.wf / state.wFs;            // turns per camera image
+    wheel.smear = perImage * Math.max(1, steps);      // what the eye integrates during this frame
+    if (steps > 0) {
+      wheel.phase = ((wheel.phase + perImage * steps) % 1 + 1) % 1;
+      wheel.camPhase = wheel.phase;
+      wheel.image += steps;
+    }
+  }
+
+
+  // The wheel is drawn once into a sprite (opaque inside the tyre), then rotated.
+  const sprite = { canvas: document.createElement('canvas'), size: 0 };
+
+  function renderSprite(sizePx) {
+    const c = sprite.canvas;
+    c.width = c.height = sizePx;
+    sprite.size = sizePx;
+    sprite.type = state.wheelType;
+    if (state.wheelType === 'dot') { renderDotSprite(c, sizePx); return; }
+    const g = c.getContext('2d');
+    const R = sizePx / 2 - 1;
+    g.clearRect(0, 0, sizePx, sizePx);
+    g.save();
+    g.translate(sizePx / 2, sizePx / 2);
+    const circle = (r, fill) => { g.fillStyle = fill; g.beginPath(); g.arc(0, 0, r, 0, 2 * Math.PI); g.fill(); };
+    const ring = (r0, r1, fill) => { g.fillStyle = fill; g.beginPath(); g.arc(0, 0, r1, 0, 2 * Math.PI); g.arc(0, 0, r0, 0, 2 * Math.PI, true); g.fill(); };
+    const radial = (r0, r1, stops) => { const gr = g.createRadialGradient(0, 0, r0, 0, 0, r1); stops.forEach(([o, col]) => gr.addColorStop(o, col)); return gr; };
+
+    // Tyre: sidewall with a soft bulge, tread edge
+    ring(0.70 * R, R, radial(0.70 * R, R, [[0, '#141518'], [0.35, '#2a2c31'], [0.7, '#1d1f23'], [1, '#0c0d0f']]));
+    ring(0.965 * R, R, '#0a0b0c');
+    // Rim lip (polished)
+    ring(0.64 * R, 0.70 * R, radial(0.64 * R, 0.70 * R, [[0, '#7d848c'], [0.45, '#e9ecef'], [1, '#9aa1a9']]));
+    ring(0.635 * R, 0.645 * R, '#4b5056');
+
+    // Inside of the rim and brake disc (plain: rotationally uniform)
+    circle(0.635 * R, radial(0, 0.635 * R, [[0, '#30343a'], [1, '#16181b']]));
+    circle(0.52 * R, radial(0.2 * R, 0.52 * R, [[0, '#8a9097'], [0.8, '#6c7279'], [1, '#4d5257']]));
+
+    // Five identical wedge spokes, each half of the spacing wide (36° of 72°), between a plain
+    // outer ring and a plain hub. Their angular profile is a square wave with 50 % duty cycle
+    // (sharp, antialiased edges): it has no even harmonics, so the camera shows the spoke passage
+    // f = 5·v without a "10-spoke" component (2f) that would alias in another direction.
+    // No groove, no nuts, no valve: nothing breaks or doubles the 5-fold pattern.
+    const alloy = radial(0.2 * R, 0.645 * R, [[0, '#f2f4f6'], [0.55, '#d3d8dd'], [1, '#a9b0b8']]);
+    ring(0.585 * R, 0.645 * R, alloy);
+    const off = document.createElement('canvas');
+    off.width = off.height = sizePx;
+    const o = off.getContext('2d');
+    o.translate(sizePx / 2, sizePx / 2);
+    o.fillStyle = radial(0.2 * R, 0.645 * R, [[0, '#f2f4f6'], [0.55, '#d3d8dd'], [1, '#a9b0b8']]);
+    o.beginPath(); o.arc(0, 0, 0.6 * R, 0, 2 * Math.PI); o.arc(0, 0, 0.2 * R, 0, 2 * Math.PI, true); o.fill();
+    o.globalCompositeOperation = 'destination-in';
+    const half = 180 / SPOKES / 2, ramp = 0.025 * 360 / SPOKES, start = -2 * half;  // degrees (ramp ≈ 1.8°: just antialiasing)
+    if (typeof o.createConicGradient === 'function') {
+      const mask = o.createConicGradient(start * Math.PI / 180, 0, 0);
+      const stop = (deg, alpha) => mask.addColorStop((deg - start) / 360, `rgba(0,0,0,${alpha})`);
+      stop(start, 0);
+      for (let k = 0; k < SPOKES; k++) {
+        const a = k * 360 / SPOKES;
+        stop(a - half - ramp / 2, 0); stop(a - half + ramp / 2, 1);
+        stop(a + half - ramp / 2, 1); stop(a + half + ramp / 2, 0);
+      }
+      stop(start + 360, 0);
+      o.fillStyle = mask;
+      o.fillRect(-sizePx / 2, -sizePx / 2, sizePx, sizePx);
+    } else {
+      // Older browsers: sharp sectors (still no even harmonics)
+      o.fillStyle = '#000';
+      o.beginPath();
+      for (let k = 0; k < SPOKES; k++) {
+        const a = (k / SPOKES) * 2 * Math.PI, h = Math.PI / SPOKES / 2;
+        o.moveTo(0, 0); o.arc(0, 0, R, a - h, a + h); o.closePath();
+      }
+      o.fill();
+    }
+    g.drawImage(off, -sizePx / 2, -sizePx / 2);
+
+    circle(0.27 * R, radial(0, 0.27 * R, [[0, '#f5f6f8'], [0.75, '#cdd2d8'], [1, '#9aa1a9']]));
+    circle(0.1 * R, radial(0, 0.1 * R, [[0, '#4a5058'], [1, '#262a2f']]));
+    g.strokeStyle = '#b8bec5'; g.lineWidth = Math.max(1, R * 0.008);
+    g.beginPath(); g.arc(0, 0, 0.075 * R, 0, 2 * Math.PI); g.stroke();
+    g.restore();
+  }
+
+  // Black disc with one small white hole near the edge: the only thing that turns visibly.
+  function renderDotSprite(c, sizePx) {
+    const g = c.getContext('2d');
+    const R = sizePx / 2 - 1;
+    g.clearRect(0, 0, sizePx, sizePx);
+    g.save();
+    g.translate(sizePx / 2, sizePx / 2);
+    const disc = g.createRadialGradient(0, 0, 0, 0, 0, R);
+    disc.addColorStop(0, '#202227'); disc.addColorStop(0.92, '#131418'); disc.addColorStop(1, '#08090b');
+    g.fillStyle = disc; g.beginPath(); g.arc(0, 0, R, 0, 2 * Math.PI); g.fill();
+    g.strokeStyle = '#5a606a'; g.lineWidth = Math.max(1.5, R * 0.025);
+    g.beginPath(); g.arc(0, 0, R - g.lineWidth / 2, 0, 2 * Math.PI); g.stroke();
+    // axle
+    g.fillStyle = '#3a3e45'; g.beginPath(); g.arc(0, 0, 0.06 * R, 0, 2 * Math.PI); g.fill();
+    // the hole
+    g.fillStyle = '#ffffff';
+    g.beginPath(); g.arc(0.78 * R, 0, 0.075 * R, 0, 2 * Math.PI); g.fill();
+    g.restore();
+  }
+
+  // Motion blur: average of the wheel over the angle swept during one display frame (exact running
+  // average, copy i drawn with alpha 1/(i+1)). It only depends on that angle, not on the phase,
+  // so it is computed once per speed and then simply rotated.
+  const blur = { canvas: document.createElement('canvas'), key: '' };
+  // Anti-aliasing for the real wheel. The monitor shows one image per display frame, so it
+  // samples the real wheel with the same ratio f/Fs as the camera: a one-frame blur is not enough
+  // (at f = 0.6·Fs about half of the spoke contrast would remain and be seen going backwards).
+  // A blur lasting exactly one pattern period (1/n turn) gives a uniform disc, with nothing
+  // left that can alias. So: plain one-frame blur while the spokes move less than 0.2 spacing per
+  // frame, then a longer blur, reaching one full spoke period at 0.4 spacing per frame.
+  function antiAliasSpan(smear) {
+    const spacing = 1 / nSym();
+    const sp = Math.abs(smear) / spacing;              // spoke spacings per display frame
+    let L;                                             // blur length, in spoke spacings
+    if (sp <= 0.2) L = sp;
+    else if (sp >= 0.4) L = 1;
+    else { const u = (sp - 0.2) / 0.2; L = sp + (1 - sp) * u * u * (3 - 2 * u); }
+    return Math.sign(smear) * L * spacing;
+  }
+
+  function blurredSprite(smear) {
+    const span = Math.round(Math.min(Math.abs(smear), 1) * Math.sign(smear) * 1000) / 1000;
+    const M = Math.min(96, Math.max(1, Math.ceil(Math.abs(span) * 240)));   // ≤ 1.5° between copies
+    if (M === 1) return sprite.canvas;
+    const key = sprite.size + ':' + sprite.type + ':' + span.toFixed(3);
+    if (blur.key === key) return blur.canvas;
+    blur.key = key;
+    const c = blur.canvas, S = sprite.size;
+    c.width = c.height = S;
+    const g = c.getContext('2d');
+    g.clearRect(0, 0, S, S);
+    for (let i = 0; i < M; i++) {
+      g.globalAlpha = 1 / (i + 1);
+      g.save();
+      g.translate(S / 2, S / 2);
+      g.rotate(2 * Math.PI * span * (i / M));         // copies behind the current position (a full period averages exactly)
+      g.drawImage(sprite.canvas, -S / 2, -S / 2);
+      g.restore();
+    }
+    return c;
+  }
+
+  // Static layers drawn once per size and theme (fixed background as the canvas CSS background,
+  // fixed light over the wheel): per frame only the wheel square is redrawn.
+  function staticLayer(w, h, dpr, draw) {
+    const c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(w * dpr)); c.height = Math.max(1, Math.round(h * dpr));
+    const g = c.getContext('2d');
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    draw(g);
+    return c;
+  }
+
+  function drawWheel(canvas, phase, smear, isCamera) {
+    const { ctx, width, height } = setupCanvas(canvas);
+    const P = palette();
+    const dpr = window.devicePixelRatio || 1;
+    const R = Math.max(10, 0.4 * Math.min(width, height));
+    const cx = width / 2, cy = height / 2 - 4;
+    const need = Math.ceil(2 * R * dpr) + 2;
+    if (Math.abs(sprite.size - need) > 2 || sprite.type !== state.wheelType) renderSprite(need);
+
+    const key = `${width}x${height}@${dpr}:${P.dark}:${isCamera}:${state.wheelType}`;
+    if (canvas._layersKey !== key) {
+      canvas._layersKey = key;
+      // Fixed background (colour, ground shadow, viewfinder, REC) as the canvas CSS background
+      const under = staticLayer(width, height, dpr, (g) => {
+        g.fillStyle = P.bg;
+        g.fillRect(0, 0, width, height);
+        g.save();
+        g.translate(cx, cy + R);
+        g.scale(1, 0.12);
+        const sh = g.createRadialGradient(0, 0, 0, 0, 0, R * 1.1);
+        sh.addColorStop(0, P.dark ? 'rgba(0,0,0,0.55)' : 'rgba(0,0,0,0.22)');
+        sh.addColorStop(1, 'rgba(0,0,0,0)');
+        g.fillStyle = sh; g.beginPath(); g.arc(0, 0, R * 1.1, 0, 2 * Math.PI); g.fill();
+        g.restore();
+        if (isCamera) {
+          g.strokeStyle = P.text; g.lineWidth = 2;
+          const m = 10, L = 18;
+          for (const [x, y, dx, dy] of [[m, m, 1, 1], [width - m, m, -1, 1], [m, height - m, 1, -1], [width - m, height - m, -1, -1]]) {
+            g.beginPath(); g.moveTo(x, y + dy * L); g.lineTo(x, y); g.lineTo(x + dx * L, y); g.stroke();
+          }
+          const yRec = m + 14;
+          g.fillStyle = '#ef4444';
+          g.beginPath(); g.arc(m + 14, yRec, 4.5, 0, 2 * Math.PI); g.fill();
+          if (width >= 260) {
+            g.fillStyle = P.text; g.font = '600 12px system-ui'; g.textAlign = 'left'; g.textBaseline = 'middle';
+            g.fillText('REC', m + 23, yRec);
+          }
+        }
+      });
+      canvas.style.background = `url(${under.toDataURL()}) 0 0 / 100% 100% no-repeat`;
+      // Fixed light from the top left, only over the wheel (does not turn with it)
+      canvas._light = staticLayer(2 * R, 2 * R, dpr, (g) => {
+        const hl = g.createRadialGradient(0.55 * R, 0.5 * R, 0, 0.55 * R, 0.5 * R, 1.3 * R);
+        hl.addColorStop(0, 'rgba(255,255,255,0.18)');
+        hl.addColorStop(0.5, 'rgba(255,255,255,0.03)');
+        hl.addColorStop(1, 'rgba(0,0,0,0.18)');
+        g.fillStyle = hl; g.beginPath(); g.arc(R, R, R, 0, 2 * Math.PI); g.fill();
+      });
+      ctx.clearRect(0, 0, width, height);
+    }
+
+    // Per frame: clear the wheel square, draw the turned wheel, then the fixed light.
+    ctx.clearRect(cx - R - 2, cy - R - 2, 2 * R + 4, 2 * R + 4);
+    // Exposure = the whole display frame for the eye (motion blur), very short for the camera.
+    const img = isCamera ? sprite.canvas : blurredSprite(antiAliasSpan(smear));
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(-2 * Math.PI * phase);             // counter-clockwise = positive
+    ctx.drawImage(img, -R, -R, 2 * R, 2 * R);
+    ctx.restore();
+    if (state.wheelType !== 'dot') ctx.drawImage(canvas._light, cx - R, cy - R, 2 * R, 2 * R);   // a flat disc gets no highlight
+  }
+
+
+
+  // =====================================================================
+  // PANELS, LABELS, STATUS
+  // =====================================================================
+  function updatePanel() {
+    const tx = t();
+    const { f, Fs } = cur();
+    const wheelTab = state.tab === 'wheel';
+    const unit = wheelTab ? tx.rev : 'Hz';
+    const fStar = apparent(f, Fs);
+
+    $('fValue').textContent = `${fmt(state.f, 0)} Hz`;
+    $('FsValue').textContent = `${fmt(state.Fs, 0)} Hz`;
+    $('wValue').textContent = `${fmt(state.wf, 2)} ${tx.rev}`;
+    $('FcValue').textContent = `${fmt(state.wFs, 0)} ${tx.img}`;
+    $('periodsValue').textContent = state.periods;
+    $('cameraTitle').textContent = `${tx.camera} · ${fmt(state.wFs, 0)} ${tx.img}`;
+
+    const row = (label, value) => `<div class="info-row"><span class="info-label">${label}:</span><span class="info-value">${value}</span></div>`;
+    let rows;
+    if (wheelTab) {
+      const v = state.wf, vStar = fStar / nSym();
+      const dir = fStar === 0 ? ` (${tx.still})` : (v !== 0 && Math.sign(vStar) !== Math.sign(v) ? ` (${tx.reverse})` : '');
+      if (state.wheelType === 'dot') {
+        rows = row(tx.wReal, `${fmt(v, 2)} ${tx.rev}`)
+          + row(tx.wFs, `${fmt(Fs, 1)} ${tx.img}`)
+          + row(tx.wNyq, `${fmt(Fs / 2, 2)} ${tx.rev}`)
+          + row(tx.wAppSpeed, `${signed(vStar, 2)} ${tx.rev}${dir}`);
+      } else {
+        rows = row(tx.wReal, `${fmt(v, 2)} ${tx.rev}`)
+          + row(tx.wSpoke, `${fmt(f, 2)} Hz`)
+          + row(tx.wFs, `${fmt(Fs, 1)} ${tx.img}`)
+          + row(tx.wNyq, `${fmt(Fs / 2, 2)} Hz`)
+          + row(tx.wApp, `${signed(fStar, 2)} Hz`)
+          + row(tx.wAppSpeed, `${signed(vStar, 2)} ${tx.rev}${dir}`);
+      }
+      rows += row(tx.wSlow, `×${fmt(playback(), 1)} (${fmt(display.rate, 0)} ${tx.img})`);
+    } else {
+      rows = row(tx.f0, `${fmt(f, 1)} Hz`)
+        + row(tx.Fs, `${fmt(Fs, 1)} Hz`)
+        + row(tx.fNyquist, `${fmt(Fs / 2, 1)} Hz`)
+        + row(tx.condition, 'Fs > 2·f<sub>IN</sub>')
+        + row(tx.fAlias, `${signed(fStar, 1)} Hz`);
+    }
+    $('infoRows').innerHTML = rows;
+
+    const status = $('statusIndicator');
+    const ratio = f === 0 ? Infinity : Fs / Math.abs(f);
+    if (wheelTab && f !== 0 && Math.abs(fStar) >= 0.4 * Fs) { status.className = 'status-indicator status-warning'; status.textContent = tx.statusAmbiguous; }
+    else if (ratio > 2.1) { status.className = 'status-indicator status-ok'; status.textContent = tx.statusOk; }
+    else if (ratio >= 2.0) { status.className = 'status-indicator status-warning'; status.textContent = tx.statusNyquist; }
+    else { status.className = 'status-indicator status-error'; status.textContent = tx.statusAlias; }
+
+    $('noteText').innerHTML = wheelTab ? (state.wheelType === 'dot' ? tx.noteDot : tx.noteWheel)
+      : { ideal: tx.noteIdeal, zoh: tx.noteZOH, linear: tx.noteLinear }[state.interpType];
+
+    document.querySelectorAll('.preset-btn[data-f]').forEach((b) => {
+      b.classList.toggle('active', Number(b.dataset.f) === state.f && Number(b.dataset.fs) === state.Fs);
+    });
+    document.querySelectorAll('.preset-btn[data-wfreq]').forEach((b) => {
+      b.textContent = `${fmt(Number(b.dataset.wfreq) / nSym(), 2)} ${tx.rev}`;
+      b.classList.toggle('active', Math.abs(Number(b.dataset.wfreq) / nSym() - state.wf) < 1e-6 && Number(b.dataset.wfs) === state.wFs);
+    });
+    document.querySelectorAll('[data-wheel-type]').forEach((b) => {
+      const on = b.dataset.wheelType === state.wheelType;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', String(on));
+    });
+  }
+
+  function redraw() {
+    updatePanel();
+    if (state.tab === 'sine') drawTemporalGraph();
+    drawSpectralGraph();
+  }
+
+  // =====================================================================
+  // CONTROLS
+  // =====================================================================
+  const fSlider = $('fSlider'), FsSlider = $('FsSlider'), sweepBtn = $('sweepBtn');
+
+  function setFs(v) {
+    state.Fs = Math.round(Math.min(500, Math.max(2, v)));
+    FsSlider.value = state.Fs;
+    fSlider.min = -2 * state.Fs;
+    fSlider.max = 2 * state.Fs;
+    if (Math.abs(state.f) > 2 * state.Fs) state.f = Math.sign(state.f) * 2 * state.Fs;
+    fSlider.value = state.f;
+  }
+  function setF(v) {
+    state.f = Math.round(Math.max(-2 * state.Fs, Math.min(2 * state.Fs, v)));
+    fSlider.value = state.f;
+  }
+  const wSlider = $('wSlider'), FcSlider = $('FcSlider');
+  function setWFs(v) {
+    state.wFs = Math.round(Math.min(60, Math.max(10, v)));
+    FcSlider.value = state.wFs;
+    wSlider.max = 2 * state.wFs / nSym();
+    if (state.wf > 2 * state.wFs / nSym()) state.wf = 2 * state.wFs / nSym();
+    wSlider.value = state.wf;
+  }
+  function setWF(v) {
+    state.wf = Math.round(Math.max(0, Math.min(2 * state.wFs / nSym(), v)) * 100) / 100;
+    wSlider.value = state.wf;
+  }
+  wSlider.addEventListener('input', () => { stopSweep(); setWF(Number(wSlider.value)); redraw(); });
+  FcSlider.addEventListener('input', () => { setWFs(Number(FcSlider.value)); redraw(); });
+  document.querySelectorAll('.preset-btn[data-wfreq]').forEach((b) => b.addEventListener('click', () => {
+    stopSweep(); setWFs(Number(b.dataset.wfs)); setWF(Number(b.dataset.wfreq) / nSym()); redraw();
+  }));
+  // Wheel model: keep the same sampled frequency f, so the point on the sawtooth does not move.
+  document.querySelectorAll('[data-wheel-type]').forEach((b) => b.addEventListener('click', () => {
+    if (b.dataset.wheelType === state.wheelType) return;
+    stopSweep();
+    const f = nSym() * state.wf;
+    state.wheelType = b.dataset.wheelType;
+    setWFs(state.wFs);
+    setWF(f / nSym());
+    try { localStorage.setItem('samplingAliasing.wheelType', state.wheelType); } catch (_) { /* ignore */ }
+    redraw();
+  }));
+
+  function stopSweep() { state.sweeping = false; sweepBtn.classList.remove('active'); sweepBtn.setAttribute('aria-pressed', 'false'); sweepBtn.textContent = t().sweep; }
+  function startSweep() { state.sweeping = true; state.sweepF = 0; if (state.tab === 'wheel') setWF(0); else setF(0); sweepBtn.classList.add('active'); sweepBtn.setAttribute('aria-pressed', 'true'); sweepBtn.textContent = t().stop; redraw(); }
+
+  fSlider.addEventListener('input', () => { stopSweep(); setF(Number(fSlider.value)); redraw(); });
+  FsSlider.addEventListener('input', () => { setFs(Number(FsSlider.value)); redraw(); });
+  $('periodsSlider').addEventListener('input', (e) => { state.periods = parseInt(e.target.value, 10); redraw(); });
+  document.querySelectorAll('input[name="interpType"]').forEach((r) => r.addEventListener('change', (e) => { state.interpType = e.target.value; redraw(); }));
+  document.querySelectorAll('.preset-btn[data-f]').forEach((b) => b.addEventListener('click', () => {
+    stopSweep(); setFs(Number(b.dataset.fs)); setF(Number(b.dataset.f)); redraw();
+  }));
+  sweepBtn.addEventListener('click', () => (state.sweeping ? stopSweep() : startSweep()));
+
+  // Tabs
+  const tabs = document.querySelectorAll('.step-tab');
+  function setTab(tab) {
+    if (state.sweeping) stopSweep();
+    state.tab = tab === 'wheel' ? 'wheel' : 'sine';
+    tabs.forEach((b) => { const on = b.dataset.tab === state.tab; b.classList.toggle('active', on); b.setAttribute('aria-selected', String(on)); });
+    document.querySelectorAll('[data-only]').forEach((el) => { el.hidden = el.dataset.only !== state.tab; });
+    document.querySelector('.step2-container').classList.toggle('wheel-mode', state.tab === 'wheel');
+    try { localStorage.setItem('samplingAliasing.tab', state.tab); } catch (_) { /* ignore */ }
+    redraw();
+  }
+  tabs.forEach((b) => b.addEventListener('click', () => setTab(b.dataset.tab)));
+
+  // Language
+  const themeButton = $('theme-toggle');
+  const languageTrigger = $('language-trigger'), languageMenu = $('language-menu');
+  const languageButtons = [...languageMenu.querySelectorAll('[data-lang]')];
+  function setLanguage(lang) {
+    state.lang = TEXTS[lang] ? lang : 'fr';
+    $('language-current').textContent = state.lang.toUpperCase();
+    languageButtons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.lang === state.lang)));
+    languageTrigger.setAttribute('aria-label', TEXTS[state.lang].languageAria);
+    languageMenu.setAttribute('aria-label', TEXTS[state.lang].languageAria);
+    themeButton.setAttribute('aria-label', isDark() ? TEXTS[state.lang].themeLight : TEXTS[state.lang].themeDark);
+    document.documentElement.lang = state.lang;
+    const tx = t();
+    document.title = tx.title;
+    $('appTitle').textContent = tx.title;
+    $('appSubtitle').textContent = tx.subtitle;
+    document.querySelectorAll('[data-i18n]').forEach((el) => { el.innerHTML = tx[el.dataset.i18n]; });
+    document.querySelectorAll('.preset-btn[data-f]').forEach((b) => {
+      if (b.dataset.i18n) return;
+      b.textContent = `f=${b.dataset.f} · Fs=${b.dataset.fs}`;
+    });
+    sweepBtn.textContent = state.sweeping ? tx.stop : tx.sweep;
+    try { localStorage.setItem('samplingAliasing.lang', state.lang); } catch (_) { /* ignore */ }
+    redraw();
+  }
+  const setLanguageMenu = (open) => { languageMenu.hidden = !open; languageTrigger.setAttribute('aria-expanded', String(open)); };
+  languageTrigger.addEventListener('click', () => setLanguageMenu(languageMenu.hidden));
+  languageButtons.forEach((b) => b.addEventListener('click', () => { setLanguage(b.dataset.lang); setLanguageMenu(false); languageTrigger.focus(); }));
+  document.addEventListener('click', (e) => { if (!languageMenu.hidden && !e.target.closest('.language-switch')) setLanguageMenu(false); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !languageMenu.hidden) { setLanguageMenu(false); languageTrigger.focus(); } });
+
+  // Theme (light/dark button; starts from the system setting)
+  function setTheme(dark) {
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    themeButton.setAttribute('aria-pressed', String(dark));
+    themeButton.setAttribute('aria-label', dark ? t().themeLight : t().themeDark);
+    redraw();
+  }
+  themeButton.addEventListener('click', () => setTheme(!isDark()));
+
+  // No context menu (right click / long press): it only gets in the way, mostly on touch screens.
+  document.addEventListener('contextmenu', (e) => e.preventDefault());
+
+  let resizeTimeout;
+  window.addEventListener('resize', () => { clearTimeout(resizeTimeout); resizeTimeout = setTimeout(redraw, 100); });
+
+  // =====================================================================
+  // ANIMATION LOOP (wheel + sweep)
+  // =====================================================================
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min(0.1, Math.max(0, (now - last) / 1000));
+    last = now;
+    if (state.sweeping) {
+      const wheelTab = state.tab === 'wheel';
+      const Fs = wheelTab ? state.wFs / nSym() : state.Fs;   // sweep 0 → 2·Fs (sinusoid) or 0 → 2·Fs/n (wheel speed)
+      const set = wheelTab ? setWF : setF;
+      const before = wheelTab ? state.wf : state.f;
+      state.sweepF += (2 * Fs / SWEEP_SECONDS[state.tab]) * dt;
+      if (state.sweepF >= 2 * Fs) { set(2 * Fs); stopSweep(); redraw(); }
+      else { set(state.sweepF); if ((wheelTab ? state.wf : state.f) !== before) redraw(); }
+    }
+    measureDisplay(dt);
+    stepWheel(dt);
+    if (state.tab === 'wheel') {
+      drawWheel($('realWheelCanvas'), wheel.phase, wheel.smear, false);
+      drawWheel($('cameraCanvas'), wheel.camPhase, 0, true);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  // =====================================================================
+  // INIT: ?lang=, ?tab=, last choices, then French + the system color scheme
+  // =====================================================================
+  const params = new URLSearchParams(location.search);
+  let lang = 'fr', tab = 'sine';
+  try {
+    lang = localStorage.getItem('samplingAliasing.lang') || lang;
+    tab = localStorage.getItem('samplingAliasing.tab') || tab;
+  } catch (_) { /* ignore */ }
+  lang = params.get('lang') || lang;
+  tab = params.get('tab') || tab;
+
+  setFs(state.Fs);
+  setF(state.f);
+  try { if (localStorage.getItem('samplingAliasing.wheelType') === 'dot') state.wheelType = 'dot'; } catch (_) { /* ignore */ }
+  setWFs(state.wFs);
+  setWF(state.wf);
+  state.lang = TEXTS[lang] ? lang : 'fr';
+  setTheme(window.matchMedia('(prefers-color-scheme: dark)').matches);
+  setTab(tab);
+  setLanguage(state.lang);
+  requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>
