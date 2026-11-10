@@ -387,6 +387,9 @@ svg text{font-family:"Segoe UI",sans-serif;user-select:none}
     paint-order:stroke;stroke:var(--panel-bg);stroke-width:3.5px;stroke-linejoin:round}
 .hit{fill:rgba(0,0,0,0);stroke:none}
 .closed-pole{pointer-events:none}
+.closed-pole.draggable{pointer-events:auto;cursor:grab}
+.closed-pole.draggable.dragging{cursor:grabbing}
+.closed-pole.draggable:hover line{stroke-width:4.2}
 .closed-pole line{stroke:var(--pole);stroke-width:3.4;stroke-linecap:round;
                   paint-order:stroke;filter:drop-shadow(0 0 1px var(--panel-bg))}
 .closed-pole.zero path{fill:var(--panel-bg);stroke:var(--accent);stroke-width:2}

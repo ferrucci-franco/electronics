@@ -41,6 +41,7 @@ const Model = (() => {
       show3d: false, showBode: false, showTime: true, surfMode: 'mag',
       logScale: false,
       aspectLock: true, showTransient: true, eqCollapsed: true, eqFit: true, eqFreq: false,
+      plantLocked: true,                  // pôles et zéros de la plante figés dans le plan s
       sidebarHidden: false,
       bodeUnwrap: true, omegaLogDecades: 3, bodeShowPhase: true,
       bodeFunctions: ['L'],
@@ -637,9 +638,47 @@ const Model = (() => {
     syncPidRoots();
     return { ok: true };
   }
-  function isRootLocked(id){
+  // Raison pour laquelle une racine ne se déplace pas dans le plan s :
+  // 'integrator' (pôle structurel du PID), 'plant' (planta verrouillée par la
+  // case du plan s) ou null. L'édition numérique de l'inventaire reste permise.
+  function rootLockReason(id){
     const f = find(id);
-    return !!(f && f.el.pidStructural && f.el.structuralRole === 'integrator');
+    if (!f) return null;
+    if (f.el.pidStructural && f.el.structuralRole === 'integrator') return 'integrator';
+    if (ownerOf(f.el) === 'plant' && state.view.plantLocked) return 'plant';
+    return null;
+  }
+  function isRootLocked(id){ return rootLockReason(id) !== null; }
+
+  // ---------- gain du contrôleur réglé depuis les pôles de T(s) ----------
+  // Saisir un pôle de la boucle fermée et le faire glisser le long du lieu
+  // revient à multiplier le contrôleur entier par κ : Kp en PID (Ti, Td et ωf
+  // inchangés, donc Ki et Kd suivent), K_C en rationnel libre.
+  function controllerGainSnapshot(){
+    if (state.controller.mode === 'pid'){
+      const c = pidCanonicalParams();
+      return { mode: 'pid', Kp: c.Kp, Ti: c.Ti, Td: c.Td };
+    }
+    return { mode: 'free', K: state.blockGains.controller };
+  }
+  function controllerGainValue(){
+    return state.controller.mode === 'pid' ? state.controller.pid.Kp : state.blockGains.controller;
+  }
+  function setControllerGainScale(snap, value){
+    const kappa = Number(value);
+    if (!snap || snap.mode !== state.controller.mode || !(kappa > 0) || !isFinite(kappa))
+      return { ok: false, msg: 'msgBadValue' };
+    if (snap.mode === 'pid'){
+      const Kp = snap.Kp * kappa;
+      if (!(Kp > 0) || !isFinite(Kp)) return { ok: false, msg: 'msgBadValue' };
+      return setPidCanonicalParams({ Kp, Ti: snap.Ti, Td: snap.Td });
+    }
+    const K = snap.K * kappa;
+    if (!isFinite(K) || K === 0) return { ok: false, msg: 'msgBadValue' };
+    state.blockGains.controller = K;
+    ui.blockKAuto.controller = false;
+    notify();
+    return { ok: true };
   }
   function closedLoopPoles(){
     if (state.delay > 0) return [];
@@ -1180,6 +1219,7 @@ const Model = (() => {
       show3d: false, showBode: false, showTime: true, surfMode: 'mag',
       logScale: false, omegaLogDecades: 3,
       aspectLock: true, showTransient: true, eqCollapsed: true, eqFit: true, eqFreq: false,
+      plantLocked: true,
       sidebarHidden: false,
       bodeUnwrap: true, bodeShowPhase: true,
       bodeFunctions: ['L'],
@@ -1222,7 +1262,8 @@ const Model = (() => {
     addElement, removeElement, decrementElement, editElement,
     dragTo, endDrag, select, setActiveBlock, setK, setKAuto, setDelay, setView, setInput, setPlaneWindow,
     setControllerMode, setPidParams, pidCanonicalParams, setPidCanonicalParams,
-    setPidStructure, resetPid, isRootLocked, setSaturation,
+    setPidStructure, resetPid, isRootLocked, rootLockReason, setSaturation,
+    controllerGainSnapshot, controllerGainValue, setControllerGainScale,
     setOmegaEval, evalOmega, rootPoints, bodeWindow,
     inventoryData, sub, loadExample, reset
   };
