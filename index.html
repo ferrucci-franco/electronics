@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Franco Ferrucci – Home</title>
-  <meta name="description" content="Personal homepage with links to projects and pages in English, Français, Español." />
+  <meta name="description" content="Interactive browser demos for teaching signals & systems, control and electronics. English, Français, Español." />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -34,13 +34,11 @@
     a{color:var(--link); text-decoration:none}
     a:hover{text-decoration:underline}
     .wrap{max-width:1100px; margin:0 auto; padding:28px clamp(16px,4vw,40px)}
-    header{display:flex; gap:16px; align-items:center; justify-content:space-between; padding-block:6px 10px}
-    .brand{display:flex; align-items:center; gap:14px}
-    .avatar{width:56px; height:56px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--link)); box-shadow:var(--shadow)}
+    header{display:flex; gap:16px; align-items:center; justify-content:space-between; flex-wrap:wrap; padding-block:6px 10px}
     .title h1{font-size:clamp(24px,3vw,32px); margin:0; letter-spacing:.2px}
     .title p{margin:.15rem 0 0; color:var(--muted); font-size:14px}
 
-    .controls{display:flex; gap:10px; align-items:center}
+    .controls{display:flex; gap:10px; align-items:center; flex-shrink:0}
     .btn{border:1px solid var(--border); background:var(--card); color:var(--fg); padding:10px 14px; border-radius:12px; cursor:pointer; font-weight:600; box-shadow:var(--shadow)}
     .btn:hover{filter:brightness(1.03)}
     .segmented{display:flex; background:var(--card); border:1px solid var(--border); border-radius:12px; overflow:hidden; box-shadow:var(--shadow)}
@@ -50,16 +48,28 @@
     .hero{margin-top:18px; background:var(--card); border:1px solid var(--border); border-radius:var(--radius-xl); box-shadow:var(--shadow); padding:22px clamp(16px,3vw,28px)}
     .hero h2{margin:.2rem 0 .6rem; font-size:clamp(20px,2.6vw,28px)}
     .hero p{margin:.25rem 0; color:var(--muted)}
+    .hero p.lead{color:var(--fg); font-size:clamp(15px,1.6vw,17px)}
 
-    .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:16px; margin-top:20px}
+    .nav{display:flex; gap:8px; flex-wrap:wrap; margin-top:22px; padding:10px 0}
+    @media (min-width:700px){ .nav{position:sticky; top:0; z-index:5; background:var(--bg)} }
+    .nav button{border:1px solid var(--border); background:var(--card); color:var(--muted); padding:7px 14px; border-radius:999px; font-weight:600; font-size:14px; cursor:pointer; font-family:inherit}
+    .nav button:hover{color:var(--fg)}
+    .nav button.active{background:var(--accent); border-color:var(--accent); color:#fff}
+    .nav button .n{opacity:.7; font-weight:500; margin-left:4px}
+
+    .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:16px; margin-top:16px}
     .card{background:var(--card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:10px}
     .card h3{margin:0; font-size:18px}
     .card p{margin:0; color:var(--muted); font-size:14px}
     .chipbar{display:flex; gap:6px; flex-wrap:wrap; margin-top:4px}
     .chip{font-size:12px; border:1px solid var(--border); background:transparent; color:var(--muted); padding:2px 8px; border-radius:999px}
 
-    .section-title{display:flex; align-items:center; justify-content:space-between; margin-top:24px}
-    .section-title h2{margin:0; font-size:clamp(18px,2vw,22px)}
+    .sec{margin-top:28px; scroll-margin-top:64px}
+    .sec[hidden]{display:none}
+    .section-title{display:flex; align-items:baseline; justify-content:space-between; gap:12px; padding-bottom:8px; border-bottom:2px solid var(--border)}
+    .section-title h2{margin:0; font-size:clamp(19px,2.2vw,24px)}
+    .section-title .muted{white-space:nowrap; font-size:14px}
+    .sec > p{margin:8px 0 0; color:var(--muted); font-size:14px}
     .muted{color:var(--muted)}
 
     footer{margin-top:30px; color:var(--muted); font-size:13px}
@@ -71,12 +81,9 @@
 <body>
   <div class="wrap">
     <header>
-      <div class="brand">
-        <div class="avatar" aria-hidden="true"></div>
-        <div class="title">
-          <h1 id="name">Franco Ferrucci</h1>
-          <p id="tag">Signal processing • Electronics • Teaching</p>
-        </div>
+      <div class="title">
+        <h1 id="name">Franco Ferrucci</h1>
+        <p id="tag">Signals & systems • Control • Electronics</p>
       </div>
       <div class="controls">
         <div class="segmented" role="tablist" aria-label="Language switcher">
@@ -89,21 +96,14 @@
     </header>
 
     <section class="hero" aria-labelledby="intro-title">
-      <h2 id="intro-title">Hello!</h2>
-      <p id="intro-body">
-        I'm Franco, a university professor in Tahiti. I teach and build things around signals & systems, electronics, and Python.
-      </p>
-      <p id="intro-more" class="muted">
-        Below are all my public pages and mini-projects hosted on GitHub Pages.
-      </p>
+      <h2 id="intro-title">Interactive demos for teaching</h2>
+      <p id="intro-body" class="lead"></p>
+      <p id="intro-more"></p>
     </section>
 
-    <div class="section-title">
-      <h2 id="list-title">All pages</h2>
-      <span class="muted" id="count"></span>
-    </div>
+    <nav class="nav" id="nav" aria-label="Sections"></nav>
 
-    <section class="grid" id="cards" aria-label="Links to pages"></section>
+    <main id="sections"></main>
 
     <footer>
       <div>© <span id="year"></span> <span id="foot-name">Franco Ferrucci</span> · <span class="mono">github.com/ferrucci-franco</span></div>
@@ -113,276 +113,10 @@
   <script>
     // --------- EDIT THIS: Your pages list (titles per language) ---------
     const PAGES = [
-      {
-        url: "fourier-series-2d/", // folder with its own index.html
-        titles: { en: "Fourier Series – 2D Demo", fr: "Séries de Fourier – Démo 2D", es: "Series de Fourier – Demo 2D" },
-        desc: {  en: "Interactive 2D real Fourier visualizer.",
-                 fr: "Visualiseur 2D interactif des séries de Fourier réelles.",
-                 es: "Visualizador 2d interactivo de series de Fourier reales." },
-        tags: ["Fourier", "Teaching", "Signals"]
-      },
-      {
-        url: "fourier-series-3d/", // folder with its own index.html
-        titles: { en: "Fourier Series – 3D Demo", fr: "Séries de Fourier – Démo 3D", es: "Series de Fourier – Demo 3D" },
-        desc: {  en: "Interactive 3D complex Fourier visualizer.",
-                 fr: "Visualiseur 3D interactif des séries de Fourier complexes.",
-                 es: "Visualizador 3D interactivo de series de Fourier complejas." },
-        tags: ["Fourier", "Teaching", "Signals"]
-      },
-      {
-        url: "fourier-series-and-forier-transform/",
-        titles: { 
-          en: "Periodic Signals & Fourier Series", 
-          fr: "Signaux Périodiques & Série de Fourier", 
-          es: "Señales Periódicas & Serie de Fourier" 
-        },
-        desc: {  
-          en: "Interactive tool for analyzing periodic signals using Fourier Series and FFT. Supports multiple signal types, noise addition, and windowing functions.",
-          fr: "Outil interactif pour analyser les signaux périodiques avec les séries de Fourier et la FFT. Prend en charge plusieurs types de signaux, ajout de bruit et fonctions de fenêtrage.",
-          es: "Herramienta interactiva para analizar señales periódicas usando Series de Fourier y FFT. Soporta múltiples tipos de señales, adición de ruido y funciones de ventana."
-        },
-        tags: ["Fourier", "FFT", "Signals", "Teaching"]
-      },      
-      {
-        url: "fourier-oscilloscope_and_spectrum/",
-        titles: {
-          en: "Oscilloscope & Spectrogram",
-          fr: "Oscilloscope & Spectrogramme",
-          es: "Osciloscopio & Espectrograma"
-        },
-        desc: {
-          en: "Interactive audio oscilloscope with real-time waveform, spectrum, spectrogram, recorded presets, and frequency sweeps.",
-          fr: "Oscilloscope audio interactif avec forme d’onde, spectre, spectrogramme, sons enregistrés et balayages de fréquence en temps réel.",
-          es: "Osciloscopio de audio interactivo con señal temporal, espectro, espectrograma, sonidos grabados y barridos de frecuencia en tiempo real."
-        },
-        tags: ["Audio", "Oscilloscope", "Spectrogram", "FFT", "Teaching"]
-      },
-      {
-        url: "adjustable-filters/",
-        titles: {
-          en: "Continuous-time Filters Explorer",
-          fr: "Explorateur de filtres en temps continu",
-          es: "Explorador de filtros en tiempo continuo"
-        },
-        desc: {
-          en: "Single-frequency input, two adjustable low-pass / high-pass filters, optional cascading, with time response and Bode plots.",
-          fr: "Entrée à fréquence unique, deux filtres passe-bas / passe-haut réglables, mise en cascade optionnelle, avec réponse temporelle et diagrammes de Bode.",
-          es: "Entrada de frecuencia única, dos filtros pasa-bajo / pasa-alto ajustables, cascada opcional, con respuesta temporal y diagramas de Bode."
-        },
-        tags: ["Filter", "Signals", "Teaching"]
-      },
-      {
-        url: "laplace-explorer/",
-        titles: {
-          en: "Laplace → Fourier: poles, zeros and frequency response",
-          fr: "Laplace → Fourier : pôles, zéros et réponse en fréquence",
-          es: "Laplace → Fourier: polos, ceros y respuesta en frecuencia"
-        },
-        desc: {
-          en: "Drag poles and zeros in the s-plane and watch the 3D surface of |H(s)|, the Bode and Nyquist plots follow. Geometric construction of magnitude and phase, pure delay.",
-          fr: "Déplacez pôles et zéros dans le plan s et voyez suivre la surface 3D de |H(s)|, le Bode et le Nyquist. Construction géométrique du module et de la phase, retard pur.",
-          es: "Arrastra polos y ceros en el plano s y mira cómo siguen la superficie 3D de |H(s)| y los diagramas de Bode y Nyquist. Construcción geométrica del módulo y la fase, retardo puro."
-        },
-        tags: ["Laplace", "Fourier", "Bode", "Nyquist", "Teaching"]
-      },
-      {
-        url: "closed-loop-control/",
-        titles: {
-          en: "Closed-loop Control Explorer",
-          fr: "Explorateur de contrôle en boucle fermée",
-          es: "Explorador de control en lazo cerrado"
-        },
-        desc: {
-          en: "Build a loop from plant, controller and sensor models; explore PID tuning, root locus, saturation, Bode and Nyquist plots, 3D surfaces, and time responses.",
-          fr: "Construisez une boucle avec plante, contrôleur et capteur ; explorez le réglage PID, le lieu des racines, la saturation, Bode, Nyquist, les surfaces 3D et les réponses temporelles.",
-          es: "Construye un lazo con planta, controlador y sensor; explora el ajuste PID, el lugar de las raíces, la saturación, Bode, Nyquist, las superficies 3D y las respuestas temporales."
-        },
-        tags: ["Control", "PID", "Root locus", "Bode", "Teaching"]
-      },
-      {
-        url: "shower-control/",
-        titles: {
-          en: "Shower Temperature Control",
-          fr: "Contrôle de la température d’une douche",
-          es: "Control de la temperatura de una ducha"
-        },
-        desc: {
-          en: "Set a shower by hand, measure the tap’s nonlinear curve, then compare open-loop control from that table with proportional and integral feedback, under disturbances and a sensor delay.",
-          fr: "Réglez une douche à la main, mesurez la courbe non linéaire du robinet, puis comparez la commande en boucle ouverte par cette table aux correcteurs proportionnel et intégral, face aux perturbations et à un retard de mesure.",
-          es: "Ajusta una ducha a mano, mide la curva no lineal del grifo y compara el control en lazo abierto con esa tabla frente a los correctores proporcional e integral, con perturbaciones y un retardo de medida."
-        },
-        tags: ["Control", "Open loop", "Feedback", "Delay", "Teaching"]
-      },
-      {
-        url: "step-response/",
-        titles: {
-          en: "Step Response of First- and Second-Order Systems",
-          fr: "Réponse indicielle des systèmes du premier et du deuxième ordre",
-          es: "Respuesta al escalón de sistemas de primer y segundo orden"
-        },
-        desc: {
-          en: "Set K, τ or K, ω0, ξ and watch the step response: differential equation, overshoot, pseudo-period, settling time, two read cursors snapping to the peaks, and a stored curve for comparison.",
-          fr: "Réglez K, τ ou K, ω0, ξ et observez la réponse indicielle : équation différentielle, dépassement, pseudo-période, temps de réponse, deux curseurs de lecture aimantés aux extremums et une courbe mémorisée pour comparer.",
-          es: "Ajusta K, τ o K, ω0, ξ y observa la respuesta al escalón: ecuación diferencial, sobrepaso, pseudoperíodo, tiempo de respuesta, dos cursores de lectura con imán en los extremos y una curva memorizada para comparar."
-        },
-        tags: ["Control", "Step response", "Second order", "Damping", "Teaching"]
-      },
-      {
-        url: "pid-tuning/",
-        titles: {
-          en: "PID Tuning: Closed Loop and Step Responses",
-          fr: "Réglage PID : boucle fermée et réponses indicielles",
-          es: "Ajuste PID: lazo cerrado y respuestas al escalón"
-        },
-        desc: {
-          en: "Tune a P, PI or PID controller on a first-order, second-order or S-shaped process, with a sensor and optional saturation: live steady-state error, overshoot and settling time, Ziegler–Nichols tuning from the reaction curve, and the step response of each block.",
-          fr: "Réglez un correcteur P, PI ou PID sur un procédé du premier ordre, du deuxième ordre ou en S, avec capteur et saturation en option : erreur statique, dépassement et temps de réponse en direct, réglage de Ziegler–Nichols depuis la courbe de réaction, et la réponse indicielle de chaque bloc.",
-          es: "Ajusta un corrector P, PI o PID sobre un proceso de primer orden, de segundo orden o en S, con sensor y saturación opcional: error estático, sobrepaso y tiempo de respuesta en vivo, ajuste de Ziegler–Nichols desde la curva de reacción y la respuesta al escalón de cada bloque."
-        },
-        tags: ["Control", "PID", "Closed loop", "Ziegler–Nichols", "Teaching"]
-      },
-      {
-        url: "power-converters/",
-        titles: {
-          en: "Power Converter Simulator",
-          fr: "Simulateur de convertisseurs de puissance",
-          es: "Simulador de convertidores de potencia"
-        },
-        desc: {
-          en: "Diode rectifiers, SCR/TRIAC power control, buck and boost choppers, H-bridge inverter and a solar PV chain feeding the grid: tune the components and watch the waveforms.",
-          fr: "Redresseurs à diodes, commande de puissance par SCR/TRIAC, hacheurs buck et boost, onduleur en pont en H et chaîne solaire PV vers le réseau : réglez les composants et observez les formes d’onde.",
-          es: "Rectificadores de diodos, control de potencia con SCR/TRIAC, convertidores buck y boost, inversor en puente H y cadena solar FV hacia la red: ajusta los componentes y observa las formas de onda."
-        },
-        tags: ["Power electronics", "Rectifier", "Converters", "Inverter", "Teaching"]
-      },
-      {
-        url: "dc-circuit-simulator/",
-        titles: {
-          en: "DC Circuit Simulator",
-          fr: "Simulateur de circuits en continu",
-          es: "Simulador de circuitos en continua"
-        },
-        desc: {
-          en: "Draw DC circuits with resistors, sources, meters, diodes (ideal, 0.7 V or Shockley), Schottky diodes, ideal op-amps and transistors: voltages, currents and powers, plus Thévenin and Norton equivalents. Mouse and touch, USA or IEC symbols.",
-          fr: "Dessinez des circuits en continu avec résistances, sources, appareils de mesure, diodes (idéales, 0,7 V ou Shockley), diodes Schottky, AOP idéaux et transistors : tensions, courants et puissances, et équivalents de Thévenin et de Norton. Souris et tactile, symboles USA ou CEI.",
-          es: "Dibuje circuitos de continua con resistencias, fuentes, instrumentos, diodos (ideales, 0,7 V o Shockley), diodos Schottky, AO ideales y transistores: tensiones, corrientes y potencias, más los equivalentes de Thévenin y Norton. Ratón y pantalla táctil, símbolos USA o IEC."
-        },
-        tags: ["Circuits", "DC", "Thévenin", "Op-amp", "Transistor", "Teaching"]
-      },
-      {
-        url: "chirp/", // folder with its own index.html
-        titles: { 
-          en: "Chirp → Adjustable Filters", 
-          fr: "Chirp → Filtres réglables", 
-          es: "Chirp → Filtros ajustables" 
-        },
-        desc: {  
-          en: "Linear chirp with two tunable filters. Listen and visualize time response and Bode plots.", 
-          fr: "Chirp linéaire avec deux filtres réglables. Écoutez et visualisez la réponse temporelle et les diagrammes de Bode.", 
-          es: "Chirp lineal con dos filtros ajustables. Escucha y visualiza la respuesta temporal y los diagramas de Bode." 
-        },
-        tags: ["Filter", "Signals", "Audio"]
-      },
-      {
-        url: "room-acoustic-response/", // folder with its own index.html
-        titles: {
-          en: "Room Acoustic Response Measurement",
-          fr: "Mesure de réponse acoustique d’une pièce",
-          es: "Medida de la respuesta acústica de una sala"
-        },
-        desc: {
-          en: "Play a logarithmic sine sweep through any loudspeaker while recording with the microphone, then download an uncompressed WAV plus JSON metadata. Also predicts the room modes from its dimensions.",
-          fr: "Jouez un balayage sinusoïdal logarithmique sur un haut-parleur tout en enregistrant au microphone, puis téléchargez un WAV non compressé et ses métadonnées JSON. Prédit aussi les modes propres de la pièce à partir de ses dimensions.",
-          es: "Reproduce un barrido sinusoidal logarítmico por un altavoz mientras graba con el micrófono, y descarga un WAV sin compresión más sus metadatos JSON. Predice también los modos propios de la sala a partir de sus dimensiones."
-        },
-        tags: ["Acoustics", "Sweep", "Audio", "Measurement", "Room modes"]
-      },
-      {
-        url: "complex-exponential-explorer/", // folder with its own index.html
-        titles: {
-            en: "Complex Exponential Explorer",
-            fr: "Explorateur de l'exponentielle complexe",
-            es: "Explorador de la exponencial compleja"
-        },
-        desc: {
-            en: "Builds exp(x) and exp(ix) from the same small multiplicative step: y(n+1) = y(n)(1 + Δx) against z(n+1) = z(n)(1 + iΔx). Shrink Δx and watch the discrete spiral close onto the unit circle — a route to Euler's formula that never assumes it.",
-            fr: "Construit exp(x) et exp(ix) à partir du même petit pas multiplicatif : y(n+1) = y(n)(1 + Δx) face à z(n+1) = z(n)(1 + iΔx). Réduisez Δx et voyez la spirale discrète se refermer sur le cercle unité — un chemin vers la formule d'Euler qui ne la suppose jamais.",
-            es: "Construye exp(x) y exp(ix) con el mismo pequeño paso multiplicativo: y(n+1) = y(n)(1 + Δx) frente a z(n+1) = z(n)(1 + iΔx). Reducí Δx y mirá cómo la espiral discreta se cierra sobre el círculo unidad — un camino hacia la fórmula de Euler que nunca la presupone."
-        },
-        tags: ["Exponential", "Euler", "Complex plane", "Teaching"]
-      },
-      {
-        url: "damped-complex-exponential/", // folder with its own index.html
-        titles: { 
-          en: "Damped Complex Exponential", 
-          fr: "Exponentielle complexe amortie", 
-          es: "Exponencial compleja amortiguada" 
-        },
-        desc: {  
-          en: "Interactive visualization of damped complex exponentials with amplitude, frequency, phase, and damping control.",
-          fr: "Visualisation interactive d'exponentielles complexes amorties avec contrôle de l’amplitude, de la fréquence, de la phase et de l’amortissement.",
-          es: "Visualización interactiva de exponenciales complejas amortiguadas con control de amplitud, frecuencia, fase y amortiguamiento."
-        },
-        tags: ["Exponential", "Signals", "Teaching"]
-      },
-      {
-        url: "damped-complex-exponential-discrete/", // folder with its own index.html
-        titles: { 
-          en: "Damped Complex Exponential (discrete)", 
-          fr: "Exponentielle complexe amortie (discrète)", 
-          es: "Exponencial compleja amortiguada (discreta)" 
-        },
-        desc: {  
-          en: "Interactive visualization of discrete-time, damped complex exponentials.",
-          fr: "Visualisation interactive d'exponentielles complexes en temps discret.",
-          es: "Visualización interactiva de exponenciales complejas amortiguadas en tiempo discreto."
-        },
-        tags: ["Exponential", "Discrete-time", "Signals", "Teaching"]
-      },      
-      {
-        url: "complex-exponentials-and-phasors/", // folder with its own index.html
-        titles: {
-            en: "Complex Exponentials & Phasors",
-            fr: "Exponentielles complexes et phaseurs",
-            es: "Exponenciales complejas y fasores"
-        },
-        desc: {
-            en: "Interactive 3D/2D visualizer of z(t)=A·e^{j(ωt+φ)} with phasor, derivative and integral comparisons.",
-            fr: "Visualiseur 3D/2D interactif de z(t)=A·e^{j(ωt+φ)} avec phaseur, dérivée et intégrale.",
-            es: "Visualizador 3D/2D interactivo de z(t)=A·e^{j(ωt+φ)} con fasor, derivada e integral."
-        },
-        tags: ["Phasor", "Signals", "Teaching"]
-      },
-      {
-        url: "discrete-cos-video/", // folder with its own index.html
-        titles: {
-          en: "Discrete-Time Cosine: Frequency Periodicity",
-          fr: "Cosinus discret : Périodicité en fréquence",
-          es: "Coseno en tiempo discreto: Periodicidad en frecuencia"
-        },
-        desc: {
-          en: "Visualization of the periodic property of frequency in discrete cos(ωn) — aliasing.",
-          fr: "Visualisation de la propriété de périodicité en fréquence du cosinus discret — repliement (aliasing).",
-          es: "Visualización de la propiedad de periodicidad en frecuencia en cos(ωn) discreto — aliasing."
-        },
-        tags: ["Discrete-Time", "Aliasing", "Signals"]
-      },
-      {
-        url: "sampling-aliasing/",
-        titles: {
-          en: "Sampling and Aliasing: Sampled Sinusoid & Filmed Wheel",
-          fr: "Échantillonnage et repliement : sinusoïde échantillonnée et roue filmée",
-          es: "Muestreo y aliasing: sinusoide muestreada y rueda filmada"
-        },
-        desc: {
-          en: "Two tabs on aliasing. A sinusoid sampled at Fs with ideal, ZOH or linear reconstruction and the sawtooth of the apparent frequency. A wheel filmed by a camera (5-spoke rim or disc with one hole) that seems to stop or turn backwards, next to the motion-blurred wheel the eye sees. Presets and frequency sweep.",
-          fr: "Deux onglets sur le repliement. Une sinusoïde échantillonnée à Fs avec reconstruction idéale, ZOH ou linéaire et la dent de scie de la fréquence apparente. Une roue filmée par une caméra (jante 5 rayons ou disque à un trou) qui semble s’arrêter ou tourner à l’envers, à côté de la roue floue que voit l’œil. Exemples et balayage en fréquence.",
-          es: "Dos pestañas sobre el aliasing. Una sinusoide muestreada a Fs con reconstrucción ideal, ZOH o lineal y el diente de sierra de la frecuencia aparente. Una rueda filmada por una cámara (llanta de 5 rayos o disco con un agujero) que parece detenerse o girar al revés, junto a la rueda borrosa que ve el ojo. Ejemplos y barrido en frecuencia."
-        },
-        tags: ["Sampling", "Aliasing", "Stroboscope", "Signals", "Teaching"]
-      },
+      // ===== Señales y sistemas / Signals & systems =====
       {
         url: "complex-numbers-operations/",
+        cat: "signals",
         titles: { 
           en: "Complex → Vector Operations",
           fr: "Complexes → Opérations vectorielles",
@@ -397,6 +131,7 @@
       },
       {
         url: "complex-multiplication-rotation/", // folder with its own index.html
+        cat: "signals",
         titles: { 
           en: "Complex Multiplication → Vector Rotation", 
           fr: "Multiplication complexe → Rotation de vecteur", 
@@ -410,7 +145,191 @@
         tags: ["Complex Numbers", "Teaching", "Signals"]
       },
       {
+        url: "complex-exponential-explorer/", // folder with its own index.html
+        cat: "signals",
+        titles: {
+            en: "Complex Exponential Explorer",
+            fr: "Explorateur de l'exponentielle complexe",
+            es: "Explorador de la exponencial compleja"
+        },
+        desc: {
+            en: "Builds exp(x) and exp(ix) from the same small multiplicative step: y(n+1) = y(n)(1 + Δx) against z(n+1) = z(n)(1 + iΔx). Shrink Δx and watch the discrete spiral close onto the unit circle — a route to Euler's formula that never assumes it.",
+            fr: "Construit exp(x) et exp(ix) à partir du même petit pas multiplicatif : y(n+1) = y(n)(1 + Δx) face à z(n+1) = z(n)(1 + iΔx). Réduisez Δx et voyez la spirale discrète se refermer sur le cercle unité — un chemin vers la formule d'Euler qui ne la suppose jamais.",
+            es: "Construye exp(x) y exp(ix) con el mismo pequeño paso multiplicativo: y(n+1) = y(n)(1 + Δx) frente a z(n+1) = z(n)(1 + iΔx). Reducí Δx y mirá cómo la espiral discreta se cierra sobre el círculo unidad — un camino hacia la fórmula de Euler que nunca la presupone."
+        },
+        tags: ["Exponential", "Euler", "Complex plane", "Teaching"]
+      },
+      {
+        url: "complex-exponentials-and-phasors/", // folder with its own index.html
+        cat: "signals",
+        titles: {
+            en: "Complex Exponentials & Phasors",
+            fr: "Exponentielles complexes et phaseurs",
+            es: "Exponenciales complejas y fasores"
+        },
+        desc: {
+            en: "Interactive 3D/2D visualizer of z(t)=A·e^{j(ωt+φ)} with phasor, derivative and integral comparisons.",
+            fr: "Visualiseur 3D/2D interactif de z(t)=A·e^{j(ωt+φ)} avec phaseur, dérivée et intégrale.",
+            es: "Visualizador 3D/2D interactivo de z(t)=A·e^{j(ωt+φ)} con fasor, derivada e integral."
+        },
+        tags: ["Phasor", "Signals", "Teaching"]
+      },
+      {
+        url: "damped-complex-exponential/", // folder with its own index.html
+        cat: "signals",
+        titles: { 
+          en: "Damped Complex Exponential", 
+          fr: "Exponentielle complexe amortie", 
+          es: "Exponencial compleja amortiguada" 
+        },
+        desc: {  
+          en: "Interactive visualization of damped complex exponentials with amplitude, frequency, phase, and damping control.",
+          fr: "Visualisation interactive d'exponentielles complexes amorties avec contrôle de l’amplitude, de la fréquence, de la phase et de l’amortissement.",
+          es: "Visualización interactiva de exponenciales complejas amortiguadas con control de amplitud, frecuencia, fase y amortiguamiento."
+        },
+        tags: ["Exponential", "Signals", "Teaching"]
+      },
+      {
+        url: "damped-complex-exponential-discrete/", // folder with its own index.html
+        cat: "signals",
+        titles: { 
+          en: "Damped Complex Exponential (discrete)", 
+          fr: "Exponentielle complexe amortie (discrète)", 
+          es: "Exponencial compleja amortiguada (discreta)" 
+        },
+        desc: {  
+          en: "Interactive visualization of discrete-time, damped complex exponentials.",
+          fr: "Visualisation interactive d'exponentielles complexes en temps discret.",
+          es: "Visualización interactiva de exponenciales complejas amortiguadas en tiempo discreto."
+        },
+        tags: ["Exponential", "Discrete-time", "Signals", "Teaching"]
+      },      
+      {
+        url: "fourier-series-2d/", // folder with its own index.html
+        cat: "signals",
+        titles: { en: "Fourier Series – 2D Demo", fr: "Séries de Fourier – Démo 2D", es: "Series de Fourier – Demo 2D" },
+        desc: {  en: "Interactive 2D real Fourier visualizer.",
+                 fr: "Visualiseur 2D interactif des séries de Fourier réelles.",
+                 es: "Visualizador 2d interactivo de series de Fourier reales." },
+        tags: ["Fourier", "Teaching", "Signals"]
+      },
+      {
+        url: "fourier-series-3d/", // folder with its own index.html
+        cat: "signals",
+        titles: { en: "Fourier Series – 3D Demo", fr: "Séries de Fourier – Démo 3D", es: "Series de Fourier – Demo 3D" },
+        desc: {  en: "Interactive 3D complex Fourier visualizer.",
+                 fr: "Visualiseur 3D interactif des séries de Fourier complexes.",
+                 es: "Visualizador 3D interactivo de series de Fourier complejas." },
+        tags: ["Fourier", "Teaching", "Signals"]
+      },
+      {
+        url: "fourier-series-and-forier-transform/",
+        cat: "signals",
+        titles: { 
+          en: "Periodic Signals & Fourier Series", 
+          fr: "Signaux Périodiques & Série de Fourier", 
+          es: "Señales Periódicas & Serie de Fourier" 
+        },
+        desc: {  
+          en: "Interactive tool for analyzing periodic signals using Fourier Series and FFT. Supports multiple signal types, noise addition, and windowing functions.",
+          fr: "Outil interactif pour analyser les signaux périodiques avec les séries de Fourier et la FFT. Prend en charge plusieurs types de signaux, ajout de bruit et fonctions de fenêtrage.",
+          es: "Herramienta interactiva para analizar señales periódicas usando Series de Fourier y FFT. Soporta múltiples tipos de señales, adición de ruido y funciones de ventana."
+        },
+        tags: ["Fourier", "FFT", "Signals", "Teaching"]
+      },      
+      {
+        url: "fourier-oscilloscope_and_spectrum/",
+        cat: "signals",
+        titles: {
+          en: "Oscilloscope & Spectrogram",
+          fr: "Oscilloscope & Spectrogramme",
+          es: "Osciloscopio & Espectrograma"
+        },
+        desc: {
+          en: "Interactive audio oscilloscope with real-time waveform, spectrum, spectrogram, recorded presets, and frequency sweeps.",
+          fr: "Oscilloscope audio interactif avec forme d’onde, spectre, spectrogramme, sons enregistrés et balayages de fréquence en temps réel.",
+          es: "Osciloscopio de audio interactivo con señal temporal, espectro, espectrograma, sonidos grabados y barridos de frecuencia en tiempo real."
+        },
+        tags: ["Audio", "Oscilloscope", "Spectrogram", "FFT", "Teaching"]
+      },
+      {
+        url: "adjustable-filters/",
+        cat: "signals",
+        titles: {
+          en: "Continuous-time Filters Explorer",
+          fr: "Explorateur de filtres en temps continu",
+          es: "Explorador de filtros en tiempo continuo"
+        },
+        desc: {
+          en: "Single-frequency input, two adjustable low-pass / high-pass filters, optional cascading, with time response and Bode plots.",
+          fr: "Entrée à fréquence unique, deux filtres passe-bas / passe-haut réglables, mise en cascade optionnelle, avec réponse temporelle et diagrammes de Bode.",
+          es: "Entrada de frecuencia única, dos filtros pasa-bajo / pasa-alto ajustables, cascada opcional, con respuesta temporal y diagramas de Bode."
+        },
+        tags: ["Filter", "Signals", "Teaching"]
+      },
+      {
+        url: "chirp/", // folder with its own index.html
+        cat: "signals",
+        titles: { 
+          en: "Chirp → Adjustable Filters", 
+          fr: "Chirp → Filtres réglables", 
+          es: "Chirp → Filtros ajustables" 
+        },
+        desc: {  
+          en: "Linear chirp with two tunable filters. Listen and visualize time response and Bode plots.", 
+          fr: "Chirp linéaire avec deux filtres réglables. Écoutez et visualisez la réponse temporelle et les diagrammes de Bode.", 
+          es: "Chirp lineal con dos filtros ajustables. Escucha y visualiza la respuesta temporal y los diagramas de Bode." 
+        },
+        tags: ["Filter", "Signals", "Audio"]
+      },
+      {
+        url: "laplace-explorer/",
+        cat: "signals",
+        titles: {
+          en: "Laplace → Fourier: poles, zeros and frequency response",
+          fr: "Laplace → Fourier : pôles, zéros et réponse en fréquence",
+          es: "Laplace → Fourier: polos, ceros y respuesta en frecuencia"
+        },
+        desc: {
+          en: "Drag poles and zeros in the s-plane and watch the 3D surface of |H(s)|, the Bode and Nyquist plots follow. Geometric construction of magnitude and phase, pure delay.",
+          fr: "Déplacez pôles et zéros dans le plan s et voyez suivre la surface 3D de |H(s)|, le Bode et le Nyquist. Construction géométrique du module et de la phase, retard pur.",
+          es: "Arrastra polos y ceros en el plano s y mira cómo siguen la superficie 3D de |H(s)| y los diagramas de Bode y Nyquist. Construcción geométrica del módulo y la fase, retardo puro."
+        },
+        tags: ["Laplace", "Fourier", "Bode", "Nyquist", "Teaching"]
+      },
+      {
+        url: "sampling-aliasing/",
+        cat: "signals",
+        titles: {
+          en: "Sampling and Aliasing: Sampled Sinusoid & Filmed Wheel",
+          fr: "Échantillonnage et repliement : sinusoïde échantillonnée et roue filmée",
+          es: "Muestreo y aliasing: sinusoide muestreada y rueda filmada"
+        },
+        desc: {
+          en: "Two tabs on aliasing. A sinusoid sampled at Fs with ideal, ZOH or linear reconstruction and the sawtooth of the apparent frequency. A wheel filmed by a camera (5-spoke rim or disc with one hole) that seems to stop or turn backwards, next to the motion-blurred wheel the eye sees. Presets and frequency sweep.",
+          fr: "Deux onglets sur le repliement. Une sinusoïde échantillonnée à Fs avec reconstruction idéale, ZOH ou linéaire et la dent de scie de la fréquence apparente. Une roue filmée par une caméra (jante 5 rayons ou disque à un trou) qui semble s’arrêter ou tourner à l’envers, à côté de la roue floue que voit l’œil. Exemples et balayage en fréquence.",
+          es: "Dos pestañas sobre el aliasing. Una sinusoide muestreada a Fs con reconstrucción ideal, ZOH o lineal y el diente de sierra de la frecuencia aparente. Una rueda filmada por una cámara (llanta de 5 rayos o disco con un agujero) que parece detenerse o girar al revés, junto a la rueda borrosa que ve el ojo. Ejemplos y barrido en frecuencia."
+        },
+        tags: ["Sampling", "Aliasing", "Stroboscope", "Signals", "Teaching"]
+      },
+      {
+        url: "discrete-cos-video/", // folder with its own index.html
+        cat: "signals",
+        titles: {
+          en: "Discrete-Time Cosine: Frequency Periodicity",
+          fr: "Cosinus discret : Périodicité en fréquence",
+          es: "Coseno en tiempo discreto: Periodicidad en frecuencia"
+        },
+        desc: {
+          en: "Visualization of the periodic property of frequency in discrete cos(ωn) — aliasing.",
+          fr: "Visualisation de la propriété de périodicité en fréquence du cosinus discret — repliement (aliasing).",
+          es: "Visualización de la propiedad de periodicidad en frecuencia en cos(ωn) discreto — aliasing."
+        },
+        tags: ["Discrete-Time", "Aliasing", "Signals"]
+      },
+      {
         url: "LTI-systems-discrete/", // folder with its own index.html
+        cat: "signals",
         titles: { 
           en: "LTI System Response", 
           fr: "Réponse des systèmes LTI", 
@@ -423,8 +342,116 @@
         },
         tags: ["LTI", "Systems", "Signals", "Teaching"]
       },
+      {
+        url: "correlation-discrete/", // folder with its own index.html
+        cat: "signals",
+        titles: { 
+          en: "Discrete Signal Correlation", 
+          fr: "Corrélation de Signaux Discrets", 
+          es: "Correlación de Señales Discretas" 
+        },
+        desc: {  
+          en: "Interactive discrete signal correlation analyzer with lag visualization.",
+          fr: "Analyseur interactif de corrélation de signaux discrets avec visualisation du décalage.",
+          es: "Analizador interactivo de correlación de señales discretas con visualización de desfase." 
+        },
+        tags: ["Correlation", "Teaching", "Signals"]
+      },
+      // ===== Control =====
+      {
+        url: "step-response/",
+        cat: "control",
+        titles: {
+          en: "Step Response of First- and Second-Order Systems",
+          fr: "Réponse indicielle des systèmes du premier et du deuxième ordre",
+          es: "Respuesta al escalón de sistemas de primer y segundo orden"
+        },
+        desc: {
+          en: "Set K, τ or K, ω0, ξ and watch the step response: differential equation, overshoot, pseudo-period, settling time, two read cursors snapping to the peaks, and a stored curve for comparison.",
+          fr: "Réglez K, τ ou K, ω0, ξ et observez la réponse indicielle : équation différentielle, dépassement, pseudo-période, temps de réponse, deux curseurs de lecture aimantés aux extremums et une courbe mémorisée pour comparer.",
+          es: "Ajusta K, τ o K, ω0, ξ y observa la respuesta al escalón: ecuación diferencial, sobrepaso, pseudoperíodo, tiempo de respuesta, dos cursores de lectura con imán en los extremos y una curva memorizada para comparar."
+        },
+        tags: ["Control", "Step response", "Second order", "Damping", "Teaching"]
+      },
+      {
+        url: "shower-control/",
+        cat: "control",
+        titles: {
+          en: "Shower Temperature Control",
+          fr: "Contrôle de la température d’une douche",
+          es: "Control de la temperatura de una ducha"
+        },
+        desc: {
+          en: "Set a shower by hand, measure the tap’s nonlinear curve, then compare open-loop control from that table with proportional and integral feedback, under disturbances and a sensor delay.",
+          fr: "Réglez une douche à la main, mesurez la courbe non linéaire du robinet, puis comparez la commande en boucle ouverte par cette table aux correcteurs proportionnel et intégral, face aux perturbations et à un retard de mesure.",
+          es: "Ajusta una ducha a mano, mide la curva no lineal del grifo y compara el control en lazo abierto con esa tabla frente a los correctores proporcional e integral, con perturbaciones y un retardo de medida."
+        },
+        tags: ["Control", "Open loop", "Feedback", "Delay", "Teaching"]
+      },
+      {
+        url: "pid-tuning/",
+        cat: "control",
+        titles: {
+          en: "PID Tuning: Closed Loop and Step Responses",
+          fr: "Réglage PID : boucle fermée et réponses indicielles",
+          es: "Ajuste PID: lazo cerrado y respuestas al escalón"
+        },
+        desc: {
+          en: "Tune a P, PI or PID controller on a first-order, second-order or S-shaped process, with a sensor and optional saturation: live steady-state error, overshoot and settling time, Ziegler–Nichols tuning from the reaction curve, and the step response of each block.",
+          fr: "Réglez un correcteur P, PI ou PID sur un procédé du premier ordre, du deuxième ordre ou en S, avec capteur et saturation en option : erreur statique, dépassement et temps de réponse en direct, réglage de Ziegler–Nichols depuis la courbe de réaction, et la réponse indicielle de chaque bloc.",
+          es: "Ajusta un corrector P, PI o PID sobre un proceso de primer orden, de segundo orden o en S, con sensor y saturación opcional: error estático, sobrepaso y tiempo de respuesta en vivo, ajuste de Ziegler–Nichols desde la curva de reacción y la respuesta al escalón de cada bloque."
+        },
+        tags: ["Control", "PID", "Closed loop", "Ziegler–Nichols", "Teaching"]
+      },
+      {
+        url: "closed-loop-control/",
+        cat: "control",
+        titles: {
+          en: "Closed-loop Control Explorer",
+          fr: "Explorateur de contrôle en boucle fermée",
+          es: "Explorador de control en lazo cerrado"
+        },
+        desc: {
+          en: "Build a loop from plant, controller and sensor models; explore PID tuning, root locus, saturation, Bode and Nyquist plots, 3D surfaces, and time responses.",
+          fr: "Construisez une boucle avec plante, contrôleur et capteur ; explorez le réglage PID, le lieu des racines, la saturation, Bode, Nyquist, les surfaces 3D et les réponses temporelles.",
+          es: "Construye un lazo con planta, controlador y sensor; explora el ajuste PID, el lugar de las raíces, la saturación, Bode, Nyquist, las superficies 3D y las respuestas temporales."
+        },
+        tags: ["Control", "PID", "Root locus", "Bode", "Teaching"]
+      },
+      // ===== Electrónica / Electronics =====
+      {
+        url: "dc-circuit-simulator/",
+        cat: "electronics",
+        titles: {
+          en: "DC Circuit Simulator",
+          fr: "Simulateur de circuits en continu",
+          es: "Simulador de circuitos en continua"
+        },
+        desc: {
+          en: "Draw DC circuits with resistors, sources, meters, diodes (ideal, 0.7 V or Shockley), Schottky diodes, ideal op-amps and transistors: voltages, currents and powers, plus Thévenin and Norton equivalents. Mouse and touch, USA or IEC symbols.",
+          fr: "Dessinez des circuits en continu avec résistances, sources, appareils de mesure, diodes (idéales, 0,7 V ou Shockley), diodes Schottky, AOP idéaux et transistors : tensions, courants et puissances, et équivalents de Thévenin et de Norton. Souris et tactile, symboles USA ou CEI.",
+          es: "Dibuje circuitos de continua con resistencias, fuentes, instrumentos, diodos (ideales, 0,7 V o Shockley), diodos Schottky, AO ideales y transistores: tensiones, corrientes y potencias, más los equivalentes de Thévenin y Norton. Ratón y pantalla táctil, símbolos USA o IEC."
+        },
+        tags: ["Circuits", "DC", "Thévenin", "Op-amp", "Transistor", "Teaching"]
+      },
+      {
+        url: "power-converters/",
+        cat: "electronics",
+        titles: {
+          en: "Power Converter Simulator",
+          fr: "Simulateur de convertisseurs de puissance",
+          es: "Simulador de convertidores de potencia"
+        },
+        desc: {
+          en: "Diode rectifiers, SCR/TRIAC power control, buck and boost choppers, H-bridge inverter and a solar PV chain feeding the grid: tune the components and watch the waveforms.",
+          fr: "Redresseurs à diodes, commande de puissance par SCR/TRIAC, hacheurs buck et boost, onduleur en pont en H et chaîne solaire PV vers le réseau : réglez les composants et observez les formes d’onde.",
+          es: "Rectificadores de diodos, control de potencia con SCR/TRIAC, convertidores buck y boost, inversor en puente H y cadena solar FV hacia la red: ajusta los componentes y observa las formas de onda."
+        },
+        tags: ["Power electronics", "Rectifier", "Converters", "Inverter", "Teaching"]
+      },
             {
         url: "quadrature-encoder-animation/", // folder with its own index.html
+        cat: "electronics",
         titles: { 
           en: "Quadrature Encoder Animation", 
           fr: "Animation d’un encodeur en quadrature", 
@@ -439,6 +466,7 @@
       },
       {
         url: "encoder-wheel-svg-generator/", // folder with its own index.html
+        cat: "electronics",
         titles: { 
           en: "Encoder Wheel SVG Generator", 
           fr: "Générateur de roue d’encodeur SVG", 
@@ -451,8 +479,56 @@
         },
         tags: ["Robotics", "Teaching", "Signals"]
       },
+      // ===== Mediciones y laboratorio / Measurements & lab =====
+      {
+        url: "room-acoustic-response/", // folder with its own index.html
+        cat: "lab",
+        titles: {
+          en: "Room Acoustic Response Measurement",
+          fr: "Mesure de réponse acoustique d’une pièce",
+          es: "Medida de la respuesta acústica de una sala"
+        },
+        desc: {
+          en: "Play a logarithmic sine sweep through any loudspeaker while recording with the microphone, then download an uncompressed WAV plus JSON metadata. Also predicts the room modes from its dimensions.",
+          fr: "Jouez un balayage sinusoïdal logarithmique sur un haut-parleur tout en enregistrant au microphone, puis téléchargez un WAV non compressé et ses métadonnées JSON. Prédit aussi les modes propres de la pièce à partir de ses dimensions.",
+          es: "Reproduce un barrido sinusoidal logarítmico por un altavoz mientras graba con el micrófono, y descarga un WAV sin compresión más sus metadatos JSON. Predice también los modos propios de la sala a partir de sus dimensiones."
+        },
+        tags: ["Acoustics", "Sweep", "Audio", "Measurement", "Room modes"]
+      },
+      {
+        url: "pendulum/",
+        cat: "lab",
+        titles: {
+          en: "Pendulum Lab",
+          fr: "TP Pendule",
+          es: "TP Pendulo"
+        },
+        desc: {
+          en: "Interactive lab for real pendulum acquisition, Modelica simulation, period measurement, phase portrait, and system identification.",
+          fr: "Parcours interactif pour mesurer un pendule reel, simuler avec Modelica, analyser la periode, le portrait de phase et l'identification de systeme.",
+          es: "Recorrido interactivo para medir un pendulo real, simular con Modelica, analizar periodo, retrato de fase e identificacion de sistema."
+        },
+        tags: ["Pendulum", "Modelica", "Electronics", "Teaching"]
+      },
+      {
+        url: "https://ferrucci-franco.github.io/timeseries-explorer/",
+        cat: "lab",
+        titles: {
+          en: "Time Series Explorer",
+          fr: "Time Series Explorer",
+          es: "Time Series Explorer"
+        },
+        desc: {
+          en: "Interactive viewer for CSV, Parquet, and OpenModelica/Dymola result files. Explore variables, time evolution, and signals.",
+          fr: "Visualiseur interactif de fichiers CSV, Parquet et de résultats OpenModelica/Dymola. Explorez les variables et leur évolution temporelle.",
+          es: "Visor interactivo de archivos CSV, Parquet y resultados OpenModelica/Dymola. Explora variables y su evolución temporal."
+        },
+        tags: ["Time series", "CSV", "Parquet", "Modelica"]
+      },
+      // ===== Otros / Other =====
       {
         url: "monte-carlo-pi-estimation/", // folder with its own index.html
+        cat: "other",
         titles: {
           en: "Monte Carlo π – Live Demo",
           fr: "Monte Carlo π – Démo en direct",
@@ -465,88 +541,75 @@
         },
         tags: ["Monte Carlo", "Teaching", "Probability", "Signals"]
       },
-      {
-        url: "correlation-discrete/", // folder with its own index.html
-        titles: { 
-          en: "Discrete Signal Correlation", 
-          fr: "Corrélation de Signaux Discrets", 
-          es: "Correlación de Señales Discretas" 
-        },
-        desc: {  
-          en: "Interactive discrete signal correlation analyzer with lag visualization.",
-          fr: "Analyseur interactif de corrélation de signaux discrets avec visualisation du décalage.",
-          es: "Analizador interactivo de correlación de señales discretas con visualización de desfase." 
-        },
-        tags: ["Correlation", "Teaching", "Signals"]
-      },
-    {
-      url: "https://ferrucci-franco.github.io/timeseries-explorer/",
-      titles: {
-        en: "Time Series Explorer",
-        fr: "Time Series Explorer",
-        es: "Time Series Explorer"
-      },
-      desc: {
-        en: "Interactive viewer for CSV, Parquet, and OpenModelica/Dymola result files. Explore variables, time evolution, and signals.",
-        fr: "Visualiseur interactif de fichiers CSV, Parquet et de résultats OpenModelica/Dymola. Explorez les variables et leur évolution temporelle.",
-        es: "Visor interactivo de archivos CSV, Parquet y resultados OpenModelica/Dymola. Explora variables y su evolución temporal."
-      },
-      tags: ["Time series", "CSV", "Parquet", "Modelica"]
-    },
-    {
-      url: "pendulum/",
-      titles: {
-        en: "Pendulum Lab",
-        fr: "TP Pendule",
-        es: "TP Pendulo"
-      },
-      desc: {
-        en: "Interactive lab for real pendulum acquisition, Modelica simulation, period measurement, phase portrait, and system identification.",
-        fr: "Parcours interactif pour mesurer un pendule reel, simuler avec Modelica, analyser la periode, le portrait de phase et l'identification de systeme.",
-        es: "Recorrido interactivo para medir un pendulo real, simular con Modelica, analizar periodo, retrato de fase e identificacion de sistema."
-      },
-      tags: ["Pendulum", "Modelica", "Electronics", "Teaching"]
-    },
+    ];
+
+    // --------- Sections (order = display order) ---------
+    const SECTIONS = [
+      { id: "signals",
+        title: { en: "Signals & systems", fr: "Signaux & systèmes", es: "Señales y sistemas" },
+        blurb: { en: "Complex numbers, phasors, Fourier, filters, Laplace, sampling and discrete-time systems, from the basics upward.",
+                 fr: "Nombres complexes, phaseurs, Fourier, filtres, Laplace, échantillonnage et systèmes à temps discret, des bases vers le haut.",
+                 es: "Números complejos, fasores, Fourier, filtros, Laplace, muestreo y sistemas en tiempo discreto, de lo básico hacia arriba." } },
+      { id: "control",
+        title: { en: "Control", fr: "Automatique", es: "Control" },
+        blurb: { en: "Step responses, open vs. closed loop, PID tuning, root locus.",
+                 fr: "Réponses indicielles, boucle ouverte vs fermée, réglage PID, lieu des racines.",
+                 es: "Respuestas al escalón, lazo abierto vs. cerrado, ajuste PID, lugar de las raíces." } },
+      { id: "electronics",
+        title: { en: "Electronics", fr: "Électronique", es: "Electrónica" },
+        blurb: { en: "DC circuits, power converters, encoders.",
+                 fr: "Circuits DC, convertisseurs de puissance, codeurs.",
+                 es: "Circuitos DC, convertidores de potencia, encoders." } },
+      { id: "lab",
+        title: { en: "Measurements & lab", fr: "Mesures & laboratoire", es: "Mediciones y laboratorio" },
+        blurb: { en: "Tools that work with real data: microphone, sensors, simulation result files.",
+                 fr: "Outils qui travaillent avec des données réelles : microphone, capteurs, fichiers de résultats de simulation.",
+                 es: "Herramientas que trabajan con datos reales: micrófono, sensores, archivos de resultados de simulación." } },
+      { id: "other",
+        title: { en: "Other", fr: "Autres", es: "Otros" },
+        blurb: { en: "", fr: "", es: "" } },
     ];
 
     // --------- Translations ---------
     const TXT = {
       en: {
         name: "Franco Ferrucci",
-        tag: "Signal processing • Electronics • Teaching",
-        hello: "Hello!",
-        about: "I'm Franco, a university professor in Tahiti. I teach and build things around signals & systems, electronics, and Python.",
-        about2: "Below are all my public pages and mini-projects hosted on GitHub Pages.",
-        all: "All pages",
-        count: n=>`${n} link${n===1?"":"s"}`,
+        tag: "Signals & systems • Control • Electronics",
+        hello: "Interactive demos for teaching",
+        about: "Small web apps to explore signals & systems, control and electronics. Everything runs in the browser, nothing to install.",
+        about2: "I built them for my courses at the University of French Polynesia (Tahiti). Pick a section below, or browse them all.",
+        all: "All",
+        count: n=>`${n} page${n===1?"":"s"}`,
         footName: "Franco Ferrucci"
       },
       fr: {
         name: "Franco Ferrucci",
-        tag: "Traitement du signal • Électronique • Enseignement",
-        hello: "Bonjour !",
-        about: "Je suis Franco, maître de conférences à Tahiti. J'enseigne et je fabrique des choses autour des signaux & systèmes, de l'électronique et de Python.",
-        about2: "Ci‑dessous, toutes mes pages publiques et mini‑projets hébergés sur GitHub Pages.",
-        all: "Toutes les pages",
-        count: n=>`${n} lien${n>1?"s":""}`,
+        tag: "Signaux & systèmes • Automatique • Électronique",
+        hello: "Démos interactives pour l'enseignement",
+        about: "Petites applications web pour explorer les signaux & systèmes, l'automatique et l'électronique. Tout tourne dans le navigateur, rien à installer.",
+        about2: "Je les ai conçues pour mes cours à l'Université de la Polynésie française (Tahiti). Choisissez une section ci-dessous, ou parcourez tout.",
+        all: "Tout",
+        count: n=>`${n} page${n>1?"s":""}`,
         footName: "Franco Ferrucci"
       },
       es: {
         name: "Franco Ferrucci",
-        tag: "Tratamiento de señales • Electrónica • Docencia",
-        hello: "¡Hola!",
-        about: "Soy Franco, profesor universitario en Tahití. Enseño y construyo cosas sobre señales y sistemas, electrónica y Python.",
-        about2: "Abajo están todas mis páginas públicas y mini‑proyectos alojados en GitHub Pages.",
-        all: "Todas las páginas",
-        count: n=>`${n} enlace${n===1?"":"s"}`,
+        tag: "Señales y sistemas • Control • Electrónica",
+        hello: "Demos interactivas para la enseñanza",
+        about: "Pequeñas aplicaciones web para explorar señales y sistemas, control y electrónica. Todo corre en el navegador, sin instalar nada.",
+        about2: "Las hice para mis cursos en la Universidad de la Polinesia Francesa (Tahití). Elegí una sección abajo, o recorrelas todas.",
+        all: "Todas",
+        count: n=>`${n} página${n===1?"":"s"}`,
         footName: "Franco Ferrucci"
       }
     };
 
     // --------- Language logic ---------
     const $ = (q)=>document.querySelector(q);
-    const cards = $('#cards');
+    const sectionsEl = $('#sections');
+    const navEl = $('#nav');
     const btns = [$('#btn-en'), $('#btn-fr'), $('#btn-es')];
+    let currentLang = 'en';
 
     function preferredLang(){
       const saved = localStorage.getItem('lang');
@@ -557,14 +620,97 @@
       return 'en';
     }
 
+    function cardHTML(p, lang){
+      return `
+        <h3>${(p.titles && p.titles[lang]) || p.titles?.en || p.url}</h3>
+        <p>${(p.desc && p.desc[lang]) || p.desc?.en || ''}</p>
+        <div class="chipbar">${(p.tags||[]).map(tag=>`<span class="chip">${tag}</span>`).join('')}</div>
+      `;
+    }
+
+    // Which section is selected: "all" or a SECTIONS id. Kept in the URL hash so links are shareable.
+    function currentFilter(){
+      const h = location.hash.replace('#','');
+      return SECTIONS.some(s=>s.id===h) ? h : 'all';
+    }
+
+    function renderNav(lang){
+      const t = TXT[lang] || TXT.en;
+      const f = currentFilter();
+      navEl.innerHTML = '';
+      const items = [{id:'all', label:t.all, n:PAGES.length}]
+        .concat(SECTIONS.map(s=>({id:s.id, label:s.title[lang]||s.title.en, n:PAGES.filter(p=>p.cat===s.id).length})))
+        .filter(it=>it.n>0);
+      items.forEach(it=>{
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.dataset.id = it.id;
+        b.classList.toggle('active', it.id===f);
+        b.setAttribute('aria-pressed', it.id===f);
+        b.innerHTML = `${it.label}<span class="n">${it.n}</span>`;
+        b.addEventListener('click', ()=>{
+          if(it.id==='all') history.replaceState(null,'',location.pathname+location.search);
+          else history.replaceState(null,'','#'+it.id);
+          applyFilter();
+          window.scrollTo({top:0, behavior:'smooth'});
+        });
+        navEl.appendChild(b);
+      });
+    }
+
+    function renderSections(lang){
+      const t = TXT[lang] || TXT.en;
+      sectionsEl.innerHTML = '';
+      SECTIONS.forEach(s=>{
+        const pages = PAGES.filter(p=>p.cat===s.id);
+        if(!pages.length) return;
+        const sec = document.createElement('section');
+        sec.className = 'sec';
+        sec.id = 'sec-'+s.id;
+        sec.setAttribute('aria-labelledby', 'h-'+s.id);
+        const blurb = (s.blurb && (s.blurb[lang]||s.blurb.en)) || '';
+        sec.innerHTML = `
+          <div class="section-title">
+            <h2 id="h-${s.id}">${s.title[lang]||s.title.en}</h2>
+            <span class="muted">${t.count(pages.length)}</span>
+          </div>
+          ${blurb ? `<p>${blurb}</p>` : ''}
+          <div class="grid"></div>
+        `;
+        const grid = sec.querySelector('.grid');
+        pages.forEach(p=>{
+          const a = document.createElement('a');
+          a.className = 'card';
+          a.href = p.url;
+          a.innerHTML = cardHTML(p, lang);
+          grid.appendChild(a);
+        });
+        sectionsEl.appendChild(sec);
+      });
+      // Pages with an unknown category are still listed, so nothing gets lost silently.
+      const orphans = PAGES.filter(p=>!SECTIONS.some(s=>s.id===p.cat));
+      if(orphans.length) console.warn('Pages without a valid cat:', orphans.map(p=>p.url));
+    }
+
+    function applyFilter(){
+      const f = currentFilter();
+      document.querySelectorAll('.sec').forEach(sec=>{
+        sec.hidden = (f!=='all' && sec.id!=='sec-'+f);
+      });
+      navEl.querySelectorAll('button').forEach(b=>{
+        const on = b.dataset.id===f;
+        b.classList.toggle('active', on); b.setAttribute('aria-pressed', on);
+      });
+    }
+
     function setLang(lang){
       const t = TXT[lang] || TXT.en;
+      currentLang = lang;
       $('#name').textContent = t.name;
       $('#tag').textContent = t.tag;
       $('#intro-title').textContent = t.hello;
       $('#intro-body').textContent = t.about;
       $('#intro-more').textContent = t.about2;
-      $('#list-title').textContent = t.all;
       $('#foot-name').textContent = t.footName;
       document.documentElement.lang = lang;
 
@@ -573,25 +719,15 @@
         const active = b.dataset.lang === lang; b.classList.toggle('active', active); b.setAttribute('aria-selected', active);
       });
 
-      // Render cards
-      cards.innerHTML = '';
-      PAGES.forEach(p=>{
-        const h = document.createElement('a');
-        h.className = 'card';
-        h.href = p.url;
-        h.innerHTML = `
-          <h3>${(p.titles && p.titles[lang]) || p.titles?.en || p.url}</h3>
-          <p>${(p.desc && p.desc[lang]) || p.desc?.en || ''}</p>
-          <div class="chipbar">${(p.tags||[]).map(tag=>`<span class="chip">${tag}</span>`).join('')}</div>
-        `;
-        cards.appendChild(h);
-      });
-      $('#count').textContent = (t.count)(PAGES.length);
+      renderNav(lang);
+      renderSections(lang);
+      applyFilter();
 
       localStorage.setItem('lang', lang);
     }
 
     btns.forEach(b=> b.addEventListener('click', ()=> setLang(b.dataset.lang)));
+    window.addEventListener('hashchange', applyFilter);
 
     // --------- Theme toggle ---------
     const themeBtn = document.getElementById('themeBtn');
