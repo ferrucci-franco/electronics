@@ -41,7 +41,8 @@ const Model = (() => {
       show3d: false, showBode: false, showTime: true, surfMode: 'mag',
       logScale: false,
       aspectLock: true, showTransient: true, eqCollapsed: true, eqFit: true, eqFreq: false,
-      plantLocked: true,                  // pôles et zéros de la plante figés dans le plan s
+      blockLocks: { plant: true, controller: false, sensor: false },  // racines figées par bloc
+      rootsLocked: false,                 // toutes les racines figées : seul Kp se règle (croix de T(s))
       sidebarHidden: false,
       bodeUnwrap: true, omegaLogDecades: 3, bodeShowPhase: true,
       bodeFunctions: ['L'],
@@ -639,14 +640,21 @@ const Model = (() => {
     return { ok: true };
   }
   // Raison pour laquelle une racine ne se déplace pas dans le plan s :
-  // 'integrator' (pôle structurel du PID), 'plant' (planta verrouillée par la
-  // case du plan s) ou null. L'édition numérique de l'inventaire reste permise.
+  // 'integrator' (pôle structurel du PID), 'all' (case « Bloquer pôles et
+  // zéros » du plan s), 'block' (verrou du bloc, panneau latéral) ou null.
+  // L'édition numérique de l'inventaire reste permise dans tous les cas.
   function rootLockReason(id){
     const f = find(id);
     if (!f) return null;
     if (f.el.pidStructural && f.el.structuralRole === 'integrator') return 'integrator';
-    if (ownerOf(f.el) === 'plant' && state.view.plantLocked) return 'plant';
+    if (state.view.rootsLocked) return 'all';
+    if (state.view.blockLocks[ownerOf(f.el)]) return 'block';
     return null;
+  }
+  function setBlockLock(owner, on){
+    if (!OWNERS.includes(owner)) return;
+    state.view.blockLocks = { ...state.view.blockLocks, [owner]: !!on };
+    notify();
   }
   function isRootLocked(id){ return rootLockReason(id) !== null; }
 
@@ -1219,7 +1227,8 @@ const Model = (() => {
       show3d: false, showBode: false, showTime: true, surfMode: 'mag',
       logScale: false, omegaLogDecades: 3,
       aspectLock: true, showTransient: true, eqCollapsed: true, eqFit: true, eqFreq: false,
-      plantLocked: true,
+      blockLocks: { plant: true, controller: false, sensor: false },
+      rootsLocked: false,
       sidebarHidden: false,
       bodeUnwrap: true, bodeShowPhase: true,
       bodeFunctions: ['L'],
@@ -1262,7 +1271,7 @@ const Model = (() => {
     addElement, removeElement, decrementElement, editElement,
     dragTo, endDrag, select, setActiveBlock, setK, setKAuto, setDelay, setView, setInput, setPlaneWindow,
     setControllerMode, setPidParams, pidCanonicalParams, setPidCanonicalParams,
-    setPidStructure, resetPid, isRootLocked, rootLockReason, setSaturation,
+    setPidStructure, resetPid, isRootLocked, rootLockReason, setBlockLock, setSaturation,
     controllerGainSnapshot, controllerGainValue, setControllerGainScale,
     setOmegaEval, evalOmega, rootPoints, bodeWindow,
     inventoryData, sub, loadExample, reset

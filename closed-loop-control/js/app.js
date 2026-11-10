@@ -344,8 +344,8 @@ const App = (() => {
       resizeAll();       // resynchroniser sans attendre le ResizeObserver
     }
     aspectChk.checked = !!Model.state.view.aspectLock;
-    plantLockChk.checked = !!Model.state.view.plantLocked;
-    plantLockLabel.title = t('lockPlantHint');
+    rootsLockChk.checked = !!Model.state.view.rootsLocked;
+    rootsLockLabel.title = t('lockRootsHint');
     Sidebar.render();
     renderLoop();
     SPlane.render();
@@ -369,10 +369,11 @@ const App = (() => {
   // case 1:1 du plan s
   const aspectChk = document.getElementById('aspect-lock');
   aspectChk.addEventListener('change', () => Model.setView({ aspectLock: aspectChk.checked }));
-  // case « Bloquer la plante » : ses pôles et zéros ne se déplacent plus à la souris
-  const plantLockChk = document.getElementById('plant-lock');
-  const plantLockLabel = document.getElementById('plant-lock-label');
-  plantLockChk.addEventListener('change', () => Model.setView({ plantLocked: plantLockChk.checked }));
+  // case « Bloquer pôles et zéros » : plus aucune racine ne se déplace à la
+  // souris ; dans le plan s, seules les croix de T(s) (réglage de Kp) bougent
+  const rootsLockChk = document.getElementById('roots-lock');
+  const rootsLockLabel = document.getElementById('roots-lock-label');
+  rootsLockChk.addEventListener('change', () => Model.setView({ rootsLocked: rootsLockChk.checked }));
 
   // touche Suppr : suppression de l'élément sélectionné (cahier §4)
   document.addEventListener('keydown', ev => {

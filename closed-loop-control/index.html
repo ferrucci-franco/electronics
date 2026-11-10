@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Explorateur de contrôle en boucle fermée</title>
 <link rel="stylesheet" href="vendor/katex/katex.min.css">
-<link rel="stylesheet" href="css/app.css?v=33f924e-202611100424">
+<link rel="stylesheet" href="css/app.css?v=235cce4-202611100429">
 <!-- Contador de visitas (GoatCounter, sin cookies ni datos personales). No cuenta en localhost ni desde file://. -->
 <script data-goatcounter="https://ferrucci-franco.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </head>
@@ -29,6 +29,8 @@
           <span class="owner-dot"></span><span data-i18n="saturationBlock">Saturation</span></button>
       </div>
       <div class="active-block-note" id="active-block-note"></div>
+      <label class="chk block-lock" id="block-lock-row"><input type="checkbox" id="block-lock-chk">
+        <span id="block-lock-label"></span></label>
     </div>
 
     <div class="sb-section hidden" id="saturation-section">
@@ -248,8 +250,8 @@
           <span data-i18n="splane">Plan s</span>
           <span class="linear-warning hidden" data-linear-warning data-i18n="linearSatWarning">Modèle linéaire · saturation non incluse</span>
           <span class="local">
-            <label class="chk" id="plant-lock-label"><input type="checkbox" id="plant-lock" checked>
-              <span data-i18n="lockPlant">Bloquer la plante</span></label>
+            <label class="chk" id="roots-lock-label"><input type="checkbox" id="roots-lock">
+              <span data-i18n="lockRoots">Bloquer pôles et zéros</span></label>
             <label class="chk"><input type="checkbox" id="aspect-lock" checked> 1:1</label>
             <span class="badge hidden" id="aspect-badge"></span>
           </span>
@@ -482,16 +484,16 @@
 
 <script src="vendor/katex/katex.min.js"></script>
 <script src="vendor/three/three.min.js"></script>
-<script src="js/i18n.js?v=33f924e-202611100424"></script>
-<script src="js/model.js?v=33f924e-202611100424"></script>
-<script src="js/splane.js?v=33f924e-202611100424"></script>
-<script src="js/bode.js?v=33f924e-202611100424"></script>
-<script src="js/nyquist.js?v=33f924e-202611100424"></script>
-<script src="js/time.js?v=33f924e-202611100424"></script>
-<script src="js/surface3d.js?v=33f924e-202611100424"></script>
-<script src="js/sidebar.js?v=33f924e-202611100424"></script>
-<script src="js/tex.js?v=33f924e-202611100424"></script>
-<script src="js/equations.js?v=33f924e-202611100424"></script>
-<script src="js/app.js?v=33f924e-202611100424"></script>
+<script src="js/i18n.js?v=235cce4-202611100429"></script>
+<script src="js/model.js?v=235cce4-202611100429"></script>
+<script src="js/splane.js?v=235cce4-202611100429"></script>
+<script src="js/bode.js?v=235cce4-202611100429"></script>
+<script src="js/nyquist.js?v=235cce4-202611100429"></script>
+<script src="js/time.js?v=235cce4-202611100429"></script>
+<script src="js/surface3d.js?v=235cce4-202611100429"></script>
+<script src="js/sidebar.js?v=235cce4-202611100429"></script>
+<script src="js/tex.js?v=235cce4-202611100429"></script>
+<script src="js/equations.js?v=235cce4-202611100429"></script>
+<script src="js/app.js?v=235cce4-202611100429"></script>
 </body>
 </html>
