@@ -171,13 +171,24 @@ const SPlane = (() => {
       { count: cancellations.length, sources });
   }
 
+  // Nom du gain réglé en faisant glisser un pôle de T(s)
+  const gainName = () => Model.state.controller.mode === 'pid' ? 'Kp' : 'K_C';
+  const gainDraggable = () => Model.state.delay === 0 && Model.controllerGainValue() !== 0;
+
   function drawClosedRoots(frag, closed, closedZeros){
+    const draggable = gainDraggable();
     for (const pole of closed){
       const x = X(pole.sigma), y = Y(pole.omega), a = 7;
-      const g = mk('g', { class: 'closed-pole' + (pole.stable ? '' : ' unstable') });
+      const g = mk('g', { class: 'closed-pole' + (pole.stable ? '' : ' unstable')
+                                + (draggable ? ' draggable' : '')
+                                + (drag && drag.mode === 'gain' ? ' dragging' : '') });
+      g.dataset.sigma = pole.sigma;
+      g.dataset.omega = pole.omega;
       g.appendChild(mk('line', { x1: x-a, y1: y-a, x2: x+a, y2: y+a }));
       g.appendChild(mk('line', { x1: x-a, y1: y+a, x2: x+a, y2: y-a }));
-      g.appendChild(mk('title', {}, `T(s): ${dispNum(pole.sigma)} ${pole.omega < 0 ? '−' : '+'} j${dispNum(Math.abs(pole.omega))}`));
+      if (draggable) g.appendChild(mk('circle', { class: 'hit', cx: x, cy: y, r: 12 }));
+      g.appendChild(mk('title', {}, `T(s): ${dispNum(pole.sigma)} ${pole.omega < 0 ? '−' : '+'} j${dispNum(Math.abs(pole.omega))}`
+        + (draggable ? '\n' + t('closedPoleDragHint', { gain: gainName() }) : '')));
       frag.appendChild(g);
     }
     for (const zero of closedZeros){
@@ -334,14 +345,63 @@ const SPlane = (() => {
     if (!nearest){ hideLocusHover(); return; }
     const wn = Math.hypot(nearest.sigma, nearest.omega);
     const xi = wn > 1e-12 ? -nearest.sigma / wn : 0;
-    locusHover.textContent = `κ = ${dispKappa(nearest.kappa)}\n`
+    const g = Model.controllerGainValue();
+    locusHover.textContent = `κ = ${dispKappa(nearest.kappa)}`
+      + (g ? `   ${gainName()} = ${dispKappa(g * nearest.kappa)}` : '') + '\n'
       + `s = ${dispNum(nearest.sigma)} ${nearest.omega < 0 ? '−' : '+'} j${dispNum(Math.abs(nearest.omega))}\n`
       + `ωₙ = ${dispNum(wn)}   ξ = ${dispNum(xi)}`;
+    placeHover(x, y);
+  }
+  function placeHover(x, y){
     locusHover.classList.remove('hidden');
     const left = Math.min(Math.max(x + 13, 4), Math.max(4, W - locusHover.offsetWidth - 4));
     const top = Math.min(Math.max(y + 13, 4), Math.max(4, H - locusHover.offsetHeight - 4));
     locusHover.style.left = left + 'px';
     locusHover.style.top = top + 'px';
+  }
+
+  // ---------- glisser un pôle de T(s) : réglage du gain du contrôleur ----------
+  // Au départ, on fige la branche du lieu (calculée pour les gains actuels,
+  // κ = 1) qui passe par le pôle saisi. Ensuite, le curseur est projeté sur
+  // cette branche ; le κ interpolé (en log) multiplie le gain de départ. La
+  // courbe ne bouge pas : seul le pôle (et ses compagnons) glisse dessus.
+  function startGainDrag(sigma, omega){
+    const branches = Model.rootLocus();
+    let branch = null, best = Infinity;
+    for (const b of branches)
+      for (const p of b){
+        if (Math.abs(p.kappa - 1) > 1e-9) continue;
+        const d = (p.sigma - sigma) ** 2 + (p.omega - omega) ** 2;
+        if (d < best){ best = d; branch = b; }
+      }
+    if (!branch) return null;
+    return { snap: Model.controllerGainSnapshot(), branch: branch.slice() };
+  }
+  function projectOnBranch(branch, x, y){
+    let best = null;
+    for (let i = 1; i < branch.length; i++){
+      const a = branch[i - 1], b = branch[i];
+      if (![a.sigma, a.omega, b.sigma, b.omega].every(isFinite)) continue;
+      const ax = X(a.sigma), ay = Y(a.omega), bx = X(b.sigma), by = Y(b.omega);
+      const dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy;
+      const u = L2 > 0 ? Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / L2)) : 0;
+      const d2 = (ax + u * dx - x) ** 2 + (ay + u * dy - y) ** 2;
+      if (!best || d2 < best.d2) best = { d2, a, b, u };
+    }
+    if (!best) return null;
+    const { a, b, u } = best;
+    const kappa = a.kappa > 0 && b.kappa > 0
+      ? Math.exp(Math.log(a.kappa) + u * (Math.log(b.kappa) - Math.log(a.kappa)))
+      : a.kappa + u * (b.kappa - a.kappa);
+    return { kappa, sigma: a.sigma + u * (b.sigma - a.sigma), omega: a.omega + u * (b.omega - a.omega) };
+  }
+  function showGainHover(p, x, y){
+    const wn = Math.hypot(p.sigma, p.omega);
+    const xi = wn > 1e-12 ? -p.sigma / wn : 0;
+    locusHover.textContent = `${gainName()} = ${dispKappa(Model.controllerGainValue())}\n`
+      + `s = ${dispNum(p.sigma)} ${p.omega < 0 ? '−' : '+'} j${dispNum(Math.abs(p.omega))}\n`
+      + `ωₙ = ${dispNum(wn)}   ξ = ${dispNum(xi)}`;
+    placeHover(x, y);
   }
 
   // ---------- interactions ----------
@@ -364,15 +424,30 @@ const SPlane = (() => {
     // reprendre le focus clavier (preventDefault empêche le blur naturel)
     if (document.activeElement && document.activeElement !== document.body)
       document.activeElement.blur();
-    const item = ev.target.closest('.sp-item');
+    // Les croix de T(s) sont dessinées au-dessus des marqueurs : on regarde
+    // tout ce qui se trouve sous le pointeur. Une racine déplaçable garde la
+    // priorité ; une racine verrouillée laisse la main au pôle de T(s).
+    const under = document.elementsFromPoint ? document.elementsFromPoint(ev.clientX, ev.clientY) : [ev.target];
+    const pick = sel => { for (const el of under){ const c = el.closest && el.closest(sel); if (c) return c; } return null; };
+    const item = pick('.sp-item');
+    const closedPole = pick('.closed-pole.draggable');
     const evalPt = ev.target.closest('.eval-pt');
-    if (item && ev.button === 0){
-      if (Model.isRootLocked(item.dataset.id)){
-        Model.select(item.dataset.id);
-        drag = null;
-        return;
-      }
+    const itemLocked = item && Model.isRootLocked(item.dataset.id);
+    // racine déplaçable et pôle de T(s) superposés : le plus proche du pointeur l'emporte
+    const centerDist = g => Math.min(...[...g.querySelectorAll('.hit')].map(h => {
+      const b = h.getBoundingClientRect();
+      return Math.hypot(b.left + b.width / 2 - ev.clientX, b.top + b.height / 2 - ev.clientY);
+    }));
+    const preferClosed = closedPole && item && !itemLocked && centerDist(closedPole) < centerDist(item);
+    if (item && !itemLocked && !preferClosed && ev.button === 0){
       drag = { mode: 'item', id: item.dataset.id, moved: false, x: ev.clientX, y: ev.clientY };
+    } else if (closedPole && ev.button === 0){
+      const g = startGainDrag(Number(closedPole.dataset.sigma), Number(closedPole.dataset.omega));
+      if (!g){ drag = null; return; }
+      drag = { mode: 'gain', moved: false, x: ev.clientX, y: ev.clientY, ...g };
+    } else if (item && ev.button === 0){
+      Model.select(item.dataset.id);
+      drag = { mode: 'locked', id: item.dataset.id, moved: false, x: ev.clientX, y: ev.clientY };
     } else if (evalPt && ev.button === 0){
       drag = { mode: 'eval', moved: false, x: ev.clientX, y: ev.clientY };
     } else {
@@ -391,6 +466,9 @@ const SPlane = (() => {
 
   svg.addEventListener('pointermove', ev => {
     if (!drag){
+      if (ev.target.closest && ev.target.closest('.closed-pole.draggable')){
+        svg.style.cursor = ''; hideLocusHover(); return;
+      }
       updateLocusHover(ev);
       // curseur indicatif sur les bandes de bord
       const r = svg.getBoundingClientRect();
@@ -404,6 +482,21 @@ const SPlane = (() => {
       if (!drag.moved){ drag.moved = true; Model.select(drag.id); }
       const r = svg.getBoundingClientRect();
       Model.dragTo(drag.id, invX(ev.clientX - r.left), invY(ev.clientY - r.top), tf.sx, tf.sy);
+    } else if (drag.mode === 'gain'){
+      drag.moved = true;
+      const r = svg.getBoundingClientRect();
+      const x = ev.clientX - r.left, y = ev.clientY - r.top;
+      const p = projectOnBranch(drag.branch, x, y);
+      if (!p) return;
+      const kappa = Math.max(p.kappa, 1e-6);
+      const res = Model.setControllerGainScale(drag.snap, kappa);
+      if (!res.ok){ showToast(t(res.msg)); return; }
+      showGainHover(p, X(p.sigma), Y(p.omega));
+    } else if (drag.mode === 'locked'){
+      if (!drag.moved){
+        drag.moved = true;
+        showToast(t(Model.rootLockReason(drag.id) === 'plant' ? 'msgPlantLocked' : 'msgPidIntegrator'));
+      }
     } else if (drag.mode === 'eval'){
       drag.moved = true;
       const r = svg.getBoundingClientRect();
@@ -448,7 +541,9 @@ const SPlane = (() => {
     } else if (drag.mode === 'pan' && !drag.moved && drag.button === 0){
       if (Model.ui.selectedId) Model.select(null);
     }
+    const wasGain = drag.mode === 'gain';
     drag = null;
+    if (wasGain){ hideLocusHover(); render(); }
   });
 
   // flèches du clavier : déplacement fin de l'élément sélectionné
@@ -467,7 +562,7 @@ const SPlane = (() => {
     if (!f) return;
     if (Model.isRootLocked(id)){
       ev.preventDefault();
-      showToast(t('msgPidIntegrator'));
+      showToast(t(Model.rootLockReason(id) === 'plant' ? 'msgPlantLocked' : 'msgPidIntegrator'));
       return;
     }
     hideLocusHover();
