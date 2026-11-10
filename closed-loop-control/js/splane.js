@@ -404,6 +404,18 @@ const SPlane = (() => {
     placeHover(x, y);
   }
 
+  // message affiché quand on tente de déplacer une racine verrouillée
+  const OWNER_KEYS = { plant: 'plant', controller: 'controller', sensor: 'sensor' };
+  function lockMessage(id){
+    const reason = Model.rootLockReason(id);
+    if (reason === 'all') return t('msgRootsLocked');
+    if (reason === 'block'){
+      const f = Model.find(id);
+      return t('msgBlockLocked', { block: t(OWNER_KEYS[f && f.el.owner] || 'plant') });
+    }
+    return t('msgPidIntegrator');
+  }
+
   // ---------- interactions ----------
   // drag d'élément, dans les deux demi-plans (bouton gauche sur un marqueur) · pan (glisser ailleurs,
   // n'importe quel bouton) · zoom (molette, centré sur le curseur) ·
@@ -495,7 +507,7 @@ const SPlane = (() => {
     } else if (drag.mode === 'locked'){
       if (!drag.moved){
         drag.moved = true;
-        showToast(t(Model.rootLockReason(drag.id) === 'plant' ? 'msgPlantLocked' : 'msgPidIntegrator'));
+        showToast(lockMessage(drag.id));
       }
     } else if (drag.mode === 'eval'){
       drag.moved = true;
@@ -562,7 +574,7 @@ const SPlane = (() => {
     if (!f) return;
     if (Model.isRootLocked(id)){
       ev.preventDefault();
-      showToast(t(Model.rootLockReason(id) === 'plant' ? 'msgPlantLocked' : 'msgPidIntegrator'));
+      showToast(lockMessage(id));
       return;
     }
     hideLocusHover();

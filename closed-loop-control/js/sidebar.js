@@ -7,6 +7,9 @@ const Sidebar = (() => {
   const sidebar = document.getElementById('sidebar');
   const blockPicker = document.getElementById('block-picker');
   const activeBlockNote = document.getElementById('active-block-note');
+  const blockLockRow = document.getElementById('block-lock-row');
+  const blockLockChk = document.getElementById('block-lock-chk');
+  const blockLockLabel = document.getElementById('block-lock-label');
   const readout = document.getElementById('readout');
   const counter = document.getElementById('order-counter');
   const kSlider = document.getElementById('k-slider');
@@ -45,6 +48,9 @@ const Sidebar = (() => {
   const OWNER_KEYS = { plant: 'plant', controller: 'controller', sensor: 'sensor', saturation: 'saturationBlock' };
   blockPicker.querySelectorAll('[data-owner]').forEach(button =>
     button.addEventListener('click', () => Model.setActiveBlock(button.dataset.owner)));
+  // verrou du bloc actif : ses pôles et zéros ne se déplacent plus à la souris
+  blockLockChk.addEventListener('change', () =>
+    Model.setBlockLock(Model.ui.activeBlock, blockLockChk.checked));
 
   // icônes vectorielles (mêmes dessins que les boutons d'ajout)
   const ICONS = {
@@ -466,6 +472,12 @@ const Sidebar = (() => {
     activeBlockNote.textContent = saturationActive ? t('editingSaturation')
       : activeOwner === 'controller' && pidMode
         ? t('editingPid') : t('addingTo', { block: t(OWNER_KEYS[activeOwner]) });
+    blockLockRow.classList.toggle('hidden', saturationActive);
+    if (!saturationActive){
+      blockLockChk.checked = !!Model.state.view.blockLocks[activeOwner];
+      blockLockLabel.textContent = t('lockBlock', { block: t(OWNER_KEYS[activeOwner]) });
+      blockLockRow.title = t('lockBlockHint');
+    }
     controllerEditor.classList.toggle('hidden', activeOwner !== 'controller');
     saturationSection.classList.toggle('hidden', !saturationActive);
     controllerMode.value = Model.state.controller.mode;
