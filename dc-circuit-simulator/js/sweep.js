@@ -516,8 +516,16 @@
       }
     }
 
+    // (drawn into a box aside and put in place only when it changed: a live refresh, 30 times a second while a
+    // source varies, must not replace the item under the pointer between press and release; the handlers read
+    // the sweep as it is when clicked)
     function renderLegend(cvs) {
-      legend.innerHTML = '';
+      const out = legend;
+      const legendBox = document.createElement('div');
+      fillLegend(legendBox, cvs);
+      if (legendBox.innerHTML !== out.innerHTML) out.replaceChildren(...legendBox.childNodes);
+    }
+    function fillLegend(legend, cvs) {
       const s = sw(), fam = data && data.runs.length > 1 ? data.runs : null;
       s.ys.forEach((y, j) => {
         const cvv = cvs[j];
@@ -529,7 +537,7 @@
         const nm = el('span', 'sw-name', swatch + sub(cvv.name));
         if (off) { nm.title = tp('sw_axis'); nm.addEventListener('click', () => { axisU = cvv.u; update(false); }); }
         it.appendChild(nm);
-        const x = btn('✕', () => { app.checkpoint(); s.ys.splice(s.ys.indexOf(y), 1); if (!s.ys.length) delete app.circuit.sweep; app.commit(); }, 'sw-del');
+        const x = btn('✕', () => { const s2 = sw(); if (!s2 || !s2.ys[j]) return; app.checkpoint(); s2.ys.splice(j, 1); if (!s2.ys.length) delete app.circuit.sweep; app.commit(); }, 'sw-del');
         x.title = tp('sw_remove');
         it.appendChild(x);
         legend.appendChild(it);
@@ -541,7 +549,8 @@
         fam.forEach((r, k) => {
           const it = el('span', 'sw-item sw-fv' + (k === act ? ' on' : ''), `<i class="sw" style="background:${DCS.iv.slot(k)}"></i>` + sub(paramName(fc, s.f.key)) + ' = ' + esc(fmt(r.fv, fp.unit)));
           it.title = tp('sw_fam_use');
-          it.addEventListener('click', () => { if (k === activeFam()) return; app.checkpoint(); fc.props[s.f.key] = r.fv; app.liveMark(fc.id, 900); app.commit(); });
+          const fv = r.fv;
+          it.addEventListener('click', () => { const s2 = sw(), fc2 = fcomp(); if (!s2 || !s2.f || !fc2 || k === activeFam()) return; app.checkpoint(); fc2.props[s2.f.key] = fv; app.liveMark(fc2.id, 900); app.commit(); });
           legend.appendChild(it);
         });
       }

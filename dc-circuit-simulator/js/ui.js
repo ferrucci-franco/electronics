@@ -428,8 +428,10 @@
     $('side').addEventListener('pointerdown', () => { sideHeld = true; });
     window.addEventListener('pointerup', () => { sideHeld = false; }, true);
     window.addEventListener('pointercancel', () => { sideHeld = false; }, true);
+    // (a field being typed in or a drop-down open: a button that keeps the focus after a click does not count)
+    const paneBusy = () => { const a = document.activeElement; return sideHeld || !!(a && $('side').contains(a) && a.matches('input, select, textarea')); };
     ui.refreshPane = function () {
-      if (sideHeld || (tab !== 'props' && tab !== 'results') || $('side').contains(document.activeElement)) return;
+      if (paneBusy() || (tab !== 'props' && tab !== 'results')) return;
       const pane = $('pane-' + tab), y = pane.scrollTop;
       if (tab === 'props') renderProps(); else renderResults();
       pane.scrollTop = y;
@@ -522,8 +524,10 @@
       clearTimeout(toastTimer);
       toastTimer = setTimeout(() => { e.hidden = true; }, 2200);
     };
+    let lastTip = null;
     app.tip = function (h, p) {
       const tip = $('tip');
+      lastTip = h && p ? [h, p] : null;
       // (an open quiz question: the simulated values stay hidden, also here)
       const res = app.result && app.result.ok && !(app.quizHidden && app.quizHidden()) ? app.result : null;
       if (!h || !p || (!res && h.kind !== 'mark') || !HOVER.matches) { tip.hidden = true; return; }
@@ -712,9 +716,8 @@
         cls = w.length ? 'warn' : 'ok';
         txt = w.length ? plainText(w[0].text) : t('st_ok');
       }
-      s.className = 'status ' + cls;
-      s.innerHTML = `<span class="ic"></span><span class="txt">${esc(txt)}</span>`;
-      s.title = txt;
+      if (s.className !== 'status ' + cls) s.className = 'status ' + cls;
+      if (s.dataset.txt !== txt) { s.dataset.txt = txt; s.innerHTML = `<span class="ic"></span><span class="txt">${esc(txt)}</span>`; s.title = txt; }
     }
     const plainText = (h) => String(h).replace(/<sub>(.*?)<\/sub>/g, '$1').replace(/<[^>]+>/g, '');
 
@@ -1538,11 +1541,20 @@
       qsCheck();
     };
     // light refresh while dragging: status and pinned plot only, the panel follows on release
-    let thevRaf = 0;
+    let thevRaf = 0, thevLast = 0;
     ui.updateLive = function () {
       syncStatus(); ui.updateMonitor(); ui.updateThevMon(); ui.sweep.update(true); qsCheck();
+      // the tip under a still mouse follows the values (a varying source, a value dragged)
+      if (lastTip && !$('tip').hidden) { try { app.tip(lastTip[0], lastTip[1]); } catch (e) { $('tip').hidden = true; } }
       // the Thévenin / R_eq tab follows a value being dragged (slider, wheel), once per frame
-      if (tab === 'thev' && app.thev && !thevRaf) thevRaf = requestAnimationFrame(() => { thevRaf = 0; renderThev(); });
+      // (not under the finger: while something in the panel is held, focused or a varying source runs, a few
+      // times a second at most)
+      if (tab === 'thev' && app.thev && !thevRaf && !paneBusy()) {
+        const now = performance.now();
+        if (app.waving() && !C.wave.paused && now - thevLast < 250) return;
+        thevLast = now;
+        thevRaf = requestAnimationFrame(() => { thevRaf = 0; if (!paneBusy()) { const pane = $('pane-thev'), y = pane.scrollTop; renderThev(); pane.scrollTop = y; } });
+      }
     };
 
     /* ---------- quick sliders: a long press on a component with a main value (R, V, I, β, gain, pot position)
@@ -1825,14 +1837,14 @@
       tmon.hidden = false;
       tclose.title = t('close');
       const load = app.thev.loadId ? app.circuit.comps.find(c => c.id === app.thev.loadId) : null;
-      ttitle.innerHTML = load ? 'Thévenin · ' + esc(load.name) : 'Thévenin A–B';
+      let th = load ? 'Thévenin · ' + esc(load.name) : 'Thévenin A–B';
       // the side looked into, and the button that turns to the other one
       const cut = !load && app.thev.cut;
       const sideNames = (k) => { const sd = cut.sides[k]; return sd.names.length ? sd.names.slice(0, 3).map(esc).join(', ') + (sd.names.length > 3 ? '…' : '') : t('thev_side_empty'); };
       tflip.hidden = !cut;
       if (cut) {
         const k = app.thev.side || 0;
-        ttitle.innerHTML += ` <span class="sw-vs">→ ${sideNames(k)}</span>`;
+        th += ` <span class="sw-vs">→ ${sideNames(k)}</span>`;
         tflip.title = plainText(t('thev_flip', { to: sideNames(1 - k) }));
       }
       const fin = (x) => x !== undefined && isFinite(x);
@@ -1843,7 +1855,8 @@
       else kv = `<dt>${vth}</dt><dd class="v">${fin(r.vth) ? fmt(r.vth, 'V', 4) : '—'}</dd>` +
         `<dt>R<sub>Th</sub> = R<sub>eq</sub></dt><dd>${r.rth === Infinity ? '∞' : fmt(r.rth, 'Ω', 4)}</dd>` +
         `<dt>I<sub>N</sub></dt><dd class="i">${fin(r.in) ? fmt(r.in, 'A', 4) : (r.in === Infinity ? '∞' : '—')}</dd>`;
-      tbody.innerHTML = kv;
+      if (ttitle.dataset.h !== th) { ttitle.dataset.h = th; ttitle.innerHTML = th; }
+      if (tbody.dataset.h !== kv) { tbody.dataset.h = kv; tbody.innerHTML = kv; }
     };
 
     // the pinned window of the selection's plot k (same components, same plot), if any
@@ -1908,7 +1921,8 @@
       mon.hidden = false;
       mswap.hidden = specs.length < 2;
       mswap.title = t('mon_swap'); mreset.title = t('mon_reset'); mclose.title = t('close');
-      mtitle.innerHTML = (spec.titleHtml || DCS.iv.subHtml(spec.title));
+      const mt = spec.titleHtml || DCS.iv.subHtml(spec.title);
+      if (mtitle.dataset.h !== mt) { mtitle.dataset.h = mt; mtitle.innerHTML = mt; }
       spec.win = w;
       DCS.iv.draw(mcv, spec, null);
     }
