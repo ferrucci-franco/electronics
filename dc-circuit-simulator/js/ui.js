@@ -940,7 +940,7 @@
     /* a slider under the main value of a component: dragging it solves the circuit at every step (the pinned
      * plot and the drawing follow); a logarithmic range ×1/10 … ×10 for positive values, linear ±2× for the
      * signed ones (sources). The range is centred again on the value each time the panel is drawn. */
-    const LIVE_KEYS = new Set(['R', 'V', 'I', 'beta', 'Vf', 'k']);
+    const LIVE_KEYS = new Set(['R', 'V', 'I', 'amp', 'beta', 'Vf', 'k']);
     // Spring slider (0…1000, centre 500 = the value v0 when the drag starts): logarithmic ×1/10…×10 for positive
     // values, linear v0 ± |v0| when the value may be negative. On release the thumb springs back to the centre and
     // the scale is taken again around the new value, so repeated drags reach any value. The potentiometer
@@ -953,7 +953,7 @@
         const span = Math.abs(v0) > 0 ? Math.abs(v0) : ({ I: 1e-3, V: 1 }[d.key] || 1);
         return { toV: (s) => v0 + (s - 500) / 500 * span, toS: (v) => Math.round(500 + (v - v0) / span * 500), nice };
       }
-      const base = v0 > 0 ? v0 : (d.key === 'R' ? 1000 : 1);
+      const base = v0 > 0 ? v0 : (d.key === 'R' ? 1000 : d.unit === 'A' ? 1e-3 : 1);
       return { toV: (s) => base * Math.pow(10, (s - 500) / 500), toS: (v) => Math.round(500 + 500 * Math.log10(v / base)), nice };
     }
     // The spring control is a wide strip, not a native range: a finger can press anywhere on it (no thumb to
@@ -1573,41 +1573,67 @@
       if (old) { old.row.classList.remove('flash'); void old.row.offsetWidth; old.row.classList.add('flash'); return; }
       const wasOpen = !qs.hidden && qsRows.length;
       if (!stacked()) ui.hideQuick();
-      const d = C.TYPES[c.type].props.find(q => q.key === key);
       const row = el('div', { class: 'qs-row' });
       const id = c.id;
       const cur = () => app.circuit.comps.find(q => q.id === id) || c;
-      const head = el('div', { class: 'qs-head' });
-      const unitOf = () => (typeof d.unit === 'function' ? d.unit(cur(), app.circuit) : (d.unit || ''));
-      const fmtV = () => { const unit = unitOf(), ratio = unit === 'V/V' || unit === 'A/A'; const p = cur().props; return key === 'alpha' ? Math.round(p.alpha * 100) + ' %' : key === 'beta' ? String(p.beta) : U.format(p[key], ratio ? '' : unit, { digits: 4, trim: true }).trim() + (ratio ? ' ' + unit : ''); };
-      const name = el('span', { class: 'qs-name' });
-      const val = el('button', { type: 'button', class: 'qs-val', title: plainText(t('qs_type')) }, fmtV());
-      const r = { c, row, refresh: () => { const c = cur(); r.c = c; name.innerHTML = esc(c.name || '') + ' · ' + (key === 'k' ? C.depKind(c, app.circuit).sym : key === 'alpha' ? 'α' : key === 'beta' ? 'β' : esc(key)); val.innerHTML = fmtV(); } };
-      r.refresh();
-      const x = button('✕', () => removeRow(r));
-      // a click on the value: typed (keyboard, or the keypad of the app on a touch screen)
-      val.addEventListener('click', () => {
-        const c0 = cur(), pct = key === 'alpha', unit = pct ? '%' : unitOf();
-        ui.editValue(val, {
-          title: name.innerHTML, unit, value: pct ? c0.props.alpha * 100 : c0.props[key],
-          min: pct ? 0 : d.min, max: pct ? 100 : d.max,
-          apply: (v) => {
-            const c = cur();
-            app.checkpoint();
-            c.props[key] = pct ? v / 100 : v;
-            app.commit();
-            app.liveMark(c.id, 900);
-            r.refresh();
-          }
+      // one line: name, value (a click types it), spring slider; k: the property it changes
+      const lines = [];
+      const line = (k, sym) => {
+        const d = C.TYPES[c.type].props.find(q => q.key === k);
+        const head = el('div', { class: 'qs-head' });
+        const unitOf = () => (typeof d.unit === 'function' ? d.unit(cur(), app.circuit) : (d.unit || ''));
+        const fmtV = () => { const unit = unitOf(), ratio = unit === 'V/V' || unit === 'A/A'; const p = cur().props; return k === 'alpha' ? Math.round(p.alpha * 100) + ' %' : k === 'beta' ? String(p.beta) : U.format(p[k], ratio ? '' : unit, { digits: 4, trim: true }).trim() + (ratio ? ' ' + unit : ''); };
+        const name = el('span', { class: 'qs-name' });
+        const val = el('button', { type: 'button', class: 'qs-val', title: plainText(t('qs_type')) }, fmtV());
+        const L = { head, k, refresh: () => { const c = cur(); name.innerHTML = esc(c.name || '') + ' · ' + sym(c); val.innerHTML = fmtV(); } };
+        // a click on the value: typed (keyboard, or the keypad of the app on a touch screen)
+        val.addEventListener('click', () => {
+          const c0 = cur(), pct = k === 'alpha', unit = pct ? '%' : unitOf();
+          ui.editValue(val, {
+            title: name.innerHTML, unit, value: pct ? c0.props.alpha * 100 : c0.props[k],
+            min: pct ? 0 : d.min, max: pct ? 100 : d.max,
+            apply: (v) => {
+              const c = cur();
+              app.checkpoint();
+              c.props[k] = pct ? v / 100 : v;
+              app.commit();
+              app.liveMark(c.id, 900);
+              r.refresh();
+            }
+          });
         });
+        head.appendChild(name); head.appendChild(val);
+        L.slider = springSlider(cur, d, () => { val.innerHTML = fmtV(); });
+        lines.push(L);
+        return L;
+      };
+      const main = line(key, (c) => {
+        if (key === 'k') return C.depKind(c, app.circuit).sym;
+        if (key === 'alpha') return 'α';
+        if (key === 'beta') return 'β';
+        // a varying source: its offset (the middle of the sine)
+        return esc(key) + (C.waving(c) ? '<sub>0</sub>' : '');
       });
-      head.appendChild(name); head.appendChild(val); head.appendChild(x);
-      const sl = springSlider(cur, d, () => { val.innerHTML = fmtV(); });
-      row.appendChild(head); row.appendChild(sl);
+      const r = { c, row, refresh: () => { r.c = cur(); for (const L of lines) L.refresh(); if (amp) amp.wrap.hidden = !C.waving(r.c); } };
+      const x = button('✕', () => removeRow(r));
+      main.head.appendChild(x);
+      row.appendChild(main.head); row.appendChild(main.slider);
+      // a source: its amplitude too, shown while the source varies (sine)
+      let amp = null;
+      if (c.type === 'vsource' || c.type === 'isource') {
+        amp = line('amp', () => (c.type === 'vsource' ? 'V' : 'I') + '<sub>p</sub>');
+        // (an invisible ✕: the two values line up)
+        const pad = button('✕', () => {}); pad.style.visibility = 'hidden'; pad.tabIndex = -1; pad.setAttribute('aria-hidden', 'true');
+        amp.head.appendChild(pad);
+        amp.wrap = el('div', { class: 'qs-sub' });
+        amp.wrap.appendChild(amp.head); amp.wrap.appendChild(amp.slider);
+        row.appendChild(amp.wrap);
+      }
+      r.refresh();
       qs.appendChild(row);
       qsRows.push(r);
       // the box can be moved by any of its titles, like the pinned plots
-      dragByHead(qs, head);
+      for (const L of lines) dragByHead(qs, L.head);
       qs.hidden = false;
       const st = $('stage').getBoundingClientRect();
       const w = qs.offsetWidth, h = qs.offsetHeight;
