@@ -487,6 +487,19 @@ html.layout-mobile .mon2{left:6px; top:auto; bottom:6px}
   background:linear-gradient(135deg, transparent 50%, var(--muted) 50%, var(--muted) 56%, transparent 56%, transparent 68%, var(--muted) 68%, var(--muted) 74%, transparent 74%); opacity:.7}
 .mon-grip:hover{opacity:1}
 html.layout-mobile .mon-grip{width:28px; height:28px}
+/* the edges and corners of a floating window resize it (invisible strips straddling the border; wider for a finger) */
+.rs-h{position:absolute; z-index:4; touch-action:none; --t:8px; --o:-4px}
+@media (pointer:coarse){ .rs-h{--t:16px; --o:-8px} }
+.rs-n, .rs-s{left:14px; right:14px; height:var(--t); cursor:ns-resize}
+.rs-n{top:var(--o)} .rs-s{bottom:var(--o)}
+.rs-e, .rs-w{top:14px; bottom:14px; width:var(--t); cursor:ew-resize}
+.rs-e{right:var(--o)} .rs-w{left:var(--o)}
+.rs-ne, .rs-nw, .rs-sw{width:calc(var(--t) + 8px); height:calc(var(--t) + 8px)}
+.rs-ne{top:var(--o); right:var(--o); cursor:nesw-resize} .rs-sw{bottom:var(--o); left:var(--o); cursor:nesw-resize}
+.rs-nw{top:var(--o); left:var(--o); cursor:nwse-resize}
+.max > .rs-h, .monitor[hidden] > .rs-h{display:none}
+.monitor.resizing, .monitor.resizing *{-webkit-user-select:none; user-select:none}
+.mon-grip{z-index:5}
 
 .ex-card{caret-color:transparent}
 

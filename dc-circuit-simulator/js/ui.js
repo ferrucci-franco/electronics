@@ -1700,31 +1700,57 @@
         mcv.style.height = sz.h + 'px';
       };
       try { applySize(JSON.parse(app.LS.get('dcs.monSize' + slot) || 'null')); } catch (e) { /* none */ }
-      let rs = null;
-      grip.addEventListener('pointerdown', (e) => {
-        e.preventDefault(); e.stopPropagation();
-        const r = mon.getBoundingClientRect(), st = $('stage').getBoundingClientRect();
-        // the window keeps its top left corner where it is
-        Object.assign(mon.style, { left: (r.left - st.left) + 'px', top: (r.top - st.top) + 'px', right: 'auto', bottom: 'auto' });
-        rs = { id: e.pointerId, x0: e.clientX, y0: e.clientY, w0: mon.offsetWidth, h0: mcv.offsetHeight, st, left: r.left, top: r.top };
-        try { grip.setPointerCapture(e.pointerId); } catch (_) {}
-      });
-      grip.addEventListener('pointermove', (e) => {
-        if (!rs || rs.id !== e.pointerId) return;
-        const maxW = rs.st.right - rs.left - 4, maxH = rs.st.bottom - rs.top - (mon.offsetHeight - mcv.offsetHeight) - 4;
-        const w = Math.max(220, Math.min(maxW, rs.w0 + e.clientX - rs.x0));
-        const h = Math.max(110, Math.min(maxH, rs.h0 + e.clientY - rs.y0));
-        applySize({ w, h });
-        ui.updateMonitor();
-      });
-      const end = (e) => {
-        if (!rs || rs.id !== e.pointerId) return;
-        rs = null;
-        app.LS.set('dcs.monSize' + slot, JSON.stringify({ w: mon.offsetWidth, h: mcv.offsetHeight }));
-      };
-      grip.addEventListener('pointerup', end); grip.addEventListener('pointercancel', end);
+      // resized from any edge or corner; the size is kept
+      resizable(mon, mcv, grip, { minW: 220, minH: 110, onResize: () => ui.updateMonitor(),
+        onEnd: () => app.LS.set('dcs.monSize' + slot, JSON.stringify({ w: mon.offsetWidth, h: mcv.offsetHeight })) });
       return W;
     }
+    /* a floating window is resized from any of its edges and corners (mouse or finger); the corner at the bottom
+     * right also shows its grip. The width is the window's, the height that of its plot (cv); the window stays
+     * inside the circuit area. o = { minW, minH, onResize(), onEnd() } */
+    function resizable(win, cv, grip, o) {
+      const DIRS = ['n', 's', 'e', 'w', 'ne', 'nw', 'sw'];
+      const handles = DIRS.map((dir) => { const h = el('div', { class: 'rs-h rs-' + dir }); h.dataset.dir = dir; win.appendChild(h); return h; });
+      grip.dataset.dir = 'se';
+      let rs = null;
+      const down = (e) => {
+        if (win.classList.contains('max')) return;
+        e.preventDefault(); e.stopPropagation();
+        // (inside the stage's border: offsetLeft / offsetTop, not the screen rectangles)
+        const st = $('stage'), left = win.offsetLeft, top = win.offsetTop;
+        Object.assign(win.style, { left: left + 'px', top: top + 'px', right: 'auto', bottom: 'auto' });
+        rs = { id: e.pointerId, dir: e.currentTarget.dataset.dir, x0: e.clientX, y0: e.clientY, left, top,
+          w0: win.offsetWidth, h0: cv.offsetHeight, chrome: win.offsetHeight - cv.offsetHeight, W: st.clientWidth, H: st.clientHeight };
+        try { e.currentTarget.setPointerCapture(e.pointerId); } catch (_) {}
+        win.classList.add('resizing');
+      };
+      const move = (e) => {
+        if (!rs || rs.id !== e.pointerId) return;
+        const dx = e.clientX - rs.x0, dy = e.clientY - rs.y0, d = rs.dir;
+        let w = rs.w0, h = rs.h0, left = rs.left, top = rs.top;
+        if (d.includes('e')) w = Math.min(rs.W - 4 - rs.left, rs.w0 + dx);
+        if (d.includes('w')) { w = Math.min(rs.left + rs.w0 - 4, rs.w0 - dx); }
+        if (d.includes('s')) h = Math.min(rs.H - 4 - rs.top - rs.chrome, rs.h0 + dy);
+        if (d.includes('n')) { h = Math.min(rs.top + rs.h0 - 4, rs.h0 - dy); }
+        w = Math.max(o.minW, w); h = Math.max(o.minH, h);
+        // (the opposite edge stays where it is)
+        if (d.includes('w')) left = rs.left + rs.w0 - w;
+        if (d.includes('n')) top = rs.top + rs.h0 - h;
+        win.style.width = w + 'px'; cv.style.height = h + 'px';
+        win.style.left = left + 'px'; win.style.top = top + 'px';
+        o.onResize();
+      };
+      const end = (e) => {
+        if (!rs || rs.id !== e.pointerId) return;
+        rs = null; win.classList.remove('resizing');
+        o.onEnd();
+      };
+      for (const h of handles.concat([grip])) {
+        h.addEventListener('pointerdown', down); h.addEventListener('pointermove', move);
+        h.addEventListener('pointerup', end); h.addEventListener('pointercancel', end);
+      }
+    }
+    ui.resizable = resizable;
     // a floating window can be moved by its title bar
     function dragByHead(win, head) {
       let d = null;
