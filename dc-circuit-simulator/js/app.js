@@ -111,10 +111,36 @@
     app.wireCur = res.ok ? N.wireCurrents(net, res, S) : new Map();
     // closed switches: 0 V, and the current that the wire graph gives them (indeterminate inside a loop)
     if (res.ok) for (const [id, s] of app.wireCur.sw) res.el[id] = { v: 0, i: s.i, tc: [s.i, -s.i], p: 0, state: null, loop: s.loop };
+    if (!live) app.flowPeak = 0;
     buildFlow();
     if (!live) app.ui && app.ui.update();
     else app.ui && app.ui.updateLive();
     app.requestRender();
+    app.syncWave();
+  };
+
+  /* ---------- slowly varying sources (sine): the shared time runs, the circuit is solved again about 30 times
+   * a second (each instant a DC operating point); the panel follows a few times a second ---------- */
+  app.waving = () => !!(app.circuit && app.circuit.comps.some(C.waving));
+  let waveRaf = 0, waveLast = 0, waveSolved = 0, wavePane = 0;
+  function waveFrame(ts) {
+    waveRaf = 0;
+    if (!app.waving() || C.wave.paused) { waveLast = 0; return; }
+    waveRaf = requestAnimationFrame(waveFrame);
+    C.wave.t += waveLast ? Math.min(0.1, (ts - waveLast) / 1000) : 0;
+    waveLast = ts;
+    if (ts - waveSolved < 30) return;
+    waveSolved = ts;
+    app.circuitChanged(true);
+    if (ts - wavePane > 250) { wavePane = ts; if (app.ui && app.ui.refreshPane) app.ui.refreshPane(); }
+  }
+  app.syncWave = function () {
+    if (!waveRaf && app.waving() && !C.wave.paused) { waveLast = 0; waveRaf = requestAnimationFrame(waveFrame); }
+    if (app.ui && app.ui.syncWaveChip) app.ui.syncWaveChip();
+  };
+  app.toggleWave = function () {
+    C.wave.paused = !C.wave.paused;
+    app.syncWave();
   };
   app.commit = function () {
     splitWires();
@@ -445,6 +471,9 @@
     let imax = 0;
     for (const s of segs) imax = Math.max(imax, Math.abs(s.i));
     imax = Math.max(imax, 1e-5);
+    // a varying source: the reference is the largest current seen since the circuit last changed, so that the
+    // dots slow down and speed up with the currents instead of always running at full speed
+    if (app.waving()) { imax = Math.max(imax, app.flowPeak || 0); app.flowPeak = imax; }
     const old = app.flow ? app.flow.segs : [];
     segs.forEach((s, k) => {
       s.len = Math.hypot(s.x2 - s.x1, s.y2 - s.y1);
@@ -726,8 +755,7 @@
       for (const rs of (R.labelRects ? R.labelRects.values() : [])) for (const r of rs) {
         x0 = Math.min(x0, r[0]); y0 = Math.min(y0, r[1]); x1 = Math.max(x1, r[2]); y1 = Math.max(y1, r[3]);
       }
-      // (desktop: clear of the ‹ › tabs on the side edges)
-      const side = document.documentElement.classList.contains('layout-mobile') ? 8 : 30;
+      const side = 8;
       const left = side, right = R.w - side, top = 52, bottom = Math.max(top + 60, R.h - 64 - inset);
       const f = Math.min(1, (right - left) / Math.max(1, x1 - x0), (bottom - top) / Math.max(1, y1 - y0));
       const wcx = ((x0 + x1) / 2 - v.ox) / v.scale, wcy = ((y0 + y1) / 2 - v.oy) / v.scale;
@@ -910,7 +938,9 @@
   };
   function compact() {
     // short form: comps as arrays, wires as flat arrays
-    const o = { v: 1, c: app.circuit.comps.map(c => [c.type, c.name, c.x, c.y, c.rot, c.flip ? 1 : 0, c.props, c.refV, c.refI]), w: app.circuit.wires.map(w => [w.x1, w.y1, w.x2, w.y2]), n: (app.circuit.nodeNames || []).map(nn => (nn.tag ? [nn.x, nn.y, nn.name, 1] : [nn.x, nn.y, nn.name])) };
+    // (a constant source leaves out the settings of the sine: shorter links)
+    const props = (c) => { if (!(c.type === 'vsource' || c.type === 'isource') || C.waving(c)) return c.props; const p = Object.assign({}, c.props); delete p.wave; delete p.amp; delete p.speed; return p; };
+    const o = { v: 1, c: app.circuit.comps.map(c => [c.type, c.name, c.x, c.y, c.rot, c.flip ? 1 : 0, props(c), c.refV, c.refI]), w: app.circuit.wires.map(w => [w.x1, w.y1, w.x2, w.y2]), n: (app.circuit.nodeNames || []).map(nn => (nn.tag ? [nn.x, nn.y, nn.name, 1] : [nn.x, nn.y, nn.name])) };
     // the DC sweep, with the components by their place in the list
     const sw = app.circuit.sweep;
     if (sw) {

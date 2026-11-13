@@ -172,14 +172,17 @@
         return;
       }
       if (ln.hl) {
-        // the value being changed: in the accent colour, bold, underlined
+        // the value being changed: bold, in the accent colour, on a glowing pill (a halo that is seen at once)
         ctx.font = `700 ${fontPx}px ${ln.mono ? 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace' : 'ui-sans-serif, system-ui, sans-serif'}`;
-        const w = ctx.measureText(ln.text).width;
-        const x0 = align === 'left' ? sx : align === 'right' ? sx - w : sx - w / 2;
-        ctx.lineWidth = 3; ctx.strokeStyle = col.bg; ctx.lineJoin = 'round';
-        ctx.strokeText(ln.text, sx, y + 0.5);
+        const w = ctx.measureText(ln.text).width, px = Math.max(4, fontPx * 0.45), ph = lh + 2;
+        const x0 = (align === 'left' ? sx : align === 'right' ? sx - w : sx - w / 2) - px;
+        ctx.save();
+        ctx.shadowColor = col.accent; ctx.shadowBlur = Math.max(10, fontPx * 1.1);
+        ctx.globalAlpha = 0.22; ctx.fillStyle = col.accent;
+        roundRect(ctx, x0, y - ph / 2, w + 2 * px, ph, ph / 2); ctx.fill();
+        ctx.shadowBlur = 0; ctx.globalAlpha = 0.85; ctx.strokeStyle = col.accent; ctx.lineWidth = 1.5; ctx.stroke();
+        ctx.restore();
         ctx.fillStyle = col.accent; ctx.fillText(ln.text, sx, y + 0.5);
-        ctx.fillRect(x0, y + fontPx * 0.62, w, 1.5);
         return;
       }
       // halo for legibility over wires
@@ -552,7 +555,8 @@
           } else if (!st.realDir) {
             this.refMarks(S, c, r, rd, hwR, cx, cy, ax, ay, marks, lines, fmt);
           } else {
-            const showI = st.showI && c.type !== 'isource', showV = st.showV && c.type !== 'vsource';
+            // (a varying source: its value now, next to its offset ± amplitude)
+            const showI = st.showI && (c.type !== 'isource' || C.waving(c)), showV = st.showV && (c.type !== 'vsource' || C.waving(c));
             if (showI) {
               const i = r.i, dirS = i >= 0 ? 1 : -1, o = off;
               if (Math.abs(i) > 1e-12) marks.push(() => arrowScreen(this, S.view, cx + rd[0] * o - ax * 0.65 * dirS, cy + rd[1] * o - ay * 0.65 * dirS, cx + rd[0] * o + ax * 0.65 * dirS, cy + rd[1] * o + ay * 0.65 * dirS, col.cur, 1.8));

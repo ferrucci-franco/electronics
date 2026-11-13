@@ -131,7 +131,6 @@
     }
     // phone: the panel sheet covers the lower part of the circuit area, the circuit is framed above it
     function fitVisible() {
-      if (!document.documentElement.classList.contains('layout-mobile')) return;
       // (a panel docked on the right of a large touch screen does not cover the circuit)
       if (app.ui.isDocked && app.ui.isDocked()) { requestAnimationFrame(() => app.fit()); return; }
       requestAnimationFrame(() => {
@@ -143,7 +142,7 @@
       });
     }
     // the circuit framed again (double click / double tap on it while a question is open)
-    Q.fit = () => { if (document.documentElement.classList.contains('layout-mobile')) fitVisible(); else app.fit(); };
+    Q.fit = fitVisible;
     function check(given) {
       const c = st.cur, a = c.q.answer;
       let want = a.value(c.p, c.sol);
