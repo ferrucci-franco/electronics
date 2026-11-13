@@ -239,25 +239,11 @@
     ui.dragByHead(win, head);
     ui.floats.push(win);
 
-    // size: the corner at the bottom right (kept)
+    // size (kept)
     const applySize = (sz) => { if (!sz) return; win.style.width = sz.w + 'px'; win.style.right = 'auto'; cv.style.height = sz.h + 'px'; };
     try { applySize(JSON.parse(app.LS.get('dcs.swSize') || 'null')); } catch (e) { /* none */ }
-    let rs = null;
-    grip.addEventListener('pointerdown', (e) => {
-      e.preventDefault(); e.stopPropagation();
-      const r = win.getBoundingClientRect(), st = stage.getBoundingClientRect();
-      Object.assign(win.style, { left: (r.left - st.left) + 'px', top: (r.top - st.top) + 'px', right: 'auto', bottom: 'auto' });
-      rs = { id: e.pointerId, x0: e.clientX, y0: e.clientY, w0: win.offsetWidth, h0: cv.offsetHeight, st, left: r.left, top: r.top };
-      try { grip.setPointerCapture(e.pointerId); } catch (_) {}
-    });
-    grip.addEventListener('pointermove', (e) => {
-      if (!rs || rs.id !== e.pointerId) return;
-      const maxW = rs.st.right - rs.left - 4, maxH = rs.st.bottom - rs.top - (win.offsetHeight - cv.offsetHeight) - 4;
-      applySize({ w: Math.max(260, Math.min(maxW, rs.w0 + e.clientX - rs.x0)), h: Math.max(110, Math.min(maxH, rs.h0 + e.clientY - rs.y0)) });
-      draw();
-    });
-    const endRs = (e) => { if (!rs || rs.id !== e.pointerId) return; rs = null; app.LS.set('dcs.swSize', JSON.stringify({ w: win.offsetWidth, h: cv.offsetHeight })); };
-    grip.addEventListener('pointerup', endRs); grip.addEventListener('pointercancel', endRs);
+    // resized from any edge or corner (kept)
+    ui.resizable(win, cv, grip, { minW: 260, minH: 110, onResize: () => draw(), onEnd: () => app.LS.set('dcs.swSize', JSON.stringify({ w: win.offsetWidth, h: cv.offsetHeight })) });
 
     let data = null, dataKey = '', dataFull = false, axisU = null, spec = null;
     const sw = () => app.circuit.sweep || null;
