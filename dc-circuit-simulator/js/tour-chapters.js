@@ -110,12 +110,12 @@
       async run(d) {
         d.say(say('Slanted wires? One click…', 'Des fils en biais ? Un clic…', '¿Cables torcidos? Un clic…'));
         await d.wait(700);
-        if (d.mobile()) { await d.tap('#moreBtn'); await d.wait(300); }
+        if (d.menu()) { await d.tap('#moreBtn'); await d.wait(300); }
         await d.tap('#tidyBtn');
         d.say(say('…same connections, tidy drawing', '…mêmes connexions, dessin propre', '…mismas conexiones, dibujo prolijo'));
         await d.wait(1500);
         d.say(say('Undo / redo', 'Annuler / rétablir', 'Deshacer / rehacer'));
-        const undo = d.mobile() ? '#undoBtn2' : '#undoBtn', redo = d.mobile() ? '#redoBtn2' : '#redoBtn';
+        const undo = '#undoBtn2', redo = '#redoBtn2';
         await d.tap(undo); await d.wait(700); await d.tap(redo);
         await d.wait(500);
         d.say(d.mt(say('Wheel: zoom', 'Molette : zoom', 'Rueda: zoom'), say('± and ⛶: zoom and fit', '± et ⛶ : zoom et cadrage', '± y ⛶: zoom y encuadre')));
@@ -245,7 +245,7 @@
       id: 'iv', g: 'analyze', icon: '📈', est: 15000,
       t: say('I–V curve and operating point', 'Caractéristique I–V et point de fonctionnement', 'Curva I–V y punto de operación'),
       d: say('Select an element: its I–V characteristic shows where it works (Q). 📌 keeps the plot over the circuit while you change values.', 'Sélectionnez un élément : sa caractéristique I–V montre où il travaille (Q). 📌 garde le graphique sur le circuit pendant que vous changez les valeurs.', 'Seleccione un elemento: su característica I–V muestra dónde trabaja (Q). 📌 deja la gráfica sobre el circuito mientras cambia los valores.'),
-      setup(d) { d.load(LED); d.roomy(true, false); },
+      setup(d) { d.load(LED); },
       async run(d) {
         d.say(say('Select the LED', 'Sélectionnez la LED', 'Seleccione el LED'));
         await d.tap({ c: 'LED1' });
@@ -263,7 +263,7 @@
         const mon = d.$('.monitor:not(.tmon):not([hidden])');
         if (mon) {
           d.say(say('Move it by its title', 'Déplacez-la par son titre', 'Muévala por su título'));
-          await d.parkWin(mon, mon.querySelector('.mon-head'), d.mobile() ? 'tr' : 'br');
+          await d.parkWin(mon, mon.querySelector('.mon-head'), 'tr');
           await d.clearOf(mon);
         }
         await d.camCircuit(1.2, 2, mon ? [mon] : null);
@@ -279,7 +279,7 @@
       id: 'thev', g: 'analyze', icon: '⧉', est: 13000,
       t: say('Thévenin and Norton', 'Thévenin et Norton', 'Thévenin y Norton'),
       d: say('Select a load and choose “Thévenin seen by this element”, or use the <b>Thévenin A–B</b> tool on two nodes. The equivalent follows every change.', 'Sélectionnez une charge et choisissez « Thévenin vu par cet élément », ou l’outil <b>Thévenin A–B</b> sur deux nœuds. L’équivalent suit chaque changement.', 'Seleccione una carga y elija «Thévenin visto por este elemento», o la herramienta <b>Thévenin A–B</b> sobre dos nodos. El equivalente sigue cada cambio.'),
-      setup(d) { d.load('thevenin'); d.roomy(true, false); },
+      setup(d) { d.load('thevenin'); },
       async run(d) {
         d.say(say('Select the load', 'Sélectionnez la charge', 'Seleccione la carga'));
         await d.tap({ c: 'RL' });
@@ -332,7 +332,7 @@
       id: 'sweep', g: 'analyze', icon: '∿', est: 16000,
       t: say('DC sweep', 'Balayage DC', 'Barrido DC'),
       d: say('Select what to measure (a wire = its node voltage), button 📈, then tap the component that varies. Drag on the plot to move the circuit along the curve.', 'Sélectionnez ce qu’on mesure (un fil = la tension de son nœud), bouton 📈, puis touchez le composant qui varie. Glissez sur le graphique pour déplacer le circuit le long de la courbe.', 'Seleccione qué medir (un cable = la tensión de su nodo), botón 📈, y toque el componente que varía. Arrastre sobre la gráfica para mover el circuito por la curva.'),
-      setup(d) { d.load('inverting'); d.roomy(true, true); },
+      setup(d) { d.load('inverting'); },
       async run(d) {
         d.say(say('Select the output wire', 'Sélectionnez le fil de sortie', 'Seleccione el cable de salida'));
         await d.tap({ g: [14.5, 4] });
@@ -349,7 +349,7 @@
           await d.cam(win, 1.05);
           await d.wait(1200);
           await d.cam(null);
-          await d.parkWin(win, win.querySelector('.mon-head'), d.mobile() ? 'br' : 'tr');
+          await d.parkWin(win, win.querySelector('.mon-head'), 'br');
           await d.clearOf(win);
           d.say(say('Drag on the plot: the circuit follows', 'Glissez sur le graphique : le circuit suit', 'Arrastre sobre la gráfica: el circuito acompaña'));
           await d.drag({ el: cv, ax: 0.5, ay: 0.5 }, [{ el: cv, ax: 0.2, ay: 0.5 }, { el: cv, ax: 0.8, ay: 0.5 }, { el: cv, ax: 0.55, ay: 0.5 }], { ms: 1300 });
@@ -366,7 +366,7 @@
       setup(d) { d.load(null); },
       async run(d) {
         d.say(say('Button Quiz', 'Bouton Quiz', 'Botón Quiz'));
-        if (d.mobile()) { await d.tap('#moreBtn'); await d.wait(300); }
+        if (d.menu()) { await d.tap('#moreBtn'); await d.wait(300); }
         await d.tap('#quizBtn');
         await d.wait(600);
         d.say(say('Choose a deck', 'Choisissez une série', 'Elija un mazo'));
@@ -408,7 +408,7 @@
       setup(d) { d.load(DIV); },
       async run(d) {
         d.say(say('File → Share', 'Fichier → Partager', 'Archivo → Compartir'));
-        if (d.mobile()) { await d.tap('#moreBtn'); await d.wait(300); }
+        if (d.menu()) { await d.tap('#moreBtn'); await d.wait(300); }
         await d.tap('#fileBtn');
         await d.wait(400);
         await d.tap('#fileMenu [data-file="qr"]');
@@ -431,7 +431,7 @@
         await d.tap('#tabAdd');
         await d.wait(700);
         d.say(say('<b>Examples</b>: ready-made circuits', '<b>Exemples</b> : circuits prêts à l’emploi', '<b>Ejemplos</b>: circuitos listos'));
-        if (d.mobile()) { await d.tap('#moreBtn'); await d.wait(300); }
+        if (d.menu()) { await d.tap('#moreBtn'); await d.wait(300); }
         await d.tap('#examplesBtn');
         await d.wait(600);
         const cards = d.$$('#modalBody .ex-card');

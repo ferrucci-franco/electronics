@@ -49,27 +49,11 @@ canvas:focus{outline:none}
   grid-template-rows:auto minmax(0,1fr);
   grid-template-areas:"head head head" "pal stage side";
 }
-/* desktop: the side columns can be hidden (buttons on the edges of the circuit) */
-html.layout-desktop.hide-pal .palette, html.layout-desktop.hide-side .side{display:none}
-html.layout-desktop.hide-pal .app{grid-template-columns:minmax(0,1fr) var(--side-w); grid-template-areas:"head head" "stage side"}
-html.layout-desktop.hide-side .app{grid-template-columns:var(--pal-w) minmax(0,1fr); grid-template-areas:"head head" "pal stage"}
-html.layout-desktop.hide-pal.hide-side .app{grid-template-columns:minmax(0,1fr); grid-template-areas:"head" "stage"}
-/* the tabs that hide / show the side bars: amber, so that they are noticed (both themes) */
-:root{--edge-bg:#f8e7b0; --edge-bd:#e2c779; --edge-fg:#7a5c12; --edge-hover:#f4dc92}
-html.dark{--edge-bg:#4a3f22; --edge-bd:#6b5a2c; --edge-fg:#e8c66e; --edge-hover:#5a4c27}
-.edge-btn{position:absolute; top:50%; transform:translateY(-50%); width:18px; height:58px; padding:0; display:flex; align-items:center; justify-content:center; border:1px solid var(--edge-bd); background:var(--edge-bg); color:var(--edge-fg); box-shadow:0 2px 6px rgba(80,60,10,.15); cursor:pointer; z-index:12; transition:background .15s, width .15s}
-.edge-btn:hover{background:var(--edge-hover); width:20px}
-.edge-btn svg{width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:2.8; stroke-linecap:round; stroke-linejoin:round; transition:transform .15s}
-.edge-btn.left{left:-1px; border-radius:0 9px 9px 0}
-.edge-btn.right{right:-1px; border-radius:9px 0 0 9px}
-html.hide-pal .edge-btn.left svg, html.hide-side .edge-btn.right svg{transform:scaleX(-1)}
-html.layout-mobile .edge-btn{display:none}
 .panel{border:1px solid var(--border); background:var(--panel); border-radius:16px; min-width:0; min-height:0}
 .app-header{grid-area:head; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px 12px; padding:8px 12px}
 .app-header h1{margin:0; font-size:18px; font-weight:700; line-height:1.2}
 /* circuit tabs: pills next to the title, the active one filled, on one line that scrolls (faded edges when
    there is more); a dashed + adds one, ▾ lists them all */
-html.layout-desktop .app-header{flex-wrap:nowrap}
 .app-header h1{flex:none; white-space:nowrap}
 .ctabs-wrap{flex:1 1 0; min-width:150px; display:flex; align-items:center; gap:6px}
 .ctabs{display:flex; align-items:center; gap:6px; flex:0 1 auto; min-width:0; overflow-x:auto; scrollbar-width:none; padding:2px}
@@ -99,11 +83,9 @@ html.layout-desktop .app-header{flex-wrap:nowrap}
 .seg button + button{border-left:1px solid var(--border)}
 .seg button.active{background:var(--accent); color:#fff}
 #themeBtn{font-size:16px; line-height:1}
-html.layout-mobile #layoutBtn .i-mobile, html.layout-desktop #layoutBtn .i-desktop{display:none}
 
 /* palette */
 .palette{grid-area:pal; display:flex; flex-direction:column; gap:6px; padding:10px; overflow:auto; scrollbar-width:thin; scrollbar-color:var(--scroll-thumb) var(--scroll-track)}
-.pal-title{font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:4px 2px 0}
 .pal-tools, .pal-comps{display:grid; grid-template-columns:1fr; gap:4px}
 .palette button.tool, .palette button.comp{
   display:flex; align-items:center; gap:8px; width:100%; text-align:left; padding:4px 8px; min-height:34px;
@@ -113,8 +95,6 @@ html.layout-mobile #layoutBtn .i-mobile, html.layout-desktop #layoutBtn .i-deskt
 .palette button.tool.active, .palette button.comp.active{background:var(--card); border-color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent)}
 .palette button canvas{width:46px; height:24px; flex:none; pointer-events:none}
 .palette button.tool svg{width:22px; height:22px; margin:0 12px}
-.pal-foot{margin-top:auto; padding-top:6px; display:flex; flex-direction:column; gap:6px}
-.seg-sym button{flex:1}
 
 /* stage */
 .stage{grid-area:stage; position:relative; overflow:hidden; background:var(--canvas)}
@@ -127,6 +107,14 @@ html.layout-mobile #layoutBtn .i-mobile, html.layout-desktop #layoutBtn .i-deskt
 .chip.on b{opacity:1}
 .chip.on .dot-v{background:var(--c-volt)} .chip.on .dot-i{background:var(--c-cur)} .chip.on .dot-p{background:var(--c-pabs)}
 .chip.on .dot-n{background:var(--c-port)} .chip.on .dot-f{background:var(--c-dot)}
+/* the sources that vary (sine): pause / play the time */
+.wave-chip[hidden]{display:none}
+.wave-chip{color:var(--fg); border-color:var(--accent)}
+.wave-chip span{font-size:16px; line-height:1}
+.wave-chip svg{width:14px; height:14px; stroke-width:2.4}
+.wave-chip .i-play, .wave-chip.paused .i-pause{display:none}
+.wave-chip.paused .i-play{display:block; fill:currentColor}
+.wave-chip.paused{color:var(--muted); border-color:var(--border)}
 .selbar{position:absolute; top:52px; left:50%; transform:translateX(-50%); display:flex; gap:2px; padding:4px; border:1px solid var(--border); background:var(--btn); border-radius:12px; box-shadow:var(--shadow)}
 .selbar[hidden]{display:none}
 .selbar button{border:0; background:transparent; border-radius:8px; width:38px; height:36px; display:grid; place-items:center; cursor:pointer}
@@ -234,7 +222,7 @@ table.res .v{color:var(--c-volt)} table.res .i{color:var(--c-cur)} table.res .pa
 .toast{position:fixed; left:50%; bottom:24px; transform:translateX(-50%); z-index:70; background:var(--fg); color:var(--bg); padding:9px 16px; border-radius:10px; font-size:14px; box-shadow:var(--shadow); max-width:90vw; overflow-wrap:anywhere}
 .toast[hidden]{display:none}
 
-/* ===== mobile layout (chosen with the header button, or automatically on narrow screens) ===== */
+/* ===== the layout (the same on every screen: the class layout-mobile is always on <html>) ===== */
 html.layout-mobile .app{
   gap:6px; padding:6px; padding-bottom:max(6px, env(safe-area-inset-bottom));
   grid-template-columns:minmax(0,1fr); grid-template-rows:auto minmax(0,1fr) auto;
@@ -268,7 +256,6 @@ html.layout-mobile .app-header .hdr button svg{width:20px; height:20px}
 html.layout-mobile .hdr .seg{display:flex}
 html.layout-mobile .hdr .seg button{flex:1; justify-content:center}
 html.layout-mobile .palette{flex-direction:row; align-items:stretch; overflow-x:auto; overflow-y:hidden; padding:6px; gap:6px; border-radius:14px}
-html.layout-mobile .pal-title, html.layout-mobile .pal-foot{display:none}
 html.layout-mobile .pal-tools, html.layout-mobile .pal-comps{display:flex; gap:4px}
 html.layout-mobile .pal-tools{padding-right:6px; border-right:1px solid var(--border)}
 html.layout-mobile .palette button.tool, html.layout-mobile .palette button.comp{touch-action:pan-x; flex-direction:column; justify-content:center; gap:2px; width:auto; min-width:62px; padding:4px 6px; font-size:11px; text-align:center; white-space:nowrap; min-height:56px}
@@ -324,15 +311,16 @@ html.layout-mobile .field input[type=text], html.layout-mobile .field select{fon
   html.layout-mobile .status{max-width:calc(100% - 250px)}
   html.layout-mobile .sheet-btn span{display:none}
 }
-/* desktop layout on a medium screen: narrower side columns */
-@media (max-width:1180px){
-  html.layout-desktop .app{--pal-w:170px; --side-w:300px}
-}
-@media (max-width:899px){
-  html.layout-desktop .app{--pal-w:150px; --side-w:260px}
-  html.layout-desktop .palette button span{font-size:12.5px}
-}
 .modal .field{grid-template-columns:minmax(0,1fr) minmax(150px, 300px)}
+/* Settings: one grid for all the rows, the column of the controls as wide as the longest choice of its
+   drop-downs needs (up to about half the window), so that they are not cut short when there is room */
+.set-form{display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px 16px; align-items:center}
+.set-form > .field{display:contents}
+.set-form > :not(.field){grid-column:1 / -1}
+.set-form .field label{font-size:14px; line-height:1.3}
+.set-form select{width:100%; min-width:150px; max-width:min(52vw, 460px)}
+.set-form input[type=text]{width:100%}
+.set-form input[type=checkbox]{justify-self:start}
 .modal .field .btnrow{flex-wrap:nowrap}
 .modal .field .btnrow select{flex:1; min-width:0}
 
@@ -596,7 +584,7 @@ html.layout-mobile .side .tabs button{border:0; margin:0; border-radius:9px; pad
 html.layout-mobile .side .tabs button.active{background:var(--accent); color:#fff; margin:0; box-shadow:0 1px 3px rgba(0,0,0,.18)}
 html.layout-mobile .side .pane{padding:4px 10px 12px}
 
-/* large touch screen (tablet, touch monitor): the panel is docked on the right of the circuit, full height,
+/* large screen (tablet, laptop, monitor): the panel is docked on the right of the circuit, full height,
    instead of a sheet from the bottom; its left edge changes its width; ⌃ widens it, the chevron hides it */
 @media (min-width:900px) and (min-height:521px){
   html.layout-mobile .app{grid-template-columns:minmax(0,1fr) auto; grid-template-rows:auto minmax(0,1fr) auto; grid-template-areas:"head head" "stage side" "pal pal"}
@@ -618,14 +606,32 @@ html.layout-mobile .side .pane{padding:4px 10px 12px}
   /* the "Panel" button only while the panel is hidden */
   html.layout-mobile .app:has(.side.open) .sheet-btn{display:none}
 }
+/* wide screen: the header actions are in the header itself (no ⋯ menu), with their names; the tools of the
+   strip get their names too */
+@media (min-width:1100px) and (min-height:521px){
+  html.layout-mobile #moreBtn{display:none}
+  html.layout-mobile .hdr{display:flex; position:static; flex-direction:row; flex-wrap:nowrap; align-items:center; width:auto; gap:8px; padding:0; background:none; border:0; border-radius:0; box-shadow:none}
+  html.layout-mobile .hdr-group{flex-direction:row; align-items:center; gap:6px}
+  html.layout-mobile .hdr-group + .hdr-group{border-top:0; padding-top:0; border-left:1px solid var(--border); padding-left:8px}
+  html.layout-mobile .app-header .hdr button{justify-content:center; gap:6px; padding:6px 10px; min-height:36px; font-size:14px}
+  html.layout-mobile .app-header .hdr button.icon{padding:6px 8px}
+  html.layout-mobile .app-header .hdr button svg{width:18px; height:18px}
+  html.layout-mobile .app-header .hdr .mlabel{display:none}
+  html.layout-mobile .hdr .seg button{flex:none; padding:6px 9px; min-height:34px}
+  html.tour-new.layout-mobile .hdr #helpBtn::after{top:3px; right:3px; margin-top:0}
+  html.layout-mobile .palette button.tool{min-width:62px; padding:4px 6px}
+  html.layout-mobile .palette button.tool span{display:inline}
+}
+@media (min-width:1400px) and (min-height:521px){
+  html.layout-mobile .app-header h1{display:block; font-size:17px; margin-right:4px}
+}
 
 /* panel tabs: they share the width and a long name goes on two lines (Thévenin y R_eq, Résultats…),
    instead of running out of the bar in narrow panels and longer languages */
 .tabs button{flex:1 1 auto; min-width:min-content; white-space:normal; line-height:1.2; padding-left:5px; padding-right:5px}
 .tabs{align-items:stretch; overflow-x:auto; scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
-@media (max-width:1000px){ html.layout-desktop .tabs button{font-size:12px; padding-left:3px; padding-right:3px} }
-/* a narrow panel (docked panel made narrow, small desktop column): smaller tab names */
+/* a narrow panel (docked panel made narrow): smaller tab names */
 .side{container-type:inline-size; container-name:side}
 @container side (max-width:330px){ html .side .tabs button{font-size:12px !important; padding-left:3px !important; padding-right:3px !important} }
 
@@ -708,3 +714,44 @@ html.tour-new #helpBtn, html.tour-new.layout-mobile #moreBtn{position:relative}
 html.tour-new #helpBtn::after, html.tour-new.layout-mobile #moreBtn::after{content:""; position:absolute; top:3px; right:3px; width:9px; height:9px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 2px var(--paper); animation:tnew 1.8s ease-in-out infinite}
 html.tour-new.layout-mobile .hdr #helpBtn::after{top:50%; right:12px; margin-top:-4.5px}
 @keyframes tnew{50%{transform:scale(1.35); opacity:.65}}
+
+/* ---------- keypad of the app (touch screens): typing a value without the system keyboard ---------- */
+.kpad{position:fixed; z-index:85; width:min(300px, calc(100vw - 16px)); padding:0 10px 10px; background:var(--panel); border:1px solid var(--border); border-radius:18px;
+  box-shadow:0 18px 50px rgba(0,0,0,.30); display:flex; flex-direction:column; gap:8px; touch-action:none; -webkit-user-select:none; user-select:none}
+.kpad[hidden]{display:none}
+.kpad.moving{box-shadow:0 24px 60px rgba(0,0,0,.38)}
+.kp-bar{display:flex; align-items:center; gap:8px; min-height:42px; cursor:grab; position:relative; padding-top:6px}
+.kpad.moving .kp-bar{cursor:grabbing}
+.kp-grip{position:absolute; left:50%; top:5px; width:40px; height:4px; margin-left:-20px; border-radius:2px; background:var(--muted); opacity:.45}
+.kp-title{flex:1; min-width:0; font-size:14px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding-top:6px}
+.kp-x{flex:none; width:34px; height:30px; margin-top:6px; border:1px solid var(--border); border-radius:9px; background:var(--btn); color:var(--fg); font-size:15px; cursor:pointer}
+.kp-disp{display:flex; align-items:baseline; justify-content:flex-end; gap:8px; padding:8px 12px; min-height:52px; border:1px solid var(--border); border-radius:12px; background:var(--paper);
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-variant-numeric:tabular-nums; transition:border-color .15s, box-shadow .15s}
+.kp-val{font-size:26px; font-weight:600; color:var(--fg); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.kp-val:not(.fresh)::after{content:""; display:inline-block; width:2px; height:.95em; margin-left:2px; vertical-align:-0.1em; background:var(--accent); animation:kpcaret 1s steps(1) infinite}
+.kp-val.fresh{color:var(--muted)}
+@keyframes kpcaret{50%{opacity:0}}
+.kp-unit{font-size:17px; color:var(--accent); font-weight:600; min-width:1ch}
+.kp-disp.bad{border-color:var(--c-err); box-shadow:0 0 0 1px var(--c-err)}
+.kp-disp.shake{animation:kpshake .35s}
+@keyframes kpshake{20%{transform:translateX(-6px)} 40%{transform:translateX(5px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(2px)}}
+.kp-info{font-size:12px; color:var(--muted); text-align:right; margin-top:-4px; min-height:14px; padding-right:4px}
+.kp-keys{display:grid; grid-template-columns:repeat(4, 1fr); gap:6px}
+.kp-units{display:grid; gap:6px}
+.kp-units[hidden]{display:none}
+.kp-k{min-height:50px; border:1px solid var(--border); border-radius:12px; background:var(--btn); color:var(--fg); font-size:21px; font-weight:500; cursor:pointer;
+  display:grid; place-items:center; touch-action:manipulation; transition:background .08s, transform .08s}
+.kp-k:active{background:var(--btn-hover); transform:scale(.96)}
+.kp-k.fn{background:var(--card); color:var(--muted); font-size:19px}
+.kp-k.wide{grid-column:span 2}
+.kp-k.ok{background:var(--accent); border-color:var(--accent); color:#fff; font-size:17px; font-weight:700}
+.kp-k.unit{font-size:16px; font-weight:600; min-height:46px; color:var(--accent); background:var(--card)}
+.kp-k.unit.on{border-color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent)}
+.kp-gap{display:block}
+@media (hover:hover) and (pointer:fine){ .kp-k:hover{background:var(--btn-hover)} .kp-k.ok:hover{filter:brightness(1.08); background:var(--accent)} }
+/* the value of a quick slider: a click (mouse) types it in place, a tap (touch) opens the keypad */
+.qs-head .qs-val{border:1px solid transparent; background:transparent; color:inherit; font-weight:700; font-size:14px; padding:2px 6px; border-radius:8px; cursor:text; min-height:0}
+.qs-head .qs-val:hover{border-color:var(--border); background:var(--btn)}
+.qs-edit{width:110px; font:inherit; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-weight:700; font-size:14px; text-align:right; padding:3px 6px; border:1px solid var(--accent);
+  border-radius:8px; background:var(--bg); color:var(--fg); -webkit-user-select:text; user-select:text; caret-color:auto; outline:none; box-shadow:0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent)}
+.qs-edit.bad{border-color:var(--c-err); box-shadow:0 0 0 2px color-mix(in srgb, var(--c-err) 30%, transparent)}

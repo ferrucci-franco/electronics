@@ -42,5 +42,16 @@ const r2 = S.solve(n2.ckt);
 ok('T junction current', r2.ok && Math.abs(r2.el.R1.i - 1) < 1e-9);
 ok('crossing not connected', n2.wireNode.get('c') !== n2.wireNode.get('a'));
 ok('junction dot', n2.junctions.some(([x, y]) => x === 4 && y === -2));
+// a slowly varying source: each instant solved as DC, V = V0 + Vp·sin(2π t / T)
+{
+  const C = DCS.comp, v1 = circuit.comps[0];
+  Object.assign(v1.props, { V: 10, wave: 'sine', amp: 4, speed: 'normal' });
+  C.wave.t = C.WAVE_T.normal / 4;   // a quarter period: the peak
+  const rs = S.solve(N.build(circuit).ckt);
+  ok('sine source at its peak', rs.ok && Math.abs(rs.el.R2.v - 7) < 1e-9);
+  C.wave.t = 0;
+  ok('sine source at t = 0', Math.abs(S.solve(N.build(circuit).ckt).el.R2.v - 5) < 1e-9);
+  v1.props.wave = 'dc';
+}
 console.log(`${count - fails}/${count} checks passed`);
 process.exit(fails ? 1 : 0);

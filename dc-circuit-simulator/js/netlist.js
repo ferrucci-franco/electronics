@@ -92,8 +92,9 @@
           if (pr.lmodel === 'real') elements.push({ type: 'LMP', id: c.id, n, Vn: pr.Vn, Pn: pr.Pn });
           else elements.push({ type: 'R', id: c.id, n, R: Math.max(1e-6, pr.Vn * pr.Vn / pr.Pn) });
           break;
-        case 'vsource': elements.push({ type: 'V', id: c.id, n, V: pr.V }); break;
-        case 'isource': elements.push({ type: 'I', id: c.id, n, I: pr.I }); break;
+        // (a varying source: its value at the present instant)
+        case 'vsource': elements.push({ type: 'V', id: c.id, n, V: C.srcValue(c) }); break;
+        case 'isource': elements.push({ type: 'I', id: c.id, n, I: C.srcValue(c) }); break;
         case 'ammeter': case 'isense': elements.push({ type: 'AM', id: c.id, n }); break;
         case 'voltmeter': case 'vsense': elements.push({ type: 'VM', id: c.id, n }); break;
         case 'depv': case 'depi': {

@@ -41,13 +41,25 @@
     const main = { resistor: 'R', vsource: 'V', isource: 'I' }[c.type];
     return key === main ? c.name : (PNAME[key] || key) + ' (' + c.name + ')';
   }
+  // a component with one of its values set to x (a varying source swept by its main value: that value, fixed)
+  const withVal = (c, key, x) => {
+    const p = Object.assign({}, c.props, { [key]: x });
+    if (C.waving(c) && key === C.srcKey(c)) p.wave = 'dc';
+    return Object.assign({}, c, { props: p });
+  };
+  // the value of a component now (a varying source: its value at this instant)
+  const valNow = (c, key) => (C.waving(c) && key === C.srcKey(c) ? C.srcValue(c) : +c.props[key]);
   const clampP = (p, v) => Math.max(p.min != null ? p.min : -Infinity, Math.min(p.max != null ? p.max : Infinity, v));
   // the default range: a source from −2|value| to +2|value|, any other value from 0 to twice its value
   function defRange(c, p) {
     if (p.key === 'alpha') return [0, 1];
     const v = +c.props[p.key] || 0;
     let a, b;
-    if (p.key === 'V' || p.key === 'I') { const m = 2 * Math.abs(v) || (p.key === 'V' ? 10 : 0.01); a = -m; b = m; }
+    if (p.key === 'V' || p.key === 'I') {
+      const m = 2 * Math.abs(v) || (p.key === 'V' ? 10 : 0.01); a = -m; b = m;
+      // a varying source: the whole swing inside the range
+      if (C.waving(c)) { const A = Math.abs(+c.props.amp || 0); a = Math.min(a, v - 1.25 * A); b = Math.max(b, v + 1.25 * A); }
+    }
     else if (v > 0) { a = 0; b = 2 * v; }
     else if (v < 0) { a = 2 * v; b = 0; }
     else { a = 0; b = 1; }
@@ -138,7 +150,7 @@
       const zs = new Array(n).fill(null);
       let prevStates = st ? st.states : {}, prevV = st ? st.v : null;
       for (const k of order) {
-        const cx = Object.assign({}, c, { props: Object.assign({}, c.props, { [sw.x.key]: xs[k] }) });
+        const cx = withVal(c, sw.x.key, xs[k]);
         const ckt = { comps: circuit.comps.map(q => (q === c ? cx : q)), wires: circuit.wires, nodeNames: circuit.nodeNames };
         const net = N.build(ckt);
         const res = S.solve(net.ckt, { prevStates, prevV: prevV && prevV.length === net.ckt.nodeCount ? prevV : null, tempC, budget: 400 });
@@ -173,7 +185,7 @@
     const f = sw.f && sw.f.vals && sw.f.vals.length && circuit.comps.some(c => c.id === sw.f.id) ? sw.f : null;
     if (!f) return { runs: [Object.assign({ fv: null }, run(circuit, sw, n, tempC, zid))] };
     const runs = f.vals.map(fv => {
-      const ckt = { comps: circuit.comps.map(q => (q.id === f.id ? Object.assign({}, q, { props: Object.assign({}, q.props, { [f.key]: fv }) }) : q)), wires: circuit.wires, nodeNames: circuit.nodeNames };
+      const ckt = { comps: circuit.comps.map(q => (q.id === f.id ? withVal(q, f.key, fv) : q)), wires: circuit.wires, nodeNames: circuit.nodeNames };
       return Object.assign({ fv }, run(ckt, sw, n, tempC, null));
     });
     return { runs };
@@ -269,7 +281,9 @@
 
     // what the curves depend on: everything but the swept value itself (and the window, the colours)
     function keyOf(s) {
-      const comps = app.circuit.comps.map(c => (c.id === s.x.id ? Object.assign({}, c, { props: Object.assign({}, c.props, { [s.x.key]: null }) }) : c));
+      // (the other varying sources: their value now, so that the curves follow them; the swept one is fixed by
+      // the sweep. Its offset and amplitude only matter for the default range, which is set once)
+      const comps = app.circuit.comps.map(c => (c.id === s.x.id ? withVal(c, s.x.key, null) : C.waving(c) ? withVal(c, C.srcKey(c), C.srcValue(c)) : c));
       const z = zcomp();
       return JSON.stringify([comps, app.circuit.wires, app.circuit.nodeNames, s.x, s.ys.map(y => [y.n, y.id, y.q]), s.f || null, z && z.id, app.settings.tempC, Array.from(C.pressed)]);
     }
@@ -319,7 +333,7 @@
       if (!menu.hidden) { closeMenu(); return; }
       menu.innerHTML = '';
       menu.appendChild(el('div', 'swmenu-t', esc(tp('sw_measure'))));
-      for (const q of qs) menu.appendChild(btn(sub(q.name), () => { closeMenu(); addY({ id: c.id, q: q.q }); }));
+      for (const q of qs) menu.appendChild(btn('<span>' + sub(q.name) + '</span>', () => { closeMenu(); addY({ id: c.id, q: q.q }); }));
       menu.hidden = false;
       const st = stage.getBoundingClientRect(), b = anchor.getBoundingClientRect();
       const mw = menu.offsetWidth, mh = menu.offsetHeight;
@@ -632,13 +646,13 @@
     function activeFam() {
       const s = sw(), fc = fcomp();
       if (!fc || !data || data.runs.length < 1 || data.runs[0].fv === null) return -1;
-      const v = +fc.props[s.f.key];
+      const v = valNow(fc, s.f.key);
       return data.runs.findIndex(r => Math.abs(r.fv - v) <= 1e-9 * Math.max(Math.abs(v), 1e-12));
     }
     // the circuit solved with the swept value x, from the solution now (same branch of a hysteresis loop)
     function valuesAt(x, cvs) {
       const s = sw(), c = xcomp();
-      const cx = Object.assign({}, c, { props: Object.assign({}, c.props, { [s.x.key]: x }) });
+      const cx = withVal(c, s.x.key, x);
       const ckt = { comps: app.circuit.comps.map(q => (q === c ? cx : q)), wires: app.circuit.wires, nodeNames: app.circuit.nodeNames };
       const net = N.build(ckt);
       const res = S.solve(net.ckt, { prevStates: app.prevStates, prevV: app.prevV && app.prevV.length === net.ckt.nodeCount ? app.prevV : null, tempC: app.settings.tempC, budget: 400 });
@@ -654,7 +668,7 @@
     function slopes(cvs) {
       const s = sw(), c = xcomp(), p = xparam();
       if (!c || !p || !app.result || !app.result.ok) return null;
-      const xv = +c.props[s.x.key];
+      const xv = valNow(c, s.x.key);
       const h = 1e-4 * Math.max(Math.abs(s.x.to - s.x.from), Math.abs(xv), 1e-12);
       let a = xv - h, b = xv + h;
       if (p.min != null && a < p.min) a = xv;
@@ -675,9 +689,9 @@
       const s = sw(), c = xcomp(), p = xparam();
       if (!c || !p) { read.innerHTML = ''; return; }
       const vals = now(cvs);
-      const parts = ['<b>' + sub(paramName(c, s.x.key)) + ' = ' + esc(fmt(c.props[s.x.key], p.unit, 4)) + '</b>'];
+      const parts = ['<b>' + sub(paramName(c, s.x.key)) + ' = ' + esc(fmt(valNow(c, s.x.key), p.unit, 4)) + '</b>'];
       const fam = !!fcomp();
-      if (fam) { const fc = fcomp(), fp = fparam(); parts.push(sub(paramName(fc, s.f.key)) + ' = ' + esc(fmt(fc.props[s.f.key], fp.unit))); }
+      if (fam) { const fc = fcomp(), fp = fparam(); parts.push(sub(paramName(fc, s.f.key)) + ' = ' + esc(fmt(valNow(fc, s.f.key), fp.unit))); }
       // each value with its slope (a gain V/V, a transconductance A/V, a resistance V/A…)
       const sl = slopes(cvs);
       const act = activeFam();
@@ -717,7 +731,7 @@
       const series = [], points = [], jumps = [];
       let lo = Infinity, hi = -Infinity;
       const xs = data.runs[0].xs;
-      const xv = +c.props[s.x.key];
+      const xv = valNow(c, s.x.key);
       const inRange = xv >= Math.min(s.x.from, s.x.to) && xv <= Math.max(s.x.from, s.x.to);
       const act = activeFam();
       const addRuns = (ys, name, color, dash, inline, dim) => {

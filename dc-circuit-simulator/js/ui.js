@@ -25,10 +25,16 @@
 
   function UI(app) {
     const t = app.t;
-    const isMobile = () => document.documentElement.classList.contains('layout-mobile');
+    // one layout for every screen; what depends on the device: a mouse or a trackpad (hover tips) and the
+    // width (the header actions in a ⋯ menu, or in the header itself on a wide screen)
+    const HOVER = window.matchMedia('(hover: hover) and (pointer: fine)');
+    // a touch screen without a mouse: values are typed on the keypad of the app, not the system keyboard
+    const TOUCH = window.matchMedia('(hover: none) and (pointer: coarse)');
+    const hdrMenu = () => getComputedStyle($('moreBtn')).display !== 'none';
     const fmt = (v, u, d) => U.format(v, u, { digits: d || app.settings.digits });
     let tab = 'props';
     const ui = {};
+    ui.hdrMenu = hdrMenu;
 
     /* ---------- palette ---------- */
     const palComps = $('palComps');
@@ -44,11 +50,22 @@
     }
     // faded edges on the phone strip when there is more to scroll
     function syncPalFade() {
-      const p = $('palette'), mob = isMobile() && getComputedStyle(p).flexDirection === 'row';
+      const p = $('palette'), mob = getComputedStyle(p).flexDirection === 'row';
       p.classList.toggle('more-l', mob && p.scrollLeft > 4);
       p.classList.toggle('more-r', mob && p.scrollLeft + p.clientWidth < p.scrollWidth - 4);
     }
     $('palette').addEventListener('scroll', syncPalFade, { passive: true });
+    // the mouse wheel (or a two-finger swipe on a trackpad, up / down as well as sideways) scrolls the strip of
+    // components; when the strip is a column (phone held sideways) the browser scrolls it by itself
+    $('palette').addEventListener('wheel', (e) => {
+      const p = $('palette');
+      if (e.ctrlKey || getComputedStyle(p).flexDirection !== 'row' || p.scrollWidth <= p.clientWidth + 1) return;
+      const k = e.deltaMode === 1 ? 32 : e.deltaMode === 2 ? p.clientWidth : 1;
+      const d = (Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY) * k;
+      if (!d) return;
+      e.preventDefault();
+      p.scrollLeft += d;
+    }, { passive: false });
     window.addEventListener('resize', syncPalFade);
     ui.syncPalFade = syncPalFade;
     function drawPalette() {
@@ -76,17 +93,15 @@
     }
 
     /* ---------- header ---------- */
-    $('undoBtn').addEventListener('click', () => app.undo());
     $('undoBtn2').addEventListener('click', () => app.undo());
     $('redoBtn2').addEventListener('click', () => app.redo());
     $('tidyBtn').addEventListener('click', () => {
       const r = DCS.tidy.prettify(app);
       app.toast(t(!r.ok ? 'tidy_fail' : r.changed ? 'tidy_done' : 'tidy_none', { a: r.before, b: r.after }));
     });
-    $('redoBtn').addEventListener('click', () => app.redo());
     ui.updateHistory = function () {
-      $('undoBtn').disabled = $('undoBtn2').disabled = !app.undoStack.length;
-      $('redoBtn').disabled = $('redoBtn2').disabled = !app.redoStack.length;
+      $('undoBtn2').disabled = !app.undoStack.length;
+      $('redoBtn2').disabled = !app.redoStack.length;
     };
     document.querySelectorAll('.app-header [data-lang]').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
     function setLang(l) {
@@ -103,11 +118,10 @@
       document.querySelectorAll('[data-i18n]').forEach((e) => { e.innerHTML = t(e.dataset.i18n); });
       document.querySelectorAll('[data-i18n-title]').forEach((e) => { const s = app.tp(e.dataset.i18nTitle); e.title = s; e.setAttribute('aria-label', s); });
       document.querySelectorAll('#palTools .tool').forEach((b) => { b.title = app.tp('tool_' + b.dataset.tool + '_tip'); });
-      syncEdgeBtns();
       if (ui.updateTabs) ui.updateTabs();
       document.querySelectorAll('.app-header [data-lang]').forEach((b) => b.classList.toggle('active', b.dataset.lang === l));
-      syncLayoutBtn();
       drawPalette();
+      if (ui.syncWaveChip) ui.syncWaveChip();
       if (ui.quiz) ui.quiz.render();   // the quiz pane is drawn by the quiz itself
     }
     $('themeBtn').addEventListener('click', () => {
@@ -116,28 +130,11 @@
       h.classList.toggle('dark', !dark); h.classList.toggle('light', dark);
       R.readColors(); drawPalette(); app.requestRender(); ui.update();
     });
-    function syncLayoutBtn() {
-      const b = $('layoutBtn');
-      const s = app.tp(isMobile() ? 'layout_to_desktop' : 'layout_to_mobile');
-      b.title = s; b.setAttribute('aria-label', s);
-      $('layoutLabel').textContent = s;
-    }
-    /* phone: the header is a single row (circuit tabs + ☰); the actions open in a menu under it */
+    /* phone, tablet: the header is a single row (circuit tabs + ☰); the actions open in a menu under it */
     const hdrEl = document.querySelector('.app-header');
     $('moreBtn').addEventListener('click', () => hdrEl.classList.toggle('menu-open'));
     hdrEl.querySelector('.hdr').addEventListener('click', (e) => { if (e.target.closest('button')) hdrEl.classList.remove('menu-open'); });
     document.addEventListener('pointerdown', (e) => { if (hdrEl.classList.contains('menu-open') && !e.target.closest('.hdr') && !e.target.closest('#moreBtn')) hdrEl.classList.remove('menu-open'); });
-    $('layoutBtn').addEventListener('click', () => {
-      const h = document.documentElement;
-      const mob = !isMobile();
-      h.classList.toggle('layout-mobile', mob); h.classList.toggle('layout-desktop', !mob);
-      app.LS.set('dcs.layout', mob ? 'mobile' : 'desktop');
-      $('side').classList.remove('open');
-      if (ui.syncDock) ui.syncDock();   // (touch layout on a large screen: the docked panel shows)
-      syncLayoutBtn();
-      requestAnimationFrame(() => { drawPalette(); syncPalFade(); app.renderer.resize(); app.fit(); });
-    });
-
     // file menu
     const menu = $('fileMenu');
     $('fileBtn').addEventListener('click', (e) => {
@@ -326,7 +323,7 @@
 
     function settingsForm() {
       const s = app.settings;
-      const f = el('div', { class: 'card' });
+      const f = el('div', { class: 'card set-form' });
       const row = (label, input) => { const r = el('div', { class: 'field' }); const l = el('label', null, label); r.appendChild(l); r.appendChild(input); f.appendChild(r); return input; };
       const select = (opts, val) => { const e = el('select'); for (const [v, l] of opts) { const o = el('option', { value: v }, l); if (String(v) === String(val)) o.selected = true; e.appendChild(o); } return e; };
       const check = (val) => { const e = el('input', { type: 'checkbox' }); e.checked = !!val; return e; };
@@ -381,14 +378,61 @@
       if (k === 'animate') app.circuitChanged();
       app.requestRender();
     }));
-    document.querySelectorAll('#symSeg [data-sym]').forEach((b) => b.addEventListener('click', () => {
-      app.settings.style = b.dataset.sym;
-      app.saveSettings(); ui.syncControls(); ui.update(); app.requestRender();
-    }));
     ui.syncControls = function () {
       document.querySelectorAll('#viewbar [data-show]').forEach((b) => b.classList.toggle('on', !!app.settings[b.dataset.show]));
-      document.querySelectorAll('#symSeg [data-sym]').forEach((b) => b.classList.toggle('active', b.dataset.sym === app.settings.style));
       drawPalette();
+    };
+
+    /* ---------- typing a value: in place with a keyboard, on the keypad of the app on a touch screen ----------
+     * o = { title, value, unit, min, max, apply(v) → false if refused } */
+    ui.editValue = function (anchor, o) {
+      if (TOUCH.matches) { DCS.keypad.open(Object.assign({ anchor }, o)); return; }
+      const inp = el('input', { type: 'text', class: 'qs-edit', inputmode: 'decimal', autocomplete: 'off', spellcheck: 'false' });
+      inp.value = U.format(o.value, '', { digits: 6, trim: true, zero: 1e-30 }).replace(/\s+/g, '');
+      inp.title = o.unit || '';
+      anchor.hidden = true;
+      anchor.after(inp);
+      inp.focus(); inp.select();
+      let done = false;
+      const end = () => { done = true; inp.remove(); anchor.hidden = false; };
+      const accept = () => {
+        if (done) return;
+        const v = U.parse(inp.value.replace(/%$/, ''));
+        if (!isFinite(v) || (o.min != null && v < o.min) || (o.max != null && v > o.max) || o.apply(v) === false) { inp.classList.add('bad'); return false; }
+        end();
+        return true;
+      };
+      inp.addEventListener('keydown', (e) => {
+        e.stopPropagation();
+        if (e.key === 'Enter') { e.preventDefault(); accept(); }
+        else if (e.key === 'Escape') { e.preventDefault(); end(); }
+        else inp.classList.remove('bad');
+      });
+      inp.addEventListener('blur', () => { if (!done && !accept()) end(); });
+      inp.addEventListener('pointerdown', (e) => e.stopPropagation());
+    };
+
+    /* ---------- sources that vary (sine): pause / play ---------- */
+    $('waveBtn').addEventListener('click', () => app.toggleWave());
+    ui.syncWaveChip = function () {
+      const b = $('waveBtn'), on = app.waving();
+      if (b.hidden === on) b.hidden = !on;
+      const p = C.wave.paused;
+      b.classList.toggle('paused', p);
+      const s = app.tp(p ? 'wave_play' : 'wave_pause');
+      if (b.title !== s) { b.title = s; b.setAttribute('aria-label', s); }
+    };
+    // the panel follows the varying sources a few times a second, unless something in it is in use (a field
+    // being typed in, a drop-down open, a slider held): it would be drawn again under the finger
+    let sideHeld = false;
+    $('side').addEventListener('pointerdown', () => { sideHeld = true; });
+    window.addEventListener('pointerup', () => { sideHeld = false; }, true);
+    window.addEventListener('pointercancel', () => { sideHeld = false; }, true);
+    ui.refreshPane = function () {
+      if (sideHeld || (tab !== 'props' && tab !== 'results') || $('side').contains(document.activeElement)) return;
+      const pane = $('pane-' + tab), y = pane.scrollTop;
+      if (tab === 'props') renderProps(); else renderResults();
+      pane.scrollTop = y;
     };
 
     /* ---------- zoom buttons ---------- */
@@ -482,7 +526,7 @@
       const tip = $('tip');
       // (an open quiz question: the simulated values stay hidden, also here)
       const res = app.result && app.result.ok && !(app.quizHidden && app.quizHidden()) ? app.result : null;
-      if (!h || !p || (!res && h.kind !== 'mark') || isMobile()) { tip.hidden = true; return; }
+      if (!h || !p || (!res && h.kind !== 'mark') || !HOVER.matches) { tip.hidden = true; return; }
       let html = '';
       if (h.kind === 'mark') html = esc(app.tp('tip_flip'));
       else if (h.kind === 'node') html = `${t('node')} ${esc(app.net.nodes[h.node].name)}: <b>${fmt(res.v[h.node], 'V')}</b>`;
@@ -525,46 +569,19 @@
 
     /* ---------- side panel / bottom sheet ---------- */
     document.querySelectorAll('.tabs [data-tab]').forEach((b) => b.addEventListener('click', () => ui.showTab(b.dataset.tab, false)));
-    /* desktop: hide or show the palette and the side panel; the circuit stays where it is on screen */
-    function syncEdgeBtns() {
-      const h = document.documentElement;
-      for (const [id, cls, k] of [['palToggle', 'hide-pal', 'pal'], ['sideToggle', 'hide-side', 'side']]) {
-        const s = app.tp((h.classList.contains(cls) ? 'show_' : 'hide_') + k);
-        $(id).title = s; $(id).setAttribute('aria-label', s);
-      }
-    }
-    ui.setPanelHidden = function (which, hide) {
-      const h = document.documentElement, cls = which === 'pal' ? 'hide-pal' : 'hide-side';
-      if (h.classList.contains(cls) === hide) return;
-      const x0 = $('cv').getBoundingClientRect().left;
-      h.classList.toggle(cls, hide);
-      app.LS.set(which === 'pal' ? 'dcs.hidePal' : 'dcs.hideSide', hide ? '1' : '0');
-      const dx = x0 - $('cv').getBoundingClientRect().left;
-      app.view.ox += dx;
-      app.renderer.resize(); app.requestRender();
-      syncEdgeBtns();
-      if (ui.clampFloats) ui.clampFloats();
-      if (which === 'pal' && !hide) drawPalette();
-      if (which === 'side' && !hide) ui.update();
-    };
-    $('palToggle').addEventListener('click', () => ui.setPanelHidden('pal', !document.documentElement.classList.contains('hide-pal')));
-    $('sideToggle').addEventListener('click', () => ui.setPanelHidden('side', !document.documentElement.classList.contains('hide-side')));
-    syncEdgeBtns();
-
     ui.currentTab = () => tab;
     ui.showTab = function (name, open) {
       tab = name;
       if (name !== 'thev' && app.overlay.hl) { app.overlay.hl = null; app.requestRender(); }
-      if (open && !isMobile()) ui.setPanelHidden('side', false);
       document.querySelectorAll('.tabs [data-tab]').forEach((b) => b.classList.toggle('active', b.dataset.tab === name));
       for (const n of ['props', 'results', 'thev', 'quiz']) $('pane-' + n).hidden = n !== name;
-      if (open && isMobile()) { $('side').classList.add('open'); if (ui.isDocked && ui.isDocked()) app.LS.set('dcs.dockOpen', '1'); }
+      if (open) { $('side').classList.add('open'); if (ui.isDocked && ui.isDocked()) app.LS.set('dcs.dockOpen', '1'); }
       ui.update();
     };
     /* touch layout on a large screen (tablet, touch monitor): the panel is docked on the right of the circuit
      * instead of a sheet from the bottom; its width is dragged on its left edge (kept), ⌃ widens it, ⌄ hides it */
     const DOCK = window.matchMedia('(min-width: 900px) and (min-height: 521px)');
-    ui.isDocked = () => isMobile() && DOCK.matches;
+    ui.isDocked = () => DOCK.matches;
     $('sheetBtn').addEventListener('click', () => { $('side').classList.toggle('open'); if (ui.isDocked()) app.LS.set('dcs.dockOpen', $('side').classList.contains('open') ? '1' : '0'); });
     // phone: close the bottom sheet (button, tap on the grip, drag it down, tap on the empty circuit);
     // auto (a tap on the circuit, a tool chosen): not the docked panel, which covers nothing
@@ -636,7 +653,7 @@
       });
       let d = null;
       const start = (e, el, isGrip) => {
-        if (!isMobile() || ui.isDocked() || e.target.closest('.sheet-close')) return;
+        if (ui.isDocked() || e.target.closest('.sheet-close')) return;
         d = { id: e.pointerId, y0: e.clientY, dy: 0, el, isGrip, drag: false, h0: side.offsetHeight };
       };
       const move = (e) => {
@@ -673,7 +690,9 @@
     }
     app.openProps = function (focus) {
       ui.showTab('props', true);
-      if (focus && !isMobile()) {
+      // (with a mouse and a keyboard, the panel docked beside the circuit: the value is ready to be typed; on
+      // a touch screen no on-screen keyboard pops up)
+      if (focus && HOVER.matches && ui.isDocked()) {
         const inp = $('pane-props').querySelector('input[data-prop], select[data-prop]');
         if (inp) { inp.focus(); if (inp.select) inp.select(); }
       }
@@ -703,6 +722,9 @@
     function propLabel(c, d) {
       if (d.key === 'k') { const k = C.depKind(c, app.circuit); return t('p_gain') + ' ' + k.sym; }
       if (d.key === 'model' || d.key === 'pol' || d.key === 'sat') return t('p_' + d.key);
+      // a varying source: its main value is the offset (the middle of the sine)
+      if ((d.key === 'V' || d.key === 'I') && C.waving(c)) return t('p_' + d.key + '0');
+      if (d.key === 'amp') return t('p_amp') + ' ' + (c.type === 'vsource' ? 'V' : 'I') + '<sub>p</sub>';
       return t('p_' + d.key);
     }
     function renderProps() {
@@ -849,6 +871,15 @@
             return true;
           };
           inp.addEventListener('change', apply);
+          if (TOUCH.matches && d.unit) {
+            // touch screen: the keypad of the app (units with prefixes) instead of the system keyboard
+            inp.readOnly = true; inp.setAttribute('inputmode', 'none'); inp.classList.add('kp-field');
+            inp.addEventListener('click', () => {
+              const unit = typeof d.unit === 'function' ? d.unit(c, app.circuit) : d.unit;
+              ui.editValue(inp, { title: esc(c.name || '') + ' · ' + propLabel(c, d), unit, value: c.props[d.key], min: d.min, max: d.max,
+                apply: (v) => { inp.value = U.format(v, '', { digits: 6, trim: true, zero: 1e-30 }).replace(/\s+/g, ''); return apply(); } });
+            });
+          }
           inp.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') { if (apply()) inp.blur(); }
             if (e.key === 'Escape') { inp.blur(); }
@@ -1550,10 +1581,26 @@
       const unitOf = () => (typeof d.unit === 'function' ? d.unit(cur(), app.circuit) : (d.unit || ''));
       const fmtV = () => { const unit = unitOf(), ratio = unit === 'V/V' || unit === 'A/A'; const p = cur().props; return key === 'alpha' ? Math.round(p.alpha * 100) + ' %' : key === 'beta' ? String(p.beta) : U.format(p[key], ratio ? '' : unit, { digits: 4, trim: true }).trim() + (ratio ? ' ' + unit : ''); };
       const name = el('span', { class: 'qs-name' });
-      const val = el('b', { class: 'qs-val' }, fmtV());
+      const val = el('button', { type: 'button', class: 'qs-val', title: plainText(t('qs_type')) }, fmtV());
       const r = { c, row, refresh: () => { const c = cur(); r.c = c; name.innerHTML = esc(c.name || '') + ' · ' + (key === 'k' ? C.depKind(c, app.circuit).sym : key === 'alpha' ? 'α' : key === 'beta' ? 'β' : esc(key)); val.innerHTML = fmtV(); } };
       r.refresh();
       const x = button('✕', () => removeRow(r));
+      // a click on the value: typed (keyboard, or the keypad of the app on a touch screen)
+      val.addEventListener('click', () => {
+        const c0 = cur(), pct = key === 'alpha', unit = pct ? '%' : unitOf();
+        ui.editValue(val, {
+          title: name.innerHTML, unit, value: pct ? c0.props.alpha * 100 : c0.props[key],
+          min: pct ? 0 : d.min, max: pct ? 100 : d.max,
+          apply: (v) => {
+            const c = cur();
+            app.checkpoint();
+            c.props[key] = pct ? v / 100 : v;
+            app.commit();
+            app.liveMark(c.id, 900);
+            r.refresh();
+          }
+        });
+      });
       head.appendChild(name); head.appendChild(val); head.appendChild(x);
       const sl = springSlider(cur, d, () => { val.innerHTML = fmtV(); });
       row.appendChild(head); row.appendChild(sl);

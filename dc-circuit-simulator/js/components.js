@@ -37,6 +37,28 @@
   const SUP_END = 2.35, SUP_X = -0.6, SUP_Y0 = 1.3;   // stub: x, from the edge (|y| = 1.3) to |y| = SUP_END
   const isClosed = (c) => (c.type === 'switch' ? !!c.props.closed : c.type === 'button' ? (c.props.nc === 'nc') !== pressed.has(c.id) : false);
 
+  /* Slowly varying sources: a voltage or current source can follow V + A·sin(2π t / T) instead of a constant.
+   * The circuit stays a DC circuit: each instant is solved as a DC operating point (quasi-static: no
+   * capacitance or inductance), slowly enough to watch the voltages, the currents and the operating points
+   * move. The time is shared by the whole app (wave.t, seconds); three speeds (period T). */
+  const WAVE_T = { slow: 20, normal: 8, fast: 3 };
+  const wave = { t: 0, paused: false };
+  const waving = (c) => (c.type === 'vsource' || c.type === 'isource') && c.props.wave === 'sine';
+  const srcKey = (c) => (c.type === 'vsource' ? 'V' : 'I');
+  // the value of a source now (its constant value, or its offset plus the sine)
+  const srcValue = (c) => {
+    const v = +c.props[srcKey(c)] || 0;
+    if (!waving(c)) return v;
+    return v + (+c.props.amp || 0) * Math.sin(2 * Math.PI * wave.t / (WAVE_T[c.props.speed] || WAVE_T.normal));
+  };
+  const sine = (c) => c.props.wave === 'sine';
+  const waveProps = (unit, amp) => [
+    { key: 'wave', type: 'select', options: ['wave_dc', 'wave_sine'], vals: ['dc', 'sine'], def: 'dc', help: 'wave_help' },
+    { key: 'amp', unit, def: amp, min: 0, max: unit === 'V' ? 1e6 : 1e3, show: sine },
+    { key: 'speed', type: 'select', options: ['speed_slow', 'speed_normal', 'speed_fast'], vals: ['slow', 'normal', 'fast'], def: 'normal', show: sine }
+  ];
+  const waveText = (c, f, u) => (sine(c) ? ' ± ' + f(c.props.amp, u) + ' ∿' : '');
+
   const TYPES = {
     resistor: {
       prefix: 'R', terms: [[-2, 0], [2, 0]], box: [-2, -0.75, 2, 0.75],
@@ -45,13 +67,13 @@
     },
     vsource: {
       prefix: 'V', terms: [[-2, 0], [2, 0]], box: [-2, -1, 2, 1], defRot: 1,
-      props: [{ key: 'V', unit: 'V', def: 5, min: -1e6, max: 1e6 }],
-      valueText: (c, f) => f(c.props.V, 'V')
+      props: [{ key: 'V', unit: 'V', def: 5, min: -1e6, max: 1e6 }].concat(waveProps('V', 1)),
+      valueText: (c, f) => f(c.props.V, 'V') + waveText(c, f, 'V')
     },
     isource: {
       prefix: 'I', terms: [[-2, 0], [2, 0]], box: [-2, -1, 2, 1], defRot: 3,
-      props: [{ key: 'I', unit: 'A', def: 1e-3, min: -1e3, max: 1e3 }],
-      valueText: (c, f) => f(c.props.I, 'A')
+      props: [{ key: 'I', unit: 'A', def: 1e-3, min: -1e3, max: 1e3 }].concat(waveProps('A', 5e-4)),
+      valueText: (c, f) => f(c.props.I, 'A') + waveText(c, f, 'A')
     },
     lamp: {
       prefix: 'LP', terms: [[-2, 0], [2, 0]], box: [-2, -2.1, 2, 1.0],
@@ -305,6 +327,15 @@
     },
     vsource(P, c, us) {
       P.circle(0, 0, 0.9, false);
+      if (c && c.props && sine(c)) {
+        // a varying source: a sine inside the circle (level on screen), the + terminal marked outside
+        P.line([[-2, 0], [-0.9, 0]]); P.line([[0.9, 0], [2, 0]]);
+        const across = (c.rot || 0) % 2 === 1, pts = [];
+        for (let k = 0; k <= 16; k++) { const u = -0.55 + 1.1 * k / 16, w = -0.3 * Math.sin(Math.PI * 2 * k / 16); pts.push(across ? [w, u] : [u, w]); }
+        P.line(pts);
+        P.plus(-1.45, -0.7, 0.36);
+        return;
+      }
       if (us) {
         P.line([[-2, 0], [-0.9, 0]]); P.line([[0.9, 0], [2, 0]]);
         P.plus(-0.42, 0, 0.36); P.minus(0.42, 0, 0.36);
@@ -575,7 +606,7 @@
     }
   };
 
-  const api = { TYPES, LED_COLORS, opampUp, SUP_END, SUP_X, SUP_Y0, lampState, meterKind, isDep, ctrlOf, depKind, depText, isDiode, pressed, isSwitch, isClosed, passiveOnly, potX, potFrac, ROT, defaults, defRef, refs, signed, flippable, toWorld, toLocal, terminals, hit, bounds, SYM };
+  const api = { WAVE_T, wave, waving, srcKey, srcValue, TYPES, LED_COLORS, opampUp, SUP_END, SUP_X, SUP_Y0, lampState, meterKind, isDep, ctrlOf, depKind, depText, isDiode, pressed, isSwitch, isClosed, passiveOnly, potX, potFrac, ROT, defaults, defRef, refs, signed, flippable, toWorld, toLocal, terminals, hit, bounds, SYM };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else (root.DCS = root.DCS || {}).comp = api;
 })(typeof window !== 'undefined' ? window : globalThis);

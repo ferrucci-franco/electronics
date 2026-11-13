@@ -393,28 +393,19 @@ html.demo .tip{transition:none}`;
     app.ui.update();
     app.requestRender();
   };
-  // more room for the circuit and its floating windows (desktop layout): the list of components and / or the
-  // side panel put away
-  D.roomy = function (pal, side) {
-    if (this.mobile()) return;
-    const ui = this.app.ui;
-    if (pal) ui.setPanelHidden('pal', true);
-    if (side) ui.setPanelHidden('side', true);
-    this.app.fit();
-    this.app.requestRender();
-  };
-  D.mobile = function () { return this.doc.documentElement.classList.contains('layout-mobile'); };
+  // the header actions are in the ⋯ menu (not on a wide screen, where they are in the header itself)
+  D.menu = function () { return !!(this.app.ui.hdrMenu && this.app.ui.hdrMenu()); };
   D.docked = function () { return !!(this.app.ui.isDocked && this.app.ui.isDocked()); };
   // a tab of the side panel (the phone's sheet opens first)
   D.panel = async function (name) {
     const side = this.$('#side');
-    if (this.mobile() && !side.classList.contains('open')) { await this.tap('#sheetBtn'); await this.wait(350); }
+    if (!side.classList.contains('open')) { await this.tap('#sheetBtn'); await this.wait(350); }
     const b = this.$(`.side .tabs button[data-tab="${name}"]`);
     if (b && !b.classList.contains('active')) await this.tap(b);
   };
   D.closePanel = async function () {
     const side = this.$('#side');
-    if (this.mobile() && side.classList.contains('open') && !this.docked()) { await this.tap('#sheetClose'); await this.wait(300); }
+    if (side.classList.contains('open') && !this.docked()) { await this.tap('#sheetClose'); await this.wait(300); }
   };
   // a component of the palette (the phone's strip scrolls to it)
   D.pal = async function (key) {
@@ -522,13 +513,12 @@ html.demo .tip{transition:none}`;
     this.lang = lang;
   };
 
-  // the demo uses the layout of the app (a phone layout when the window is narrow), at a fixed size that is
-  // scaled to the space there is
+  // the demo: a phone when the window is narrow, else a tablet / laptop screen, at a fixed size that is scaled
+  // to the space there is; a mouse pointer or a finger, as the device that watches it
   T.mode = function () {
     const w = this.stagewrap.clientWidth;
-    const mob = document.documentElement.classList.contains('layout-mobile');
-    if (w < 560) return { layout: 'mobile', VW: 390, VH: 640, touch: true };
-    return mob ? { layout: 'mobile', VW: 960, VH: 600, touch: true } : { layout: 'desktop', VW: 960, VH: 600, touch: false };
+    if (w < 560) return { layout: 'phone', VW: 390, VH: 640, touch: true };
+    return { layout: 'wide', VW: 960, VH: 600, touch: !window.matchMedia('(hover: hover) and (pointer: fine)').matches };
   };
   T.layout = function () {
     if (!this.win) return;
@@ -601,7 +591,7 @@ html.demo .tip{transition:none}`;
   T.loadFrame = function () {
     const m = this.m;
     const theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
-    const q = `demo&lang=${I.getLang()}&layout=${m.layout}&theme=${theme}&sym=${this.app.settings.style === 'iec' ? 'iec' : 'us'}`;
+    const q = `demo&lang=${I.getLang()}&theme=${theme}&sym=${this.app.settings.style === 'iec' ? 'iec' : 'us'}`;
     const f = this.frame;
     return new Promise((resolve) => {
       const done = () => {
