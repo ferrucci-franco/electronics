@@ -364,6 +364,8 @@ html.layout-mobile .field input[type=text], html.layout-mobile .field select{fon
 .qslider[hidden]{display:none}
 .qs-head{display:flex; align-items:center; gap:8px; font-size:14px; cursor:move; touch-action:none}
 .qs-row + .qs-row{border-top:1px solid var(--border); margin-top:2px; padding-top:3px}
+.qs-sub{border-top:1px dashed var(--border); margin-top:1px; padding-top:3px}
+.qs-sub[hidden]{display:none}
 @keyframes qsflash{from{background:var(--btn-hover)} to{background:transparent}}
 .qs-row.flash{animation:qsflash .6s ease; border-radius:8px}
 .qslider{max-height:calc(100% - 8px); overflow-y:auto; overscroll-behavior:contain}
