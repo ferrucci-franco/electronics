@@ -577,7 +577,9 @@
       const s = sw();
       const hidden = (app.quizHidden && app.quizHidden());
       if (!s || hidden) {
-        win.hidden = true; banner.hidden = true; closeMenu();
+        // (a live refresh, e.g. a varying source running, leaves the menu of what to measure open)
+        win.hidden = true; banner.hidden = true;
+        if (!live || hidden) closeMenu();
         if (!s && app.sweepPicking) stopPick();
         return;
       }
@@ -588,7 +590,12 @@
       if (s.x && !xcomp()) s.x = null;
       if (s.f && (!fcomp() || !fparam())) delete s.f;
       if (!s.x && picking !== 'x') { inUpdate = true; startPick('x'); inUpdate = false; }
-      if (picking) { win.hidden = true; closeMenu(); document.getElementById('selbar').hidden = true; showBanner(s.ys.map(y => curve(y, app.circuit, net))); return; }
+      if (picking) {
+        win.hidden = true; closeMenu(); document.getElementById('selbar').hidden = true;
+        // (drawn again only when it changes: not under the finger at every live refresh)
+        if (!live || banner.hidden) showBanner(s.ys.map(y => curve(y, app.circuit, net)));
+        return;
+      }
       banner.hidden = true;
       const wasHidden = win.hidden;
       win.hidden = false;
