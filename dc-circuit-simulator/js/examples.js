@@ -18,6 +18,12 @@
     // named nodes: [x, y, name] (a point of the node)
     // (tag: the name is drawn on the circuit as a flag, always, also while the values are hidden in a quiz)
     if (spec.n) out.nodeNames = spec.n.map(([x, y, name]) => ({ x, y, name, tag: true }));
+    // a plot ready with the example: sw = { y: [[name, quantity]], x: [name, key, from, to] (optional), t: 1 (against time) }
+    if (spec.sw) {
+      const id = (name) => comps.find(c => c.name === name).id;
+      out.sweep = { x: spec.sw.x ? { id: id(spec.sw.x[0]), key: spec.sw.x[1], from: spec.sw.x[2], to: spec.sw.x[3], log: false } : null, ys: spec.sw.y.map(([name, q], c) => ({ id: id(name), q, c })) };
+      if (spec.sw.t) out.sweep.t = 1;
+    }
     return out;
   }
 
@@ -181,6 +187,17 @@
           ['resistor', 'RC', 11, 2, 1, { R: 470 }], ['vsource', 'VCC', 16, 6, 1, { V: 5 }],
           ['ground', '', 0, 11, 0], ['ground', '', 11, 8, 0], ['ground', '', 16, 8, 0]],
         w: [[[0, 7], [0, 6], [2, 6]], [[6, 6], [8, 6]], [[11, 0], [16, 0], [16, 4]]]
+      }
+    },
+    bjtclip: {
+      t: { en: 'Transistor amplifier: a sine that clips', fr: 'Amplificateur à transistor : un sinus écrêté', es: 'Amplificador con transistor: una senoide que recorta' },
+      d: { en: 'A slow sine Vin in series with the bias VBB. The plots show VCE against Vin and against time: the output is clipped where the transistor saturates. Change VBB or the amplitude (long press) and watch.', fr: 'Un sinus lent Vin en série avec la polarisation VBB. Les graphiques montrent VCE en fonction de Vin et du temps : la sortie est écrêtée là où le transistor sature. Changez VBB ou l’amplitude (appui long) et observez.', es: 'Una senoide lenta Vin en serie con la polarización VBB. Las gráficas muestran VCE en función de Vin y del tiempo: la salida queda recortada donde el transistor satura. Cambie VBB o la amplitud (toque largo) y observe.' },
+      s: {
+        c: [['vsource', 'VBB', 0, 9, 1, { V: 3.5 }], ['vsource', 'Vin', 4, 6, 2, { V: 0, wave: 'sine', amp: 2, speed: 'normal' }], ['resistor', 'RB', 10, 6, 0, { R: 47000 }], ['bjt', 'Q1', 16, 6, 0],
+          ['resistor', 'RC', 17, 2, 1, { R: 1000 }], ['vsource', 'VCC', 22, 6, 1, { V: 10 }],
+          ['ground', '', 0, 11, 0], ['ground', '', 17, 8, 0], ['ground', '', 22, 8, 0]],
+        w: [[[0, 7], [0, 6], [2, 6]], [[6, 6], [8, 6]], [[12, 6], [14, 6]], [[17, 0], [22, 0], [22, 4]]],
+        sw: { x: ['Vin', 'V', -3, 3], y: [['Q1', 'vce']], t: 1 }
       }
     },
     lampswitch: {

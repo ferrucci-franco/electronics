@@ -42,14 +42,16 @@
    * capacitance or inductance), slowly enough to watch the voltages, the currents and the operating points
    * move. The time is shared by the whole app (wave.t, seconds); three speeds (period T). */
   const WAVE_T = { slow: 20, normal: 8, fast: 3 };
-  const wave = { t: 0, paused: false };
+  const wave = { t: 0, paused: false, scrub: false };   // scrub: the time is held by a finger on the time plot
   const waving = (c) => (c.type === 'vsource' || c.type === 'isource') && c.props.wave === 'sine';
   const srcKey = (c) => (c.type === 'vsource' ? 'V' : 'I');
   // the value of a source now (its constant value, or its offset plus the sine)
-  const srcValue = (c) => {
+  // (t: at another instant than now, for the plot against time)
+  const wavePeriod = (c) => WAVE_T[c.props.speed] || WAVE_T.normal;
+  const srcValue = (c, t) => {
     const v = +c.props[srcKey(c)] || 0;
     if (!waving(c)) return v;
-    return v + (+c.props.amp || 0) * Math.sin(2 * Math.PI * wave.t / (WAVE_T[c.props.speed] || WAVE_T.normal));
+    return v + (+c.props.amp || 0) * Math.sin(2 * Math.PI * (t === undefined ? wave.t : t) / wavePeriod(c));
   };
   const sine = (c) => c.props.wave === 'sine';
   const waveProps = (unit, amp) => [
@@ -606,7 +608,7 @@
     }
   };
 
-  const api = { WAVE_T, wave, waving, srcKey, srcValue, TYPES, LED_COLORS, opampUp, SUP_END, SUP_X, SUP_Y0, lampState, meterKind, isDep, ctrlOf, depKind, depText, isDiode, pressed, isSwitch, isClosed, passiveOnly, potX, potFrac, ROT, defaults, defRef, refs, signed, flippable, toWorld, toLocal, terminals, hit, bounds, SYM };
+  const api = { WAVE_T, wave, waving, wavePeriod, srcKey, srcValue, TYPES, LED_COLORS, opampUp, SUP_END, SUP_X, SUP_Y0, lampState, meterKind, isDep, ctrlOf, depKind, depText, isDiode, pressed, isSwitch, isClosed, passiveOnly, potX, potFrac, ROT, defaults, defRef, refs, signed, flippable, toWorld, toLocal, terminals, hit, bounds, SYM };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else (root.DCS = root.DCS || {}).comp = api;
 })(typeof window !== 'undefined' ? window : globalThis);

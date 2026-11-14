@@ -438,7 +438,7 @@
     return (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10) * e;
   }
 
-  const PAD = { L: 52, R: 10, T: 24, B: 30 };   // T leaves room above the plot for the name of the y axis
+  const PAD = { L: 52, R: 10, T: 24, B: 30 }, TIGHT_T = 8;   // T leaves room above the plot for the name of the y axis
   // the x value under a point of the canvas (css px from its left side), inside the window
   function xInv(spec, W, px) {
     const w = spec.win, { L, R } = PAD;
@@ -450,13 +450,14 @@
     const dpr = Math.min(3, window.devicePixelRatio || 1);
     const W = cv.clientWidth, H = cv.clientHeight;
     if (!W || !H) return null;
-    if (cv.width !== Math.round(W * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+    if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
     const ctx = cv.getContext('2d');
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const col = DCS.render.colors();
     ctx.fillStyle = col.bg; ctx.fillRect(0, 0, W, H);
     const w = spec.win;
-    const { L, R, T, B } = PAD;
+    // (spec.tight, a low plot: no name over the y axis, the room goes to the curves)
+    const { L, R, B } = PAD, T = spec.tight ? TIGHT_T : PAD.T;
     // x: linear, or logarithmic (spec.xlog, a DC sweep of a resistance over decades)
     const lg = !!spec.xlog && w.v0 > 0 && w.v1 > w.v0;
     const fx = lg ? Math.log10 : (v) => v;
@@ -499,7 +500,7 @@
     if (w.i0 < 0 && w.i1 > 0) { const y = Math.round(Y(0)) + 0.5; ctx.beginPath(); ctx.moveTo(L, y); ctx.lineTo(W - R, y); ctx.stroke(); }
     ctx.fillStyle = col.fg;
     subText(ctx, spec.xlab, W - R, H - B + 15, 'right', 12, 600);
-    subText(ctx, spec.ylab, !lg && w.v0 < 0 && w.v1 > 0 ? X(0) : L, T - 9, 'center', 12, 600);
+    if (!spec.tight) subText(ctx, spec.ylab, !lg && w.v0 < 0 && w.v1 > 0 ? X(0) : L, T - 9, 'center', 12, 600);
     // plot area clip
     ctx.save();
     ctx.beginPath(); ctx.rect(L, T, W - L - R, H - T - B); ctx.clip();
@@ -655,5 +656,5 @@
     return { redraw };
   }
 
-  DCS.iv = { build, mount, analyse, trace, portSpec, nlNames, subHtml, draw, xInv, slot, PAD };
+  DCS.iv = { build, mount, analyse, trace, portSpec, nlNames, subHtml, draw, xInv, slot, PAD, TIGHT_T };
 })(window);

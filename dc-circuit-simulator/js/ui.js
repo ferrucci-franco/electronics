@@ -1706,12 +1706,14 @@
       $('stage').appendChild(mon);
       dragByHead(mon, mhead);
       const W = { mon, mtitle, mswap, mreset, mclose, mcv };
-      const applySize = (sz) => {
-        if (!sz) return;
-        mon.style.width = sz.w + 'px'; mon.style.right = 'auto';
-        mcv.style.height = sz.h + 'px';
+      // the size it would like (kept from the last time it was resized); the arrangement of the windows gives it
+      // that, or what there is room for
+      mon._pref = () => {
+        let z = null;
+        try { z = JSON.parse(app.LS.get('dcs.monSize' + slot) || 'null'); } catch (e) { /* none */ }
+        const st = $('stage'), small = st.clientWidth < 640 || st.clientHeight < 440;
+        return z && z.w > 0 && z.h > 0 ? { w: z.w, h: z.h, minH: 96 } : { w: 380, h: small ? 150 : 220, minH: 96 };
       };
-      try { applySize(JSON.parse(app.LS.get('dcs.monSize' + slot) || 'null')); } catch (e) { /* none */ }
       // resized from any edge or corner; the size is kept
       resizable(mon, mcv, grip, { minW: 220, minH: 110, onResize: () => ui.updateMonitor(),
         onEnd: () => app.LS.set('dcs.monSize' + slot, JSON.stringify({ w: mon.offsetWidth, h: mcv.offsetHeight })) });
@@ -1750,6 +1752,7 @@
         if (d.includes('n')) top = rs.top + rs.h0 - h;
         win.style.width = w + 'px'; cv.style.height = h + 'px';
         win.style.left = left + 'px'; win.style.top = top + 'px';
+        win.dataset.placed = '1';   // (sized by hand: the arrangement leaves it alone)
         o.onResize();
       };
       const end = (e) => {
@@ -1777,6 +1780,7 @@
         const x = Math.max(0, Math.min(d.s.width - win.offsetWidth, e.clientX - d.s.left - d.dx));
         const y = Math.max(0, Math.min(d.s.height - win.offsetHeight, e.clientY - d.s.top - d.dy));
         Object.assign(win.style, { left: x + 'px', top: y + 'px', right: 'auto', bottom: 'auto' });
+        win.dataset.placed = '1';   // (put somewhere by hand: the arrangement leaves it alone)
       });
       head.addEventListener('pointerup', () => { d = null; });
     }
@@ -1786,7 +1790,109 @@
     ui.sweep = DCS.sweep.init(app, ui);
     // the floating windows stay inside the circuit area when it gets narrower (side panel shown again, window
     // resized): a window that would be covered slides back in
+    /* The plot windows (DC sweep, pinned I–V plots) are arranged so that they cover neither each other nor the
+     * circuit: in a row along the bottom of a wide circuit area (the sweep on the right), one over the other at
+     * the bottom of a narrow one (a phone held upright), in a column on the right of a low one (a phone held
+     * sideways). Each gets the size it would like, or what there is room for. When the set of windows changes,
+     * the circuit is fitted in the room that is left. A window moved or resized by hand is left where it is
+     * (until it is closed); a maximized one covers everything anyway. */
+    let arrSig = '', arrFitted = false;
+    ui.arrange = function () {
+      const st = $('stage'), W = st.clientWidth, H = st.clientHeight;
+      let all;
+      try { all = [ui.sweep.win].concat(monWins.map(m => m.mon)); } catch (e) { return; }   // (not all built yet)
+      if (!W || !H) return;
+      for (const w of all) if (w.hidden) delete w.dataset.placed;
+      const wins = all.filter(w => !w.hidden && !w.classList.contains('max') && !w.dataset.placed);
+      const GAP = 8, BOT = 54, TOP = 46;
+      let mode = H < 560 && W > H * 1.25 ? 'side' : W < 640 ? 'stack' : 'row';
+      let prefs = wins.map(w => w._pref());
+      const pcs = wins.map(w => w.querySelector('.mon-cv'));
+      const setW = (w, px) => Object.assign(w.style, { width: px + 'px', right: 'auto' });
+      // the heights of the plots: what each would like, reduced together (down to their minimum) to leave
+      // `room` pixels for all the windows
+      // (true when even their minimum does not fit)
+      const fitHeights = (room) => {
+        pcs.forEach((pc, k) => { pc.style.height = prefs[k].h + 'px'; });
+        const chrome = wins.reduce((a, w, k) => a + w.offsetHeight - pcs[k].offsetHeight, 0);
+        const want = prefs.reduce((a, p) => a + p.h, 0), have = room - chrome;
+        if (want > have) {
+          const f = Math.max(0, have) / want;
+          pcs.forEach((pc, k) => { pc.style.height = Math.round(Math.max(prefs[k].minH, prefs[k].h * f)) + 'px'; });
+        }
+        return prefs.reduce((a, p) => a + p.minH, 0) > have + 24;
+      };
+      // a small screen with more plots than it can show: the oldest pinned I–V plot is closed (it is pinned
+      // again with one tap; the sweep and its settings stay) rather than left over another window
+      const dropOne = () => {
+        const ms = app.monitors, open = [0, 1].filter(k => ms[k] && wins.includes(monWins[k].mon));
+        if (!open.length) return false;
+        const k = open.sort((a, b) => ms[a].t - ms[b].t)[0];
+        ms[k] = null; monWins[k].mon.hidden = true;
+        app.toast(plainText(t('mon_noroom')));
+        requestAnimationFrame(() => ui.updateMonitor());
+        return true;
+      };
+      if (mode === 'row' && wins.length) {
+        // side by side along the bottom; narrower when they do not fit, one over the other when that is too narrow
+        const sum = prefs.reduce((a, p) => a + p.w, 0), avail = W - 16 - GAP * (wins.length - 1);
+        const f = Math.min(1, avail / sum);
+        if (prefs.some(p => p.w * f < Math.min(p.w, 240))) mode = 'stack';
+        else {
+          const circuit = Math.max(170, 0.36 * H);
+          wins.forEach((w, k) => {
+            setW(w, Math.floor(prefs[k].w * f));
+            prefs[k] = w._pref(Math.floor(prefs[k].w * f));
+            pcs[k].style.height = prefs[k].h + 'px';
+            const chrome = w.offsetHeight - pcs[k].offsetHeight;
+            pcs[k].style.height = Math.round(Math.max(prefs[k].minH, Math.min(prefs[k].h, H - BOT - TOP - circuit - chrome))) + 'px';
+          });
+          // the sweep on the right, the pinned plots from the left
+          let left = 8, right = W - 8;
+          wins.forEach((w) => {
+            const ww = w.offsetWidth;
+            if (w === ui.sweep.win) { right -= ww; Object.assign(w.style, { left: right + 'px', top: 'auto', bottom: BOT + 'px' }); right -= GAP; }
+            else { Object.assign(w.style, { left: left + 'px', top: 'auto', bottom: BOT + 'px' }); left += ww + GAP; }
+          });
+        }
+      }
+      if (mode === 'stack' && wins.length) {
+        const ww = Math.min(W - 12, 760);
+        wins.forEach(w => setW(w, ww));
+        prefs = wins.map(w => w._pref(ww));
+        if (fitHeights(H - BOT - TOP - Math.max(130, 0.27 * H) - GAP * (wins.length - 1)) && dropOne()) return ui.arrange();
+        let bottom = BOT;
+        wins.forEach((w) => { Object.assign(w.style, { left: Math.round((W - ww) / 2) + 'px', top: 'auto', bottom: bottom + 'px' }); bottom += w.offsetHeight + GAP; });
+      }
+      if (mode === 'side' && wins.length) {
+        const ww = Math.round(Math.max(Math.min(280, W - 12), Math.min(0.5 * W, 420)));
+        wins.forEach(w => setW(w, ww));
+        prefs = wins.map(w => w._pref(ww));
+        if (fitHeights(H - BOT - 6 - GAP * (wins.length - 1)) && dropOne()) return ui.arrange();
+        let top = 6;
+        wins.forEach((w) => { Object.assign(w.style, { left: (W - ww - 6) + 'px', top: top + 'px', bottom: 'auto' }); top += w.offsetHeight + GAP; });
+      }
+      // the chips at the top keep clear of a column of windows on the right
+      st.style.setProperty('--plots-w', mode === 'side' && wins.length ? (wins[0].offsetWidth + 12) + 'px' : '0px');
+      st.classList.toggle('plots-side', mode === 'side' && wins.length > 0);
+      // the circuit: fitted in the room left when the set of windows has changed and it is covered
+      const sig = wins.length ? mode + '|' + wins.map(w => all.indexOf(w) + ':' + w.offsetWidth + 'x' + w.offsetHeight).join(',') : '';
+      if (sig === arrSig) return;
+      arrSig = sig;
+      if (!wins.length) { if (arrFitted) { arrFitted = false; app.fit(); } return; }
+      const b = app.circuitBounds(app.circuit), v = app.view;
+      if (!b) return;
+      const x0 = b[0] * v.scale + v.ox, x1 = b[2] * v.scale + v.ox, y0 = b[1] * v.scale + v.oy, y1 = b[3] * v.scale + v.oy;
+      const rects = wins.map(w => [w.offsetLeft, w.offsetTop, w.offsetLeft + w.offsetWidth, w.offsetTop + w.offsetHeight]);
+      const covered = rects.some(r => x1 > r[0] && x0 < r[2] && y1 > r[1] && y0 < r[3]);
+      // (also when it was fitted before: the room may have grown)
+      if (!covered && !arrFitted) return;
+      arrFitted = true;
+      if (mode === 'side') app.fit({ right: W - Math.min(...rects.map(r => r[0])) + 6 });
+      else app.fit({ bottom: Math.max(0, H - Math.min(...rects.map(r => r[1])) - 48) });
+    };
     ui.clampFloats = function () {
+      ui.arrange();
       const st = $('stage');
       const W = st.clientWidth, H = st.clientHeight;
       let wins;
@@ -1810,6 +1916,16 @@
       if (resized) requestAnimationFrame(() => { ui.updateMonitor(); if (ui.sweep) ui.sweep.update(false); });
     };
     window.addEventListener('resize', () => requestAnimationFrame(ui.clampFloats));
+    // (the circuit area also changes with the side panel: shown, hidden, made wider)
+    if (typeof ResizeObserver !== 'undefined') {
+      let roRaf = 0, lw = 0, lh = 0;
+      new ResizeObserver(() => {
+        const st = $('stage');
+        if (st.clientWidth === lw && st.clientHeight === lh) return;
+        lw = st.clientWidth; lh = st.clientHeight;
+        if (!roRaf) roRaf = requestAnimationFrame(() => { roRaf = 0; ui.clampFloats(); });
+      }).observe($('stage'));
+    }
     /* pinned Thévenin values: a small window over the circuit with V_Th, R_Th = R_eq and I_N (or V_oc and I_sc
      * when the circuit is not linear), updated at every change, also while a value is dragged */
     const tmon = el('div', { class: 'monitor tmon' });
@@ -1888,7 +2004,10 @@
       if (quizHidden()) { monWins.forEach(w => { w.mon.hidden = true; }); return; }
       const ms = app.monitors;
       for (let k = 0; k < MAXMON; k++) if (ms[k] && !ms[k].ids.every(id => app.circuit.comps.some(c => c.id === id))) ms[k] = null;
+      const was = monWins.map(w => w.mon.hidden).join();
       monWins.forEach((w, k) => updateMonWin(w, app.monitors[k]));
+      // (one appeared or went: the windows are arranged again)
+      if (was !== monWins.map(w => w.mon.hidden).join()) requestAnimationFrame(() => { ui.clampFloats(); monWins.forEach((w, k) => updateMonWin(w, app.monitors[k])); });
       syncPins();
     };
     function updateMonWin(W, m) {

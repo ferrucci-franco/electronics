@@ -127,7 +127,7 @@
     waveRaf = 0;
     if (!app.waving() || C.wave.paused) { waveLast = 0; return; }
     waveRaf = requestAnimationFrame(waveFrame);
-    C.wave.t += waveLast ? Math.min(0.1, (ts - waveLast) / 1000) : 0;
+    C.wave.t += waveLast && !C.wave.scrub ? Math.min(0.1, (ts - waveLast) / 1000) : 0;
     waveLast = ts;
     if (ts - waveSolved < 30) return;
     waveSolved = ts;
@@ -741,9 +741,10 @@
   app.fit = function (opts) {
     const R = app.renderer;
     // inset: pixels hidden at the bottom of the circuit area (phone: the panel sheet over it, in a quiz)
-    const inset = (opts && opts.bottom) || 0;
+    // (right: pixels hidden on the right, the plot windows of a phone held sideways)
+    const inset = (opts && opts.bottom) || 0, insetR = (opts && opts.right) || 0;
     // leave room for the chips at the top and the buttons at the bottom
-    const v = app.fitView(app.circuit, R.w, Math.max(80, R.h - 70 - inset), 3.5);
+    const v = app.fitView(app.circuit, Math.max(80, R.w - insetR), Math.max(80, R.h - 70 - inset), 3.5);
     v.oy += 30;
     app.view = v;
     // the labels (values, readings) have a fixed size on screen: once drawn, the view is reduced and centred
@@ -756,7 +757,7 @@
         x0 = Math.min(x0, r[0]); y0 = Math.min(y0, r[1]); x1 = Math.max(x1, r[2]); y1 = Math.max(y1, r[3]);
       }
       const side = 8;
-      const left = side, right = R.w - side, top = 52, bottom = Math.max(top + 60, R.h - 64 - inset);
+      const left = side, right = Math.max(left + 60, R.w - side - insetR), top = 52, bottom = Math.max(top + 60, R.h - 64 - inset);
       const f = Math.min(1, (right - left) / Math.max(1, x1 - x0), (bottom - top) / Math.max(1, y1 - y0));
       const wcx = ((x0 + x1) / 2 - v.ox) / v.scale, wcy = ((y0 + y1) / 2 - v.oy) / v.scale;
       const s2 = Math.max(app.minScale, v.scale * (f < 1 ? f * 0.98 : 1));
@@ -910,6 +911,7 @@
         .map((y, k) => Object.assign(y.n ? { n: [Math.round(y.n[0]), Math.round(y.n[1])] } : { id: String(y.id), q: y.q }, { c: isFinite(y.c) ? Math.abs(Math.round(y.c)) % 8 : k }));
       const x = sw.x && ids.has(String(sw.x.id)) && typeof sw.x.key === 'string' && isFinite(sw.x.from) && isFinite(sw.x.to) ? { id: String(sw.x.id), key: sw.x.key, from: +sw.x.from, to: +sw.x.to, log: !!sw.x.log } : null;
       if (ys.length) clean.sweep = { x, ys };
+      if (ys.length && sw.t) clean.sweep.t = 1;   // the plot against time
       const f = sw.f;
       if (ys.length && f && ids.has(String(f.id)) && typeof f.key === 'string' && Array.isArray(f.vals)) {
         const vals = f.vals.map(Number).filter(isFinite).slice(0, 6);
@@ -948,6 +950,7 @@
       o.s = { x: sw.x ? [ix(sw.x.id), sw.x.key, sw.x.from, sw.x.to, sw.x.log ? 1 : 0] : null, y: sw.ys.map(y => (y.n ? [y.n[0], y.n[1], y.c] : [ix(y.id), y.q, y.c])) };
       if (sw.f) o.s.f = [ix(sw.f.id), sw.f.key, sw.f.vals];
       if (sw.z !== undefined) o.s.z = sw.z === '' ? -1 : ix(sw.z);
+      if (sw.t) o.s.t = 1;
     }
     return JSON.stringify(o);
   }
@@ -962,6 +965,7 @@
       };
       if (o.s.f) out.sweep.f = { id: id(o.s.f[0]), key: o.s.f[1], vals: o.s.f[2] };
       if (o.s.z !== undefined) out.sweep.z = o.s.z < 0 ? '' : id(o.s.z);
+      if (o.s.t) out.sweep.t = 1;
     }
     return out;
   }
