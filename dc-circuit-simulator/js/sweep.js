@@ -6,14 +6,15 @@
  * component (cut-off / active / saturation, on / off…) shaded under the curves.
  * The sweep is part of the circuit (circuit.sweep, kept with the tab, the file and the share link):
  *   { x: { id, key, from, to, log } | null, ys: [{ n: [x, y], c } | { id, q, c }],   (c: colour slot)
- *     f: { id, key, vals: [..] } (family, optional), z: id | '' (regions: a component, none; absent: automatic) }
+ *     f: { id, key, vals: [..] } (family, optional), z: id | '' (regions: a component, none; absent: automatic),
+ *     t: 1 (the same quantities against time, over two periods of the varying sources; x may then be null) }
  * Every point is solved from the solution of the previous one (continuation), there and back (hysteresis).
  * A dashed line marks the value the circuit has now; dragging on the plot sets that value in the circuit. */
 (function (root) {
   'use strict';
   const DCS = root.DCS;
   const C = DCS.comp, N = DCS.netlist, S = DCS.solver, U = DCS.units;
-  const NPTS = 201, NLIVE = 61, NFAM = 121, MAXFAM = 6;
+  const NPTS = 201, NLIVE = 61, NFAM = 121, MAXFAM = 6, NT = 241, NTLIVE = 97;
 
   // the names of the values, written for the axis (the part after _ is a subscript)
   const PNAME = {
@@ -191,6 +192,54 @@
     return { runs };
   }
 
+  /* The evolution in time. The sources that vary are slow sines: the plot shows two periods of the slowest one
+   * (span), from t0. The circuit is solved at n instants, each from the solution of the previous one; a circuit
+   * with memory (Schmitt trigger) is run a second time from the end of the first, so that the picture is the
+   * one it settles to. xid: a source whose own value is also noted (the input, for the comparison). */
+  function timeSpan(circuit) {
+    let T = 0;
+    for (const c of circuit.comps) if (C.waving(c)) T = Math.max(T, C.wavePeriod(c));
+    return 2 * T;
+  }
+  function runTime(circuit, ys, t0, span, n, tempC, zid, xid) {
+    const ts = new Float64Array(n);
+    for (let k = 0; k < n; k++) ts[k] = span * k / (n - 1);
+    const xc = xid ? circuit.comps.find(q => q.id === xid) : null;
+    const at = (k, st) => {
+      const t = t0 + ts[k];
+      const ckt = { comps: circuit.comps.map(q => (C.waving(q) ? withVal(q, C.srcKey(q), C.srcValue(q, t)) : q)), wires: circuit.wires, nodeNames: circuit.nodeNames };
+      const net = N.build(ckt);
+      const res = S.solve(net.ckt, { prevStates: st.states, prevV: st.v && st.v.length === net.ckt.nodeCount ? st.v : null, tempC, budget: 400 });
+      if (!res.ok) return { st: { states: {}, v: null }, vals: null, z: null };
+      const vals = ys.map((y) => {
+        const cv = curve(y, ckt, net);
+        return !cv ? NaN : cv.node != null ? (cv.node ? res.v[cv.node] : 0) : qval(res, cv.c, cv.q);
+      });
+      return { st: { states: Object.assign({}, st.states, res.states), v: res.v }, vals, z: zid && res.el[zid] ? res.el[zid].state || null : null };
+    };
+    function pass(st) {
+      const out = ys.map(() => new Float64Array(n).fill(NaN)), zs = new Array(n).fill(null);
+      for (let k = 0; k < n; k++) {
+        const r = at(k, st);
+        st = r.st;
+        if (!r.vals) continue;
+        r.vals.forEach((v, j) => { out[j][k] = v; });
+        zs[k] = r.z;
+      }
+      return { ys: out, zs, st };
+    }
+    let a = pass({ states: {}, v: null });
+    // the first instant again, coming from the end: another value means memory
+    const again = at(0, a.st).vals;
+    const differs = !again || again.some((v, j) => {
+      const w = a.ys[j][0];
+      return isFinite(v) !== isFinite(w) || (isFinite(v) && Math.abs(v - w) > 1e-6 * Math.max(Math.abs(v), Math.abs(w), 1e-9));
+    });
+    if (differs) a = pass(a.st);
+    const xv = xc && C.waving(xc) ? Float64Array.from(ts, (t) => C.srcValue(xc, t0 + t)) : null;
+    return { t0, span, ts, ys: a.ys, zs: a.zs, xv };
+  }
+
   function niceStep(span) {
     if (!(span > 0)) return 1;
     const e = Math.pow(10, Math.floor(Math.log10(span))), m = span / e;
@@ -214,7 +263,12 @@
     win.hidden = true;
     const head = el('div', 'mon-head');
     const title = el('span', 'mon-title');
-    const csvB = btn('CSV', () => exportCSV());
+    const csvB = btn('CSV', () => exportCSV(), 'sw-csv');
+    // the same quantities against time (two periods), next to the transfer plot or under it
+    const timeB = btn('<span class="sw-ti">∿</span> t', () => { const s = sw(); if (!s || !s.x) return; app.checkpoint(); if (s.t) delete s.t; else s.t = 1; app.commit(); }, 'sw-time');
+    // the rows of settings (what varies, range, family, regions) are put away: more room for the plots
+    const compactOn = () => { const v = app.LS.get('dcs.swCompact'); return v === '1' || v === '0' ? v === '1' : stage.clientWidth < 640 || stage.clientHeight < 440; };
+    const setB = btn('<svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>', () => { app.LS.set('dcs.swCompact', compactOn() ? '0' : '1'); update(false); rearrange(); }, 'sw-set');
     const closeB = btn('✕', () => { app.checkpoint(); delete app.circuit.sweep; stopPick(); setMax(false); app.commit(); });
     // maximize: the window over the whole circuit area (everything keeps working: cursor, limits, family)
     const maxB = btn('⤢', () => setMax(!win.classList.contains('max')));
@@ -222,30 +276,67 @@
       win.classList.toggle('max', on);
       maxB.textContent = on ? '⤡' : '⤢';
       maxB.title = tp(on ? 'sw_restore' : 'iv_expand');
-      requestAnimationFrame(() => { draw(); if (!on) ui.clampFloats(); });
+      requestAnimationFrame(() => { layoutPlots(); draw(); if (!on) rearrange(); });
     }
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && win.classList.contains('max') && !win.hidden) { e.stopPropagation(); setMax(false); } }, true);
     const ghostB = btn('◐', () => { const on = win.classList.toggle('ghost'); ghostB.classList.toggle('on', on); });
     ghostB.title = tp('mon_ghost');
-    head.appendChild(title); head.appendChild(csvB); head.appendChild(maxB); head.appendChild(ghostB); head.appendChild(closeB);
+    head.appendChild(title); head.appendChild(timeB); head.appendChild(setB); head.appendChild(maxB); head.appendChild(ghostB); head.appendChild(closeB);
     const xrow = el('div', 'sw-x');
     const orow = el('div', 'sw-x sw-opt');
     const legend = el('div', 'sw-legend');
-    const cv = el('canvas', 'mon-cv sw-cv');
+    // the plots: the transfer characteristic and the evolution in time, side by side in a wide window (they
+    // share the vertical axis: the output wave is the transfer curve read sideways), one over the other otherwise
+    const plots = el('div', 'mon-cv sw-plots');
+    const cpane = el('div', 'sw-pane'), tpane = el('div', 'sw-pane');
+    const cv = el('canvas', 'sw-cv'), tcv = el('canvas', 'sw-cv sw-tcv');
+    cpane.appendChild(cv); tpane.appendChild(tcv); plots.appendChild(cpane); plots.appendChild(tpane);
+    tpane.hidden = true;
     const read = el('div', 'sw-read');
     const grip = el('div', 'mon-grip');
-    for (const e of [head, xrow, orow, legend, cv, read, grip]) win.appendChild(e);
+    for (const e of [head, xrow, orow, legend, plots, read, grip]) win.appendChild(e);
     stage.appendChild(win);
     ui.dragByHead(win, head);
     ui.floats.push(win);
 
-    // size (kept)
-    const applySize = (sz) => { if (!sz) return; win.style.width = sz.w + 'px'; win.style.right = 'auto'; cv.style.height = sz.h + 'px'; };
-    try { applySize(JSON.parse(app.LS.get('dcs.swSize') || 'null')); } catch (e) { /* none */ }
+    /* size: the width of the window and the height of one plot; kept, one size with a single plot and another
+     * with the two (rows: 2 when they are one over the other) */
+    const GAP = 6;
+    let rows = 1, both = false;
+    const small = () => stage.clientWidth < 640 || stage.clientHeight < 440;
+    const sizeKey = () => (both ? 'dcs.swSize2' : 'dcs.swSize');
+    const saved = () => { try { const z = JSON.parse(app.LS.get(sizeKey()) || 'null'); return z && z.w > 0 && z.h > 0 ? z : null; } catch (e) { return null; } };
+    // what the window would like to be (the arrangement of the windows gives it that, or what there is room for)
+    // (given: the width it is given, which decides whether the two plots are side by side)
+    win._pref = (given) => {
+      const z = saved() || { w: both ? 720 : 440, h: small() ? 130 : both ? 190 : 200 };
+      const wide = both && (given || z.w) >= WIDE;
+      return { w: z.w, h: wide || !both ? z.h : 2 * z.h + GAP, minH: both && !wide ? 2 * 88 + GAP : 96 };
+    };
+    const WIDE = 520;
     // resized from any edge or corner (kept)
-    ui.resizable(win, cv, grip, { minW: 260, minH: 110, onResize: () => draw(), onEnd: () => app.LS.set('dcs.swSize', JSON.stringify({ w: win.offsetWidth, h: cv.offsetHeight })) });
+    ui.resizable(win, plots, grip, { minW: 260, minH: 110, onResize: () => { layoutPlots(); draw(); },
+      onEnd: () => app.LS.set(sizeKey(), JSON.stringify({ w: win.offsetWidth, h: Math.round((plots.offsetHeight - (rows - 1) * GAP) / rows) })) });
+    const rearrange = () => requestAnimationFrame(() => { ui.clampFloats(); layoutPlots(); draw(); });
+    // which plots are shown, and how: side by side when the window is wide enough
+    function layoutPlots() {
+      const s = sw(), tOn = !!(s && s.t), hasX = !!(s && s.x && xcomp());
+      both = tOn && hasX;
+      cpane.hidden = tOn && !hasX;
+      tpane.hidden = !tOn;
+      const max = win.classList.contains('max');
+      const wide = both && win.offsetWidth >= WIDE && (!max || win.offsetWidth > win.offsetHeight);
+      plots.classList.toggle('row', wide);
+      rows = both && !wide ? 2 : 1;
+      win.classList.toggle('compact', compactOn());
+      // (compact, a single curve: the title names it; the legend leaves its room to the plots)
+      win.classList.toggle('one', !!(s && s.ys.length === 1 && !s.f));
+      setB.classList.toggle('on', !compactOn());
+    }
 
     let data = null, dataKey = '', dataFull = false, axisU = null, spec = null;
+    let tdata = null, tKey = '', tFull = false, tspec = null, tRaf = 0, tIdle = 0, yWin = null;
+    const span = () => timeSpan(app.circuit);
     const sw = () => app.circuit.sweep || null;
     const compById = (id) => app.circuit.comps.find(c => c.id === id) || null;
     const xcomp = () => { const s = sw(); return s && s.x ? compById(s.x.id) : null; };
@@ -347,7 +438,7 @@
     function stopPick() { picking = null; app.sweepPicking = false; banner.hidden = true; }
     function cancelPick() {
       const s = sw();
-      if (s && !s.x) { stopPick(); app.checkpoint(); delete app.circuit.sweep; app.commit(); return; }   // nothing to plot yet: no sweep
+      if (s && !s.x && !s.t) { stopPick(); app.checkpoint(); delete app.circuit.sweep; app.commit(); return; }   // nothing to plot yet: no sweep
       stopPick(); update(false);
     }
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && picking && !banner.hidden) { e.stopPropagation(); cancelPick(); } }, true);
@@ -359,6 +450,11 @@
       const x = btn('✕', cancelPick, 'swpick-x');
       x.title = tp('cancel_esc');
       banner.appendChild(x);
+      // a source varies: the quantities can also be plotted against time
+      const s = sw();
+      if (picking === 'x' && s && !s.t && app.waving()) {
+        banner.appendChild(btn('<span class="sw-ti">∿</span> ' + esc(t('sw_time_pick')), () => { const s2 = sw(); if (!s2) return; app.checkpoint(); s2.t = 1; stopPick(); app.sel.clear(); app.commit(); }, 'swpick-t'));
+      }
       banner.hidden = false;
     }
     // the editor hands over the component tapped while picking; true when it was taken
@@ -444,7 +540,17 @@
       const s = sw(), c = xcomp();
       xrow.innerHTML = ''; orow.innerHTML = '';
       if (!s) return;
+      const csv = () => { csvB.title = tp('sw_csv'); const sp = el('span', 'sw-grow'); return [sp, csvB]; };
       if (!c || picking === 'x') {
+        if (s.t) {
+          // against time only: a transfer plot can be added
+          const ab = btn('+ ' + esc(t('sw_add_x')), () => startPick('x'), 'sw-fam');
+          ab.title = tp('sw_pick');
+          xrow.appendChild(ab);
+          zonesSel(xrow);
+          for (const e of csv()) xrow.appendChild(e);
+          return;
+        }
         xrow.appendChild(el('span', 'sw-ask', esc(t('sw_pick'))));
         if (c) xrow.appendChild(btn('✕', () => { stopPick(); render(); }, 'sw-cancel'));
         return;
@@ -466,6 +572,12 @@
         const lb = btn('log', () => { app.checkpoint(); s.x.log = !s.x.log; app.commit(); }, 'sw-log' + (s.x.log ? ' on' : ''));
         lb.title = tp('sw_log');
         xrow.appendChild(lb);
+      }
+      if (s.t) {
+        // with the plot against time: the transfer plot can go
+        const xx = btn('✕', () => { app.checkpoint(); s.x = null; delete s.f; app.commit(); }, 'sw-cancel');
+        xx.title = tp('sw_x_del');
+        xrow.appendChild(xx);
       }
       // family
       const fc = fcomp(), fp = fparam();
@@ -502,18 +614,22 @@
         orow.appendChild(fb);
       }
       // regions
-      const nl = app.circuit.comps.filter(zoneable);
-      if (nl.length && !(fc && fp) && picking !== 'f') {
-        orow.appendChild(el('span', 'sw-lab sw-zl', esc(t('sw_zones'))));
-        const zs = el('select', 'sw-key');
-        const z = zcomp();
-        zs.appendChild(Object.assign(el('option', null, '—'), { value: '' }));
-        for (const q of nl) zs.appendChild(Object.assign(el('option', null, esc(q.name)), { value: q.id }));
-        zs.value = z ? z.id : '';
-        zs.title = tp('sw_zones_tip');
-        zs.addEventListener('change', () => { app.checkpoint(); s.z = zs.value; app.commit(); });
-        orow.appendChild(zs);
-      }
+      if (!(fc && fp) && picking !== 'f') zonesSel(orow);
+      for (const e of csv()) orow.appendChild(e);
+    }
+    // the component whose regions are shaded, chosen in a list
+    function zonesSel(row) {
+      const s = sw(), nl = app.circuit.comps.filter(zoneable);
+      if (!nl.length) return;
+      row.appendChild(el('span', 'sw-lab sw-zl', esc(t('sw_zones'))));
+      const zs = el('select', 'sw-key');
+      const z = zcomp();
+      zs.appendChild(Object.assign(el('option', null, '—'), { value: '' }));
+      for (const q of nl) zs.appendChild(Object.assign(el('option', null, esc(q.name)), { value: q.id }));
+      zs.value = z ? z.id : '';
+      zs.title = tp('sw_zones_tip');
+      zs.addEventListener('change', () => { app.checkpoint(); s.z = zs.value; app.commit(); });
+      row.appendChild(zs);
     }
 
     // (drawn into a box aside and put in place only when it changed: a live refresh, 30 times a second while a
@@ -569,6 +685,11 @@
     /* ---------- refresh: after every change (live: while a value is dragged) ---------- */
     let liveRaf = 0;
     function update(live) {
+      const shown = !win.hidden;
+      update0(live);
+      if (shown && win.hidden) rearrange();   // (gone: the other windows and the circuit take the room)
+    }
+    function update0(live) {
       const s = sw();
       const hidden = (app.quizHidden && app.quizHidden());
       if (!s || hidden) {
@@ -584,7 +705,7 @@
       if (!s.ys.length) { delete app.circuit.sweep; win.hidden = true; stopPick(); return; }
       if (s.x && !xcomp()) s.x = null;
       if (s.f && (!fcomp() || !fparam())) delete s.f;
-      if (!s.x && picking !== 'x') { inUpdate = true; startPick('x'); inUpdate = false; }
+      if (!s.x && !s.t && picking !== 'x') { inUpdate = true; startPick('x'); inUpdate = false; }
       if (picking) {
         win.hidden = true; closeMenu(); document.getElementById('selbar').hidden = true;
         // (drawn again only when it changes: not under the finger at every live refresh)
@@ -592,19 +713,26 @@
         return;
       }
       banner.hidden = true;
-      const wasHidden = win.hidden;
+      const wasHidden = win.hidden, was = rows + '|' + both + '|' + win.classList.contains('compact');
       win.hidden = false;
-      if (wasHidden) requestAnimationFrame(() => { ui.clampFloats(); makeRoom(); });
-      csvB.title = tp('sw_csv'); closeB.title = tp('close'); maxB.title = tp(win.classList.contains('max') ? 'sw_restore' : 'iv_expand');
+      layoutPlots();
+      // (shown, or its plots changed: the windows are arranged again, clear of each other and of the circuit)
+      if (wasHidden || was !== rows + '|' + both + '|' + win.classList.contains('compact')) rearrange();
+      closeB.title = tp('close'); maxB.title = tp(win.classList.contains('max') ? 'sw_restore' : 'iv_expand');
+      setB.title = tp('sw_settings');
+      timeB.hidden = !(s.x && (s.t || app.waving()));
+      timeB.classList.toggle('on', !!s.t); timeB.title = tp('sw_time_tip');
       const cvs = s.ys.map(y => curve(y, app.circuit, net));
       // the unit of the y axis: the one chosen, else that of the first curve
       const units = cvs.filter(Boolean).map(q => q.u);
       if (!units.includes(axisU)) axisU = units[0] || 'V';
       const c = xcomp();
       const names = cvs.filter(q => q && q.u === axisU).map(q => sub(q.name));
-      title.innerHTML = (names.length ? names.join(', ') : esc(t('sw_title'))) + (c ? ' <span class="sw-vs">' + esc(t('sw_vs')) + '</span> ' + sub(paramName(c, s.x.key)) : '');
+      const th = (names.length ? names.join(', ') : esc(t('sw_title'))) + ' <span class="sw-vs">' + esc(t('sw_vs')) + '</span> ' + (c ? sub(paramName(c, s.x.key)) : '<i>t</i>');
+      if (title.dataset.h !== th) { title.dataset.h = th; title.innerHTML = th; }
       if (!live) render();
-      if (!c) { data = null; spec = null; renderLegend(cvs); draw(); readout(cvs); return; }
+      if (s.t) timeData(s, live); else { tdata = null; tKey = ''; }
+      if (!c) { data = null; dataKey = ''; spec = null; renderLegend(cvs); draw(); readout(cvs); return; }
       const key = keyOf(s);
       if (key !== dataKey || (!live && !dataFull)) {
         if (live) {
@@ -622,13 +750,45 @@
       draw();
       readout(cvs);
     }
-    // the window has just appeared over the circuit: the circuit is fitted in the room left above it
-    function makeRoom() {
-      if (win.hidden) return;
-      const st = stage.getBoundingClientRect(), r = win.getBoundingClientRect(), b = app.circuitBounds(app.circuit), v = app.view;
-      if (!b) return;
-      const x0 = st.left + b[0] * v.scale + v.ox, x1 = st.left + b[2] * v.scale + v.ox, y1 = st.top + b[3] * v.scale + v.oy;
-      if (y1 > r.top && x1 > r.left && x0 < r.right && r.top - st.top > 130) app.fit({ bottom: st.bottom - r.top - 40 });
+    /* ---------- against time: two periods of the slowest source, the page the present instant is in ---------- */
+    const page = () => { const sp = span(); return sp ? Math.floor(C.wave.t / sp + 1e-9) : 0; };
+    // the input drawn with the curves against time: the source that varies in the transfer plot; without a
+    // transfer plot, the only source that varies
+    function inputComp(s) {
+      const xc = xcomp();
+      if (xc) return C.waving(xc) && s.x.key === C.srcKey(xc) ? xc : null;
+      const ws = app.circuit.comps.filter(C.waving);
+      return ws.length === 1 ? ws[0] : null;
+    }
+    function timeKey(s) {
+      const z = zcomp();
+      return JSON.stringify([app.circuit.comps, app.circuit.wires, app.circuit.nodeNames, s.ys.map(y => [y.n, y.id, y.q]), s.x && s.x.id, z && z.id, app.settings.tempC, Array.from(C.pressed), page()]);
+    }
+    function safeTime(s, n) {
+      const sp = span(), z = zcomp();
+      if (!sp) return null;
+      const ic = inputComp(s);
+      try { return runTime(app.circuit, s.ys, page() * sp, sp, n, app.settings.tempC, z && z.id, ic && ic.id); } catch (e) { console.error(e); return null; }
+    }
+    function timeData(s, live) {
+      const key = timeKey(s);
+      if (key === tKey) return;
+      if (!live || !tdata) { tdata = safeTime(s, NT); tKey = key; tFull = true; clearTimeout(tIdle); return; }
+      // while a value is dragged: fewer instants, once per frame; all of them once it rests
+      if (!tRaf) tRaf = requestAnimationFrame(() => {
+        tRaf = 0;
+        const s2 = sw();
+        if (!s2 || !s2.t) return;
+        tdata = safeTime(s2, NTLIVE); tKey = timeKey(s2); tFull = false;
+        draw();
+      });
+      clearTimeout(tIdle);
+      tIdle = setTimeout(() => {
+        const s2 = sw();
+        if (!s2 || !s2.t || tFull) return;
+        tdata = safeTime(s2, NT); tKey = timeKey(s2); tFull = true;
+        draw();
+      }, 220);
     }
     function safeRun(s, n) {
       const z = zcomp();
@@ -689,7 +849,17 @@
     const slopeUnit = (yu, xu) => (xu ? yu + '/' + xu : yu);
     function readout(cvs) {
       const s = sw(), c = xcomp(), p = xparam();
-      if (!c || !p) { read.innerHTML = ''; return; }
+      if (!c || !p) {
+        if (!s || !s.t) { read.innerHTML = ''; return; }
+        // against time only: the instant and the values now
+        const vals = now(cvs), sp = span();
+        const parts = sp ? ['<b><i>t</i> = ' + esc(U.format(C.wave.t - page() * sp, 's', { digits: 3 })) + '</b>'] : [];
+        s.ys.forEach((y, j) => { if (cvs[j]) parts.push(`<span style="color:${DCS.iv.slot(y.c)}">${sub(cvs[j].name)} = ${esc(fmt(vals[j], cvs[j].u))}</span>`); });
+        const zc = zcomp(), res = app.result && app.result.ok ? app.result : null;
+        if (zc && res && res.el[zc.id] && zoneSet(zc)[res.el[zc.id].state]) parts.push(esc(zc.name) + ' ' + esc(t(zoneSet(zc)[res.el[zc.id].state][0])));
+        read.innerHTML = parts.join(' · ');
+        return;
+      }
       const vals = now(cvs);
       const parts = ['<b>' + sub(paramName(c, s.x.key)) + ' = ' + esc(fmt(valNow(c, s.x.key), p.unit, 4)) + '</b>'];
       const fam = !!fcomp();
@@ -700,7 +870,7 @@
       s.ys.forEach((y, j) => {
         if (!cvs[j]) return;
         const k = sl ? sl[j] : NaN;
-        const slope = isFinite(k) ? ` <span class="sw-slope">(${esc(t('sw_slope'))} ${esc(U.format(k, slopeUnit(cvs[j].u, p.unit), { digits: 3, zero: 1e-300 }))})</span>` : '';
+        const slope = isFinite(k) && !win.classList.contains('compact') ? ` <span class="sw-slope">(${esc(t('sw_slope'))} ${esc(U.format(k, slopeUnit(cvs[j].u, p.unit), { digits: 3, zero: 1e-300 }))})</span>` : '';
         const color = fam ? (act >= 0 ? DCS.iv.slot(act) : 'var(--fg)') : DCS.iv.slot(y.c);
         parts.push(`<span style="color:${color}">${sub(cvs[j].name)} = ${esc(fmt(vals[j], cvs[j].u))}</span>${slope}`);
       });
@@ -709,20 +879,47 @@
       read.innerHTML = parts.join(' · ');
     }
 
+    // low plots (a phone): the name of the y axis, which is in the title and the legend, leaves its room
+    const tight = () => (cpane.hidden ? tpane : cpane).clientHeight < 150;
     function draw() {
-      const s = sw(), c = xcomp(), p = xparam();
       if (win.hidden) return;
+      yWin = null;
+      if (!cpane.hidden) drawX();
+      if (!tpane.hidden) drawTime();
+    }
+    // nothing to plot: a few words in the middle
+    function message(cv, text) {
+      const ctx = cv.getContext('2d'), col = DCS.render.colors();
+      const dpr = Math.min(3, window.devicePixelRatio || 1), W = cv.clientWidth, H = cv.clientHeight;
+      if (!W || !H) return;
+      cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.fillStyle = col.bg; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = col.muted; ctx.font = '13px ui-sans-serif, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      // (two lines when it does not fit)
+      const words = text.split(' '), lines = [''];
+      for (const w of words) { const k = lines.length - 1, tr = lines[k] ? lines[k] + ' ' + w : w; if (ctx.measureText(tr).width > W - 24 && lines[k]) lines.push(w); else lines[k] = tr; }
+      lines.forEach((ln, k) => ctx.fillText(ln, W / 2, H / 2 + (k - (lines.length - 1) / 2) * 17));
+    }
+    // the input (the source that varies in the transfer plot) is drawn with the curves against time when it
+    // has their unit and is not one of them already
+    function inputShown(s) {
+      const ic = inputComp(s);
+      return !!(ic && tdata && tdata.xv && (ic.type === 'vsource' ? 'V' : 'A') === axisU && !s.ys.some(y => y.id === ic.id && (y.q === 'v' || y.q === 'i')));
+    }
+    // a single curve on the axis: a line at its present value, across both plots (the point of the transfer
+    // curve and the point of the wave are at the same height)
+    function guide(s, cvs, vals) {
+      if (!s.t || !tdata) return null;
+      const on = s.ys.map((y, j) => j).filter(j => cvs[j] && cvs[j].u === axisU);
+      return on.length === 1 && isFinite(vals[on[0]]) ? vals[on[0]] : null;
+    }
+    function drawX() {
+      const s = sw(), c = xcomp(), p = xparam();
       const ctx = cv.getContext('2d');
       const col = DCS.render.colors();
       if (!s || !c || !p || !data) {
-        // nothing to plot yet: the question, in the middle
-        const dpr = Math.min(3, window.devicePixelRatio || 1), W = cv.clientWidth, H = cv.clientHeight;
-        if (!W || !H) return;
-        cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        ctx.fillStyle = col.bg; ctx.fillRect(0, 0, W, H);
-        ctx.fillStyle = col.muted; ctx.font = '13px ui-sans-serif, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(tp(data === null && c ? 'sw_none' : 'sw_pick_short'), W / 2, H / 2);
+        message(cv, tp(data === null && c ? 'sw_none' : 'sw_pick_short'));
         spec = null;
         return;
       }
@@ -768,12 +965,20 @@
       });
       // with a family, the point of the circuit now (between the curves when its value is not one of them)
       if (fam && inRange) s.ys.forEach((y, j) => { if (cvs[j] && cvs[j].u === axisU && isFinite(vals[j])) points.push({ v: xv, i: vals[j], small: true, color: act >= 0 ? DCS.iv.slot(act) : col.fg }); });
+      // the curves against time are on the same vertical axis
+      if (!tpane.hidden && tdata) {
+        const ext = (ys) => { for (let k = 0; k < ys.length; k++) { const v = ys[k]; if (isFinite(v)) { if (v < lo) lo = v; if (v > hi) hi = v; } } };
+        s.ys.forEach((y, j) => { if (cvs[j] && cvs[j].u === axisU && tdata.ys[j]) ext(tdata.ys[j]); });
+        if (inputShown(s)) ext(tdata.xv);
+      }
       if (!isFinite(lo)) { lo = -1; hi = 1; }
       let span = hi - lo;
       if (span < 1e-12 * Math.max(1, Math.abs(hi))) { const m = Math.abs(hi) * 0.1 || 1; lo -= m; hi += m; span = hi - lo; }
       const x0 = Math.min(s.x.from, s.x.to), x1 = Math.max(s.x.from, s.x.to);
       const lg = !!s.x.log && x0 > 0;
       const pw = { v0: x0, v1: x1 > x0 ? x1 : x0 + 1, i0: lo - 0.08 * span, i1: hi + 0.08 * span };
+      yWin = { i0: pw.i0, i1: pw.i1 };
+      const gv = guide(s, cvs, vals);
       // the regions of the chosen component, as bands from one point to the next
       const regions = [];
       const zc = zcomp(), zs = !fam && data.runs[0].zs;
@@ -794,12 +999,12 @@
       const yn = cvs.filter(q => q && q.u === axisU);
       spec = {
         win: pw, xlab: paramName(c, s.x.key), ylab: yn.length === 1 ? yn[0].name : axisU, xu: p.unit, yu: axisU, xlog: lg,
-        series, points, lines: [{ vt: xv }], regions
+        series, points, lines: gv == null ? [{ vt: xv }] : [{ vt: xv }, { hz: gv }], regions, tight: tight()
       };
       DCS.iv.draw(cv, spec, null);
       // hysteresis: an arrow on the jump of each way (up on the way there, down on the way back)
       if (jumps.length) {
-        const W = cv.clientWidth, H = cv.clientHeight, P = DCS.iv.PAD, w = spec.win;
+        const W = cv.clientWidth, H = cv.clientHeight, P = Object.assign({}, DCS.iv.PAD, spec.tight ? { T: DCS.iv.TIGHT_T } : null), w = spec.win;
         const lgx = (v) => (lg ? Math.log10(v) : v);
         const X = (v) => P.L + (lgx(v) - lgx(w.v0)) / (lgx(w.v1) - lgx(w.v0)) * (W - P.L - P.R);
         const Y = (v) => H - P.B - (v - w.i0) / (w.i1 - w.i0) * (H - P.T - P.B);
@@ -815,6 +1020,86 @@
         }
       }
     }
+
+    // the curves against time: two periods, the present instant marked (dashed line, a point on each curve)
+    function drawTime() {
+      const s = sw(), sp = span(), col = DCS.render.colors();
+      if (!s || !sp || !tdata) { message(tcv, tp(sp ? 'sw_none' : 'sw_t_none')); tspec = null; return; }
+      const cvs = s.ys.map(y => curve(y, app.circuit, app.net));
+      const vals = now(cvs);
+      const fam = !!fcomp(), act = fam ? activeFam() : -1;
+      const ts = tdata.ts, series = [], points = [];
+      // (the page of the data: while a new page is being computed the instant is kept inside the old one)
+      const tnow = Math.max(0, Math.min(tdata.span, C.wave.t - tdata.t0));
+      let lo = Infinity, hi = -Infinity;
+      const add = (ys, o) => {
+        let pts = [];
+        const flush = () => { if (pts.length > 1) series.push(Object.assign({ pts }, o)); pts = []; };
+        for (let k = 0; k < ts.length; k++) {
+          const v = ys[k];
+          if (!isFinite(v)) { flush(); continue; }
+          pts.push([ts[k], v]);
+          if (v < lo) lo = v; if (v > hi) hi = v;
+        }
+        flush();
+      };
+      // the input first (under the curves): dashed, with its name at its end
+      const xc = xcomp(), ic = inputComp(s);
+      if (inputShown(s)) {
+        add(tdata.xv, { name: ic.name, color: 'muted', dash: [5, 4], width: 1.6, inline: true });
+        points.push({ v: tnow, i: C.srcValue(ic), small: true, color: col.muted });
+      }
+      s.ys.forEach((y, j) => {
+        if (!cvs[j] || cvs[j].u !== axisU || !tdata.ys[j]) return;
+        const color = fam ? (act >= 0 ? DCS.iv.slot(act) : col.fg) : DCS.iv.slot(y.c);
+        add(tdata.ys[j], { name: cvs[j].name, color, dash: fam ? DASHES[dashIdx(s, y)] : null, width: 2 });
+        if (isFinite(vals[j])) points.push({ v: tnow, i: vals[j], small: true, color });
+      });
+      if (!isFinite(lo)) { lo = -1; hi = 1; }
+      let dy = hi - lo;
+      if (dy < 1e-12 * Math.max(1, Math.abs(hi))) { const m = Math.abs(hi) * 0.1 || 1; lo -= m; hi += m; dy = hi - lo; }
+      // (next to the transfer plot: its vertical axis)
+      const yw = yWin || { i0: lo - 0.08 * dy, i1: hi + 0.08 * dy };
+      const regions = [];
+      const zc = zcomp(), zs = tdata.zs;
+      if (zc && zs) {
+        const zset = zoneSet(zc);
+        let k0 = 0;
+        for (let k = 1; k <= ts.length; k++) {
+          if (k < ts.length && zs[k] === zs[k0]) continue;
+          const st = zs[k0];
+          if (st && zset[st]) regions.push({ v0: k0 === 0 ? 0 : (ts[k0 - 1] + ts[k0]) / 2, v1: k === ts.length ? tdata.span : (ts[k - 1] + ts[k]) / 2, i0: yw.i0, i1: yw.i1, color: colOf(zset[st][1]) });
+          k0 = k;
+        }
+      }
+      const yn = cvs.filter(q => q && q.u === axisU);
+      const gv = xc ? guide(s, cvs, vals) : null;
+      tspec = {
+        win: { v0: 0, v1: tdata.span, i0: yw.i0, i1: yw.i1 }, xlab: 't', ylab: yn.length === 1 ? yn[0].name : axisU, xu: 's', yu: axisU,
+        series, points, lines: gv == null ? [{ vt: tnow }] : [{ vt: tnow }, { hz: gv }], regions, tight: tight()
+      };
+      DCS.iv.draw(tcv, tspec, null);
+    }
+    /* dragging on the plot against time moves the time itself (it is held meanwhile): the circuit is seen at
+     * that instant, running or paused */
+    let scrub = null;
+    const scrubTo = (e) => {
+      if (!tspec || !tdata) return;
+      const b = tcv.getBoundingClientRect();
+      const x = DCS.iv.xInv(tspec, tcv.clientWidth, e.clientX - b.left);
+      C.wave.t = tdata.t0 + Math.max(0, Math.min(tdata.span * (1 - 1e-6), x));
+      app.circuitChanged(true);
+    };
+    tcv.addEventListener('pointerdown', (e) => {
+      if (!tspec) return;
+      e.preventDefault();
+      scrub = e.pointerId; C.wave.scrub = true;
+      try { tcv.setPointerCapture(e.pointerId); } catch (_) {}
+      scrubTo(e);
+    });
+    tcv.addEventListener('pointermove', (e) => { if (scrub === e.pointerId) scrubTo(e); });
+    const endScrub = (e) => { if (scrub !== e.pointerId) return; scrub = null; C.wave.scrub = false; };
+    tcv.addEventListener('pointerup', endScrub); tcv.addEventListener('pointercancel', endScrub);
 
     /* ---------- the cursor: dragging on the plot sets the value in the circuit ---------- */
     let drag = null;
@@ -861,7 +1146,7 @@
       const xs = data.runs[0].xs, x = DCS.iv.xInv(spec, cv.clientWidth, px);
       let kx = 0;
       for (let k = 1; k < xs.length; k++) if (Math.abs(xs[k] - x) < Math.abs(xs[kx] - x)) kx = k;
-      const P = DCS.iv.PAD, w = spec.win, H = cv.clientHeight;
+      const P = Object.assign({}, DCS.iv.PAD, spec.tight ? { T: DCS.iv.TIGHT_T } : null), w = spec.win, H = cv.clientHeight;
       const Y = (v) => H - P.B - (v - w.i0) / (w.i1 - w.i0) * (H - P.T - P.B);
       const cvs = s.ys.map(y => curve(y, app.circuit, app.net));
       let best = -1, bd = 14;
@@ -878,10 +1163,30 @@
 
     function exportCSV() {
       const s = sw(), c = xcomp();
-      if (!s || !c || !data || !dataFull) return;
+      if (!s) return;
       const cvs = s.ys.map(y => curve(y, app.circuit, app.net));
-      const p = xparam();
       const plain = (n, u) => n.replace(/_/g, '') + (u ? ' (' + u + ')' : '');
+      const save = (lines, what) => {
+        const blob = new Blob([lines.join('\n') + '\n'], { type: 'text/csv' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = ((app.tabs[app.tabIdx] && app.tabs[app.tabIdx].name) || 'sweep').replace(/[^\w\- ]+/g, '_') + ' - ' + what + '.csv';
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      };
+      const row = (vs) => vs.map(v => (isFinite(v) ? Number(v.toPrecision(8)) : '')).join(',');
+      const quote = (cols) => cols.map(x => '"' + x.replace(/"/g, '') + '"').join(',');
+      // against time only: the instants and the values (with the transfer plot: the points of the sweep)
+      if (!c) {
+        if (!tdata) return;
+        const on = cvs.map((q, j) => (q ? j : -1)).filter(j => j >= 0);
+        const lines = [quote(['t (s)'].concat(on.map(j => plain(cvs[j].name, cvs[j].u))))];
+        for (let k = 0; k < tdata.ts.length; k++) lines.push(row([tdata.ts[k]].concat(on.map(j => tdata.ys[j][k]))));
+        save(lines, 'time');
+        return;
+      }
+      if (!data || !dataFull) return;
+      const p = xparam();
       const fc = fcomp(), fp = fparam();
       const cols = [plain(paramName(c, s.x.key), p.unit)];
       const xs = data.runs[0].xs;
@@ -894,14 +1199,9 @@
           if (r.back && r.back[j]) { cols.push(plain(q.name, q.u) + tag + ' ←'); colsData.push(r.back[j]); }
         });
       }
-      const lines = [cols.map(x => '"' + x.replace(/"/g, '') + '"').join(',')];
-      for (let k = 0; k < xs.length; k++) lines.push([xs[k]].concat(colsData.map(ys => ys[k])).map(v => (isFinite(v) ? Number(v.toPrecision(8)) : '')).join(','));
-      const blob = new Blob([lines.join('\n') + '\n'], { type: 'text/csv' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = ((app.tabs[app.tabIdx] && app.tabs[app.tabIdx].name) || 'sweep').replace(/[^\w\- ]+/g, '_') + ' - sweep.csv';
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+      const lines = [quote(cols)];
+      for (let k = 0; k < xs.length; k++) lines.push(row([xs[k]].concat(colsData.map(ys => ys[k]))));
+      save(lines, 'sweep');
     }
 
     // the probes drawn on the circuit: the nodes measured, with their letter in the colour of the curve
@@ -919,8 +1219,8 @@
       return out;
     }
 
-    return { update, fromSelection, canMeasure, pick, probes, stopPick };
+    return { update, fromSelection, canMeasure, pick, probes, stopPick, win };
   }
 
-  DCS.sweep = { init, params, quantities, run, runAll, defRange, defFamily, paramName };
+  DCS.sweep = { init, params, quantities, run, runAll, runTime, timeSpan, defRange, defFamily, paramName };
 })(window);
