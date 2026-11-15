@@ -469,6 +469,41 @@
       }
     });
     function syncSelbar() {
+      syncSelbar0();
+      ui.placeSelbar();
+    }
+    /* the selection toolbar stays clear of the plot windows: at its place (bottom, centred) when it is free;
+     * otherwise centred in the free part of the bottom strip beside the windows; otherwise just above them */
+    ui.placeSelbar = function () {
+      const bar = $('selbar'), st = $('stage');
+      Object.assign(bar.style, { left: '', right: '', bottom: '', marginLeft: '', marginRight: '', maxWidth: '' });
+      if (bar.hidden) return;
+      const wins = Array.from(st.querySelectorAll('.monitor, .qslider')).filter(w => !w.hidden && w.offsetWidth && !w.classList.contains('max') && !w.classList.contains('ghost'));
+      if (!wins.length) return;
+      const box = (e) => [e.offsetLeft, e.offsetTop, e.offsetLeft + e.offsetWidth, e.offsetTop + e.offsetHeight];
+      const hit = (a, q) => a[2] > q[0] && a[0] < q[2] && a[3] > q[1] && a[1] < q[3];
+      const b = box(bar);
+      const over = wins.map(box).filter(q => hit(b, q));
+      if (!over.length) return;
+      const W = st.clientWidth, H = st.clientHeight, bw = bar.offsetWidth, bh = bar.offsetHeight;
+      // the free stretches of the strip the toolbar is in (the zoom buttons on the right stay clear)
+      const inStrip = wins.map(box).filter(q => q[3] > b[1] && q[1] < b[3]).sort((p, q) => p[0] - q[0]);
+      let x = 6, best = null, widest = null;
+      for (const q of inStrip.concat([[W - 56, 0, W, 0]])) {
+        const w = q[0] - 6 - x;
+        if (w >= bw && (!best || w > best[1])) best = [x, w];
+        if (!widest || w > widest[1]) widest = [x, w];
+        x = Math.max(x, q[2] + 6);
+      }
+      if (best) { Object.assign(bar.style, { left: Math.round(best[0] + (best[1] - bw) / 2) + 'px', right: 'auto', marginLeft: '0', marginRight: '0' }); return; }
+      // above the windows it was over (the circuit is fitted with room for it there)
+      const top = Math.min(...over.map(q => q[1]));
+      if (top - bh - 8 >= 46) { bar.style.bottom = (H - top + 8) + 'px'; return; }
+      // no room for all of it (a phone held sideways, a column of plots): narrower, in the widest free stretch;
+      // its buttons scroll sideways under the finger
+      if (widest && widest[1] >= 120) Object.assign(bar.style, { left: Math.round(widest[0]) + 'px', right: 'auto', marginLeft: '0', marginRight: '0', maxWidth: Math.round(widest[1]) + 'px' });
+    };
+    function syncSelbar0() {
       const bar = $('selbar');
       const cs = app.selectedComps();
       const placing = app.tool === 'place';
@@ -1759,6 +1794,7 @@
         if (!rs || rs.id !== e.pointerId) return;
         rs = null; win.classList.remove('resizing');
         o.onEnd();
+        ui.placeSelbar();
       };
       for (const h of handles.concat([grip])) {
         h.addEventListener('pointerdown', down); h.addEventListener('pointermove', move);
@@ -1782,7 +1818,7 @@
         Object.assign(win.style, { left: x + 'px', top: y + 'px', right: 'auto', bottom: 'auto' });
         win.dataset.placed = '1';   // (put somewhere by hand: the arrangement leaves it alone)
       });
-      head.addEventListener('pointerup', () => { d = null; });
+      head.addEventListener('pointerup', () => { if (d) ui.placeSelbar(); d = null; });
     }
     for (let k = 0; k < MAXMON; k++) monWins.push(makeMonWin(k));
     ui.dragByHead = dragByHead;
@@ -1889,10 +1925,11 @@
       if (!covered && !arrFitted) return;
       arrFitted = true;
       if (mode === 'side') app.fit({ right: W - Math.min(...rects.map(r => r[0])) + 6 });
-      else app.fit({ bottom: Math.max(0, H - Math.min(...rects.map(r => r[1])) - 48) });
+      else app.fit({ bottom: Math.max(0, H - Math.min(...rects.map(r => r[1])) - 20) });
     };
     ui.clampFloats = function () {
       ui.arrange();
+      requestAnimationFrame(() => ui.placeSelbar());
       const st = $('stage');
       const W = st.clientWidth, H = st.clientHeight;
       let wins;

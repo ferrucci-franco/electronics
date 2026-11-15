@@ -512,6 +512,8 @@
     // load lines
     ctx.setLineDash([6, 4]); ctx.strokeStyle = col.muted; ctx.lineWidth = 1.6;
     for (const ln of spec.lines) {
+      // (thin: a cursor or a guide, not a load line)
+      if (ln.thin) { ctx.setLineDash([3, 3]); ctx.lineWidth = 1; ctx.globalAlpha = 0.75; } else { ctx.setLineDash([6, 4]); ctx.lineWidth = 1.6; ctx.globalAlpha = 1; }
       ctx.beginPath();
       if (ln.pts) ln.pts.forEach(([v, i], k) => { if (k) ctx.lineTo(X(v), Y(i)); else ctx.moveTo(X(v), Y(i)); });
       else if (ln.p1) {
@@ -524,7 +526,7 @@
       else { ctx.moveTo(X(w.v0), Y((ln.v - w.v0) / ln.r)); ctx.lineTo(X(w.v1), Y((ln.v - w.v1) / ln.r)); }
       ctx.stroke();
     }
-    ctx.setLineDash([]);
+    ctx.setLineDash([]); ctx.globalAlpha = 1;
     // curves
     ctx.lineJoin = 'round'; ctx.lineCap = 'round';
     for (const s of spec.series) {

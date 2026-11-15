@@ -58,8 +58,9 @@
     let a, b;
     if (p.key === 'V' || p.key === 'I') {
       const m = 2 * Math.abs(v) || (p.key === 'V' ? 10 : 0.01); a = -m; b = m;
-      // a varying source: the whole swing inside the range
-      if (C.waving(c)) { const A = Math.abs(+c.props.amp || 0); a = Math.min(a, v - 1.25 * A); b = Math.max(b, v + 1.25 * A); }
+      // a varying source: its swing, with a margin (what the circuit goes through)
+      const A = C.waving(c) ? Math.abs(+c.props.amp || 0) : 0;
+      if (A > 0) { a = Number((v - 1.25 * A).toPrecision(3)); b = Number((v + 1.25 * A).toPrecision(3)); }
     }
     else if (v > 0) { a = 0; b = 2 * v; }
     else if (v < 0) { a = 2 * v; b = 0; }
@@ -513,11 +514,13 @@
       const wrap = el('span', 'sw-field');
       const inp = el('input', 'sw-in');
       inp.type = 'text'; inp.value = fmtNum(value); inp.title = title;
+      if (wheelKey) inp.dataset.k = wheelKey;
       inp.setAttribute('inputmode', 'decimal'); inp.spellcheck = false;
       inp.addEventListener('change', () => {
         const v = U.parse(inp.value);
         if (!isFinite(v)) { inp.value = fmtNum(value); return; }
-        onSet(v);
+        // (applied once the focus has moved: Tab goes on to the next field, which keeps the focus after the redraw)
+        setTimeout(() => onSet(v), 0);
       });
       inp.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Enter') inp.blur(); });
       if (wheelKey) inp.addEventListener('wheel', (e) => onWheel(e, wheelKey), { passive: false });
@@ -536,15 +539,23 @@
     }
 
     /* ---------- the rows: what varies (component, value, range, scale); family and regions ---------- */
+    // the rows are drawn again after every change: the control that has the focus (Tab from a field to the next
+    // one) gets it back in the new rows, found by its key (data-k)
     function render() {
+      const a = document.activeElement, fk = a && win.contains(a) && a.dataset ? a.dataset.k : null;
+      render0();
+      if (fk) { const e = win.querySelector('[data-k="' + fk + '"]'); if (e && e !== a) { e.focus({ preventScroll: true }); if (e.select && e.tagName === 'INPUT') e.select(); } }
+    }
+    const K = (e, k) => { e.dataset.k = k; return e; };
+    function render0() {
       const s = sw(), c = xcomp();
       xrow.innerHTML = ''; orow.innerHTML = '';
       if (!s) return;
-      const csv = () => { csvB.title = tp('sw_csv'); const sp = el('span', 'sw-grow'); return [sp, csvB]; };
+      const csv = () => { csvB.title = tp('sw_csv'); K(csvB, 'csv'); const sp = el('span', 'sw-grow'); return [sp, csvB]; };
       if (!c || picking === 'x') {
         if (s.t) {
           // against time only: a transfer plot can be added
-          const ab = btn('+ ' + esc(t('sw_add_x')), () => startPick('x'), 'sw-fam');
+          const ab = K(btn('+ ' + esc(t('sw_add_x')), () => startPick('x'), 'sw-fam'), 'addx');
           ab.title = tp('sw_pick');
           xrow.appendChild(ab);
           zonesSel(xrow);
@@ -555,27 +566,38 @@
         if (c) xrow.appendChild(btn('✕', () => { stopPick(); render(); }, 'sw-cancel'));
         return;
       }
-      const cb = btn(esc(c.name), () => startPick('x'), 'sw-comp');
+      const cb = K(btn(esc(c.name), () => startPick('x'), 'sw-comp'), 'xc');
       cb.title = tp('sw_change');
       xrow.appendChild(cb);
       const sel = paramSelect(c, s.x.key, s.f && s.f.id === c.id ? s.f.key : null, (p) => {
         const [a, b] = defRange(c, p);
         app.checkpoint(); Object.assign(s.x, { key: p.key, from: a, to: b, log: false }); app.commit();
       });
-      if (sel) xrow.appendChild(sel);
+      if (sel) xrow.appendChild(K(sel, 'xk'));
       const p = xparam() || params(c, app.circuit)[0];
-      const setLim = (k) => (v) => { app.checkpoint(); s.x[k] = clampP(p, v); if (s.x.log && !(s.x.from > 0 && s.x.to > 0)) s.x.log = false; app.commit(); };
+      // (equal limits: no range, refused)
+      const setLim = (k) => (v) => {
+        v = clampP(p, v);
+        if (v === s.x[k === 'from' ? 'to' : 'from']) { app.toast(t('sw_same')); render(); return; }
+        app.checkpoint(); s.x[k] = v; if (s.x.log && !(s.x.from > 0 && s.x.to > 0)) s.x.log = false; app.commit();
+      };
       xrow.appendChild(numField(s.x.from, p.unit, tp('sw_from') + ' · ' + tp('sw_wheel'), setLim('from'), 'from'));
       xrow.appendChild(el('span', 'sw-arrow', '→'));
       xrow.appendChild(numField(s.x.to, p.unit, tp('sw_to') + ' · ' + tp('sw_wheel'), setLim('to'), 'to'));
+      // automatic range: the swing of a varying source (with a margin), else the default range of the value
+      const [ra, rb] = defRange(c, p);
+      const isAuto = ra === s.x.from && rb === s.x.to;
+      const au = K(btn('auto', () => { const [a, b] = defRange(c, p); if (a === b) return; app.checkpoint(); Object.assign(s.x, { from: a, to: b, log: false }); app.commit(); }, 'sw-log' + (isAuto ? ' on' : '')), 'auto');
+      au.title = tp(C.waving(c) && s.x.key === C.srcKey(c) ? 'sw_auto_wave' : 'sw_auto');
+      xrow.appendChild(au);
       if (s.x.from > 0 && s.x.to > 0) {
-        const lb = btn('log', () => { app.checkpoint(); s.x.log = !s.x.log; app.commit(); }, 'sw-log' + (s.x.log ? ' on' : ''));
+        const lb = K(btn('log', () => { app.checkpoint(); s.x.log = !s.x.log; app.commit(); }, 'sw-log' + (s.x.log ? ' on' : '')), 'log');
         lb.title = tp('sw_log');
         xrow.appendChild(lb);
       }
       if (s.t) {
         // with the plot against time: the transfer plot can go
-        const xx = btn('✕', () => { app.checkpoint(); s.x = null; delete s.f; app.commit(); }, 'sw-cancel');
+        const xx = K(btn('✕', () => { app.checkpoint(); s.x = null; delete s.f; app.commit(); }, 'sw-cancel'), 'xdel');
         xx.title = tp('sw_x_del');
         xrow.appendChild(xx);
       }
@@ -586,30 +608,31 @@
         orow.appendChild(btn('✕', () => { stopPick(); render(); }, 'sw-cancel'));
       } else if (fc && fp) {
         orow.appendChild(el('span', 'sw-lab', esc(t('sw_family'))));
-        const fb = btn(esc(fc.name), () => startPick('f'), 'sw-comp');
+        const fb = K(btn(esc(fc.name), () => startPick('f'), 'sw-comp'), 'fc');
         fb.title = tp('sw_change');
         orow.appendChild(fb);
         const fsel = paramSelect(fc, s.f.key, s.x.id === fc.id ? s.x.key : null, (q) => { app.checkpoint(); s.f.key = q.key; s.f.vals = defFamily(fc, q); app.commit(); });
-        if (fsel) orow.appendChild(fsel);
+        if (fsel) orow.appendChild(K(fsel, 'fk'));
         // the values, separated by ";" or spaces ("1k; 2.2k; 4.7k")
         const vals = el('span', 'sw-field');
-        const inp = el('input', 'sw-in wide');
+        const inp = K(el('input', 'sw-in wide'), 'fv');
         inp.type = 'text'; inp.spellcheck = false; inp.title = tp('sw_family_vals');
         inp.value = s.f.vals.map(fmtNum).join('; ');
         inp.addEventListener('change', () => {
           const vs = inp.value.split(/[;\s]+/).filter(Boolean).map(x => U.parse(x)).filter(isFinite).map(v => clampP(fp, v)).slice(0, MAXFAM);
           if (!vs.length) { inp.value = s.f.vals.map(fmtNum).join('; '); return; }
-          app.checkpoint(); s.f.vals = vs; app.commit();
+          // (after the focus has moved: Tab goes on to the next control)
+          setTimeout(() => { app.checkpoint(); s.f.vals = vs; app.commit(); }, 0);
         });
         inp.addEventListener('keydown', (e) => { e.stopPropagation(); if (e.key === 'Enter') inp.blur(); });
         vals.appendChild(inp);
         if (fp.unit) vals.appendChild(el('span', 'sw-unit', esc(fp.unit)));
         orow.appendChild(vals);
-        const fx = btn('✕', () => { app.checkpoint(); delete s.f; app.commit(); }, 'sw-cancel');
+        const fx = K(btn('✕', () => { app.checkpoint(); delete s.f; app.commit(); }, 'sw-cancel'), 'fdel');
         fx.title = tp('sw_family_del');
         orow.appendChild(fx);
       } else {
-        const fb = btn('+ ' + esc(t('sw_family')), () => startPick('f'), 'sw-fam');
+        const fb = K(btn('+ ' + esc(t('sw_family')), () => startPick('f'), 'sw-fam'), 'fam');
         fb.title = tp('sw_family_tip');
         orow.appendChild(fb);
       }
@@ -622,7 +645,7 @@
       const s = sw(), nl = app.circuit.comps.filter(zoneable);
       if (!nl.length) return;
       row.appendChild(el('span', 'sw-lab sw-zl', esc(t('sw_zones'))));
-      const zs = el('select', 'sw-key');
+      const zs = K(el('select', 'sw-key'), 'z');
       const z = zcomp();
       zs.appendChild(Object.assign(el('option', null, '—'), { value: '' }));
       for (const q of nl) zs.appendChild(Object.assign(el('option', null, esc(q.name)), { value: q.id }));
@@ -704,6 +727,8 @@
       s.ys = s.ys.filter(y => y.n || app.circuit.comps.some(c => c.id === y.id));
       if (!s.ys.length) { delete app.circuit.sweep; win.hidden = true; stopPick(); return; }
       if (s.x && !xcomp()) s.x = null;
+      // (a range with equal limits shows nothing: the default one instead)
+      if (s.x && s.x.from === s.x.to && xparam()) { const [a, b] = defRange(xcomp(), xparam()); if (a !== b) Object.assign(s.x, { from: a, to: b, log: false }); }
       if (s.f && (!fcomp() || !fparam())) delete s.f;
       if (!s.x && !s.t && picking !== 'x') { inUpdate = true; startPick('x'); inUpdate = false; }
       if (picking) {
@@ -999,7 +1024,7 @@
       const yn = cvs.filter(q => q && q.u === axisU);
       spec = {
         win: pw, xlab: paramName(c, s.x.key), ylab: yn.length === 1 ? yn[0].name : axisU, xu: p.unit, yu: axisU, xlog: lg,
-        series, points, lines: gv == null ? [{ vt: xv }] : [{ vt: xv }, { hz: gv }], regions, tight: tight()
+        series, points, lines: gv == null ? [{ vt: xv, thin: 1 }] : [{ vt: xv, thin: 1 }, { hz: gv, thin: 1 }], regions, tight: tight()
       };
       DCS.iv.draw(cv, spec, null);
       // hysteresis: an arrow on the jump of each way (up on the way there, down on the way back)
@@ -1046,7 +1071,7 @@
       // the input first (under the curves): dashed, with its name at its end
       const xc = xcomp(), ic = inputComp(s);
       if (inputShown(s)) {
-        add(tdata.xv, { name: ic.name, color: 'muted', dash: [5, 4], width: 1.6, inline: true });
+        add(tdata.xv, { name: ic.name, color: 'muted', dash: [4, 3], width: 1.2, inline: true });
         points.push({ v: tnow, i: C.srcValue(ic), small: true, color: col.muted });
       }
       s.ys.forEach((y, j) => {
@@ -1076,7 +1101,7 @@
       const gv = xc ? guide(s, cvs, vals) : null;
       tspec = {
         win: { v0: 0, v1: tdata.span, i0: yw.i0, i1: yw.i1 }, xlab: 't', ylab: yn.length === 1 ? yn[0].name : axisU, xu: 's', yu: axisU,
-        series, points, lines: gv == null ? [{ vt: tnow }] : [{ vt: tnow }, { hz: gv }], regions, tight: tight()
+        series, points, lines: gv == null ? [{ vt: tnow, thin: 1 }] : [{ vt: tnow, thin: 1 }, { hz: gv, thin: 1 }], regions, tight: tight()
       };
       DCS.iv.draw(tcv, tspec, null);
     }
