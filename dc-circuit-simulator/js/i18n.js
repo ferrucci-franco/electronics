@@ -3,7 +3,7 @@
   'use strict';
   const T = {
     en: {
-      title: 'DC Circuit Simulator',
+      title: 'Circuit Simulator: DC and slow signals',
       wheel_dir: 'Wheel / two fingers on a selected component', wheel_auto: 'automatic (Mac: natural scrolling)', wheel_normal: 'up = larger (classic wheel)', wheel_inverted: 'up = larger (natural scrolling)',
       tidy: 'Prettify', tidy_tip: 'Tidy the wires without changing any connection (Ctrl+Z to undo)', tidy_done: 'Wires tidied: {a} → {b} pieces (Ctrl+Z to undo)', tidy_none: 'Nothing to tidy', tidy_fail: 'Not tidied: it would have changed a connection', p_ctl: 'Control', slider: 'straight (slider)', knob: 'rotary (round symbol)',
       c_switch: 'Switch', cs_switch: 'Switch', c_button: 'Push button', cs_button: 'Push button', p_closed: 'Closed', p_nc: 'Contact', sw_closed: 'closed', sw_open: 'open', sw_do_open: 'Open the switch', sw_do_close: 'Close the switch', pb_do_press: 'Press (hold)', pb_no: 'NO', pb_nc: 'NC', no: 'Normally open (NO): closes while pressed', nc: 'Normally closed (NC): opens while pressed',
@@ -189,7 +189,7 @@
       tip_node: 'Node'
     },
     fr: {
-      title: 'Simulateur de circuits en continu',
+      title: 'Simulateur de circuits : DC et signaux lents',
       wheel_dir: 'Molette / deux doigts sur un composant sélectionné', wheel_auto: 'automatique (Mac : défilement naturel)', wheel_normal: 'vers le haut = plus grand (molette classique)', wheel_inverted: 'vers le haut = plus grand (défilement naturel)',
       tidy: 'Embellir', tidy_tip: 'Ranger les fils sans changer aucune connexion (Ctrl+Z pour annuler)', tidy_done: 'Fils rangés : {a} → {b} segments (Ctrl+Z pour annuler)', tidy_none: 'Rien à ranger', tidy_fail: 'Non rangé : une connexion aurait changé', p_ctl: 'Commande', slider: 'rectiligne (glissière)', knob: 'rotatif (symbole rond)',
       c_switch: 'Interrupteur', cs_switch: 'Interrupteur', c_button: 'Bouton-poussoir', cs_button: 'Poussoir', p_closed: 'Fermé', p_nc: 'Contact', sw_closed: 'fermé', sw_open: 'ouvert', sw_do_open: 'Ouvrir l’interrupteur', sw_do_close: 'Fermer l’interrupteur', pb_do_press: 'Appuyer (maintenir)', pb_no: 'NO', pb_nc: 'NF', no: 'Normalement ouvert (NO) : se ferme quand on appuie', nc: 'Normalement fermé (NF) : s’ouvre quand on appuie',
@@ -376,7 +376,7 @@
       tip_node: 'Nœud'
     },
     es: {
-      title: 'Simulador de circuitos en continua',
+      title: 'Simulador de circuitos: DC y señales lentas',
       wheel_dir: 'Rueda / dos dedos sobre un componente seleccionado', wheel_auto: 'automático (Mac: desplazamiento natural)', wheel_normal: 'hacia arriba = mayor (rueda clásica)', wheel_inverted: 'hacia arriba = mayor (desplazamiento natural)',
       tidy: 'Ordenar', tidy_tip: 'Ordenar los cables sin cambiar ninguna conexión (Ctrl+Z para deshacer)', tidy_done: 'Cables ordenados: {a} → {b} tramos (Ctrl+Z para deshacer)', tidy_none: 'No hay nada que ordenar', tidy_fail: 'No se ordenó: habría cambiado una conexión', p_ctl: 'Control', slider: 'recto (deslizante)', knob: 'rotativo (símbolo redondo)',
       c_switch: 'Interruptor', cs_switch: 'Interruptor', c_button: 'Pulsador', cs_button: 'Pulsador', p_closed: 'Cerrado', p_nc: 'Contacto', sw_closed: 'cerrado', sw_open: 'abierto', sw_do_open: 'Abrir el interruptor', sw_do_close: 'Cerrar el interruptor', pb_do_press: 'Pulsar (mantener)', pb_no: 'NA', pb_nc: 'NC', no: 'Normal abierto (NA): se cierra mientras se pulsa', nc: 'Normal cerrado (NC): se abre mientras se pulsa',
