@@ -219,7 +219,7 @@
     return result;
   }
 
-  // SCR et TRIAC : un seul schéma dessiné dans Inkscape (app/scr.svg), empilé par
+  // SCR et TRIAC : un seul schéma dessiné dans Inkscape (schemas-inkscape/scr.svg), empilé par
   // tools/empiler-calques-svg.py ; un calque = une <img> du même fichier, dans le même cadre,
   // réglé par onResult. Le balisage ne dépend d'aucun réglage (montage compris) : app.js garde
   // les mêmes nœuds d'un calcul à l'autre, et seul le composant central change.

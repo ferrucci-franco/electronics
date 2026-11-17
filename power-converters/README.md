@@ -16,7 +16,7 @@ L’application comprend :
 - `styles.css` et `pv.css`
 - `app.js`
 - `topologies/` pour les modèles Buck, Boost, pont en H, redresseurs et PV → réseau
-- `assets/` pour les schémas SVG ; ceux du redresseur et de la commande de puissance sont générés par calques à partir des dessins Inkscape de `app/` (`tools/empiler-calques-svg.py`, voir `CLAUDE.md`)
+- `assets/` pour les schémas SVG ; ceux du redresseur et de la commande de puissance sont générés par calques à partir des dessins Inkscape de `schemas-inkscape/` (voir « Schémas à calques » ci-dessous)
 - `vendor/` pour KaTeX, utilisable sans connexion Internet
 
 Notation : minuscule pour une grandeur instantanée (v_o, i_L, v_x), majuscule pour une constante, une moyenne ou une valeur efficace (V_in continue, V_o = ⟨v_o⟩) ; le rapport cyclique est noté α. Le sélecteur de circuit est le bouton du titre, en haut à gauche.
@@ -40,12 +40,26 @@ Dans l’application réseau du pont en H, la commande du courant peut utiliser 
 
 ## Publication (GitHub Pages)
 
-Copie publique : https://ferrucci-franco.github.io/electronics/power-converters/ (dépôt public `ferrucci-franco/electronics`, dossier `power-converters/`). On modifie toujours ici, on committe, puis, depuis la racine du dépôt :
+En ligne : https://ferrucci-lab.com/power-converters/. L’application vit dans ce dossier du dépôt public `ferrucci-franco/electronics` : on la modifie ici, et un push sur `main` la publie (environ une minute).
 
-    node tools/publier-simulateur.js            # tests, copie, carte de l’index, commit, push
-    node tools/publier-simulateur.js --essai    # montre ce qui changerait, sans rien écrire
+Avant de committer, depuis la racine du dépôt :
 
-Seuls les fichiers versionnés de ce dossier sont publiés (pas `OUVRIR.md`), dans leur version committée ; la copie publiée reçoit le compteur de visites GoatCounter commun au site. Le script travaille dans un clone dédié (`C:/Users/ferrucci/repos/electronics-power-converters-publish`, créé au besoin) et s’arrête si la source n’est pas committée, si un test échoue ou si le clone est modifié.
+    node power-converters/tests/thyristor.test.js
+    node power-converters/tests/redresseur.test.js
+    node power-converters/tests/pont-h.test.js
+    node power-converters/tools/versionner.js
+
+`tools/versionner.js` met à jour la marque anti-cache (`?v=…`) des CSS/JS dans `index.html` ; à relancer après toute modification d’un CSS ou d’un JS (`--verifier` signale seulement une marque périmée). Le compteur de visites GoatCounter commun au site est dans `index.html`.
+
+## Schémas à calques
+
+Les schémas du redresseur et de la commande de puissance sont dessinés dans Inkscape (`schemas-inkscape/`), puis convertis pour le simulateur, depuis la racine du dépôt :
+
+    python power-converters/tools/empiler-calques-svg.py power-converters/schemas-inkscape/ac-dc_diodes.svg power-converters/assets/ac-dc_diodes.svg
+    python power-converters/tools/empiler-calques-svg.py power-converters/schemas-inkscape/ac-dc_4diodes.svg power-converters/assets/ac-dc_4diodes.svg
+    python power-converters/tools/empiler-calques-svg.py power-converters/schemas-inkscape/scr.svg power-converters/assets/scr.svg
+
+Les autres dessins de `schemas-inkscape/` (buck, boost) servent de source aux figures des polycopiés du cours.
 
 ## Topologie « Redresseur à diodes »
 

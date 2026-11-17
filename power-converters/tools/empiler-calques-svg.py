@@ -11,7 +11,7 @@ Nom du calque → identifiant : minuscules, tout caractère hors [a-z0-9] devien
 « - » (« load_RL » → « load-rl », « Lf-cable » → « lf-cable »).
 
 Usage :
-    python tools/empiler-calques-svg.py SOURCE.svg DESTINATION.svg
+    python power-converters/tools/empiler-calques-svg.py SOURCE.svg DESTINATION.svg
 """
 
 import re
