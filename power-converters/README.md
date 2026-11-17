@@ -40,7 +40,7 @@ Dans l’application réseau du pont en H, la commande du courant peut utiliser 
 
 ## Publication (GitHub Pages)
 
-Copie publique : https://ferrucci-franco.github.io/electronics/power-converters/ (dépôt public `ferrucci-franco/electronics`, dossier `power-converters/`). On modifie toujours ici, on committe, puis, depuis la racine du dépôt :
+Copie publique : https://ferrucci-lab.com/power-converters/ (dépôt public `ferrucci-franco/electronics`, dossier `power-converters/`). On modifie toujours ici, on committe, puis, depuis la racine du dépôt :
 
     node tools/publier-simulateur.js            # tests, copie, carte de l’index, commit, push
     node tools/publier-simulateur.js --essai    # montre ce qui changerait, sans rien écrire

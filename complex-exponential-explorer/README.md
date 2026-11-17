@@ -4,7 +4,7 @@ An interactive, classroom-oriented visualisation of the link between the **real
 exponential** and the **complex exponential**, built to prepare students
 visually for Euler's formula.
 
-**Live version:** https://ferrucci-franco.github.io/electronics/complex-exponential-explorer/
+**Live version:** https://ferrucci-lab.com/complex-exponential-explorer/
 
 ## The idea
 
