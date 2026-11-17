@@ -287,7 +287,7 @@
     };
   }
 
-  // Schémas dessinés dans Inkscape (app/ac-dc_diodes.svg, app/ac-dc_4diodes.svg), empilés
+  // Schémas dessinés dans Inkscape (schemas-inkscape/ac-dc_diodes.svg, schemas-inkscape/ac-dc_4diodes.svg), empilés
   // par tools/empiler-calques-svg.py : chaque calque est une <img> du même fichier
   // (#nom-du-calque), toutes dans le même cadre, allumées ou éteintes par onResult.
   // Le balisage ne dépend d'aucun réglage (fréquence comprise) : app.js garde alors les
