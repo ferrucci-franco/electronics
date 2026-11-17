@@ -4,7 +4,7 @@ An interactive, classroom-oriented visualisation of the link between the **real
 exponential** and the **complex exponential**, built to prepare students
 visually for Euler's formula.
 
-**Live version:** https://ferrucci-franco.github.io/complex-exponential-explorer/
+**Live version:** https://ferrucci-lab.com/complex-exponential-explorer/
 
 ## The idea
 
@@ -155,22 +155,6 @@ vendor/katex/  KaTeX 0.18.1 (MIT), script + stylesheet + WOFF2 fonts
 
 `script.js` is organised in those five sections; the mathematical parts are
 commented in detail.
-
-## Publishing
-
-The app is also served from the public site repository, under
-`https://ferrucci-franco.github.io/electronics/complex-exponential-explorer/`.
-That copy is generated — edit here, then run:
-
-```
-./scripts/publish-to-electronics.sh [path-to-electronics-repo]   # ../electronics by default
-```
-
-It mirrors the app files into the site repo, rewrites the live-version link to
-the address it is actually served from (the one line that legitimately differs
-between the two copies), stages the result and stops. Add `--commit` to commit
-as well; it never pushes. Pushing that repo's `main` is what triggers its Pages
-deployment.
 
 ## Licence
 
