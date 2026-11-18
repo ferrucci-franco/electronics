@@ -3219,41 +3219,22 @@
         // The plot divs stay in place across Plotly.newPlot, so this is done once.
         PLOT_IDS.forEach(id => setupTouchZoom(document.getElementById(id)));
 
-        // Mouse wheel on a number field once the pointer has rested on it for a moment
-        // (right away when the field has the focus). While the panel is being scrolled
-        // the timer keeps restarting, so a field passing under the pointer does not
-        // steal the scroll.
+        // Mouse wheel on a number field only once the user has clicked it (it has the
+        // focus). Otherwise the wheel or the trackpad just scrolls the panel, even
+        // when the pointer passes over a field.
         (function wheelOnNumberFields() {
-            const DWELL_MS = 350;
             const NOTCH = 40;
-            let hovered = null;
-            let since = 0;
+            let current = null;
             let accumulated = 0;
             const numberFieldOf = target => (target && target.closest) ? target.closest('input[type="number"]') : null;
 
-            document.addEventListener('mouseover', event => {
-                const field = numberFieldOf(event.target);
-                if (field !== hovered) {
-                    hovered = field;
-                    since = performance.now();
-                    accumulated = 0;
-                }
-            });
-
             document.addEventListener('wheel', event => {
                 const field = numberFieldOf(event.target);
-                if (!field || field.disabled || !document.getElementById('busy-backdrop').hidden) return;
-                const now = performance.now();
-                const focused = document.activeElement === field;
-                if (field !== hovered) {
-                    hovered = field;
-                    since = now;
+                if (!field || field.disabled || document.activeElement !== field
+                    || !document.getElementById('busy-backdrop').hidden) return;
+                if (field !== current) {
+                    current = field;
                     accumulated = 0;
-                    if (!focused) return;
-                }
-                if (!focused && now - since < DWELL_MS) {
-                    since = now;
-                    return;
                 }
                 event.preventDefault();
 
