@@ -2302,7 +2302,8 @@
                   'M500,210L630,380h-85v240h85L500,790L370,620h85V380h-85Z'
         };
 
-        // Fit X, fit Y and fit all, next to the zoom and pan tools.
+        // Only fit X, fit Y and fit all, always shown. Left drag zooms, right drag pans
+        // (see setupRightPan).
         function buildPlotConfig() {
             const t = translations[currentLang];
             const fitButton = (name, title, icon, update) => ({
@@ -2312,13 +2313,10 @@
                 click: gd => Plotly.relayout(gd, update)
             });
 
-            // On touch the zoom is the double-tap gesture, so the zoom / pan mode
-            // buttons would do nothing there.
-            const modeButtons = COARSE_POINTER.matches ? [] : [['zoom2d', 'pan2d']];
-
             return {
                 responsive: true,
                 displaylogo: false,
+                displayModeBar: true,
                 showTips: false,
                 // Double click / double tap is handled in attachPlotGestures().
                 doubleClick: false,
@@ -2330,9 +2328,7 @@
                             'xaxis.autorange': true,
                             'yaxis.autorange': true
                         })
-                    ],
-                    ...modeButtons,
-                    ['toImage']
+                    ]
                 ]
             };
         }
@@ -2843,7 +2839,7 @@
                 dragmode: COARSE_POINTER.matches ? false : 'zoom'
             };
             // Narrow plots (phones): tighter margins and the title on the left, clear
-            // of the mode bar that touch screens always show.
+            // of the mode bar, which is always shown.
             const plotTitle = (text, plotId) => {
                 const el = document.getElementById(plotId);
                 const narrow = el && el.clientWidth > 0 && el.clientWidth < 440;
@@ -3216,8 +3212,93 @@
             ['touchstart', 'touchmove'].forEach(type => gd.addEventListener(type, block, {capture: true, passive: false}));
         }
 
+        // Mouse / pen: drag with the right button (on a trackpad, a two-finger click
+        // and drag) to pan. Plotly never sees that button, so its zoom box stays on
+        // the left one.
+        function setupRightPan(gd) {
+            let pan = null;
+            let frame = 0;
+
+            function apply() {
+                frame = 0;
+                if (!pan || (pan.dx === 0 && pan.dy === 0)) return;
+                const {x, y, dx, dy} = pan;
+                // Ranges are linear in pixels, also on a log axis (log10 units).
+                const sx = dx * (x.r[1] - x.r[0]) / x.len;
+                const sy = dy * (y.r[1] - y.r[0]) / y.len;
+                Plotly.relayout(gd, {
+                    // dotted keys, so the magnitude / phase link picks the pan up
+                    'xaxis.range[0]': x.r[0] - sx,
+                    'xaxis.range[1]': x.r[1] - sx,
+                    'yaxis.range[0]': y.r[0] + sy,
+                    'yaxis.range[1]': y.r[1] + sy
+                });
+            }
+
+            function end(event) {
+                if (!pan || event.pointerId !== pan.id) return;
+                if (frame) cancelAnimationFrame(frame);
+                apply();
+                pan = null;
+                gd.style.cursor = '';
+                try { gd.releasePointerCapture(event.pointerId); } catch (error) { /* already released */ }
+            }
+
+            // Plotly starts its drag on mousedown; keep the right button from it.
+            gd.addEventListener('mousedown', event => {
+                if (event.button === 2) event.stopPropagation();
+            }, true);
+            // no hover labels while panning
+            gd.addEventListener('mousemove', event => {
+                if (pan) event.stopPropagation();
+            }, true);
+
+            gd.addEventListener('pointerdown', event => {
+                if (event.button !== 2 || event.pointerType === 'touch') return;
+                event.stopPropagation();
+                const fullLayout = gd._fullLayout;
+                const xa = fullLayout && fullLayout.xaxis;
+                const ya = fullLayout && fullLayout.yaxis;
+                if (!xa || !ya || !xa._length || !ya._length) return;
+                const rect = gd.getBoundingClientRect();
+                const left = rect.left + xa._offset;
+                const top = rect.top + ya._offset;
+                if (event.clientX < left || event.clientX > left + xa._length ||
+                    event.clientY < top || event.clientY > top + ya._length) return;
+                event.preventDefault();
+                pan = {
+                    id: event.pointerId,
+                    x0: event.clientX,
+                    y0: event.clientY,
+                    dx: 0,
+                    dy: 0,
+                    x: {r: xa.range.slice(), len: xa._length},
+                    y: {r: ya.range.slice(), len: ya._length}
+                };
+                gd.style.cursor = 'grabbing';
+                try { gd.setPointerCapture(event.pointerId); } catch (error) { /* not capturable */ }
+                if (Plotly.Fx) Plotly.Fx.unhover(gd);
+            }, true);
+
+            gd.addEventListener('pointermove', event => {
+                if (!pan || event.pointerId !== pan.id) return;
+                event.stopPropagation();
+                pan.dx = event.clientX - pan.x0;
+                pan.dy = event.clientY - pan.y0;
+                if (!frame) frame = requestAnimationFrame(apply);
+            }, true);
+
+            gd.addEventListener('pointerup', end, true);
+            gd.addEventListener('pointercancel', end, true);
+            gd.addEventListener('lostpointercapture', end);
+        }
+
         // The plot divs stay in place across Plotly.newPlot, so this is done once.
-        PLOT_IDS.forEach(id => setupTouchZoom(document.getElementById(id)));
+        PLOT_IDS.forEach(id => {
+            const gd = document.getElementById(id);
+            setupTouchZoom(gd);
+            setupRightPan(gd);
+        });
 
         // Mouse wheel on a number field only once the user has clicked it (it has the
         // focus). Otherwise the wheel or the trackpad just scrolls the panel, even
