@@ -30,9 +30,12 @@ assert.ok(relativeError(mainsBridge.vChMean, mainsBridge.idealMean) < .02, "50/6
 // --- 1 kHz (générateur) : curseurs ---
 const top = model.controlsFor("single", { frequency: 1000 }).top;
 const [vin, resistance, capacitance] = top;
-assert.deepEqual([vin.key, vin.min, vin.max, vin.step, vin.unit], ["vinRms", 1, 10, .5, "V"]);
+assert.deepEqual([vin.key, vin.min, vin.max, vin.step, vin.unit], ["vinRms", 1, 10, .1, "V"]);
 assert.deepEqual([resistance.key, resistance.min, resistance.max, resistance.step, resistance.unit], ["resistance", 1, 20, 1, "kΩ"]);
-assert.deepEqual([capacitance.key, capacitance.min, capacitance.max, capacitance.step, capacitance.unit], ["capacitance", 0, 2200, 100, "nF"]);
+assert.deepEqual([capacitance.key, capacitance.min, capacitance.max, capacitance.unit], ["capacitance", 0, 100000, "nF"]);
+assert.equal(capacitance.values[0], 0); assert.equal(capacitance.values.at(-1), 100000); assert.ok(capacitance.values.length > 90, "C : paliers E24 sur quatre décades");
+assert.ok(capacitance.values.includes(1000) && capacitance.values.includes(2200), "C : 1 µF et 2,2 µF disponibles");
+assert.equal(vin.step, .1, "V_in : pas de 0,1 V");
 const advanced = model.controlsFor("single", { frequency: 1000, advanced: true });
 assert.deepEqual(advanced.top.map((item) => item.key), ["vinRms", "resistance", "inductance"]);
 assert.deepEqual(advanced.bottom.map((item) => [item.key, item.unit]), [["filterInductance", "mH"], ["capacitance", "nF"]]);
