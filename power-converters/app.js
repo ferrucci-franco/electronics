@@ -213,7 +213,10 @@
   function displayAngle(value) { const rounded = Math.round(value * 100) / 100; return `${number.format(rounded === 0 ? 0 : rounded)}°`; }
   function texVoltage(value) { const v = Math.abs(value) < 1e-12 ? 0 : value; return Math.abs(v) < 1 ? `${texNumber(v * 1000)}\\,\\mathrm{mV}` : `${texNumber(v)}\\,\\mathrm{V}`; }
   function setInfoMath(id, expression) { renderTex(document.querySelector(`#${id}`), `\\displaystyle ${expression}`); }
-  function displayControl(def, value) { return `${number.format(value * (def.scale || 1))} ${def.unit}`; }
+  function displayControl(def, value) { return typeof def.format === "function" ? def.format(value, number) : `${number.format(value * (def.scale || 1))} ${def.unit}`; }
+  // Curseur à paliers (def.values) : l'input porte l'indice du palier, l'état porte la valeur physique.
+  function controlIndex(def, value) { return def.values.reduce((best, candidate, index) => Math.abs(candidate - value) < Math.abs(def.values[best] - value) ? index : best, 0); }
+  function inputValue(input) { const def = input._definition; return def?.values ? def.values[Number(input.value)] : Number(input.value); }
   const outputMeasure = document.createElement("canvas").getContext("2d");
   function reserveOutputWidth(card, def) {
     const output = card.querySelector("output");
@@ -221,7 +224,7 @@
     const style = getComputedStyle(output);
     outputMeasure.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
     const step = Number(def.step) || 0;
-    const candidates = [Number(def.min), Number(def.max), Number(def.min) + step, Number(def.max) - step];
+    const candidates = def.values ? def.values : [Number(def.min), Number(def.max), Number(def.min) + step, Number(def.max) - step];
     const widest = Math.max(...candidates.map((value) => outputMeasure.measureText(displayControl(def, value)).width));
     output.style.minWidth = `${Math.ceil(widest) + 2}px`;
     output.style.textAlign = "right";
@@ -230,7 +233,7 @@
     const value = (Number(input.value) - Number(input.min)) / (Number(input.max) - Number(input.min)) * 100;
     input.style.setProperty("--range-progress", `${value}%`);
   }
-  function getState() { return { ...(states[currentTopology] || activeModel()?.defaults || {}), ...Object.fromEntries(inputs.map((input) => [input.dataset.key, Number(input.value)])) }; }
+  function getState() { return { ...(states[currentTopology] || activeModel()?.defaults || {}), ...Object.fromEntries(inputs.map((input) => [input.dataset.key, inputValue(input)])) }; }
   function saveState() { if (inputs.length && activeModel()) states[currentTopology] = getState(); }
 
   function bindControl(card, input) {
@@ -265,7 +268,7 @@
         const value = values[def.key] ?? currentModel.defaults[def.key];
         card.classList.toggle("advanced-control", Boolean(def.advanced));
         card.hidden = Boolean(def.advanced && !advanced);
-        card.innerHTML = `<span class="control-copy"><b>${def.symbol}</b><small>${localize(def.label)}</small></span><output>${displayControl(def, value)}</output><input data-key="${def.key}" type="range" min="${def.min}" max="${def.max}" step="${def.step}" value="${value}" aria-label="${localize(def.aria)}" />`;
+        card.innerHTML = `<span class="control-copy"><b>${def.symbol}</b><small>${localize(def.label)}</small></span><output>${displayControl(def, value)}</output><input data-key="${def.key}" type="range" min="${def.values ? 0 : def.min}" max="${def.values ? def.values.length - 1 : def.max}" step="${def.values ? 1 : def.step}" value="${def.values ? controlIndex(def, value) : value}" aria-label="${localize(def.aria)}" />`;
         const input = card.querySelector("input"); input._definition = def;
         if (currentTopology === "thyristor") { input.style.width = "100%"; input.style.justifySelf = "stretch"; }
         updateRange(input); bindControl(card, input); reserveOutputWidth(card, def);
@@ -362,7 +365,7 @@
     thyristorVoltageButtons.forEach((button) => button.setAttribute("aria-pressed", String(Number(button.dataset.thyristorVoltage) === thyristorVoltage)));
     rectifierViewGroup.hidden = controlled || !advanced;
     rectifierViewButtons.forEach((button) => { button.textContent = tr()[button.dataset.rectifierView === "transient" ? "motorTransient" : "rectifierSteady"]; button.setAttribute("aria-pressed", String(button.dataset.rectifierView === mode.view)); });
-    rectifierDiodesGroup.hidden = controlled || !advanced;
+    rectifierDiodesGroup.hidden = controlled;
     rectifierDiodesButtons.forEach((button) => {
       const real = button.dataset.rectifierDiodes === "real";
       button.textContent = tr()[real ? "diodesReal" : "diodesIdeal"];
@@ -928,7 +931,7 @@
   let lastTraceSignature = "";
   function update() {
     const state = getState(); states[currentTopology] = state;
-    inputs.forEach((input) => { input.closest(".control").querySelector("output").textContent = displayControl(input._definition, Number(input.value)); updateRange(input); });
+    inputs.forEach((input) => { input.closest(".control").querySelector("output").textContent = displayControl(input._definition, inputValue(input)); updateRange(input); });
     // Les traces peuvent dépendre des réglages (v_x du redresseur n'existe que si Lf > 0) : légendes à refaire si la liste change.
     const traceSignature = activePlotGroups().map((group) => group.map((trace) => trace.key).join()).join("|");
     if (traceSignature !== lastTraceSignature) { lastTraceSignature = traceSignature; renderLegends(); }

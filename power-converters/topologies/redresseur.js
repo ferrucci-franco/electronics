@@ -12,7 +12,7 @@
   const control = (key, symbol, labels, min, max, step, unit, extra = {}) => ({ key, symbol, label: text(...labels), aria: text(...labels), min, max, step, unit, ...extra });
 
   const i18n = {
-    law: text("Ideal law (R load)", "Loi idéale (charge R)", "Ley ideal (carga R)"),
+    law: text("Ideal law (R\u00a0load)", "Loi idéale (charge\u00a0R)", "Ley ideal (carga\u00a0R)"),
     voltages: text("Load voltage", "Tension de charge", "Tensión de carga"),
     loadCurrent: text("Load current", "Courant de charge", "Corriente de carga"),
     powerColumn: text("Power and quality", "Puissance et qualité", "Potencia y calidad"),
@@ -95,10 +95,16 @@
   // dans ces unités (simulate() convertit) ; L et Lf restent ceux du mode avancé.
   const generatorFrequency = 1000;
   const generatorDefaults = { vinRms: 7, resistance: 10, capacitance: 0 };
+  const e24 = [10, 11, 12, 13, 15, 16, 18, 20, 22, 24, 27, 30, 33, 36, 39, 43, 47, 51, 56, 62, 68, 75, 82, 91];
+  const generatorCapacitances = [0, ...[1, 10, 100, 1000].flatMap((decade) => e24.map((value) => value * decade)), 100000];
   const generatorControls = {
-    vinRms: control("vinRms", "V<sub>in</sub>", ["RMS voltage", "Tension efficace", "Tensión eficaz"], 1, 10, .5, "V"),
+    vinRms: control("vinRms", "V<sub>in</sub>", ["RMS voltage", "Tension efficace", "Tensión eficaz"], 1, 10, .1, "V"),
     resistance: control("resistance", "R", ["Load resistance", "Résistance de charge", "Resistencia de carga"], 1, 20, 1, "kΩ"),
-    capacitance: control("capacitance", "C", ["Filter capacitor", "Filtre capacitif", "Filtro capacitivo"], 0, 2200, 100, "nF"),
+    // C de 0 à 100 µF par paliers de la série E24 (10 nF → 100 µF) : finesse constante sur quatre décades.
+    capacitance: control("capacitance", "C", ["Filter capacitor", "Filtre capacitif", "Filtro capacitivo"], 0, 100000, null, "nF", {
+      values: generatorCapacitances,
+      format: (value, number) => value >= 1000 ? `${number.format(value / 1000)} µF` : `${number.format(value)} nF`,
+    }),
   };
 
   const tracesMain = [
