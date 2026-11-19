@@ -43,8 +43,40 @@
     exit: { en: 'Leave (the app goes back to how it was)', fr: 'Quitter (l’application revient à son état d’avant)', es: 'Salir (la aplicación vuelve a como estaba)' }
   };
 
-  // Notes drawn on the plots: dark text on a yellow label, readable in both themes.
-  const INK = { bg: '#fff3a8', border: '#c99a06', text: '#1f2328', line: '#e0a800' };
+  // Notes drawn on the plots: dark text on a yellow label in the light theme, light text on a
+  // muted amber label in the dark one (a bright yellow glares on a dark page).
+  const INKS = {
+    light: { bg: '#fff3a8', border: '#c99a06', text: '#1f2328', line: '#e0a800' },
+    dark: { bg: '#463f24', border: '#9c8333', text: '#fdf0c4', line: '#c9a43a' }
+  };
+  const themeName = () => (document.body.getAttribute('data-theme') === 'dark' ? 'dark' : 'light');
+  let INK = INKS[themeName()];
+
+  // the same notes in the colours of another theme
+  function recolor(overlay, from, to) {
+    const swap = (value) => {
+      const key = Object.keys(from).find((k) => from[k] === value);
+      return key ? to[key] : value;
+    };
+    (overlay.shapes || []).forEach((shape) => { if (shape.line) shape.line.color = swap(shape.line.color); });
+    (overlay.annotations || []).forEach((note) => {
+      note.bgcolor = swap(note.bgcolor);
+      note.bordercolor = swap(note.bordercolor);
+      note.arrowcolor = swap(note.arrowcolor);
+      if (note.font) note.font.color = swap(note.font.color);
+    });
+  }
+
+  // icons drawn in a 20×20 box, centred in their buttons whatever the font
+  const icon = (path) => `<svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`;
+  const ICON = {
+    menu: icon('<path d="M4 6h12M4 10h12M4 14h12"/>'),
+    prev: icon('<path d="M12.5 4.5 7 10l5.5 5.5"/>'),
+    next: icon('<path d="M7.5 4.5 13 10l-5.5 5.5"/>'),
+    pause: icon('<path d="M7 5v10M13 5v10"/>'),
+    play: icon('<path d="M7 4.8v10.4L15.5 10Z" fill="currentColor"/>'),
+    exit: icon('<path d="M5.5 5.5l9 9M14.5 5.5l-9 9"/>')
+  };
 
   /* ---------------- formatting ---------------- */
   function num(value, digits = 3) {
@@ -646,12 +678,12 @@
           <span class="tour-title"></span>
           <div class="tour-dots"></div>
           <div class="tour-buttons">
-            <button type="button" class="tour-btn" data-act="menu">☰</button>
-            <button type="button" class="tour-btn" data-act="prev">‹</button>
-            <button type="button" class="tour-btn" data-act="pause">⏸</button>
-            <button type="button" class="tour-btn" data-act="next">›</button>
+            <button type="button" class="tour-btn" data-act="menu">${ICON.menu}</button>
+            <button type="button" class="tour-btn" data-act="prev">${ICON.prev}</button>
+            <button type="button" class="tour-btn" data-act="pause">${ICON.pause}</button>
+            <button type="button" class="tour-btn" data-act="next">${ICON.next}</button>
             <button type="button" class="tour-btn tour-explore" data-act="explore"></button>
-            <button type="button" class="tour-btn" data-act="exit">✕</button>
+            <button type="button" class="tour-btn" data-act="exit">${ICON.exit}</button>
           </div>
         </div>
         <div class="tour-caption" aria-live="polite">
@@ -689,6 +721,19 @@
           window.dispatchEvent(new Event('resize'));
         }).observe(this.bar);
       }
+
+      // a change of theme (button or clock) recolours the notes on screen
+      new MutationObserver(() => {
+        const next = INKS[themeName()];
+        if (next === INK) return;
+        const previous = INK;
+        INK = next;
+        if (!this.run) return;
+        Object.keys(this.run.overlays).forEach((plotId) => {
+          recolor(this.run.overlays[plotId], previous, next);
+          App.setOverlay(plotId, this.run.overlays[plotId]);
+        });
+      }).observe(document.body, { attributes: true, attributeFilter: ['data-theme'] });
 
       document.addEventListener('keydown', (event) => this.onKey(event), true);
       this.updateLanguage();
@@ -776,7 +821,7 @@
     updatePauseButton() {
       const b = this.bar && this.bar.querySelector('[data-act="pause"]');
       if (!b) return;
-      b.textContent = this.paused ? '▶' : '⏸';
+      b.innerHTML = this.paused ? ICON.play : ICON.pause;
       b.title = L(this.paused ? TX.play : TX.pause);
       b.setAttribute('aria-label', b.title);
     },
