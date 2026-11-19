@@ -806,8 +806,8 @@
                     <button type="button" class="lang-btn" data-lang="fr">FR</button>
                     <button type="button" class="lang-btn" data-lang="es">ES</button>
                 </div>
-                <button type="button" id="help-btn" class="icon-btn" title="Help" aria-label="Help">
-                    <span class="icon" aria-hidden="true">❓</span>
+                <button type="button" id="tour-btn" class="icon-btn" title="Animations" aria-label="Animations">
+                    <span class="icon" aria-hidden="true">🎬</span>
                 </button>
                 <button type="button" id="theme-toggle" class="icon-btn" title="Toggle theme" aria-label="Toggle theme">
                     <span class="icon" id="theme-icon" aria-hidden="true">🌙</span>
@@ -1479,12 +1479,12 @@
             toggle.setAttribute('aria-label', toggle.title);
         }
 
+        // The header button opens the animations (tour.js); the help text is opened
+        // from there, with its own "?" button.
         function updateHelpButton() {
             const t = translations[currentLang];
-            const helpButton = document.getElementById('help-btn');
-            helpButton.title = t.helpButton;
-            helpButton.setAttribute('aria-label', t.helpButton);
             document.getElementById('help-close').setAttribute('aria-label', t.helpClose);
+            if (window.FourierTour) window.FourierTour.updateLanguage();
         }
 
         function renderInlineMath(tex) {
@@ -1711,7 +1711,6 @@
         document.addEventListener('contextmenu', event => event.preventDefault());
 
         // Help handling
-        document.getElementById('help-btn').addEventListener('click', openHelpModal);
         document.getElementById('help-close').addEventListener('click', closeHelpModal);
         document.getElementById('busy-cancel').addEventListener('click', cancelPlotUpdate);
         document.getElementById('help-backdrop').addEventListener('click', function(event) {
@@ -2159,13 +2158,18 @@
             return {t, signal};
         }
 
+        // Random numbers of the noise. The animations swap in a seeded generator, so
+        // that each run shows the same noise as its captions describe.
+        let noiseRandom = Math.random;
+
         // Generate Gaussian white noise using Box-Muller transform
         function generateNoise(numSamples, rmsLevel) {
             const noise = [];
             for (let i = 0; i < numSamples; i += 2) {
                 // Box-Muller transform to generate Gaussian random numbers
-                const u1 = Math.random();
-                const u2 = Math.random();
+                // (1 - u keeps u1 away from 0, whose logarithm is infinite)
+                const u1 = 1 - noiseRandom();
+                const u2 = noiseRandom();
                 const z0 = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
                 const z1 = Math.sqrt(-2 * Math.log(u1)) * Math.sin(2 * Math.PI * u2);
                 
@@ -2360,6 +2364,34 @@
             return preserved;
         }
 
+        // Shapes and notes an animation draws over a plot (tour.js). They are kept
+        // across re-plots until the animation changes or clears them.
+        const plotOverlays = {};
+        const plotBaseAnnotations = {};
+
+        function withOverlay(layout, plotId) {
+            const overlay = plotOverlays[plotId];
+            if (!overlay) return layout;
+            layout.shapes = [...(layout.shapes || []), ...(overlay.shapes || [])];
+            layout.annotations = [...(layout.annotations || []), ...(overlay.annotations || [])];
+            return layout;
+        }
+
+        function setPlotOverlay(plotId, overlay) {
+            if (overlay && ((overlay.shapes || []).length || (overlay.annotations || []).length)) {
+                plotOverlays[plotId] = overlay;
+            } else {
+                delete plotOverlays[plotId];
+            }
+            const gd = document.getElementById(plotId);
+            if (!gd || !gd._fullLayout) return Promise.resolve();
+            const current = plotOverlays[plotId] || {};
+            return Plotly.relayout(gd, {
+                shapes: [...(current.shapes || [])],
+                annotations: [...(plotBaseAnnotations[plotId] || []), ...(current.annotations || [])]
+            });
+        }
+
         function setPlotMode(showPhase) {
             document.getElementById('plots-grid').classList.toggle('phase-layout', showPhase);
             document.getElementById('phase-plot-container').setAttribute('aria-hidden', String(!showPhase));
@@ -2425,6 +2457,7 @@
             );
         }
 
+        let tourDrivesApp = false;
         let plotUpdateScheduled = false;
         let plotUpdateRunning = false;
         let plotUpdateRequested = false;
@@ -2522,6 +2555,8 @@
                 }
             });
 
+            document.getElementById('duty-cycle').disabled = !document.getElementById('signal-square').checked;
+            document.getElementById('duty-cycle2').disabled = !document.getElementById('signal2-square').checked;
             const signal2Controls = document.getElementById('signal2-controls');
             signal2Controls.style.display = document.getElementById('enable-signal2').checked ? 'block' : 'none';
             const noiseControls = document.getElementById('noise-controls');
@@ -2554,6 +2589,8 @@
         }
 
         function shouldShowBusyForCurrentUpdate() {
+            // An animation waits for each plot itself; no overlay over it.
+            if (tourDrivesApp) return false;
             const frequency = parseFloat(document.getElementById('frequency').value);
             const cycles = parseFloat(document.getElementById('cycles').value);
             const maxFreq = parseFloat(document.getElementById('max-freq').value);
@@ -2816,6 +2853,7 @@
             const timeHoverTemplate = `%{x:${PLOT_NUMBER_FORMAT}} s<br>%{y:${PLOT_NUMBER_FORMAT}} V<extra>%{fullData.name}</extra>`;
             const phaseHoverTemplate = `%{x:${PLOT_NUMBER_FORMAT}} Hz<br>%{y:${PLOT_NUMBER_FORMAT}}°<extra>${phaseTitle}</extra>`;
             const plotConfig = buildPlotConfig();
+            plotBaseAnnotations.plot2 = spectrumAnnotations;
             // What each axis currently shows; a zoom is only restored while it stays the same.
             const frequencyAxisView = `frequency:${xScale}`;
             const plotPromises = [];
@@ -2897,6 +2935,7 @@
                 },
                 margin: plotMargin('plot1', showBothTimeTraces ? {...layout.margin, b: 95} : layout.margin)
             }, 'plot1', {xaxis: 'time', yaxis: 'volt'});
+            withOverlay(layout1, 'plot1');
 
             if (!showPhase) {
                 // Plot 1: Time-domain signal
@@ -2941,6 +2980,7 @@
                     yaxis: {...layout.yaxis, title: yAxisTitle},
                     annotations: spectrumAnnotations
                 }, 'plot2', {xaxis: frequencyAxisView, yaxis: `magnitude:${yScale}`});
+                withOverlay(layout2, 'plot2');
 
                 plotPromises.push(Plotly.newPlot('plot2', [trace2, ...stemTraces], layout2, plotConfig));
 
@@ -2986,6 +3026,7 @@
                     yaxis: {...layout.yaxis, title: yAxisTitle},
                     annotations: spectrumAnnotations
                 }, 'plot2', {xaxis: frequencyAxisView, yaxis: `magnitude:${yScale}`});
+                withOverlay(layout2, 'plot2');
 
                 plotPromises.push(Plotly.newPlot('plot2', [trace2, ...stemTraces2], layout2, plotConfig));
 
@@ -3346,6 +3387,24 @@
             }, {passive: false, capture: true});
         })();
 
+        // What the animations (tour.js) use to drive the app.
+        window.FourierApp = {
+            updatePlots,
+            isIdle: () => !plotUpdateScheduled && !plotUpdateRunning && !plotUpdateRequested,
+            captureControls: captureControlState,
+            restoreControls(state) {
+                restoreControlState(state);
+                updateFrequencySteps();
+            },
+            setDriven(driven) { tourDrivesApp = driven; },
+            setNoiseRandom(random) { noiseRandom = random || Math.random; },
+            setOverlay: setPlotOverlay,
+            openHelp: openHelpModal,
+            lang: () => currentLang,
+            t: () => translations[currentLang],
+            formatSI: formatWithSIPrefix
+        };
+
         // Theme from the clock, before the first plot so the colours are right away
         applyClockTheme();
         setInterval(applyClockTheme, THEME_CLOCK_INTERVAL_MS);
@@ -3367,5 +3426,8 @@
             }
         });
     </script>
+    <link rel="stylesheet" href="tour.css">
+    <script src="tour-chapters.js"></script>
+    <script src="tour.js"></script>
 </body>
 </html>
