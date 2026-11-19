@@ -898,12 +898,12 @@
     cursor.playing = playing; labelCursorPlay();
     if (start) { cursor.last = performance.now(); requestAnimationFrame(playCursor); }
   }
-  // Lecture : la fenêtre visible défile en boucle, à 90°/s (entre 3 et 12 s par passage).
+  // Lecture : la fenêtre visible défile en boucle, à 60°/s (entre 4,5 et 18 s par passage).
   function playCursor(now) {
     if (!cursor.playing) return;
     const elapsed = Math.min(.1, Math.max(0, (now - cursor.last) / 1000)); cursor.last = now;
     if (plotView) {
-      const span = plotView.xMaxTime - plotView.xMinTime; const seconds = Math.min(12, Math.max(3, cursorOmega() * span * DEGREES / 90));
+      const span = plotView.xMaxTime - plotView.xMinTime; const seconds = Math.min(18, Math.max(4.5, cursorOmega() * span * DEGREES / 60));
       cursor.time += span * elapsed / seconds;
       if (cursor.time >= plotView.xMaxTime) cursor.time = plotView.xMinTime;
     }
