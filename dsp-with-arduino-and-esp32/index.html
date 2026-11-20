@@ -1094,8 +1094,8 @@
       🌐
       <select id="langSelect">
         <option value="es">ES</option>
-        <option value="fr">FR</option>
-        <option value="en" selected>EN</option>
+        <option value="fr" selected>FR</option>
+        <option value="en">EN</option>
       </select>
     </label>
     <label>
@@ -1207,7 +1207,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
     }
   };
 
-  const state = { lang: 'en', step: 1 };
+  const state = { lang: 'fr', step: 1 };
 
   const stepLabels = {
     es: {1:'Montaje',2:'Aliasing & Fs',3:'Señal & Filtro',4:'Conexión µC',5:'Bode & Medidas'},
@@ -3838,7 +3838,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
 
   // INIT
   applyTheme('light');
-  setLanguage('en');
+  setLanguage('fr');
   setActiveStep(1);
 </script>
 
