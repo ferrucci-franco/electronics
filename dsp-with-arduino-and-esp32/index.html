@@ -2580,6 +2580,11 @@ Implement a real-time digital signal acquisition and processing system using Ard
     return { b:[1, -1], a:[1] };
   }
 
+  // Sortie du CNA de l'UNO R4 : 0 … 5 V. Les filtres qui suppriment la composante continue
+  // (passe-haut, passe-bande, dérivateur) sortent re-centrés à mi-échelle, 2,5 V.
+  const STEP3_DAC_MAX = 5.0, STEP3_DAC_MID = 2.5;
+  function step3DacClip(y) { return y.map(v => Math.max(0, Math.min(STEP3_DAC_MAX, v))); }
+
   // Apply filter
   function step3FilterApply(x) {
     const cf = step3Coeffs();
@@ -2592,8 +2597,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
       // même convention que la forme polynomiale : retard d'un échantillon (sortie du CNA)
       const y = new Array(v.length); y[0] = 0;
       for (let n = 1; n < v.length; n++) y[n] = v[n-1];
-      if (step3State.filt === 'hp' || step3State.filt === 'bp') for (let n = 0; n < y.length; n++) y[n] += 1.5;   // re-biais de la carte (mode AC)
-      return y;
+      if (step3State.filt === 'hp' || step3State.filt === 'bp') for (let n = 0; n < y.length; n++) y[n] += STEP3_DAC_MID;   // re-centrage (mode AC)
+      return step3DacClip(y);
     }
     const b = cf.b.slice();
     const a = cf.a.slice();
@@ -2619,12 +2624,12 @@ Implement a real-time digital signal acquisition and processing system using Ard
       y[n] = y0[n-1];
     }
 
-    if(step3State.filt === 'hp' || step3State.filt === 'diff') {
+    if(step3State.filt === 'hp' || step3State.filt === 'bp' || step3State.filt === 'diff') {
       for(let n=0; n<N; n++) {
-        y[n] += 1.5;
+        y[n] += STEP3_DAC_MID;   // re-centrage (mode AC)
       }
     }
-    return y;
+    return step3DacClip(y);
   }
 
   // Settle samples for transient
@@ -3963,7 +3968,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
 
   // Step 4 constants and state
   const STEP4_BAUD_RATE = 115200;  // Change this to match your board's baudrate
-  const STEP4_AC_BIAS_VOLTAGE = 1.5;  // AC bias in volts (target voltage)
+  // Biais du mode AC : mi-échelle du CNA (fraction de Vref) → 2,5 V sur l'UNO R4, 1,65 V sur l'ESP32
 
   const step4State = {
     port: null,
@@ -4300,7 +4305,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       // AC ON for HP and diff (they need DC-centered signals)
       // AC OFF for MA and LP
       if (filt === 'hp' || filt === 'bp' || filt === 'diff') {
-        const acBias = STEP4_AC_BIAS_VOLTAGE / step4State.vref;
+        const acBias = 0.5;
         await step4Send(`ac set ${acBias.toFixed(6)}`);
         await step4Send('ac on');
       } else {
