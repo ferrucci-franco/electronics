@@ -910,7 +910,7 @@
 
     /* Boutons d'ajustement des graphiques (X, Y, tout) */
     .step3-plot-card{ position:relative; }
-    .step3-plot-card > .step3-plot-title{ padding-right:104px; }   /* place des boutons X / Y / tout */
+    .step3-plot-card > .step3-plot-title{ padding-right:104px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }   /* place des boutons X / Y / tout */
     .plot-fit-btns{
       position:absolute; top:8px; right:10px; z-index:5;
       display:flex; gap:4px;
@@ -2264,7 +2264,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       advanced_fmax_ratio_label: "Fmax / FNyq",
       time_plot_title: "Señal continua, muestras y salida",
       bode_plot_title: "Respuesta en frecuencia",
-      bode_drag_hint: "(arrastre la línea roja f<sub>IN</sub>)",
+      bode_drag_hint: "(arrastrar la línea f<sub>IN</sub>)",
       axis_time: "Tiempo (s)",
       axis_amp: "Amplitud (V)",
       axis_input: "Entrada",
@@ -2337,7 +2337,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       advanced_fmax_ratio_label: "Fmax / FNyq",
       time_plot_title: "Signal continu, échantillons et sortie",
       bode_plot_title: "Réponse en fréquence",
-      bode_drag_hint: "(faites glisser la ligne rouge f<sub>IN</sub>)",
+      bode_drag_hint: "(glisser la ligne f<sub>IN</sub>)",
       axis_time: "Temps (s)",
       axis_amp: "Amplitude (V)",
       axis_input: "Entrée",
@@ -2410,7 +2410,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       advanced_fmax_ratio_label: "Fmax / FNyq",
       time_plot_title: "Continuous signal, samples and output",
       bode_plot_title: "Frequency response",
-      bode_drag_hint: "(drag the red f<sub>IN</sub> line)",
+      bode_drag_hint: "(drag the f<sub>IN</sub> line)",
       axis_time: "Time (s)",
       axis_amp: "Amplitude (V)",
       axis_input: "Input",
