@@ -2973,18 +2973,43 @@ Implement a real-time digital signal acquisition and processing system using Ard
       phDiv.style.display = 'none';
     }
 
+    // Même plage de fréquences pour le module et la phase (lignes verticales alignées)
+    const xRange = useLog ? [Math.log10(fMin), Math.log10(fMax)] : [fMin, fMax];
+
     const magLayout = {
       margin:{l:54,r:18,t:25,b:(step3State.showPhase ? 6 : 40)},
       paper_bgcolor:'rgba(0,0,0,0)',
       plot_bgcolor:'rgba(0,0,0,0)',
-      xaxis:{ type:(useLog ? 'log' : 'linear'), title:(step3State.showPhase ? '' : '<b>'+step3t('axis_freq')+'</b>'), titlefont:{size:14}, tickfont:{size:(step3State.showPhase?0:13)}, showticklabels: !step3State.showPhase, gridcolor:C.grid, gridwidth:1, zerolinecolor:C.zero, zerolinewidth:1, color:C.text },
+      xaxis:{ type:(useLog ? 'log' : 'linear'), range:xRange.slice(), title:(step3State.showPhase ? '' : '<b>'+step3t('axis_freq')+'</b>'), titlefont:{size:14}, tickfont:{size:(step3State.showPhase?0:13)}, showticklabels: !step3State.showPhase, gridcolor:C.grid, gridwidth:1, zerolinecolor:C.zero, zerolinewidth:1, color:C.text },
       yaxis:{ title:magLabel, titlefont:{size:14}, tickfont:{size:13}, gridcolor:C.grid, gridwidth:1, zerolinecolor:C.zero, zerolinewidth:1, color:C.text, rangemode:(step3State.magMode === 'linear' ? 'tozero' : 'normal') },
       shapes: shapesMag,
       annotations: ann,
       showlegend:false
     };
 
-    Plotly.newPlot(magDiv, [{ x:freqs, y:magVals, type:'scatter', mode:'lines', line:{color:C.bode, width:3} }], magLayout, {displaylogo:false, responsive:true, displayModeBar:false});
+    // Point à f_IN sur les courbes, avec sa valeur
+    const f0 = step3State.f0;
+    const f0In = f0 > 0 && f0 <= fMax && (!useLog || f0 >= fMin);
+    const H0 = step3H_at_f(f0);
+    const m0 = Math.hypot(H0.Re, H0.Im);
+    const m0Val = (step3State.magMode === 'db') ? Math.max(20*Math.log10(m0 || 1e-12), -100) : m0;
+    const m0Txt = (step3State.magMode === 'db') ? m0Val.toFixed(1).replace('.', state.lang === 'en' ? '.' : ',') + ' dB'
+                                               : m0.toFixed(3).replace('.', state.lang === 'en' ? '.' : ',');
+    const ph0 = (() => {   // phase à f_IN, sur la même branche que la courbe tracée
+      let best = 0, d = Infinity;
+      freqs.forEach((f, i) => { const e = Math.abs(f - f0); if (e < d) { d = e; best = i; } });
+      let a = Math.atan2(H0.Im, H0.Re) * 180 / Math.PI;
+      while (a - phases[best] > 180) a -= 360;
+      while (a - phases[best] < -180) a += 360;
+      return a;
+    })();
+    const ptAnn = (yv, txt) => ({ x: useLog ? Math.log10(f0) : f0, y: yv, xref:'x', yref:'y', xanchor:'left', yanchor:'bottom',
+      xshift:8, yshift:4, text:'<b>'+txt+'</b>', showarrow:false, font:{size:14, color:'#dc2626'}, bgcolor:annBg, borderpad:3 });
+    if (f0In) magLayout.annotations = ann.concat([ptAnn(m0Val, m0Txt)]);
+    const magTraces = [{ x:freqs, y:magVals, type:'scatter', mode:'lines', line:{color:C.bode, width:3}, hoverinfo:'skip' }];
+    if (f0In) magTraces.push({ x:[f0], y:[m0Val], type:'scatter', mode:'markers', marker:{color:'#dc2626', size:11, line:{color:dark ? '#2b3648' : '#ffffff', width:2}}, hoverinfo:'skip' });
+
+    Plotly.newPlot(magDiv, magTraces, magLayout, {displaylogo:false, responsive:true, displayModeBar:false});
     step3AttachF0Drag(magDiv);
     step3StoreInit(magDiv, magLayout);
     step3AttachRightPan(magDiv);
@@ -2994,12 +3019,17 @@ Implement a real-time digital signal acquisition and processing system using Ard
         margin:{l:54,r:18,t:22,b:40},
         paper_bgcolor:'rgba(0,0,0,0)',
         plot_bgcolor:'rgba(0,0,0,0)',
-        xaxis:{ type:(useLog ? 'log' : 'linear'), title:'<b>'+step3t('axis_freq')+'</b>', titlefont:{size:14}, tickfont:{size:13}, gridcolor:C.grid, gridwidth:1, zerolinecolor:C.zero, zerolinewidth:1, color:C.text },
+        xaxis:{ type:(useLog ? 'log' : 'linear'), range:xRange.slice(), title:'<b>'+step3t('axis_freq')+'</b>', titlefont:{size:14}, tickfont:{size:13}, gridcolor:C.grid, gridwidth:1, zerolinecolor:C.zero, zerolinewidth:1, color:C.text },
         yaxis:{ title:'<b>'+step3t('axis_phase')+'</b>', titlefont:{size:14}, tickfont:{size:13}, gridcolor:C.grid, gridwidth:1, zerolinecolor:C.zero, zerolinewidth:1, color:C.text },
         shapes: shapesPh,
         showlegend:false
       };
-      Plotly.newPlot(phDiv, [{ x:freqs, y:phases, type:'scatter', mode:'lines', line:{color:C.bodePh, width:3} }], phLayout, {displaylogo:false, responsive:true, displayModeBar:false});
+      const phTraces = [{ x:freqs, y:phases, type:'scatter', mode:'lines', line:{color:C.bodePh, width:3}, hoverinfo:'skip' }];
+      if (f0In) {
+        phTraces.push({ x:[f0], y:[ph0], type:'scatter', mode:'markers', marker:{color:'#dc2626', size:11, line:{color:dark ? '#2b3648' : '#ffffff', width:2}}, hoverinfo:'skip' });
+        phLayout.annotations = [ptAnn(ph0, ph0.toFixed(1).replace('.', state.lang === 'en' ? '.' : ',') + '°')];
+      }
+      Plotly.newPlot(phDiv, phTraces, phLayout, {displaylogo:false, responsive:true, displayModeBar:false});
       step3AttachF0Drag(phDiv);
       step3StoreInit(phDiv, phLayout);
       step3AttachRightPan(phDiv);
@@ -3556,6 +3586,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       drawSpectralGraph();
     }
     if (state.step === 1) renderMontage();
+    if (state.step === 3) step3DrawAll();
   });
 
   // ===================== STEP 4: µC CONNECTION =====================
