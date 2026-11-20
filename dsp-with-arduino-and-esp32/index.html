@@ -2322,6 +2322,10 @@ Implement a real-time digital signal acquisition and processing system using Ard
       filter_ma: "Media móvil",
       filter_bypass: "Bypass",
       filter_lp: "Pasa bajos IIR",
+      filter_fir: "Pasa bajos FIR (Hamming)",
+      filter_fir_taps: "Número de coeficientes N",
+      fir_delay_prefix: "Retardo (N−1)/2 = ",
+      fir_delay_unit: " muestras",
       filter_hp: "Pasa altos IIR",
       filter_bp: "Pasa banda IIR",
       filter_notch: "Rechaza banda (notch) IIR",
@@ -2395,6 +2399,10 @@ Implement a real-time digital signal acquisition and processing system using Ard
       filter_ma: "Moyenne mobile",
       filter_bypass: "Bypass",
       filter_lp: "Passe-bas RII",
+      filter_fir: "Passe-bas RIF (Hamming)",
+      filter_fir_taps: "Nombre de coefficients N",
+      fir_delay_prefix: "Retard (N−1)/2 = ",
+      fir_delay_unit: " échantillons",
       filter_hp: "Passe-haut RII",
       filter_bp: "Passe-bande RII",
       filter_notch: "Coupe-bande (notch) RII",
@@ -2468,6 +2476,10 @@ Implement a real-time digital signal acquisition and processing system using Ard
       filter_ma: "Moving average",
       filter_bypass: "Bypass",
       filter_lp: "IIR lowpass",
+      filter_fir: "FIR lowpass (Hamming)",
+      filter_fir_taps: "Number of taps N",
+      fir_delay_prefix: "Delay (N−1)/2 = ",
+      fir_delay_unit: " samples",
       filter_hp: "IIR highpass",
       filter_bp: "IIR band-pass",
       filter_notch: "IIR notch (band-stop)",
@@ -2531,6 +2543,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
     maN: 5,
     lpR: 0.10,
     hpR: 0.10,
+    firN: 21,       // passe-bas RIF à fenêtre de Hamming : nombre de coefficients (≤ 32 = MAX_NX du firmware)
+    firR: 0.20,     // f_c / F_Nyq
     lpOrder: 2,
     hpOrder: 2,
     notchR: 0.12,   // f_centre / F_Nyq (60 Hz à Fs = 1 kHz : le ronflement du secteur à Tahiti)
@@ -2673,6 +2687,21 @@ Implement a real-time digital signal acquisition and processing system using Ard
 
 
 
+  // Passe-bas RIF par la méthode de la fenêtre : sinus cardinal tronqué à N coefficients,
+  // pondéré par une fenêtre de Hamming, normalisé pour un gain 1 en continu.
+  function step3DesignFirLp(N, fc, Fs) {
+    const M = N - 1, wc = 2 * fc / Fs;                     // fréquence de coupure normalisée (1 = F_Nyq)
+    const h = [];
+    for (let n = 0; n < N; n++) {
+      const m = n - M / 2;
+      const sinc = m === 0 ? 1 : Math.sin(Math.PI * wc * m) / (Math.PI * wc * m);
+      const w = M > 0 ? 0.54 - 0.46 * Math.cos(2 * Math.PI * n / M) : 1;
+      h.push(wc * sinc * w);
+    }
+    const sum = h.reduce((u, v) => u + v, 0);
+    return h.map(v => v / sum);
+  }
+
   function step3Coeffs() {
     const Fs = step3State.Fs;
     const Fnyq = Fs/2;
@@ -2683,6 +2712,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       const b = new Array(N).fill(1/N);
       return { b:b, a:[1] };
     }
+    if(step3State.filt === 'fir') return { b: step3DesignFirLp(step3State.firN, step3State.firR * Fnyq, Fs), a: [1] };
     if(step3State.filt === 'notch' || step3State.filt === 'bp') {
       const t = step3State.filt;
       const sos = step3DesignBand(t, step3State[t + 'R'] * Fnyq, step3State[t + 'Q'], Fs);
@@ -2759,6 +2789,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
 
     if(step3State.filt === 'ma') {
       settle = step3State.maN + 10;
+    } else if(step3State.filt === 'fir') {
+      settle = step3State.firN + 10;
     } else if(step3State.filt === 'lp' || step3State.filt === 'hp') {
       const fc = (step3State.filt === 'lp' ? step3State.lpR : step3State.hpR)*Fnyq;
       const a1 = Math.exp(-2*Math.PI*fc/Fs);
@@ -3675,6 +3707,12 @@ Implement a real-time digital signal acquisition and processing system using Ard
     };
     if(lpEl) lpEl.innerHTML = step3t('fc_prefix') + lp.toFixed(1) + ' Hz' + (step3State.lpOrder === 1 ? eq1('lp', lp) : '');
     if(hpEl) hpEl.innerHTML = step3t('fc_prefix') + hp.toFixed(1) + ' Hz' + (step3State.hpOrder === 1 ? eq1('hp', hp) : '');
+    const firEl = document.getElementById('step3FirInfo');
+    if (firEl) {
+      const d = (step3State.firN - 1) / 2;
+      firEl.innerHTML = step3t('fc_prefix') + (step3State.firR * nyq).toFixed(1) + ' Hz<br>' +
+        step3t('fir_delay_prefix') + (Number.isInteger(d) ? d : d.toFixed(1).replace('.', state.lang === 'en' ? '.' : ',')) + step3t('fir_delay_unit');
+    }
     [['Bp', 'bp'], ['Notch', 'notch']].forEach(([T, k]) => {
       const el = document.getElementById('step3' + T + 'Info');
       if (!el) return;
@@ -3781,6 +3819,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
                     <option value="ma" ${S.filt === 'ma' ? 'selected' : ''}>${t('filter_ma')}</option>
                     <option value="bypass" ${S.filt === 'bypass' ? 'selected' : ''}>${t('filter_bypass')}</option>
                     <option value="lp" ${S.filt === 'lp' ? 'selected' : ''}>${t('filter_lp')}</option>
+                    <option value="fir" ${S.filt === 'fir' ? 'selected' : ''}>${t('filter_fir')}</option>
                     <option value="hp" ${S.filt === 'hp' ? 'selected' : ''}>${t('filter_hp')}</option>
                     <option value="bp" ${S.filt === 'bp' ? 'selected' : ''}>${t('filter_bp')}</option>
                     <option value="notch" ${S.filt === 'notch' ? 'selected' : ''}>${t('filter_notch')}</option>
@@ -3806,6 +3845,19 @@ Implement a real-time digital signal acquisition and processing system using Ard
                     <input type="text" id="step3LpRatioNumber" value="${step3Fmt(S.lpR, 3)}">
                   </div>
                   <div class="step3-note" id="step3LpFcInfo">${t('fc_prefix')}250.0 Hz</div>
+                </div>
+                <div class="step3-group" id="step3FirGroup" style="display:${S.filt === 'fir' ? 'block' : 'none'}">
+                  <div class="step3-row"><span>${t('filter_fir_taps')}</span></div>
+                  <div class="step3-range-row">
+                    <input type="range" id="step3FirNSlider" min="3" max="32" step="1" value="${S.firN}">
+                    <input type="text" id="step3FirNNumber" value="${step3Fmt(S.firN, 0)}">
+                  </div>
+                  <div class="step3-row"><span>${t('filter_ratio')}</span></div>
+                  <div class="step3-range-row">
+                    <input type="range" id="step3FirRatioSlider" min="0.02" max="0.9" step="0.005" value="${S.firR}">
+                    <input type="text" id="step3FirRatioNumber" value="${step3Fmt(S.firR, 3)}">
+                  </div>
+                  <div class="step3-note" id="step3FirInfo"></div>
                 </div>
                 <div class="step3-group" id="step3HpGroup" style="display:${S.filt === 'hp' ? 'block' : 'none'}">
                   <div class="step3-row"><span>${t('filter_order')}</span>
@@ -4030,6 +4082,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       step3State.filt = e.target.value;
       document.getElementById('step3MaGroup').style.display = (step3State.filt === 'ma') ? 'block' : 'none';
       document.getElementById('step3LpGroup').style.display = (step3State.filt === 'lp') ? 'block' : 'none';
+      document.getElementById('step3FirGroup').style.display = (step3State.filt === 'fir') ? 'block' : 'none';
       document.getElementById('step3HpGroup').style.display = (step3State.filt === 'hp') ? 'block' : 'none';
       document.getElementById('step3BpGroup').style.display = (step3State.filt === 'bp') ? 'block' : 'none';
       document.getElementById('step3NotchGroup').style.display = (step3State.filt === 'notch') ? 'block' : 'none';
@@ -4047,6 +4100,30 @@ Implement a real-time digital signal acquisition and processing system using Ard
     };
     document.getElementById('step3MaNSlider').addEventListener('input', e => syncN(e.target.value));
     document.getElementById('step3MaNNumber').addEventListener('change', e => syncN(e.target.value));
+
+    // Passe-bas RIF : N et f_c / F_Nyq
+    const syncFirN = v => {
+      let n = step3ParseNum(v, step3State.firN);
+      n = Math.max(3, Math.min(32, Math.round(n)));     // 32 = taps FIR max du firmware (MAX_NX)
+      step3State.firN = n;
+      document.getElementById('step3FirNSlider').value = n;
+      document.getElementById('step3FirNNumber').value = step3Fmt(n, 0);
+      step3UpdateFcTexts();
+      step3DrawAll();
+    };
+    document.getElementById('step3FirNSlider').addEventListener('input', e => syncFirN(e.target.value));
+    document.getElementById('step3FirNNumber').addEventListener('change', e => syncFirN(e.target.value));
+    const syncFirR = v => {
+      let r = step3ParseNum(v, step3State.firR);
+      r = Math.max(0.02, Math.min(0.9, r));
+      step3State.firR = r;
+      document.getElementById('step3FirRatioSlider').value = r;
+      document.getElementById('step3FirRatioNumber').value = step3Fmt(r, 3);
+      step3UpdateFcTexts();
+      step3DrawAll();
+    };
+    document.getElementById('step3FirRatioSlider').addEventListener('input', e => syncFirR(e.target.value));
+    document.getElementById('step3FirRatioNumber').addEventListener('change', e => syncFirR(e.target.value));
 
     // LP ratio
     const syncLp = v => {
@@ -4390,6 +4467,12 @@ Implement a real-time digital signal acquisition and processing system using Ard
       filterName = step3t('filter_ma');
       a = [1];
       b = new Array(N).fill(1/N);
+    } else if (filt === 'fir') {
+      fc = step3State.firR * Fnyq;
+      N = step3State.firN;
+      a = [1];
+      b = step3DesignFirLp(N, fc, Fs);
+      filterName = step3t('filter_fir');
     } else if (filt === 'lp') {
       fc = lpR * Fnyq;
       sos = step3DesignSOS('lp', step3State.lpOrder, fc, Fs);
@@ -4740,7 +4823,14 @@ Implement a real-time digital signal acquisition and processing system using Ard
         <span class="step4-param-value">${cfg.filterName}</span>
     `;
 
-    if (cfg.filt === 'ma') {
+    if (cfg.filt === 'fir') {
+      html += `
+        <span class="step4-param-label">N:</span>
+        <span class="step4-param-value">${cfg.N}</span>
+        <span class="step4-param-label">${step4t('cutoff_freq')}:</span>
+        <span class="step4-param-value">${cfg.fc.toFixed(1)} Hz</span>
+      `;
+    } else if (cfg.filt === 'ma') {
       html += `
         <span class="step4-param-label">${step4t('order_label')} N:</span>
         <span class="step4-param-value">${cfg.N}</span>
@@ -4806,8 +4896,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
     }
 
     // Determine which extra parameters to show
-    const showN = (filt === 'ma' || filt === 'lp' || filt === 'hp');
-    const showFc = (filt === 'lp' || filt === 'hp');
+    const showN = (filt === 'ma' || filt === 'lp' || filt === 'hp' || filt === 'fir');
+    const showFc = (filt === 'lp' || filt === 'hp' || filt === 'fir');
 
     stepContentEl.innerHTML = `
       <div class="step4-wrapper">
@@ -4820,7 +4910,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
             <span class="step4-param-label">${step4t('filter_type')}:</span>
             <span class="step4-param-value">${filterName}</span>
             ${showN ? `
-            <span class="step4-param-label">${step4t('order_label')}${filt === 'ma' ? ' N' : ''}:</span>
+            <span class="step4-param-label">${filt === 'fir' ? 'N' : step4t('order_label') + (filt === 'ma' ? ' N' : '')}:</span>
             <span class="step4-param-value">${N}</span>
             ` : ''}
             ${showFc ? `
