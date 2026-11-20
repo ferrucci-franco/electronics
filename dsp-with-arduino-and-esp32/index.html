@@ -841,6 +841,18 @@
     }
 
 
+    /* ===== Pas de sélection de texte ni de curseur texte hors des champs de saisie ===== */
+    html, body{
+      -webkit-user-select:none;
+      user-select:none;
+      caret-color:transparent;
+    }
+    input, textarea{
+      -webkit-user-select:text;
+      user-select:text;
+      caret-color:auto;
+    }
+
     /* ===== Montage (schéma de câblage) ===== */
     .montage-panel{
       max-width:1180px;
@@ -1256,6 +1268,15 @@ Implement a real-time digital signal acquisition and processing system using Ard
   };
 
   const stepContentEl = document.getElementById('stepContent');
+  // Menu contextuel (clic droit) désactivé, sauf dans les champs de saisie (copier/coller)
+  document.addEventListener('contextmenu', e => {
+    if (!e.target.closest('input, textarea')) e.preventDefault();
+  });
+  // Empêche aussi le glisser-déposer des images du schéma
+  document.addEventListener('dragstart', e => {
+    if (e.target.closest && e.target.closest('svg, img')) e.preventDefault();
+  });
+
   // ===================== MONTAGE (schéma de câblage) =====================
   const montageTexts = {
     fr:{gen:'Générateur de signaux', osc:'Oscilloscope', ard:'Arduino UNO R4',
@@ -1289,6 +1310,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
     const CH1 = P(OSC,378,335), CH2 = P(OSC,444,335);
     const GOUT = P(GEN,486,252);
     const yBlue = 742, yRed = 702, xNode = 770, yA1 = 412;
+    const xR = (xNode + GOUT.x) / 2;   // résistance de protection, avant la bifurcation
     const BLUE = '#1d4ed8', RED = '#dc2626', INK = '#111827', MUTED = '#4b5563';
     const f = v => v.toFixed(1);
     const dot = (p,c)=>`<circle cx="${f(p.x)}" cy="${f(p.y)}" r="5" fill="${c}" stroke="#fff" stroke-width="1.5"/>`;
@@ -1309,11 +1331,11 @@ Implement a real-time digital signal acquisition and processing system using Ard
   <text x="236" y="${f(USB.y-4)}" text-anchor="end" class="m-small">${t.usb1}</text>
   <text x="236" y="${f(USB.y+20)}" text-anchor="end" class="m-small">${t.usb2}</text>
 
-  <!-- Fil bleu : générateur → CH1 et → R → A1 -->
+  <!-- Fil bleu : générateur → R → bifurcation → A1 et CH1 -->
   <path d="M ${f(GOUT.x)} ${f(GOUT.y)} V ${yBlue} H ${f(CH1.x)} V ${f(CH1.y)}" stroke="${BLUE}" stroke-width="4" fill="none" stroke-linejoin="round"/>
   <path d="M ${xNode} ${yBlue} V ${yA1} H ${f(A1.x)} V ${f(A1.y)}" stroke="${BLUE}" stroke-width="4" fill="none" stroke-linejoin="round"/>
-  <rect x="${xNode-11}" y="530" width="22" height="78" rx="2" fill="#fff" stroke="${INK}" stroke-width="3"/>
-  <text x="${xNode+22}" y="577" class="m-label" fill="${INK}">${t.res}</text>
+  <rect x="${f(xR-39)}" y="${yBlue-11}" width="78" height="22" rx="2" fill="#fff" stroke="${INK}" stroke-width="3"/>
+  <text x="${f(xR)}" y="${yBlue-22}" text-anchor="middle" class="m-label" fill="${INK}">${t.res}</text>
   <circle cx="${xNode}" cy="${yBlue}" r="6.5" fill="${BLUE}"/>
   <text x="${xNode+18}" y="${yA1+30}" class="m-label" fill="${BLUE}">${t.a1}</text>
   <text x="${xNode+18}" y="${yA1+54}" class="m-small">${t.a1r}</text>
