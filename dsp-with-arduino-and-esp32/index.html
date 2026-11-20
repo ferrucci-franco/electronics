@@ -2479,7 +2479,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
   // fiable jusqu'à l'ordre 3, et à l'ordre 4 seulement si fc/FNyq >= 0,02.
   function step3PolyOkOnOldFirmware(order, ratio) { return order <= 3 || (order === 4 && ratio >= 0.02); }
 
-  // Cascade de cellules du second ordre [b0,b1,b2,a1,a2] (a0 = 1), même filtre que step3DesignIIR
+  // Cascade de cellules du second ordre [b0,b1,b2,a1,a2] (a0 = 1)
   function step3DesignSOS(type, order, fc, Fs) {
     if (order === 1) {
       const RC = 1 / (2 * Math.PI * fc), Ts = 1 / Fs, a = RC / (RC + Ts);
