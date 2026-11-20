@@ -1655,7 +1655,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
               <span>${t.periodsLabel}</span>
               <span class="value" id="periodsValue">${step2State.periods}</span>
             </label>
-            <input type="range" id="periodsSlider" min="1" max="10" value="${step2State.periods}" step="1">
+            <input type="range" id="periodsSlider" min="1" max="50" value="${step2State.periods}" step="1">
           </div>
           
           <div class="control-group" style="margin-top:16px;">
@@ -1894,9 +1894,13 @@ Implement a real-time digital signal acquisition and processing system using Ard
     ctx.lineTo(width-padding, padding + graphHeight/2);
     ctx.stroke();
 
-    // Líneas verticales
+    // Pas des graduations : une période sur 1, 2, 5, 10… pour garder ≥ 55 px entre deux valeurs
+    const pxPerPeriod = graphWidth / periods;
+    const tickStep = [1, 2, 5, 10, 20, 50].find(k => k * pxPerPeriod >= 55) || 50;
+    // Líneas verticales (toutes les périodes, sauf si elles deviennent trop serrées)
+    const lineStep = pxPerPeriod >= 8 ? 1 : tickStep;
     ctx.setLineDash([2,2]);
-    for(let i=0;i<=periods;i++){
+    for(let i=0;i<=periods;i+=lineStep){
       const x = padding + (i/periods)*graphWidth;
       ctx.beginPath();
       ctx.moveTo(x,padding);
@@ -1909,7 +1913,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
     ctx.strokeStyle = signalColor;
     ctx.lineWidth = 2;
     ctx.beginPath();
-    const numPoints = 1000;
+    const numPoints = Math.max(1000, 120 * periods);       // ≥ 120 points par période
     for(let i=0;i<=numPoints;i++){
       const t = (i/numPoints)*duration;
       const x = padding + (t/duration)*graphWidth;
@@ -1995,15 +1999,19 @@ Implement a real-time digital signal acquisition and processing system using Ard
       ctx.setLineDash([]);
     }
 
-    // Puntos muestras
+    // Puntos muestras (plus petits quand ils sont très rapprochés)
+    const sampDx = samples.length > 1 ? samples[1].x - samples[0].x : 20;
+    const sampR = Math.max(1.5, Math.min(4.5, sampDx / 3));
     samples.forEach(s=>{
       ctx.fillStyle=sampleColor;
       ctx.beginPath();
-      ctx.arc(s.x,s.y,4.5,0,2*Math.PI);
+      ctx.arc(s.x,s.y,sampR,0,2*Math.PI);
       ctx.fill();
-      ctx.strokeStyle=sampleEdge;
-      ctx.lineWidth=1.5;
-      ctx.stroke();
+      if (sampR >= 3) {
+        ctx.strokeStyle=sampleEdge;
+        ctx.lineWidth=1.5;
+        ctx.stroke();
+      }
     });
 
     // Ejes/labels (aumentar tamaño de fuente)
@@ -2013,7 +2021,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
     ctx.textAlign='center';
     const dec = Math.max(0, 2 - Math.floor(Math.log10(T0)));          // 3 chiffres significatifs sur T0
     const fmtT = v => (v === 0 ? '0' : v.toFixed(dec).replace('.', state.lang === 'en' ? '.' : ','));
-    for (let i=0; i<=periods; i++) {
+    for (let i=0; i<=periods; i+=tickStep) {
       ctx.fillText(fmtT(i*T0), padding + (i/periods)*graphWidth, height-padding+16);
     }
 
