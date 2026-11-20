@@ -2431,7 +2431,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
       zero: dark ? 'rgba(203,213,225,0.45)' : '#9ca3af',
       text: dark ? '#cbd5e1' : '#6b7280',
       contIn: dark ? '#60a5fa' : '#2563eb',
-      xSamples: '#16a34a',
+      xSamples: dark ? '#bfdbfe' : '#1e3a8a',   // x[n] : bleu, plus foncé (clair) que la courbe x(t)
+      xSamplesEdge: dark ? '#1e3a8a' : '#ffffff',
       ySamples: '#dc2626',
       zoh: '#f97316',
       bode: dark ? '#60a5fa' : '#2563eb',
@@ -2777,7 +2778,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
 
     if(step3State.overlay) {
       data.push({ x:tCont, y:xCont, type:'scatter', mode:'lines', name:'x(t)', line:{color:C.contIn, width:2} });
-      data.push({ x:tArr, y:x, type:'scatter', mode:'markers', name:'x[n]', marker:{color:C.xSamples, size:6} });
+      data.push({ x:tArr, y:x, type:'scatter', mode:'markers', name:'x[n]', marker:{color:C.xSamples, size:7, line:{color:C.xSamplesEdge, width:1}} });
       data.push({ x:tArr, y:y, type:'scatter', mode:'markers', name:'y[n]', marker:{color:C.ySamples, size:6} });
       if(step3State.showZOH) {
         data.push({ x:tArr, y:y, type:'scatter', mode:'lines', name:'ZOH(y[n])', line:{color:C.zoh, width:2, shape:'hv'} });
@@ -2800,7 +2801,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       layout.grid = {rows:2, columns:1, pattern:'independent'};
 
       data.push({ x:tCont, y:xCont, type:'scatter', mode:'lines', name:'x(t)', line:{color:C.contIn, width:2}, xaxis:'x', yaxis:'y' });
-      data.push({ x:tArr, y:x, type:'scatter', mode:'markers', name:'x[n]', marker:{color:C.xSamples, size:6}, xaxis:'x', yaxis:'y' });
+      data.push({ x:tArr, y:x, type:'scatter', mode:'markers', name:'x[n]', marker:{color:C.xSamples, size:7, line:{color:C.xSamplesEdge, width:1}}, xaxis:'x', yaxis:'y' });
       data.push({ x:tArr, y:y, type:'scatter', mode:'markers', name:'y[n]', marker:{color:C.ySamples, size:6}, xaxis:'x2', yaxis:'y2' });
       if(step3State.showZOH) {
         data.push({ x:tArr, y:y, type:'scatter', mode:'lines', name:'ZOH(y[n])', line:{color:C.zoh, width:2, shape:'hv'}, xaxis:'x2', yaxis:'y2' });
@@ -3242,8 +3243,17 @@ Implement a real-time digital signal acquisition and processing system using Ard
     const hp = step3State.hpR * nyq;
     const lpEl = document.getElementById('step3LpFcInfo');
     const hpEl = document.getElementById('step3HpFcInfo');
-    if(lpEl) lpEl.innerHTML = step3t('fc_prefix') + lp.toFixed(1) + ' Hz';
-    if(hpEl) hpEl.innerHTML = step3t('fc_prefix') + hp.toFixed(1) + ' Hz';
+    // Ordre 1 : afficher a et l'équation chiffrée, comme dans le polycopié
+    const dec = v => v.toFixed(3).replace('.', state.lang === 'en' ? '.' : ',');
+    const aOf = fc => { const RC = 1 / (2 * Math.PI * fc); return RC / (RC + 1 / step3State.Fs); };
+    const eq1 = (type, fc) => {
+      const a = aOf(fc);
+      return type === 'lp'
+        ? `<br>a = ${dec(a)} : y[n] = ${dec(a)}·y[n−1] + ${dec(1 - a)}·x[n]`
+        : `<br>a = ${dec(a)} : y[n] = ${dec(a)}·y[n−1] + ${dec(a)}·(x[n] − x[n−1])`;
+    };
+    if(lpEl) lpEl.innerHTML = step3t('fc_prefix') + lp.toFixed(1) + ' Hz' + (step3State.lpOrder === 1 ? eq1('lp', lp) : '');
+    if(hpEl) hpEl.innerHTML = step3t('fc_prefix') + hp.toFixed(1) + ' Hz' + (step3State.hpOrder === 1 ? eq1('hp', hp) : '');
   }
 
   // Update Step 3 layout
