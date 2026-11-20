@@ -1198,6 +1198,41 @@
       }
       .step3-panel{ max-height:300px; }
     }
+
+    /* ===================== TÉLÉPHONE (≤ 760 px) =====================
+       La page devient une colonne qui défile : panneaux puis graphiques, chacun à hauteur fixe.
+       (La connexion à l'Arduino demande un ordinateur : Web Serial n'existe pas sur mobile.) */
+    @media (max-width:760px){
+      html, body { height:auto !important; min-height:100%; display:block !important; }
+      main { overflow:visible !important; padding:8px !important; display:block !important; }
+      .step-wrapper { height:auto !important; display:block !important; }
+      .step-card { overflow:visible !important; height:auto !important; padding:8px !important; }
+      #stepContent { height:auto !important; display:block !important; }
+
+      /* Rappel */
+      .step2-container { display:flex !important; flex-direction:column; gap:8px; height:auto !important; }
+      .step2-sidebar { overflow:visible !important; height:auto !important; }
+      .step2-temporal { height:320px !important; flex:0 0 auto; }
+      .step2-spectral { display:flex !important; flex-direction:column; min-height:0 !important; overflow:visible !important; }
+
+      /* Montage */
+      .montage-panel { height:auto !important; display:block !important; padding:6px !important; }
+      .montage-svg { height:auto !important; }
+
+      /* Simulation */
+      .step3-wrapper { height:auto !important; padding:0 !important; display:block !important; }
+      .step3-card { overflow:visible !important; }
+      .step3-layout { display:flex !important; flex-direction:column; gap:8px; }
+      .step3-panel { max-height:none !important; overflow:visible !important; }
+      #step3TimeCard { height:400px; }
+      #step3BodeCard { height:480px; }
+      .step3-plot-card > .step3-plot-title { white-space:normal; padding-right:100px; }
+
+      /* Connexion à l'Arduino */
+      .step4-wrapper { display:flex !important; flex-direction:column; height:auto !important; padding:0 !important; }
+      .step4-card { overflow:visible !important; }
+      .step4-console-output { height:220px; flex:0 0 auto; }
+    }
   </style>
 <!-- Contador de visitas (GoatCounter, sin cookies ni datos personales). No cuenta en localhost ni desde file://. -->
 <script data-goatcounter="https://ferrucci-franco.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
@@ -2176,7 +2211,11 @@ Implement a real-time digital signal acquisition and processing system using Ard
     ctx.fillText((2*Fs).toFixed(0), f0ToX(2*Fs), yZero+22);
     ctx.font='bold 14px system-ui';  // Negrita (même taille que l'onglet Simulation)
     ctx.textAlign='right';  // Justificado a la derecha
-    ctx.fillText('fᵢₙ (Hz)', width-padding-10, height-bottomPadding+45);
+    if (width < 520) {   // écran étroit (téléphone) : titre au bout de l'axe, au-dessus, pour ne pas chevaucher la légende
+      ctx.fillText('fᵢₙ (Hz)', width-padding, yZero-8);
+    } else {
+      ctx.fillText('fᵢₙ (Hz)', width-padding-10, height-bottomPadding+45);
+    }
 
     // Labels eje Y (cerca del eje centrado en x=0, mostrar decimales si no son enteros)
     ctx.textAlign='right';
@@ -4442,6 +4481,10 @@ Implement a real-time digital signal acquisition and processing system using Ard
     }
     if (sendConfigBtn) sendConfigBtn.disabled = !on;
     if (hintEl) hintEl.style.display = on ? 'none' : '';
+    if (!('serial' in navigator)) {
+      if (connectBtn) connectBtn.disabled = true;
+      if (hintEl) { hintEl.style.display = ''; hintEl.textContent = step4t('no_serial'); }
+    }
 
     if (statusEl) {
       statusEl.textContent = on
