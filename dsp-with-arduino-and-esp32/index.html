@@ -2695,7 +2695,15 @@ Implement a real-time digital signal acquisition and processing system using Ard
   }
 
   // Frequency response
+  // Réponse vue à la sortie de la carte : filtre × retard d'un échantillon (le CNA sort y[n-1]).
+  // Le module est inchangé ; la phase perd 360°·f/Fs.
   function step3H_at_f(f) {
+    const H = step3H_filter_at_f(f);
+    const w = 2*Math.PI*f/step3State.Fs, c = Math.cos(w), sn = Math.sin(w);
+    return { Re: H.Re*c + H.Im*sn, Im: H.Im*c - H.Re*sn };
+  }
+
+  function step3H_filter_at_f(f) {
     const Fs = step3State.Fs;
     const cf = step3Coeffs();
     if (cf.sos) {
