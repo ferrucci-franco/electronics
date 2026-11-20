@@ -2471,44 +2471,58 @@ Implement a real-time digital signal acquisition and processing system using Ard
   // ===== Conception des filtres RII passe-bas / passe-haut (une seule source pour la simulation ET la carte) =====
   // Ordre 1 : forme du polycopié, y[n] = a·y[n-1] + (1-a)·x[n], a = RC/(RC+Ts), RC = 1/(2π fc)
   //           (passe-haut : y[n] = a·y[n-1] + a·(x[n] - x[n-1]))
-  // Ordres 2 à 4 : Butterworth par transformation bilinéaire avec pré-distorsion (-3 dB exactement à fc)
-  const IIR_MAX_ORDER = 4;
-  function step3MinRatio(order) { return order >= 4 ? 0.02 : 0.005; }  // ordre 4 : précision float32 de la carte
-  function step3DesignIIR(type, order, fc, Fs) {
+  // Ordres 2 à 8 : Butterworth par transformation bilinéaire avec pré-distorsion (-3 dB exactement à fc),
+  //           calculé en cellules du second ordre (step3DesignSOS) ; le polynôme global en est le produit.
+  const IIR_MAX_ORDER = 8;
+  function step3MinRatio(order) { return 0.005; }
+  // Ancien programme de la carte (sans cellules en cascade) : un seul polynôme en float32,
+  // fiable jusqu'à l'ordre 3, et à l'ordre 4 seulement si fc/FNyq >= 0,02.
+  function step3PolyOkOnOldFirmware(order, ratio) { return order <= 3 || (order === 4 && ratio >= 0.02); }
+
+  // Cascade de cellules du second ordre [b0,b1,b2,a1,a2] (a0 = 1), même filtre que step3DesignIIR
+  function step3DesignSOS(type, order, fc, Fs) {
     if (order === 1) {
       const RC = 1 / (2 * Math.PI * fc), Ts = 1 / Fs, a = RC / (RC + Ts);
-      return type === 'lp' ? { b:[1 - a], a:[1, -a] } : { b:[a, -a], a:[1, -a] };
+      return type === 'lp' ? [[1 - a, 0, 0, -a, 0]] : [[a, -a, 0, -a, 0]];
     }
     const K = 2 * Fs, Wc = K * Math.tan(Math.PI * fc / Fs);
-    // pôles numériques
-    const zr = [];
-    for (let k = 1; k <= order; k++) {
+    const zpole = k => {
       const th = Math.PI * (2 * k + order - 1) / (2 * order);
-      const pr = Wc * Math.cos(th), pi = Wc * Math.sin(th);          // pôle analogique
-      const nr = K + pr, ni = pi, dr = K - pr, di = -pi;              // (K + p) / (K - p)
-      const den = dr * dr + di * di;
-      zr.push([(nr * dr + ni * di) / den, (ni * dr - nr * di) / den]);
+      const pr = Wc * Math.cos(th), pi = Wc * Math.sin(th);
+      const nr = K + pr, ni = pi, dr = K - pr, di = -pi, den = dr * dr + di * di;
+      return [(nr * dr + ni * di) / den, (ni * dr - nr * di) / den];
+    };
+    const secs = [];
+    const lp = type === 'lp';
+    // gain unité de chaque cellule à 0 (passe-bas) ou à Fs/2 (passe-haut)
+    const norm = (b, a) => {
+      const z = lp ? 1 : -1;
+      const B = b[0] + b[1] * z + b[2] * z * z, A = 1 + a[0] * z + a[1] * z * z;
+      const g = A / B;
+      return [b[0] * g, b[1] * g, b[2] * g, a[0], a[1]];
+    };
+    for (let k = 1; k <= Math.floor(order / 2); k++) {
+      const [r, i] = zpole(k);                       // paire conjuguée
+      const a = [-2 * r, r * r + i * i];
+      const b = lp ? [1, 2, 1] : [1, -2, 1];
+      secs.push(norm(b, a));
     }
-    // polynôme en z^-1 à partir des racines (coefficients complexes, partie réelle à la fin)
-    let P = [[1, 0]];
-    zr.forEach(([rr, ri]) => {
-      const Q = P.map(c => c.slice()); Q.push([0, 0]);
-      for (let i = 1; i < Q.length; i++) {
-        const [pr, pi] = P[i - 1];
-        Q[i][0] -= rr * pr - ri * pi;
-        Q[i][1] -= rr * pi + ri * pr;
-      }
-      P = Q;
-    });
-    const a = P.map(c => c[0]);
-    // numérateur : (1 + z^-1)^N (passe-bas) ou (1 - z^-1)^N (passe-haut)
-    const b = [];
-    for (let k = 0, c = 1; k <= order; k++) { b.push(type === 'lp' ? c : c * (k % 2 ? -1 : 1)); c = c * (order - k) / (k + 1); }
-    // gain unité à 0 (passe-bas) ou à Fs/2 (passe-haut)
-    const sgn = k => (type === 'lp' ? 1 : (k % 2 ? -1 : 1));
-    const g = a.reduce((s, v, k) => s + v * sgn(k), 0) / b.reduce((s, v, k) => s + v * sgn(k), 0);
-    return { b: b.map(v => v * g), a };
+    if (order % 2) {                                 // pôle réel
+      const [r] = zpole((order + 1) / 2);
+      secs.push(norm(lp ? [1, 1, 0] : [1, -1, 0], [-r, 0]));
+    }
+    return secs;
   }
+  function step3SosToPoly(secs) {
+    const mul = (p, q) => { const r = new Array(p.length + q.length - 1).fill(0); p.forEach((x, i) => q.forEach((y, j) => r[i + j] += x * y)); return r; };
+    let b = [1], a = [1];
+    secs.forEach(([b0, b1, b2, a1, a2]) => { b = mul(b, [b0, b1, b2]); a = mul(a, [1, a1, a2]); });
+    while (b.length > 1 && b[b.length - 1] === 0) b.pop();
+    while (a.length > 1 && a[a.length - 1] === 0) a.pop();
+    return { b, a };
+  }
+
+
 
   function step3Coeffs() {
     const Fs = step3State.Fs;
@@ -2520,14 +2534,30 @@ Implement a real-time digital signal acquisition and processing system using Ard
       const b = new Array(N).fill(1/N);
       return { b:b, a:[1] };
     }
-    if(step3State.filt === 'lp') return step3DesignIIR('lp', step3State.lpOrder, step3State.lpR * Fnyq, Fs);
-    if(step3State.filt === 'hp') return step3DesignIIR('hp', step3State.hpOrder, step3State.hpR * Fnyq, Fs);
+    if(step3State.filt === 'lp' || step3State.filt === 'hp') {
+      const t = step3State.filt;
+      const sos = step3DesignSOS(t, step3State[t + 'Order'], step3State[t + 'R'] * Fnyq, Fs);
+      const pa = step3SosToPoly(sos);
+      return { b: pa.b, a: pa.a, sos };
+    }
     return { b:[1, -1], a:[1] };
   }
 
   // Apply filter
   function step3FilterApply(x) {
     const cf = step3Coeffs();
+    if (cf.sos) {
+      let v = x.slice();
+      cf.sos.forEach(([b0, b1, b2, a1, a2]) => {
+        let s1 = 0, s2 = 0;
+        v = v.map(xn => { const w = b0*xn + s1; s1 = b1*xn - a1*w + s2; s2 = b2*xn - a2*w; return w; });
+      });
+      // même convention que la forme polynomiale : retard d'un échantillon (sortie du CNA)
+      const y = new Array(v.length); y[0] = 0;
+      for (let n = 1; n < v.length; n++) y[n] = v[n-1];
+      if (step3State.filt === 'hp') for (let n = 0; n < y.length; n++) y[n] += 1.5;   // re-biais de la carte (mode AC)
+      return y;
+    }
     const b = cf.b.slice();
     const a = cf.a.slice();
     const N = x.length;
@@ -2667,6 +2697,18 @@ Implement a real-time digital signal acquisition and processing system using Ard
   function step3H_at_f(f) {
     const Fs = step3State.Fs;
     const cf = step3Coeffs();
+    if (cf.sos) {
+      const w = 2*Math.PI*f/Fs, c1 = Math.cos(w), s1 = Math.sin(w), c2 = Math.cos(2*w), s2 = Math.sin(2*w);
+      let Re = 1, Im = 0;
+      cf.sos.forEach(([b0, b1, b2, a1, a2]) => {
+        const nr = b0 + b1*c1 + b2*c2, ni = -(b1*s1 + b2*s2);
+        const dr = 1 + a1*c1 + a2*c2, di = -(a1*s1 + a2*s2);
+        const d = (dr*dr + di*di) || 1e-18;
+        const hr = (nr*dr + ni*di)/d, hi = (ni*dr - nr*di)/d;
+        const r2 = Re*hr - Im*hi; Im = Re*hi + Im*hr; Re = r2;
+      });
+      return { Re, Im };
+    }
     const b = cf.b;
     const a = cf.a;
     const w = 2*Math.PI*f/Fs;
@@ -3298,7 +3340,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
                 <div class="step3-group" id="step3LpGroup" style="display:${S.filt === 'lp' ? 'block' : 'none'}">
                   <div class="step3-row"><span>${t('filter_order')}</span>
                     <select id="step3LpOrder" class="step3-order-select">
-                      ${[1,2,3,4].map(n => `<option value="${n}" ${S.lpOrder === n ? 'selected' : ''}>${n}</option>`).join('')}
+                      ${[1,2,3,4,5,6,7,8].map(n => `<option value="${n}" ${S.lpOrder === n ? 'selected' : ''}>${n}</option>`).join('')}
                     </select>
                   </div>
                   <div class="step3-row"><span>${t('filter_ratio')}</span></div>
@@ -3311,7 +3353,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
                 <div class="step3-group" id="step3HpGroup" style="display:${S.filt === 'hp' ? 'block' : 'none'}">
                   <div class="step3-row"><span>${t('filter_order')}</span>
                     <select id="step3HpOrder" class="step3-order-select">
-                      ${[1,2,3,4].map(n => `<option value="${n}" ${S.hpOrder === n ? 'selected' : ''}>${n}</option>`).join('')}
+                      ${[1,2,3,4,5,6,7,8].map(n => `<option value="${n}" ${S.hpOrder === n ? 'selected' : ''}>${n}</option>`).join('')}
                     </select>
                   </div>
                   <div class="step3-row"><span>${t('filter_ratio')}</span></div>
@@ -3672,6 +3714,9 @@ Implement a real-time digital signal acquisition and processing system using Ard
       coef_a: 'Coeficientes a (denominador)',
       coef_b: 'Coeficientes b (numerador)',
       connect_arduino: 'Conectar el Arduino',
+      program: 'programa',
+      old_firmware: 'programa antiguo de la placa',
+      needs_new_firmware: 'Este filtro necesita el programa 2.0 de la placa (orden > 3). Cargue el .ino actual o elija un orden menor.',
       connect_hint: 'La primera vez, el navegador abre una ventana y pregunta qué dispositivo usar: elija el Arduino y luego «\u00a0Conectar\u00a0».',
       no_device_chosen: 'Ningún dispositivo elegido.',
       unplugged: 'Arduino desconectado (cable USB).',
@@ -3708,6 +3753,9 @@ Implement a real-time digital signal acquisition and processing system using Ard
       coef_a: 'Coefficients a (dénominateur)',
       coef_b: 'Coefficients b (numérateur)',
       connect_arduino: 'Connecter l\'Arduino',
+      program: 'programme',
+      old_firmware: 'ancien programme de la carte',
+      needs_new_firmware: 'Ce filtre demande le programme 2.0 de la carte (ordre > 3). Chargez le .ino actuel ou choisissez un ordre plus petit.',
       connect_hint: 'La première fois, le navigateur ouvre une fenêtre et demande quel appareil utiliser : choisissez l\'Arduino, puis «\u00a0Connexion\u00a0».',
       no_device_chosen: 'Aucun appareil choisi.',
       unplugged: 'Arduino débranché (câble USB).',
@@ -3744,6 +3792,9 @@ Implement a real-time digital signal acquisition and processing system using Ard
       coef_a: 'Coefficients a (denominator)',
       coef_b: 'Coefficients b (numerator)',
       connect_arduino: 'Connect the Arduino',
+      program: 'program',
+      old_firmware: 'old board program',
+      needs_new_firmware: 'This filter needs board program 2.0 (order > 3). Upload the current .ino or choose a lower order.',
       connect_hint: 'The first time, the browser opens a window asking which device to use: choose the Arduino, then «\u00a0Connect\u00a0».',
       no_device_chosen: 'No device chosen.',
       unplugged: 'Arduino unplugged (USB cable).',
@@ -3791,6 +3842,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
     vref: 3.3,  // Reference voltage (updated by vref command)
     waitingForVref: false,  // Flag to capture vref response
     waitingForModel: false, // Flag to capture model response
+    waitingForVersion: false,
+    fwVersion: null,        // '2.0' si le programme gère les cellules en cascade (commande sos)
     boardName: ''
   };
 
@@ -3803,6 +3856,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
     let filterName = '';
     let fc = 0;
     let N = maN;
+    let sos = null;
 
     if (filt === 'bypass') {
       filterName = step3t('filter_bypass');
@@ -3814,12 +3868,14 @@ Implement a real-time digital signal acquisition and processing system using Ard
       b = new Array(N).fill(1/N);
     } else if (filt === 'lp') {
       fc = lpR * Fnyq;
-      ({ a, b } = step3DesignIIR('lp', step3State.lpOrder, fc, Fs));
+      sos = step3DesignSOS('lp', step3State.lpOrder, fc, Fs);
+      ({ a, b } = step3SosToPoly(sos));
       N = step3State.lpOrder;
       filterName = step3t('filter_lp');
     } else if (filt === 'hp') {
       fc = hpR * Fnyq;
-      ({ a, b } = step3DesignIIR('hp', step3State.hpOrder, fc, Fs));
+      sos = step3DesignSOS('hp', step3State.hpOrder, fc, Fs);
+      ({ a, b } = step3SosToPoly(sos));
       N = step3State.hpOrder;
       filterName = step3t('filter_hp');
     } else if (filt === 'diff') {
@@ -3828,7 +3884,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       b = [1, -1];
     }
 
-    return { a, b, filterName, Fs, fc, N, filt };
+    return { a, b, sos, filterName, Fs, fc, N, filt };
   }
 
   // Build difference equation strings (filter + DAC timing)
@@ -3922,6 +3978,9 @@ Implement a real-time digital signal acquisition and processing system using Ard
       await step4Send('model');
       step4State.waitingForVref = true;
       await step4Send('vref');
+      step4State.fwVersion = null;
+      step4State.waitingForVersion = true;
+      await step4Send('version');
     } catch (err) {
       if (err && err.name === 'NotFoundError') {
         step4Log(step4t('no_device_chosen'), 'err');
@@ -3992,6 +4051,20 @@ Implement a real-time digital signal acquisition and processing system using Ard
             for (const line of lines) {
               const trimmed = line.trim();
               if (trimmed) {
+                // Réponse à 'version' : « FW x.y » (programme récent) ou « Commande inconnue » (ancien)
+                if (step4State.waitingForVersion && /^FW\s+\S+/.test(trimmed)) {
+                  step4State.waitingForVersion = false;
+                  step4State.fwVersion = trimmed.split(/\s+/)[1];
+                  step4Log(`RX: ${trimmed}`, 'rx');
+                  updateStep4UI();
+                  continue;
+                }
+                if (step4State.waitingForVersion && /^Commande inconnue/.test(trimmed)) {
+                  step4State.waitingForVersion = false;
+                  step4State.fwVersion = null;
+                  step4Log(`RX: ${trimmed} (${step4t('old_firmware')})`, 'rx');
+                  continue;
+                }
                 // Réponse à 'model' : nom de la carte
                 if (step4State.waitingForModel && /^(UNO_R4|ESP32)/.test(trimmed)) {
                   step4State.waitingForModel = false;
@@ -4046,7 +4119,13 @@ Implement a real-time digital signal acquisition and processing system using Ard
   }
 
   async function step4SendConfig() {
-    const { a, b, Fs, filterName, fc, N, filt } = getFilterCoefficients();
+    const { a, b, sos, Fs, filterName, fc, N, filt } = getFilterCoefficients();
+    const useSos = !!(sos && step4State.fwVersion && parseFloat(step4State.fwVersion) >= 2);
+    const ratio = (filt === 'lp') ? step3State.lpR : step3State.hpR;
+    if (sos && !useSos && !step3PolyOkOnOldFirmware(N, ratio)) {
+      step4Log(step4t('needs_new_firmware'), 'err');
+      return;
+    }
 
     // Send sampling frequency first (needed for all modes)
     await step4Send(`fs ${Fs}`);
@@ -4061,7 +4140,11 @@ Implement a real-time digital signal acquisition and processing system using Ard
       // Send coefficients based on filter type
       const bStr = '[' + b.map(x => Number(x.toPrecision(8)).toString()).join(',') + ']';
 
-      if (a.length <= 1) {
+      if (useSos) {
+        // Cellules du second ordre en cascade (programme 2.0 ou plus récent)
+        const flat = sos.flat().map(x => Number(x.toPrecision(8)).toString()).join(',');
+        await step4Send(`sos [${flat}]`);
+      } else if (a.length <= 1) {
         // FIR filter (MA, diff)
         await step4Send(`fir ${bStr}`);
       } else {
@@ -4142,6 +4225,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
     if (statusEl) {
       statusEl.textContent = on
         ? step4t('status_connected') + (step4State.boardName ? ' : ' + step4State.boardName : '')
+          + (step4State.fwVersion ? ' (' + step4t('program') + ' ' + step4State.fwVersion + ')' : '')
         : step4t('status_disconnected');
       statusEl.className = `step4-status ${on ? 'connected' : 'disconnected'}`;
     }
@@ -4205,8 +4289,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
           </div>
           <p id="step4Hint" class="step4-hint">${step4t('connect_hint')}</p>
           <p class="step4-firmware-note">${step4t('firmware_note')}
-            <a href="firmware/TP2_UNOR4_V4.ino" download>UNO R4 (.ino)</a> ·
-            <a href="firmware/TP2_ESP32_V6.ino" download>ESP32 (.ino)</a></p>
+            <a href="firmware/TP2_UNOR4/TP2_UNOR4.ino" download>UNO R4 (.ino)</a> ·
+            <a href="firmware/TP2_ESP32/TP2_ESP32.ino" download>ESP32 (.ino)</a></p>
         </div>
 
         <!-- Difference Equation Card -->

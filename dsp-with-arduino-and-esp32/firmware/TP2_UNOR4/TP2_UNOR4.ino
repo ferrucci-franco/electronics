@@ -1,12 +1,21 @@
 /*  ===========================================================================
-    UNO R4 (RA4M1) — ADC A1 → (FIR/IIR) → DAC A0 @ Fs sélectionnée par série
-    - Tick périodique matériel via FspTimer (jitter très faible)
-    - Commandes série : fs / fir / iir / bypass / filter / ac / show / help
-    - Implémentation en base z^{-1} :
-        H(z) = (Σ b[k] z^{-k}) / (1 + Σ a[k] z^{-k})   (a0=1 implicite)
-    - Latence pipeline : 1 échantillon (DAC sort y[n-1], calcule y[n])
+    UNO R4 (RA4M1) — ADC A1 → filtre (FIR / RII / biquads en cascade) → DAC A0
+    Version du programme : 2.0  (commande 'version' → "FW 2.0")
 
-    Ajout : Mode AC (optionnel)
+    - Tick périodique matériel via FspTimer (gigue très faible)
+    - Démarre seul à la mise sous tension : la sortie recopie l'entrée (y = x)
+      tant qu'aucune configuration n'a été envoyée — pas besoin d'ouvrir le port série.
+    - Commandes série : fs / fir / iir / sos / bypass / filter / ac / show / version / help
+    - fir / iir : un seul polynôme en z^-1 (forme directe I)
+        H(z) = (Σ b[k] z^-k) / (1 + Σ a[k] z^-k)   (a0 = 1 implicite)
+    - sos : cascade de cellules du second ordre (biquads, forme directe II transposée),
+      numériquement robuste en float32 jusqu'à l'ordre 8 (4 cellules)
+        sos [b0,b1,b2,a1,a2, b0,b1,b2,a1,a2, ...]   (a0 = 1 implicite pour chaque cellule)
+    - Latence : 1 échantillon (le DAC sort y[n-1] pendant que y[n] est calculé)
+    - D7 : carré à Fs/2 (contrôle de Fs)   D8 : à 1 pendant le calcul d'un échantillon
+      (largeur de l'impulsion = temps de calcul ; doit rester bien inférieure à 1/Fs)
+
+    Mode AC (optionnel)
       - Avant filtrage : x <- x - acOffsetRef       (centre la mesure autour de 0)
       - Après filtrage : y <- y + acOffsetRef       (re-biais pour le DAC 0..1)
       - Commandes : 'ac on' / 'ac off' / 'ac set <valeur>'
@@ -25,8 +34,11 @@
 #define MAX_NX            32        // taps FIR max
 #define MAX_NY            32        // ordre IIR max (nb d'éléments a[1..ny])
 #define SERIAL_BAUD       115200
-#define LINE_MAX_LEN      256
-#define PIN_PROBE         7
+#define LINE_MAX_LEN      512
+#define PIN_PROBE         7         // carré à Fs/2
+#define PIN_BUSY          8         // à 1 pendant le calcul d'un échantillon
+#define MAX_SOS           4         // cellules du second ordre (ordre 8 au maximum)
+#define FW_VERSION        "2.0"
 
 // Fréquences autorisées (Hz)
 static const uint32_t kAllowedFs[] = {500, 1000, 5000, 10000, 20000};
@@ -52,6 +64,12 @@ volatile uint8_t  nx = 1;                  // nb de b[k] utilisés (>=1)
 volatile uint8_t  ny = 0;                  // nb de a[k] utilisés (>=0)
 volatile float    b_coef[MAX_NX];          // b[0..nx-1]
 volatile float    a_coef[MAX_NY];          // a[1..ny] (a0=1 implicite)
+
+// Cascade de biquads (prioritaire si nsos > 0) : [b0, b1, b2, a1, a2] par cellule
+volatile uint8_t  nsos = 0;
+volatile float    sos_coef[MAX_SOS][5];
+static float      sos_s1[MAX_SOS];          // états de la forme directe II transposée
+static float      sos_s2[MAX_SOS];
 
 // Tampons circulaires pour l’historique (calculs en float)
 static float   x_hist[MAX_NX];
@@ -97,6 +115,7 @@ static void filter_init() {
   for (int i=0;i<MAX_NY;++i) y_hist[i] = 0.0f;
   x_head = 0;
   y_head = 0;
+  for (int i=0;i<MAX_SOS;++i) { sos_s1[i] = 0.0f; sos_s2[i] = 0.0f; }
 }
 
 // ============================ ÉTAPE DE FILTRE ===============================
@@ -116,6 +135,23 @@ static inline uint16_t filter_step(uint16_t x_code) {
     x_now -= ac_ref;          // typiquement 0.5 => plage ~[-0.5..+0.5]
   }
 
+  float acc = 0.0f;
+
+  // 3') Cascade de biquads (forme directe II transposée), si chargée
+  uint8_t ns_loc = nsos;
+  if (ns_loc > 0) {
+    float v = x_now;
+    for (uint8_t i=0; i<ns_loc; ++i) {
+      const float b0 = sos_coef[i][0], b1 = sos_coef[i][1], b2 = sos_coef[i][2];
+      const float a1 = sos_coef[i][3], a2 = sos_coef[i][4];
+      const float w = b0 * v + sos_s1[i];
+      sos_s1[i] = b1 * v - a1 * w + sos_s2[i];
+      sos_s2[i] = b2 * v - a2 * w;
+      v = w;
+    }
+    acc = v;
+  } else {
+
   // 3) Historique x[n]
   push_x(x_now);
 
@@ -126,7 +162,6 @@ static inline uint16_t filter_step(uint16_t x_code) {
   interrupts();
 
   // 5) Accumulateur Direct Form I
-  float acc = 0.0f;
 
   // FIR : Σ b[k] * x[n-k]
   for (uint8_t k=0; k<nx_loc; ++k) {
@@ -144,6 +179,7 @@ static inline uint16_t filter_step(uint16_t x_code) {
 
   // 6) Historique y[n]
   push_y(acc);
+  }  // fin de la branche polynôme (fir / iir)
 
   // 7) Re-biais éventuel pour le DAC (revenir à 0..1)
   float y_out = acc;
@@ -162,6 +198,7 @@ static void on_timer_irq(timer_callback_args_t * /*args*/) {
   static bool tgl = false;
   tgl = !tgl;
   digitalWrite(PIN_PROBE, tgl);  // carrée à Fs/2
+  digitalWrite(PIN_BUSY, HIGH);  // début du calcul
 
   // 1) sortir y[n-1]
   analogWrite(DAC_PIN, pendingSample);
@@ -171,6 +208,7 @@ static void on_timer_irq(timer_callback_args_t * /*args*/) {
   uint16_t y_now_code = filter_step(x_now_code);
   // 4) stocker pour le tick suivant
   pendingSample = y_now_code;
+  digitalWrite(PIN_BUSY, LOW);   // fin du calcul
 
   // Scheduler léger pour lecture des commandes
   tick_count++;
@@ -279,6 +317,7 @@ void print_help() {
   Serial.println(F("  fs <500|1000|5000|10000|20000>      : règle la Fs (Hz)"));
   Serial.println(F("  fir [b0,b1,...]                     : charge un filtre FIR"));
   Serial.println(F("  iir [b0,b1,...] [a1,a2,...]         : charge un filtre IIR (a0=1)"));
+  Serial.println(F("  sos [b0,b1,b2,a1,a2, ...]           : cascade de biquads (max 4 cellules)"));
   Serial.println(F("  bypass                              : ADC→DAC direct (sans filtre)"));
   Serial.println(F("  filter                              : filtre actif (désactive bypass)"));
   Serial.println(F("  ac on|off                           : active/désactive le mode AC"));
@@ -286,6 +325,7 @@ void print_help() {
   Serial.println(F("  show                                : affiche la configuration"));
   Serial.println(F("  model                               : retourne le modèle (UNO_R4)"));
   Serial.println(F("  vref                                : retourne la tension Vref (5.0)"));
+  Serial.println(F("  version                             : version du programme (FW x.y)"));
   Serial.println(F("  help                                : cette aide"));
 }
 
@@ -299,7 +339,19 @@ void print_config() {
 
   Serial.print(F("Fs = ")); Serial.print(fs); Serial.println(F(" Hz"));
   Serial.print(F("Mode = ")); Serial.println(bp ? F("BYPASS") : F("FILTRE"));
-  Serial.print(F("Type = ")); Serial.println(ny_loc==0 ? F("FIR") : F("IIR"));
+  uint8_t ns_loc = nsos;
+  Serial.print(F("Version = ")); Serial.println(F(FW_VERSION));
+  Serial.print(F("Type = ")); Serial.println(ns_loc > 0 ? F("SOS") : (ny_loc==0 ? F("FIR") : F("IIR")));
+  if (ns_loc > 0) {
+    for (uint8_t i=0;i<ns_loc;++i) {
+      Serial.print(F("cellule ")); Serial.print(i); Serial.print(F(" : ["));
+      for (uint8_t k=0;k<5;++k) { Serial.print(sos_coef[i][k], 7); if (k<4) Serial.print(F(", ")); }
+      Serial.println(F("]"));
+    }
+    Serial.print(F("AC mode = ")); Serial.println(ac_on ? F("ON") : F("OFF"));
+    Serial.print(F("AC offset ref = ")); Serial.println(ac_ref, 6);
+    return;
+  }
   Serial.print(F("AC mode = ")); Serial.println(ac_on ? F("ON") : F("OFF"));
   Serial.print(F("AC offset ref = ")); Serial.println(ac_ref, 6);
 
@@ -335,6 +387,7 @@ void handle_line(String line) {
   if (lower.startsWith("show")) { print_config(); return; }
   if (lower.startsWith("model")) { Serial.println(F("UNO_R4")); return; }
   if (lower.startsWith("vref")) { Serial.println(F("5.0")); return; }
+  if (lower.startsWith("version")) { Serial.print(F("FW ")); Serial.println(F(FW_VERSION)); return; }
 
   if (lower.startsWith("bypass")) {
     noInterrupts(); bypassEnabled = true; interrupts();
@@ -353,7 +406,7 @@ void handle_line(String line) {
       Serial.println(F("Erreur: Fs non autorisée. Utiliser 500|1000|5000|10000|20000."));
       return;
     }
-    noInterrupts(); reprogram_timer((uint32_t)f); interrupts();
+    reprogram_timer((uint32_t)f);   // arrête / relance le timer lui-même
     Serial.print(F("Fs = ")); Serial.print(f); Serial.println(F(" Hz (OK)"));
     return;
   }
@@ -369,6 +422,7 @@ void handle_line(String line) {
     for (int i=0;i<nb;++i) b_coef[i] = btmp[i];
     nx = (uint8_t)nb;
     ny = 0; // FIR
+    nsos = 0;
     filter_init();
     interrupts();
     Serial.print(F("FIR charge: nx=")); Serial.println(nb);
@@ -393,10 +447,28 @@ void handle_line(String line) {
     for (int i=0;i<na;++i) a_coef[i] = atmp[i];
     nx = (uint8_t)nb;
     ny = (uint8_t)na;
+    nsos = 0;
     filter_init();
     interrupts();
     Serial.print(F("IIR charge: nx=")); Serial.print(nb);
     Serial.print(F(", ny=")); Serial.println(na);
+    return;
+  }
+
+  if (lower.startsWith("sos")) {
+    float tmp[5*MAX_SOS];
+    int nv = parse_float_list(line, 0, tmp, 5*MAX_SOS);
+    if (nv <= 0 || (nv % 5) != 0) {
+      Serial.println(F("Erreur: syntaxe SOS. Exemple: sos [b0,b1,b2,a1,a2, b0,b1,b2,a1,a2]"));
+      return;
+    }
+    int ns = nv / 5;
+    noInterrupts();
+    for (int i=0;i<ns;++i) for (int k=0;k<5;++k) sos_coef[i][k] = tmp[5*i+k];
+    nsos = (uint8_t)ns;
+    filter_init();
+    interrupts();
+    Serial.print(F("SOS charge: ")); Serial.print(ns); Serial.println(F(" cellule(s)"));
     return;
   }
 
@@ -431,9 +503,11 @@ void handle_line(String line) {
 void setup() {
   pinMode(PIN_PROBE, OUTPUT);
   digitalWrite(PIN_PROBE, LOW);
+  pinMode(PIN_BUSY, OUTPUT);
+  digitalWrite(PIN_BUSY, LOW);
 
   Serial.begin(SERIAL_BAUD);
-  while (!Serial) { /* attendre USB si nécessaire */ }
+  // Pas d'attente du port USB : la carte filtre dès la mise sous tension.
 
   analogReadResolution(ADC_BITS);
   analogWriteResolution(DAC_BITS);
