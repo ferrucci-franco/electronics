@@ -723,6 +723,9 @@
 
     .step3-note{ font-size:.85rem; color:var(--muted); }
     .step3-order-select{ width:auto; min-width:64px; }
+    .app-copyright{ margin-top:auto; padding:10px 4px 2px; font-size:12px; line-height:1.35; color:var(--muted); }
+    .app-copyright a{ color:var(--accent); text-decoration:none; }
+    .app-copyright a:hover{ text-decoration:underline; }
     /* Encadré Nyquist : valeurs lisibles */
     #step3FinValue, #step3NyquistValue, #step3AliasInfo, #step3FstarValue, #step3SamplingStatus{
       font-size:1rem; color:var(--fg); line-height:1.35;
@@ -1336,9 +1339,9 @@ Implement a real-time digital signal acquisition and processing system using Ard
   };
 
   const appTitles = {
-    es:{main:'TP — Laboratorio de Filtros Digitales',sub:'Procesamiento en tiempo real con Arduino/ESP32 - Franco FERRUCCI'},
-    fr:{main:'TP — Laboratoire de Filtres Numériques',sub:'Traitement en temps réel avec Arduino/ESP32 - Franco FERRUCCI'},
-    en:{main:'Digital Filter Lab',sub:'Real-time processing with Arduino/ESP32 - Franco FERRUCCI'}
+    es:{main:'TP — Laboratorio de Filtros Digitales',sub:'Procesamiento en tiempo real con Arduino/ESP32'},
+    fr:{main:'TP — Laboratoire de Filtres Numériques',sub:'Traitement en temps réel avec Arduino/ESP32'},
+    en:{main:'Digital Filter Lab',sub:'Real-time processing with Arduino/ESP32'}
   };
 
   const stepNotes = {
@@ -1595,6 +1598,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
             <div style="font-weight:600; margin-bottom:4px; color:var(--accent);">${t.interpDescTitle}</div>
             <div id="interpDescText">${t.interpDescIdeal}</div>
           </div>
+          <div class="app-copyright">© 2026 Franco Ferrucci<br><a href="https://ferrucci-lab.com/" target="_blank" rel="noopener">ferrucci-lab.com</a></div>
         </div>
 
         <div class="step2-temporal">
@@ -3391,6 +3395,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
                   </div>
                 </div>
               </div>
+              <div class="app-copyright">© 2026 Franco Ferrucci<br><a href="https://ferrucci-lab.com/" target="_blank" rel="noopener">ferrucci-lab.com</a></div>
             </div>
 
             <!-- Time plot -->
