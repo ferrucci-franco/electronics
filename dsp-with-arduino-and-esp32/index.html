@@ -722,6 +722,7 @@
     }
 
     .step3-note{ font-size:.85rem; color:var(--muted); }
+    .step3-order-select{ width:auto; min-width:64px; }
     /* Encadré Nyquist : valeurs lisibles */
     #step3FinValue, #step3NyquistValue, #step3AliasInfo, #step3FstarValue, #step3SamplingStatus{
       font-size:1rem; color:var(--fg); line-height:1.35;
@@ -2200,6 +2201,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       filter_diff: "Diferenciador",
       filter_ma_order: "Orden N (media móvil)",
       filter_ratio: "Razón F<sub>corte</sub> / F<sub>Nyq</sub>",
+      filter_order: "Orden",
       fc_prefix: "Frecuencia de corte: ",
       filter_note: "El filtro se aplica a x[n] con retardo de 1 muestra.",
       visual_time_title: "Respuesta temporal",
@@ -2266,6 +2268,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       filter_diff: "Différenciateur",
       filter_ma_order: "Ordre N",
       filter_ratio: "Rapport F<sub>coupure</sub> / F<sub>Nyq</sub>",
+      filter_order: "Ordre",
       fc_prefix: "Fréquence de coupure : ",
       filter_note: "Filtre appliqué avec retard d'un échantillon.",
       visual_time_title: "Réponse temporelle",
@@ -2332,6 +2335,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       filter_diff: "Differentiator",
       filter_ma_order: "Order N",
       filter_ratio: "Ratio F<sub>cutoff</sub> / F<sub>Nyq</sub>",
+      filter_order: "Order",
       fc_prefix: "Cutoff frequency: ",
       filter_note: "Filter applied with 1-sample delay.",
       visual_time_title: "Time response",
@@ -2384,6 +2388,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
     maN: 5,
     lpR: 0.10,
     hpR: 0.10,
+    lpOrder: 2,
+    hpOrder: 2,
     magMode: 'linear',
     log: false,
     beyond: false,
@@ -2454,6 +2460,49 @@ Implement a real-time digital signal acquisition and processing system using Ard
   }
 
   // Filter coefficients
+
+  // ===== Conception des filtres RII passe-bas / passe-haut (une seule source pour la simulation ET la carte) =====
+  // Ordre 1 : forme du polycopié, y[n] = a·y[n-1] + (1-a)·x[n], a = RC/(RC+Ts), RC = 1/(2π fc)
+  //           (passe-haut : y[n] = a·y[n-1] + a·(x[n] - x[n-1]))
+  // Ordres 2 à 4 : Butterworth par transformation bilinéaire avec pré-distorsion (-3 dB exactement à fc)
+  const IIR_MAX_ORDER = 4;
+  function step3MinRatio(order) { return order >= 4 ? 0.02 : 0.005; }  // ordre 4 : précision float32 de la carte
+  function step3DesignIIR(type, order, fc, Fs) {
+    if (order === 1) {
+      const RC = 1 / (2 * Math.PI * fc), Ts = 1 / Fs, a = RC / (RC + Ts);
+      return type === 'lp' ? { b:[1 - a], a:[1, -a] } : { b:[a, -a], a:[1, -a] };
+    }
+    const K = 2 * Fs, Wc = K * Math.tan(Math.PI * fc / Fs);
+    // pôles numériques
+    const zr = [];
+    for (let k = 1; k <= order; k++) {
+      const th = Math.PI * (2 * k + order - 1) / (2 * order);
+      const pr = Wc * Math.cos(th), pi = Wc * Math.sin(th);          // pôle analogique
+      const nr = K + pr, ni = pi, dr = K - pr, di = -pi;              // (K + p) / (K - p)
+      const den = dr * dr + di * di;
+      zr.push([(nr * dr + ni * di) / den, (ni * dr - nr * di) / den]);
+    }
+    // polynôme en z^-1 à partir des racines (coefficients complexes, partie réelle à la fin)
+    let P = [[1, 0]];
+    zr.forEach(([rr, ri]) => {
+      const Q = P.map(c => c.slice()); Q.push([0, 0]);
+      for (let i = 1; i < Q.length; i++) {
+        const [pr, pi] = P[i - 1];
+        Q[i][0] -= rr * pr - ri * pi;
+        Q[i][1] -= rr * pi + ri * pr;
+      }
+      P = Q;
+    });
+    const a = P.map(c => c[0]);
+    // numérateur : (1 + z^-1)^N (passe-bas) ou (1 - z^-1)^N (passe-haut)
+    const b = [];
+    for (let k = 0, c = 1; k <= order; k++) { b.push(type === 'lp' ? c : c * (k % 2 ? -1 : 1)); c = c * (order - k) / (k + 1); }
+    // gain unité à 0 (passe-bas) ou à Fs/2 (passe-haut)
+    const sgn = k => (type === 'lp' ? 1 : (k % 2 ? -1 : 1));
+    const g = a.reduce((s, v, k) => s + v * sgn(k), 0) / b.reduce((s, v, k) => s + v * sgn(k), 0);
+    return { b: b.map(v => v * g), a };
+  }
+
   function step3Coeffs() {
     const Fs = step3State.Fs;
     const Fnyq = Fs/2;
@@ -2464,16 +2513,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
       const b = new Array(N).fill(1/N);
       return { b:b, a:[1] };
     }
-    if(step3State.filt === 'lp') {
-      const fc = step3State.lpR * Fnyq;
-      const a1 = Math.exp(-2*Math.PI*fc/Fs);
-      return { b:[1-a1], a:[1, -a1] };
-    }
-    if(step3State.filt === 'hp') {
-      const fc = step3State.hpR * Fnyq;
-      const a1 = Math.exp(-2*Math.PI*fc/Fs);
-      return { b:[1 - a1, -(1 - a1)], a:[1, -a1] };
-    }
+    if(step3State.filt === 'lp') return step3DesignIIR('lp', step3State.lpOrder, step3State.lpR * Fnyq, Fs);
+    if(step3State.filt === 'hp') return step3DesignIIR('hp', step3State.hpOrder, step3State.hpR * Fnyq, Fs);
     return { b:[1, -1], a:[1] };
   }
 
@@ -2525,7 +2566,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
       const fc = (step3State.filt === 'lp' ? step3State.lpR : step3State.hpR)*Fnyq;
       const a1 = Math.exp(-2*Math.PI*fc/Fs);
       const tau = 1 / Math.max(1e-6, (1 - a1));
-      settle = Math.ceil(6*tau);
+      const ord = step3State.filt === 'lp' ? step3State.lpOrder : step3State.hpOrder;
+      settle = Math.ceil(6*tau*ord);
     } else {
       settle = 8;
     }
@@ -3247,17 +3289,27 @@ Implement a real-time digital signal acquisition and processing system using Ard
                   </div>
                 </div>
                 <div class="step3-group" id="step3LpGroup" style="display:${S.filt === 'lp' ? 'block' : 'none'}">
+                  <div class="step3-row"><span>${t('filter_order')}</span>
+                    <select id="step3LpOrder" class="step3-order-select">
+                      ${[1,2,3,4].map(n => `<option value="${n}" ${S.lpOrder === n ? 'selected' : ''}>${n}</option>`).join('')}
+                    </select>
+                  </div>
                   <div class="step3-row"><span>${t('filter_ratio')}</span></div>
                   <div class="step3-range-row">
-                    <input type="range" id="step3LpRatioSlider" min="0.005" max="0.9" step="0.005" value="${S.lpR}">
+                    <input type="range" id="step3LpRatioSlider" min="${step3MinRatio(S.lpOrder)}" max="0.9" step="0.005" value="${S.lpR}">
                     <input type="text" id="step3LpRatioNumber" value="${step3Fmt(S.lpR, 3)}">
                   </div>
                   <div class="step3-note" id="step3LpFcInfo">${t('fc_prefix')}250.0 Hz</div>
                 </div>
                 <div class="step3-group" id="step3HpGroup" style="display:${S.filt === 'hp' ? 'block' : 'none'}">
+                  <div class="step3-row"><span>${t('filter_order')}</span>
+                    <select id="step3HpOrder" class="step3-order-select">
+                      ${[1,2,3,4].map(n => `<option value="${n}" ${S.hpOrder === n ? 'selected' : ''}>${n}</option>`).join('')}
+                    </select>
+                  </div>
                   <div class="step3-row"><span>${t('filter_ratio')}</span></div>
                   <div class="step3-range-row">
-                    <input type="range" id="step3HpRatioSlider" min="0.005" max="0.9" step="0.005" value="${S.hpR}">
+                    <input type="range" id="step3HpRatioSlider" min="${step3MinRatio(S.hpOrder)}" max="0.9" step="0.005" value="${S.hpR}">
                     <input type="text" id="step3HpRatioNumber" value="${step3Fmt(S.hpR, 3)}">
                   </div>
                   <div class="step3-note" id="step3HpFcInfo">${t('fc_prefix')}250.0 Hz</div>
@@ -3464,7 +3516,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
     // LP ratio
     const syncLp = v => {
       let r = step3ParseNum(v, step3State.lpR);
-      r = Math.max(0.005, Math.min(0.9, r));
+      r = Math.max(step3MinRatio(step3State.lpOrder), Math.min(0.9, r));
       step3State.lpR = r;
       document.getElementById('step3LpRatioSlider').value = r;
       document.getElementById('step3LpRatioNumber').value = step3Fmt(r, 3);
@@ -3477,7 +3529,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
     // HP ratio
     const syncHp = v => {
       let r = step3ParseNum(v, step3State.hpR);
-      r = Math.max(0.005, Math.min(0.9, r));
+      r = Math.max(step3MinRatio(step3State.hpOrder), Math.min(0.9, r));
       step3State.hpR = r;
       document.getElementById('step3HpRatioSlider').value = r;
       document.getElementById('step3HpRatioNumber').value = step3Fmt(r, 3);
@@ -3486,6 +3538,15 @@ Implement a real-time digital signal acquisition and processing system using Ard
     };
     document.getElementById('step3HpRatioSlider').addEventListener('input', e => syncHp(e.target.value));
     document.getElementById('step3HpRatioNumber').addEventListener('change', e => syncHp(e.target.value));
+
+    // Ordre des filtres RII
+    [['Lp', 'lp', syncLp], ['Hp', 'hp', syncHp]].forEach(([T, k, sync]) => {
+      document.getElementById('step3' + T + 'Order').addEventListener('change', e => {
+        step3State[k + 'Order'] = parseInt(e.target.value, 10);
+        document.getElementById('step3' + T + 'RatioSlider').min = step3MinRatio(step3State[k + 'Order']);
+        sync(step3State[k + 'R']);   // ré-applique la borne basse et redessine
+      });
+    });
 
     // Function to update disabled states based on ShowTime and ShowBode
     function step3UpdateDisabledStates() {
@@ -3745,21 +3806,13 @@ Implement a real-time digital signal acquisition and processing system using Ard
       b = new Array(N).fill(1/N);
     } else if (filt === 'lp') {
       fc = lpR * Fnyq;
-      const w0 = 2 * Math.PI * fc / Fs;
-      const alpha = Math.sin(w0) / (2 * 0.707);
-      const cosw0 = Math.cos(w0);
-      const a0 = 1 + alpha;
-      a = [1, (-2 * cosw0) / a0, (1 - alpha) / a0];
-      b = [(1 - cosw0) / (2 * a0), (1 - cosw0) / a0, (1 - cosw0) / (2 * a0)];
+      ({ a, b } = step3DesignIIR('lp', step3State.lpOrder, fc, Fs));
+      N = step3State.lpOrder;
       filterName = step3t('filter_lp');
     } else if (filt === 'hp') {
       fc = hpR * Fnyq;
-      const w0 = 2 * Math.PI * fc / Fs;
-      const alpha = Math.sin(w0) / (2 * 0.707);
-      const cosw0 = Math.cos(w0);
-      const a0 = 1 + alpha;
-      a = [1, (-2 * cosw0) / a0, (1 - alpha) / a0];
-      b = [(1 + cosw0) / (2 * a0), -(1 + cosw0) / a0, (1 + cosw0) / (2 * a0)];
+      ({ a, b } = step3DesignIIR('hp', step3State.hpOrder, fc, Fs));
+      N = step3State.hpOrder;
       filterName = step3t('filter_hp');
     } else if (filt === 'diff') {
       filterName = step3t('filter_diff');
@@ -3792,8 +3845,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
       }
     }
 
-    const allTerms = [...bTerms, ...aTerms];
-    eq += allTerms.join(' + ').replace(/\+ -/g, '- ');
+    // Convention du tableau et de la carte : H(z) = Σ b_k z^-k / (1 + Σ a_k z^-k), donc les a_k sont retranchés
+    eq += bTerms.join(' + ') + aTerms.map(t => ' − ' + t).join('');
 
     return {
       filter: eq || 'y[n] = x[n]',
@@ -3998,14 +4051,14 @@ Implement a real-time digital signal acquisition and processing system using Ard
       await step4Send('filter');
 
       // Send coefficients based on filter type
-      const bStr = '[' + b.map(x => x.toFixed(6)).join(',') + ']';
+      const bStr = '[' + b.map(x => Number(x.toPrecision(8)).toString()).join(',') + ']';
 
       if (a.length <= 1) {
         // FIR filter (MA, diff)
         await step4Send(`fir ${bStr}`);
       } else {
         // IIR filter (LP, HP) - a[0]=1 is implicit, send a[1..n]
-        const aStr = '[' + a.slice(1).map(x => x.toFixed(6)).join(',') + ']';
+        const aStr = '[' + a.slice(1).map(x => Number(x.toPrecision(8)).toString()).join(',') + ']';
         await step4Send(`iir ${bStr} ${aStr}`);
       }
 
@@ -4053,6 +4106,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
       `;
     } else if (cfg.filt === 'lp' || cfg.filt === 'hp') {
       html += `
+        <span class="step4-param-label">${step4t('order_label')}:</span>
+        <span class="step4-param-value">${cfg.N}</span>
         <span class="step4-param-label">${step4t('cutoff_freq')}:</span>
         <span class="step4-param-value">${cfg.fc.toFixed(1)} Hz</span>
       `;
@@ -4092,13 +4147,13 @@ Implement a real-time digital signal acquisition and processing system using Ard
     const maxLen = Math.max(a.length, b.length);
     let tableRows = '';
     for (let i = 0; i < maxLen; i++) {
-      const bVal = i < b.length ? b[i].toFixed(6) : '-';
-      const aVal = i < a.length ? a[i].toFixed(6) : '-';
+      const bVal = i < b.length ? Number(b[i].toPrecision(6)).toString() : '-';
+      const aVal = i < a.length ? Number(a[i].toPrecision(6)).toString() : '-';
       tableRows += `<tr><td>${i}</td><td>${bVal}</td><td>${aVal}</td></tr>`;
     }
 
     // Determine which extra parameters to show
-    const showN = (filt === 'ma');
+    const showN = (filt === 'ma' || filt === 'lp' || filt === 'hp');
     const showFc = (filt === 'lp' || filt === 'hp');
 
     stepContentEl.innerHTML = `
@@ -4112,7 +4167,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
             <span class="step4-param-label">${step4t('filter_type')}:</span>
             <span class="step4-param-value">${filterName}</span>
             ${showN ? `
-            <span class="step4-param-label">${step4t('order_label')} N:</span>
+            <span class="step4-param-label">${step4t('order_label')}${filt === 'ma' ? ' N' : ''}:</span>
             <span class="step4-param-value">${N}</span>
             ` : ''}
             ${showFc ? `
