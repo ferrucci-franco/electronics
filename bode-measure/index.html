@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Relevé de diagramme de Bode — RC / RLC</title>
+<meta name="description" content="Manual Bode-plot measurement sheet for RC and series RLC circuits: type the oscilloscope readings, get gain and phase, the Bode plot and a printable report.">
+<script>
+  (function(){
+    var hour = new Date().getHours();
+    var mode = (hour >= 7 && hour < 18) ? 'light' : 'dark';
+    document.documentElement.classList.add(mode);
+  })();
+</script>
+<script defer src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+<style>
+  :root{
+    --bg:#ffffff; --fg:#0f1222; --muted:#5a6275; --card:#eef4ff; --border:#d7e2f4; --link:#0b6cff; --accent:#2f6fde;
+    --paper:#ffffff; --plot:#ffffff; --panel:#f6f8fc;
+    --grid:#e6ebf3; --zero:#b9c3d6; --axis:#5a6275;
+    --scroll-track:#e4ebf7; --scroll-thumb:#a8bbdb; --scroll-thumb-hover:#7f97bf;
+    --c-meas:#1f77b4; --c-theory:#ff7f0e; --c-mark:#e0242b; --c-in:#888888;
+    --computed:#f1f4fa; --invalid:#d9343f; --danger:#b3261e;
+  }
+  html.dark{
+    --bg:#0b0e15; --fg:#eaf0ff; --muted:#a9b1c6; --card:#151d30; --border:#27324f; --link:#8ab4ff; --accent:#6d9cff;
+    --paper:#111624; --plot:#111624; --panel:#0f1524;
+    --grid:#1f2940; --zero:#3a4868; --axis:#a9b1c6;
+    --scroll-track:#131b2e; --scroll-thumb:#415374; --scroll-thumb-hover:#5b739d;
+    --c-meas:#4a9fe0; --c-theory:#ff9a3c; --c-mark:#ff4d55; --c-in:#9aa1ad;
+    --computed:#0d1322; --invalid:#ff6b74; --danger:#ff8a80;
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--fg);
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-text-size-adjust:100%;
+  }
+  a{color:var(--link);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  /* ===== Layout: header on top, measurement column on the left, Bode on the right ===== */
+  .app{
+    display:grid; gap:10px; padding:10px;
+    grid-template-columns:minmax(560px, 46%) minmax(0,1fr);
+    grid-template-areas:"head head" "left right";
+    align-items:start;
+  }
+  .app-header{grid-area:head}
+  .left{grid-area:left; display:flex; flex-direction:column; gap:10px; min-width:0}
+  .right{grid-area:right; position:sticky; top:10px; height:calc(100vh - 20px); min-height:560px; min-width:0}
+
+  .panel{border:1px solid var(--border);background:var(--card);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:10px;min-width:0}
+  .app-header{background:var(--panel); padding:10px 12px; flex-direction:row; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px 12px}
+  .app-header h1{margin:0; font-size:18px; line-height:1.25; font-weight:700}
+  .muted{color:var(--muted)}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;min-height:28px}
+  label{font-size:15px}
+  .pill{font-variant-numeric:tabular-nums;border:1px solid var(--border);border-radius:999px;padding:2px 9px;font-size:13px;background:var(--card);white-space:nowrap}
+
+  button, select, input[type=text]{
+    border:1px solid var(--border);background:var(--card);color:var(--fg);border-radius:10px;padding:7px 10px;font:inherit;font-size:14px
+  }
+  select{min-width:150px; cursor:pointer}
+  button{cursor:pointer}
+  button:hover{filter:brightness(0.95)}
+  button:focus-visible, select:focus-visible, input:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+  button:disabled{cursor:not-allowed; opacity:.5; filter:none}
+
+  .lang-theme{display:flex;gap:8px;align-items:center}
+  .seg{display:flex;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--card)}
+  .app-header .seg button{border:0;border-radius:0;background:transparent;color:var(--muted);padding:6px 11px;font-size:13px;font-weight:600}
+  .app-header .seg button + button{border-left:1px solid var(--border)}
+  .app-header .seg button.active{background:var(--accent);color:#fff}
+  #themeBtn{padding:5px 10px; font-size:16px; line-height:1.2}
+
+  .card{border:1px solid var(--border);border-radius:12px;padding:10px 12px;background:var(--paper);display:flex;flex-direction:column;gap:8px}
+  .card h3{margin:0 0 2px;font-size:15px}
+  .grow{flex:1}
+  .hint{font-size:12px;line-height:1.35}
+  .copyright{font-size:12px;line-height:1.35;padding:2px 2px 0}
+  .btn-accent{background:var(--accent) !important; color:#fff !important; border-color:var(--accent) !important}
+  .btn-accent:hover{filter:brightness(1.08)}
+  .btn-danger{color:var(--danger) !important}
+
+  /* ----- circuit panel ----- */
+  .circuit-grid{display:grid; grid-template-columns:1fr auto; gap:10px; align-items:start}
+  .comp-fields{display:flex; flex-direction:column; gap:6px}
+  .comp-fields .row label{min-width:120px}
+  .comp-fields input[type=text]{width:120px; text-align:right; font-variant-numeric:tabular-nums}
+  .comp-fields .unit{min-width:34px; color:var(--muted); font-size:14px}
+  .schematic{width:340px; max-width:100%; color:var(--fg)}
+  .schematic svg{width:100%; height:auto; display:block}
+  .schematic text{font-family:ui-sans-serif,system-ui,"Segoe UI",Roboto,Arial,sans-serif; font-size:13px; fill:var(--fg)}
+  .schematic .sub{font-size:9px}
+  .schematic .sign{font-size:15px; font-weight:700}
+  .schematic .ve{fill:var(--c-in)} .schematic .vs{fill:var(--c-meas)}
+  .schematic path, .schematic line, .schematic circle, .schematic rect{stroke:var(--fg); fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round}
+  .schematic circle.node{fill:var(--fg); stroke:none}
+  [hidden]{display:none !important}
+
+  /* ----- fake "disabled" checkbox (toggled with Ctrl+Shift+click) ----- */
+  .theory-row{cursor:default; user-select:none; -webkit-user-select:none}
+  .fake-check{
+    display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:4px;
+    border:1.5px solid var(--muted); background:var(--computed); color:var(--muted); font-size:13px; line-height:1; opacity:.55;
+  }
+  .fake-check[aria-checked="true"]::after{content:'✔'}
+  .disabled-label{color:var(--muted); opacity:.6}
+  .theory-values dl{display:grid; grid-template-columns:auto auto; gap:4px 14px; margin:0; font-size:14px; justify-content:start}
+  .theory-values dt{margin:0; color:var(--muted)}
+  .theory-values dd{margin:0; font-variant-numeric:tabular-nums; font-weight:600}
+
+  /* ----- measurement table ----- */
+  .table-wrap{overflow-x:auto}
+  table.meas{border-collapse:separate; border-spacing:0; width:100%; font-size:14px}
+  table.meas th, table.meas td{border-bottom:1px solid var(--border); padding:3px 4px; text-align:center; white-space:nowrap}
+  table.meas th{font-weight:600; font-size:13px; padding-bottom:6px; cursor:help}
+  table.meas th.nohelp{cursor:default}
+  table.meas th .sub-hdr{display:block; font-weight:400; font-size:11px; color:var(--muted)}
+  table.meas td.editable input{width:100%; min-width:76px; text-align:right; padding:5px 7px; border-radius:8px; background:var(--paper); font-variant-numeric:tabular-nums}
+  table.meas td.editable input.invalid{border-color:var(--invalid); box-shadow:0 0 0 1px var(--invalid) inset}
+  table.meas td.computed{background:var(--computed); color:var(--muted); font-variant-numeric:tabular-nums; text-align:right; padding:5px 9px; min-width:76px; user-select:none; -webkit-user-select:none}
+  table.meas td.computed:empty::after{content:'—'; opacity:.35}
+  table.meas th.computed{background:var(--computed); border-radius:6px 6px 0 0}
+  table.meas tr:last-child td{border-bottom:0}
+  table.meas td.actions{width:34px; padding:0 2px}
+  .row-del{border:0; background:transparent; color:var(--muted); font-size:18px; line-height:1; padding:4px 7px; border-radius:8px}
+  .row-del:hover{color:var(--danger); background:var(--computed); filter:none}
+  .table-actions{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+  .table-actions .spacer{flex:1}
+
+  .dt-note{display:grid; grid-template-columns:1fr 240px; gap:10px; align-items:center}
+  .dt-note svg{width:100%; height:auto; display:block}
+  .dt-note .dt-in{stroke:var(--c-in)} .dt-note .dt-out{stroke:var(--c-meas)}
+  .dt-note text{font-family:ui-sans-serif,system-ui,"Segoe UI",Roboto,Arial,sans-serif; font-size:11px; fill:var(--fg)}
+  .dt-note .axis{stroke:var(--zero); stroke-width:1}
+  .dt-note .dim{stroke:var(--c-mark); stroke-width:1.2}
+  .dt-note .guide{stroke:var(--c-mark); stroke-width:1; stroke-dasharray:3 3}
+
+  /* ----- report fields ----- */
+  .report-fields{display:grid; grid-template-columns:auto 1fr; gap:6px 10px; align-items:center}
+  .report-fields input[type=text]{width:100%}
+  .report-fields .date{font-variant-numeric:tabular-nums}
+
+  .confirm-box{border:1px solid var(--danger); border-radius:12px; padding:10px 12px; background:var(--computed); display:flex; flex-direction:column; gap:8px}
+  .confirm-box .row{justify-content:flex-end}
+
+  /* ----- Bode ----- */
+  .plotwrap.panel{background:var(--paper); padding:8px; height:100%}
+  .bodeWrap{display:flex;flex-direction:column;gap:8px;height:100%;min-height:0}
+  #bodeMag{flex:11 1 0; min-height:0; width:100%}
+  #bodePhase{flex:9 1 0; min-height:0; width:100%}
+  .plotly-notifier{display:none !important}
+
+  @media (max-width:1099px){
+    .app{grid-template-columns:minmax(0,1fr); grid-template-areas:"head" "right" "left"}
+    .right{position:static; height:720px}
+  }
+
+  /* ===== Print report (A4 portrait, light theme) ===== */
+  #report{display:none}
+  @media print{
+    @page{size:A4 portrait; margin:11mm 12mm}
+    :root, html.dark{
+      --bg:#ffffff; --fg:#000000; --muted:#444c5c; --card:#ffffff; --border:#9aa4b8; --paper:#ffffff; --computed:#f1f4fa;
+    }
+    html, body{background:#fff !important; color:#000 !important}
+    .app{display:none !important}
+    #report{display:block; font-size:10.5pt; color:#000}
+    #report h1{font-size:15pt; margin:0 0 4mm}
+    #report .meta{display:grid; grid-template-columns:auto 1fr auto 1fr; gap:1.5mm 4mm; margin:0 0 3mm; font-size:10pt}
+    #report .meta dt{color:#444; margin:0} #report .meta dd{margin:0; font-weight:600}
+    #report .body{display:grid; grid-template-columns:minmax(0,1fr) 98mm; gap:3mm; align-items:start}
+    #report table{border-collapse:collapse; width:100%; font-size:8.5pt; table-layout:auto}
+    #report th, #report td{border:0.3pt solid #9aa4b8; padding:0.8mm 1.5mm; text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums}
+    #report th{background:#eef2f8; text-align:center; font-weight:600; white-space:normal; line-height:1.15}
+    #report td.c{background:#f6f8fb; color:#333}
+    #report .plots img{display:block; width:98mm; height:auto}
+    #report .plots img + img{margin-top:1mm}
+    #report .theory{margin-top:2mm; font-size:9.5pt}
+    #report .theory ul{margin:1mm 0 0; padding-left:5mm}
+    #report .foot{margin-top:3mm; font-size:8pt; color:#555}
+    #report .foot .line{border-top:0.3pt solid #9aa4b8; margin-top:3mm; padding-top:1mm}
+  }
+</style>
+<!-- Contador de visitas (GoatCounter, sin cookies ni datos personales). No cuenta en localhost ni desde file://. -->
+<script data-goatcounter="https://ferrucci-franco.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</head>
+<body>
+  <div class="app" id="app">
+    <header class="panel app-header">
+      <h1 id="title">Relevé de diagramme de Bode — RC / RLC série</h1>
+      <div class="lang-theme">
+        <div class="seg" role="group" aria-label="Langue">
+          <button id="lang-fr" type="button" class="active" data-lang="fr" aria-pressed="true">FR</button>
+          <button id="lang-en" type="button" data-lang="en" aria-pressed="false">EN</button>
+          <button id="lang-es" type="button" data-lang="es" aria-pressed="false">ES</button>
+        </div>
+        <button id="themeBtn" type="button" title="Changer de thème" aria-label="Changer de thème">🌗</button>
+      </div>
+    </header>
+
+    <!-- ===== Left column: circuit, report fields, table ===== -->
+    <aside class="panel left" style="background:var(--panel)">
+
+      <!-- Circuit -->
+      <div class="card">
+        <h3 id="circuitCardTitle">Circuit</h3>
+        <div class="circuit-grid">
+          <div class="comp-fields">
+            <div class="row">
+              <label for="circuitSel" id="circuitLbl">Type de circuit</label>
+              <select id="circuitSel">
+                <option value="rc" id="optRc">RC</option>
+                <option value="rlc" id="optRlc">RLC série</option>
+              </select>
+            </div>
+            <div class="row">
+              <label for="compR" id="lblR">R</label>
+              <input id="compR" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="1000" /><span class="unit">Ω</span>
+            </div>
+            <div class="row">
+              <label for="compC" id="lblC">C</label>
+              <input id="compC" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="100" /><span class="unit">nF</span>
+            </div>
+            <div class="row rlc-only">
+              <label for="compL" id="lblL">L</label>
+              <input id="compL" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="10" /><span class="unit">mH</span>
+            </div>
+            <div class="row rlc-only">
+              <label for="compRL" id="lblRL">R<sub>L</sub> (bobine)</label>
+              <input id="compRL" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" value="0" /><span class="unit">Ω</span>
+            </div>
+          </div>
+          <div class="schematic" id="schematic" aria-hidden="true"></div>
+        </div>
+
+        <!-- hidden theory curve (Ctrl+Shift+click) -->
+        <div class="row theory-row" id="theoryRow" title="">
+          <span class="fake-check" id="theoryCheck" role="checkbox" aria-checked="false" aria-disabled="true" tabindex="-1"></span>
+          <span id="theoryLabel" class="disabled-label">Afficher la courbe théorique</span>
+        </div>
+        <div class="theory-values" id="theoryValues" hidden></div>
+      </div>
+
+      <!-- Report fields -->
+      <div class="card">
+        <h3 id="reportCardTitle">Rapport</h3>
+        <div class="report-fields">
+          <label for="namesIn" id="namesLbl">Noms</label>
+          <input id="namesIn" type="text" autocomplete="off" />
+          <label for="groupIn" id="groupLbl">Groupe / banc</label>
+          <input id="groupIn" type="text" autocomplete="off" />
+          <span id="dateLbl">Date</span>
+          <span class="date" id="dateVal"></span>
+        </div>
+        <div class="row">
+          <button id="printBtn" type="button" class="btn-accent">Imprimer le rapport (PDF)</button>
+          <button id="csvBtn" type="button">Exporter CSV</button>
+          <span class="spacer grow"></span>
+          <button id="newBtn" type="button" class="btn-danger">Nouvelle série de mesures</button>
+        </div>
+        <div class="confirm-box" id="confirmBox" hidden>
+          <div id="confirmText">Effacer toutes les mesures, les valeurs des composants et les noms ?</div>
+          <div class="row">
+            <button id="confirmNo" type="button">Annuler</button>
+            <button id="confirmYes" type="button" class="btn-danger">Oui, tout effacer</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Measurement table -->
+      <div class="card">
+        <h3 id="tableCardTitle">Mesures</h3>
+        <div class="muted hint" id="measHint"></div>
+        <div class="table-wrap">
+          <table class="meas" id="measTable">
+            <thead>
+              <tr>
+                <th class="nohelp" id="thF">f (Hz)</th>
+                <th id="thVe">V<sub>e,pp</sub> (V)</th>
+                <th id="thVs">V<sub>s,pp</sub> (V)</th>
+                <th id="thDt">ΔT (µs)</th>
+                <th class="computed" id="thG">G (V/V)</th>
+                <th class="computed" id="thGdb">G<sub>dB</sub> (dB)</th>
+                <th class="computed" id="thPhi">φ (°)</th>
+                <th class="nohelp"></th>
+              </tr>
+            </thead>
+            <tbody id="measBody"></tbody>
+          </table>
+        </div>
+        <div class="table-actions">
+          <button id="addRowBtn" type="button">+ Ajouter une ligne</button>
+          <span class="spacer"></span>
+          <span class="muted hint" id="rowsHint"></span>
+        </div>
+        <div class="dt-note">
+          <div class="muted hint" id="dtNote"></div>
+          <div id="dtDrawing" aria-hidden="true"></div>
+        </div>
+      </div>
+
+      <div class="muted copyright">
+        © 2025 Franco Ferrucci<br>
+        <a href="https://ferrucci-lab.com/" target="_blank" rel="noopener">ferrucci-lab.com</a>
+      </div>
+    </aside>
+
+    <!-- ===== Right column: Bode plot ===== -->
+    <section class="panel plotwrap right" id="bodeSection">
+      <div class="bodeWrap">
+        <div id="bodeMag"></div>
+        <div id="bodePhase"></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ===== Printable report (filled just before printing) ===== -->
+  <div id="report" aria-hidden="true"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  'use strict';
+
+  // ========= Helpers =========
+  const $ = s => document.querySelector(s);
+  const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const log10 = x => Math.log(x) / Math.LN10;
+  const TWO_PI = 2 * Math.PI;
+  const STORE_KEY = 'bode-measure-v1';
+  const LANG_KEY = 'bode-measure-lang';
+  const LOCALES = {fr:'fr-FR', en:'en-US', es:'es-ES'};
+  const DEFAULT_ROWS = 8;
+  const BODE_FMIN = 10, BODE_FMAX = 1e5;
+
+  // ========= Texts =========
+  const TXT = {
+    fr:{
+      title:'Relevé de diagramme de Bode — RC / RLC série',
+      circuitCard:'Circuit', circuitType:'Type de circuit', rc:'RC', rlc:'RLC série',
+      R:'R', C:'C', L:'L', RL:'R<sub>L</sub> (bobine)',
+      measHint:'Mesurez V<sub>e</sub> aux bornes d’entrée du circuit (voie 1), pas sur l’affichage du générateur.',
+      dtNote:'ΔT = temps entre le passage montant de l’entrée et le passage montant suivant de la sortie (la sortie est en retard : ΔT &gt; 0, φ &lt; 0).',
+      dtTip:'ΔT = temps entre le passage montant de l’entrée et le passage montant suivant de la sortie (la sortie est en retard : ΔT > 0, φ < 0).',
+      veTip:'Tension d’entrée crête à crête (voie 1), mesurée aux bornes du circuit.',
+      vsTip:'Tension de sortie crête à crête (voie 2), aux bornes de C.',
+      gTip:'G = V_s,pp / V_e,pp', gdbTip:'G_dB = 20·log10(G)', phiTip:'φ = −360 · f · ΔT  (ΔT en secondes)',
+      tableCard:'Mesures', addRow:'+ Ajouter une ligne', delRow:'Supprimer cette ligne',
+      rowsHint:'Virgule ou point décimal acceptés. L’ordre des lignes est libre : le tracé les classe par fréquence.',
+      reportCard:'Rapport', names:'Noms', group:'Groupe / banc', date:'Date',
+      print:'Imprimer le rapport (PDF)', csv:'Exporter CSV', newSeries:'Nouvelle série de mesures',
+      confirmText:'Effacer toutes les mesures, les valeurs des composants et les noms ?', confirmYes:'Oui, tout effacer', confirmNo:'Annuler',
+      theory:'Afficher la courbe théorique', theoryTitle:'Valeurs caractéristiques (théorie)',
+      fc:'Fréquence de coupure f<sub>c</sub>', f0:'Fréquence de résonance f<sub>0</sub>', Q:'Facteur de qualité Q',
+      invalidComp:'Valeurs de composants invalides : la courbe théorique ne peut pas être tracée.',
+      bodeTitle:'Bode — Gain', bodePhaseTitle:'Bode — Phase', bodeX:'Fréquence (Hz)', bodeYdB:'G (dB)', phaseY:'Phase (°)',
+      traceMeas:'Mesures', traceTh:'Théorie',
+      reportCircuit:'Circuit', reportComponents:'Composants', reportTheory:'Courbe théorique affichée',
+      reportFoot:'Relevé réalisé avec ferrucci-lab.com/bode-measure',
+      theme:'Changer de thème', language:'Langue',
+      csvComment:'Relevé de diagramme de Bode'
+    },
+    en:{
+      title:'Bode Plot Measurement Sheet — RC / series RLC',
+      circuitCard:'Circuit', circuitType:'Circuit type', rc:'RC', rlc:'Series RLC',
+      R:'R', C:'C', L:'L', RL:'R<sub>L</sub> (coil)',
+      measHint:'Measure V<sub>e</sub> at the circuit input terminals (channel 1), not on the generator display.',
+      dtNote:'ΔT = time between a rising zero crossing of the input and the next rising zero crossing of the output (the output lags: ΔT &gt; 0, φ &lt; 0).',
+      dtTip:'ΔT = time between a rising zero crossing of the input and the next rising zero crossing of the output (the output lags: ΔT > 0, φ < 0).',
+      veTip:'Input peak-to-peak voltage (channel 1), measured at the circuit terminals.',
+      vsTip:'Output peak-to-peak voltage (channel 2), across C.',
+      gTip:'G = V_s,pp / V_e,pp', gdbTip:'G_dB = 20·log10(G)', phiTip:'φ = −360 · f · ΔT  (ΔT in seconds)',
+      tableCard:'Measurements', addRow:'+ Add a row', delRow:'Delete this row',
+      rowsHint:'Decimal comma or point accepted. Rows can be typed in any order: the plot sorts them by frequency.',
+      reportCard:'Report', names:'Names', group:'Group / bench', date:'Date',
+      print:'Print the report (PDF)', csv:'Export CSV', newSeries:'New measurement series',
+      confirmText:'Clear all measurements, component values and names?', confirmYes:'Yes, clear everything', confirmNo:'Cancel',
+      theory:'Show the theoretical curve', theoryTitle:'Characteristic values (theory)',
+      fc:'Cutoff frequency f<sub>c</sub>', f0:'Resonance frequency f<sub>0</sub>', Q:'Quality factor Q',
+      invalidComp:'Invalid component values: the theoretical curve cannot be drawn.',
+      bodeTitle:'Bode — Gain', bodePhaseTitle:'Bode — Phase', bodeX:'Frequency (Hz)', bodeYdB:'G (dB)', phaseY:'Phase (°)',
+      traceMeas:'Measurements', traceTh:'Theory',
+      reportCircuit:'Circuit', reportComponents:'Components', reportTheory:'Theoretical curve shown',
+      reportFoot:'Measured with ferrucci-lab.com/bode-measure',
+      theme:'Toggle theme', language:'Language',
+      csvComment:'Bode plot measurement sheet'
+    },
+    es:{
+      title:'Hoja de medición de diagrama de Bode — RC / RLC serie',
+      circuitCard:'Circuito', circuitType:'Tipo de circuito', rc:'RC', rlc:'RLC serie',
+      R:'R', C:'C', L:'L', RL:'R<sub>L</sub> (bobina)',
+      measHint:'Mida V<sub>e</sub> en los bornes de entrada del circuito (canal 1), no en la pantalla del generador.',
+      dtNote:'ΔT = tiempo entre el cruce ascendente de la entrada y el siguiente cruce ascendente de la salida (la salida está retrasada: ΔT &gt; 0, φ &lt; 0).',
+      dtTip:'ΔT = tiempo entre el cruce ascendente de la entrada y el siguiente cruce ascendente de la salida (la salida está retrasada: ΔT > 0, φ < 0).',
+      veTip:'Tensión de entrada pico a pico (canal 1), medida en los bornes del circuito.',
+      vsTip:'Tensión de salida pico a pico (canal 2), en los bornes de C.',
+      gTip:'G = V_s,pp / V_e,pp', gdbTip:'G_dB = 20·log10(G)', phiTip:'φ = −360 · f · ΔT  (ΔT en segundos)',
+      tableCard:'Mediciones', addRow:'+ Agregar una fila', delRow:'Eliminar esta fila',
+      rowsHint:'Se acepta coma o punto decimal. Las filas pueden escribirse en cualquier orden: el gráfico las ordena por frecuencia.',
+      reportCard:'Informe', names:'Nombres', group:'Grupo / banco', date:'Fecha',
+      print:'Imprimir el informe (PDF)', csv:'Exportar CSV', newSeries:'Nueva serie de mediciones',
+      confirmText:'¿Borrar todas las mediciones, los valores de los componentes y los nombres?', confirmYes:'Sí, borrar todo', confirmNo:'Cancelar',
+      theory:'Mostrar la curva teórica', theoryTitle:'Valores característicos (teoría)',
+      fc:'Frecuencia de corte f<sub>c</sub>', f0:'Frecuencia de resonancia f<sub>0</sub>', Q:'Factor de calidad Q',
+      invalidComp:'Valores de componentes inválidos: no se puede trazar la curva teórica.',
+      bodeTitle:'Bode — Ganancia', bodePhaseTitle:'Bode — Fase', bodeX:'Frecuencia (Hz)', bodeYdB:'G (dB)', phaseY:'Fase (°)',
+      traceMeas:'Mediciones', traceTh:'Teoría',
+      reportCircuit:'Circuito', reportComponents:'Componentes', reportTheory:'Curva teórica mostrada',
+      reportFoot:'Medido con ferrucci-lab.com/bode-measure',
+      theme:'Cambiar tema', language:'Idioma',
+      csvComment:'Hoja de medición de diagrama de Bode'
+    }
+  };
+
+  // ========= State =========
+  const blankRow = () => ({f:'', ve:'', vs:'', dt:''});
+  const defaultState = () => ({
+    circuit:'rc', R:'1000', C:'100', L:'10', RL:'0',
+    rows: Array.from({length:DEFAULT_ROWS}, blankRow),
+    names:'', group:''
+  });
+  let state = defaultState();
+  let theoryOn = false;          // never persisted: always off after a reload
+  let LANG = 'fr';
+  let plotsBuilt = false;
+
+  // ========= Number parsing / formatting =========
+  // accepts "3,39" and "3.39", spaces allowed, nothing else
+  function parseNum(s){
+    if(s == null) return NaN;
+    s = String(s).trim().replace(/[\s  ]+/g, '').replace(',', '.');
+    if(!/^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/.test(s)) return NaN;
+    return parseFloat(s);
+  }
+  const numFmts = {};
+  function fmt(v, opts, key){
+    if(!Number.isFinite(v)) return '';
+    const k = LANG + '|' + key;
+    return (numFmts[k] ||= new Intl.NumberFormat(LOCALES[LANG], opts)).format(v);
+  }
+  const fmtG   = v => fmt(v, {minimumSignificantDigits:3, maximumSignificantDigits:3}, 'g');
+  const round1 = v => { const r = Math.round(v*10)/10; return r === 0 ? 0 : r; };   // no "-0.0"
+  const fmtDec1 = v => fmt(Number.isFinite(v) ? round1(v) : v, {minimumFractionDigits:1, maximumFractionDigits:1}, 'd1');
+  const fmtF   = v => fmt(v, {maximumFractionDigits:2}, 'f');
+  const fmtChar = v => fmt(v, {maximumSignificantDigits:5}, 'c');
+  // CSV: fixed number of decimals, decimal comma in French
+  function csvNum(v, dec){
+    if(!Number.isFinite(v)) return '';
+    let s = dec == null ? String(v) : (dec === 1 ? round1(v) : v).toFixed(dec);
+    return LANG === 'fr' ? s.replace('.', ',') : s;
+  }
+
+  // ========= Row computation =========
+  function computeRow(row){
+    const f = parseNum(row.f), ve = parseNum(row.ve), vs = parseNum(row.vs), dt = parseNum(row.dt);
+    const out = {f, ve, vs, dt, G:NaN, GdB:NaN, phi:NaN};
+    const fOk = Number.isFinite(f) && f > 0;
+    if(fOk && Number.isFinite(ve) && ve > 0 && Number.isFinite(vs) && vs >= 0){
+      out.G = vs / ve;
+      if(out.G > 0) out.GdB = 20 * log10(out.G);
+    }
+    if(fOk && Number.isFinite(dt)) out.phi = -360 * f * dt * 1e-6;
+    return out;
+  }
+  // is a non-empty cell value invalid? (empty cells are simply "not yet measured")
+  function cellInvalid(key, raw){
+    if(String(raw).trim() === '') return false;
+    const v = parseNum(raw);
+    if(!Number.isFinite(v)) return true;
+    if(key === 'f' || key === 've') return v <= 0;
+    if(key === 'vs') return v < 0;
+    return false;
+  }
+
+  // ========= Components / theory =========
+  function components(){
+    const R = parseNum(state.R), C = parseNum(state.C) * 1e-9, L = parseNum(state.L) * 1e-3, RL = parseNum(state.RL);
+    const rc = state.circuit === 'rc';
+    const ok = Number.isFinite(R) && R >= 0 && Number.isFinite(C) && C > 0 &&
+               (rc || (Number.isFinite(L) && L > 0 && Number.isFinite(RL) && RL >= 0));
+    return {ok, R, C, L, RL: rc ? 0 : RL, rc};
+  }
+  // H(jω) of the selected circuit: {mag, phaseDeg}, phase continuous (0 → −90° for RC, 0 → −180° for RLC)
+  function theoryAt(f, c){
+    const w = TWO_PI * f;
+    if(c.rc){
+      const x = w * c.R * c.C;
+      return {mag: 1 / Math.sqrt(1 + x*x), ph: -Math.atan(x) * 180 / Math.PI};
+    }
+    const re = 1 - w*w*c.L*c.C, im = w * (c.R + c.RL) * c.C;
+    const d = Math.hypot(re, im);
+    return {mag: d > 0 ? 1/d : Infinity, ph: -Math.atan2(im, re) * 180 / Math.PI};
+  }
+  function characteristic(c){
+    if(c.rc) return {fc: 1 / (TWO_PI * c.R * c.C)};
+    const f0 = 1 / (TWO_PI * Math.sqrt(c.L * c.C));
+    const Rt = c.R + c.RL;
+    return {f0, Q: Rt > 0 ? Math.sqrt(c.L / c.C) / Rt : Infinity};
+  }
+
+  // ========= Persistence (inside try/catch: the app keeps working without storage) =========
+  function save(){
+    try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(_){}
+  }
+  function load(){
+    try{
+      const raw = localStorage.getItem(STORE_KEY);
+      if(!raw) return;
+      const s = JSON.parse(raw);
+      if(!s || typeof s !== 'object') return;
+      const d = defaultState();
+      state = {
+        circuit: s.circuit === 'rlc' ? 'rlc' : 'rc',
+        R: typeof s.R === 'string' ? s.R : d.R, C: typeof s.C === 'string' ? s.C : d.C,
+        L: typeof s.L === 'string' ? s.L : d.L, RL: typeof s.RL === 'string' ? s.RL : d.RL,
+        rows: Array.isArray(s.rows) && s.rows.length
+          ? s.rows.map(r => ({f:String(r.f ?? ''), ve:String(r.ve ?? ''), vs:String(r.vs ?? ''), dt:String(r.dt ?? '')}))
+          : d.rows,
+        names: typeof s.names === 'string' ? s.names : '', group: typeof s.group === 'string' ? s.group : ''
+      };
+    }catch(_){ state = defaultState(); }
+  }
+
+  // ========= Schematics (SVG) =========
+  function resistorPath(x, y, len){
+    // horizontal zigzag centred on y, from x to x+len
+    const n = 6, dx = len / (2*n), a = 7;
+    let d = `M${x} ${y}`;
+    for(let i = 0; i < 2*n; i++){
+      const xx = x + dx*(i + 0.5), yy = (i % 2 === 0) ? y - a : y + a;
+      d += ` L${xx.toFixed(1)} ${yy}`;
+    }
+    return d + ` L${x+len} ${y}`;
+  }
+  function inductorPath(x, y, len){
+    const n = 4, r = len / (2*n);
+    let d = `M${x} ${y}`;
+    for(let i = 0; i < n; i++) d += ` a${r} ${r} 0 0 1 ${2*r} 0`;
+    return d;
+  }
+  function schematicSVG(rlc){
+    const yTop = 34, yBot = 124, xIn = 92, xOut = rlc ? 334 : 300, W = rlc ? 360 : 326;
+    const xC = rlc ? 286 : 236;
+    let s = `<svg viewBox="0 0 ${W} 150" xmlns="http://www.w3.org/2000/svg">`;
+    // generator
+    s += `<circle cx="42" cy="79" r="16"/><path d="M32 79 q5 -9 10 0 t10 0"/>`;
+    s += `<path d="M42 63 V${yTop} H${xIn}"/><path d="M42 95 V${yBot} H${xOut}"/>`;
+    // input terminals and v_e
+    s += `<circle class="node" cx="${xIn}" cy="${yTop}" r="3"/><circle class="node" cx="${xIn}" cy="${yBot}" r="3"/>`;
+    s += `<text class="sign ve" x="${xIn}" y="${yTop+22}" text-anchor="middle">+</text>`;
+    s += `<text class="ve" x="${xIn}" y="${(yTop+yBot)/2+5}" text-anchor="middle">v<tspan class="sub" dy="3">e</tspan></text>`;
+    s += `<text class="sign ve" x="${xIn}" y="${yBot-10}" text-anchor="middle">−</text>`;
+    // top rail with components
+    let x = xIn;
+    const rLen = rlc ? 44 : 60;
+    s += `<path d="M${x} ${yTop} H${x+16}"/>`; x += 16;
+    s += `<path d="${resistorPath(x, yTop, rLen)}"/><text x="${x+rLen/2}" y="${yTop-14}" text-anchor="middle">R</text>`; x += rLen;
+    if(rlc){
+      s += `<path d="M${x} ${yTop} H${x+12}"/>`; x += 12;
+      s += `<path d="${inductorPath(x, yTop, 56)}"/><text x="${x+28}" y="${yTop-14}" text-anchor="middle">L</text>`; x += 56;
+      s += `<path d="M${x} ${yTop} H${x+10}"/>`; x += 10;
+      s += `<path d="${resistorPath(x, yTop, 36)}"/><text x="${x+18}" y="${yTop-14}" text-anchor="middle">R<tspan class="sub" dy="3">L</tspan></text>`; x += 36;
+    }
+    s += `<path d="M${x} ${yTop} H${xOut}"/>`;
+    // capacitor to the bottom rail
+    s += `<path d="M${xC} ${yTop} V${(yTop+yBot)/2-6}"/><path d="M${xC-14} ${(yTop+yBot)/2-6} H${xC+14}"/><path d="M${xC-14} ${(yTop+yBot)/2+6} H${xC+14}"/><path d="M${xC} ${(yTop+yBot)/2+6} V${yBot}"/>`;
+    s += `<text x="${xC-20}" y="${(yTop+yBot)/2+5}" text-anchor="end">C</text>`;
+    // output terminals and v_s
+    s += `<circle class="node" cx="${xOut}" cy="${yTop}" r="3"/><circle class="node" cx="${xOut}" cy="${yBot}" r="3"/>`;
+    s += `<text class="sign vs" x="${xOut}" y="${yTop+22}" text-anchor="middle">+</text>`;
+    s += `<text class="vs" x="${xOut}" y="${(yTop+yBot)/2+5}" text-anchor="middle">v<tspan class="sub" dy="3">s</tspan></text>`;
+    s += `<text class="sign vs" x="${xOut}" y="${yBot-10}" text-anchor="middle">−</text>`;
+    return s + '</svg>';
+  }
+  function dtDrawingSVG(){
+    const W = 240, H = 100, y0 = 48, T = 150, x0 = 18, delay = 36, aIn = 30, aOut = 19;
+    const sine = (amp, shift) => {
+      let d = '';
+      for(let x = x0 - 60; x <= W - 4; x += 2){
+        const y = y0 - amp * Math.sin(TWO_PI * (x - x0 - shift) / T);
+        d += (d ? ' L' : 'M') + x + ' ' + y.toFixed(1);
+      }
+      return d;
+    };
+    let s = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
+    s += `<line class="axis" x1="2" y1="${y0}" x2="${W-2}" y2="${y0}"/>`;
+    s += `<path class="dt-in" d="${sine(aIn, 0)}" fill="none" stroke-width="1.6"/>`;
+    s += `<path class="dt-out" d="${sine(aOut, delay)}" fill="none" stroke-width="1.8"/>`;
+    s += `<line class="guide" x1="${x0}" y1="${y0}" x2="${x0}" y2="${H-8}"/><line class="guide" x1="${x0+delay}" y1="${y0}" x2="${x0+delay}" y2="${H-8}"/>`;
+    s += `<line class="dim" x1="${x0}" y1="${H-12}" x2="${x0+delay}" y2="${H-12}"/>`;
+    s += `<text x="${x0+delay/2}" y="${H-2}" text-anchor="middle" style="font-weight:700">ΔT</text>`;
+    s += `<text x="${W-4}" y="${y0-aIn-2}" text-anchor="end" style="fill:var(--c-in)">v<tspan dy="2" style="font-size:8px">e</tspan></text>`;
+    s += `<text x="${W-4}" y="${y0+aOut+11}" text-anchor="end" style="fill:var(--c-meas)">v<tspan dy="2" style="font-size:8px">s</tspan></text>`;
+    return s + '</svg>';
+  }
+  $('#dtDrawing').innerHTML = dtDrawingSVG();
+
+  // ========= Language =========
+  const langBtns = [$('#lang-fr'), $('#lang-en'), $('#lang-es')];
+  function setLang(l){
+    LANG = TXT[l] ? l : 'fr'; const t = TXT[LANG];
+    document.title = t.title;
+    [['title', t.title], ['circuitCardTitle', t.circuitCard], ['circuitLbl', t.circuitType], ['optRc', t.rc], ['optRlc', t.rlc],
+     ['lblR', t.R], ['lblC', t.C], ['lblL', t.L], ['lblRL', t.RL], ['theoryLabel', t.theory],
+     ['reportCardTitle', t.reportCard], ['namesLbl', t.names], ['groupLbl', t.group], ['dateLbl', t.date],
+     ['printBtn', t.print], ['csvBtn', t.csv], ['newBtn', t.newSeries], ['confirmText', t.confirmText], ['confirmYes', t.confirmYes], ['confirmNo', t.confirmNo],
+     ['tableCardTitle', t.tableCard], ['measHint', t.measHint], ['addRowBtn', t.addRow], ['rowsHint', t.rowsHint], ['dtNote', t.dtNote]
+    ].forEach(([id, html]) => { const el = document.getElementById(id); if(el) el.innerHTML = html; });
+    $('#thVe').title = t.veTip; $('#thVs').title = t.vsTip; $('#thDt').title = t.dtTip;
+    $('#thG').title = t.gTip; $('#thGdb').title = t.gdbTip; $('#thPhi').title = t.phiTip;
+    $('#themeBtn').title = t.theme; $('#themeBtn').setAttribute('aria-label', t.theme);
+    $('.seg').setAttribute('aria-label', t.language);
+    document.querySelectorAll('.row-del').forEach(b => { b.title = t.delRow; b.setAttribute('aria-label', t.delRow); });
+    langBtns.forEach(btn => {
+      const on = btn.dataset.lang === LANG;
+      btn.classList.toggle('active', on); btn.setAttribute('aria-pressed', String(on));
+    });
+    document.documentElement.setAttribute('lang', LANG);
+    try{ localStorage.setItem(LANG_KEY, LANG); }catch(_){}
+    renderDate();
+    refreshComputedCells();
+    renderTheoryValues();
+    updatePlots();
+  }
+  langBtns.forEach(b => b.addEventListener('click', () => setLang(b.dataset.lang)));
+
+  function renderDate(){
+    $('#dateVal').textContent = new Date().toLocaleDateString(LOCALES[LANG], {year:'numeric', month:'2-digit', day:'2-digit'});
+  }
+
+  // ========= Theme =========
+  (function themeToggle(){
+    const html = document.documentElement;
+    $('#themeBtn').addEventListener('click', () => {
+      const mode = html.classList.contains('dark') ? 'light' : 'dark';
+      html.classList.remove('light', 'dark'); html.classList.add(mode);
+      updatePlots();
+    });
+  })();
+
+  // ========= Circuit panel =========
+  const circuitSel = $('#circuitSel');
+  function applyCircuit(){
+    const rlc = state.circuit === 'rlc';
+    document.querySelectorAll('.rlc-only').forEach(el => el.hidden = !rlc);
+    $('#schematic').innerHTML = schematicSVG(rlc);
+  }
+  circuitSel.addEventListener('change', () => { state.circuit = circuitSel.value; applyCircuit(); save(); renderTheoryValues(); updatePlots(); });
+  [['compR','R'], ['compC','C'], ['compL','L'], ['compRL','RL']].forEach(([id, key]) => {
+    const el = document.getElementById(id);
+    el.addEventListener('input', () => {
+      state[key] = el.value;
+      const v = parseNum(el.value);
+      el.classList.toggle('invalid', !(Number.isFinite(v) && (key === 'R' || key === 'RL' ? v >= 0 : v > 0)));
+      save(); renderTheoryValues(); updatePlots();
+    });
+  });
+  function syncCircuitInputs(){
+    circuitSel.value = state.circuit;
+    $('#compR').value = state.R; $('#compC').value = state.C; $('#compL').value = state.L; $('#compRL').value = state.RL;
+    ['compR','compC','compL','compRL'].forEach(id => document.getElementById(id).classList.remove('invalid'));
+    applyCircuit();
+  }
+
+  // ========= Hidden theory checkbox: Ctrl+Shift+click only =========
+  const theoryCheck = $('#theoryCheck');
+  $('#theoryRow').addEventListener('click', e => {
+    if(!((e.ctrlKey || e.metaKey) && e.shiftKey)) return;   // looks disabled: a normal click does nothing
+    e.preventDefault();
+    theoryOn = !theoryOn;
+    theoryCheck.setAttribute('aria-checked', String(theoryOn));
+    renderTheoryValues();
+    updatePlots();
+  });
+  function renderTheoryValues(){
+    const box = $('#theoryValues');
+    if(!theoryOn){ box.hidden = true; box.innerHTML = ''; return; }   // nothing about the theory stays in the DOM when off
+    const t = TXT[LANG], c = components();
+    box.hidden = false;
+    if(!c.ok){ box.innerHTML = `<div class="muted hint">${t.invalidComp}</div>`; return; }
+    const ch = characteristic(c);
+    let html = `<h3 style="font-size:14px;margin:4px 0 2px">${t.theoryTitle}</h3><dl>`;
+    if(c.rc) html += `<dt>${t.fc}</dt><dd>${fmtChar(ch.fc)} Hz</dd>`;
+    else html += `<dt>${t.f0}</dt><dd>${fmtChar(ch.f0)} Hz</dd><dt>${t.Q}</dt><dd>${Number.isFinite(ch.Q) ? fmtChar(ch.Q) : '∞'}</dd>`;
+    box.innerHTML = html + '</dl>';
+  }
+
+  // ========= Report fields =========
+  const namesIn = $('#namesIn'), groupIn = $('#groupIn');
+  namesIn.addEventListener('input', () => { state.names = namesIn.value; save(); });
+  groupIn.addEventListener('input', () => { state.group = groupIn.value; save(); });
+
+  // ========= Measurement table =========
+  const body = $('#measBody');
+  const COLS = ['f', 've', 'vs', 'dt'];
+  function renderTable(){
+    body.innerHTML = '';
+    state.rows.forEach((row, i) => body.appendChild(makeRow(row, i)));
+    refreshComputedCells();
+  }
+  function makeRow(row, i){
+    const tr = document.createElement('tr');
+    tr.dataset.index = i;
+    COLS.forEach(key => {
+      const td = document.createElement('td'); td.className = 'editable';
+      const inp = document.createElement('input');
+      inp.type = 'text'; inp.inputMode = 'decimal'; inp.autocomplete = 'off'; inp.spellcheck = false;
+      inp.value = row[key]; inp.dataset.key = key;
+      inp.addEventListener('input', onCellInput);
+      inp.addEventListener('keydown', onCellKey);
+      td.appendChild(inp); tr.appendChild(td);
+    });
+    ['G', 'GdB', 'phi'].forEach(k => {
+      const td = document.createElement('td'); td.className = 'computed'; td.dataset.out = k; td.setAttribute('aria-readonly', 'true');
+      tr.appendChild(td);
+    });
+    const tdA = document.createElement('td'); tdA.className = 'actions';
+    const del = document.createElement('button'); del.type = 'button'; del.className = 'row-del'; del.textContent = '×';
+    del.title = TXT[LANG].delRow; del.setAttribute('aria-label', TXT[LANG].delRow); del.tabIndex = -1;
+    del.addEventListener('click', () => deleteRow(Number(tr.dataset.index)));
+    tdA.appendChild(del); tr.appendChild(tdA);
+    return tr;
+  }
+  function onCellInput(e){
+    const inp = e.target, tr = inp.closest('tr'), i = Number(tr.dataset.index);
+    state.rows[i][inp.dataset.key] = inp.value;
+    refreshRow(tr, state.rows[i]);
+    save(); updatePlots();
+  }
+  // Enter moves down the same column (adds a row at the bottom), like a spreadsheet
+  function onCellKey(e){
+    if(e.key !== 'Enter') return;
+    e.preventDefault();
+    const inp = e.target, tr = inp.closest('tr');
+    let next = tr.nextElementSibling;
+    if(!next){ addRow(false); next = tr.nextElementSibling; }
+    const target = next && next.querySelector(`input[data-key="${inp.dataset.key}"]`);
+    if(target) target.focus();
+  }
+  function refreshRow(tr, row){
+    const c = computeRow(row);
+    tr.querySelector('[data-out="G"]').textContent = fmtG(c.G);
+    tr.querySelector('[data-out="GdB"]').textContent = fmtDec1(c.GdB);
+    tr.querySelector('[data-out="phi"]').textContent = fmtDec1(c.phi);
+    tr.querySelectorAll('input').forEach(inp => inp.classList.toggle('invalid', cellInvalid(inp.dataset.key, inp.value)));
+  }
+  function refreshComputedCells(){
+    body.querySelectorAll('tr').forEach(tr => refreshRow(tr, state.rows[Number(tr.dataset.index)]));
+  }
+  function addRow(focus = true){
+    state.rows.push(blankRow());
+    const tr = makeRow(state.rows[state.rows.length-1], state.rows.length-1);
+    body.appendChild(tr); refreshRow(tr, state.rows[state.rows.length-1]);
+    if(focus) tr.querySelector('input').focus();
+    save();
+  }
+  function deleteRow(i){
+    state.rows.splice(i, 1);
+    renderTable(); save(); updatePlots();
+  }
+  $('#addRowBtn').addEventListener('click', () => addRow(true));
+
+  // ========= New series (in-page confirmation) =========
+  const confirmBox = $('#confirmBox');
+  $('#newBtn').addEventListener('click', () => { confirmBox.hidden = false; $('#confirmNo').focus(); });
+  $('#confirmNo').addEventListener('click', () => { confirmBox.hidden = true; });
+  $('#confirmYes').addEventListener('click', () => {
+    confirmBox.hidden = true;
+    state = defaultState();
+    try{ localStorage.removeItem(STORE_KEY); }catch(_){}
+    syncAll(); save(); updatePlots();
+  });
+
+  // ========= CSV export =========
+  function csvEscape(s){
+    s = String(s ?? '');
+    return /[";\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+  function buildCSV(){
+    const t = TXT[LANG], c = components(), lines = [];
+    lines.push([t.csvComment, new Date().toLocaleDateString(LOCALES[LANG])].map(csvEscape).join(';'));
+    lines.push([t.names, state.names].map(csvEscape).join(';'));
+    lines.push([t.group, state.group].map(csvEscape).join(';'));
+    lines.push([t.reportCircuit, c.rc ? t.rc : t.rlc].map(csvEscape).join(';'));
+    lines.push(['R (Ω)', csvNum(c.R)].join(';'));
+    lines.push(['C (nF)', csvNum(parseNum(state.C))].join(';'));
+    if(!c.rc){ lines.push(['L (mH)', csvNum(parseNum(state.L))].join(';')); lines.push(['R_L (Ω)', csvNum(c.RL)].join(';')); }
+    lines.push('');
+    lines.push(['f (Hz)', 'V_e,pp (V)', 'V_s,pp (V)', 'ΔT (µs)', 'G (V/V)', 'G_dB (dB)', 'φ (°)'].join(';'));
+    sortedRows().forEach(({row, c}) => {
+      const raw = (key, v) => Number.isFinite(v) ? csvNum(v) : csvEscape(row[key]);
+      lines.push([raw('f', c.f), raw('ve', c.ve), raw('vs', c.vs), raw('dt', c.dt),
+                  Number.isFinite(c.G) ? csvNum(Number(c.G.toPrecision(3))) : '', csvNum(c.GdB, 1), csvNum(c.phi, 1)].join(';'));
+    });
+    return lines.join('\r\n') + '\r\n';
+  }
+  // rows with at least one filled cell, sorted by frequency (unparsable frequencies last)
+  function sortedRows(){
+    return state.rows
+      .filter(r => COLS.some(k => String(r[k]).trim() !== ''))
+      .map(row => ({row, c: computeRow(row)}))
+      .sort((a, b) => (Number.isFinite(a.c.f) ? a.c.f : Infinity) - (Number.isFinite(b.c.f) ? b.c.f : Infinity));
+  }
+  $('#csvBtn').addEventListener('click', () => {
+    const blob = new Blob(['﻿' + buildCSV()], {type:'text/csv;charset=utf-8'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `bode-${state.circuit.toUpperCase()}-${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  });
+
+  // ========= Bode plots =========
+  const LIGHT = {paper:'#ffffff', plot:'#ffffff', grid:'#e6ebf3', zero:'#b9c3d6', axis:'#5a6275', fg:'#0f1222', meas:'#1f77b4', theory:'#ff7f0e', mark:'#e0242b'};
+  function palette(){
+    return {paper:cssVar('--paper'), plot:cssVar('--plot'), grid:cssVar('--grid'), zero:cssVar('--zero'), axis:cssVar('--axis'), fg:cssVar('--fg'),
+            meas:cssVar('--c-meas'), theory:cssVar('--c-theory'), mark:cssVar('--c-mark')};
+  }
+  const FONT = 'ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif';
+  function plotConfig(){ return {displaylogo:false, displayModeBar:false, responsive:true, showTips:false, scrollZoom:false}; }
+
+  // measured points, sorted by frequency
+  function measuredPoints(){
+    const pts = state.rows.map(computeRow).filter(c => Number.isFinite(c.f) && c.f > 0);
+    pts.sort((a, b) => a.f - b.f);
+    return {
+      gain: pts.filter(c => Number.isFinite(c.GdB)),
+      phase: pts.filter(c => Number.isFinite(c.phi))
+    };
+  }
+  // log-frequency range: 10 Hz – 100 kHz by default, extended by whole decades to fit the points
+  function freqRangeExp(pts){
+    let lo = log10(BODE_FMIN), hi = log10(BODE_FMAX);
+    pts.forEach(c => { lo = Math.min(lo, Math.floor(log10(c.f) + 1e-9)); hi = Math.max(hi, Math.ceil(log10(c.f) - 1e-9)); });
+    return [lo, hi];
+  }
+  function theoryCurve(range, c){
+    const n = 400, f = [], mag = [], ph = [];
+    for(let i = 0; i <= n; i++){
+      const ff = Math.pow(10, range[0] + (range[1]-range[0]) * i / n);
+      const h = theoryAt(ff, c);
+      f.push(ff); mag.push(Number.isFinite(h.mag) && h.mag > 0 ? 20*log10(h.mag) : null); ph.push(h.ph);
+    }
+    return {f, mag, ph};
+  }
+  function hoverText(c){
+    return `f = ${fmtF(c.f)} Hz<br>G = ${fmtG(c.G)} (${fmtDec1(c.GdB)} dB)<br>φ = ${Number.isFinite(c.phi) ? fmtDec1(c.phi) + '°' : '—'}`;
+  }
+  function hoverTextPhase(c){
+    return `f = ${fmtF(c.f)} Hz<br>G = ${Number.isFinite(c.GdB) ? fmtG(c.G) + ' (' + fmtDec1(c.GdB) + ' dB)' : '—'}<br>φ = ${fmtDec1(c.phi)}°`;
+  }
+  // everything the two plots need: data + layouts, for the screen palette or the light print palette
+  function buildPlotModel(pal, sizeOpts){
+    const t = TXT[LANG], pts = measuredPoints();
+    const allPts = pts.gain.concat(pts.phase);
+    const range = freqRangeExp(allPts);
+    const c = components();
+    const th = (theoryOn && c.ok) ? theoryCurve(range, c) : null;
+    const ch = th ? characteristic(c) : null;
+    const fMark = ch ? (c.rc ? ch.fc : ch.f0) : null;
+
+    const markerStyle = {color:pal.meas, size:9, line:{color:pal.paper, width:1}};
+    const magData = [
+      {type:'scatter', mode:'markers', name:t.traceMeas, x:pts.gain.map(p => p.f), y:pts.gain.map(p => p.GdB),
+       text:pts.gain.map(hoverText), hovertemplate:'%{text}<extra></extra>', marker:markerStyle}
+    ];
+    const phData = [
+      {type:'scatter', mode:'markers', name:t.traceMeas, x:pts.phase.map(p => p.f), y:pts.phase.map(p => p.phi),
+       text:pts.phase.map(hoverTextPhase), hovertemplate:'%{text}<extra></extra>', marker:markerStyle}
+    ];
+    if(th){
+      magData.unshift({type:'scatter', mode:'lines', name:t.traceTh, x:th.f, y:th.mag, line:{color:pal.theory, width:2}, hoverinfo:'skip'});
+      phData.unshift({type:'scatter', mode:'lines', name:t.traceTh, x:th.f, y:th.ph, line:{color:pal.theory, width:2}, hoverinfo:'skip'});
+    }
+
+    // y ranges: always include the measured points (and the theory when shown)
+    const gVals = pts.gain.map(p => p.GdB).concat(th ? th.mag.filter(Number.isFinite) : []);
+    let gLo = Math.min(-40, ...gVals), gHi = Math.max(5, ...gVals);
+    gLo = Math.floor(gLo/5)*5 - 2; gHi = Math.ceil(gHi/5)*5 + 2;
+    const pVals = pts.phase.map(p => p.phi).concat(th ? th.ph : []);
+    let pLo = Math.min(c.rc ? -95 : -185, ...pVals), pHi = Math.max(5, ...pVals);
+    pLo = Math.floor(pLo/15)*15 - 5; pHi = Math.ceil(pHi/15)*15 + 5;
+
+    const shapes = fMark ? [{type:'line', x0:fMark, x1:fMark, y0:0, y1:1, xref:'x', yref:'paper', layer:'below',
+                             line:{color:pal.mark, width:1.5, dash:'dot'}}] : [];
+    const axis = {gridcolor:pal.grid, zerolinecolor:pal.zero, linecolor:pal.zero, tickcolor:pal.zero, automargin:true};
+    const base = (title, yTitle, yRange, dtick) => ({
+      paper_bgcolor:pal.paper, plot_bgcolor:pal.plot,
+      font:{color:pal.axis, family:FONT}, hoverlabel:{font:{family:FONT}},
+      margin:sizeOpts.margin, dragmode:'zoom',
+      xaxis:{title:{text:t.bodeX}, type:'log', range:range, ...axis, exponentformat:'none', ticks:'outside', minor:{showgrid:true, gridcolor:pal.grid, ticks:'outside'}},
+      yaxis:{title:{text:yTitle}, range:yRange, dtick, ...axis},
+      showlegend:true, legend:{orientation:'h', x:0.5, xanchor:'center', y:1.01, yanchor:'bottom', bgcolor:'rgba(0,0,0,0)', font:{size:sizeOpts.legendSize}},
+      title:{text:'<b>'+title+'</b>', x:0.5, xanchor:'center', y:0.985, yanchor:'top', font:{size:sizeOpts.titleSize, color:pal.fg}},
+      separators: LANG === 'en' ? '.,' : ',.',
+      // zoom is kept while the data range does not change; a new decade or a new theory resets the view
+      uirevision: range.join('|') + '|' + yRange.join('|') + '|' + (th ? 'th' : 'no'),
+      shapes
+    });
+    return {
+      mag:{data:magData, layout:base(t.bodeTitle, t.bodeYdB, [gLo, gHi], null)},
+      phase:{data:phData, layout:base(t.bodePhaseTitle, t.phaseY, [pLo, pHi], c.rc ? 15 : 30)},
+      fMark, ch, c
+    };
+  }
+  const screenSize = () => ({margin:{l:64, r:16, t:76, b:48}, titleSize:18, legendSize:12});
+
+  let linking = false;
+  function updatePlots(){
+    if(!window.Plotly) return;
+    const m = buildPlotModel(palette(), screenSize());
+    const cfg = plotConfig();
+    Plotly.react('bodeMag', m.mag.data, m.mag.layout, cfg);
+    Plotly.react('bodePhase', m.phase.data, m.phase.layout, cfg);
+    if(!plotsBuilt){ plotsBuilt = true; linkXAxes(); }
+  }
+  // zooming one plot zooms the other (shared log-frequency axis)
+  function linkXAxes(){
+    const mag = document.getElementById('bodeMag'), ph = document.getElementById('bodePhase');
+    const pair = [[mag, ph], [ph, mag]];
+    pair.forEach(([src, dst]) => {
+      src.on('plotly_relayout', ev => {
+        if(linking) return;
+        const upd = {};
+        if('xaxis.range[0]' in ev){ upd['xaxis.range'] = [ev['xaxis.range[0]'], ev['xaxis.range[1]']]; }
+        else if(ev['xaxis.autorange'] || (ev['xaxis.range'] && !ev['xaxis.range[0]'])){ upd['xaxis.range'] = src.layout.xaxis.range; }
+        else return;
+        linking = true;
+        Plotly.relayout(dst, upd).then(() => { linking = false; }, () => { linking = false; });
+      });
+    });
+  }
+  function whenPlotly(){
+    return new Promise(res => {
+      if(window.Plotly) return res();
+      const s = document.querySelector('script[src*="plotly"]');
+      if(s) s.addEventListener('load', res, {once:true});
+      const iv = setInterval(() => { if(window.Plotly){ clearInterval(iv); res(); } }, 100);
+    });
+  }
+
+  // ========= Print report =========
+  async function plotImage(model, width, height){
+    const div = document.createElement('div');
+    div.style.cssText = `position:fixed; left:-10000px; top:0; width:${width}px; height:${height}px`;
+    document.body.appendChild(div);
+    try{
+      await Plotly.newPlot(div, model.data, {...model.layout, width, height, uirevision:undefined}, {staticPlot:true, displayModeBar:false});
+      return await Plotly.toImage(div, {format:'png', width, height, scale:3});
+    }finally{ Plotly.purge(div); div.remove(); }
+  }
+  function esc(s){ return String(s ?? '').replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch])); }
+  async function buildReport(){
+    $('#report').innerHTML = '';
+    const t = TXT[LANG], c = components();
+    const printSize = {margin:{l:50, r:14, t:54, b:44}, titleSize:15, legendSize:11};
+    const m = buildPlotModel(LIGHT, printSize);
+    const [imgMag, imgPh] = await Promise.all([plotImage(m.mag, 500, 360), plotImage(m.phase, 500, 360)]);
+    const rows = sortedRows();
+    let comps = `R = ${esc(state.R)} Ω, C = ${esc(state.C)} nF`;
+    if(!c.rc) comps += `, L = ${esc(state.L)} mH, R<sub>L</sub> = ${esc(state.RL)} Ω`;
+    let html = `<h1>${esc(t.title)}</h1>
+      <dl class="meta">
+        <dt>${esc(t.names)}</dt><dd>${esc(state.names) || '—'}</dd>
+        <dt>${esc(t.date)}</dt><dd>${esc($('#dateVal').textContent)}</dd>
+        <dt>${esc(t.group)}</dt><dd>${esc(state.group) || '—'}</dd>
+        <dt>${esc(t.reportCircuit)}</dt><dd>${c.rc ? t.rc : t.rlc} — ${comps}</dd>
+      </dl>
+      <div class="body"><div>
+      <table><thead><tr><th>f (Hz)</th><th>V<sub>e,pp</sub> (V)</th><th>V<sub>s,pp</sub> (V)</th><th>ΔT (µs)</th><th>G (V/V)</th><th>G<sub>dB</sub> (dB)</th><th>φ (°)</th></tr></thead><tbody>`;
+    rows.forEach(({row, c}) => {
+      const raw = (key, v, f) => Number.isFinite(v) ? f(v) : esc(row[key]);
+      html += `<tr><td>${raw('f', c.f, fmtF)}</td><td>${raw('ve', c.ve, fmtF)}</td><td>${raw('vs', c.vs, fmtF)}</td><td>${raw('dt', c.dt, fmtF)}</td>
+               <td class="c">${fmtG(c.G)}</td><td class="c">${fmtDec1(c.GdB)}</td><td class="c">${fmtDec1(c.phi)}</td></tr>`;
+    });
+    html += `</tbody></table>`;
+    if(theoryOn && m.ch){
+      html += `<div class="theory"><strong>${esc(t.reportTheory)}</strong><ul>`;
+      if(c.rc) html += `<li>${t.fc} = ${fmtChar(m.ch.fc)} Hz</li>`;
+      else html += `<li>${t.f0} = ${fmtChar(m.ch.f0)} Hz</li><li>${t.Q} = ${Number.isFinite(m.ch.Q) ? fmtChar(m.ch.Q) : '∞'}</li>`;
+      html += `</ul></div>`;
+    }
+    html += `</div><div class="plots"><img src="${imgMag}" alt=""><img src="${imgPh}" alt=""></div></div>
+      <div class="foot"><div class="line">${esc(t.reportFoot)} — © 2025 Franco Ferrucci</div></div>`;
+    $('#report').innerHTML = html;
+  }
+  let printing = false;
+  $('#printBtn').addEventListener('click', async () => {
+    if(printing || !window.Plotly) return;
+    printing = true; $('#printBtn').disabled = true;
+    try{ await buildReport(); window.print(); }
+    catch(err){ console.error('report', err); }
+    finally{ printing = false; $('#printBtn').disabled = false; }
+  });
+  window.addEventListener('afterprint', () => { $('#report').innerHTML = ''; });
+
+  // ========= Init =========
+  function syncAll(){
+    syncCircuitInputs();
+    namesIn.value = state.names; groupIn.value = state.group;
+    renderTable();
+    renderTheoryValues();
+  }
+  load();
+  let savedLang = null;
+  try{ savedLang = localStorage.getItem(LANG_KEY); }catch(_){}
+  syncAll();
+  setLang(TXT[savedLang] ? savedLang : 'fr');
+  whenPlotly().then(() => updatePlots());
+  // the sticky Bode column changes height with the window: let Plotly follow it
+  window.addEventListener('resize', () => { if(plotsBuilt){ Plotly.Plots.resize('bodeMag'); Plotly.Plots.resize('bodePhase'); } });
+});
+</script>
+</body>
+</html>

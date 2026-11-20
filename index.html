@@ -481,6 +481,21 @@
       },
       // ===== Mediciones y laboratorio / Measurements & lab =====
       {
+        url: "bode-measure/", // folder with its own index.html
+        cat: "lab",
+        titles: {
+          en: "Bode Plot Measurement Sheet (RC / RLC)",
+          fr: "Relevé de diagramme de Bode (RC / RLC)",
+          es: "Hoja de medición de diagrama de Bode (RC / RLC)"
+        },
+        desc: {
+          en: "Type the oscilloscope readings (V_e, V_s, ΔT) for each frequency of an RC or series RLC circuit: gain and phase are computed, plotted on a Bode diagram and printed as a one-page report. CSV export, autosave.",
+          fr: "Saisissez les lectures de l’oscilloscope (V_e, V_s, ΔT) à chaque fréquence pour un circuit RC ou RLC série : gain et phase sont calculés, placés sur un diagramme de Bode et imprimés en rapport d’une page. Export CSV, sauvegarde automatique.",
+          es: "Escriba las lecturas del osciloscopio (V_e, V_s, ΔT) para cada frecuencia de un circuito RC o RLC serie: la ganancia y la fase se calculan, se ubican en un diagrama de Bode y se imprimen en un informe de una página. Exportación CSV, guardado automático."
+        },
+        tags: ["Bode", "Measurement", "Filter", "Oscilloscope", "Teaching"]
+      },
+      {
         url: "room-acoustic-response/", // folder with its own index.html
         cat: "lab",
         titles: {
@@ -562,9 +577,9 @@
                  es: "Circuitos DC, convertidores de potencia, encoders." } },
       { id: "lab",
         title: { en: "Measurements & lab", fr: "Mesures & laboratoire", es: "Mediciones y laboratorio" },
-        blurb: { en: "Tools that work with real data: microphone, sensors, simulation result files.",
-                 fr: "Outils qui travaillent avec des données réelles : microphone, capteurs, fichiers de résultats de simulation.",
-                 es: "Herramientas que trabajan con datos reales: micrófono, sensores, archivos de resultados de simulación." } },
+        blurb: { en: "Tools that work with real data: microphone, sensors, oscilloscope readings, simulation result files.",
+                 fr: "Outils qui travaillent avec des données réelles : microphone, capteurs, relevés à l’oscilloscope, fichiers de résultats de simulation.",
+                 es: "Herramientas que trabajan con datos reales: micrófono, sensores, lecturas de osciloscopio, archivos de resultados de simulación." } },
       { id: "other",
         title: { en: "Other", fr: "Autres", es: "Otros" },
         blurb: { en: "", fr: "", es: "" } },
