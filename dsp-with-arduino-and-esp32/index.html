@@ -2994,7 +2994,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       }
     }
 
-    Plotly.react(el, data, layout, {displaylogo:false, responsive:true, displayModeBar:false});
+    Plotly.react(el, data, layout, {displaylogo:false, responsive:true, displayModeBar:false, doubleClick:false});
     step3StoreInit(el, layout);
     step3AttachRightPan(el);
     step3AttachWheel(el);
@@ -3234,6 +3234,19 @@ Implement a real-time digital signal acquisition and processing system using Ard
       const q = partner();
       if (q && q._fullLayout && q.style.display !== 'none') Plotly.relayout(q, { 'xaxis.range': nx.slice() });
     };
+    // Double clic (ou double tape sur le trackpad) dans la zone tracée : tout ajuster.
+    // Plotly pose un calque sur la page pendant le clic, si bien que le navigateur n'émet pas « dblclick » :
+    // on reconnaît le double clic au second « click » (e.detail === 2).
+    window.addEventListener('click', e => {
+      if (e.detail !== 2 || e.button !== 0) return;
+      if (!div._fullLayout || !div.isConnected || div.offsetParent === null) return;
+      const r = div.getBoundingClientRect();
+      if (!plotAt(e.clientX - r.left, e.clientY - r.top)) return;
+      e.preventDefault(); e.stopPropagation();
+      step3Fit(div.id.startsWith('step3Bode')
+        ? [document.getElementById('step3BodeMag'), document.getElementById('step3BodePhase')]
+        : [div], 'all');
+    }, true);
     div.addEventListener('wheel', e => {
       if (!div._fullLayout) return;
       const r = div.getBoundingClientRect();
@@ -3522,7 +3535,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
     const magTraces = [{ x:freqs, y:magVals, type:'scatter', mode:'lines', line:{color:C.bode, width:3}, hoverinfo:'skip' }];
     if (f0In) magTraces.push({ x:[f0], y:[m0Val], type:'scatter', mode:'markers', marker:{color:'#dc2626', size:11, line:{color:dark ? '#2b3648' : '#ffffff', width:2}}, hoverinfo:'skip' });
 
-    Plotly.react(magDiv, magTraces, magLayout, {displaylogo:false, responsive:true, displayModeBar:false});
+    Plotly.react(magDiv, magTraces, magLayout, {displaylogo:false, responsive:true, displayModeBar:false, doubleClick:false});
     step3AttachF0Drag(magDiv);
     step3StoreInit(magDiv, magLayout);
     step3AttachRightPan(magDiv);
@@ -3544,7 +3557,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
         phTraces.push({ x:[f0], y:[ph0], type:'scatter', mode:'markers', marker:{color:'#dc2626', size:11, line:{color:dark ? '#2b3648' : '#ffffff', width:2}}, hoverinfo:'skip' });
         phLayout.annotations = [ptAnn(ph0, ph0.toFixed(1).replace('.', state.lang === 'en' ? '.' : ',') + '°', phases)];
       }
-      Plotly.react(phDiv, phTraces, phLayout, {displaylogo:false, responsive:true, displayModeBar:false});
+      Plotly.react(phDiv, phTraces, phLayout, {displaylogo:false, responsive:true, displayModeBar:false, doubleClick:false});
       step3AttachF0Drag(phDiv);
       step3StoreInit(phDiv, phLayout);
       step3AttachRightPan(phDiv);
