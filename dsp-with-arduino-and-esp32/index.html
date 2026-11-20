@@ -2334,7 +2334,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
       center_prefix: "Frecuencia central: ",
       bw_prefix: "Ancho de banda (−3 dB): ",
       filter_diff: "Diferenciador",
-      filter_ma_order: "Orden N (media móvil)",
+      filter_ma_order: "Número de puntos N (media móvil)",
+      filter_ma_order_note: "Orden del filtro: N − 1 = ",
       filter_ratio: "Razón F<sub>corte</sub> / F<sub>Nyq</sub>",
       filter_order: "Orden",
       fc_prefix: "Frecuencia de corte: ",
@@ -2411,7 +2412,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
       center_prefix: "Fréquence centrale : ",
       bw_prefix: "Largeur de bande (−3 dB) : ",
       filter_diff: "Différenciateur",
-      filter_ma_order: "Ordre N",
+      filter_ma_order: "Nombre de points N (moyenne mobile)",
+      filter_ma_order_note: "Ordre du filtre : N − 1 = ",
       filter_ratio: "Rapport F<sub>coupure</sub> / F<sub>Nyq</sub>",
       filter_order: "Ordre",
       fc_prefix: "Fréquence de coupure : ",
@@ -2488,7 +2490,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
       center_prefix: "Center frequency: ",
       bw_prefix: "Bandwidth (−3 dB): ",
       filter_diff: "Differentiator",
-      filter_ma_order: "Order N",
+      filter_ma_order: "Number of points N (moving average)",
+      filter_ma_order_note: "Filter order: N − 1 = ",
       filter_ratio: "Ratio F<sub>cutoff</sub> / F<sub>Nyq</sub>",
       filter_order: "Order",
       fc_prefix: "Cutoff frequency: ",
@@ -3422,6 +3425,28 @@ Implement a real-time digital signal acquisition and processing system using Ard
     }, true);
   }
 
+  // Déroulement de la phase (équivalent de numpy.unwrap, en degrés) : en parcourant les fréquences
+  // croissantes, chaque saut de plus de 180° entre deux points voisins est compensé par ±360°
+  // sur tous les points suivants. Un vrai saut de 180° (zéro sur le cercle unité) est conservé.
+  function step3UnwrapDeg(ph) {
+    let off = 0;
+    for (let i = 1; i < ph.length; i++) {
+      const raw = ph[i] + off;
+      const d = raw - ph[i - 1];
+      if (d > 180) off -= 360 * Math.ceil((d - 180) / 360);
+      else if (d < -180) off += 360 * Math.ceil((-d - 180) / 360);
+      ph[i] += off;
+    }
+    return ph;
+  }
+  // Graduations de la phase : multiples de 45° ou 90° (180° pour une très grande plage)
+  function step3PhaseDtick(span) {
+    if (span > 720) return 180;
+    if (span > 270) return 90;
+    if (span >= 60) return 45;
+    return null;                       // zoom serré : graduations automatiques
+  }
+
   // Draw Bode plot
   function step3DrawBode() {
     const magDiv = document.getElementById('step3BodeMag');
@@ -3446,7 +3471,6 @@ Implement a real-time digital signal acquisition and processing system using Ard
     const freqs = [];
     const mags = [];
     const phases = [];
-    let prev = 0;
     let fMin = useLog ? 10 : 0;
 
     // Grille de fréquences : 400 points réguliers, plus 120 points serrés autour de f0 pour le
@@ -3463,17 +3487,19 @@ Implement a real-time digital signal acquisition and processing system using Ard
     for(let i=0; i<fGrid.length; i++) {
       const f = fGrid[i];
       const H = step3H_at_f(f);
-      const m = Math.hypot(H.Re, H.Im);
-      let a = Math.atan2(H.Im, H.Re);
-      const d = a - prev;
-      if(d > Math.PI) a -= 2*Math.PI;
-      if(d < -Math.PI) a += 2*Math.PI;
-      prev = a;
-
       freqs.push(f);
-      mags.push(m);
-      phases.push(a*180/Math.PI);
+      mags.push(Math.hypot(H.Re, H.Im));
+      phases.push(Math.atan2(H.Im, H.Re) * 180 / Math.PI);   // phase « enroulée », dans ]−180°, 180°]
     }
+    // Là où le gain est nul (passe-haut en f = 0, zéros en F_Nyq…), la phase n'est pas définie :
+    // on reprend celle du point voisin pour ne pas créer de faux saut.
+    const magMax = Math.max(...mags);
+    for (let i = 0; i < phases.length; i++) {
+      if (mags[i] > 1e-9 * magMax) continue;
+      if (i > 0) phases[i] = phases[i - 1];
+      else if (phases.length > 1) phases[0] = phases[1];
+    }
+    step3UnwrapDeg(phases);
 
     const magVals = (step3State.magMode === 'db')
       ? mags.map(v => Math.max(20*Math.log10(v || 1e-12), -100))
@@ -3580,7 +3606,10 @@ Implement a real-time digital signal acquisition and processing system using Ard
         paper_bgcolor:'rgba(0,0,0,0)',
         plot_bgcolor:'rgba(0,0,0,0)',
         xaxis:{ type:(useLog ? 'log' : 'linear'), range:xRange.slice(), title:'<b>'+step3t('axis_freq')+'</b>', titlefont:{size:14}, tickfont:{size:13}, gridcolor:C.grid, gridwidth:1, zerolinecolor:C.zero, zerolinewidth:1, color:C.text },
-        yaxis:{ title:'<b>'+step3t('axis_phase')+'</b>', titlefont:{size:14}, tickfont:{size:13}, gridcolor:C.grid, gridwidth:1, zerolinecolor:C.zero, zerolinewidth:1, color:C.text },
+        yaxis:{ title:'<b>'+step3t('axis_phase')+'</b>', titlefont:{size:14}, tickfont:{size:13}, gridcolor:C.grid, gridwidth:1, zerolinecolor:C.zero, zerolinewidth:1, color:C.text,
+                autorange:true, tick0:0, ticksuffix:'°',
+                ...(() => { const dt = step3PhaseDtick((Math.max(...phases) - Math.min(...phases)) * 1.1);
+                            return dt ? { tickmode:'linear', dtick:dt } : { tickmode:'auto' }; })() },
         shapes: shapesPh,
         showlegend:false
       };
@@ -3595,6 +3624,18 @@ Implement a real-time digital signal acquisition and processing system using Ard
       step3AttachRightPan(phDiv);
       step3AttachWheel(phDiv);
       step3AttachTouch(phDiv);
+
+      // Après un zoom ou un pan vertical, garder des graduations de 45° / 90° adaptées à la plage visible
+      if (!phDiv._dtickHook) {
+        phDiv._dtickHook = true;
+        phDiv.on('plotly_relayout', () => {
+          const ya = phDiv._fullLayout && phDiv._fullLayout.yaxis;
+          if (!ya || !ya.range) return;
+          const dt = step3PhaseDtick(Math.abs(ya.range[1] - ya.range[0]));
+          const cur = ya.tickmode === 'linear' ? ya.dtick : null;
+          if (dt !== cur) Plotly.relayout(phDiv, dt ? { 'yaxis.tickmode':'linear', 'yaxis.dtick':dt, 'yaxis.tick0':0 } : { 'yaxis.tickmode':'auto' });
+        });
+      }
 
       // Sync zoom between magnitude and phase plots
       let syncing = false;
@@ -3832,6 +3873,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
                     <input type="range" id="step3MaNSlider" min="2" max="32" step="1" value="${S.maN}">
                     <input type="text" id="step3MaNNumber" value="${step3Fmt(S.maN, 0)}">
                   </div>
+                  <div class="step3-note" id="step3MaOrderInfo">${t('filter_ma_order_note')}${S.maN - 1}</div>
                 </div>
                 <div class="step3-group" id="step3LpGroup" style="display:${S.filt === 'lp' ? 'block' : 'none'}">
                   <div class="step3-row"><span>${t('filter_order')}</span>
@@ -4096,6 +4138,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       step3State.maN = n;
       document.getElementById('step3MaNSlider').value = n;
       document.getElementById('step3MaNNumber').value = step3Fmt(n, 0);
+      document.getElementById('step3MaOrderInfo').textContent = step3t('filter_ma_order_note') + (n - 1);
       step3DrawAll();
     };
     document.getElementById('step3MaNSlider').addEventListener('input', e => syncN(e.target.value));
@@ -4297,6 +4340,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       cutoff_freq: 'Frecuencia de corte',
       center_freq: 'Frecuencia central',
       order_label: 'Orden',
+      points_label: 'Número de puntos N',
       coef_a: 'Coeficientes a (denominador)',
       coef_b: 'Coeficientes b (numerador)',
       connect_arduino: 'Conectar el Arduino',
@@ -4341,6 +4385,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       cutoff_freq: 'Fréquence de coupure',
       center_freq: 'Fréquence centrale',
       order_label: 'Ordre',
+      points_label: 'Nombre de points N',
       coef_a: 'Coefficients a (dénominateur)',
       coef_b: 'Coefficients b (numérateur)',
       connect_arduino: 'Connecter l\'Arduino',
@@ -4385,6 +4430,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       cutoff_freq: 'Cutoff frequency',
       center_freq: 'Center frequency',
       order_label: 'Order',
+      points_label: 'Number of points N',
       coef_a: 'Coefficients a (denominator)',
       coef_b: 'Coefficients b (numerator)',
       connect_arduino: 'Connect the Arduino',
@@ -4832,8 +4878,10 @@ Implement a real-time digital signal acquisition and processing system using Ard
       `;
     } else if (cfg.filt === 'ma') {
       html += `
-        <span class="step4-param-label">${step4t('order_label')} N:</span>
+        <span class="step4-param-label">${step4t('points_label')}:</span>
         <span class="step4-param-value">${cfg.N}</span>
+        <span class="step4-param-label">${step4t('order_label')}:</span>
+        <span class="step4-param-value">${cfg.N - 1}</span>
       `;
     } else if (cfg.filt === 'lp' || cfg.filt === 'hp') {
       html += `
@@ -4910,8 +4958,12 @@ Implement a real-time digital signal acquisition and processing system using Ard
             <span class="step4-param-label">${step4t('filter_type')}:</span>
             <span class="step4-param-value">${filterName}</span>
             ${showN ? `
-            <span class="step4-param-label">${filt === 'fir' ? 'N' : step4t('order_label') + (filt === 'ma' ? ' N' : '')}:</span>
+            <span class="step4-param-label">${filt === 'fir' ? 'N' : step4t(filt === 'ma' ? 'points_label' : 'order_label')}:</span>
             <span class="step4-param-value">${N}</span>
+            ` : ''}
+            ${filt === 'ma' ? `
+            <span class="step4-param-label">${step4t('order_label')}:</span>
+            <span class="step4-param-value">${N - 1}</span>
             ` : ''}
             ${showFc ? `
             <span class="step4-param-label">${step4t('cutoff_freq')}:</span>
