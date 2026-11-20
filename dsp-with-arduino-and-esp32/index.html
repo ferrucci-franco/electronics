@@ -717,7 +717,12 @@
       text-align:right;
     }
 
-    .step3-note{ font-size:.72rem; color:var(--muted); }
+    .step3-note{ font-size:.85rem; color:var(--muted); }
+    /* Encadré Nyquist : valeurs lisibles */
+    #step3FinValue, #step3NyquistValue, #step3AliasInfo, #step3FstarValue, #step3SamplingStatus{
+      font-size:1rem; color:var(--fg); line-height:1.35;
+    }
+    .step3-plot-hint{ font-size:.8rem; font-weight:400; color:var(--muted); margin-left:6px; }
     .step3-disabled{ opacity:0.4; pointer-events:none; }
 
     .step3-radios, .step3-checks{ display:flex; flex-wrap:wrap; gap:6px; font-size:.86rem; }
@@ -2120,7 +2125,9 @@ Implement a real-time digital signal acquisition and processing system using Ard
       signal_sine: "Senoidal",
       signal_square: "Cuadrada",
       signal_tri: "Triangular",
-      force_range: "Forzar 0 ≤ Vin ≤ 3 V",
+      force_range: "Forzar 0 ≤ Vin ≤ 5 V",
+      vmax_label: "V<sub>max</sub> (V)",
+      vmin_label: "V<sub>min</sub> (V)",
       vpp_label: "Vpp (V)",
       offset_label: "Offset (V)",
       fin_label: "Frecuencia f<sub>IN</sub> (Hz)",
@@ -2164,6 +2171,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       advanced_fmax_ratio_label: "Fmax / FNyq",
       time_plot_title: "Señal continua, muestras y salida",
       bode_plot_title: "Respuesta en frecuencia",
+      bode_drag_hint: "(arrastre la línea roja f<sub>IN</sub>)",
       axis_time: "Tiempo (s)",
       axis_amp: "Amplitud (V)",
       axis_input: "Entrada",
@@ -2183,7 +2191,9 @@ Implement a real-time digital signal acquisition and processing system using Ard
       signal_sine: "Sinusoïdale",
       signal_square: "Carrée",
       signal_tri: "Triangulaire",
-      force_range: "Forcer 0 ≤ Vin ≤ 3 V",
+      force_range: "Forcer 0 ≤ Vin ≤ 5 V",
+      vmax_label: "V<sub>max</sub> (V)",
+      vmin_label: "V<sub>min</sub> (V)",
       vpp_label: "Vpp (V)",
       offset_label: "Décalage (V)",
       fin_label: "Fréquence f<sub>IN</sub> (Hz)",
@@ -2227,6 +2237,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       advanced_fmax_ratio_label: "Fmax / FNyq",
       time_plot_title: "Signal continu, échantillons et sortie",
       bode_plot_title: "Réponse en fréquence",
+      bode_drag_hint: "(faites glisser la ligne rouge f<sub>IN</sub>)",
       axis_time: "Temps (s)",
       axis_amp: "Amplitude (V)",
       axis_input: "Entrée",
@@ -2246,7 +2257,9 @@ Implement a real-time digital signal acquisition and processing system using Ard
       signal_sine: "Sinusoidal",
       signal_square: "Square",
       signal_tri: "Triangular",
-      force_range: "Force 0 ≤ Vin ≤ 3 V",
+      force_range: "Force 0 ≤ Vin ≤ 5 V",
+      vmax_label: "V<sub>max</sub> (V)",
+      vmin_label: "V<sub>min</sub> (V)",
       vpp_label: "Vpp (V)",
       offset_label: "Offset (V)",
       fin_label: "Frequency f<sub>IN</sub> (Hz)",
@@ -2290,6 +2303,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       advanced_fmax_ratio_label: "Fmax / FNyq",
       time_plot_title: "Continuous signal, samples and output",
       bode_plot_title: "Frequency response",
+      bode_drag_hint: "(drag the red f<sub>IN</sub> line)",
       axis_time: "Time (s)",
       axis_amp: "Amplitude (V)",
       axis_input: "Input",
@@ -2309,8 +2323,10 @@ Implement a real-time digital signal acquisition and processing system using Ard
   // Step 3 state
   const step3State = {
     signal: 'sine',
-    Vpp: 2.5,
-    offset: 1.5,
+    Vpp: 4.0,       // dérivés de vmin / vmax
+    offset: 2.5,
+    vmin: 0.5,
+    vmax: 4.5,
     f0: 50,
     duty: 50,
     limit: true,
@@ -2526,39 +2542,27 @@ Implement a real-time digital signal acquisition and processing system using Ard
     return { t:t, x:x, y:y, tShow: showS/Fs };
   }
 
-  // Clamp functions
-  function step3ClampVpp(val) {
-    let v = Math.max(0, Math.min(3, val));
-    if(!step3State.limit) return v;
-    const off = step3State.offset;
-    const maxVpp = 2 * Math.min(Math.max(off,0), Math.max(0,3-off));
-    return Math.max(0, Math.min(maxVpp, v));
-  }
-
-  function step3ClampOffset(val) {
-    let v = Math.max(-3, Math.min(3, val));
-    if(!step3State.limit) return v;
-    const Vpp = step3State.Vpp;
-    const half = Vpp/2;
-    const minOff = half;
-    const maxOff = 3 - half;
-    if(v < minOff) v = minOff;
-    if(v > maxOff) v = maxOff;
-    return v;
+  // Vmin / Vmax : bornes 0…5 V (entrée du CAN de l'UNO R4) si « forcer » est coché, sinon ±10 V
+  function step3SetVminVmax(vmin, vmax, moved) {
+    const lo = step3State.limit ? 0 : -10;
+    const hi = step3State.limit ? 5 : 10;
+    vmin = Math.max(lo, Math.min(hi, vmin));
+    vmax = Math.max(lo, Math.min(hi, vmax));
+    if (vmin > vmax) { if (moved === 'min') vmax = vmin; else vmin = vmax; }
+    step3State.vmin = vmin;
+    step3State.vmax = vmax;
+    step3State.Vpp = vmax - vmin;
+    step3State.offset = (vmax + vmin) / 2;
+    [['Vmin', vmin], ['Vmax', vmax]].forEach(([k, v]) => {
+      const sl = document.getElementById('step3' + k + 'Slider');
+      const nb = document.getElementById('step3' + k + 'Number');
+      if (sl) { sl.min = lo; sl.max = hi; sl.value = v; }
+      if (nb) nb.value = step3Fmt(v, 2);
+    });
   }
 
   function step3ApplyLimitImmediately() {
-    if(!step3State.limit) return;
-    step3State.offset = step3ClampOffset(step3State.offset);
-    step3State.Vpp = step3ClampVpp(step3State.Vpp);
-    const offSlider = document.getElementById('step3OffsetSlider');
-    const offNumber = document.getElementById('step3OffsetNumber');
-    const vppSlider = document.getElementById('step3VppSlider');
-    const vppNumber = document.getElementById('step3VppNumber');
-    if(offSlider) offSlider.value = step3State.offset;
-    if(offNumber) offNumber.value = step3Fmt(step3State.offset,2);
-    if(vppSlider) vppSlider.value = step3State.Vpp;
-    if(vppNumber) vppNumber.value = step3Fmt(step3State.Vpp,2);
+    step3SetVminVmax(step3State.vmin, step3State.vmax, 'max');
   }
 
   // Frequency response
@@ -2616,7 +2620,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       paper_bgcolor:'rgba(0,0,0,0)',
       plot_bgcolor:'rgba(0,0,0,0)',
       showlegend:true,
-      legend:{orientation:'h',yanchor:'bottom',y:1.04,x:0,font:{size:12}}
+      legend:{orientation:'h',yanchor:'bottom',y:1.04,x:0,font:{size:14}}
     };
 
     const contFs = Math.max(50*step3State.f0, 20*step3State.Fs);
@@ -2639,15 +2643,15 @@ Implement a real-time digital signal acquisition and processing system using Ard
         data.push({ x:tArr, y:y, type:'scatter', mode:'lines', name:'ZOH(y[n])', line:{color:C.zoh, width:2, shape:'hv'} });
       }
 
-      layout.xaxis = { title:'<b>'+step3t('axis_time')+'</b>', titlefont:{size:14}, tickfont:{size:12}, range:[tStart, tEnd], gridcolor:C.grid, color:C.text };
-      layout.yaxis = { title:'<b>'+step3t('axis_amp')+'</b>', titlefont:{size:14}, tickfont:{size:12}, gridcolor:C.grid, color:C.text };
+      layout.xaxis = { title:'<b>'+step3t('axis_time')+'</b>', titlefont:{size:14}, tickfont:{size:13}, range:[tStart, tEnd], gridcolor:C.grid, color:C.text };
+      layout.yaxis = { title:'<b>'+step3t('axis_amp')+'</b>', titlefont:{size:14}, tickfont:{size:13}, gridcolor:C.grid, color:C.text };
 
       if(!step3State.autoYRange) {
         if(step3State.limit) {
-          layout.yaxis.range = [-0.5, 3.5];
+          layout.yaxis.range = [-0.5, 5.5];
           layout.yaxis.autorange = false;
         } else {
-          layout.yaxis.range = [-5, 5];
+          layout.yaxis.range = [-10.5, 10.5];
           layout.yaxis.autorange = false;
         }
       }
@@ -2662,23 +2666,89 @@ Implement a real-time digital signal acquisition and processing system using Ard
         data.push({ x:tArr, y:y, type:'scatter', mode:'lines', name:'ZOH(y[n])', line:{color:C.zoh, width:2, shape:'hv'}, xaxis:'x2', yaxis:'y2' });
       }
 
-      layout.xaxis = { title:'<b>'+step3t('axis_time')+'</b>', titlefont:{size:13}, tickfont:{size:11}, domain:[0,1], anchor:'y', gridcolor:C.grid, color:C.text, range:[tStart, tEnd] };
-      layout.yaxis = { title:'<b>'+step3t('axis_input')+'</b>', titlefont:{size:13}, tickfont:{size:11}, domain:[0.55,1], gridcolor:C.grid, color:C.text };
-      layout.xaxis2 = { title:'<b>'+step3t('axis_time')+'</b>', titlefont:{size:13}, tickfont:{size:11}, domain:[0,1], anchor:'y2', gridcolor:C.grid, color:C.text, range:[tStart, tEnd], matches:'x' };
-      layout.yaxis2 = { title:'<b>'+step3t('axis_output')+'</b>', titlefont:{size:13}, tickfont:{size:11}, domain:[0,0.45], gridcolor:C.grid, color:C.text };
+      layout.xaxis = { title:'<b>'+step3t('axis_time')+'</b>', titlefont:{size:13}, tickfont:{size:13}, domain:[0,1], anchor:'y', gridcolor:C.grid, color:C.text, range:[tStart, tEnd] };
+      layout.yaxis = { title:'<b>'+step3t('axis_input')+'</b>', titlefont:{size:13}, tickfont:{size:13}, domain:[0.55,1], gridcolor:C.grid, color:C.text };
+      layout.xaxis2 = { title:'<b>'+step3t('axis_time')+'</b>', titlefont:{size:13}, tickfont:{size:13}, domain:[0,1], anchor:'y2', gridcolor:C.grid, color:C.text, range:[tStart, tEnd], matches:'x' };
+      layout.yaxis2 = { title:'<b>'+step3t('axis_output')+'</b>', titlefont:{size:13}, tickfont:{size:13}, domain:[0,0.45], gridcolor:C.grid, color:C.text };
 
       if(!step3State.autoYRange) {
         if(step3State.limit) {
-          layout.yaxis.range = [-0.5, 3.5];
-          layout.yaxis2.range = [-0.5, 3.5];
+          layout.yaxis.range = [-0.5, 5.5];
+          layout.yaxis2.range = [-0.5, 5.5];
         } else {
-          layout.yaxis.range = [-5, 5];
-          layout.yaxis2.range = [-5, 5];
+          layout.yaxis.range = [-10.5, 10.5];
+          layout.yaxis2.range = [-10.5, 10.5];
         }
       }
     }
 
     Plotly.newPlot(el, data, layout, {displaylogo:false, responsive:true});
+  }
+
+  // f_IN modifiable en faisant glisser (ou en cliquant) la ligne rouge du Bode
+  function step3SetF0(f) {
+    f = Math.max(10, Math.min(50000, f));
+    step3State.f0 = f;
+    const nb = document.getElementById('step3F0Number');
+    const sl = document.getElementById('step3F0LogSlider');
+    if (nb) nb.value = step3Fmt(f, 0);
+    if (sl) sl.value = step3InvLog(f);
+  }
+
+  function step3AttachF0Drag(div) {
+    if (!div || div._f0DragAttached) return;
+    div._f0DragAttached = true;
+    const NEAR = 9;  // px
+    const axisOf = () => div._fullLayout && div._fullLayout.xaxis;
+    const pxOfF0 = ax => ax.l2p(ax.type === 'log' ? Math.log10(step3State.f0) : step3State.f0) + ax._offset;
+    const fOfPx = (ax, px) => { const l = ax.p2l(px - ax._offset); return ax.type === 'log' ? Math.pow(10, l) : l; };
+    const localX = e => e.clientX - div.getBoundingClientRect().left;
+    const nearLine = e => {
+      const ax = axisOf(); if (!ax) return false;
+      const ya = div._fullLayout.yaxis;
+      const y = e.clientY - div.getBoundingClientRect().top;
+      if (ya && (y < ya._offset - 14 || y > ya._offset + ya._length)) return false;
+      return Math.abs(localX(e) - pxOfF0(ax)) <= NEAR;
+    };
+    let dragging = false, pending = null, timer = null;
+    const flush = () => {
+      timer = null;
+      if (pending === null) return;
+      step3SetF0(pending); pending = null;
+      step3DrawAll();
+    };
+    const move = e => {
+      if (!dragging) return;
+      const ax = axisOf(); if (!ax) return;
+      const xmin = ax._offset, xmax = ax._offset + ax._length;
+      const fMaxAxis = fOfPx(ax, xmax);
+      pending = Math.min(fOfPx(ax, Math.max(xmin, Math.min(xmax, localX(e)))), fMaxAxis);
+      if (!timer) timer = setTimeout(flush, 60);
+      e.preventDefault();
+    };
+    const up = () => {
+      if (!dragging) return;
+      dragging = false;
+      document.body.style.cursor = '';
+      window.removeEventListener('mousemove', move, true);
+      window.removeEventListener('mouseup', up, true);
+      if (timer) { clearTimeout(timer); timer = null; }
+      flush();
+    };
+    div.addEventListener('mousedown', e => {
+      if (e.button !== 0 || !nearLine(e)) return;
+      e.stopPropagation(); e.preventDefault();   // pas de zoom Plotly
+      dragging = true;
+      document.body.style.cursor = 'ew-resize';
+      window.addEventListener('mousemove', move, true);
+      window.addEventListener('mouseup', up, true);
+    }, true);
+    div.addEventListener('mousemove', e => {
+      if (dragging) return;
+      const near = nearLine(e);
+      const layer = div.querySelector('.nsewdrag');
+      if (layer) layer.style.cursor = near ? 'ew-resize' : '';
+    }, true);
   }
 
   // Draw Bode plot
@@ -2737,14 +2807,14 @@ Implement a real-time digital signal acquisition and processing system using Ard
       if(freq <= 0 || freq > fMax) return;
       shapesMag.push({ type:'line', x0:freq, x1:freq, y0:0, y1:1, xref:'x', yref:'paper', line:{color:color, width:2, dash:'dot'} });
       shapesPh.push({ type:'line', x0:freq, x1:freq, y0:0, y1:1, xref:'x', yref:'paper', line:{color:color, width:2, dash:'dot'} });
-      ann.push({ x:useLog ? Math.log10(freq) : freq, y:1.018, xref:'x', yref:'paper', xanchor:'center', yanchor:'top', text:'<b>'+label+'</b>', showarrow:false, font:{size:11, color:color}, bgcolor:annBg, borderpad:2 });
+      ann.push({ x:useLog ? Math.log10(freq) : freq, y:1.018, xref:'x', yref:'paper', xanchor:'center', yanchor:'top', text:'<b>'+label+'</b>', showarrow:false, font:{size:13, color:color}, bgcolor:annBg, borderpad:2 });
     }
 
     if(step3State.f0 > 0 && step3State.f0 <= fMax) {
       const col = '#dc2626';
-      shapesMag.push({ type:'line', x0:step3State.f0, x1:step3State.f0, y0:0, y1:1, xref:'x', yref:'paper', line:{color:col, width:2, dash:'dot'} });
-      shapesPh.push({ type:'line', x0:step3State.f0, x1:step3State.f0, y0:0, y1:1, xref:'x', yref:'paper', line:{color:col, width:2, dash:'dot'} });
-      ann.push({ x:useLog ? Math.log10(step3State.f0) : step3State.f0, y:1.018, xref:'x', yref:'paper', xanchor:'center', yanchor:'top', text:'<b>f<sub>IN</sub></b>', showarrow:false, font:{size:11, color:col}, bgcolor:annBg, borderpad:2 });
+      shapesMag.push({ type:'line', x0:step3State.f0, x1:step3State.f0, y0:0, y1:1, xref:'x', yref:'paper', line:{color:col, width:3, dash:'dot'} });
+      shapesPh.push({ type:'line', x0:step3State.f0, x1:step3State.f0, y0:0, y1:1, xref:'x', yref:'paper', line:{color:col, width:3, dash:'dot'} });
+      ann.push({ x:useLog ? Math.log10(step3State.f0) : step3State.f0, y:1.018, xref:'x', yref:'paper', xanchor:'center', yanchor:'top', text:'<b>f<sub>IN</sub></b>', showarrow:false, font:{size:13, color:col}, bgcolor:annBg, borderpad:2 });
     }
 
     addMarker(Fnyq, 'FNyq', C.nyq);
@@ -2764,26 +2834,28 @@ Implement a real-time digital signal acquisition and processing system using Ard
       margin:{l:54,r:18,t:25,b:(step3State.showPhase ? 6 : 40)},
       paper_bgcolor:'rgba(0,0,0,0)',
       plot_bgcolor:'rgba(0,0,0,0)',
-      xaxis:{ type:(useLog ? 'log' : 'linear'), title:(step3State.showPhase ? '' : '<b>'+step3t('axis_freq')+'</b>'), titlefont:{size:14}, tickfont:{size:(step3State.showPhase?0:11)}, showticklabels: !step3State.showPhase, gridcolor:C.grid, color:C.text },
-      yaxis:{ title:magLabel, titlefont:{size:14}, tickfont:{size:11}, gridcolor:C.grid, color:C.text, rangemode:(step3State.magMode === 'linear' ? 'tozero' : 'normal') },
+      xaxis:{ type:(useLog ? 'log' : 'linear'), title:(step3State.showPhase ? '' : '<b>'+step3t('axis_freq')+'</b>'), titlefont:{size:14}, tickfont:{size:(step3State.showPhase?0:13)}, showticklabels: !step3State.showPhase, gridcolor:C.grid, color:C.text },
+      yaxis:{ title:magLabel, titlefont:{size:14}, tickfont:{size:13}, gridcolor:C.grid, color:C.text, rangemode:(step3State.magMode === 'linear' ? 'tozero' : 'normal') },
       shapes: shapesMag,
       annotations: ann,
       showlegend:false
     };
 
     Plotly.newPlot(magDiv, [{ x:freqs, y:magVals, type:'scatter', mode:'lines', line:{color:C.bode, width:3} }], magLayout, {displaylogo:false, responsive:true});
+    step3AttachF0Drag(magDiv);
 
     if(step3State.showPhase) {
       const phLayout = {
         margin:{l:54,r:18,t:22,b:40},
         paper_bgcolor:'rgba(0,0,0,0)',
         plot_bgcolor:'rgba(0,0,0,0)',
-        xaxis:{ type:(useLog ? 'log' : 'linear'), title:'<b>'+step3t('axis_freq')+'</b>', titlefont:{size:14}, tickfont:{size:11}, gridcolor:C.grid, color:C.text },
-        yaxis:{ title:'<b>'+step3t('axis_phase')+'</b>', titlefont:{size:14}, tickfont:{size:11}, gridcolor:C.grid, color:C.text },
+        xaxis:{ type:(useLog ? 'log' : 'linear'), title:'<b>'+step3t('axis_freq')+'</b>', titlefont:{size:14}, tickfont:{size:13}, gridcolor:C.grid, color:C.text },
+        yaxis:{ title:'<b>'+step3t('axis_phase')+'</b>', titlefont:{size:14}, tickfont:{size:13}, gridcolor:C.grid, color:C.text },
         shapes: shapesPh,
         showlegend:false
       };
       Plotly.newPlot(phDiv, [{ x:freqs, y:phases, type:'scatter', mode:'lines', line:{color:C.bodePh, width:3} }], phLayout, {displaylogo:false, responsive:true});
+      step3AttachF0Drag(phDiv);
 
       // Sync zoom between magnitude and phase plots
       let syncing = false;
@@ -2945,17 +3017,17 @@ Implement a real-time digital signal acquisition and processing system using Ard
                   </div>
                 </div>
                 <div class="step3-group">
-                  <div class="step3-row"><span>${t('vpp_label')}</span></div>
+                  <div class="step3-row"><span>${t('vmax_label')}</span></div>
                   <div class="step3-range-row">
-                    <input type="range" id="step3VppSlider" min="0" max="3" step="0.1" value="${S.Vpp}">
-                    <input type="text" id="step3VppNumber" value="${step3Fmt(S.Vpp, 2)}">
+                    <input type="range" id="step3VmaxSlider" min="${S.limit ? 0 : -10}" max="${S.limit ? 5 : 10}" step="0.1" value="${S.vmax}">
+                    <input type="text" id="step3VmaxNumber" value="${step3Fmt(S.vmax, 2)}">
                   </div>
                 </div>
                 <div class="step3-group">
-                  <div class="step3-row"><span>${t('offset_label')}</span></div>
+                  <div class="step3-row"><span>${t('vmin_label')}</span></div>
                   <div class="step3-range-row">
-                    <input type="range" id="step3OffsetSlider" min="-3" max="3" step="0.1" value="${S.offset}">
-                    <input type="text" id="step3OffsetNumber" value="${step3Fmt(S.offset, 2)}">
+                    <input type="range" id="step3VminSlider" min="${S.limit ? 0 : -10}" max="${S.limit ? 5 : 10}" step="0.1" value="${S.vmin}">
+                    <input type="text" id="step3VminNumber" value="${step3Fmt(S.vmin, 2)}">
                   </div>
                 </div>
                 <div class="step3-group">
@@ -3098,7 +3170,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
 
             <!-- Bode plot -->
             <div class="step3-plot-card" id="step3BodeCard">
-              <p class="step3-plot-title">${t('bode_plot_title')}</p>
+              <p class="step3-plot-title">${t('bode_plot_title')} <span class="step3-plot-hint">${t('bode_drag_hint')}</span></p>
               <div class="step3-bode-wrap">
                 <div id="step3BodeMag" class="step3-plot-box"></div>
                 <div id="step3BodePhase" class="step3-plot-box"></div>
@@ -3128,27 +3200,13 @@ Implement a real-time digital signal acquisition and processing system using Ard
       step3DrawAll();
     });
 
-    // Vpp
-    const syncVpp = v => {
-      step3State.Vpp = step3ClampVpp(step3ParseNum(v, step3State.Vpp));
-      document.getElementById('step3VppSlider').value = step3State.Vpp;
-      document.getElementById('step3VppNumber').value = step3Fmt(step3State.Vpp, 2);
-      if(step3State.limit) step3ApplyLimitImmediately();
-      step3DrawAll();
-    };
-    document.getElementById('step3VppSlider').addEventListener('input', e => syncVpp(e.target.value));
-    document.getElementById('step3VppNumber').addEventListener('change', e => syncVpp(e.target.value));
-
-    // Offset
-    const syncOff = v => {
-      step3State.offset = step3ClampOffset(step3ParseNum(v, step3State.offset));
-      document.getElementById('step3OffsetSlider').value = step3State.offset;
-      document.getElementById('step3OffsetNumber').value = step3Fmt(step3State.offset, 2);
-      if(step3State.limit) step3ApplyLimitImmediately();
-      step3DrawAll();
-    };
-    document.getElementById('step3OffsetSlider').addEventListener('input', e => syncOff(e.target.value));
-    document.getElementById('step3OffsetNumber').addEventListener('change', e => syncOff(e.target.value));
+    // Vmin / Vmax (le signal est décrit par ses extrêmes ; Vpp et décalage en sont déduits)
+    const syncVmax = v => { step3SetVminVmax(step3State.vmin, step3ParseNum(v, step3State.vmax), 'max'); step3DrawAll(); };
+    const syncVmin = v => { step3SetVminVmax(step3ParseNum(v, step3State.vmin), step3State.vmax, 'min'); step3DrawAll(); };
+    document.getElementById('step3VmaxSlider').addEventListener('input', e => syncVmax(e.target.value));
+    document.getElementById('step3VmaxNumber').addEventListener('change', e => syncVmax(e.target.value));
+    document.getElementById('step3VminSlider').addEventListener('input', e => syncVmin(e.target.value));
+    document.getElementById('step3VminNumber').addEventListener('change', e => syncVmin(e.target.value));
 
     // Duty
     const syncDuty = v => {
