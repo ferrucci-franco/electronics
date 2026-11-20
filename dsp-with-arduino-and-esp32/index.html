@@ -924,7 +924,7 @@
       flex:1 1 auto;
       min-height:0;
       width:100%;
-      background:#ffffff;
+      background:var(--card);
       border:1px solid var(--border);
       border-radius:14px;
       padding:10px;
@@ -933,9 +933,11 @@
     }
     /* Le viewBox garde les proportions : le schéma remplit l'espace disponible sans défilement */
     .montage-svg{ flex:1 1 auto; width:100%; height:100%; min-height:0; display:block; font-family:var(--font); }
-    .montage-svg .m-title{ font-size:24px; font-weight:700; fill:#111827; }
+    .montage-svg .m-title{ font-size:24px; font-weight:700; fill:var(--fg); }
     .montage-svg .m-label{ font-size:21px; font-weight:700; }
-    .montage-svg .m-small{ font-size:17px; fill:#4b5563; }
+    .montage-svg .m-small{ font-size:17px; fill:var(--muted); }
+    /* En thème sombre : léger halo autour des appareils pour les détacher du fond */
+    :root[data-theme="dark"] .montage-svg image{ filter:drop-shadow(0 0 8px rgba(226,232,240,0.18)); }
 
     .eq-term{ white-space:nowrap; }
     .step4-btn-big{ font-size:1rem !important; padding:9px 18px !important; }
@@ -1388,9 +1390,13 @@ Implement a real-time digital signal acquisition and processing system using Ard
     const GOUT = P(GEN,486,252);
     const yBlue = 742, yRed = 702, xNode = 770, yA1 = 412;
     const xR = (xNode + GOUT.x) / 2;   // résistance de protection, avant la bifurcation
-    const BLUE = '#1d4ed8', RED = '#dc2626', INK = '#111827', MUTED = '#4b5563';
+    const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    // Couleurs adaptées au thème (fils lisibles sur fond clair comme sur fond sombre)
+    const BLUE = dark ? '#60a5fa' : '#1d4ed8', RED = dark ? '#f87171' : '#dc2626';
+    const INK  = dark ? '#e5e7eb' : '#111827', BG = dark ? '#2b3648' : '#ffffff';
+    const CABLE = dark ? '#64748b' : '#9ca3af';
     const f = v => v.toFixed(1);
-    const dot = (p,c)=>`<circle cx="${f(p.x)}" cy="${f(p.y)}" r="5" fill="${c}" stroke="#fff" stroke-width="1.5"/>`;
+    const dot = (p,c)=>`<circle cx="${f(p.x)}" cy="${f(p.y)}" r="5" fill="${c}" stroke="${BG}" stroke-width="1.5"/>`;
     const img = (o,w,h,href)=>`<image href="${href}" x="${o.x}" y="${o.y}" width="${(w*o.s).toFixed(1)}" height="${(h*o.s).toFixed(1)}"/>`;
     const svg = `
 <svg class="montage-svg" viewBox="0 0 1200 830" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${t.ard}">
@@ -1404,14 +1410,14 @@ Implement a real-time digital signal acquisition and processing system using Ard
   <text x="${f(ARD.x+577*ARD.s+14)}" y="60" class="m-title">${t.ard}</text>
 
   <!-- USB vers l'ordinateur -->
-  <path d="M ${f(USB.x)} ${f(USB.y)} H 250" stroke="#9ca3af" stroke-width="7" stroke-linecap="round" fill="none"/>
+  <path d="M ${f(USB.x)} ${f(USB.y)} H 250" stroke="${CABLE}" stroke-width="7" stroke-linecap="round" fill="none"/>
   <text x="236" y="${f(USB.y-4)}" text-anchor="end" class="m-small">${t.usb1}</text>
   <text x="236" y="${f(USB.y+20)}" text-anchor="end" class="m-small">${t.usb2}</text>
 
   <!-- Fil bleu : générateur → R → bifurcation → A1 et CH1 -->
   <path d="M ${f(GOUT.x)} ${f(GOUT.y)} V ${yBlue} H ${f(CH1.x)} V ${f(CH1.y)}" stroke="${BLUE}" stroke-width="4" fill="none" stroke-linejoin="round"/>
   <path d="M ${xNode} ${yBlue} V ${yA1} H ${f(A1.x)} V ${f(A1.y)}" stroke="${BLUE}" stroke-width="4" fill="none" stroke-linejoin="round"/>
-  <rect x="${f(xR-39)}" y="${yBlue-11}" width="78" height="22" rx="2" fill="#fff" stroke="${INK}" stroke-width="3"/>
+  <rect x="${f(xR-39)}" y="${yBlue-11}" width="78" height="22" rx="2" fill="${BG}" stroke="${INK}" stroke-width="3"/>
   <text x="${f(xR)}" y="${yBlue-22}" text-anchor="middle" class="m-label" fill="${INK}">${t.res}</text>
   <circle cx="${xNode}" cy="${yBlue}" r="6.5" fill="${BLUE}"/>
   <text x="${xNode+18}" y="${yA1+30}" class="m-label" fill="${BLUE}">${t.a1}</text>
@@ -3549,6 +3555,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       drawTemporalGraph();
       drawSpectralGraph();
     }
+    if (state.step === 1) renderMontage();
   });
 
   // ===================== STEP 4: µC CONNECTION =====================
