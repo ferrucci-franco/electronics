@@ -840,6 +840,31 @@
       grid-row:1;
     }
 
+
+    /* ===== Montage (schéma de câblage) ===== */
+    .montage-panel{
+      max-width:1180px;
+      margin:0 auto;
+      background:#ffffff;
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:12px 16px;
+    }
+    .montage-svg{ width:100%; height:auto; display:block; font-family:var(--font); }
+    .montage-svg .m-title{ font-size:24px; font-weight:700; fill:#111827; }
+    .montage-svg .m-label{ font-size:21px; font-weight:700; }
+    .montage-svg .m-small{ font-size:17px; fill:#4b5563; }
+
+    .eq-term{ white-space:nowrap; }
+
+    .step4-firmware-note{
+      margin-top:auto;
+      padding-top:14px;
+      font-size:.78rem;
+      color:var(--muted);
+    }
+    .step4-firmware-note a{ color:var(--muted); text-decoration:underline; }
+
     .step4-equation{
       grid-column:1 / 3;
       grid-row:2;
@@ -861,7 +886,7 @@
       display:grid;
       grid-template-columns:auto 1fr;
       gap:6px 12px;
-      font-size:.85rem;
+      font-size:1rem;
     }
 
     .step4-param-label{
@@ -870,6 +895,7 @@
     }
 
     .step4-param-value{
+      white-space:nowrap;
       font-family:'Fira Code',monospace;
       color:var(--accent);
     }
@@ -877,7 +903,7 @@
     .step4-coef-table{
       width:100%;
       border-collapse:collapse;
-      font-size:.8rem;
+      font-size:1rem;
       font-family:'Fira Code',monospace;
     }
 
@@ -895,7 +921,8 @@
 
     .step4-equation-display{
       font-family:'Fira Code',monospace;
-      font-size:.85rem;
+      font-size:1.2rem;
+      line-height:1.6;
       padding:8px;
       background:var(--bg-soft);
       border-radius:6px;
@@ -983,8 +1010,9 @@
       background:#1e1e1e;
       color:#d4d4d4;
       font-family:'Fira Code',monospace;
-      font-size:.75rem;
-      padding:8px;
+      font-size:1rem;
+      line-height:1.45;
+      padding:10px;
       border-radius:6px;
       overflow-y:auto;
       overflow-x:hidden;
@@ -1005,7 +1033,7 @@
       border-radius:6px;
       border:1px solid var(--border);
       font-family:'Fira Code',monospace;
-      font-size:.8rem;
+      font-size:1rem;
     }
 
     .step4-log-tx{
@@ -1068,20 +1096,20 @@
   </div>
 
   <nav class="steps-nav" id="stepsNav">
-    <button class="step-tab active" data-step="1">
-      <span class="num">1</span><span id="stepLabel1">Montaje</span>
+    <button class="step-tab active" data-step="2">
+      <span class="num">1</span><span id="stepLabel2">Rappel : repliement</span>
     </button>
     <span class="step-arrow">→</span>
-    <button class="step-tab" data-step="2">
-      <span class="num">2</span><span id="stepLabel2">Aliasing &amp; Fs</span>
+    <button class="step-tab" data-step="1">
+      <span class="num">2</span><span id="stepLabel1">Montage</span>
     </button>
     <span class="step-arrow">→</span>
     <button class="step-tab" data-step="3">
-      <span class="num">3</span><span id="stepLabel3">Señal &amp; Filtro</span>
+      <span class="num">3</span><span id="stepLabel3">Simulation du filtre</span>
     </button>
     <span class="step-arrow">→</span>
     <button class="step-tab" data-step="4">
-      <span class="num">4</span><span id="stepLabel4">Conexión µC</span>
+      <span class="num">4</span><span id="stepLabel4">Connexion à l'Arduino</span>
     </button>
     <span class="step-arrow" id="step5Arrow">→</span>
     <button class="step-tab" data-step="5" id="step5Button">
@@ -1210,9 +1238,9 @@ Implement a real-time digital signal acquisition and processing system using Ard
   const state = { lang: 'fr', step: 1 };
 
   const stepLabels = {
-    es: {1:'Montaje',2:'Aliasing & Fs',3:'Señal & Filtro',4:'Conexión µC',5:'Bode & Medidas'},
-    fr: {1:'Montage',2:'Aliasing & Fs',3:'Signal & Filtre',4:'Connexion µC',5:'Bode & Mesures'},
-    en: {1:'Setup',2:'Aliasing & Fs',3:'Signal & Filter',4:'µC Connection',5:'Bode & Measurements'}
+    es: {1:'Montaje',2:'Repaso: aliasing',3:'Simulación del filtro',4:'Conexión al Arduino',5:'Bode & Medidas'},
+    fr: {1:'Montage',2:'Rappel : repliement',3:'Simulation du filtre',4:'Connexion à l\'Arduino',5:'Bode & Mesures'},
+    en: {1:'Setup',2:'Recap: aliasing',3:'Filter simulation',4:'Connect the Arduino',5:'Bode & Measurements'}
   };
 
   const appTitles = {
@@ -1228,6 +1256,89 @@ Implement a real-time digital signal acquisition and processing system using Ard
   };
 
   const stepContentEl = document.getElementById('stepContent');
+  // ===================== MONTAGE (schéma de câblage) =====================
+  const montageTexts = {
+    fr:{gen:'Générateur de signaux', osc:'Oscilloscope', ard:'Arduino UNO R4',
+        a1:'A1 : entrée du CAN', a1r:'(0 … 5 V)', a0:'A0 : sortie du CNA',
+        res:'10 kΩ',
+        ch1:'CH1 : signal d’entrée', ch2:'CH2 : signal de sortie',
+        usb1:'Câble USB', usb2:'vers l’ordinateur',
+        gnd:'Masse commune : relier le GND de l’Arduino à la masse du générateur et de l’oscilloscope'},
+    es:{gen:'Generador de señales', osc:'Osciloscopio', ard:'Arduino UNO R4',
+        a1:'A1: entrada del ADC', a1r:'(0 … 5 V)', a0:'A0: salida del DAC',
+        res:'10 kΩ',
+        ch1:'CH1: señal de entrada', ch2:'CH2: señal de salida',
+        usb1:'Cable USB', usb2:'hacia la computadora',
+        gnd:'Masa común: unir el GND del Arduino a la masa del generador y del osciloscopio'},
+    en:{gen:'Signal generator', osc:'Oscilloscope', ard:'Arduino UNO R4',
+        a1:'A1: ADC input', a1r:'(0 … 5 V)', a0:'A0: DAC output',
+        res:'10 kΩ',
+        ch1:'CH1: input signal', ch2:'CH2: output signal',
+        usb1:'USB cable', usb2:'to the computer',
+        gnd:'Common ground: connect the Arduino GND to the generator and oscilloscope ground'}
+  };
+
+  function renderMontage(){
+    const t = montageTexts[state.lang] || montageTexts.fr;
+    // Géométrie (unités du viewBox). Positions des connecteurs mesurées sur les photos.
+    const ARD = {x:355, y:10, s:0.85};               // photo 577 × 433
+    const OSC = {x:20,  y:420, s:0.65};              // photo 658 × 379
+    const GEN = {x:868, y:530, s:0.50};              // photo 654 × 381
+    const P = (o,px,py)=>({x:o.x+px*o.s, y:o.y+py*o.s});
+    const A0  = P(ARD,414,391), A1 = P(ARD,431.5,391), GND = P(ARD,361,391), USB = P(ARD,60,140);
+    const CH1 = P(OSC,378,335), CH2 = P(OSC,444,335);
+    const GOUT = P(GEN,486,252);
+    const yBlue = 742, yRed = 702, xNode = 770, yA1 = 412;
+    const BLUE = '#1d4ed8', RED = '#dc2626', INK = '#111827', MUTED = '#4b5563';
+    const f = v => v.toFixed(1);
+    const dot = (p,c)=>`<circle cx="${f(p.x)}" cy="${f(p.y)}" r="5" fill="${c}" stroke="#fff" stroke-width="1.5"/>`;
+    const img = (o,w,h,href)=>`<image href="${href}" x="${o.x}" y="${o.y}" width="${(w*o.s).toFixed(1)}" height="${(h*o.s).toFixed(1)}"/>`;
+    const svg = `
+<svg class="montage-svg" viewBox="0 0 1200 830" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${t.ard}">
+  ${img(ARD,577,433,'img/arduino-uno-r4.png')}
+  ${img(OSC,658,379,'img/oscilloscope.png')}
+  ${img(GEN,654,381,'img/generateur.png')}
+
+  <!-- Titres des appareils -->
+  <text x="${f(OSC.x+658*OSC.s/2)}" y="406" text-anchor="middle" class="m-title">${t.osc}</text>
+  <text x="${f(GEN.x+654*GEN.s/2)}" y="514" text-anchor="middle" class="m-title">${t.gen}</text>
+  <text x="${f(ARD.x+577*ARD.s+14)}" y="60" class="m-title">${t.ard}</text>
+
+  <!-- USB vers l'ordinateur -->
+  <path d="M ${f(USB.x)} ${f(USB.y)} H 250" stroke="#9ca3af" stroke-width="7" stroke-linecap="round" fill="none"/>
+  <text x="236" y="${f(USB.y-4)}" text-anchor="end" class="m-small">${t.usb1}</text>
+  <text x="236" y="${f(USB.y+20)}" text-anchor="end" class="m-small">${t.usb2}</text>
+
+  <!-- Fil bleu : générateur → CH1 et → R → A1 -->
+  <path d="M ${f(GOUT.x)} ${f(GOUT.y)} V ${yBlue} H ${f(CH1.x)} V ${f(CH1.y)}" stroke="${BLUE}" stroke-width="4" fill="none" stroke-linejoin="round"/>
+  <path d="M ${xNode} ${yBlue} V ${yA1} H ${f(A1.x)} V ${f(A1.y)}" stroke="${BLUE}" stroke-width="4" fill="none" stroke-linejoin="round"/>
+  <rect x="${xNode-11}" y="530" width="22" height="78" rx="2" fill="#fff" stroke="${INK}" stroke-width="3"/>
+  <text x="${xNode+22}" y="577" class="m-label" fill="${INK}">${t.res}</text>
+  <circle cx="${xNode}" cy="${yBlue}" r="6.5" fill="${BLUE}"/>
+  <text x="${xNode+18}" y="${yA1+30}" class="m-label" fill="${BLUE}">${t.a1}</text>
+  <text x="${xNode+18}" y="${yA1+54}" class="m-small">${t.a1r}</text>
+
+  <!-- Fil rouge : A0 → CH2 -->
+  <path d="M ${f(A0.x)} ${f(A0.y)} V ${yRed} H ${f(CH2.x)} V ${f(CH2.y)}" stroke="${RED}" stroke-width="4" fill="none" stroke-linejoin="round"/>
+  <text x="${f(A0.x-14)}" y="560" text-anchor="end" class="m-label" fill="${RED}">${t.a0}</text>
+
+  <!-- Masse de l'Arduino -->
+  <path d="M ${f(GND.x)} ${f(GND.y)} V ${f(GND.y+40)}" stroke="${INK}" stroke-width="3" fill="none"/>
+  <path d="M ${f(GND.x-16)} ${f(GND.y+40)} H ${f(GND.x+16)} M ${f(GND.x-10)} ${f(GND.y+47)} H ${f(GND.x+10)} M ${f(GND.x-4)} ${f(GND.y+54)} H ${f(GND.x+4)}" stroke="${INK}" stroke-width="3" fill="none"/>
+  <text x="${f(GND.x-22)}" y="${f(GND.y+50)}" text-anchor="end" class="m-small" fill="${INK}">GND</text>
+
+  <!-- Points de connexion -->
+  ${dot(A0,RED)} ${dot(A1,BLUE)} ${dot(GND,INK)}
+  ${dot(CH1,BLUE)} ${dot(CH2,RED)} ${dot(GOUT,BLUE)}
+
+  <!-- Légende des voies -->
+  <text x="30" y="784" class="m-label" fill="${BLUE}">${t.ch1}</text>
+  <text x="30" y="814" class="m-label" fill="${RED}">${t.ch2}</text>
+  <text x="1180" y="814" text-anchor="end" class="m-small">${t.gnd}</text>
+</svg>`;
+    stepContentEl.innerHTML = `<div class="montage-panel">${svg}</div>`;
+  }
+
   const stepNoteEl = document.getElementById('stepNote');
   const langSelect = document.getElementById('langSelect');
   const themeSelect = document.getElementById('themeSelect');
@@ -3213,7 +3324,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
       config_sent: 'Configuración enviada',
       error_connect: 'Error al conectar',
       baud_rate: 'Baudrate',
-      lastconfig_title: 'Última config. enviada al µC',
+      lastconfig_title: 'Última config. enviada al Arduino',
+      firmware_note: 'Para docentes: el programa ya está cargado en las placas del TP. Para preparar otra placa:',
       no_config_sent: 'Ninguna configuración enviada',
       desc_x: 'entrada ADC (muestra n)',
       desc_y: 'salida del filtro (muestra n)',
@@ -3245,7 +3357,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
       config_sent: 'Configuration envoyée',
       error_connect: 'Erreur de connexion',
       baud_rate: 'Baudrate',
-      lastconfig_title: 'Dernière config. envoyée au µC',
+      lastconfig_title: 'Dernière config. envoyée à l\'Arduino',
+      firmware_note: 'Pour les enseignants : le programme est déjà chargé dans les cartes du TP. Pour préparer une autre carte :',
       no_config_sent: 'Aucune configuration envoyée',
       desc_x: 'entrée ADC (échantillon n)',
       desc_y: 'sortie du filtre (échantillon n)',
@@ -3277,7 +3390,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
       config_sent: 'Configuration sent',
       error_connect: 'Connection error',
       baud_rate: 'Baud rate',
-      lastconfig_title: 'Last config. sent to µC',
+      lastconfig_title: 'Last config. sent to the Arduino',
+      firmware_note: 'For teachers: the program is already loaded on the lab boards. To prepare another board:',
       no_config_sent: 'No configuration sent',
       desc_x: 'ADC input (sample n)',
       desc_y: 'filter output (sample n)',
@@ -3396,7 +3510,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       const coef = b[i];
       if (Math.abs(coef) > 1e-10) {
         const delay = i === 0 ? 'x[n]' : `x[n-${i}]`;
-        bTerms.push(`b<sub>${i}</sub>·${delay}`);
+        bTerms.push(`<span class="eq-term">b<sub>${i}</sub>·${delay}</span>`);
       }
     }
 
@@ -3404,7 +3518,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       const coef = -a[i];
       if (Math.abs(coef) > 1e-10) {
         const delay = `y[n-${i}]`;
-        aTerms.push(`a<sub>${i}</sub>·${delay}`);
+        aTerms.push(`<span class="eq-term">a<sub>${i}</sub>·${delay}</span>`);
       }
     }
 
@@ -3716,6 +3830,9 @@ Implement a real-time digital signal acquisition and processing system using Ard
             <span id="step4Status" class="step4-status disconnected">${step4t('status_disconnected')}</span>
             <button id="step4SendConfigBtn" class="step4-btn" disabled>${step4t('send_config')}</button>
           </div>
+          <p class="step4-firmware-note">${step4t('firmware_note')}
+            <a href="firmware/TP2_UNOR4_V4.ino" download>UNO R4 (.ino)</a> ·
+            <a href="firmware/TP2_ESP32_V6.ino" download>ESP32 (.ino)</a></p>
         </div>
 
         <!-- Difference Equation Card -->
@@ -3724,7 +3841,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
           <div class="step4-equation-display">
             <div style="margin-bottom:4px">${equation.filter}</div>
             <div style="margin-bottom:8px">${equation.dac}</div>
-            <div style="font-size:0.75em;color:var(--muted);line-height:1.4">
+            <div style="font-size:0.72em;color:var(--muted);line-height:1.5">
               <div>x[n]: ${step4t('desc_x')}</div>
               <div>y[n]: ${step4t('desc_y')}</div>
               <div>y<sub>OUT</sub>[n]: ${step4t('desc_yout')}</div>
@@ -3818,7 +3935,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
   function loadStepContent(){
     const {step,lang} = state;
     if(step===1){
-      stepContentEl.innerHTML = marked.parse(markdownContent.step1[lang]);
+      renderMontage();
     } else if(step===2){
       renderStep2();
     } else if(step===3){
@@ -3839,7 +3956,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
   // INIT
   applyTheme('light');
   setLanguage('fr');
-  setActiveStep(1);
+  setActiveStep(2);   // premier onglet affiché : rappel sur le repliement
 </script>
 
 </body>
