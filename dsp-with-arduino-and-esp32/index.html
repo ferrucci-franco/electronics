@@ -32,7 +32,9 @@
       --card:#f7f8fb;
       --border:#e5e7eb;
       --accent:#2563eb;
+      --accent-strong:#2563eb;
       --accent-soft:rgba(37,99,235,0.10);
+      --scroll-thumb:rgba(100,116,139,0.45);
       --accent2:#dc2626;
       --shadow:0 10px 30px rgba(15,23,42,0.12);
     }
@@ -41,10 +43,12 @@
       --bg:#1e293b;
       --fg:#e5e7eb;
       --muted:#94a3b8;
-      --card:#334155;
-      --border:#475569;
-      --accent:#38bdf8;
-      --accent-soft:rgba(56,189,248,0.25);
+      --card:#2b3648;
+      --border:#3b4a60;
+      --accent:#60a5fa;
+      --accent-strong:#3b82f6;
+      --accent-soft:rgba(96,165,250,0.18);
+      --scroll-thumb:rgba(148,163,184,0.45);
       --accent2:#fb7185;
       --shadow:0 18px 50px rgba(15,23,42,0.5);
       --bg-soft:#293548;
@@ -129,14 +133,14 @@
 
     .step-tab.active {
       color:#ffffff;
-      border-color:var(--accent);
-      background:var(--accent);
+      border-color:var(--accent-strong);
+      background:var(--accent-strong);
       font-weight:600;
       box-shadow:0 2px 10px rgba(37,99,235,0.35);
     }
     .step-tab.active span.num {
       background:#ffffff;
-      color:var(--accent);
+      color:var(--accent-strong);
       border-radius:999px;
       min-width:1.35em;
       height:1.35em;
@@ -484,8 +488,8 @@
         #fb7185 49.5%, 
         var(--border) 49.5%,
         var(--border) 50.5%,
-        #38bdf8 50.5%, 
-        #38bdf8 100%);
+        var(--accent-strong) 50.5%, 
+        var(--accent-strong) 100%);
       position: relative;
     }
 
@@ -858,6 +862,44 @@
       grid-row:1;
     }
 
+
+    /* ===== Barres de défilement fines, identiques dans tous les navigateurs ===== */
+    *{
+      scrollbar-width:thin;
+      scrollbar-color:var(--scroll-thumb) transparent;
+    }
+    ::-webkit-scrollbar{ width:10px; height:10px; }
+    ::-webkit-scrollbar-track{ background:transparent; }
+    ::-webkit-scrollbar-thumb{
+      background:var(--scroll-thumb);
+      border-radius:8px;
+      border:2px solid transparent;
+      background-clip:content-box;
+    }
+    ::-webkit-scrollbar-corner{ background:transparent; }
+
+    /* Curseurs, cases et boutons radio : la couleur d'accent du thème */
+    input[type="range"], input[type="checkbox"], input[type="radio"]{ accent-color:var(--accent-strong); }
+
+    /* Boutons d'ajustement des graphiques (X, Y, tout) */
+    .step3-plot-card{ position:relative; }
+    .plot-fit-btns{
+      position:absolute; top:8px; right:10px; z-index:5;
+      display:flex; gap:4px;
+    }
+    .plot-fit-btns button{
+      width:28px; height:28px; padding:4px;
+      border-radius:7px;
+      border:1px solid var(--border);
+      background:var(--card);
+      color:var(--fg);
+      opacity:.5;
+      cursor:pointer;
+      display:flex; align-items:center; justify-content:center;
+      transition:opacity .15s;
+    }
+    .plot-fit-btns button:hover{ opacity:1; }
+    .plot-fit-btns svg{ width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
 
     /* ===== Pas de sélection de texte ni de curseur texte hors des champs de saisie ===== */
     html, body{
@@ -1736,10 +1778,10 @@ Implement a real-time digital signal acquisition and processing system using Ard
 
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark' ||
       (!document.documentElement.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    const bgColor = isDark ? '#0b1020' : '#f7f8fb';
-    const gridColor = isDark ? '#1f2937' : '#e5e7eb';
+    const bgColor = isDark ? '#263244' : '#f7f8fb';
+    const gridColor = isDark ? 'rgba(148,163,184,0.16)' : '#e5e7eb';
     const textColor = isDark ? '#9ca3af' : '#6b7280';
-    const signalColor = '#38bdf8';
+    const signalColor = '#3b82f6';
     const sampleColor = '#fb7185';
     const reconstructColor = '#22c55e';
 
@@ -1861,7 +1903,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       ctx.beginPath();
       ctx.arc(s.x,s.y,4,0,2*Math.PI);
       ctx.fill();
-      ctx.strokeStyle=isDark?'#0b1020':'#ffffff';
+      ctx.strokeStyle=isDark?'#263244':'#ffffff';
       ctx.lineWidth=2;
       ctx.stroke();
     });
@@ -1947,10 +1989,10 @@ Implement a real-time digital signal acquisition and processing system using Ard
 
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark' ||
       (!document.documentElement.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    const bgColor = isDark ? '#0b1020' : '#f7f8fb';
-    const gridColor = isDark ? '#1f2937' : '#e5e7eb';
+    const bgColor = isDark ? '#263244' : '#f7f8fb';
+    const gridColor = isDark ? 'rgba(148,163,184,0.16)' : '#e5e7eb';
     const textColor = isDark ? '#9ca3af' : '#6b7280';
-    const accentColor = '#38bdf8';
+    const accentColor = '#3b82f6';
     const aliasColor = '#fb7185';
 
     ctx.fillStyle=bgColor;
@@ -2051,7 +2093,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
     ctx.beginPath();
     ctx.arc(xF0,yF0,5,0,2*Math.PI);
     ctx.fill();
-    ctx.strokeStyle=isDark?'#0b1020':'#ffffff';
+    ctx.strokeStyle=isDark?'#263244':'#ffffff';
     ctx.lineWidth=2;
     ctx.stroke();
 
@@ -2336,12 +2378,12 @@ Implement a real-time digital signal acquisition and processing system using Ard
     maN: 5,
     lpR: 0.10,
     hpR: 0.10,
-    magMode: 'db',
+    magMode: 'linear',
     log: false,
     beyond: false,
     fmaxRatio: 2.0,
     showTime: true,
-    showPhase: true,
+    showPhase: false,
     showZOH: true,
     showBode: true,
     overlay: true,
@@ -2365,14 +2407,15 @@ Implement a real-time digital signal acquisition and processing system using Ard
     const dark = document.documentElement.getAttribute('data-theme') === 'dark' ||
       (!document.documentElement.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
     return {
-      bg: dark ? '#0b1020' : '#ffffff',
-      grid: dark ? '#111827' : '#e5e7eb',
-      text: dark ? '#9ca3af' : '#6b7280',
-      contIn: '#2563eb',
+      bg: dark ? '#263244' : '#ffffff',
+      grid: dark ? 'rgba(148,163,184,0.16)' : '#e5e7eb',
+      zero: dark ? 'rgba(203,213,225,0.45)' : '#9ca3af',
+      text: dark ? '#cbd5e1' : '#6b7280',
+      contIn: dark ? '#60a5fa' : '#2563eb',
       xSamples: '#16a34a',
       ySamples: '#dc2626',
       zoh: '#f97316',
-      bode: '#2563eb',
+      bode: dark ? '#60a5fa' : '#2563eb',
       bodePh: '#dc2626',
       nyq: '#22c55e',
       fs: '#f97316',
@@ -2620,7 +2663,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       paper_bgcolor:'rgba(0,0,0,0)',
       plot_bgcolor:'rgba(0,0,0,0)',
       showlegend:true,
-      legend:{orientation:'h',yanchor:'bottom',y:1.04,x:0,font:{size:14}}
+      legend:{orientation:'h',yanchor:'bottom',y:1.04,x:0,font:{size:14, color:C.text}}
     };
 
     const contFs = Math.max(50*step3State.f0, 20*step3State.Fs);
@@ -2643,8 +2686,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
         data.push({ x:tArr, y:y, type:'scatter', mode:'lines', name:'ZOH(y[n])', line:{color:C.zoh, width:2, shape:'hv'} });
       }
 
-      layout.xaxis = { title:'<b>'+step3t('axis_time')+'</b>', titlefont:{size:14}, tickfont:{size:13}, range:[tStart, tEnd], gridcolor:C.grid, color:C.text };
-      layout.yaxis = { title:'<b>'+step3t('axis_amp')+'</b>', titlefont:{size:14}, tickfont:{size:13}, gridcolor:C.grid, color:C.text };
+      layout.xaxis = { title:'<b>'+step3t('axis_time')+'</b>', titlefont:{size:14}, tickfont:{size:13}, range:[tStart, tEnd], gridcolor:C.grid, gridwidth:1, zerolinecolor:C.zero, zerolinewidth:1, color:C.text };
+      layout.yaxis = { title:'<b>'+step3t('axis_amp')+'</b>', titlefont:{size:14}, tickfont:{size:13}, gridcolor:C.grid, gridwidth:1, zerolinecolor:C.zero, zerolinewidth:1, color:C.text };
 
       if(!step3State.autoYRange) {
         if(step3State.limit) {
@@ -2666,10 +2709,10 @@ Implement a real-time digital signal acquisition and processing system using Ard
         data.push({ x:tArr, y:y, type:'scatter', mode:'lines', name:'ZOH(y[n])', line:{color:C.zoh, width:2, shape:'hv'}, xaxis:'x2', yaxis:'y2' });
       }
 
-      layout.xaxis = { title:'<b>'+step3t('axis_time')+'</b>', titlefont:{size:13}, tickfont:{size:13}, domain:[0,1], anchor:'y', gridcolor:C.grid, color:C.text, range:[tStart, tEnd] };
-      layout.yaxis = { title:'<b>'+step3t('axis_input')+'</b>', titlefont:{size:13}, tickfont:{size:13}, domain:[0.55,1], gridcolor:C.grid, color:C.text };
-      layout.xaxis2 = { title:'<b>'+step3t('axis_time')+'</b>', titlefont:{size:13}, tickfont:{size:13}, domain:[0,1], anchor:'y2', gridcolor:C.grid, color:C.text, range:[tStart, tEnd], matches:'x' };
-      layout.yaxis2 = { title:'<b>'+step3t('axis_output')+'</b>', titlefont:{size:13}, tickfont:{size:13}, domain:[0,0.45], gridcolor:C.grid, color:C.text };
+      layout.xaxis = { title:'<b>'+step3t('axis_time')+'</b>', titlefont:{size:13}, tickfont:{size:13}, domain:[0,1], anchor:'y', gridcolor:C.grid, gridwidth:1, zerolinecolor:C.zero, zerolinewidth:1, color:C.text, range:[tStart, tEnd] };
+      layout.yaxis = { title:'<b>'+step3t('axis_input')+'</b>', titlefont:{size:13}, tickfont:{size:13}, domain:[0.55,1], gridcolor:C.grid, gridwidth:1, zerolinecolor:C.zero, zerolinewidth:1, color:C.text };
+      layout.xaxis2 = { title:'<b>'+step3t('axis_time')+'</b>', titlefont:{size:13}, tickfont:{size:13}, domain:[0,1], anchor:'y2', gridcolor:C.grid, gridwidth:1, zerolinecolor:C.zero, zerolinewidth:1, color:C.text, range:[tStart, tEnd], matches:'x' };
+      layout.yaxis2 = { title:'<b>'+step3t('axis_output')+'</b>', titlefont:{size:13}, tickfont:{size:13}, domain:[0,0.45], gridcolor:C.grid, gridwidth:1, zerolinecolor:C.zero, zerolinewidth:1, color:C.text };
 
       if(!step3State.autoYRange) {
         if(step3State.limit) {
@@ -2682,7 +2725,101 @@ Implement a real-time digital signal acquisition and processing system using Ard
       }
     }
 
-    Plotly.newPlot(el, data, layout, {displaylogo:false, responsive:true});
+    Plotly.newPlot(el, data, layout, {displaylogo:false, responsive:true, displayModeBar:false});
+    step3StoreInit(el, layout);
+    step3AttachRightPan(el);
+  }
+
+
+  // ===== Graphiques : plages initiales, boutons d'ajustement, déplacement au clic droit =====
+  function step3StoreInit(div, layout) {
+    if (!div) return;
+    const init = {};
+    Object.keys(layout).filter(k => /^xaxis\d*$/.test(k)).forEach(k => {
+      init[k] = (layout[k] && Array.isArray(layout[k].range)) ? layout[k].range.slice() : null;
+    });
+    div._initX = init;
+  }
+
+  function step3Fit(divs, which) {
+    divs.forEach(d => {
+      if (!d || !d._fullLayout || !d.data) return;
+      const upd = {};
+      Object.keys(d._fullLayout).forEach(k => {
+        if (/^xaxis\d*$/.test(k) && which !== 'y') {
+          const r = d._initX && d._initX[k];
+          if (r) upd[k + '.range'] = r.slice(); else upd[k + '.autorange'] = true;
+        }
+        if (/^yaxis\d*$/.test(k) && which !== 'x') upd[k + '.autorange'] = true;
+      });
+      if (Object.keys(upd).length) Plotly.relayout(d, upd);
+    });
+  }
+
+  function step3FitButtons(target) {
+    const ic = {
+      x: '<svg viewBox="0 0 24 24"><path d="M3 12h18M3 12l4-4M3 12l4 4M21 12l-4-4M21 12l-4 4"/></svg>',
+      y: '<svg viewBox="0 0 24 24"><path d="M12 3v18M12 3l-4 4M12 3l4 4M12 21l-4-4M12 21l4-4"/></svg>',
+      a: '<svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>'
+    };
+    const tt = {fr:['Ajuster X','Ajuster Y','Tout ajuster'], es:['Ajustar X','Ajustar Y','Ajustar todo'], en:['Fit X','Fit Y','Fit all']}[state.lang] || ['Fit X','Fit Y','Fit all'];
+    return `<div class="plot-fit-btns">
+      <button type="button" data-fit="x" data-target="${target}" title="${tt[0]}">${ic.x}</button>
+      <button type="button" data-fit="y" data-target="${target}" title="${tt[1]}">${ic.y}</button>
+      <button type="button" data-fit="a" data-target="${target}" title="${tt[2]}">${ic.a}</button>
+    </div>`;
+  }
+
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('.plot-fit-btns button');
+    if (!b) return;
+    const divs = b.dataset.target === 'bode'
+      ? [document.getElementById('step3BodeMag'), document.getElementById('step3BodePhase')]
+      : [document.getElementById('step3TimePlot')];
+    step3Fit(divs, b.dataset.fit === 'a' ? 'all' : b.dataset.fit);
+  });
+
+  // Clic droit maintenu : déplacer la vue (pan) dans le sous-graphe sous le curseur
+  function step3AttachRightPan(div) {
+    if (!div || div._rightPanAttached) return;
+    div._rightPanAttached = true;
+    let st = null, raf = 0, last = null;
+    const partner = () => div.id === 'step3BodeMag' ? document.getElementById('step3BodePhase')
+                        : div.id === 'step3BodePhase' ? document.getElementById('step3BodeMag') : null;
+    const apply = () => {
+      raf = 0;
+      if (!st || !last) return;
+      const dX = -(last.x - st.x) * (st.xr[1] - st.xr[0]) / st.xlen;
+      const dY =  (last.y - st.y) * (st.yr[1] - st.yr[0]) / st.ylen;
+      const xr = [st.xr[0] + dX, st.xr[1] + dX];
+      const upd = {}; upd[st.xn + '.range'] = xr; upd[st.yn + '.range'] = [st.yr[0] + dY, st.yr[1] + dY];
+      Plotly.relayout(div, upd);
+      const p = partner();
+      if (p && p._fullLayout && p.style.display !== 'none') Plotly.relayout(p, {'xaxis.range': xr.slice()});
+    };
+    const move = e => { last = {x:e.clientX, y:e.clientY}; if (!raf) raf = requestAnimationFrame(apply); e.preventDefault(); };
+    const up = () => {
+      st = null; document.body.style.cursor = '';
+      window.removeEventListener('mousemove', move, true);
+      window.removeEventListener('mouseup', up, true);
+    };
+    div.addEventListener('mousedown', e => {
+      if (e.button !== 2 || !div._fullLayout) return;
+      const r = div.getBoundingClientRect();
+      const lx = e.clientX - r.left, ly = e.clientY - r.top;
+      const plots = Object.values(div._fullLayout._plots || {});
+      const pl = plots.find(q => q.xaxis && q.yaxis &&
+        lx >= q.xaxis._offset && lx <= q.xaxis._offset + q.xaxis._length &&
+        ly >= q.yaxis._offset && ly <= q.yaxis._offset + q.yaxis._length);
+      if (!pl) return;
+      e.preventDefault(); e.stopPropagation();
+      st = { x:e.clientX, y:e.clientY, xr:pl.xaxis.range.slice(), yr:pl.yaxis.range.slice(),
+             xn:pl.xaxis._name, yn:pl.yaxis._name, xlen:pl.xaxis._length, ylen:pl.yaxis._length };
+      last = null;
+      document.body.style.cursor = 'grabbing';
+      window.addEventListener('mousemove', move, true);
+      window.addEventListener('mouseup', up, true);
+    }, true);
   }
 
   // f_IN modifiable en faisant glisser (ou en cliquant) la ligne rouge du Bode
@@ -2763,7 +2900,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
 
     const C = step3Colors();
     const dark = document.documentElement.getAttribute('data-theme') === 'dark';
-    const annBg = dark ? 'rgba(2,8,23,0.9)' : 'rgba(255,255,255,0.9)';
+    const annBg = dark ? 'rgba(38,50,68,0.85)' : 'rgba(255,255,255,0.9)';
 
     const Fs = step3State.Fs;
     const Fnyq = Fs/2;
@@ -2834,28 +2971,32 @@ Implement a real-time digital signal acquisition and processing system using Ard
       margin:{l:54,r:18,t:25,b:(step3State.showPhase ? 6 : 40)},
       paper_bgcolor:'rgba(0,0,0,0)',
       plot_bgcolor:'rgba(0,0,0,0)',
-      xaxis:{ type:(useLog ? 'log' : 'linear'), title:(step3State.showPhase ? '' : '<b>'+step3t('axis_freq')+'</b>'), titlefont:{size:14}, tickfont:{size:(step3State.showPhase?0:13)}, showticklabels: !step3State.showPhase, gridcolor:C.grid, color:C.text },
-      yaxis:{ title:magLabel, titlefont:{size:14}, tickfont:{size:13}, gridcolor:C.grid, color:C.text, rangemode:(step3State.magMode === 'linear' ? 'tozero' : 'normal') },
+      xaxis:{ type:(useLog ? 'log' : 'linear'), title:(step3State.showPhase ? '' : '<b>'+step3t('axis_freq')+'</b>'), titlefont:{size:14}, tickfont:{size:(step3State.showPhase?0:13)}, showticklabels: !step3State.showPhase, gridcolor:C.grid, gridwidth:1, zerolinecolor:C.zero, zerolinewidth:1, color:C.text },
+      yaxis:{ title:magLabel, titlefont:{size:14}, tickfont:{size:13}, gridcolor:C.grid, gridwidth:1, zerolinecolor:C.zero, zerolinewidth:1, color:C.text, rangemode:(step3State.magMode === 'linear' ? 'tozero' : 'normal') },
       shapes: shapesMag,
       annotations: ann,
       showlegend:false
     };
 
-    Plotly.newPlot(magDiv, [{ x:freqs, y:magVals, type:'scatter', mode:'lines', line:{color:C.bode, width:3} }], magLayout, {displaylogo:false, responsive:true});
+    Plotly.newPlot(magDiv, [{ x:freqs, y:magVals, type:'scatter', mode:'lines', line:{color:C.bode, width:3} }], magLayout, {displaylogo:false, responsive:true, displayModeBar:false});
     step3AttachF0Drag(magDiv);
+    step3StoreInit(magDiv, magLayout);
+    step3AttachRightPan(magDiv);
 
     if(step3State.showPhase) {
       const phLayout = {
         margin:{l:54,r:18,t:22,b:40},
         paper_bgcolor:'rgba(0,0,0,0)',
         plot_bgcolor:'rgba(0,0,0,0)',
-        xaxis:{ type:(useLog ? 'log' : 'linear'), title:'<b>'+step3t('axis_freq')+'</b>', titlefont:{size:14}, tickfont:{size:13}, gridcolor:C.grid, color:C.text },
-        yaxis:{ title:'<b>'+step3t('axis_phase')+'</b>', titlefont:{size:14}, tickfont:{size:13}, gridcolor:C.grid, color:C.text },
+        xaxis:{ type:(useLog ? 'log' : 'linear'), title:'<b>'+step3t('axis_freq')+'</b>', titlefont:{size:14}, tickfont:{size:13}, gridcolor:C.grid, gridwidth:1, zerolinecolor:C.zero, zerolinewidth:1, color:C.text },
+        yaxis:{ title:'<b>'+step3t('axis_phase')+'</b>', titlefont:{size:14}, tickfont:{size:13}, gridcolor:C.grid, gridwidth:1, zerolinecolor:C.zero, zerolinewidth:1, color:C.text },
         shapes: shapesPh,
         showlegend:false
       };
-      Plotly.newPlot(phDiv, [{ x:freqs, y:phases, type:'scatter', mode:'lines', line:{color:C.bodePh, width:3} }], phLayout, {displaylogo:false, responsive:true});
+      Plotly.newPlot(phDiv, [{ x:freqs, y:phases, type:'scatter', mode:'lines', line:{color:C.bodePh, width:3} }], phLayout, {displaylogo:false, responsive:true, displayModeBar:false});
       step3AttachF0Drag(phDiv);
+      step3StoreInit(phDiv, phLayout);
+      step3AttachRightPan(phDiv);
 
       // Sync zoom between magnitude and phase plots
       let syncing = false;
@@ -2865,6 +3006,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
         if(ed['xaxis.range[0]'] !== undefined) update['xaxis.range[0]'] = ed['xaxis.range[0]'];
         if(ed['xaxis.range[1]'] !== undefined) update['xaxis.range[1]'] = ed['xaxis.range[1]'];
         if(ed['xaxis.autorange'] !== undefined) update['xaxis.autorange'] = ed['xaxis.autorange'];
+        if(ed['xaxis.range'] !== undefined) update['xaxis.range'] = ed['xaxis.range'].slice();
         if(Object.keys(update).length > 0) {
           syncing = true;
           Plotly.relayout(phDiv, update).then(() => { syncing = false; });
@@ -2876,6 +3018,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
         if(ed['xaxis.range[0]'] !== undefined) update['xaxis.range[0]'] = ed['xaxis.range[0]'];
         if(ed['xaxis.range[1]'] !== undefined) update['xaxis.range[1]'] = ed['xaxis.range[1]'];
         if(ed['xaxis.autorange'] !== undefined) update['xaxis.autorange'] = ed['xaxis.autorange'];
+        if(ed['xaxis.range'] !== undefined) update['xaxis.range'] = ed['xaxis.range'].slice();
         if(Object.keys(update).length > 0) {
           syncing = true;
           Plotly.relayout(magDiv, update).then(() => { syncing = false; });
@@ -3127,7 +3270,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
                 <div class="step3-group">
                   <div class="step3-row"><span>${t('cycles_label')}</span></div>
                   <div class="step3-range-row">
-                    <input type="range" id="step3CyclesSlider" min="2" max="110" step="1" value="${S.cycles}">
+                    <input type="range" id="step3CyclesSlider" min="2" max="500" step="1" value="${S.cycles}">
                     <input type="text" id="step3CyclesNumber" value="${step3Fmt(S.cycles, 0)}">
                   </div>
                 </div>
@@ -3165,12 +3308,14 @@ Implement a real-time digital signal acquisition and processing system using Ard
             <!-- Time plot -->
             <div class="step3-plot-card" id="step3TimeCard">
               <p class="step3-plot-title">${t('time_plot_title')}</p>
+              ${step3FitButtons('time')}
               <div id="step3TimePlot" class="step3-plot-box"></div>
             </div>
 
             <!-- Bode plot -->
             <div class="step3-plot-card" id="step3BodeCard">
               <p class="step3-plot-title">${t('bode_plot_title')} <span class="step3-plot-hint">${t('bode_drag_hint')}</span></p>
+              ${step3FitButtons('bode')}
               <div class="step3-bode-wrap">
                 <div id="step3BodeMag" class="step3-plot-box"></div>
                 <div id="step3BodePhase" class="step3-plot-box"></div>
@@ -3250,7 +3395,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
     // Cycles
     const syncCycles = v => {
       let c = step3ParseNum(v, step3State.cycles);
-      c = Math.max(2, Math.min(110, c));
+      c = Math.max(2, Math.min(500, c));
       step3State.cycles = c;
       document.getElementById('step3CyclesSlider').value = c;
       document.getElementById('step3CyclesNumber').value = step3Fmt(c, 0);
