@@ -177,11 +177,11 @@ input[type="range"]::-moz-range-thumb { width: 15px; height: 15px; border: 3px s
 .rect-layered > img { position: absolute; inset: 0; width: 100%; height: 100%; transition: opacity 160ms ease; }
 /* Diodes sous le curseur d'instant : halo vert (passante) ou gris (bloquée), pour attirer l'œil
    sur le changement d'état. drop-shadow suit le tracé du calque (fond transparent). */
-.rect-layered > img[data-layer$="-on"] { filter: drop-shadow(0 0 2px #00b050) drop-shadow(0 0 5px #00b050) drop-shadow(0 0 10px #00b050b3); }
-.rect-layered > img[data-layer$="-off"] { filter: drop-shadow(0 0 2px #8c8c8c) drop-shadow(0 0 5px #8c8c8c99); }
+.rect-layered > img[data-layer$="-on"] { filter: drop-shadow(0 0 3px #00b05099) drop-shadow(0 0 8px #00b05099) drop-shadow(0 0 16px #00b05080); }
+.rect-layered > img[data-layer$="-off"] { filter: drop-shadow(0 0 3px #8c8c8c80) drop-shadow(0 0 8px #8c8c8c80) drop-shadow(0 0 14px #8c8c8c66); }
 /* Thème sombre : l'inversion du schéma doit précéder le halo, sinon elle en change la couleur. */
-body.dark-theme .rect-layered > img[data-layer$="-on"] { filter: invert(1) hue-rotate(180deg) drop-shadow(0 0 2px #2ee07a) drop-shadow(0 0 6px #2ee07a) drop-shadow(0 0 12px #2ee07acc); }
-body.dark-theme .rect-layered > img[data-layer$="-off"] { filter: invert(1) hue-rotate(180deg) drop-shadow(0 0 2px #94a3b8) drop-shadow(0 0 5px #94a3b880); }
+body.dark-theme .rect-layered > img[data-layer$="-on"] { filter: invert(1) hue-rotate(180deg) drop-shadow(0 0 3px #2ee07a99) drop-shadow(0 0 8px #2ee07a99) drop-shadow(0 0 16px #2ee07a80); }
+body.dark-theme .rect-layered > img[data-layer$="-off"] { filter: invert(1) hue-rotate(180deg) drop-shadow(0 0 3px #94a3b880) drop-shadow(0 0 8px #94a3b880) drop-shadow(0 0 14px #94a3b866); }
 .diagram-mode-title { z-index: 1; align-self: end; color: var(--teal); font-family: "Cambria Math", Cambria, serif; font-size: clamp(1.1rem, 1.35vw, 1.45rem); font-weight: 400; line-height: 1; text-align: center; }
 .circuit-diagram.has-mode-title .bridge-schematic { grid-row: 2; }
 .bridge-schematic { display: block; max-width: 100%; max-height: 100%; }
