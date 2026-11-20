@@ -2997,6 +2997,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
     Plotly.react(el, data, layout, {displaylogo:false, responsive:true, displayModeBar:false});
     step3StoreInit(el, layout);
     step3AttachRightPan(el);
+    step3AttachWheel(el);
     step3AttachTouch(el);
   }
 
@@ -3193,6 +3194,61 @@ Implement a real-time digital signal acquisition and processing system using Ard
     };
     div.addEventListener('touchend', end, { capture: true, passive: false });
     div.addEventListener('touchcancel', () => { mode = null; hideBox(); }, { capture: true });
+  }
+
+  // Pavé tactile (trackpad) : deux doigts = déplacer la vue (pan), pincer = zoom autour du curseur.
+  // Molette de souris classique = zoom autour du curseur. (Le téléphone n'envoie pas d'événements
+  // « wheel » : les gestes tactiles de step3AttachTouch ne sont pas concernés.)
+  function step3AttachWheel(div) {
+    if (!div || div._wheelAttached) return;
+    div._wheelAttached = true;
+    const partner = () => div.id === 'step3BodeMag' ? document.getElementById('step3BodePhase')
+                        : div.id === 'step3BodePhase' ? document.getElementById('step3BodeMag') : null;
+    const plotAt = (x, y) => Object.values((div._fullLayout && div._fullLayout._plots) || {}).find(q => q.xaxis && q.yaxis &&
+      x >= q.xaxis._offset && x <= q.xaxis._offset + q.xaxis._length &&
+      y >= q.yaxis._offset && y <= q.yaxis._offset + q.yaxis._length);
+    // Molette « à crans » (souris) ou défilement continu (trackpad) ?
+    const isMouseWheel = e => e.deltaMode !== 0 ||
+      (e.deltaX === 0 && Number.isInteger(e.deltaY) && Math.abs(e.deltaY) >= 50);
+    let acc = null, raf = 0;
+    const apply = () => {
+      raf = 0;
+      const a = acc; acc = null;
+      if (!a || !div._fullLayout) return;
+      const xa = a.pl.xaxis, ya = a.pl.yaxis;
+      const xr = xa.range.slice(), yr = ya.range.slice();
+      const upd = {};
+      let nx;
+      if (a.zoom) {
+        const k = Math.exp(a.zoom);                               // > 1 : dézoom, < 1 : zoom
+        const cx = xa.p2l(a.px - xa._offset), cy = ya.p2l(a.py - ya._offset);
+        nx = [cx + (xr[0] - cx) * k, cx + (xr[1] - cx) * k];
+        upd[ya._name + '.range'] = [cy + (yr[0] - cy) * k, cy + (yr[1] - cy) * k];
+      } else {
+        const sx = (xr[1] - xr[0]) / xa._length, sy = (yr[1] - yr[0]) / ya._length;
+        nx = [xr[0] + a.dx * sx, xr[1] + a.dx * sx];
+        upd[ya._name + '.range'] = [yr[0] - a.dy * sy, yr[1] - a.dy * sy];
+      }
+      upd[xa._name + '.range'] = nx;
+      Plotly.relayout(div, upd);
+      const q = partner();
+      if (q && q._fullLayout && q.style.display !== 'none') Plotly.relayout(q, { 'xaxis.range': nx.slice() });
+    };
+    div.addEventListener('wheel', e => {
+      if (!div._fullLayout) return;
+      const r = div.getBoundingClientRect();
+      const px = e.clientX - r.left, py = e.clientY - r.top;
+      const pl = plotAt(px, py);
+      if (!pl) return;                                           // hors de la zone tracée : défilement normal
+      e.preventDefault(); e.stopPropagation();
+      const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? r.height : 1;
+      const dx = e.deltaX * unit, dy = e.deltaY * unit;
+      const zoom = (e.ctrlKey || isMouseWheel(e)) ? dy : 0;      // ctrlKey : pincement sur trackpad
+      if (!acc || acc.pl !== pl || (!!acc.zoom) !== (!!zoom)) { if (acc) apply(); acc = { pl, dx: 0, dy: 0, zoom: 0, px, py }; }
+      acc.px = px; acc.py = py;
+      if (zoom) acc.zoom += zoom * (e.ctrlKey ? 0.01 : 0.002); else { acc.dx += dx; acc.dy += dy; }
+      if (!raf) raf = requestAnimationFrame(apply);
+    }, { capture: true, passive: false });
   }
 
   // Clic droit maintenu : déplacer la vue (pan) dans le sous-graphe sous le curseur
@@ -3470,6 +3526,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
     step3AttachF0Drag(magDiv);
     step3StoreInit(magDiv, magLayout);
     step3AttachRightPan(magDiv);
+    step3AttachWheel(magDiv);
     step3AttachTouch(magDiv);
 
     if(step3State.showPhase) {
@@ -3491,6 +3548,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       step3AttachF0Drag(phDiv);
       step3StoreInit(phDiv, phLayout);
       step3AttachRightPan(phDiv);
+      step3AttachWheel(phDiv);
       step3AttachTouch(phDiv);
 
       // Sync zoom between magnitude and phase plots
