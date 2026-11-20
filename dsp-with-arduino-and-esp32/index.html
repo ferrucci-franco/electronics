@@ -128,9 +128,22 @@
     }
 
     .step-tab.active {
-      color:var(--accent);
+      color:#ffffff;
       border-color:var(--accent);
-      background:var(--accent-soft);
+      background:var(--accent);
+      font-weight:600;
+      box-shadow:0 2px 10px rgba(37,99,235,0.35);
+    }
+    .step-tab.active span.num {
+      background:#ffffff;
+      color:var(--accent);
+      border-radius:999px;
+      min-width:1.35em;
+      height:1.35em;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      opacity:1;
     }
 
     .step-tab:hover:not(.active) {
@@ -800,7 +813,7 @@
     .step4-wrapper{
       display:grid;
       grid-template-columns:1fr 1fr 2fr;
-      grid-template-rows:30% 1fr;
+      grid-template-rows:auto minmax(0,1fr);
       gap:10px;
       height:100%;
       padding:10px;
@@ -854,24 +867,41 @@
     }
 
     /* ===== Montage (schéma de câblage) ===== */
+    #stepContent:has(.montage-panel){
+      flex:1 1 auto;
+      display:flex;
+      min-height:0;
+    }
+    .step-card:has(.montage-panel){ overflow:hidden; }
     .montage-panel{
-      max-width:1180px;
-      margin:0 auto;
+      flex:1 1 auto;
+      min-height:0;
+      width:100%;
       background:#ffffff;
       border:1px solid var(--border);
       border-radius:14px;
-      padding:12px 16px;
+      padding:10px;
+      box-sizing:border-box;
+      display:flex;
     }
-    .montage-svg{ width:100%; height:auto; display:block; font-family:var(--font); }
+    /* Le viewBox garde les proportions : le schéma remplit l'espace disponible sans défilement */
+    .montage-svg{ flex:1 1 auto; width:100%; height:100%; min-height:0; display:block; font-family:var(--font); }
     .montage-svg .m-title{ font-size:24px; font-weight:700; fill:#111827; }
     .montage-svg .m-label{ font-size:21px; font-weight:700; }
     .montage-svg .m-small{ font-size:17px; fill:#4b5563; }
 
     .eq-term{ white-space:nowrap; }
+    .step4-btn-big{ font-size:1rem !important; padding:9px 18px !important; }
+    .step4-hint{
+      margin:8px 0 0;
+      font-size:.82rem;
+      color:var(--muted);
+      line-height:1.4;
+    }
 
     .step4-firmware-note{
-      margin-top:auto;
-      padding-top:14px;
+      margin:auto 0 0;
+      padding-top:8px;
       font-size:.78rem;
       color:var(--muted);
     }
@@ -3331,7 +3361,10 @@ Implement a real-time digital signal acquisition and processing system using Ard
       order_label: 'Orden',
       coef_a: 'Coeficientes a (denominador)',
       coef_b: 'Coeficientes b (numerador)',
-      select_port: 'Seleccionar puerto',
+      connect_arduino: 'Conectar el Arduino',
+      connect_hint: 'La primera vez, el navegador abre una ventana y pregunta qué dispositivo usar: elija el Arduino y luego «\u00a0Conectar\u00a0».',
+      no_device_chosen: 'Ningún dispositivo elegido.',
+      unplugged: 'Arduino desconectado (cable USB).',
       connect: 'Conectar',
       disconnect: 'Desconectar',
       send_config: 'Enviar configuración',
@@ -3339,7 +3372,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       status_disconnected: 'Desconectado',
       send: 'Enviar',
       clear: 'Limpiar',
-      no_serial: 'Web Serial no soportado en este navegador',
+      no_serial: 'Este navegador no permite conectar el Arduino: use Chrome o Edge.',
       request_port: 'Solicitar puerto...',
       port_opened: 'Puerto abierto',
       port_closed: 'Puerto cerrado',
@@ -3364,7 +3397,10 @@ Implement a real-time digital signal acquisition and processing system using Ard
       order_label: 'Ordre',
       coef_a: 'Coefficients a (dénominateur)',
       coef_b: 'Coefficients b (numérateur)',
-      select_port: 'Sélectionner port',
+      connect_arduino: 'Connecter l\'Arduino',
+      connect_hint: 'La première fois, le navigateur ouvre une fenêtre et demande quel appareil utiliser : choisissez l\'Arduino, puis «\u00a0Connexion\u00a0».',
+      no_device_chosen: 'Aucun appareil choisi.',
+      unplugged: 'Arduino débranché (câble USB).',
       connect: 'Connecter',
       disconnect: 'Déconnecter',
       send_config: 'Envoyer configuration',
@@ -3372,7 +3408,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       status_disconnected: 'Déconnecté',
       send: 'Envoyer',
       clear: 'Effacer',
-      no_serial: 'Web Serial non supporté dans ce navigateur',
+      no_serial: 'Ce navigateur ne permet pas de connecter l\'Arduino : utilisez Chrome ou Edge.',
       request_port: 'Demander port...',
       port_opened: 'Port ouvert',
       port_closed: 'Port fermé',
@@ -3397,7 +3433,10 @@ Implement a real-time digital signal acquisition and processing system using Ard
       order_label: 'Order',
       coef_a: 'Coefficients a (denominator)',
       coef_b: 'Coefficients b (numerator)',
-      select_port: 'Select port',
+      connect_arduino: 'Connect the Arduino',
+      connect_hint: 'The first time, the browser opens a window asking which device to use: choose the Arduino, then «\u00a0Connect\u00a0».',
+      no_device_chosen: 'No device chosen.',
+      unplugged: 'Arduino unplugged (USB cable).',
       connect: 'Connect',
       disconnect: 'Disconnect',
       send_config: 'Send configuration',
@@ -3405,7 +3444,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       status_disconnected: 'Disconnected',
       send: 'Send',
       clear: 'Clear',
-      no_serial: 'Web Serial not supported in this browser',
+      no_serial: 'This browser cannot connect to the Arduino: use Chrome or Edge.',
       request_port: 'Request port...',
       port_opened: 'Port opened',
       port_closed: 'Port closed',
@@ -3440,42 +3479,10 @@ Implement a real-time digital signal acquisition and processing system using Ard
     lastSentConfig: null,  // {filterName, Fs, fc, N, filt}
     rxBuffer: '',  // Buffer for incoming serial data
     vref: 3.3,  // Reference voltage (updated by vref command)
-    waitingForVref: false  // Flag to capture vref response
+    waitingForVref: false,  // Flag to capture vref response
+    waitingForModel: false, // Flag to capture model response
+    boardName: ''
   };
-
-  // Refresh available serial ports
-  async function step4RefreshPorts() {
-    if (!('serial' in navigator)) {
-      step4Log(step4t('no_serial'), 'err');
-      return;
-    }
-
-    try {
-      const ports = await navigator.serial.getPorts();
-      step4State.availablePorts = ports;
-
-      const select = document.getElementById('step4PortSelect');
-      if (!select) return;
-
-      select.innerHTML = `<option value="">${step4t('select_port')}</option>`;
-
-      for (let i = 0; i < ports.length; i++) {
-        const port = ports[i];
-        const info = port.getInfo();
-        let label = `Port ${i + 1}`;
-        if (info.usbVendorId) {
-          label = `USB ${info.usbVendorId.toString(16)}:${info.usbProductId.toString(16)}`;
-        }
-        select.innerHTML += `<option value="${i}">${label}</option>`;
-      }
-
-      if (ports.length === 0) {
-        step4Log('No ports available. Click Connect to request access.', 'info');
-      }
-    } catch (err) {
-      step4Log(`Error: ${err.message}`, 'err');
-    }
-  }
 
   // Get filter coefficients from step3
   function getFilterCoefficients() {
@@ -3573,35 +3580,67 @@ Implement a real-time digital signal acquisition and processing system using Ard
   }
 
   // Serial port functions
+  // Cartes reconnues (filtre de la fenêtre de choix du navigateur) :
+  // Arduino, Espressif (USB natif), Silicon Labs CP210x, WCH CH340, FTDI
+  const STEP4_USB_FILTERS = [
+    { usbVendorId: 0x2341 }, { usbVendorId: 0x2A03 }, { usbVendorId: 0x303A },
+    { usbVendorId: 0x10C4 }, { usbVendorId: 0x1A86 }, { usbVendorId: 0x0403 }
+  ];
+
   async function step4Connect() {
     if (!('serial' in navigator)) {
       step4Log(step4t('no_serial'), 'err');
+      const statusEl = document.getElementById('step4Status');
+      if (statusEl) statusEl.textContent = step4t('no_serial');
       return;
     }
 
     try {
-      const select = document.getElementById('step4PortSelect');
-      const selectedIdx = select ? select.value : '';
-
-      if (selectedIdx !== '' && step4State.availablePorts[selectedIdx]) {
-        step4State.port = step4State.availablePorts[selectedIdx];
-      } else {
-        step4State.port = await navigator.serial.requestPort();
-        step4RefreshPorts();
+      // Un seul appareil déjà autorisé : connexion directe, sans fenêtre du navigateur.
+      // Sinon (première fois, ou plusieurs appareils) : le navigateur demande lequel utiliser.
+      const granted = await navigator.serial.getPorts();
+      let port = granted.length === 1 ? granted[0] : null;
+      if (port) {
+        try { await port.open({ baudRate: STEP4_BAUD_RATE }); }
+        catch (e) { port = null; }
       }
-
-      await step4State.port.open({ baudRate: STEP4_BAUD_RATE });
+      if (!port) {
+        port = await navigator.serial.requestPort({ filters: STEP4_USB_FILTERS });
+        await port.open({ baudRate: STEP4_BAUD_RATE });
+      }
+      step4State.port = port;
+      step4State.boardName = '';
       step4State.connected = true;
       step4Log(`${step4t('port_opened')} @ ${STEP4_BAUD_RATE} baud`, 'info');
       updateStep4UI();
       startReading();
 
-      // Query board's Vref for AC bias calculation
+      // Identification de la carte, puis Vref pour le biais du mode AC
+      step4State.waitingForModel = true;
+      await step4Send('model');
       step4State.waitingForVref = true;
       await step4Send('vref');
     } catch (err) {
-      step4Log(`${step4t('error_connect')}: ${err.message}`, 'err');
+      if (err && err.name === 'NotFoundError') {
+        step4Log(step4t('no_device_chosen'), 'err');
+      } else {
+        step4Log(`${step4t('error_connect')}: ${err.message}`, 'err');
+      }
     }
+  }
+
+  // Câble USB débranché pendant la séance
+  if ('serial' in navigator) {
+    navigator.serial.addEventListener('disconnect', (e) => {
+      if (step4State.port && e.target === step4State.port) {
+        step4State.connected = false;
+        step4State.port = null;
+        step4State.reader = null;
+        step4State.boardName = '';
+        step4Log(step4t('unplugged'), 'err');
+        updateStep4UI();
+      }
+    });
   }
 
   async function step4Disconnect() {
@@ -3651,6 +3690,14 @@ Implement a real-time digital signal acquisition and processing system using Ard
             for (const line of lines) {
               const trimmed = line.trim();
               if (trimmed) {
+                // Réponse à 'model' : nom de la carte
+                if (step4State.waitingForModel && /^(UNO_R4|ESP32)/.test(trimmed)) {
+                  step4State.waitingForModel = false;
+                  step4State.boardName = trimmed.startsWith('UNO_R4') ? 'Arduino UNO R4' : 'ESP32';
+                  step4Log(`RX: ${trimmed}`, 'rx');
+                  updateStep4UI();
+                  continue;
+                }
                 // Check if waiting for vref response
                 if (step4State.waitingForVref) {
                   const vrefValue = parseFloat(trimmed);
@@ -3776,17 +3823,23 @@ Implement a real-time digital signal acquisition and processing system using Ard
 
   function updateStep4UI() {
     const connectBtn = document.getElementById('step4ConnectBtn');
-    const disconnectBtn = document.getElementById('step4DisconnectBtn');
     const sendConfigBtn = document.getElementById('step4SendConfigBtn');
     const statusEl = document.getElementById('step4Status');
 
-    if (connectBtn) connectBtn.disabled = step4State.connected;
-    if (disconnectBtn) disconnectBtn.disabled = !step4State.connected;
-    if (sendConfigBtn) sendConfigBtn.disabled = !step4State.connected;
+    const hintEl = document.getElementById('step4Hint');
+    const on = step4State.connected;
+    if (connectBtn) {
+      connectBtn.textContent = on ? step4t('disconnect') : step4t('connect_arduino');
+      connectBtn.classList.toggle('step4-btn-danger', on);
+    }
+    if (sendConfigBtn) sendConfigBtn.disabled = !on;
+    if (hintEl) hintEl.style.display = on ? 'none' : '';
 
     if (statusEl) {
-      statusEl.textContent = step4State.connected ? step4t('status_connected') : step4t('status_disconnected');
-      statusEl.className = `step4-status ${step4State.connected ? 'connected' : 'disconnected'}`;
+      statusEl.textContent = on
+        ? step4t('status_connected') + (step4State.boardName ? ' : ' + step4State.boardName : '')
+        : step4t('status_disconnected');
+      statusEl.className = `step4-status ${on ? 'connected' : 'disconnected'}`;
     }
   }
 
@@ -3840,18 +3893,13 @@ Implement a real-time digital signal acquisition and processing system using Ard
         <div class="step4-card step4-serial">
           <p class="step3-plot-title">${step4t('serial_title')}</p>
           <div class="step4-serial-controls">
-            <select id="step4PortSelect">
-              <option value="">${step4t('select_port')}</option>
-            </select>
-            <button id="step4RefreshBtn" class="step4-btn">↻</button>
-            <button id="step4ConnectBtn" class="step4-btn">${step4t('connect')}</button>
-            <button id="step4DisconnectBtn" class="step4-btn step4-btn-danger" disabled>${step4t('disconnect')}</button>
+            <button id="step4ConnectBtn" class="step4-btn step4-btn-big">${step4t('connect_arduino')}</button>
+            <button id="step4SendConfigBtn" class="step4-btn step4-btn-big" disabled>${step4t('send_config')}</button>
           </div>
           <div class="step4-serial-controls" style="margin-top:8px;">
-            <span class="step4-param-label">Status:</span>
             <span id="step4Status" class="step4-status disconnected">${step4t('status_disconnected')}</span>
-            <button id="step4SendConfigBtn" class="step4-btn" disabled>${step4t('send_config')}</button>
           </div>
+          <p id="step4Hint" class="step4-hint">${step4t('connect_hint')}</p>
           <p class="step4-firmware-note">${step4t('firmware_note')}
             <a href="firmware/TP2_UNOR4_V4.ino" download>UNO R4 (.ino)</a> ·
             <a href="firmware/TP2_ESP32_V6.ino" download>ESP32 (.ino)</a></p>
@@ -3891,13 +3939,13 @@ Implement a real-time digital signal acquisition and processing system using Ard
     `;
 
     // Attach event listeners
-    document.getElementById('step4RefreshBtn').addEventListener('click', step4RefreshPorts);
-    document.getElementById('step4ConnectBtn').addEventListener('click', step4Connect);
-    document.getElementById('step4DisconnectBtn').addEventListener('click', step4Disconnect);
+    document.getElementById('step4ConnectBtn').addEventListener('click', () => {
+      if (step4State.connected) step4Disconnect(); else step4Connect();
+    });
     document.getElementById('step4SendConfigBtn').addEventListener('click', step4SendConfig);
 
     // Initial port refresh
-    step4RefreshPorts();
+    updateStep4UI();
 
     document.getElementById('step4SendBtn').addEventListener('click', () => {
       const input = document.getElementById('step4ConsoleInput');
