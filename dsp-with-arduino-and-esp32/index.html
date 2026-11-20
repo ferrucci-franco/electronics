@@ -1213,6 +1213,19 @@
       .step-card { overflow:visible !important; height:auto !important; padding:8px !important; }
       #stepContent { height:auto !important; display:block !important; }
 
+      /* En-tête : les quatre onglets en grille 2 × 2, tous visibles, sans défilement horizontal */
+      header { padding:8px 8px 6px !important; gap:6px !important; }
+      header .app-left { width:100%; }
+      header .app-title-main { white-space:normal !important; font-size:1rem; }
+      header .steps-nav { display:grid !important; grid-template-columns:1fr 1fr; gap:6px !important;
+                          width:100%; overflow:visible !important; order:2; }
+      header .step-arrow { display:none !important; }
+      header .step-tab { white-space:normal !important; justify-content:flex-start; text-align:left;
+                         padding:7px 9px !important; font-size:.82rem !important; line-height:1.2;
+                         min-width:0; box-shadow:none; }
+      header .step-tab span.num { flex:0 0 auto; }
+      header .top-right { order:3; }
+
       /* Rappel */
       .step2-container { display:flex !important; flex-direction:column; gap:8px; height:auto !important; }
       .step2-sidebar { overflow:visible !important; height:auto !important; }
