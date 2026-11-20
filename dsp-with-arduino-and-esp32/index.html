@@ -4131,6 +4131,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       send: 'Enviar',
       clear: 'Limpiar',
       no_serial: 'Este navegador no permite conectar el Arduino: use Chrome o Edge.',
+      no_serial_mobile: 'La conexión con el Arduino requiere una computadora: los teléfonos y tabletas no permiten la conexión USB serie.',
       request_port: 'Solicitar puerto...',
       port_opened: 'Puerto abierto',
       port_closed: 'Puerto cerrado',
@@ -4173,6 +4174,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       send: 'Envoyer',
       clear: 'Effacer',
       no_serial: 'Ce navigateur ne permet pas de connecter l\'Arduino : utilisez Chrome ou Edge.',
+      no_serial_mobile: 'La connexion à l\'Arduino demande un ordinateur : les téléphones et les tablettes ne permettent pas la liaison série USB.',
       request_port: 'Demander port...',
       port_opened: 'Port ouvert',
       port_closed: 'Port fermé',
@@ -4215,6 +4217,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       send: 'Send',
       clear: 'Clear',
       no_serial: 'This browser cannot connect to the Arduino: use Chrome or Edge.',
+      no_serial_mobile: 'Connecting to the Arduino requires a computer: phones and tablets do not support USB serial.',
       request_port: 'Request port...',
       port_opened: 'Port opened',
       port_closed: 'Port closed',
@@ -4362,11 +4365,20 @@ Implement a real-time digital signal acquisition and processing system using Ard
     { usbVendorId: 0x10C4 }, { usbVendorId: 0x1A86 }, { usbVendorId: 0x0403 }
   ];
 
+  // Téléphone ou tablette : c'est l'appareil qui ne permet pas la connexion USB série, pas le navigateur
+  function step4IsMobileDevice() {
+    const ua = navigator.userAgent || '';
+    return (navigator.userAgentData && navigator.userAgentData.mobile) ||
+           /Android|iPhone|iPad|iPod|Mobile/i.test(ua) ||
+           (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);   // iPad récent (se présente comme un Mac)
+  }
+  function step4NoSerialText() { return step4t(step4IsMobileDevice() ? 'no_serial_mobile' : 'no_serial'); }
+
   async function step4Connect() {
     if (!('serial' in navigator)) {
-      step4Log(step4t('no_serial'), 'err');
+      step4Log(step4NoSerialText(), 'err');
       const statusEl = document.getElementById('step4Status');
-      if (statusEl) statusEl.textContent = step4t('no_serial');
+      if (statusEl) statusEl.textContent = step4NoSerialText();
       return;
     }
 
@@ -4651,7 +4663,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
     if (hintEl) hintEl.style.display = on ? 'none' : '';
     if (!('serial' in navigator)) {
       if (connectBtn) connectBtn.disabled = true;
-      if (hintEl) { hintEl.style.display = ''; hintEl.textContent = step4t('no_serial'); }
+      if (hintEl) { hintEl.style.display = ''; hintEl.textContent = step4NoSerialText(); }
     }
 
     if (statusEl) {
