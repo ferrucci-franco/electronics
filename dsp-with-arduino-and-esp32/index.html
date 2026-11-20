@@ -2844,9 +2844,10 @@ Implement a real-time digital signal acquisition and processing system using Ard
     return { Re: H.Re*c + H.Im*sn, Im: H.Im*c - H.Re*sn };
   }
 
+  let step3CoeffCache = null;
   function step3H_filter_at_f(f) {
     const Fs = step3State.Fs;
-    const cf = step3Coeffs();
+    const cf = step3CoeffCache || step3Coeffs();
     if (cf.sos) {
       const w = 2*Math.PI*f/Fs, c1 = Math.cos(w), s1 = Math.sin(w), c2 = Math.cos(2*w), s2 = Math.sin(2*w);
       let Re = 1, Im = 0;
@@ -2972,7 +2973,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       }
     }
 
-    Plotly.newPlot(el, data, layout, {displaylogo:false, responsive:true, displayModeBar:false});
+    Plotly.react(el, data, layout, {displaylogo:false, responsive:true, displayModeBar:false});
     step3StoreInit(el, layout);
     step3AttachRightPan(el);
     step3AttachTouch(el);
@@ -3037,7 +3038,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
     div.style.touchAction = 'none';
     if (getComputedStyle(div).position === 'static') div.style.position = 'relative';
     const DBL_MS = 500, DBL_PX = 40, MOVE_PX = 6, NEAR_F0 = 16;
-    let mode = null, st = null, last = null, raf = 0, moved = false, f0Timer = null, f0Pending = null;
+    let mode = null, st = null, last = null, raf = 0, moved = false, f0Pending = null;
     let lastTap = { t: 0, x: 0, y: 0 };
     const group = () => div.id.startsWith('step3Bode')
       ? [document.getElementById('step3BodeMag'), document.getElementById('step3BodePhase')]
@@ -3094,7 +3095,6 @@ Implement a real-time digital signal acquisition and processing system using Ard
       const q = partner();
       if (q && q._fullLayout && q.style.display !== 'none') Plotly.relayout(q, { 'xaxis.range': xr.slice() });
     };
-    const flushF0 = () => { f0Timer = null; if (f0Pending === null) return; step3SetF0(f0Pending); f0Pending = null; step3DrawAll(); };
 
     div.addEventListener('touchstart', e => {
       if (e.touches.length !== 1) { mode = null; hideBox(); return; }
@@ -3123,7 +3123,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
         const ax = pl.xaxis;
         const xc = Math.max(ax._offset, Math.min(ax._offset + ax._length, last.x));
         f0Pending = fOf(ax, xc);
-        if (!f0Timer) f0Timer = setTimeout(flushF0, 60);
+        step3DragF0(f0Pending, false);
       }
     }, { capture: true, passive: false });
 
@@ -3149,7 +3149,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
         hideBox();
         lastTap.t = 0;
       } else {
-        if (mode === 'f0') { if (f0Timer) { clearTimeout(f0Timer); } flushF0(); }
+        if (mode === 'f0') { step3DragF0(f0Pending, true); f0Pending = null; }
         lastTap = moved ? { t: 0, x: 0, y: 0 } : { t: now, x: st.p.x, y: st.p.y };
       }
       mode = null;
@@ -3211,6 +3211,29 @@ Implement a real-time digital signal acquisition and processing system using Ard
     if (sl) sl.value = step3InvLog(f);
   }
 
+  let f0DragRaf = 0, f0DragPending = null, f0TimeTimer = null;
+  function step3DragF0(f, final) {
+    if (final) {
+      if (f0DragRaf) { cancelAnimationFrame(f0DragRaf); f0DragRaf = 0; }
+      clearTimeout(f0TimeTimer);
+      if (f !== null && f !== undefined) step3SetF0(f);
+      f0DragPending = null;
+      step3DrawAll();
+      return;
+    }
+    f0DragPending = f;
+    if (f0DragRaf) return;
+    f0DragRaf = requestAnimationFrame(() => {
+      f0DragRaf = 0;
+      if (f0DragPending === null) return;
+      step3SetF0(f0DragPending); f0DragPending = null;
+      if (step3State.showBode) step3DrawBode();
+      step3UpdateNyquist();
+      clearTimeout(f0TimeTimer);
+      f0TimeTimer = setTimeout(() => { if (step3State.showTime) step3DrawTime(); }, 180);
+    });
+  }
+
   function step3AttachF0Drag(div) {
     if (!div || div._f0DragAttached) return;
     div._f0DragAttached = true;
@@ -3226,20 +3249,14 @@ Implement a real-time digital signal acquisition and processing system using Ard
       if (ya && (y < ya._offset - 14 || y > ya._offset + ya._length)) return false;
       return Math.abs(localX(e) - pxOfF0(ax)) <= NEAR;
     };
-    let dragging = false, pending = null, timer = null;
-    const flush = () => {
-      timer = null;
-      if (pending === null) return;
-      step3SetF0(pending); pending = null;
-      step3DrawAll();
-    };
+    let dragging = false, pending = null;
     const move = e => {
       if (!dragging) return;
       const ax = axisOf(); if (!ax) return;
       const xmin = ax._offset, xmax = ax._offset + ax._length;
       const fMaxAxis = fOfPx(ax, xmax);
       pending = Math.min(fOfPx(ax, Math.max(xmin, Math.min(xmax, localX(e)))), fMaxAxis);
-      if (!timer) timer = setTimeout(flush, 60);
+      step3DragF0(pending, false);
       e.preventDefault();
     };
     const up = () => {
@@ -3248,8 +3265,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
       document.body.style.cursor = '';
       window.removeEventListener('mousemove', move, true);
       window.removeEventListener('mouseup', up, true);
-      if (timer) { clearTimeout(timer); timer = null; }
-      flush();
+      step3DragF0(pending, true);
+      pending = null;
     };
     div.addEventListener('mousedown', e => {
       if (e.button !== 0 || !nearLine(e)) return;
@@ -3286,15 +3303,27 @@ Implement a real-time digital signal acquisition and processing system using Ard
     const fMax = step3State.beyond ? (Fnyq * step3State.fmaxRatio) : Fnyq;
     const useLog = step3State.log;
 
-    const N = 600;
+    step3CoeffCache = step3Coeffs();   // mêmes coefficients pour toutes les fréquences de ce tracé
+    const N = 400;
     const freqs = [];
     const mags = [];
     const phases = [];
     let prev = 0;
     let fMin = useLog ? 10 : 0;
 
-    for(let i=0; i<N; i++) {
-      const f = useLog ? fMin * Math.pow(fMax/fMin, i/(N-1)) : (fMin + (fMax - fMin)*i/(N-1));
+    // Grille de fréquences : 400 points réguliers, plus 120 points serrés autour de f0 pour le
+    // passe-bande et le coupe-bande (sinon un creux étroit, Q élevé, serait mal dessiné)
+    let fGrid = [];
+    for(let i=0; i<N; i++) fGrid.push(useLog ? fMin * Math.pow(fMax/fMin, i/(N-1)) : (fMin + (fMax - fMin)*i/(N-1)));
+    if (step3State.filt === 'notch' || step3State.filt === 'bp') {
+      const fc0 = step3State[step3State.filt + 'R'] * Fnyq, bw = fc0 / step3State[step3State.filt + 'Q'];
+      const lo = Math.max(fMin, fc0 - 4*bw), hi = Math.min(fMax, fc0 + 4*bw);
+      for (let i=0; i<120; i++) fGrid.push(lo + (hi - lo) * i / 119);
+      fGrid.push(fc0);
+      fGrid = fGrid.filter(f => f >= fMin && f <= fMax && (!useLog || f > 0)).sort((u, v) => u - v);
+    }
+    for(let i=0; i<fGrid.length; i++) {
+      const f = fGrid[i];
       const H = step3H_at_f(f);
       const m = Math.hypot(H.Re, H.Im);
       let a = Math.atan2(H.Im, H.Re);
@@ -3377,6 +3406,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
     const f0 = step3State.f0;
     const f0In = f0 > 0 && f0 <= fMax && (!useLog || f0 >= fMin);
     const H0 = step3H_at_f(f0);
+    step3CoeffCache = null;            // fin des calculs du tracé : le cache ne doit pas survivre
     const m0 = Math.hypot(H0.Re, H0.Im);
     const m0Val = (step3State.magMode === 'db') ? Math.max(20*Math.log10(m0 || 1e-12), -100) : m0;
     const m0Txt = (step3State.magMode === 'db') ? m0Val.toFixed(1).replace('.', state.lang === 'en' ? '.' : ',') + ' dB'
@@ -3399,7 +3429,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
     const magTraces = [{ x:freqs, y:magVals, type:'scatter', mode:'lines', line:{color:C.bode, width:3}, hoverinfo:'skip' }];
     if (f0In) magTraces.push({ x:[f0], y:[m0Val], type:'scatter', mode:'markers', marker:{color:'#dc2626', size:11, line:{color:dark ? '#2b3648' : '#ffffff', width:2}}, hoverinfo:'skip' });
 
-    Plotly.newPlot(magDiv, magTraces, magLayout, {displaylogo:false, responsive:true, displayModeBar:false});
+    Plotly.react(magDiv, magTraces, magLayout, {displaylogo:false, responsive:true, displayModeBar:false});
     step3AttachF0Drag(magDiv);
     step3StoreInit(magDiv, magLayout);
     step3AttachRightPan(magDiv);
@@ -3420,7 +3450,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
         phTraces.push({ x:[f0], y:[ph0], type:'scatter', mode:'markers', marker:{color:'#dc2626', size:11, line:{color:dark ? '#2b3648' : '#ffffff', width:2}}, hoverinfo:'skip' });
         phLayout.annotations = [ptAnn(ph0, ph0.toFixed(1).replace('.', state.lang === 'en' ? '.' : ',') + '°', phases)];
       }
-      Plotly.newPlot(phDiv, phTraces, phLayout, {displaylogo:false, responsive:true, displayModeBar:false});
+      Plotly.react(phDiv, phTraces, phLayout, {displaylogo:false, responsive:true, displayModeBar:false});
       step3AttachF0Drag(phDiv);
       step3StoreInit(phDiv, phLayout);
       step3AttachRightPan(phDiv);
