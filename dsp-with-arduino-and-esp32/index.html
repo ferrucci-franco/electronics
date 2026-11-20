@@ -2631,7 +2631,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
     const maxCyclesBySamples = Math.floor((MAX_SAMPLES * f0) / Fs);
 
     let effectiveCycles = Math.max(cyclesVisible, minCycles);
-    effectiveCycles = Math.min(effectiveCycles, maxCyclesBySamples, 110);
+    effectiveCycles = Math.min(effectiveCycles, maxCyclesBySamples, 500);
 
     const timeShow = effectiveCycles / f0;
     const showS = Math.ceil(Fs * timeShow);
@@ -3037,18 +3037,31 @@ Implement a real-time digital signal acquisition and processing system using Ard
     const shapesPh = [];
     const ann = [];
 
+    // Position relative (0…1) d'une fréquence sur l'axe : sert à garder les étiquettes dans le graphe
+    const frac = f => useLog ? (Math.log10(f) - Math.log10(fMin)) / (Math.log10(fMax) - Math.log10(fMin))
+                             : (f - fMin) / (fMax - fMin);
+    const edgeAnchor = f => { const r = frac(f); return r > 0.93 ? 'right' : (r < 0.07 ? 'left' : 'center'); };
+    // f_IN trop près d'un autre repère (FNyq, Fs…) : son étiquette passe de l'autre côté de la ligne
+    const others = [Fnyq, Fs, 2*Fs, 3*Fs].filter(v => v > 0 && v <= fMax);
+    const near = others.find(v => Math.abs(frac(v) - frac(step3State.f0)) < 0.12);
+    // Le repère voisin collé au bord droit garde son étiquette à l'intérieur ; f_IN se décale alors davantage
+    const nearAtEdge = near !== undefined && frac(near) > 0.93;
+    const nearAnchor = near === undefined ? null : (nearAtEdge ? 'right' : (step3State.f0 <= near ? 'left' : 'right'));
+    const f0Anchor = near !== undefined ? (step3State.f0 <= near ? 'right' : 'left') : edgeAnchor(step3State.f0);
+    const f0Shift = (nearAtEdge && step3State.f0 <= near) ? -Math.max(0, 46 - Math.abs(frac(near) - frac(step3State.f0)) * 520) : 0;
+
     function addMarker(freq, label, color) {
       if(freq <= 0 || freq > fMax) return;
       shapesMag.push({ type:'line', x0:freq, x1:freq, y0:0, y1:1, xref:'x', yref:'paper', line:{color:color, width:2, dash:'dot'} });
       shapesPh.push({ type:'line', x0:freq, x1:freq, y0:0, y1:1, xref:'x', yref:'paper', line:{color:color, width:2, dash:'dot'} });
-      ann.push({ x:useLog ? Math.log10(freq) : freq, y:1.018, xref:'x', yref:'paper', xanchor:'center', yanchor:'top', text:'<b>'+label+'</b>', showarrow:false, font:{size:13, color:color}, bgcolor:annBg, borderpad:2 });
+      ann.push({ x:useLog ? Math.log10(freq) : freq, y:1.018, xref:'x', yref:'paper', xanchor:(near === freq ? nearAnchor : edgeAnchor(freq)), yanchor:'top', text:'<b>'+label+'</b>', showarrow:false, font:{size:13, color:color}, bgcolor:annBg, borderpad:2 });
     }
 
     if(step3State.f0 > 0 && step3State.f0 <= fMax) {
       const col = '#dc2626';
       shapesMag.push({ type:'line', x0:step3State.f0, x1:step3State.f0, y0:0, y1:1, xref:'x', yref:'paper', line:{color:col, width:3, dash:'dot'} });
       shapesPh.push({ type:'line', x0:step3State.f0, x1:step3State.f0, y0:0, y1:1, xref:'x', yref:'paper', line:{color:col, width:3, dash:'dot'} });
-      ann.push({ x:useLog ? Math.log10(step3State.f0) : step3State.f0, y:1.018, xref:'x', yref:'paper', xanchor:'center', yanchor:'top', text:'<b>f<sub>IN</sub></b>', showarrow:false, font:{size:13, color:col}, bgcolor:annBg, borderpad:2 });
+      ann.push({ x:useLog ? Math.log10(step3State.f0) : step3State.f0, y:1.018, xref:'x', yref:'paper', xanchor:f0Anchor, xshift:f0Shift, yanchor:'top', text:'<b>f<sub>IN</sub></b>', showarrow:false, font:{size:13, color:col}, bgcolor:annBg, borderpad:2 });
     }
 
     addMarker(Fnyq, 'FNyq', C.nyq);
@@ -3094,9 +3107,13 @@ Implement a real-time digital signal acquisition and processing system using Ard
       while (a - phases[best] < -180) a += 360;
       return a;
     })();
-    const ptAnn = (yv, txt) => ({ x: useLog ? Math.log10(f0) : f0, y: yv, xref:'x', yref:'y', xanchor:'left', yanchor:'bottom',
-      xshift:8, yshift:4, text:'<b>'+txt+'</b>', showarrow:false, font:{size:14, color:'#dc2626'}, bgcolor:annBg, borderpad:3 });
-    if (f0In) magLayout.annotations = ann.concat([ptAnn(m0Val, m0Txt)]);
+    const ptRight = frac(f0) > 0.7;   // près du bord droit : valeur à gauche du point
+    // près du haut du graphe : valeur sous le point (sinon elle chevauche l'étiquette f_IN)
+    const highIn = (yv, arr) => { const lo = Math.min(...arr), hi = Math.max(...arr); return hi > lo && (yv - lo) / (hi - lo) > 0.85; };
+    const ptAnn = (yv, txt, arr) => { const below = highIn(yv, arr); return { x: useLog ? Math.log10(f0) : f0, y: yv, xref:'x', yref:'y',
+      xanchor:(ptRight ? 'right' : 'left'), yanchor:(below ? 'top' : 'bottom'), xshift:(ptRight ? -8 : 8), yshift:(below ? -6 : 4),
+      text:'<b>'+txt+'</b>', showarrow:false, font:{size:14, color:'#dc2626'}, bgcolor:annBg, borderpad:3 }; };
+    if (f0In) magLayout.annotations = ann.concat([ptAnn(m0Val, m0Txt, magVals)]);
     const magTraces = [{ x:freqs, y:magVals, type:'scatter', mode:'lines', line:{color:C.bode, width:3}, hoverinfo:'skip' }];
     if (f0In) magTraces.push({ x:[f0], y:[m0Val], type:'scatter', mode:'markers', marker:{color:'#dc2626', size:11, line:{color:dark ? '#2b3648' : '#ffffff', width:2}}, hoverinfo:'skip' });
 
@@ -3118,7 +3135,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       const phTraces = [{ x:freqs, y:phases, type:'scatter', mode:'lines', line:{color:C.bodePh, width:3}, hoverinfo:'skip' }];
       if (f0In) {
         phTraces.push({ x:[f0], y:[ph0], type:'scatter', mode:'markers', marker:{color:'#dc2626', size:11, line:{color:dark ? '#2b3648' : '#ffffff', width:2}}, hoverinfo:'skip' });
-        phLayout.annotations = [ptAnn(ph0, ph0.toFixed(1).replace('.', state.lang === 'en' ? '.' : ',') + '°')];
+        phLayout.annotations = [ptAnn(ph0, ph0.toFixed(1).replace('.', state.lang === 'en' ? '.' : ',') + '°', phases)];
       }
       Plotly.newPlot(phDiv, phTraces, phLayout, {displaylogo:false, responsive:true, displayModeBar:false});
       step3AttachF0Drag(phDiv);
