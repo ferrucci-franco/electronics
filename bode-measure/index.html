@@ -41,16 +41,15 @@
   a{color:var(--link);text-decoration:none}
   a:hover{text-decoration:underline}
 
-  /* ===== Layout: header on top; the measurement column (left) and the Bode column (right)
-     each scroll on their own, so the plot stays in view while the table grows ===== */
+  /* ===== Layout: side panel (title, settings, table) on the left, Bode on the right, full height;
+     each column scrolls on its own, so the plot stays in view while the table grows ===== */
   .app{
     display:grid; gap:10px; padding:10px;
     height:100vh; height:100dvh;
-    grid-template-columns:minmax(560px, 46%) minmax(0,1fr);
-    grid-template-rows:auto minmax(0,1fr);
-    grid-template-areas:"head head" "left right";
+    grid-template-columns:minmax(560px, 44%) minmax(0,1fr);
+    grid-template-rows:minmax(0,1fr);
+    grid-template-areas:"left right";
   }
-  .app-header{grid-area:head}
   .left{grid-area:left; display:flex; flex-direction:column; gap:10px; min-width:0; min-height:0; overflow:auto; overscroll-behavior:contain;
         scrollbar-width:thin; scrollbar-color:var(--scroll-thumb) var(--scroll-track)}
   .left::-webkit-scrollbar, .bodeWrap::-webkit-scrollbar{width:12px}
@@ -59,8 +58,10 @@
   .right{grid-area:right; min-width:0; min-height:0; overflow:hidden; display:flex; flex-direction:column; gap:6px}
 
   .panel{border:1px solid var(--border);background:var(--card);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:10px;min-width:0}
-  .app-header{background:var(--panel); padding:10px 12px; flex-direction:row; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px 12px}
-  .app-header h1{margin:0; font-size:18px; line-height:1.25; font-weight:700}
+  .side-head{display:flex; flex-direction:column; gap:8px; padding:2px 2px 0; flex:none}
+  .side-head .title-row{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px 12px}
+  .side-head h1{margin:0; font-size:18px; line-height:1.25; font-weight:700}
+  .side-head .fit-row{display:inline-flex; gap:8px; align-items:center; font-size:14px; cursor:pointer; align-self:flex-start}
   .muted{color:var(--muted)}
   .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;min-height:28px}
   label{font-size:15px}
@@ -77,9 +78,9 @@
 
   .lang-theme{display:flex;gap:8px;align-items:center}
   .seg{display:flex;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--card)}
-  .app-header .seg button{border:0;border-radius:0;background:transparent;color:var(--muted);padding:6px 11px;font-size:13px;font-weight:600}
-  .app-header .seg button + button{border-left:1px solid var(--border)}
-  .app-header .seg button.active{background:var(--accent);color:#fff}
+  .side-head .seg button{border:0;border-radius:0;background:transparent;color:var(--muted);padding:6px 11px;font-size:13px;font-weight:600}
+  .side-head .seg button + button{border-left:1px solid var(--border)}
+  .side-head .seg button.active{background:var(--accent);color:#fff}
   #themeBtn{padding:5px 10px; font-size:16px; line-height:1.2}
 
   .card{border:1px solid var(--border);border-radius:12px;padding:10px 12px;background:var(--paper);display:flex;flex-direction:column;gap:8px;flex:none}
@@ -92,12 +93,17 @@
   .btn-danger{color:var(--danger) !important}
 
   /* ----- circuit panel ----- */
-  .circuit-grid{display:grid; grid-template-columns:1fr auto; gap:10px; align-items:start}
-  .comp-fields{display:flex; flex-direction:column; gap:6px}
-  .comp-fields .row label{min-width:150px}
-  .comp-fields input[type=text]{width:120px; text-align:right; font-variant-numeric:tabular-nums}
+  .circuit-grid{display:grid; grid-template-columns:auto minmax(0,1fr); gap:16px; align-items:start}
+  /* labels next to their values; the circuit selector spans both columns, so its right edge
+     lines up with the right edge of the value boxes */
+  .comp-fields{display:grid; width:240px; grid-template-columns:minmax(0,1fr) 108px; gap:6px 12px; align-items:center}
+  .comp-fields .span{grid-column:1 / -1}
+  .comp-fields label{white-space:nowrap}
+  .comp-fields .circuit-lbl{margin-bottom:-2px}
+  .comp-fields select{width:100%; min-width:0}
+  .comp-fields input[type=text]{width:100%; text-align:right; font-variant-numeric:tabular-nums}
   .comp-fields input.invalid{border-color:var(--invalid); box-shadow:0 0 0 1px var(--invalid) inset}
-  .schematic{width:340px; max-width:100%; color:var(--fg)}
+  .schematic{width:340px; max-width:100%; color:var(--fg); justify-self:center}
   .schematic svg{width:100%; height:auto; display:block}
   .schematic text{font-family:ui-sans-serif,system-ui,"Segoe UI",Roboto,Arial,sans-serif; font-size:13px; fill:var(--fg)}
   .schematic .sub{font-size:9px}
@@ -155,8 +161,6 @@
 
   /* ----- Bode ----- */
   .plotwrap.panel{background:var(--paper); padding:8px}
-  .bode-toolbar{display:flex; justify-content:flex-end; align-items:center; gap:8px; padding:0 6px; flex:none}
-  .bode-toolbar label{display:inline-flex; gap:6px; align-items:center; font-size:13px; color:var(--muted); cursor:pointer; white-space:nowrap}
   .bodeWrap{display:flex;flex-direction:column;gap:8px;min-height:0; flex:1 1 auto; overflow:auto; overscroll-behavior:contain;
             scrollbar-width:thin; scrollbar-color:var(--scroll-thumb) var(--scroll-track)}
   /* "fit" (default): both plots share the panel height, no scroll */
@@ -172,7 +176,7 @@
 
   @media (max-width:1099px){
     body{overflow:auto}
-    .app{height:auto; min-height:100vh; grid-template-columns:minmax(0,1fr); grid-template-rows:none; grid-template-areas:"head" "right" "left"}
+    .app{height:auto; min-height:100vh; grid-template-columns:minmax(0,1fr); grid-template-rows:none; grid-template-areas:"left" "right"}
     .left{overflow:visible}
     .right{height:760px}
   }
@@ -211,49 +215,42 @@
 </head>
 <body>
   <div class="app" id="app">
-    <header class="panel app-header">
-      <h1 id="title">Relevé de diagramme de Bode — RC / RLC série</h1>
-      <div class="lang-theme">
-        <div class="seg" role="group" aria-label="Langue">
-          <button id="lang-fr" type="button" class="active" data-lang="fr" aria-pressed="true">FR</button>
-          <button id="lang-en" type="button" data-lang="en" aria-pressed="false">EN</button>
-          <button id="lang-es" type="button" data-lang="es" aria-pressed="false">ES</button>
-        </div>
-        <button id="themeBtn" type="button" title="Changer de thème" aria-label="Changer de thème">🌗</button>
-      </div>
-    </header>
-
-    <!-- ===== Left column: circuit, report fields, table ===== -->
+    <!-- ===== Left column: title and settings, circuit, report fields, table ===== -->
     <aside class="panel left" style="background:var(--panel)">
+
+      <div class="side-head">
+        <div class="title-row">
+          <h1 id="title">Relevé de diagramme de Bode — RC / RLC série</h1>
+          <div class="lang-theme">
+            <div class="seg" role="group" aria-label="Langue">
+              <button id="lang-fr" type="button" class="active" data-lang="fr" aria-pressed="true">FR</button>
+              <button id="lang-en" type="button" data-lang="en" aria-pressed="false">EN</button>
+              <button id="lang-es" type="button" data-lang="es" aria-pressed="false">ES</button>
+            </div>
+            <button id="themeBtn" type="button" title="Changer de thème" aria-label="Changer de thème">🌗</button>
+          </div>
+        </div>
+        <label class="fit-row"><input id="fitBode" type="checkbox" checked /><span id="fitBodeLbl">Ajuster le Bode à la hauteur</span></label>
+      </div>
 
       <!-- Circuit -->
       <div class="card">
         <h3 id="circuitCardTitle">Circuit</h3>
         <div class="circuit-grid">
           <div class="comp-fields">
-            <div class="row">
-              <label for="circuitSel" id="circuitLbl">Type de circuit</label>
-              <select id="circuitSel">
-                <option value="rc" id="optRc">RC</option>
-                <option value="rlc" id="optRlc">RLC série</option>
-              </select>
-            </div>
-            <div class="row">
-              <label for="compR" id="lblR">R (Ω)</label>
-              <input id="compR" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" />
-            </div>
-            <div class="row">
-              <label for="compC" id="lblC">C (nF)</label>
-              <input id="compC" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" />
-            </div>
-            <div class="row rlc-only">
-              <label for="compL" id="lblL">L (mH)</label>
-              <input id="compL" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" />
-            </div>
-            <div class="row rlc-only">
-              <label for="compRL" id="lblRL">R<sub>L</sub> bobine (Ω)</label>
-              <input id="compRL" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" />
-            </div>
+            <label for="circuitSel" id="circuitLbl" class="span circuit-lbl">Type de circuit</label>
+            <select id="circuitSel" class="span">
+              <option value="rc" id="optRc">RC</option>
+              <option value="rlc" id="optRlc">RLC série</option>
+            </select>
+            <label for="compR" id="lblR">R (Ω)</label>
+            <input id="compR" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" />
+            <label for="compC" id="lblC">C (nF)</label>
+            <input id="compC" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" />
+            <label for="compL" id="lblL" class="rlc-only">L (mH)</label>
+            <input id="compL" class="rlc-only" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" />
+            <label for="compRL" id="lblRL" class="rlc-only">R<sub>L</sub> bobine (Ω)</label>
+            <input id="compRL" class="rlc-only" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" />
           </div>
           <div class="schematic" id="schematic" aria-hidden="true"></div>
         </div>
@@ -334,11 +331,6 @@
 
     <!-- ===== Right column: Bode plot ===== -->
     <section class="panel plotwrap right fit" id="bodeSection">
-      <div class="bode-toolbar">
-        <span class="muted hint" id="panHint"></span>
-        <span class="grow"></span>
-        <label><input id="fitBode" type="checkbox" checked /><span id="fitBodeLbl">Ajuster le Bode à la hauteur</span></label>
-      </div>
       <div class="bodeWrap">
         <div id="bodeMag"></div>
         <div id="bodePhase"></div>
@@ -391,7 +383,6 @@ document.addEventListener('DOMContentLoaded', () => {
       invalidComp:'Valeurs de composants invalides : la courbe théorique ne peut pas être tracée.',
       bodeTitle:'Bode — Gain', bodePhaseTitle:'Bode — Phase', bodeX:'Fréquence (Hz)', bodeYdB:'G (dB)', phaseY:'Phase (°)',
       traceMeas:'Mesures', traceTh:'Théorie', fitBode:'Ajuster le Bode à la hauteur',
-      panHint:'Zoom : glisser (bouton gauche) · Déplacer : bouton droit ou deux doigts sur le pavé tactile · Double-clic : vue initiale',
       reportCircuit:'Circuit', reportTheory:'Courbe théorique affichée',
       reportFoot:'Relevé réalisé avec ferrucci-lab.com/bode-measure',
       theme:'Changer de thème', language:'Langue',
@@ -420,7 +411,6 @@ document.addEventListener('DOMContentLoaded', () => {
       invalidComp:'Invalid component values: the theoretical curve cannot be drawn.',
       bodeTitle:'Bode — Gain', bodePhaseTitle:'Bode — Phase', bodeX:'Frequency (Hz)', bodeYdB:'G (dB)', phaseY:'Phase (°)',
       traceMeas:'Measurements', traceTh:'Theory', fitBode:'Fit Bode to the height',
-      panHint:'Zoom: drag (left button) · Pan: right button or two fingers on the trackpad · Double-click: initial view',
       reportCircuit:'Circuit', reportTheory:'Theoretical curve shown',
       reportFoot:'Measured with ferrucci-lab.com/bode-measure',
       theme:'Toggle theme', language:'Language',
@@ -449,7 +439,6 @@ document.addEventListener('DOMContentLoaded', () => {
       invalidComp:'Valores de componentes inválidos: no se puede trazar la curva teórica.',
       bodeTitle:'Bode — Ganancia', bodePhaseTitle:'Bode — Fase', bodeX:'Frecuencia (Hz)', bodeYdB:'G (dB)', phaseY:'Fase (°)',
       traceMeas:'Mediciones', traceTh:'Teoría', fitBode:'Ajustar el Bode a la altura',
-      panHint:'Zoom: arrastrar (botón izquierdo) · Desplazar: botón derecho o dos dedos en el trackpad · Doble clic: vista inicial',
       reportCircuit:'Circuito', reportTheory:'Curva teórica mostrada',
       reportFoot:'Medido con ferrucci-lab.com/bode-measure',
       theme:'Cambiar tema', language:'Idioma',
@@ -685,7 +674,7 @@ document.addEventListener('DOMContentLoaded', () => {
      ['reportCardTitle', t.reportCard], ['namesLbl', t.names], ['groupLbl', t.group], ['dateLbl', t.date], ['reportHint', t.reportHint],
      ['printBtn', t.print], ['csvBtn', t.csv], ['newBtn', t.newSeries], ['confirmText', t.confirmText], ['confirmYes', t.confirmYes], ['confirmNo', t.confirmNo],
      ['tableCardTitle', t.tableCard], ['measHint', t.measHint], ['addRowBtn', t.addRow], ['rowsHint', t.rowsHint], ['dtNote', t.dtNote],
-     ['fitBodeLbl', t.fitBode], ['panHint', t.panHint]
+     ['fitBodeLbl', t.fitBode]
     ].forEach(([id, html]) => { const el = document.getElementById(id); if(el) el.innerHTML = html; });
     $('#thVe').title = t.veTip; $('#thVs').title = t.vsTip; $('#thDt').title = t.dtTip;
     $('#thG').title = t.gTip; $('#thGdb').title = t.gdbTip; $('#thPhi').title = t.phiTip;
@@ -1101,38 +1090,42 @@ document.addEventListener('DOMContentLoaded', () => {
     }, true));
     gd.addEventListener('contextmenu', e => e.preventDefault());
   }
-  // ----- Pan with two fingers on a trackpad (wheel events); pinch (Ctrl+wheel) zooms the frequency axis -----
+  // ----- Pan with two fingers on a trackpad -----
+  // The mouse wheel is left alone (it scrolls, never zooms or moves the plot). A two-finger swipe
+  // that STARTS horizontally latches into "pan" for the whole gesture and then pans in both
+  // directions; a gesture that starts vertically, or a pinch (Ctrl+wheel), keeps the browser's
+  // usual behaviour. The latch outlives short pauses (and Windows' lift-and-replace of the fingers
+  // needed to change axis), then expires so the wheel scrolls again.
   function setupWheelPan(gd){
     if(!gd || gd.dataset.wheelPan) return;
     gd.dataset.wheelPan = '1';
-    let acc = null, raf = 0;
-    function apply(){
+    const END_MS = 800;
+    let base = null, endTimer = 0, raf = 0, pdx = 0, pdy = 0;
+    const scale = e => e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? (gd.clientHeight || 800) : 1;
+    function flush(){
       raf = 0;
-      if(!acc) return;
-      const upd = acc; acc = null;
-      Plotly.relayout(gd, upd);
+      if(!base) return;
+      // scroll right -> higher frequencies, scroll up -> higher values: the view follows the fingers
+      const xs = pdx / base.xLen * base.xSpan, ys = -pdy / base.yLen * base.ySpan;
+      pdx = 0; pdy = 0;
+      base.x = [base.x[0] + xs, base.x[1] + xs];
+      base.y = [base.y[0] + ys, base.y[1] + ys];
+      Plotly.relayout(gd, {'xaxis.autorange':false, 'xaxis.range':base.x.slice(), 'yaxis.autorange':false, 'yaxis.range':base.y.slice()});
     }
     gd.addEventListener('wheel', e => {
-      const p = plotAreaPoint(gd, e.clientX, e.clientY);
-      if(!p) return;
-      e.preventDefault();
-      const xr = (acc && acc['xaxis.range']) || p.xa.range.map(Number);
-      const yr = (acc && acc['yaxis.range']) || p.ya.range.map(Number);
-      const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? p.ya._length : 1;
-      let dx = e.deltaX * unit, dy = e.deltaY * unit;
-      if(e.ctrlKey){
-        // pinch: zoom the frequency axis around the pointer
-        const s = Math.exp(dy * 0.01), fx = p.px / p.xa._length, cx = xr[0] + fx*(xr[1]-xr[0]);
-        acc = {'xaxis.autorange':false, 'xaxis.range':[cx - (cx-xr[0])*s, cx + (xr[1]-cx)*s]};
-      }else{
-        if(e.shiftKey && !dx){ dx = dy; dy = 0; }    // mouse wheel + Shift: horizontal
-        const kx = (xr[1]-xr[0]) / p.xa._length, ky = (yr[1]-yr[0]) / p.ya._length;
-        // the content follows the fingers: swipe right → the curve moves right
-        acc = {'xaxis.autorange':false, 'xaxis.range':[xr[0] + dx*kx, xr[1] + dx*kx],
-               'yaxis.autorange':false, 'yaxis.range':[yr[0] + dy*ky, yr[1] + dy*ky]};
+      if(!base){
+        if(e.ctrlKey || Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;   // mouse wheel, vertical swipe, pinch
+        const p = plotAreaPoint(gd, e.clientX, e.clientY);
+        if(!p) return;
+        const x = p.xa.range.map(Number), y = p.ya.range.map(Number);
+        base = {xLen:p.xa._length, yLen:p.ya._length, xSpan:x[1]-x[0], ySpan:y[1]-y[0], x, y};
       }
-      if(!raf) raf = requestAnimationFrame(apply);
-    }, {passive:false});
+      clearTimeout(endTimer);
+      endTimer = setTimeout(() => { base = null; pdx = 0; pdy = 0; }, END_MS);
+      e.preventDefault(); e.stopPropagation();
+      pdx += e.deltaX * scale(e); pdy += e.deltaY * scale(e);
+      if(!raf) raf = requestAnimationFrame(flush);
+    }, {capture:true, passive:false});
   }
   // ----- Fit Bode: both plots share the column height, or fixed heights with a scrolling column -----
   const fitBode = $('#fitBode');
