@@ -3790,7 +3790,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
                 <div class="step3-group" id="step3MaGroup" style="display:${S.filt === 'ma' ? 'block' : 'none'}">
                   <div class="step3-row"><span>${t('filter_ma_order')}</span></div>
                   <div class="step3-range-row">
-                    <input type="range" id="step3MaNSlider" min="2" max="15" step="1" value="${S.maN}">
+                    <input type="range" id="step3MaNSlider" min="2" max="32" step="1" value="${S.maN}">
                     <input type="text" id="step3MaNNumber" value="${step3Fmt(S.maN, 0)}">
                   </div>
                 </div>
@@ -4039,7 +4039,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
     // MA N
     const syncN = v => {
       let n = step3ParseNum(v, step3State.maN);
-      n = Math.max(2, Math.min(15, n));
+      n = Math.max(2, Math.min(32, n));                 // 32 = taps FIR max du firmware (MAX_NX)
       step3State.maN = n;
       document.getElementById('step3MaNSlider').value = n;
       document.getElementById('step3MaNNumber').value = step3Fmt(n, 0);
