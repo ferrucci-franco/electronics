@@ -1,5 +1,9 @@
 /*  ===========================================================================
-    ESP32 WROOM-32 — ADC → (FIR/IIR) → DAC @ Fs
+    ESP32 WROOM-32 — ADC → filtre (FIR / RII / biquads en cascade) → DAC @ Fs
+    Version du programme : 2.0  (commande 'version' → "FW 2.0")
+    - sos [b0,b1,b2,a1,a2, ...] : cascade de cellules du second ordre (forme directe II
+      transposée), robuste en float32 jusqu'à l'ordre 8 (4 cellules)
+    - GPIO27 : carré à Fs/2   GPIO33 : à 1 pendant le calcul d'un échantillon
     Valeurs par défaut au démarrage (sans PC) :
       - Fs = 1000 Hz
       - FIR moyenne mobile de 10 : b = [0.1,...,0.1]
@@ -17,6 +21,9 @@
 #define ADC_PIN           34        // ADC1_CH6 (entrée analogique)
 #define DAC_PIN           25        // DAC1 (GPIO25) — ESP32 classique
 #define PIN_PROBE         27        // broche sonde (carrée ~Fs/2)
+#define PIN_BUSY          33        // à 1 pendant le calcul d'un échantillon
+#define MAX_SOS            4        // cellules du second ordre (ordre 8 au maximum)
+#define FW_VERSION        "2.0"
 
 #define ADC_BITS          12
 #define DAC_BITS           8        // ESP32 DAC : 8 bits
@@ -51,6 +58,12 @@ volatile uint8_t  nx = 1;
 volatile uint8_t  ny = 0;
 volatile float    b_coef[MAX_NX];          // b[0..nx-1]
 volatile float    a_coef[MAX_NY];          // a[1..ny]
+
+// Cascade de biquads (prioritaire si nsos > 0) : [b0, b1, b2, a1, a2] par cellule
+volatile uint8_t  nsos = 0;
+volatile float    sos_coef[MAX_SOS][5];
+static float      sos_s1[MAX_SOS];
+static float      sos_s2[MAX_SOS];
 
 // Historiques
 static float   x_hist[MAX_NX];
@@ -96,6 +109,7 @@ static void filter_init() {
   for (int i=0;i<MAX_NY;++i) y_hist[i] = 0.0f;
   x_head = 0;
   y_head = 0;
+  for (int i=0;i<MAX_SOS;++i) { sos_s1[i] = 0.0f; sos_s2[i] = 0.0f; }
 }
 
 // ============================ Étape de filtrage ==============================
@@ -114,6 +128,23 @@ static inline uint16_t filter_step(uint16_t x_code) {
   noInterrupts(); ac_on = acModeEnabled; ac_ref = acOffsetRef; interrupts();
   if (ac_on) x_now -= ac_ref;
 
+  float acc = 0.0f;
+
+  // 3') Cascade de biquads (forme directe II transposée), si chargée
+  uint8_t ns_loc = nsos;
+  if (ns_loc > 0) {
+    float v = x_now;
+    for (uint8_t i=0; i<ns_loc; ++i) {
+      const float b0 = sos_coef[i][0], b1 = sos_coef[i][1], b2 = sos_coef[i][2];
+      const float a1 = sos_coef[i][3], a2 = sos_coef[i][4];
+      const float w = b0 * v + sos_s1[i];
+      sos_s1[i] = b1 * v - a1 * w + sos_s2[i];
+      sos_s2[i] = b2 * v - a2 * w;
+      v = w;
+    }
+    acc = v;
+  } else {
+
   // 3) Historique x
   push_x(x_now);
 
@@ -124,7 +155,6 @@ static inline uint16_t filter_step(uint16_t x_code) {
   interrupts();
 
   // 5) DF-I
-  float acc = 0.0f;
 
   // FIR: Σ b[k] x[n-k]
   for (uint8_t k=0; k<nx_loc; ++k) {
@@ -141,6 +171,7 @@ static inline uint16_t filter_step(uint16_t x_code) {
 
   // 6) Historique y
   push_y(acc);
+  }  // fin de la branche polynôme (fir / iir)
 
   // 7) Rebiais si AC ON
   float y_out = acc;
@@ -157,6 +188,7 @@ void IRAM_ATTR on_timer_irq() {
   static bool tgl = false;
   tgl = !tgl;
   digitalWrite(PIN_PROBE, tgl);
+  digitalWrite(PIN_BUSY, HIGH);   // début du calcul
 
   // 1) DAC y[n-1]
   dacWrite(DAC_PIN, (uint8_t)pendingSample);
@@ -166,6 +198,7 @@ void IRAM_ATTR on_timer_irq() {
   uint16_t y_now_code = filter_step(x_now_code);
   // 4) sauvegarde pour le prochain tick
   pendingSample = y_now_code;
+  digitalWrite(PIN_BUSY, LOW);    // fin du calcul
 
   // (optionnel) Scheduler léger
   tick_count++;
@@ -241,6 +274,7 @@ void print_help() {
   Serial.println(F("  fs <500|1000|5000|10000>            : règle la Fs (Hz)"));
   Serial.println(F("  fir [b0,b1,...]                     : charge un filtre FIR"));
   Serial.println(F("  iir [b0,b1,...] [a1,a2,...]         : charge un filtre IIR (a0=1)"));
+  Serial.println(F("  sos [b0,b1,b2,a1,a2, ...]           : cascade de biquads (max 4 cellules)"));
   Serial.println(F("  bypass                              : ADC→DAC direct (sans filtre)"));
   Serial.println(F("  filter                              : filtre actif (désactive bypass)"));
   Serial.println(F("  ac on|off                           : active/désactive le mode AC"));
@@ -248,6 +282,7 @@ void print_help() {
   Serial.println(F("  show                                : affiche la configuration"));
   Serial.println(F("  model                               : retourne le modèle (ESP32)"));
   Serial.println(F("  vref                                : retourne la tension Vref (3.3)"));
+  Serial.println(F("  version                             : version du programme (FW x.y)"));
   Serial.println(F("  help                                : cette aide"));
 }
 
@@ -261,9 +296,19 @@ void print_config() {
 
   Serial.print(F("Fs = ")); Serial.print(fs); Serial.println(F(" Hz"));
   Serial.print(F("Mode = ")); Serial.println(bp ? F("BYPASS") : F("FILTRE"));
-  Serial.print(F("Type = ")); Serial.println(ny_loc==0 ? F("FIR") : F("IIR"));
+  uint8_t ns_loc = nsos;
+  Serial.print(F("Version = ")); Serial.println(F(FW_VERSION));
+  Serial.print(F("Type = ")); Serial.println(ns_loc > 0 ? F("SOS") : (ny_loc==0 ? F("FIR") : F("IIR")));
   Serial.print(F("AC mode = ")); Serial.println(ac_on ? F("ON") : F("OFF"));
   Serial.print(F("AC offset ref = ")); Serial.println(ac_ref, 6);
+  if (ns_loc > 0) {
+    for (uint8_t i=0;i<ns_loc;++i) {
+      Serial.print(F("cellule ")); Serial.print(i); Serial.print(F(" : ["));
+      for (uint8_t k=0;k<5;++k) { Serial.print(sos_coef[i][k], 7); if (k<4) Serial.print(F(", ")); }
+      Serial.println(F("]"));
+    }
+    return;
+  }
 
   Serial.print(F("b[0..")); Serial.print(nx_loc-1); Serial.println(F("] = ["));
   for (uint8_t i=0;i<nx_loc;++i) {
@@ -295,6 +340,7 @@ void handle_line(String line) {
   if (lower.startsWith("show")) { print_config(); return; }
   if (lower.startsWith("model")) { Serial.println(F("ESP32")); return; }
   if (lower.startsWith("vref")) { Serial.println(F("3.3")); return; }
+  if (lower.startsWith("version")) { Serial.print(F("FW ")); Serial.println(F(FW_VERSION)); return; }
 
   if (lower.startsWith("bypass")) {
     noInterrupts(); bypassEnabled = true; interrupts();
@@ -313,7 +359,7 @@ void handle_line(String line) {
       Serial.println(F("Erreur: Fs non autorisée. Utiliser 500|1000|5000|10000."));
       return;
     }
-    noInterrupts(); reprogram_timer((uint32_t)f); interrupts();
+    reprogram_timer((uint32_t)f);   // arrête / relance le timer lui-même
     Serial.print(F("Fs = ")); Serial.print(f); Serial.println(F(" Hz (OK)"));
     return;
   }
@@ -329,6 +375,7 @@ void handle_line(String line) {
     for (int i=0;i<nb;++i) b_coef[i] = btmp[i];
     nx = (uint8_t)nb;
     ny = 0; // FIR
+    nsos = 0;
     filter_init();
     interrupts();
     Serial.print(F("FIR chargé: nx=")); Serial.println(nb);
@@ -353,10 +400,28 @@ void handle_line(String line) {
     for (int i=0;i<na;++i) a_coef[i] = atmp[i];
     nx = (uint8_t)nb;
     ny = (uint8_t)na;
+    nsos = 0;
     filter_init();
     interrupts();
     Serial.print(F("IIR chargé: nx=")); Serial.print(nb);
     Serial.print(F(", ny=")); Serial.println(na);
+    return;
+  }
+
+  if (lower.startsWith("sos")) {
+    float tmp[5*MAX_SOS];
+    int nv = parse_float_list(line, 0, tmp, 5*MAX_SOS);
+    if (nv <= 0 || (nv % 5) != 0) {
+      Serial.println(F("Erreur SOS. Ex: sos [b0,b1,b2,a1,a2, b0,b1,b2,a1,a2]"));
+      return;
+    }
+    int ns = nv / 5;
+    noInterrupts();
+    for (int i=0;i<ns;++i) for (int k=0;k<5;++k) sos_coef[i][k] = tmp[5*i+k];
+    nsos = (uint8_t)ns;
+    filter_init();
+    interrupts();
+    Serial.print(F("SOS charge: ")); Serial.print(ns); Serial.println(F(" cellule(s)"));
     return;
   }
 
@@ -382,6 +447,8 @@ void handle_line(String line) {
 void setup() {
   pinMode(PIN_PROBE, OUTPUT);
   digitalWrite(PIN_PROBE, LOW);
+  pinMode(PIN_BUSY, OUTPUT);
+  digitalWrite(PIN_BUSY, LOW);
 
   // Serial optionnel (ne bloque pas s'il n'y a pas de PC)
   Serial.begin(115200);
@@ -421,7 +488,7 @@ void setup() {
 // ================================= LOOP =====================================
 void loop() {
   // Parser de commandes série (si PC connecté). Sinon, ne gêne pas.
-  static char lineBuf[256];
+  static char lineBuf[512];
   static size_t lineLen = 0;
 
   while (Serial.available() > 0) {

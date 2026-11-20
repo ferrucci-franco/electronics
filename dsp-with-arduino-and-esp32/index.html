@@ -82,6 +82,26 @@
       background:linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
     }
 
+    /* En-tête sur une seule ligne jusqu'à ~1100 px de large */
+    header .app-title-main, header .app-title-sub { white-space:nowrap; }
+    header .steps-nav, header .top-right { flex-wrap:nowrap; }
+    @media (max-width:1500px){
+      header { gap:10px; padding:8px 12px 6px; }
+      header .app-title-main { font-size:1rem; }
+      header .app-title-sub { font-size:.72rem; }
+      header .steps-nav { gap:5px; }
+      header .step-tab { padding:6px 10px; font-size:.84rem; gap:5px; }
+      header .step-arrow { font-size:1rem; }
+    }
+    @media (max-width:1300px){
+      header .app-title-sub { display:none; }
+      header .step-arrow { display:none; }
+    }
+    @media (max-width:1150px){            /* très petit écran : les onglets passent sur une 2e ligne */
+      header { flex-wrap:wrap; }
+      header .steps-nav { order:3; width:100%; overflow-x:auto; }
+    }
+
     :root[data-theme="dark"] header {
       background:linear-gradient(135deg, #1e3a5f 0%, #1e293b 100%);
     }
@@ -1245,6 +1265,14 @@
 
 <script>
   // ===== FEATURE FLAGS =====
+  const APP_VERSION = '2.0';   // affichée à côté du © ; même numéro que le programme de la carte
+  const SETTINGS_KEY = 'dsp-arduino-lab-settings-v1';
+  const UI_TEXTS = {
+    fr: { reset_settings: 'Réinitialiser les réglages', reset_confirm: 'Revenir aux réglages par défaut ?' },
+    es: { reset_settings: 'Restablecer los ajustes', reset_confirm: '¿Volver a los ajustes por defecto?' },
+    en: { reset_settings: 'Reset settings', reset_confirm: 'Return to the default settings?' }
+  };
+  function uiT(k) { const l = (typeof state !== 'undefined' && state.lang) || 'fr'; return (UI_TEXTS[l] || UI_TEXTS.fr)[k] || k; }
   const ENABLE_STEP5 = false;  // Set to true to show step 5 (Bode & Measurements)
 
   // Hide step 5 if disabled
@@ -1601,7 +1629,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
             <div style="font-weight:600; margin-bottom:4px; color:var(--accent);">${t.interpDescTitle}</div>
             <div id="interpDescText">${t.interpDescIdeal}</div>
           </div>
-          <div class="app-copyright">© 2026 Franco Ferrucci<br><a href="https://ferrucci-lab.com/" target="_blank" rel="noopener">ferrucci-lab.com</a></div>
+          <div class="app-copyright">© 2026 Franco Ferrucci · v${APP_VERSION}<br><a href="https://ferrucci-lab.com/" target="_blank" rel="noopener">ferrucci-lab.com</a><br><a href="#" class="app-reset" data-reset="1">${uiT('reset_settings')}</a></div>
         </div>
 
         <div class="step2-temporal">
@@ -1752,6 +1780,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
 
     drawTemporalGraph();
     drawSpectralGraph();
+    saveSettings();
   }
 
   function drawTemporalGraph() {
@@ -3343,6 +3372,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
     if(step3State.showTime) step3DrawTime(); else { const el = document.getElementById('step3TimePlot'); if(el) Plotly.purge(el); }
     if(step3State.showBode) step3DrawBode(); else { const m = document.getElementById('step3BodeMag'); const p = document.getElementById('step3BodePhase'); if(m) Plotly.purge(m); if(p) Plotly.purge(p); }
     step3UpdateNyquist();
+    saveSettings();
   }
 
   // Render Step 3
@@ -3483,7 +3513,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
                     <option value="1000" ${S.Fs === 1000 ? 'selected' : ''}>1 kHz</option>
                     <option value="5000" ${S.Fs === 5000 ? 'selected' : ''}>5 kHz</option>
                     <option value="10000" ${S.Fs === 10000 ? 'selected' : ''}>10 kHz</option>
-                    <!-- <option value="20000" ${S.Fs === 20000 ? 'selected' : ''}>20 kHz</option> -->
+                    <option value="20000" ${S.Fs === 20000 ? 'selected' : ''}>20 kHz</option>
                   </select>
                 </div>
                 <div class="step3-note">${t('filter_note')}</div>
@@ -3553,7 +3583,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
                   </div>
                 </div>
               </div>
-              <div class="app-copyright">© 2026 Franco Ferrucci<br><a href="https://ferrucci-lab.com/" target="_blank" rel="noopener">ferrucci-lab.com</a></div>
+              <div class="app-copyright">© 2026 Franco Ferrucci · v${APP_VERSION}<br><a href="https://ferrucci-lab.com/" target="_blank" rel="noopener">ferrucci-lab.com</a><br><a href="#" class="app-reset" data-reset="1">${uiT('reset_settings')}</a></div>
             </div>
 
             <!-- Time plot -->
@@ -3835,6 +3865,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
     }
     if (state.step === 1) renderMontage();
     if (state.step === 3) step3DrawAll();
+    saveSettings();
   });
 
   // ===================== STEP 4: µC CONNECTION =====================
@@ -3852,6 +3883,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
       coef_a: 'Coeficientes a (denominador)',
       coef_b: 'Coeficientes b (numerador)',
       connect_arduino: 'Conectar el Arduino',
+      err_generic: 'Error', read_error: 'Error de lectura', send_error: 'Error de envío', not_connected: 'Arduino no conectado',
+      console_placeholder: 'Escriba un comando (help)…', esp32_fs_limit: 'La ESP32 acepta como máximo Fs = 10 kHz.',
       program: 'programa',
       old_firmware: 'programa antiguo de la placa',
       needs_new_firmware: 'Este filtro necesita el programa 2.0 de la placa (orden > 3). Cargue el .ino actual o elija un orden menor.',
@@ -3892,6 +3925,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
       coef_a: 'Coefficients a (dénominateur)',
       coef_b: 'Coefficients b (numérateur)',
       connect_arduino: 'Connecter l\'Arduino',
+      err_generic: 'Erreur', read_error: 'Erreur de lecture', send_error: 'Erreur d\'envoi', not_connected: 'Arduino non connecté',
+      console_placeholder: 'Tapez une commande (help)…', esp32_fs_limit: 'L\'ESP32 accepte au plus Fs = 10 kHz.',
       program: 'programme',
       old_firmware: 'ancien programme de la carte',
       needs_new_firmware: 'Ce filtre demande le programme 2.0 de la carte (ordre > 3). Chargez le .ino actuel ou choisissez un ordre plus petit.',
@@ -3932,6 +3967,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
       coef_a: 'Coefficients a (denominator)',
       coef_b: 'Coefficients b (numerator)',
       connect_arduino: 'Connect the Arduino',
+      err_generic: 'Error', read_error: 'Read error', send_error: 'Send error', not_connected: 'Arduino not connected',
+      console_placeholder: 'Type a command (help)…', esp32_fs_limit: 'The ESP32 accepts at most Fs = 10 kHz.',
       program: 'program',
       old_firmware: 'old board program',
       needs_new_firmware: 'This filter needs board program 2.0 (order > 3). Upload the current .ino or choose a lower order.',
@@ -4171,7 +4208,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
         step4State.port = null;
       }
     } catch (err) {
-      step4Log(`Error: ${err.message}`, 'err');
+      step4Log(`${step4t('err_generic')} : ${err.message}`, 'err');
     }
 
     step4State.rxBuffer = '';  // Clear buffer on disconnect
@@ -4238,7 +4275,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
         }
       } catch (err) {
         if (err.name !== 'AbortError' && step4State.connected) {
-          step4Log(`Read error: ${err.message}`, 'err');
+          step4Log(`${step4t('read_error')} : ${err.message}`, 'err');
         }
       } finally {
         if (step4State.reader) {
@@ -4251,7 +4288,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
 
   async function step4Send(data) {
     if (!step4State.connected || !step4State.port) {
-      step4Log('Not connected', 'err');
+      step4Log(step4t('not_connected'), 'err');
       return;
     }
 
@@ -4262,7 +4299,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       writer.releaseLock();
       step4Log(`TX: ${data}`, 'tx');
     } catch (err) {
-      step4Log(`Send error: ${err.message}`, 'err');
+      step4Log(`${step4t('send_error')} : ${err.message}`, 'err');
     }
   }
 
@@ -4270,6 +4307,10 @@ Implement a real-time digital signal acquisition and processing system using Ard
     const { a, b, sos, Fs, filterName, fc, N, filt, Q } = getFilterCoefficients();
     const useSos = !!(sos && step4State.fwVersion && parseFloat(step4State.fwVersion) >= 2);
     const ratio = (filt === 'lp') ? step3State.lpR : step3State.hpR;
+    if (step4State.boardName === 'ESP32' && Fs > 10000) {
+      step4Log(step4t('esp32_fs_limit'), 'err');
+      return;
+    }
     if (sos && !useSos && !step3PolyOkOnOldFirmware(N, ratio)) {
       step4Log(step4t('needs_new_firmware'), 'err');
       return;
@@ -4479,7 +4520,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
           <p class="step3-plot-title">${step4t('console_title')}</p>
           <div id="step4ConsoleOutput" class="step4-console-output"></div>
           <div class="step4-console-input">
-            <input type="text" id="step4ConsoleInput" placeholder="Enter command...">
+            <input type="text" id="step4ConsoleInput" placeholder="${step4t('console_placeholder')}">
             <button id="step4SendBtn" class="step4-btn">${step4t('send')}</button>
             <button id="step4ClearBtn" class="step4-btn">${step4t('clear')}</button>
           </div>
@@ -4531,6 +4572,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       btn.classList.toggle('active', Number(btn.dataset.step)===step);
     });
     loadStepContent();
+    saveSettings();
   }
   stepTabs.forEach(btn=>{
     btn.addEventListener('click', ()=>setActiveStep(Number(btn.dataset.step)));
@@ -4547,6 +4589,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
     document.getElementById('stepLabel4').textContent = stepLabels[lang][4];
     document.getElementById('stepLabel5').textContent = stepLabels[lang][5];
     loadStepContent();
+    saveSettings();
   }
   langSelect.addEventListener('change', ()=>setLanguage(langSelect.value));
 
@@ -4572,10 +4615,49 @@ Implement a real-time digital signal acquisition and processing system using Ard
     stepNoteEl.textContent = stepNotes[lang][step] || '';
   }
 
+  // ===== Réglages mémorisés dans le navigateur (rechargement de page, onglet fermé par erreur) =====
+  let saveTimer = null;
+  function saveSettings() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      try {
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+          step2: step2State, step3: step3State, lang: state.lang,
+          theme: themeSelect.value, step: state.step
+        }));
+      } catch (e) { /* stockage indisponible : on continue sans */ }
+    }, 300);
+  }
+  function loadSettings() {
+    try {
+      const raw = localStorage.getItem(SETTINGS_KEY);
+      if (!raw) return null;
+      const saved = JSON.parse(raw);
+      // ne reprendre que les champs connus, du même type
+      const merge = (dst, src) => { if (src) Object.keys(dst).forEach(k => {
+        if (src[k] !== undefined && typeof src[k] === typeof dst[k]) dst[k] = src[k]; }); };
+      merge(step2State, saved.step2);
+      merge(step3State, saved.step3);
+      return saved;
+    } catch (e) { return null; }
+  }
+  document.addEventListener('click', e => {
+    const a = e.target.closest && e.target.closest('[data-reset]');
+    if (!a) return;
+    e.preventDefault();
+    if (!window.confirm(uiT('reset_confirm'))) return;
+    try { localStorage.removeItem(SETTINGS_KEY); } catch (err) {}
+    location.reload();
+  });
   // INIT
-  applyTheme('light');
-  setLanguage('fr');
-  setActiveStep(2);   // premier onglet affiché : rappel sur le repliement
+  const saved = loadSettings();
+  const theme0 = (saved && ['light', 'dark'].includes(saved.theme)) ? saved.theme : 'light';
+  themeSelect.value = theme0;
+  applyTheme(theme0);
+  const lang0 = (saved && ['fr', 'es', 'en'].includes(saved.lang)) ? saved.lang : 'fr';
+  langSelect.value = lang0;
+  setLanguage(lang0);
+  setActiveStep((saved && [1, 2, 3, 4].includes(saved.step)) ? saved.step : 2);   // par défaut : rappel sur le repliement
 </script>
 
 </body>
