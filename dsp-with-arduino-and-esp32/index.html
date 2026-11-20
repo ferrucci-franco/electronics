@@ -927,6 +927,10 @@
       transition:opacity .15s;
     }
     .plot-fit-btns button:hover{ opacity:1; }
+    /* Zoom tactile : l'extérieur de la fenêtre est grisé */
+    .touch-zoom-ov{ position:absolute; inset:0; pointer-events:none; display:none; z-index:6; }
+    .touch-zoom-ov > div{ position:absolute; background:rgba(100,116,139,0.35); }
+    .touch-zoom-ov > .tz-box{ background:transparent; border:1.5px dashed var(--accent-strong); box-sizing:border-box; }
     .plot-fit-btns svg{ width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
 
     /* ===== Pas de sélection de texte ni de curseur texte hors des champs de saisie ===== */
@@ -2971,6 +2975,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
     Plotly.newPlot(el, data, layout, {displaylogo:false, responsive:true, displayModeBar:false});
     step3StoreInit(el, layout);
     step3AttachRightPan(el);
+    step3AttachTouch(el);
   }
 
 
@@ -3021,6 +3026,137 @@ Implement a real-time digital signal acquisition and processing system using Ard
       : [document.getElementById('step3TimePlot')];
     step3Fit(divs, b.dataset.fit === 'a' ? 'all' : b.dataset.fit);
   });
+
+
+  // ===== Écran tactile : un doigt = déplacer la vue ; double tap lent puis glisser = zoom sur une fenêtre
+  //       (l'extérieur de la fenêtre est grisé) ; double tap sans glisser = tout ajuster ;
+  //       sur le Bode, un doigt posé sur la ligne rouge déplace f_IN.
+  function step3AttachTouch(div) {
+    if (!div || div._touchAttached) return;
+    div._touchAttached = true;
+    div.style.touchAction = 'none';
+    if (getComputedStyle(div).position === 'static') div.style.position = 'relative';
+    const DBL_MS = 500, DBL_PX = 40, MOVE_PX = 6, NEAR_F0 = 16;
+    let mode = null, st = null, last = null, raf = 0, moved = false, f0Timer = null, f0Pending = null;
+    let lastTap = { t: 0, x: 0, y: 0 };
+    const group = () => div.id.startsWith('step3Bode')
+      ? [document.getElementById('step3BodeMag'), document.getElementById('step3BodePhase')]
+      : [div];
+    const partner = () => div.id === 'step3BodeMag' ? document.getElementById('step3BodePhase')
+                        : div.id === 'step3BodePhase' ? document.getElementById('step3BodeMag') : null;
+    const local = t => { const r = div.getBoundingClientRect(); return { x: t.clientX - r.left, y: t.clientY - r.top }; };
+    const plotAt = p => Object.values((div._fullLayout && div._fullLayout._plots) || {}).find(q => q.xaxis && q.yaxis &&
+      p.x >= q.xaxis._offset && p.x <= q.xaxis._offset + q.xaxis._length &&
+      p.y >= q.yaxis._offset && p.y <= q.yaxis._offset + q.yaxis._length);
+    const fOf = (ax, px) => { const l = ax.p2l(px - ax._offset); return ax.type === 'log' ? Math.pow(10, l) : l; };
+    const nearF0 = (p, pl) => {
+      if (!div.id.startsWith('step3Bode')) return false;
+      const ax = pl.xaxis, f0 = step3State.f0;
+      const px = ax.l2p(ax.type === 'log' ? Math.log10(f0) : f0) + ax._offset;
+      return Math.abs(p.x - px) <= NEAR_F0;
+    };
+    // calque de zoom : quatre bandes grises autour de la fenêtre + son cadre
+    const overlay = () => {
+      let ov = div.querySelector(':scope > .touch-zoom-ov');
+      if (!ov) {
+        ov = document.createElement('div');
+        ov.className = 'touch-zoom-ov';
+        ov.innerHTML = '<div></div><div></div><div></div><div></div><div class="tz-box"></div>';
+        div.appendChild(ov);
+      }
+      return ov;
+    };
+    const drawBox = (pl, a, b) => {
+      const xa = pl.xaxis, ya = pl.yaxis;
+      const X0 = xa._offset, X1 = xa._offset + xa._length, Y0 = ya._offset, Y1 = ya._offset + ya._length;
+      const cl = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+      const x0 = cl(Math.min(a.x, b.x), X0, X1), x1 = cl(Math.max(a.x, b.x), X0, X1);
+      const y0 = cl(Math.min(a.y, b.y), Y0, Y1), y1 = cl(Math.max(a.y, b.y), Y0, Y1);
+      const ov = overlay(); ov.style.display = 'block';
+      const [top, bot, lef, rig, box] = ov.children;
+      const set = (el, l, t, w, h) => Object.assign(el.style, { left: l + 'px', top: t + 'px', width: Math.max(0, w) + 'px', height: Math.max(0, h) + 'px' });
+      set(top, X0, Y0, X1 - X0, y0 - Y0);
+      set(bot, X0, y1, X1 - X0, Y1 - y1);
+      set(lef, X0, y0, x0 - X0, y1 - y0);
+      set(rig, x1, y0, X1 - x1, y1 - y0);
+      set(box, x0, y0, x1 - x0, y1 - y0);
+      return { x0, x1, y0, y1 };
+    };
+    const hideBox = () => { const ov = div.querySelector(':scope > .touch-zoom-ov'); if (ov) ov.style.display = 'none'; };
+    const applyPan = () => {
+      raf = 0;
+      if (mode !== 'pan' || !st || !last) return;
+      const dX = -(last.x - st.p.x) * (st.xr[1] - st.xr[0]) / st.xlen;
+      const dY =  (last.y - st.p.y) * (st.yr[1] - st.yr[0]) / st.ylen;
+      const xr = [st.xr[0] + dX, st.xr[1] + dX];
+      const upd = {}; upd[st.xn + '.range'] = xr; upd[st.yn + '.range'] = [st.yr[0] + dY, st.yr[1] + dY];
+      Plotly.relayout(div, upd);
+      const q = partner();
+      if (q && q._fullLayout && q.style.display !== 'none') Plotly.relayout(q, { 'xaxis.range': xr.slice() });
+    };
+    const flushF0 = () => { f0Timer = null; if (f0Pending === null) return; step3SetF0(f0Pending); f0Pending = null; step3DrawAll(); };
+
+    div.addEventListener('touchstart', e => {
+      if (e.touches.length !== 1) { mode = null; hideBox(); return; }
+      const p = local(e.touches[0]);
+      const pl = plotAt(p);
+      if (!pl) { mode = null; return; }
+      e.preventDefault(); e.stopPropagation();
+      const now = performance.now();
+      const dbl = (now - lastTap.t) < DBL_MS && Math.hypot(p.x - lastTap.x, p.y - lastTap.y) < DBL_PX;
+      st = { p, pl, xr: pl.xaxis.range.slice(), yr: pl.yaxis.range.slice(), xn: pl.xaxis._name, yn: pl.yaxis._name,
+             xlen: pl.xaxis._length, ylen: pl.yaxis._length };
+      last = p; moved = false;
+      mode = dbl ? 'zoom' : (nearF0(p, pl) ? 'f0' : 'pan');
+    }, { capture: true, passive: false });
+
+    div.addEventListener('touchmove', e => {
+      if (!mode) return;
+      e.preventDefault(); e.stopPropagation();
+      last = local(e.touches[0]);
+      if (Math.hypot(last.x - st.p.x, last.y - st.p.y) > MOVE_PX) moved = true;
+      if (!moved) return;
+      if (mode === 'pan') { if (!raf) raf = requestAnimationFrame(applyPan); }
+      else if (mode === 'zoom') drawBox(st.pl, st.p, last);
+      else if (mode === 'f0') {
+        const pl = plotAt({ x: last.x, y: st.p.y }) || st.pl;
+        const ax = pl.xaxis;
+        const xc = Math.max(ax._offset, Math.min(ax._offset + ax._length, last.x));
+        f0Pending = fOf(ax, xc);
+        if (!f0Timer) f0Timer = setTimeout(flushF0, 60);
+      }
+    }, { capture: true, passive: false });
+
+    const end = e => {
+      if (!mode) return;
+      if (e) { e.preventDefault(); e.stopPropagation(); }
+      const now = performance.now();
+      if (mode === 'zoom') {
+        if (moved) {
+          const r = drawBox(st.pl, st.p, last);
+          if (r.x1 - r.x0 > 10 && r.y1 - r.y0 > 10) {
+            const xa = st.pl.xaxis, ya = st.pl.yaxis;
+            const xr = [xa.p2l(r.x0 - xa._offset), xa.p2l(r.x1 - xa._offset)];
+            const yv = [ya.p2l(r.y0 - ya._offset), ya.p2l(r.y1 - ya._offset)].sort((u, v) => u - v);
+            const upd = {}; upd[xa._name + '.range'] = xr; upd[ya._name + '.range'] = yv;
+            Plotly.relayout(div, upd);
+            const q = partner();
+            if (q && q._fullLayout && q.style.display !== 'none') Plotly.relayout(q, { 'xaxis.range': xr.slice() });
+          }
+        } else {
+          step3Fit(group(), 'all');          // double tap sans glisser : tout ajuster
+        }
+        hideBox();
+        lastTap.t = 0;
+      } else {
+        if (mode === 'f0') { if (f0Timer) { clearTimeout(f0Timer); } flushF0(); }
+        lastTap = moved ? { t: 0, x: 0, y: 0 } : { t: now, x: st.p.x, y: st.p.y };
+      }
+      mode = null;
+    };
+    div.addEventListener('touchend', end, { capture: true, passive: false });
+    div.addEventListener('touchcancel', () => { mode = null; hideBox(); }, { capture: true });
+  }
 
   // Clic droit maintenu : déplacer la vue (pan) dans le sous-graphe sous le curseur
   function step3AttachRightPan(div) {
@@ -3267,6 +3403,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
     step3AttachF0Drag(magDiv);
     step3StoreInit(magDiv, magLayout);
     step3AttachRightPan(magDiv);
+    step3AttachTouch(magDiv);
 
     if(step3State.showPhase) {
       const phLayout = {
@@ -3287,6 +3424,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       step3AttachF0Drag(phDiv);
       step3StoreInit(phDiv, phLayout);
       step3AttachRightPan(phDiv);
+      step3AttachTouch(phDiv);
 
       // Sync zoom between magnitude and phase plots
       let syncing = false;
