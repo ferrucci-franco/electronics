@@ -4131,7 +4131,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
       send: 'Enviar',
       clear: 'Limpiar',
       no_serial: 'Este navegador no permite conectar el Arduino: use Chrome, Edge o Firefox (versión 151 o posterior).',
-      no_serial_mobile: 'La conexión con el Arduino requiere una computadora: los teléfonos y tabletas no permiten la conexión USB serie.',
+      no_serial_mobile: 'La conexión con el Arduino requiere una computadora: este teléfono o tableta no permite la conexión USB serie.',
+      no_device_android: 'En Android, la conexión USB serie solo existe en algunos equipos recientes: use una computadora.',
       request_port: 'Solicitar puerto...',
       port_opened: 'Puerto abierto',
       port_closed: 'Puerto cerrado',
@@ -4174,7 +4175,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
       send: 'Envoyer',
       clear: 'Effacer',
       no_serial: 'Ce navigateur ne permet pas de connecter l\'Arduino : utilisez Chrome, Edge ou Firefox (version 151 ou plus récente).',
-      no_serial_mobile: 'La connexion à l\'Arduino demande un ordinateur : les téléphones et les tablettes ne permettent pas la liaison série USB.',
+      no_serial_mobile: 'La connexion à l\'Arduino demande un ordinateur : ce téléphone ou cette tablette ne permet pas la liaison série USB.',
+      no_device_android: 'Sur Android, la liaison USB série n\'existe que sur certains appareils récents : utilisez un ordinateur.',
       request_port: 'Demander port...',
       port_opened: 'Port ouvert',
       port_closed: 'Port fermé',
@@ -4217,7 +4219,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
       send: 'Send',
       clear: 'Clear',
       no_serial: 'This browser cannot connect to the Arduino: use Chrome, Edge or Firefox (version 151 or later).',
-      no_serial_mobile: 'Connecting to the Arduino requires a computer: phones and tablets do not support USB serial.',
+      no_serial_mobile: 'Connecting to the Arduino requires a computer: this phone or tablet does not support USB serial.',
+      no_device_android: 'On Android, USB serial is only available on some recent devices: use a computer.',
       request_port: 'Request port...',
       port_opened: 'Port opened',
       port_closed: 'Port closed',
@@ -4413,6 +4416,12 @@ Implement a real-time digital signal acquisition and processing system using Ard
     } catch (err) {
       if (err && err.name === 'NotFoundError') {
         step4Log(step4t('no_device_chosen'), 'err');
+        // Android : l'API existe (Chrome 148+), mais la liste des ports est vide sur la plupart des appareils
+        if (/Android/i.test(navigator.userAgent || '')) {
+          step4Log(step4t('no_device_android'), 'err');
+          const statusEl = document.getElementById('step4Status');
+          if (statusEl) statusEl.textContent = step4t('no_device_android');
+        }
       } else {
         step4Log(`${step4t('error_connect')}: ${err.message}`, 'err');
       }
