@@ -1761,11 +1761,12 @@ Implement a real-time digital signal acquisition and processing system using Ard
     };
     const t = texts[state.lang];
 
-    document.getElementById('f0InfoVal').textContent = f0.toFixed(1) + ' Hz';
-    document.getElementById('FsInfoVal').textContent = Fs.toFixed(1) + ' Hz';
-    document.getElementById('fNyquistVal').textContent = fNyquist.toFixed(1) + ' Hz';
+    const d1 = v => v.toFixed(1).replace('.', state.lang === 'en' ? '.' : ',');   // virgule décimale (fr, es)
+    document.getElementById('f0InfoVal').textContent = d1(f0) + ' Hz';
+    document.getElementById('FsInfoVal').textContent = d1(Fs) + ' Hz';
+    document.getElementById('fNyquistVal').textContent = d1(fNyquist) + ' Hz';
     document.getElementById('conditionVal').innerHTML = 'Fs > 2·f<sub>IN</sub>';
-    document.getElementById('fAliasVal').textContent = (fAlias >= 0 ? '+' : '') + fAlias.toFixed(1) + ' Hz';
+    document.getElementById('fAliasVal').textContent = (fAlias >= 0 ? '+' : '−') + d1(Math.abs(fAlias)) + ' Hz';
 
     const statusIndicator = document.getElementById('statusIndicator');
     if (ratio > 2.1) {
@@ -1826,8 +1827,9 @@ Implement a real-time digital signal acquisition and processing system using Ard
     const gridColor = isDark ? 'rgba(148,163,184,0.16)' : '#e5e7eb';
     const textColor = isDark ? '#9ca3af' : '#6b7280';
     const signalColor = '#3b82f6';
-    const sampleColor = '#fb7185';
-    const reconstructColor = '#22c55e';
+    const sampleColor = isDark ? '#bfdbfe' : '#1e3a8a';      // = x[n] de l'onglet Simulation
+    const sampleEdge  = isDark ? '#1e3a8a' : '#ffffff';
+    const reconstructColor = '#f97316';                     // = ZOH(y[n]) de l'onglet Simulation
 
     ctx.fillStyle = bgColor;
     ctx.fillRect(0,0,width,height);
@@ -1945,28 +1947,32 @@ Implement a real-time digital signal acquisition and processing system using Ard
     samples.forEach(s=>{
       ctx.fillStyle=sampleColor;
       ctx.beginPath();
-      ctx.arc(s.x,s.y,4,0,2*Math.PI);
+      ctx.arc(s.x,s.y,4.5,0,2*Math.PI);
       ctx.fill();
-      ctx.strokeStyle=isDark?'#263244':'#ffffff';
-      ctx.lineWidth=2;
+      ctx.strokeStyle=sampleEdge;
+      ctx.lineWidth=1.5;
       ctx.stroke();
     });
 
     // Ejes/labels (aumentar tamaño de fuente)
+    // Graduations : une par période (lignes verticales pointillées), valeurs avec virgule décimale
     ctx.fillStyle=textColor;
-    ctx.font='14px system-ui';
+    ctx.font='13px system-ui';
     ctx.textAlign='center';
-    ctx.fillText('0', padding, height-padding+16);
-    ctx.fillText((periods*T0).toFixed(3)+' s', width-padding, height-padding+16);
-    
-    // Label del eje X en negrita
-    ctx.font='bold 16px system-ui';
+    const dec = Math.max(0, 2 - Math.floor(Math.log10(T0)));          // 3 chiffres significatifs sur T0
+    const fmtT = v => (v === 0 ? '0' : v.toFixed(dec).replace('.', state.lang === 'en' ? '.' : ','));
+    for (let i=0; i<=periods; i++) {
+      ctx.fillText(fmtT(i*T0), padding + (i/periods)*graphWidth, height-padding+16);
+    }
+
+    // Titre de l'axe X en gras (même taille que dans l'onglet Simulation)
+    ctx.font='bold 14px system-ui';
     ctx.textAlign='right';
-    ctx.fillText(t.legend_time, width-padding, height-padding+32);
+    ctx.fillText(t.legend_time, width-padding, height-padding+33);
 
     // Leyenda temporal (aumentar tamaño)
     const legendY = padding-18;
-    ctx.font='13px system-ui';
+    ctx.font='14px system-ui';
     ctx.textAlign='left';
 
     ctx.strokeStyle=signalColor;
@@ -1980,8 +1986,9 @@ Implement a real-time digital signal acquisition and processing system using Ard
 
     ctx.fillStyle=sampleColor;
     ctx.beginPath();
-    ctx.arc(padding+110,legendY,3,0,2*Math.PI);
+    ctx.arc(padding+110,legendY,4,0,2*Math.PI);
     ctx.fill();
+    ctx.strokeStyle=sampleEdge; ctx.lineWidth=1; ctx.stroke();
     ctx.fillStyle=textColor;
     ctx.fillText(t.legend_samples, padding+118, legendY+4);
 
@@ -2141,22 +2148,39 @@ Implement a real-time digital signal acquisition and processing system using Ard
     ctx.lineWidth=2;
     ctx.stroke();
 
+    // Valeur de f*_IN à côté du point (sur fond semi-transparent, côté libre du graphe)
+    {
+      const v = (fStar >= 0 ? '+' : '−') + Math.abs(fStar).toFixed(1).replace('.', state.lang === 'en' ? '.' : ',');
+      const label = 'f*ᵢₙ = ' + v + ' Hz';
+      ctx.font='bold 14px system-ui';
+      const tw = ctx.measureText(label).width;
+      const right = xF0 + 12 + tw < width - padding;             // à droite du point si la place le permet
+      const lx = right ? xF0 + 12 : xF0 - 12 - tw;
+      const up = yF0 - 26 > padding;                             // au-dessus du point si la place le permet
+      const ly = up ? yF0 - 10 : yF0 + 22;
+      ctx.fillStyle = isDark ? 'rgba(38,50,68,0.85)' : 'rgba(255,255,255,0.85)';
+      ctx.fillRect(lx - 3, ly - 14, tw + 6, 19);
+      ctx.fillStyle = pointColor;
+      ctx.textAlign = 'left';
+      ctx.fillText(label, lx, ly);
+    }
+
     // Labels ejes X (mover bien abajo sin superposición)
     ctx.fillStyle=textColor;
-    ctx.font='14px system-ui';
+    ctx.font='13px system-ui';
     ctx.textAlign='center';
     ctx.fillText((-2*Fs).toFixed(0), f0ToX(-2*Fs), yZero+22);
     ctx.fillText((-Fs).toFixed(0), f0ToX(-Fs), yZero+22);
     ctx.fillText('0', f0ToX(0)+15, yZero+22);  // Desplazar "0" a la derecha
     ctx.fillText(Fs.toFixed(0), f0ToX(Fs), yZero+22);
     ctx.fillText((2*Fs).toFixed(0), f0ToX(2*Fs), yZero+22);
-    ctx.font='bold 16px system-ui';  // Negrita
+    ctx.font='bold 14px system-ui';  // Negrita (même taille que l'onglet Simulation)
     ctx.textAlign='right';  // Justificado a la derecha
     ctx.fillText('fᵢₙ (Hz)', width-padding-10, height-bottomPadding+45);
 
     // Labels eje Y (cerca del eje centrado en x=0, mostrar decimales si no son enteros)
     ctx.textAlign='right';
-    ctx.font='14px system-ui';
+    ctx.font='13px system-ui';
     const fNyquistNeg = -Fs/2;
     const fNyquistPos = Fs/2;
     // Mostrar con 1 decimal si no es entero, sino sin decimales
@@ -2169,11 +2193,11 @@ Implement a real-time digital signal acquisition and processing system using Ard
     
     // Label del eje Y horizontal arriba con más espacio y negrita
     ctx.textAlign='center';
-    ctx.font='bold 16px system-ui';  // Negrita
+    ctx.font='bold 14px system-ui';  // Negrita
     ctx.fillText('f*ᵢₙ (Hz)', xZero, padding-15);  // Más espacio desde el borde
 
     // Leyenda centrada en la parte inferior
-    ctx.font='13px system-ui';
+    ctx.font='14px system-ui';
     const legendY = height - 12;  // Parte inferior
     const legendCenterX = width / 2;
     const spacing = 120;  // Espacio entre las dos leyendas
