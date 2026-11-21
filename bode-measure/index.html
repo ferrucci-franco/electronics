@@ -177,6 +177,11 @@
   .right:not(.fit) #bodeMag{flex:none; height:480px; width:100%}
   .right:not(.fit) #bodePhase{flex:none; height:420px; width:100%}
   .plotly-notifier{display:none !important}
+  /* one-finger gestures on the plots are handled by the page (scroll, pan, zoom, fit) */
+  #bodeMag, #bodePhase{touch-action:none}
+  .zoom-sel{position:fixed; display:none; pointer-events:none; z-index:40; border:1px solid var(--accent); background:color-mix(in srgb, var(--accent) 16%, transparent)}
+  .touch-ring{position:fixed; display:none; pointer-events:none; z-index:41; width:46px; height:46px; margin:-23px 0 0 -23px; border-radius:50%;
+              border:2px solid var(--accent); background:color-mix(in srgb, var(--accent) 14%, transparent)}
   body.panning, body.panning *{cursor:grabbing !important}
   body.panning{user-select:none; -webkit-user-select:none}
 
@@ -1180,10 +1185,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const cfg = plotConfig();
     Plotly.react('bodeMag', m.mag.data, m.mag.layout, cfg);
     Plotly.react('bodePhase', m.phase.data, m.phase.layout, cfg);
+    // initial view of each plot, for the "fit" double tap
+    [['bodeMag', m.mag.layout], ['bodePhase', m.phase.layout]].forEach(([id, l]) => {
+      document.getElementById(id)._fitView = {x:l.xaxis.range.slice(), y:l.yaxis.range.slice()};
+    });
     if(!plotsBuilt){
       plotsBuilt = true;
       linkXAxes();
-      ['bodeMag', 'bodePhase'].forEach(id => { setupMousePan(document.getElementById(id)); setupWheelPan(document.getElementById(id)); });
+      ['bodeMag', 'bodePhase'].forEach(id => {
+        const gd = document.getElementById(id);
+        setupMousePan(gd); setupWheelPan(gd); setupTouchGestures(gd);
+      });
     }
   }
   // zooming or panning one plot moves the other (shared log-frequency axis)
@@ -1211,6 +1223,174 @@ document.addEventListener('DOMContentLoaded', () => {
     if(px < 0 || px > xa._length || py < 0 || py > ya._length) return null;
     return {xa, ya, px, py};
   }
+  // ----- One-finger touch gestures on a plot -----
+  // The plots take every one-finger touch (touch-action: none), because telling a fast finger from a
+  // slow one needs the first pixels of movement, before the browser would have started scrolling.
+  //   fast, mostly vertical finger      -> scrolls the page (with inertia), as does any movement while
+  //                                        the page is still moving or that starts outside the plot area
+  //   slower finger                     -> pans the plot (both axes)
+  //   finger held still, then moved     -> zoom: x, y or window depending on the direction
+  //   slow double tap (2nd touch moves) -> zoom, the same way
+  //   quick double tap                  -> back to the initial view ("fit")
+  // A single tap still shows the point's tooltip (Plotly gets the emulated mouse events of a tap).
+  const TOUCH = {SLOP:8, HOLD_MS:350, FAST:0.6, MOVING_MS:150, TAP_MS:250, DTAP_MS:300, NEAR:40, TAU:325, MINDRAG:14, MINZOOM:36};
+  const touchScroll = {last:0, anim:0};
+  document.addEventListener('scroll', () => { touchScroll.last = performance.now(); }, true);
+  function stopTouchMomentum(){ if(touchScroll.anim){ cancelAnimationFrame(touchScroll.anim); touchScroll.anim = 0; } }
+  function scrollParentOf(el){
+    for(let p = el.parentElement; p && p !== document.body && p !== document.documentElement; p = p.parentElement){
+      const oy = getComputedStyle(p).overflowY;
+      if((oy === 'auto' || oy === 'scroll') && p.scrollHeight > p.clientHeight + 1) return p;
+    }
+    return document.scrollingElement || document.documentElement;
+  }
+  // inertia after a flick: exponential decay of the release speed (px/ms), like native scrolling
+  function touchMomentum(target, v){
+    stopTouchMomentum();
+    if(Math.abs(v) < 0.05) return;
+    const t0 = performance.now(), top0 = target.scrollTop;
+    const step = now => {
+      const t = now - t0;
+      target.scrollTop = top0 + v * TOUCH.TAU * (1 - Math.exp(-t / TOUCH.TAU));
+      touchScroll.anim = Math.abs(v) * Math.exp(-t / TOUCH.TAU) > 0.02 ? requestAnimationFrame(step) : 0;
+    };
+    touchScroll.anim = requestAnimationFrame(step);
+  }
+  function setupTouchGestures(gd){
+    if(!gd || gd.dataset.touchGestures) return;
+    gd.dataset.touchGestures = '1';
+    const T = TOUCH, clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+    const sel = document.createElement('div'); sel.className = 'zoom-sel'; document.body.appendChild(sel);
+    const ring = document.createElement('div'); ring.className = 'touch-ring'; document.body.appendChild(ring);
+    let g = null, lastTap = null, raf = 0;
+    const isTouch = e => e.pointerType === 'touch' || e.pointerType === 'pen';
+    function plotArea(){
+      const fl = gd._fullLayout;
+      if(!fl || !fl.xaxis || !fl.yaxis || !fl.xaxis._length) return null;
+      const r = gd.getBoundingClientRect();
+      return {xa:fl.xaxis, ya:fl.yaxis, left:r.left + fl.xaxis._offset, top:r.top + fl.yaxis._offset, w:fl.xaxis._length, h:fl.yaxis._length};
+    }
+    const inside = (a, x, y) => x >= a.left && x <= a.left + a.w && y >= a.top && y <= a.top + a.h;
+    function zoomMode(dx, dy){
+      const ax = Math.abs(dx), ay = Math.abs(dy);
+      if(ax < T.MINDRAG && ay < T.MINDRAG) return null;
+      if(ay < Math.min(Math.max(ax * 0.6, T.MINDRAG), T.MINZOOM)) return 'x';
+      if(ax < Math.min(Math.max(ay * 0.6, T.MINDRAG), T.MINZOOM)) return 'y';
+      return 'xy';
+    }
+    function showRing(x, y){ Object.assign(ring.style, {display:'block', left:x + 'px', top:y + 'px'}); }
+    const hideRing = () => { ring.style.display = 'none'; };
+    function arm(){
+      if(!g) return;
+      if(g.mode === 'pending') g.mode = 'armed';
+      showRing(g.x, g.y);
+      if(Plotly.Fx) Plotly.Fx.unhover(gd);
+    }
+    function drawBox(){
+      const z = g, a = z.a;
+      if(!z.zmode){ sel.style.display = 'none'; return; }
+      let x0 = Math.min(z.zx0, z.zx1), x1 = Math.max(z.zx0, z.zx1), y0 = Math.min(z.zy0, z.zy1), y1 = Math.max(z.zy0, z.zy1);
+      if(z.zmode === 'y'){ x0 = a.left; x1 = a.left + a.w; }
+      if(z.zmode === 'x'){ y0 = a.top; y1 = a.top + a.h; }
+      Object.assign(sel.style, {display:'block', left:x0 + 'px', top:y0 + 'px', width:(x1 - x0) + 'px', height:(y1 - y0) + 'px'});
+    }
+    function applyZoom(){
+      const z = g, {xa, ya, left, top} = z.a, upd = {};
+      if(!z.zmode) return;
+      if(z.zmode !== 'y') upd['xaxis.range'] = [xa.p2r(Math.min(z.zx0, z.zx1) - left), xa.p2r(Math.max(z.zx0, z.zx1) - left)];
+      if(z.zmode !== 'x') upd['yaxis.range'] = [ya.p2r(Math.max(z.zy0, z.zy1) - top), ya.p2r(Math.min(z.zy0, z.zy1) - top)];
+      Plotly.relayout(gd, upd);
+    }
+    function fit(){
+      if(gd._fitView) Plotly.relayout(gd, {'xaxis.range':gd._fitView.x.slice(), 'yaxis.range':gd._fitView.y.slice()});
+    }
+    function applyPan(){
+      raf = 0;
+      if(!g || g.mode !== 'pan') return;
+      const dx = g.x - g.x0, dy = g.y - g.y0, p = g.pan;
+      Plotly.relayout(gd, {'xaxis.range':[p.x[0] - dx * p.kx, p.x[1] - dx * p.kx], 'yaxis.range':[p.y[0] + dy * p.ky, p.y[1] + dy * p.ky]});
+    }
+    function startScroll(){ g.mode = 'scroll'; g.top0 = g.target.scrollTop + (g.y - g.y0); }
+    function startPan(){
+      const a = g.a, x = a.xa.range.map(Number), y = a.ya.range.map(Number);
+      g.mode = 'pan';
+      g.pan = {x, y, kx:(x[1] - x[0]) / a.w, ky:(y[1] - y[0]) / a.h};
+    }
+    function end(){
+      if(g){ clearTimeout(g.hold); try{ gd.releasePointerCapture(g.id); }catch(_){} }
+      g = null; hideRing(); sel.style.display = 'none';
+    }
+    // Plotly's own touch handling (its zoom box on a drag) never sees a finger
+    ['touchstart', 'touchmove', 'touchend'].forEach(type => gd.addEventListener(type, e => e.stopPropagation(), {capture:true}));
+
+    gd.addEventListener('pointerdown', e => {
+      if(!isTouch(e)) return;
+      if(g){ end(); return; }              // a second finger cancels the gesture
+      const now = performance.now(), a = plotArea();
+      const pageMoving = !!touchScroll.anim || now - touchScroll.last < T.MOVING_MS;
+      stopTouchMomentum();
+      const target = scrollParentOf(gd);
+      g = {id:e.pointerId, t0:now, x0:e.clientX, y0:e.clientY, x:e.clientX, y:e.clientY, a, target,
+           samples:[{t:now, y:e.clientY}], mode:'pending', hold:0};
+      try{ gd.setPointerCapture(e.pointerId); }catch(_){}
+      if(pageMoving || !a || !inside(a, e.clientX, e.clientY)){ g.mode = 'scrollOnly'; lastTap = null; return; }
+      if(lastTap && now - lastTap.t < T.DTAP_MS && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < T.NEAR){
+        g.mode = 'second'; lastTap = null; arm(); return;
+      }
+      g.hold = setTimeout(arm, T.HOLD_MS);
+    }, true);
+
+    gd.addEventListener('pointermove', e => {
+      if(!g || e.pointerId !== g.id) return;
+      const now = performance.now();
+      g.x = e.clientX; g.y = e.clientY;
+      g.samples.push({t:now, y:g.y});
+      while(g.samples.length > 2 && now - g.samples[0].t > 100) g.samples.shift();
+      const dx = g.x - g.x0, dy = g.y - g.y0, dist = Math.hypot(dx, dy);
+      if(g.mode === 'pending' && dist > T.SLOP){
+        clearTimeout(g.hold);
+        const speed = dist / Math.max(1, now - g.t0);
+        if(speed > T.FAST && Math.abs(dy) >= Math.abs(dx)) startScroll(); else startPan();
+      }else if(g.mode === 'scrollOnly' && dist > T.SLOP){
+        startScroll();
+      }else if((g.mode === 'armed' || g.mode === 'second') && dist > T.SLOP){
+        hideRing();
+        g.mode = 'zoom';
+        g.zx0 = clamp(g.x0, g.a.left, g.a.left + g.a.w); g.zy0 = clamp(g.y0, g.a.top, g.a.top + g.a.h);
+      }
+      if(g.mode === 'scroll'){
+        g.target.scrollTop = g.top0 - (g.y - g.y0);
+      }else if(g.mode === 'pan'){
+        if(!raf) raf = requestAnimationFrame(applyPan);
+      }else if(g.mode === 'zoom'){
+        const a = g.a;
+        g.zx1 = clamp(g.x, a.left, a.left + a.w); g.zy1 = clamp(g.y, a.top, a.top + a.h);
+        g.zmode = zoomMode(g.zx1 - g.zx0, g.zy1 - g.zy0);
+        drawBox();
+      }
+    }, true);
+
+    gd.addEventListener('pointerup', e => {
+      if(!g || e.pointerId !== g.id) return;
+      const now = performance.now(), dt = now - g.t0;
+      if(g.mode === 'scroll'){
+        const s = g.samples.filter(p => now - p.t <= 80), first = s[0] || g.samples[0];
+        const v = s.length > 1 ? -(g.y - first.y) / Math.max(1, now - first.t) : 0;
+        if(now - (s.length ? s[s.length - 1].t : 0) < 60) touchMomentum(g.target, v);
+      }else if(g.mode === 'pan'){
+        if(raf){ cancelAnimationFrame(raf); applyPan(); }
+      }else if(g.mode === 'zoom'){
+        applyZoom();
+      }else if(g.mode === 'second'){
+        if(dt < T.TAP_MS) fit();
+      }else if(g.mode === 'pending' && dt < T.TAP_MS){
+        lastTap = {t:now, x:g.x0, y:g.y0};
+      }
+      end();
+    }, true);
+    gd.addEventListener('pointercancel', e => { if(g && e.pointerId === g.id) end(); }, true);
+  }
+
   // ----- Pan with the right (or middle) mouse button -----
   // Plotly would treat a right-button drag as a zoom box it never draws, and on release zoom to
   // a zero-size box. Those buttons never reach Plotly: they pan instead, the left button zooms.
