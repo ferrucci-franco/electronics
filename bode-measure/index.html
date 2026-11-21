@@ -37,7 +37,10 @@
     margin:0; background:var(--bg); color:var(--fg);
     font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
     overflow:hidden; -webkit-text-size-adjust:100%;
+    /* no text selection (nor the iOS long-press callout) anywhere but in the input fields */
+    -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;
   }
+  input, textarea{-webkit-user-select:text; user-select:text; -webkit-touch-callout:default}
   a{color:var(--link);text-decoration:none}
   a:hover{text-decoration:underline}
 
@@ -170,15 +173,17 @@
   .bodeWrap{display:flex;flex-direction:column;gap:8px;min-height:0; flex:1 1 auto; overflow:auto; overscroll-behavior:contain;
             scrollbar-width:thin; scrollbar-color:var(--scroll-thumb) var(--scroll-track)}
   /* "fit" (default): both plots share the panel height, no scroll */
-  .right.fit .bodeWrap{overflow:hidden}
+  /* not scrollable itself: a scroll that starts on the plots must reach the page */
+  .right.fit .bodeWrap{overflow:hidden; overscroll-behavior:auto}
   .right.fit #bodeMag{flex:11 1 0; min-height:0; width:100%}
   .right.fit #bodePhase{flex:9 1 0; min-height:0; width:100%}
   /* unfit: comfortable fixed heights, the Bode column scrolls */
   .right:not(.fit) #bodeMag{flex:none; height:480px; width:100%}
   .right:not(.fit) #bodePhase{flex:none; height:420px; width:100%}
   .plotly-notifier{display:none !important}
-  /* one-finger gestures on the plots are handled by the page (scroll, pan, zoom, fit) */
-  #bodeMag, #bodePhase{touch-action:none}
+  /* one-finger gestures on the plots: the browser scrolls natively unless the page blocks it for a
+     pan or a zoom; "manipulation" removes the browser's double-tap zoom, which is our "fit" */
+  #bodeMag, #bodePhase{touch-action:manipulation}
   .zoom-sel{position:fixed; display:none; pointer-events:none; z-index:40; border:1px solid var(--accent); background:color-mix(in srgb, var(--accent) 16%, transparent)}
   .touch-ring{position:fixed; display:none; pointer-events:none; z-index:41; width:46px; height:46px; margin:-23px 0 0 -23px; border-radius:50%;
               border:2px solid var(--accent); background:color-mix(in srgb, var(--accent) 14%, transparent)}
@@ -1224,42 +1229,25 @@ document.addEventListener('DOMContentLoaded', () => {
     return {xa, ya, px, py};
   }
   // ----- One-finger touch gestures on a plot -----
-  // The plots take every one-finger touch (touch-action: none), because telling a fast finger from a
-  // slow one needs the first pixels of movement, before the browser would have started scrolling.
-  //   fast, mostly vertical finger      -> scrolls the page (with inertia), as does any movement while
-  //                                        the page is still moving or that starts outside the plot area
+  //   fast, mostly vertical finger      -> the page scrolls, natively (smooth, with the browser's inertia);
+  //                                        so does any movement while the page is still moving, or one
+  //                                        that starts outside the plot area
   //   slower finger                     -> pans the plot (both axes)
   //   finger held still, then moved     -> zoom: x, y or window depending on the direction
   //   slow double tap (2nd touch moves) -> zoom, the same way
   //   quick double tap                  -> back to the initial view ("fit")
+  // The decision is taken on the first movement past SLOP, before the browser starts its own scroll
+  // (its touch slop is larger): for a pan or a zoom the touchmove events are cancelled, which keeps the
+  // page still; for a scroll nothing is cancelled and the browser takes over (pointercancel follows).
   // A single tap still shows the point's tooltip (Plotly gets the emulated mouse events of a tap).
-  const TOUCH = {SLOP:8, HOLD_MS:350, FAST:0.6, MOVING_MS:150, TAP_MS:250, DTAP_MS:300, NEAR:40, TAU:325, MINDRAG:14, MINZOOM:36};
-  const touchScroll = {last:0, anim:0};
+  const TOUCH = {SLOP:8, HOLD_MS:350, FAST:0.6, MOVING_MS:150, TAP_MS:250, DTAP_MS:300, NEAR:40, MINDRAG:14, MINZOOM:36};
+  const touchScroll = {last:0};
   document.addEventListener('scroll', () => { touchScroll.last = performance.now(); }, true);
-  function stopTouchMomentum(){ if(touchScroll.anim){ cancelAnimationFrame(touchScroll.anim); touchScroll.anim = 0; } }
-  function scrollParentOf(el){
-    for(let p = el.parentElement; p && p !== document.body && p !== document.documentElement; p = p.parentElement){
-      const oy = getComputedStyle(p).overflowY;
-      if((oy === 'auto' || oy === 'scroll') && p.scrollHeight > p.clientHeight + 1) return p;
-    }
-    return document.scrollingElement || document.documentElement;
-  }
-  // inertia after a flick: exponential decay of the release speed (px/ms), like native scrolling
-  function touchMomentum(target, v){
-    stopTouchMomentum();
-    if(Math.abs(v) < 0.05) return;
-    const t0 = performance.now(), top0 = target.scrollTop;
-    const step = now => {
-      const t = now - t0;
-      target.scrollTop = top0 + v * TOUCH.TAU * (1 - Math.exp(-t / TOUCH.TAU));
-      touchScroll.anim = Math.abs(v) * Math.exp(-t / TOUCH.TAU) > 0.02 ? requestAnimationFrame(step) : 0;
-    };
-    touchScroll.anim = requestAnimationFrame(step);
-  }
   function setupTouchGestures(gd){
     if(!gd || gd.dataset.touchGestures) return;
     gd.dataset.touchGestures = '1';
     const T = TOUCH, clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+    const BLOCKING = {pan:1, zoom:1, armed:1, second:1};   // gestures during which the page must not scroll
     const sel = document.createElement('div'); sel.className = 'zoom-sel'; document.body.appendChild(sel);
     const ring = document.createElement('div'); ring.className = 'touch-ring'; document.body.appendChild(ring);
     let g = null, lastTap = null, raf = 0;
@@ -1278,12 +1266,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if(ax < Math.min(Math.max(ay * 0.6, T.MINDRAG), T.MINZOOM)) return 'y';
       return 'xy';
     }
-    function showRing(x, y){ Object.assign(ring.style, {display:'block', left:x + 'px', top:y + 'px'}); }
     const hideRing = () => { ring.style.display = 'none'; };
     function arm(){
       if(!g) return;
       if(g.mode === 'pending') g.mode = 'armed';
-      showRing(g.x, g.y);
+      Object.assign(ring.style, {display:'block', left:g.x + 'px', top:g.y + 'px'});
       if(Plotly.Fx) Plotly.Fx.unhover(gd);
     }
     function drawBox(){
@@ -1310,30 +1297,49 @@ document.addEventListener('DOMContentLoaded', () => {
       const dx = g.x - g.x0, dy = g.y - g.y0, p = g.pan;
       Plotly.relayout(gd, {'xaxis.range':[p.x[0] - dx * p.kx, p.x[1] - dx * p.kx], 'yaxis.range':[p.y[0] + dy * p.ky, p.y[1] + dy * p.ky]});
     }
-    function startScroll(){ g.mode = 'scroll'; g.top0 = g.target.scrollTop + (g.y - g.y0); }
     function startPan(){
       const a = g.a, x = a.xa.range.map(Number), y = a.ya.range.map(Number);
       g.mode = 'pan';
       g.pan = {x, y, kx:(x[1] - x[0]) / a.w, ky:(y[1] - y[0]) / a.h};
     }
+    // first movement past SLOP decides the gesture; called from pointermove and touchmove alike,
+    // whichever arrives first, so the touchmove that would start a native scroll is already decided
+    function decide(x, y, now){
+      if(!g) return;
+      g.x = x; g.y = y;
+      const dx = x - g.x0, dy = y - g.y0, dist = Math.hypot(dx, dy);
+      if(dist <= T.SLOP) return;
+      if(g.mode === 'pending'){
+        clearTimeout(g.hold);
+        const speed = dist / Math.max(1, now - g.t0);
+        if(speed > T.FAST && Math.abs(dy) >= Math.abs(dx)) g.mode = 'native'; else startPan();
+      }else if(g.mode === 'armed' || g.mode === 'second'){
+        hideRing();
+        g.mode = 'zoom';
+        g.zx0 = clamp(g.x0, g.a.left, g.a.left + g.a.w); g.zy0 = clamp(g.y0, g.a.top, g.a.top + g.a.h);
+      }
+    }
     function end(){
       if(g){ clearTimeout(g.hold); try{ gd.releasePointerCapture(g.id); }catch(_){} }
       g = null; hideRing(); sel.style.display = 'none';
     }
-    // Plotly's own touch handling (its zoom box on a drag) never sees a finger
-    ['touchstart', 'touchmove', 'touchend'].forEach(type => gd.addEventListener(type, e => e.stopPropagation(), {capture:true}));
+    // Plotly's own touch handling (its zoom box on a drag) never sees a finger; touchmove is cancelled
+    // only during a pan or a zoom, so that every other movement scrolls the page natively
+    ['touchstart', 'touchend'].forEach(type => gd.addEventListener(type, e => e.stopPropagation(), {capture:true}));
+    gd.addEventListener('touchmove', e => {
+      e.stopPropagation();
+      if(g && e.touches.length === 1) decide(e.touches[0].clientX, e.touches[0].clientY, performance.now());
+      if(g && BLOCKING[g.mode] && e.cancelable) e.preventDefault();
+    }, {capture:true, passive:false});
 
     gd.addEventListener('pointerdown', e => {
       if(!isTouch(e)) return;
       if(g){ end(); return; }              // a second finger cancels the gesture
       const now = performance.now(), a = plotArea();
-      const pageMoving = !!touchScroll.anim || now - touchScroll.last < T.MOVING_MS;
-      stopTouchMomentum();
-      const target = scrollParentOf(gd);
-      g = {id:e.pointerId, t0:now, x0:e.clientX, y0:e.clientY, x:e.clientX, y:e.clientY, a, target,
-           samples:[{t:now, y:e.clientY}], mode:'pending', hold:0};
-      try{ gd.setPointerCapture(e.pointerId); }catch(_){}
-      if(pageMoving || !a || !inside(a, e.clientX, e.clientY)){ g.mode = 'scrollOnly'; lastTap = null; return; }
+      g = {id:e.pointerId, t0:now, x0:e.clientX, y0:e.clientY, x:e.clientX, y:e.clientY, a, mode:'pending', hold:0};
+      if(now - touchScroll.last < T.MOVING_MS || !a || !inside(a, e.clientX, e.clientY)){
+        g.mode = 'native'; lastTap = null; return;   // page still moving, or outside the plot area: plain scroll
+      }
       if(lastTap && now - lastTap.t < T.DTAP_MS && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < T.NEAR){
         g.mode = 'second'; lastTap = null; arm(); return;
       }
@@ -1342,25 +1348,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     gd.addEventListener('pointermove', e => {
       if(!g || e.pointerId !== g.id) return;
-      const now = performance.now();
-      g.x = e.clientX; g.y = e.clientY;
-      g.samples.push({t:now, y:g.y});
-      while(g.samples.length > 2 && now - g.samples[0].t > 100) g.samples.shift();
-      const dx = g.x - g.x0, dy = g.y - g.y0, dist = Math.hypot(dx, dy);
-      if(g.mode === 'pending' && dist > T.SLOP){
-        clearTimeout(g.hold);
-        const speed = dist / Math.max(1, now - g.t0);
-        if(speed > T.FAST && Math.abs(dy) >= Math.abs(dx)) startScroll(); else startPan();
-      }else if(g.mode === 'scrollOnly' && dist > T.SLOP){
-        startScroll();
-      }else if((g.mode === 'armed' || g.mode === 'second') && dist > T.SLOP){
-        hideRing();
-        g.mode = 'zoom';
-        g.zx0 = clamp(g.x0, g.a.left, g.a.left + g.a.w); g.zy0 = clamp(g.y0, g.a.top, g.a.top + g.a.h);
-      }
-      if(g.mode === 'scroll'){
-        g.target.scrollTop = g.top0 - (g.y - g.y0);
-      }else if(g.mode === 'pan'){
+      decide(e.clientX, e.clientY, performance.now());
+      if(g.mode === 'pan'){
         if(!raf) raf = requestAnimationFrame(applyPan);
       }else if(g.mode === 'zoom'){
         const a = g.a;
@@ -1373,11 +1362,7 @@ document.addEventListener('DOMContentLoaded', () => {
     gd.addEventListener('pointerup', e => {
       if(!g || e.pointerId !== g.id) return;
       const now = performance.now(), dt = now - g.t0;
-      if(g.mode === 'scroll'){
-        const s = g.samples.filter(p => now - p.t <= 80), first = s[0] || g.samples[0];
-        const v = s.length > 1 ? -(g.y - first.y) / Math.max(1, now - first.t) : 0;
-        if(now - (s.length ? s[s.length - 1].t : 0) < 60) touchMomentum(g.target, v);
-      }else if(g.mode === 'pan'){
+      if(g.mode === 'pan'){
         if(raf){ cancelAnimationFrame(raf); applyPan(); }
       }else if(g.mode === 'zoom'){
         applyZoom();
@@ -1388,6 +1373,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       end();
     }, true);
+    // the browser took the touch over for its native scroll
     gd.addEventListener('pointercancel', e => { if(g && e.pointerId === g.id) end(); }, true);
   }
 
