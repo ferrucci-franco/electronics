@@ -180,6 +180,13 @@
     .left{overflow:visible}
     .right{height:760px}
   }
+  /* phones: the schematic goes above the component fields and takes the full width of the card */
+  @media (max-width:699px){
+    .app{grid-template-columns:minmax(0,1fr)}
+    .circuit-grid{grid-template-columns:minmax(0,1fr)}
+    .schematic{order:-1; width:100%; justify-self:stretch}
+    .right{height:640px}
+  }
 
   /* ===== Print report (A4 portrait, light theme) ===== */
   #report{display:none}
@@ -748,10 +755,13 @@ document.addEventListener('DOMContentLoaded', () => {
     applyCircuit();
   }
 
-  // ========= Hidden theory checkbox: Ctrl+Shift+click only =========
+  // ========= Hidden theory checkbox: Ctrl+Shift+click only (Cmd+Shift+click also accepted on a Mac) =========
+  // mousedown, not click: on a Mac, Ctrl+click is a right click and never fires "click"
   const theoryCheck = $('#theoryCheck');
-  $('#theoryRow').addEventListener('click', e => {
-    if(!((e.ctrlKey || e.metaKey) && e.shiftKey)) return;   // looks disabled: a normal click does nothing
+  const theoryKeys = e => (e.ctrlKey || e.metaKey) && e.shiftKey;
+  $('#theoryRow').addEventListener('contextmenu', e => { if(theoryKeys(e)) e.preventDefault(); });
+  $('#theoryRow').addEventListener('mousedown', e => {
+    if(!theoryKeys(e) || (e.button !== 0 && !(e.button === 2 && e.ctrlKey))) return;   // looks disabled: a normal click does nothing
     e.preventDefault();
     theoryOn = !theoryOn;
     theoryCheck.setAttribute('aria-checked', String(theoryOn));
