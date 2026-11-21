@@ -930,7 +930,8 @@
     /* Zoom tactile : l'extérieur de la fenêtre est grisé */
     /* Zoom à la souris : griser l'extérieur de la fenêtre, comme au doigt (Plotly choisit sinon une
        couleur d'après plot_bgcolor, transparent ici, et le gris devient invisible) */
-    .js-plotly-plot .zoomlayer .zoombox{ fill:rgba(100,116,139,0.35) !important; }
+    .js-plotly-plot .zoomlayer .zoombox{ fill:rgba(0,0,0,0) !important; }
+    .js-plotly-plot.zoom-dragging .zoomlayer .zoombox{ fill:rgba(100,116,139,0.35) !important; }
     .js-plotly-plot .zoomlayer .zoombox-corners{ fill:#ffffff !important; stroke:#334155 !important; }
     .touch-zoom-ov{ position:absolute; inset:0; pointer-events:none; display:none; z-index:6; }
     .touch-zoom-ov > div{ position:absolute; background:rgba(100,116,139,0.35); }
@@ -3388,6 +3389,15 @@ Implement a real-time digital signal acquisition and processing system using Ard
       step3Fit(div.id.startsWith('step3Bode')
         ? [document.getElementById('step3BodeMag'), document.getElementById('step3BodePhase')]
         : [div], 'all');
+    }, true);
+    // Zoom à la souris : le gris n'apparaît qu'une fois la fenêtre commencée (glissement de plus de 6 px)
+    div.addEventListener('mousedown', e => {
+      if (e.button !== 0) return;
+      const x0 = e.clientX, y0 = e.clientY;
+      const move = ev => { if (Math.hypot(ev.clientX - x0, ev.clientY - y0) > 6) div.classList.add('zoom-dragging'); };
+      const up = () => { div.classList.remove('zoom-dragging'); window.removeEventListener('mousemove', move, true); window.removeEventListener('mouseup', up, true); };
+      window.addEventListener('mousemove', move, true);
+      window.addEventListener('mouseup', up, true);
     }, true);
     div.addEventListener('wheel', e => {
       if (!div._fullLayout) return;
