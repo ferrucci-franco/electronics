@@ -58,6 +58,22 @@
       box-sizing:border-box;
     }
 
+    /* Boîte de confirmation de l'application */
+    .app-dlg-overlay{ position:fixed; inset:0; z-index:1000; display:flex; align-items:center; justify-content:center;
+      background:rgba(15,23,42,0.45); padding:16px; animation:appDlgFade .12s ease-out; }
+    .app-dlg{ width:min(420px, 100%); background:var(--card); color:var(--fg); border:1px solid var(--border);
+      border-radius:var(--radius); box-shadow:var(--shadow); padding:20px 22px 16px; font-family:var(--font); }
+    .app-dlg-title{ font-size:1.08rem; font-weight:700; margin-bottom:8px; }
+    .app-dlg-detail{ font-size:.92rem; color:var(--muted); line-height:1.45; margin-bottom:4px; }
+    .app-dlg-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:18px; }
+    .app-dlg-btn{ font:inherit; font-weight:600; font-size:.92rem; padding:8px 16px; border-radius:8px; cursor:pointer; }
+    .app-dlg-cancel{ background:transparent; color:var(--fg); border:1px solid var(--border); }
+    .app-dlg-cancel:hover{ background:var(--accent-soft); }
+    .app-dlg-ok{ background:var(--accent-strong, var(--accent)); color:#fff; border:1px solid transparent; }
+    .app-dlg-ok:hover{ filter:brightness(1.08); }
+    .app-dlg-btn:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+    @keyframes appDlgFade{ from{ opacity:0; } to{ opacity:1; } }
+
     html, body {
       margin:0;
       padding:0;
@@ -1335,9 +1351,15 @@
   const APP_VERSION = '2.0';   // affichée à côté du © ; même numéro que le programme de la carte
   const SETTINGS_KEY = 'dsp-arduino-lab-settings-v1';
   const UI_TEXTS = {
-    fr: { reset_settings: 'Réinitialiser les réglages', reset_confirm: 'Revenir aux réglages par défaut ?' },
-    es: { reset_settings: 'Restablecer los ajustes', reset_confirm: '¿Volver a los ajustes por defecto?' },
-    en: { reset_settings: 'Reset settings', reset_confirm: 'Return to the default settings?' }
+    fr: { reset_settings: 'Réinitialiser les réglages', reset_confirm: 'Revenir aux réglages par défaut ?',
+          reset_detail: 'Tous les réglages de la simulation, la langue et le thème reprennent leur valeur initiale.',
+          dlg_ok: 'Réinitialiser', dlg_cancel: 'Annuler' },
+    es: { reset_settings: 'Restablecer los ajustes', reset_confirm: '¿Volver a los ajustes por defecto?',
+          reset_detail: 'Todos los ajustes de la simulación, el idioma y el tema vuelven a su valor inicial.',
+          dlg_ok: 'Restablecer', dlg_cancel: 'Cancelar' },
+    en: { reset_settings: 'Reset settings', reset_confirm: 'Return to the default settings?',
+          reset_detail: 'All simulation settings, the language and the theme go back to their initial values.',
+          dlg_ok: 'Reset', dlg_cancel: 'Cancel' }
   };
   function uiT(k) { const l = (typeof state !== 'undefined' && state.lang) || 'fr'; return (UI_TEXTS[l] || UI_TEXTS.fr)[k] || k; }
   const ENABLE_STEP5 = false;  // Set to true to show step 5 (Bode & Measurements)
@@ -5358,10 +5380,52 @@ Implement a real-time digital signal acquisition and processing system using Ard
     const a = e.target.closest && e.target.closest('[data-reset]');
     if (!a) return;
     e.preventDefault();
-    if (!window.confirm(uiT('reset_confirm'))) return;
-    try { localStorage.removeItem(SETTINGS_KEY); } catch (err) {}
-    location.reload();
+    appConfirm(uiT('reset_confirm'), uiT('reset_detail'), uiT('dlg_ok'), uiT('dlg_cancel')).then(ok => {
+      if (!ok) return;
+      try { localStorage.removeItem(SETTINGS_KEY); } catch (err) {}
+      location.reload();
+    });
   });
+
+  // Boîte de confirmation de l'application (remplace window.confirm) : Entrée = valider, Échap ou clic
+  // à l'extérieur = annuler. Renvoie une promesse booléenne.
+  function appConfirm(title, detail, okLabel, cancelLabel) {
+    return new Promise(resolve => {
+      const ov = document.createElement('div');
+      ov.className = 'app-dlg-overlay';
+      ov.innerHTML = `<div class="app-dlg" role="alertdialog" aria-modal="true" aria-labelledby="appDlgTitle">
+          <div class="app-dlg-title" id="appDlgTitle"></div>
+          <div class="app-dlg-detail"></div>
+          <div class="app-dlg-actions">
+            <button type="button" class="app-dlg-btn app-dlg-cancel"></button>
+            <button type="button" class="app-dlg-btn app-dlg-ok"></button>
+          </div>
+        </div>`;
+      ov.querySelector('.app-dlg-title').textContent = title;
+      const det = ov.querySelector('.app-dlg-detail');
+      if (detail) det.textContent = detail; else det.remove();
+      const okB = ov.querySelector('.app-dlg-ok'), noB = ov.querySelector('.app-dlg-cancel');
+      okB.textContent = okLabel; noB.textContent = cancelLabel;
+      const prevFocus = document.activeElement;
+      const close = v => {
+        document.removeEventListener('keydown', onKey, true);
+        ov.remove();
+        if (prevFocus && prevFocus.focus) try { prevFocus.focus(); } catch (e) {}
+        resolve(v);
+      };
+      const onKey = e => {
+        if (e.key === 'Escape') { e.preventDefault(); close(false); }
+        else if (e.key === 'Enter') { e.preventDefault(); close(document.activeElement !== noB); }
+        else if (e.key === 'Tab') { e.preventDefault(); (document.activeElement === okB ? noB : okB).focus(); }
+      };
+      okB.addEventListener('click', () => close(true));
+      noB.addEventListener('click', () => close(false));
+      ov.addEventListener('mousedown', e => { if (e.target === ov) close(false); });
+      document.addEventListener('keydown', onKey, true);
+      document.body.appendChild(ov);
+      okB.focus();
+    });
+  }
   // INIT
   const saved = loadSettings();
   const theme0 = (saved && ['light', 'dark'].includes(saved.theme)) ? saved.theme : 'light';
