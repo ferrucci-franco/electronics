@@ -1092,6 +1092,15 @@
       opacity:0.9;
     }
 
+    .step3-alias-btn{
+      width:100%; margin-top:4px; padding:7px 10px; border-radius:8px; cursor:pointer;
+      font:inherit; font-weight:600; font-size:.9rem;
+      background:transparent; color:var(--accent-strong); border:1.5px solid var(--accent-strong);
+    }
+    .step3-alias-btn:hover{ background:var(--accent-strong); color:#fff; }
+    [data-theme="dark"] .step3-alias-btn{ color:var(--accent); border-color:var(--accent); }
+    [data-theme="dark"] .step3-alias-btn:hover{ background:var(--accent); color:#0f172a; }
+
     .step4-btn:disabled{
       opacity:0.5;
       cursor:not-allowed;
@@ -2309,6 +2318,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
       duty_label: "Duty (cuadrada)",
       fs_label: "Frecuencia de muestreo Fs",
       cycles_label: "Ciclos visibles",
+      alias_show_btn: "Mostrar la sinusoide aparente",
+      alias_show_hint: "Ajusta los ciclos visibles para ver dos períodos de f*<sub>IN</sub> y acota su período.",
       steady_note: "Se muestra solo el régimen permanente.",
       nyq_value_prefix: "F<sub>Nyq</sub> = ",
       nyq_condition: "Condición: Fs > 2·f<sub>IN</sub>",
@@ -2387,6 +2398,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
       duty_label: "Rapport cyclique",
       fs_label: "Fréquence d'échantillonnage Fs",
       cycles_label: "Cycles visibles",
+      alias_show_btn: "Montrer la sinusoïde apparente",
+      alias_show_hint: "Règle les cycles visibles pour voir deux périodes de f*<sub>IN</sub> et cote sa période.",
       steady_note: "Seul le régime permanent est affiché.",
       nyq_value_prefix: "F<sub>Nyq</sub> = ",
       nyq_condition: "Condition : Fs > 2·f<sub>IN</sub>",
@@ -2465,6 +2478,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
       duty_label: "Duty (square)",
       fs_label: "Sampling frequency Fs",
       cycles_label: "Visible cycles",
+      alias_show_btn: "Show the apparent sinusoid",
+      alias_show_hint: "Sets the visible cycles to show two periods of f*<sub>IN</sub> and marks its period.",
       steady_note: "Only steady-state is shown.",
       nyq_value_prefix: "F<sub>Nyq</sub> = ",
       nyq_condition: "Condition: Fs > 2·f<sub>IN</sub>",
@@ -2950,6 +2965,56 @@ Implement a real-time digital signal acquisition and processing system using Ard
     return 1000 * (Math.log10(f) - a) / (b - a);
   }
 
+  // Fréquence apparente |f*| (0 … F_Nyq) d'une sinusoïde de fréquence f_IN échantillonnée à Fs
+  function step3ApparentFreq() {
+    const Fs = step3State.Fs;
+    let fa = step3State.f0 % Fs;
+    if (fa > Fs / 2) fa = Fs - fa;
+    return fa;
+  }
+
+  // Cote de la période apparente T* = 1/f* : on ajuste aux échantillons x[n] une sinusoïde de fréquence f*
+  // (moindres carrés sur cos et sin), on repère deux crêtes successives dans la fenêtre et on les relie
+  // par une flèche double, avec « T* = … → f* = 1/T* = … ». Rien si la fenêtre ne contient pas une période.
+  function step3AliasCote(tArr, x, C, dark) {
+    if (step3State.signal !== 'sine' || step3State.f0 <= step3State.Fs / 2) return null;
+    const fa = step3ApparentFreq();
+    if (!(fa > 1e-6 * step3State.Fs) || tArr.length < 4) return null;
+    const Ta = 1 / fa, w = 2 * Math.PI * fa;
+    const t0 = tArr[0], t1 = tArr[tArr.length - 1];
+    if (t1 - t0 < Ta) return null;
+    const off = step3State.offset, A = step3State.Vpp / 2;
+    if (!(A > 0)) return null;
+    let cc = 0, ss = 0, cs = 0, xc = 0, xs = 0;
+    for (let i = 0; i < tArr.length; i++) {
+      const c = Math.cos(w * tArr[i]), sn = Math.sin(w * tArr[i]), v = x[i] - off;
+      cc += c * c; ss += sn * sn; cs += c * sn; xc += v * c; xs += v * sn;
+    }
+    const det = cc * ss - cs * cs;
+    if (Math.abs(det) < 1e-12) return null;
+    const a = (xc * ss - xs * cs) / det, b = (xs * cc - xc * cs) / det;   // x − off ≈ a·cos(wt) + b·sin(wt)
+    const phi = Math.atan2(b, a);                                          // crêtes : w·t = phi + 2πk
+    let tc = (phi + 2 * Math.PI * Math.ceil((w * t0 - phi) / (2 * Math.PI))) / w;
+    if (tc + Ta > t1) return null;
+    const sep = state.lang === 'en' ? '.' : ',';
+    const fmtT = v => v >= 1 ? v.toPrecision(3).replace('.', sep) + ' s'
+                   : v >= 1e-3 ? (v * 1e3).toPrecision(3).replace('.', sep) + ' ms'
+                   : (v * 1e6).toPrecision(3).replace('.', sep) + ' µs';
+    const fmtF = v => v >= 1000 ? (v / 1000).toFixed(2).replace('.', sep) + ' kHz' : v.toFixed(1).replace('.', sep) + ' Hz';
+    const col = dark ? '#c4b5fd' : '#7c3aed';
+    const yTop = off + A, yC = yTop + 0.09 * Math.max(2 * A, 1);
+    const shapes = [tc, tc + Ta].map(tv => ({ type:'line', xref:'x', yref:'y', x0:tv, x1:tv, y0:yTop, y1:yC + 0.03 * Math.max(2 * A, 1),
+      line:{ color:col, width:1.5, dash:'dot' } }));
+    const annotations = [
+      { xref:'x', yref:'y', axref:'x', ayref:'y', x:tc + Ta, y:yC, ax:tc, ay:yC, text:'', showarrow:true,
+        arrowhead:2, arrowside:'end+start', arrowsize:1.2, arrowwidth:2, arrowcolor:col },
+      { xref:'x', yref:'y', x:tc + Ta / 2, y:yC, yanchor:'bottom', yshift:3, showarrow:false,
+        text:'<b>T* = ' + fmtT(Ta) + '  →  f*<sub>IN</sub> = 1/T* = ' + fmtF(fa) + '</b>',
+        font:{ size:14, color:col }, bgcolor:dark ? 'rgba(38,50,68,0.85)' : 'rgba(255,255,255,0.9)', borderpad:3 }
+    ];
+    return { shapes, annotations, yMax:yC + 0.12 * Math.max(2 * A, 1) };
+  }
+
   // Draw time plot
   function step3DrawTime() {
     const el = document.getElementById('step3TimePlot');
@@ -3027,6 +3092,16 @@ Implement a real-time digital signal acquisition and processing system using Ard
           layout.yaxis2.range = [-10.5, 10.5];
         }
       }
+    }
+
+    // Cote de la période apparente (repliement d'une sinusoïde)
+    const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const cote = step3AliasCote(tArr, x, C, dark);
+    if (cote) {
+      layout.shapes = (layout.shapes || []).concat(cote.shapes);
+      layout.annotations = (layout.annotations || []).concat(cote.annotations);
+      if (layout.yaxis.range && cote.yMax > layout.yaxis.range[1])
+        layout.yaxis.range = [layout.yaxis.range[0], cote.yMax];
     }
 
     Plotly.react(el, data, layout, {displaylogo:false, responsive:true, displayModeBar:false, doubleClick:false});
@@ -3717,6 +3792,10 @@ Implement a real-time digital signal acquisition and processing system using Ard
       }
     }
 
+    // Bouton « sinusoïde apparente » : seulement s'il y a repliement d'une sinusoïde (f* non nulle)
+    const aliasGrp = document.getElementById('step3AliasShowGroup');
+    if (aliasGrp) aliasGrp.style.display = (isSine && f0 > Fnyq && step3ApparentFreq() > 1e-6 * Fs) ? 'block' : 'none';
+
     // Status indicator
     if(statusEl) {
       if(isSine) {
@@ -3971,6 +4050,9 @@ Implement a real-time digital signal acquisition and processing system using Ard
                 <div class="step3-group">
                   <div class="step3-note" id="step3SamplingStatus" style="font-weight:600;"></div>
                 </div>
+                <div class="step3-group" id="step3AliasShowGroup" style="display:none">
+                  <button type="button" class="step3-alias-btn" id="step3AliasShowBtn" title="${t('alias_show_hint').replace(/<[^>]+>/g, '')}">${t('alias_show_btn')}</button>
+                </div>
               </div>
 
               <!-- Visualización -->
@@ -4117,6 +4199,12 @@ Implement a real-time digital signal acquisition and processing system using Ard
       if(step3State.showTime) step3DrawTime();
     };
     document.getElementById('step3CyclesSlider').addEventListener('input', e => syncCycles(e.target.value));
+    // Assez de cycles de f_IN pour voir un peu plus de deux périodes de la sinusoïde apparente
+    document.getElementById('step3AliasShowBtn').addEventListener('click', () => {
+      const fa = step3ApparentFreq();
+      if (!(fa > 0)) return;
+      syncCycles(Math.ceil(2.15 * step3State.f0 / fa));
+    });
     document.getElementById('step3CyclesNumber').addEventListener('change', e => syncCycles(e.target.value));
 
     // Filter type
