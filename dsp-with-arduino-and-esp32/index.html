@@ -1515,51 +1515,18 @@ Implement a real-time digital signal acquisition and processing system using Ard
   const montageTextsEsp = {
     fr:{ard:'ESP32 (WROOM-32)', a1:'GPIO34 : entrée du CAN', a1r:'(0 … 3,3 V)', a0:'GPIO25 : sortie du CNA',
         gnd:'Masse commune : relier le GND de l’ESP32 à la masse du générateur et de l’oscilloscope',
-        pins1:'Repérer les broches par le nom imprimé', pins2:'sur la carte (34 ou D34, 25 ou D25, GND) :', pins3:'leur position varie selon le modèle.',
+        pins1:'Repérer les broches par le nom imprimé', pins2:'sur la carte (D34, D25, GND) : sur d’autres', pins3:'modèles d’ESP32, leur position change.',
         warn1:'Signal entre 0,3 V et 3 V :', warn2:'l’ESP32 fonctionne en 3,3 V.'},
     es:{ard:'ESP32 (WROOM-32)', a1:'GPIO34: entrada del ADC', a1r:'(0 … 3,3 V)', a0:'GPIO25: salida del DAC',
         gnd:'Masa común: unir el GND del ESP32 a la masa del generador y del osciloscopio',
-        pins1:'Identificar los pines por el nombre impreso', pins2:'en la placa (34 o D34, 25 o D25, GND):', pins3:'su posición cambia según el modelo.',
+        pins1:'Identificar los pines por el nombre impreso', pins2:'en la placa (D34, D25, GND): en otros', pins3:'modelos de ESP32, su posición cambia.',
         warn1:'Señal entre 0,3 V y 3 V:', warn2:'el ESP32 funciona con 3,3 V.'},
     en:{ard:'ESP32 (WROOM-32)', a1:'GPIO34: ADC input', a1r:'(0 … 3.3 V)', a0:'GPIO25: DAC output',
         gnd:'Common ground: connect the ESP32 GND to the generator and oscilloscope ground',
-        pins1:'Find the pins by the name printed', pins2:'on the board (34 or D34, 25 or D25, GND):', pins3:'their position depends on the model.',
+        pins1:'Find the pins by the name printed', pins2:'on the board (D34, D25, GND): on other', pins3:'ESP32 models, their position differs.',
         warn1:'Signal between 0.3 V and 3 V:', warn2:'the ESP32 runs on 3.3 V.'}
   };
   const montageBoardLabels = { uno:'Arduino UNO R4', esp32:'ESP32' };
-
-  // Carte de développement ESP32-WROOM-32 dessinée (pas de photo) ; renvoie le SVG et la position des broches utiles
-  function esp32BoardSvg(dark) {
-    const X0 = 372, Y0 = 118, W = 456, H = 178;             // circuit imprimé (horizontal, USB à gauche)
-    const n = 19, xR = X0 + W - 26, dx = (W - 52) / (n - 1);
-    const pinX = i => xR - i * dx;                          // i = 0 côté antenne (droite)
-    const yTop = Y0 + 14, yBot = Y0 + H - 14;
-    const bottom = ['3V3','EN','VP','VN','34','35','32','33','25','26','27','14','12','GND','13','D2','D3','CMD','5V'];
-    const top    = ['GND','23','22','TX','RX','21','GND','19','18','5','17','16','4','0','2','15','D1','D0','CLK'];
-    const used = { '34':'#BLUE', '25':'#RED', 'GND':'#INK' };
-    const pcb = dark ? '#16324d' : '#1b3a5c', edge = dark ? '#5b7aa0' : '#0e2238';
-    let g = `<rect x="${X0}" y="${Y0}" width="${W}" height="${H}" rx="10" fill="${pcb}" stroke="${edge}" stroke-width="2"/>`;
-    // antenne (piste en zigzag) et module blindé
-    g += `<rect x="${X0+W-112}" y="${Y0+40}" width="96" height="98" rx="4" fill="${dark ? '#1d3d5d' : '#224567'}"/>`;
-    g += `<path d="M ${X0+W-28} ${Y0+50} v 78 m -12 0 v -78 h -12 v 78 h -12 v -78 h -12 v 78 h -12 v -78 h -12 v 78" stroke="#d4b25a" stroke-width="3" fill="none"/>`;
-    g += `<rect x="${X0+W-286}" y="${Y0+36}" width="168" height="106" rx="4" fill="#c9ced6" stroke="#8b939e" stroke-width="2"/>`;
-    g += `<text x="${X0+W-202}" y="${Y0+84}" text-anchor="middle" font-size="17" font-weight="700" fill="#374151">ESP32</text>`;
-    g += `<text x="${X0+W-202}" y="${Y0+106}" text-anchor="middle" font-size="14" fill="#4b5563">WROOM-32</text>`;
-    // port USB, boutons, régulateur
-    g += `<rect x="${X0-18}" y="${Y0+H/2-22}" width="40" height="44" rx="4" fill="#aeb4bd" stroke="#6b7280" stroke-width="2"/>`;
-    g += `<rect x="${X0+40}" y="${Y0+56}" width="22" height="16" rx="3" fill="#e5e7eb"/><rect x="${X0+40}" y="${Y0+106}" width="22" height="16" rx="3" fill="#e5e7eb"/>`;
-    g += `<rect x="${X0+86}" y="${Y0+70}" width="40" height="38" rx="3" fill="#111827"/>`;
-    // connecteurs : broches et sérigraphie
-    const pinRow = (labels, y, labY) => labels.map((lb, i) => {
-      const x = pinX(i), col = used[lb] && y === yBot ? used[lb] : null;
-      return `<rect x="${(x-6).toFixed(1)}" y="${y-6}" width="12" height="12" rx="2" fill="#1f2937" stroke="#d1d5db" stroke-width="1.5"/>`
-           + `<circle cx="${x.toFixed(1)}" cy="${y}" r="3" fill="#e5c07b"/>`
-           + `<text x="${x.toFixed(1)}" y="${labY}" text-anchor="middle" font-size="${col ? 13.5 : 11.5}" font-weight="${col ? 800 : 500}" fill="${col ? 'COL' + col : '#e5e7eb'}">${lb}</text>`;
-    }).join('');
-    g += pinRow(top, yTop, yTop + 20) + pinRow(bottom, yBot, yBot - 12);
-    return { svg: g, pin34: { x: pinX(4), y: yBot }, pin25: { x: pinX(8), y: yBot }, gnd: { x: pinX(13), y: yBot },
-             usb: { x: X0 - 18, y: Y0 + H / 2 } };
-  }
 
   function renderMontage(){
     const board = state.board === 'esp32' ? 'esp32' : 'uno';
@@ -1583,18 +1550,39 @@ Implement a real-time digital signal acquisition and processing system using Ard
     const f = v => v.toFixed(1);
     const dot = (p,c)=>`<circle cx="${f(p.x)}" cy="${f(p.y)}" r="5" fill="${c}" stroke="${BG}" stroke-width="1.5"/>`;
     const img = (o,w,h,href)=>`<image href="${href}" x="${o.x}" y="${o.y}" width="${(w*o.s).toFixed(1)}" height="${(h*o.s).toFixed(1)}"/>`;
-    let boardSvg = img(ARD,577,433,'img/arduino-uno-r4.png'), boardNote = '';
+    const ground = (x, y) => `<path d="M ${f(x-16)} ${f(y)} H ${f(x+16)} M ${f(x-10)} ${f(y+7)} H ${f(x+10)} M ${f(x-4)} ${f(y+14)} H ${f(x+4)}" stroke="${INK}" stroke-width="3" fill="none"/>`;
+    let boardSvg, boardNote = '', usbSvg, blueSvg, redSvg, gndSvg, pinTags = '';
+    const yA0 = board === 'esp32' ? 335 : 560;
     if (board === 'esp32') {
-      const e = esp32BoardSvg(dark);
-      // sérigraphie des broches utilisées : couleurs claires, lisibles sur le circuit imprimé foncé
-      boardSvg = e.svg.replace(/COL#BLUE/g, '#93c5fd').replace(/COL#RED/g, '#fca5a5').replace(/COL#INK/g, '#ffffff');
-      A1 = e.pin34; A0 = e.pin25; GND = e.gnd; USB = e.usb;
+      // ESP32 DevKit V1 (30 broches), vertical, USB en bas. Dessin vectoriel wokwi-elements (MIT), 107 × 201.
+      const ESP = {x:575, y:36, s:1.65};
+      boardSvg = img(ESP,107,201,'img/esp32-devkit-v1.svg');
+      A1 = P(ESP,5,53.1); A0 = P(ESP,5,91.3); GND = P(ESP,5,149); USB = P(ESP,53.5,199);
+      const xBl = A1.x - 85, xRd = A1.x - 48, xGnd = A1.x - 20;
+      // bleu : par-dessus la carte jusqu'à D34 (aucun croisement avec le fil rouge)
+      blueSvg = `<path d="M ${xNode} ${yBlue} V 20 H ${f(xBl)} V ${f(A1.y)} H ${f(A1.x)}" stroke="${BLUE}" stroke-width="4" fill="none" stroke-linejoin="round"/>`;
+      redSvg  = `<path d="M ${f(A0.x)} ${f(A0.y)} H ${f(xRd)} V ${yRed} H ${f(CH2.x)} V ${f(CH2.y)}" stroke="${RED}" stroke-width="4" fill="none" stroke-linejoin="round"/>`;
+      gndSvg  = `<path d="M ${f(GND.x)} ${f(GND.y)} H ${f(xGnd)} V ${f(GND.y+30)}" stroke="${INK}" stroke-width="3" fill="none"/>` + ground(xGnd, GND.y + 30);
+      usbSvg  = `<path d="M ${f(USB.x)} ${f(USB.y)} V 382" stroke="${CABLE}" stroke-width="7" stroke-linecap="round" fill="none"/>
+  <text x="${f(USB.x)}" y="408" text-anchor="middle" class="m-small">${t.usb1}</text>
+  <text x="${f(USB.x)}" y="430" text-anchor="middle" class="m-small">${t.usb2}</text>`;
+      const tag = (p, txt, c) => `<text x="${f(p.x-10)}" y="${f(p.y-9)}" text-anchor="end" class="m-label" style="font-size:17px" fill="${c}">${txt}</text>`;
+      pinTags = tag(A1, 'D34', BLUE) + tag(A0, 'D25', RED) + tag(GND, 'GND', INK);
       const xn = ARD.x + 577 * ARD.s + 14;
       boardNote = `<text x="${xn}" y="104" class="m-small">${t.pins1}</text>
-  <text x="${xn}" y="126" class="m-small">${t.pins2}</text>
-  <text x="${xn}" y="148" class="m-small">${t.pins3}</text>
-  <text x="${xn}" y="190" class="m-label" fill="${RED}" style="font-size:18px">${t.warn1}</text>
-  <text x="${xn}" y="213" class="m-small">${t.warn2}</text>`;
+  <text x="${xn}" y="128" class="m-small">${t.pins2}</text>
+  <text x="${xn}" y="152" class="m-small">${t.pins3}</text>
+  <text x="${xn}" y="196" class="m-label" fill="${RED}" style="font-size:19px">${t.warn1}</text>
+  <text x="${xn}" y="220" class="m-small">${t.warn2}</text>`;
+    } else {
+      boardSvg = img(ARD,577,433,'img/arduino-uno-r4.png');
+      blueSvg = `<path d="M ${xNode} ${yBlue} V ${yA1} H ${f(A1.x)} V ${f(A1.y)}" stroke="${BLUE}" stroke-width="4" fill="none" stroke-linejoin="round"/>`;
+      redSvg  = `<path d="M ${f(A0.x)} ${f(A0.y)} V ${yRed} H ${f(CH2.x)} V ${f(CH2.y)}" stroke="${RED}" stroke-width="4" fill="none" stroke-linejoin="round"/>`;
+      gndSvg  = `<path d="M ${f(GND.x)} ${f(GND.y)} V ${f(GND.y+40)}" stroke="${INK}" stroke-width="3" fill="none"/>` + ground(GND.x, GND.y + 40)
+              + `<text x="${f(GND.x-22)}" y="${f(GND.y+50)}" text-anchor="end" class="m-small" fill="${INK}">GND</text>`;
+      usbSvg  = `<path d="M ${f(USB.x)} ${f(USB.y)} H 250" stroke="${CABLE}" stroke-width="7" stroke-linecap="round" fill="none"/>
+  <text x="236" y="${f(USB.y-4)}" text-anchor="end" class="m-small">${t.usb1}</text>
+  <text x="236" y="${f(USB.y+20)}" text-anchor="end" class="m-small">${t.usb2}</text>`;
     }
     const svg = `
 <svg class="montage-svg" viewBox="0 0 1200 830" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${t.ard}">
@@ -1609,13 +1597,11 @@ Implement a real-time digital signal acquisition and processing system using Ard
   ${boardNote}
 
   <!-- USB vers l'ordinateur -->
-  <path d="M ${f(USB.x)} ${f(USB.y)} H 250" stroke="${CABLE}" stroke-width="7" stroke-linecap="round" fill="none"/>
-  <text x="236" y="${f(USB.y-4)}" text-anchor="end" class="m-small">${t.usb1}</text>
-  <text x="236" y="${f(USB.y+20)}" text-anchor="end" class="m-small">${t.usb2}</text>
+  ${usbSvg}
 
   <!-- Fil bleu : générateur → R → bifurcation → A1 et CH1 -->
   <path d="M ${f(GOUT.x)} ${f(GOUT.y)} V ${yBlue} H ${f(CH1.x)} V ${f(CH1.y)}" stroke="${BLUE}" stroke-width="4" fill="none" stroke-linejoin="round"/>
-  <path d="M ${xNode} ${yBlue} V ${yA1} H ${f(A1.x)} V ${f(A1.y)}" stroke="${BLUE}" stroke-width="4" fill="none" stroke-linejoin="round"/>
+  ${blueSvg}
   <rect x="${f(xR-39)}" y="${yBlue-11}" width="78" height="22" rx="2" fill="${BG}" stroke="${INK}" stroke-width="3"/>
   <text x="${f(xR)}" y="${yBlue-22}" text-anchor="middle" class="m-label" fill="${INK}">${t.res}</text>
   <circle cx="${xNode}" cy="${yBlue}" r="6.5" fill="${BLUE}"/>
@@ -1623,13 +1609,12 @@ Implement a real-time digital signal acquisition and processing system using Ard
   <text x="${xNode+18}" y="${yA1+54}" class="m-small">${t.a1r}</text>
 
   <!-- Fil rouge : A0 → CH2 -->
-  <path d="M ${f(A0.x)} ${f(A0.y)} V ${yRed} H ${f(CH2.x)} V ${f(CH2.y)}" stroke="${RED}" stroke-width="4" fill="none" stroke-linejoin="round"/>
-  <text x="${f(A0.x-14)}" y="${board === 'esp32' ? 392 : 560}" text-anchor="end" class="m-label" fill="${RED}">${t.a0}</text>
+  ${redSvg}
+  <text x="${f(board === 'esp32' ? A1.x - 62 : A0.x - 14)}" y="${yA0}" text-anchor="end" class="m-label" fill="${RED}">${t.a0}</text>
 
-  <!-- Masse de l'Arduino -->
-  <path d="M ${f(GND.x)} ${f(GND.y)} V ${f(GND.y+40)}" stroke="${INK}" stroke-width="3" fill="none"/>
-  <path d="M ${f(GND.x-16)} ${f(GND.y+40)} H ${f(GND.x+16)} M ${f(GND.x-10)} ${f(GND.y+47)} H ${f(GND.x+10)} M ${f(GND.x-4)} ${f(GND.y+54)} H ${f(GND.x+4)}" stroke="${INK}" stroke-width="3" fill="none"/>
-  <text x="${f(GND.x-22)}" y="${f(GND.y+50)}" text-anchor="end" class="m-small" fill="${INK}">GND</text>
+  <!-- Masse de la carte -->
+  ${gndSvg}
+  ${pinTags}
 
   <!-- Points de connexion -->
   ${dot(A0,RED)} ${dot(A1,BLUE)} ${dot(GND,INK)}
@@ -2413,7 +2398,6 @@ Implement a real-time digital signal acquisition and processing system using Ard
       signal_sine: "Senoidal",
       signal_square: "Cuadrada",
       signal_tri: "Triangular",
-      force_range: "Rango ampliado ±10 V",
       board_label: "Placa",
       adc_sat: "Fuera de 0 … {V} V: el ADC satura y x[n] queda recortado (la resistencia de 10 kΩ protege la entrada).",
       vmax_label: "V<sub>max</sub> (V)",
@@ -2497,7 +2481,6 @@ Implement a real-time digital signal acquisition and processing system using Ard
       signal_sine: "Sinusoïdale",
       signal_square: "Carrée",
       signal_tri: "Triangulaire",
-      force_range: "Plage étendue ±10 V",
       board_label: "Carte",
       adc_sat: "Hors de 0 … {V} V : le CAN sature et x[n] est écrêté (la résistance de 10 kΩ protège l’entrée).",
       vmax_label: "V<sub>max</sub> (V)",
@@ -2581,7 +2564,6 @@ Implement a real-time digital signal acquisition and processing system using Ard
       signal_sine: "Sinusoidal",
       signal_square: "Square",
       signal_tri: "Triangular",
-      force_range: "Extended range ±10 V",
       board_label: "Board",
       adc_sat: "Outside 0 … {V} V: the ADC saturates and x[n] is clipped (the 10 kΩ resistor protects the input).",
       vmax_label: "V<sub>max</sub> (V)",
@@ -3030,7 +3012,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
 
   // Vmin / Vmax : de −1 V à Vref + 1 V (au-delà de 0 … Vref le CAN sature ; la résistance de 10 kΩ
   // protège l'entrée), ou ±10 V en plage étendue
-  function step3VRange() { const V = boardCfg().vref; return step3State.limit ? [-1, V + 1] : [-10, 10]; }
+  function step3VRange() { const V = boardCfg().vref; return [-1, V + 1]; }
   function step3SetVminVmax(vmin, vmax, moved) {
     const [lo, hi] = step3VRange();
     vmin = Math.max(lo, Math.min(hi, vmin));
@@ -4142,11 +4124,6 @@ Implement a real-time digital signal acquisition and processing system using Ard
                   </select>
                 </div>
                 <div class="step3-group">
-                  <div class="step3-checks">
-                    <label><input type="checkbox" id="step3LimitRange" ${S.limit ? '' : 'checked'}><span>${t('force_range')}</span></label>
-                  </div>
-                </div>
-                <div class="step3-group">
                   <div class="step3-row"><span>${t('vmax_label')}</span></div>
                   <div class="step3-range-row">
                     <input type="range" id="step3VmaxSlider" min="${step3VRange()[0]}" max="${step3VRange()[1]}" step="0.1" value="${S.vmax}">
@@ -4377,6 +4354,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
 
   // Initialize Step 3 event listeners
   function initStep3() {
+    step3State.limit = true;   // plage −1 V … Vref + 1 V (la plage ±10 V n'existe plus)
     if (step3State.Fs > boardCfg().fsMax) step3State.Fs = boardCfg().fsMax;
     step3SetVminVmax(step3State.vmin, step3State.vmax, 'max');   // bornes de la carte + avertissement de saturation
     // Signal type
@@ -4389,12 +4367,6 @@ Implement a real-time digital signal acquisition and processing system using Ard
     // Carte
     document.querySelectorAll('.board-pill button').forEach(btn => btn.addEventListener('click', () => setBoard(btn.dataset.board)));
 
-    // Plage étendue ±10 V (case cochée) ou −1 V … Vref + 1 V
-    document.getElementById('step3LimitRange').addEventListener('change', e => {
-      step3State.limit = !e.target.checked;
-      step3ApplyLimitImmediately();
-      step3DrawAll();
-    });
 
     // Vmin / Vmax (le signal est décrit par ses extrêmes ; Vpp et décalage en sont déduits)
     const syncVmax = v => { step3SetVminVmax(step3State.vmin, step3ParseNum(v, step3State.vmax), 'max'); step3DrawAll(); };
