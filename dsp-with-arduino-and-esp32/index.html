@@ -1078,7 +1078,7 @@
     }
 
     /* Diagramme de blocs (étape 4) */
-    .step4-block-diagram{ display:block; width:100%; max-width:760px; height:auto; aspect-ratio:760 / 112; flex:0 0 auto; margin:2px 0 10px; font-family:var(--font); }
+    .step4-block-diagram{ display:block; width:100%; height:auto; flex:0 0 auto; margin:2px 0 10px; font-family:var(--font); }
     .step4-block-diagram .bd-block{ fill:var(--accent-soft); stroke:var(--accent-strong, var(--accent)); stroke-width:2; }
     .step4-block-diagram .bd-name{ font-size:19px; font-weight:700; fill:var(--fg); }
     .step4-block-diagram .bd-math{ font-size:17px; font-style:italic; fill:var(--fg); }
@@ -4730,7 +4730,6 @@ Implement a real-time digital signal acquisition and processing system using Ard
       lastconfig_title: 'Última config. enviada a la placa',
       firmware_note: 'Para docentes: el programa ya está cargado en las placas del TP. Para preparar otra placa:',
       no_config_sent: 'Ninguna configuración enviada',
-      bd_adc: 'ADC', bd_filter: 'Filtro', bd_delay: 'Retardo', bd_dac: 'DAC',
       desc_x: 'entrada del ADC (muestra n)',
       desc_y: 'salida del filtro (muestra n)',
       desc_yout: 'salida del DAC (muestra n)'
@@ -4776,7 +4775,6 @@ Implement a real-time digital signal acquisition and processing system using Ard
       lastconfig_title: 'Dernière config. envoyée à la carte',
       firmware_note: 'Pour les enseignants : le programme est déjà chargé dans les cartes du TP. Pour préparer une autre carte :',
       no_config_sent: 'Aucune configuration envoyée',
-      bd_adc: 'CAN', bd_filter: 'Filtre', bd_delay: 'Retard', bd_dac: 'CNA',
       desc_x: 'entrée du CAN (échantillon n)',
       desc_y: 'sortie du filtre (échantillon n)',
       desc_yout: 'sortie du CNA (échantillon n)'
@@ -4822,7 +4820,6 @@ Implement a real-time digital signal acquisition and processing system using Ard
       lastconfig_title: 'Last config. sent to the board',
       firmware_note: 'For teachers: the program is already loaded on the lab boards. To prepare another board:',
       no_config_sent: 'No configuration sent',
-      bd_adc: 'ADC', bd_filter: 'Filter', bd_delay: 'Delay', bd_dac: 'DAC',
       desc_x: 'ADC input (sample n)',
       desc_y: 'filter output (sample n)',
       desc_yout: 'DAC output (sample n)'
@@ -5041,41 +5038,66 @@ Implement a real-time digital signal acquisition and processing system using Ard
     });
   }
 
-  // Diagramme de blocs de la chaîne numérique (étape 4), sans valeurs numériques :
-  // x(t) → CAN → x[n] → filtre H(z) → y[n] → retard z⁻¹ → y_OUT[n] → CNA → y_OUT(t)
+  // Diagramme de blocs du filtre (forme directe I), sans valeurs numériques : ligne à retards de x[n]
+  // et gains b_k à gauche, sommateurs au centre, retards de y[n] et gains −a_k à droite, puis le retard
+  // d'un échantillon de la sortie (y_OUT[n] = y[n−1]). Au-delà de 5 lignes : 0, 1, 2, ⋮, dernière.
   // Emplacement : 'before-equation' (au-dessus de l'équation) ou 'after-table' (sous la table des coefficients)
   const STEP4_BLOCK_DIAGRAM_POS = 'before-equation';
-  function step4BlockDiagram() {
-    const W = 760, H = 112, bw = 98, bh = 48, y0 = 26, gap = (W - 4 * bw) / 5;
-    const blocks = [
-      { t: step4t('bd_adc') },
-      { t: step4t('bd_filter'), m: 'H(z)' },
-      { t: step4t('bd_delay'), m: 'z<tspan dy="-7" font-size="12">−1</tspan>' },
-      { t: step4t('bd_dac') }
-    ];
-    const sig = ['x(t)', 'x[n]', 'y[n]', 'y<tspan dy="5" font-size="12">OUT</tspan><tspan dy="-5">[n]</tspan>',
-                 'y<tspan dy="5" font-size="12">OUT</tspan><tspan dy="-5">(t)</tspan>'];
-    const bx = i => gap + i * (bw + gap);
-    const yc = y0 + bh / 2;
+  function step4BlockDiagram(b, a) {
+    const nb = b.length, na = a.length, R = Math.max(nb, na);
+    const rows = R <= 5 ? [...Array(R).keys()] : [0, 1, 2, null, R - 1];   // null : ligne « ⋮ »
+    const W = 640, TOP = 40, RH = 58, H = TOP + (rows.length - 1) * RH + 30;
+    const xIn = 14, xL = 92, xS = 262, xR = 432, xD = 520, xOut = 568;
+    const Y = i => TOP + i * RH;
+    const sub = (n, k) => `${n}<tspan dy="5" font-size="13">${k}</tspan>`;
+    const box = (cx, cy) => `<rect x="${cx - 19}" y="${cy - 14}" width="38" height="28" rx="4" class="bd-block"/>` +
+      `<text x="${cx}" y="${cy + 6}" text-anchor="middle" class="bd-math">z<tspan dy="-7" font-size="12">−1</tspan></text>`;
+    const line = (x1, y1, x2, y2, arrow, dashed) =>
+      `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="bd-wire"${dashed ? ' stroke-dasharray="3 4"' : ''}${arrow ? ' marker-end="url(#bdArrow)"' : ''}/>`;
+    const dot = (x, y) => `<circle cx="${x}" cy="${y}" r="3.5" class="bd-arrowhead"/>`;
+    const tri = (x0, y, dir) => { const x1 = x0 + 40 * dir;   // gain : triangle pointé dans le sens du signal
+      return `<path d="M ${x0} ${y - 13} L ${x1} ${y} L ${x0} ${y + 13} Z" class="bd-block"/>`; };
     let g = '';
-    for (let i = 0; i < 5; i++) {                     // flèches et noms des signaux
-      const x1 = i === 0 ? 4 : bx(i - 1) + bw, x2 = i === 4 ? W - 4 : bx(i);
-      g += `<line x1="${x1}" y1="${yc}" x2="${x2 - 2}" y2="${yc}" class="bd-wire" marker-end="url(#bdArrow)"/>`;
-      g += `<text x="${(x1 + x2) / 2}" y="${yc - 10}" text-anchor="middle" class="bd-sig">${sig[i]}</text>`;
-    }
-    blocks.forEach((b, i) => {
-      const x = bx(i), cx = x + bw / 2;
-      g += `<rect x="${x}" y="${y0}" width="${bw}" height="${bh}" rx="7" class="bd-block"/>`;
-      g += b.m
-        ? `<text x="${cx}" y="${yc - 4}" text-anchor="middle" class="bd-name">${b.t}</text><text x="${cx}" y="${yc + 17}" text-anchor="middle" class="bd-math">${b.m}</text>`
-        : `<text x="${cx}" y="${yc + 7}" text-anchor="middle" class="bd-name">${b.t}</text>`;
+    // entrée et sortie
+    g += `<text x="${xIn}" y="${Y(0) - 10}" class="bd-sig">x[n]</text>` + line(xIn, Y(0), xL, Y(0), false) + dot(xL, Y(0));
+    g += line(xS + 12, Y(0), xR, Y(0), false) + dot(xR, Y(0)) + `<text x="${xR + 8}" y="${Y(0) - 10}" class="bd-sig">y[n]</text>`;
+    g += line(xR, Y(0), xD - 19, Y(0), true) + box(xD, Y(0)) + line(xD + 19, Y(0), xOut, Y(0), true);
+    g += `<text x="${xOut + 4}" y="${Y(0) + 6}" class="bd-sig">y<tspan dy="5" font-size="13">OUT</tspan><tspan dy="-5">[n]</tspan></text>`;
+    rows.forEach((k, i) => {
+      const y = Y(i);
+      if (k === null) {                                   // ligne « ⋮ »
+        [xL, xS, xR].forEach(x => { if (x !== xR || na > 2) g += `<text x="${x}" y="${y + 8}" text-anchor="middle" class="bd-name">⋮</text>`; });
+        return;
+      }
+      const last = i === rows.length - 1;
+      // branche directe : x[n−k] → b_k → sommateur
+      if (k < nb) {
+        if (k > 0) g += dot(xL, y);
+        g += line(xL, y, xL + 40, y) + tri(xL + 40, y, 1) + line(xL + 80, y, last ? xS : xS - 12, y, !last);
+        g += `<text x="${xL + 56}" y="${y - 17}" text-anchor="middle" class="bd-math">${sub('b', k)}</text>`;
+      }
+      // branche de retour : y[n−k] → −a_k → sommateur
+      if (k >= 1 && k < na) {
+        g += dot(xR, y) + line(xR, y, xR - 40, y) + tri(xR - 40, y, -1) + line(xR - 80, y, last ? xS : xS + 12, y, !last);
+        g += `<text x="${xR - 56}" y="${y - 17}" text-anchor="middle" class="bd-math">−${sub('a', k)}</text>`;
+      }
+      // sommateur (sauf dernière ligne : le terme remonte directement)
+      if (!last) g += `<circle cx="${xS}" cy="${y}" r="12" class="bd-block"/><text x="${xS}" y="${y + 6}" text-anchor="middle" class="bd-name">+</text>`;
     });
-    // horloge d'échantillonnage commune au CAN et au CNA
-    const xa = bx(0) + bw / 2, xd = bx(3) + bw / 2, yF = y0 + bh + 24;
-    g += `<path d="M ${xa} ${yF} V ${y0 + bh + 3} M ${xd} ${yF} V ${y0 + bh + 3} M ${xa} ${yF} H ${xd}" class="bd-clock"/>`;
-    g += `<path d="M ${xa - 4} ${y0 + bh + 9} L ${xa} ${y0 + bh + 3} L ${xa + 4} ${y0 + bh + 9} M ${xd - 4} ${y0 + bh + 9} L ${xd} ${y0 + bh + 3} L ${xd + 4} ${y0 + bh + 9}" class="bd-clock" style="stroke-dasharray:none"/>`;
-    g += `<text x="${(xa + xd) / 2}" y="${yF + 5}" text-anchor="middle" class="bd-fs">F<tspan dy="4" font-size="11">s</tspan></text>`;
-    return `<svg class="step4-block-diagram" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img">
+    // liaisons verticales : retards (gauche, droite) et somme qui remonte (centre)
+    for (let i = 1; i < rows.length; i++) {
+      const y0 = Y(i - 1), y1 = Y(i), kPrev = rows[i - 1], k = rows[i];
+      const dashed = kPrev === null || k === null;
+      const ym = (y0 + y1) / 2;
+      const kk = k === null ? rows[i - 1] + 1 : k;          // indice de la branche du dessous
+      if (kk < nb) g += dashed ? line(xL, y0 + (kPrev === null ? 10 : 0), xL, y1 - (k === null ? 18 : 0), false, true)
+                               : line(xL, y0, xL, ym - 14) + box(xL, ym) + line(xL, ym + 14, xL, y1);
+      if (kk >= 1 && kk < na) g += dashed ? line(xR, y0 + (kPrev === null ? 10 : 0), xR, y1 - (k === null ? 18 : 0), false, true)
+                                          : line(xR, y0, xR, ym - 14) + box(xR, ym) + line(xR, ym + 14, xR, y1);
+      g += dashed ? line(xS, y1 - (k === null ? 18 : 0), xS, y0 + (kPrev === null ? 10 : 12), false, true)
+                  : line(xS, y1 - (i === rows.length - 1 ? 0 : 12), xS, y0 + 12, true);
+    }
+    return `<svg class="step4-block-diagram" viewBox="0 0 ${W} ${H}" style="aspect-ratio:${W} / ${H}; max-width:${W}px" xmlns="http://www.w3.org/2000/svg" role="img">
       <defs><marker id="bdArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
         <path d="M 0 0 L 10 5 L 0 10 z" class="bd-arrowhead"/></marker></defs>${g}</svg>`;
   }
@@ -5407,7 +5429,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
         <!-- Difference Equation Card -->
         <div class="step4-card step4-equation">
           <p class="step3-plot-title">${step4t('equation_title')}</p>
-          ${STEP4_BLOCK_DIAGRAM_POS === 'before-equation' ? step4BlockDiagram() : ''}
+          ${STEP4_BLOCK_DIAGRAM_POS === 'before-equation' ? step4BlockDiagram(b, a) : ''}
           <div class="step4-equation-display">
             <div style="margin-bottom:4px">${equation.filter}</div>
             <div style="margin-bottom:8px">${equation.dac}</div>
@@ -5423,7 +5445,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
             </thead>
             <tbody>${tableRows}</tbody>
           </table>
-          ${STEP4_BLOCK_DIAGRAM_POS === 'after-table' ? step4BlockDiagram() : ''}
+          ${STEP4_BLOCK_DIAGRAM_POS === 'after-table' ? step4BlockDiagram(b, a) : ''}
         </div>
 
         <!-- Console Card -->
