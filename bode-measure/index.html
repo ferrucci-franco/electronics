@@ -104,7 +104,7 @@
   .comp-fields input[type=text]{width:100%; text-align:right; font-variant-numeric:tabular-nums}
   .comp-fields input.invalid{border-color:var(--invalid); box-shadow:0 0 0 1px var(--invalid) inset}
   .schematic{width:340px; max-width:100%; color:var(--fg); justify-self:center}
-  .schematic svg{width:100%; height:auto; display:block}
+  .schematic svg{height:auto; display:block; margin:0 auto}
   .schematic text{font-family:ui-sans-serif,system-ui,"Segoe UI",Roboto,Arial,sans-serif; font-size:13px; fill:var(--fg)}
   .schematic .sub{font-size:9px}
   .schematic .sign{font-size:15px; font-weight:700}
@@ -203,7 +203,8 @@
     #report .page{break-after:page; page-break-after:always}
     #report .page:last-child{break-after:auto; page-break-after:auto}
     #report h1{font-size:15pt; margin:0 0 4mm}
-    #report h2{font-size:12pt; margin:3mm 0 2mm; padding:1.5mm 2.5mm; background:#eef2f8; border-radius:1.5mm}
+    #report h2{font-size:12pt; margin:3mm 0 1mm; padding:1.5mm 2.5mm; background:#eef2f8; border-radius:1.5mm}
+    #report p.comps{margin:0 0 2mm; padding:0 2.5mm; font-size:10pt}
     #report .meta{display:grid; grid-template-columns:auto 1fr auto 1fr; gap:1.5mm 4mm; margin:0 0 2mm; font-size:10pt}
     #report .meta dt{color:#444; margin:0} #report .meta dd{margin:0; font-weight:600}
     #report .body{display:grid; grid-template-columns:minmax(0,1fr) 98mm; gap:3mm; align-items:start}
@@ -252,6 +253,8 @@
               <option value="rc" id="optRc">RC</option>
               <option value="rlc" id="optRlc">RLC série</option>
             </select>
+            <label for="outSel" id="outLbl" class="span circuit-lbl">V<sub>out</sub> mesurée aux bornes de</label>
+            <select id="outSel" class="span"></select>
             <label for="compR" id="lblR">R (Ω)</label>
             <input id="compR" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" />
             <label for="compC" id="lblC">C (nF)</label>
@@ -263,6 +266,7 @@
           </div>
           <div class="schematic" id="schematic" aria-hidden="true"></div>
         </div>
+        <div class="muted hint" id="outHint"></div>
         <div class="muted hint" id="circuitHint"></div>
 
         <!-- hidden theory curve (Ctrl+Shift+click) -->
@@ -373,19 +377,23 @@ document.addEventListener('DOMContentLoaded', () => {
       title:'Relevé de diagramme de Bode — RC / RLC série',
       circuitCard:'Circuit', circuitType:'Type de circuit', rc:'RC', rlc:'RLC série',
       R:'R (Ω)', C:'C (nF)', L:'L (mH)', RL:'R<sub>L</sub> bobine (Ω)',
-      circuitHint:'Changer de circuit n’efface rien : chaque circuit garde ses propres valeurs de composants et son propre tableau de mesures.',
+      circuitHint:'Changer de circuit ou de composant mesuré n’efface rien : chaque combinaison garde son propre tableau de mesures (les valeurs des composants sont propres à chaque circuit).',
       nMeas:n => n === 1 ? '1 mesure' : n + ' mesures',
+      outLbl:'V<sub>out</sub> mesurée aux bornes de', outOpt:{C:'C (condensateur)', R:'R (résistance)', L:'L (bobine)'},
+      outHint:'Placez le composant mesuré côté masse, comme sur le schéma : les deux voies de l’oscilloscope ont une masse commune.',
+      outHintL:'Aux bornes de la bobine réelle, la tension mesurée inclut sa résistance R<sub>L</sub>.',
+      reportOut:'V<sub>out</sub> aux bornes de', csvOut:'V_out aux bornes de',
       measHint:'Mesurez V<sub>in</sub> aux bornes d’entrée du circuit (voie 1), pas sur l’affichage du générateur.',
-      dtNote:'ΔT = temps entre le passage montant de l’entrée et le passage montant suivant de la sortie (la sortie est en retard : ΔT &gt; 0, φ &lt; 0).',
-      dtTip:'ΔT = temps entre le passage montant de l’entrée et le passage montant suivant de la sortie (la sortie est en retard : ΔT > 0, φ < 0).',
+      dtNote:'ΔT = temps entre le passage montant de l’entrée et le passage montant suivant de la sortie (sortie en retard : ΔT &gt; 0, φ &lt; 0). Si la sortie est en avance, saisissez ΔT &lt; 0. Dans tous les cas, φ est ramené à ±180° autour de la plage attendue pour ce montage.',
+      dtTip:'ΔT = temps entre le passage montant de l’entrée et le passage montant suivant de la sortie (sortie en retard : ΔT > 0, φ < 0 ; sortie en avance : ΔT < 0).',
       veTip:'Tension d’entrée crête à crête (voie 1), mesurée aux bornes du circuit.',
-      vsTip:'Tension de sortie crête à crête (voie 2), aux bornes de C.',
+      vsTip:o => `Tension de sortie crête à crête (voie 2), aux bornes de ${o}.`,
       gTip:'G = V_out,pp / V_in,pp', gdbTip:'G_dB = 20·log10(G)', phiTip:'φ = −360 · f · ΔT  (ΔT en secondes)',
       tableCard:'Mesures', addRow:'+ Ajouter une ligne', delRow:'Supprimer cette ligne',
       rowsHint:'Virgule ou point décimal acceptés. L’ordre des lignes est libre : le tracé les classe par fréquence.',
       reportCard:'Rapport', names:'Noms', group:'Groupe / paillasse', date:'Date',
       print:'Imprimer le rapport (PDF)', csv:'Exporter CSV', newSeries:'Nouvelle série de mesures',
-      reportHint:'Le rapport et le CSV contiennent chaque circuit qui a des mesures (RC, RLC ou les deux, une page par circuit).',
+      reportHint:'Le rapport et le CSV contiennent chaque combinaison circuit / composant mesuré qui a des mesures (une page par combinaison).',
       confirmText:'Effacer toutes les mesures (RC et RLC), les valeurs des composants et les noms ?', confirmYes:'Oui, tout effacer', confirmNo:'Annuler',
       theory:'Afficher la courbe théorique', theoryTitle:'Valeurs caractéristiques (théorie)',
       fc:'Fréquence de coupure f<sub>c</sub>', f0:'Fréquence de résonance f<sub>0</sub>', Q:'Facteur de qualité Q',
@@ -401,19 +409,23 @@ document.addEventListener('DOMContentLoaded', () => {
       title:'Bode Plot Measurement Sheet — RC / series RLC',
       circuitCard:'Circuit', circuitType:'Circuit type', rc:'RC', rlc:'Series RLC',
       R:'R (Ω)', C:'C (nF)', L:'L (mH)', RL:'R<sub>L</sub> coil (Ω)',
-      circuitHint:'Switching circuit erases nothing: each circuit keeps its own component values and its own measurement table.',
+      circuitHint:'Switching circuit or measured component erases nothing: each combination keeps its own measurement table (component values belong to each circuit).',
       nMeas:n => n === 1 ? '1 measurement' : n + ' measurements',
+      outLbl:'V<sub>out</sub> measured across', outOpt:{C:'C (capacitor)', R:'R (resistor)', L:'L (coil)'},
+      outHint:'Put the measured component on the ground side, as in the schematic: both oscilloscope channels share a common ground.',
+      outHintL:'Across the real coil, the measured voltage includes its resistance R<sub>L</sub>.',
+      reportOut:'V<sub>out</sub> across', csvOut:'V_out across',
       measHint:'Measure V<sub>in</sub> at the circuit input terminals (channel 1), not on the generator display.',
-      dtNote:'ΔT = time between a rising zero crossing of the input and the next rising zero crossing of the output (the output lags: ΔT &gt; 0, φ &lt; 0).',
-      dtTip:'ΔT = time between a rising zero crossing of the input and the next rising zero crossing of the output (the output lags: ΔT > 0, φ < 0).',
+      dtNote:'ΔT = time between a rising zero crossing of the input and the next rising zero crossing of the output (output lags: ΔT &gt; 0, φ &lt; 0). If the output leads, type ΔT &lt; 0. In every case φ is brought within ±180° of the range expected for this set-up.',
+      dtTip:'ΔT = time between a rising zero crossing of the input and the next rising zero crossing of the output (output lags: ΔT > 0, φ < 0; output leads: ΔT < 0).',
       veTip:'Input peak-to-peak voltage (channel 1), measured at the circuit terminals.',
-      vsTip:'Output peak-to-peak voltage (channel 2), across C.',
+      vsTip:o => `Output peak-to-peak voltage (channel 2), across ${o}.`,
       gTip:'G = V_out,pp / V_in,pp', gdbTip:'G_dB = 20·log10(G)', phiTip:'φ = −360 · f · ΔT  (ΔT in seconds)',
       tableCard:'Measurements', addRow:'+ Add a row', delRow:'Delete this row',
       rowsHint:'Decimal comma or point accepted. Rows can be typed in any order: the plot sorts them by frequency.',
       reportCard:'Report', names:'Names', group:'Group / bench', date:'Date',
       print:'Print the report (PDF)', csv:'Export CSV', newSeries:'New measurement series',
-      reportHint:'The report and the CSV include every circuit that has measurements (RC, RLC or both, one page per circuit).',
+      reportHint:'The report and the CSV include every circuit / measured-component combination that has measurements (one page per combination).',
       confirmText:'Clear all measurements (RC and RLC), component values and names?', confirmYes:'Yes, clear everything', confirmNo:'Cancel',
       theory:'Show the theoretical curve', theoryTitle:'Characteristic values (theory)',
       fc:'Cutoff frequency f<sub>c</sub>', f0:'Resonance frequency f<sub>0</sub>', Q:'Quality factor Q',
@@ -429,19 +441,23 @@ document.addEventListener('DOMContentLoaded', () => {
       title:'Hoja de medición de diagrama de Bode — RC / RLC serie',
       circuitCard:'Circuito', circuitType:'Tipo de circuito', rc:'RC', rlc:'RLC serie',
       R:'R (Ω)', C:'C (nF)', L:'L (mH)', RL:'R<sub>L</sub> bobina (Ω)',
-      circuitHint:'Cambiar de circuito no borra nada: cada circuito conserva sus propios valores de componentes y su propia tabla de mediciones.',
+      circuitHint:'Cambiar de circuito o de componente medido no borra nada: cada combinación conserva su propia tabla de mediciones (los valores de los componentes son propios de cada circuito).',
       nMeas:n => n === 1 ? '1 medición' : n + ' mediciones',
+      outLbl:'V<sub>out</sub> medida en bornes de', outOpt:{C:'C (capacitor)', R:'R (resistencia)', L:'L (bobina)'},
+      outHint:'Coloque el componente medido del lado de masa, como en el esquema: los dos canales del osciloscopio tienen una masa común.',
+      outHintL:'En bornes de la bobina real, la tensión medida incluye su resistencia R<sub>L</sub>.',
+      reportOut:'V<sub>out</sub> en bornes de', csvOut:'V_out en bornes de',
       measHint:'Mida V<sub>in</sub> en los bornes de entrada del circuito (canal 1), no en la pantalla del generador.',
-      dtNote:'ΔT = tiempo entre el cruce ascendente de la entrada y el siguiente cruce ascendente de la salida (la salida está retrasada: ΔT &gt; 0, φ &lt; 0).',
-      dtTip:'ΔT = tiempo entre el cruce ascendente de la entrada y el siguiente cruce ascendente de la salida (la salida está retrasada: ΔT > 0, φ < 0).',
+      dtNote:'ΔT = tiempo entre el cruce ascendente de la entrada y el siguiente cruce ascendente de la salida (salida retrasada: ΔT &gt; 0, φ &lt; 0). Si la salida está adelantada, escriba ΔT &lt; 0. En todos los casos φ se lleva a ±180° alrededor del rango esperado para este montaje.',
+      dtTip:'ΔT = tiempo entre el cruce ascendente de la entrada y el siguiente cruce ascendente de la salida (salida retrasada: ΔT > 0, φ < 0; salida adelantada: ΔT < 0).',
       veTip:'Tensión de entrada pico a pico (canal 1), medida en los bornes del circuito.',
-      vsTip:'Tensión de salida pico a pico (canal 2), en los bornes de C.',
+      vsTip:o => `Tensión de salida pico a pico (canal 2), en bornes de ${o}.`,
       gTip:'G = V_out,pp / V_in,pp', gdbTip:'G_dB = 20·log10(G)', phiTip:'φ = −360 · f · ΔT  (ΔT en segundos)',
       tableCard:'Mediciones', addRow:'+ Agregar una fila', delRow:'Eliminar esta fila',
       rowsHint:'Se acepta coma o punto decimal. Las filas pueden escribirse en cualquier orden: el gráfico las ordena por frecuencia.',
       reportCard:'Informe', names:'Nombres', group:'Grupo / banco', date:'Fecha',
       print:'Imprimir el informe (PDF)', csv:'Exportar CSV', newSeries:'Nueva serie de mediciones',
-      reportHint:'El informe y el CSV incluyen cada circuito que tenga mediciones (RC, RLC o ambos, una página por circuito).',
+      reportHint:'El informe y el CSV incluyen cada combinación circuito / componente medido que tenga mediciones (una página por combinación).',
       confirmText:'¿Borrar todas las mediciones (RC y RLC), los valores de los componentes y los nombres?', confirmYes:'Sí, borrar todo', confirmNo:'Cancelar',
       theory:'Mostrar la curva teórica', theoryTitle:'Valores característicos (teoría)',
       fc:'Frecuencia de corte f<sub>c</sub>', f0:'Frecuencia de resonancia f<sub>0</sub>', Q:'Factor de calidad Q',
@@ -455,15 +471,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // ========= State: one measurement set (components + table) per circuit =========
+  // ========= State: per circuit, its component values and one table per measured component =========
+  // components across which V_out can be measured (L = the real coil, its resistance R_L included)
+  const OUTS = {rc:['C', 'R'], rlc:['C', 'R', 'L']};
+  // expected phase range of each set-up (continuous theoretical phase); measured φ is brought within ±180° of its centre
+  const PHASE_RANGE = {rc:{C:[-90, 0], R:[0, 90]}, rlc:{C:[-180, 0], R:[-90, 90], L:[0, 180]}};
   const blankRow = () => ({f:'', ve:'', vs:'', dt:''});
   const blankRows = () => Array.from({length:DEFAULT_ROWS}, blankRow);
-  const defaultCircuit = kind => kind === 'rc'
-    ? {R:'1000', C:'100', rows:blankRows()}
-    : {R:'1000', C:'100', L:'10', RL:'0', rows:blankRows()};
+  const defaultCircuit = kind => ({
+    ...(kind === 'rc' ? {R:'1000', C:'100'} : {R:'1000', C:'100', L:'10', RL:'0'}),
+    out:'C', rows:Object.fromEntries(OUTS[kind].map(o => [o, blankRows()]))
+  });
   const defaultState = () => ({circuit:'rc', rc:defaultCircuit('rc'), rlc:defaultCircuit('rlc'), names:'', group:'', fitBode:true});
   let state = defaultState();
   const cur = () => state[state.circuit];
+  const rowsOf = (kind, out) => state[kind].rows[out];
+  const curRows = () => rowsOf(state.circuit, cur().out);
   let theoryOn = false;          // never persisted: always off after a reload
   let LANG = 'fr';
   let plotsBuilt = false;
@@ -495,16 +518,21 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ========= Row computation =========
-  function computeRow(row){
+  function computeRow(row, kind = state.circuit, out = state[kind].out){
     const f = parseNum(row.f), ve = parseNum(row.ve), vs = parseNum(row.vs), dt = parseNum(row.dt);
-    const out = {f, ve, vs, dt, G:NaN, GdB:NaN, phi:NaN};
+    const res = {f, ve, vs, dt, G:NaN, GdB:NaN, phi:NaN};
     const fOk = Number.isFinite(f) && f > 0;
     if(fOk && Number.isFinite(ve) && ve > 0 && Number.isFinite(vs) && vs >= 0){
-      out.G = vs / ve;
-      if(out.G > 0) out.GdB = 20 * log10(out.G);
+      res.G = vs / ve;
+      if(res.G > 0) res.GdB = 20 * log10(res.G);
     }
-    if(fOk && Number.isFinite(dt)) out.phi = -360 * f * dt * 1e-6;
-    return out;
+    if(fOk && Number.isFinite(dt)){
+      // a phase is defined modulo 360°: take the branch within ±180° of the set-up's expected range,
+      // so a leading output works whether ΔT is typed negative or up to the next rising crossing
+      const raw = -360 * f * dt * 1e-6, pr = PHASE_RANGE[kind][out], ctr = (pr[0] + pr[1]) / 2;
+      res.phi = raw - 360 * Math.ceil((raw - ctr - 180) / 360);
+    }
+    return res;
   }
   // is a non-empty cell value invalid? (empty cells are simply "not yet measured")
   function cellInvalid(key, raw){
@@ -517,11 +545,15 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   const COLS = ['f', 've', 'vs', 'dt'];
   const rowHasData = r => COLS.some(k => String(r[k]).trim() !== '');
-  const dataCount = kind => state[kind].rows.filter(rowHasData).length;
-  // circuits that go into the report / CSV: those with data, else the current one
-  function circuitsWithData(){
-    const k = KINDS.filter(kind => dataCount(kind) > 0);
-    return k.length ? k : [state.circuit];
+  // measurements of one set-up, or of all the set-ups of a circuit when out is omitted
+  const dataCount = (kind, out) => out
+    ? rowsOf(kind, out).filter(rowHasData).length
+    : OUTS[kind].reduce((n, o) => n + dataCount(kind, o), 0);
+  // set-ups (circuit + measured component) that go into the report / CSV: those with data, else the current one
+  function configsWithData(){
+    const list = [];
+    KINDS.forEach(kind => OUTS[kind].forEach(out => { if(dataCount(kind, out) > 0) list.push({kind, out}); }));
+    return list.length ? list : [{kind:state.circuit, out:cur().out}];
   }
 
   // ========= Components / theory =========
@@ -532,16 +564,21 @@ document.addEventListener('DOMContentLoaded', () => {
                (rc || (Number.isFinite(L) && L > 0 && Number.isFinite(RL) && RL >= 0));
     return {ok, R, C, L, RL: rc ? 0 : RL, rc, kind};
   }
-  // H(jω) of the circuit: {mag, phaseDeg}, phase continuous (0 → −90° for RC, 0 → −180° for RLC)
-  function theoryAt(f, c){
-    const w = TWO_PI * f;
+  // H(jω) = V_out / V_in of the set-up: {mag, ph in degrees}, phase continuous (no wrapping).
+  // RC:  across C 1/(1+jωRC), across R jωRC/(1+jωRC).
+  // RLC: D = 1 − ω²LC + jω(R+R_L)C; across C 1/D, across R jωRC/D, across the coil jωC(R_L + jωL)/D.
+  function theoryAt(f, c, out = 'C'){
+    const w = TWO_PI * f, DEG = 180 / Math.PI;
     if(c.rc){
-      const x = w * c.R * c.C;
-      return {mag: 1 / Math.sqrt(1 + x*x), ph: -Math.atan(x) * 180 / Math.PI};
+      const x = w * c.R * c.C, mag = 1 / Math.sqrt(1 + x*x), ph = -Math.atan(x) * DEG;
+      return out === 'R' ? {mag: x * mag, ph: 90 + ph} : {mag, ph};
     }
     const re = 1 - w*w*c.L*c.C, im = w * (c.R + c.RL) * c.C;
-    const d = Math.hypot(re, im);
-    return {mag: d > 0 ? 1/d : Infinity, ph: -Math.atan2(im, re) * 180 / Math.PI};
+    const d = Math.hypot(re, im), den = Math.atan2(im, re) * DEG;
+    if(!(d > 0)) return {mag: Infinity, ph: out === 'C' ? -90 : out === 'R' ? 0 : 90};
+    if(out === 'R') return {mag: w * c.R * c.C / d, ph: 90 - den};
+    if(out === 'L') return {mag: w * c.C * Math.hypot(c.RL, w * c.L) / d, ph: 90 + Math.atan2(w * c.L, c.RL) * DEG - den};
+    return {mag: 1 / d, ph: -den};
   }
   function characteristic(c){
     if(c.rc) return {fc: 1 / (TWO_PI * c.R * c.C)};
@@ -569,9 +606,14 @@ document.addEventListener('DOMContentLoaded', () => {
   function cleanCircuit(kind, s){
     const d = defaultCircuit(kind);
     if(!s || typeof s !== 'object') return d;
-    const out = {R:str(s.R, d.R), C:str(s.C, d.C), rows:cleanRows(s.rows, d.rows)};
-    if(kind === 'rlc'){ out.L = str(s.L, d.L); out.RL = str(s.RL, d.RL); }
-    return out;
+    const res = {R:str(s.R, d.R), C:str(s.C, d.C), out:OUTS[kind].includes(s.out) ? s.out : 'C', rows:{}};
+    if(kind === 'rlc'){ res.L = str(s.L, d.L); res.RL = str(s.RL, d.RL); }
+    // earlier formats had a single table per circuit: it was measured across C
+    OUTS[kind].forEach(o => {
+      const src = Array.isArray(s.rows) ? (o === 'C' ? s.rows : null) : (s.rows && s.rows[o]);
+      res.rows[o] = cleanRows(src, d.rows[o]);
+    });
+    return res;
   }
   let migrated = false;
   function load(){
@@ -615,34 +657,53 @@ document.addEventListener('DOMContentLoaded', () => {
     for(let i = 0; i < n; i++) d += ` a${r} ${r} 0 0 1 ${2*r} 0`;
     return d;
   }
-  function schematicSVG(rlc){
-    const yTop = 34, yBot = 124, xIn = 92, xOut = rlc ? 334 : 300, W = rlc ? 360 : 326;
-    const xC = rlc ? 286 : 236;
-    let s = `<svg viewBox="0 0 ${W} 150" xmlns="http://www.w3.org/2000/svg">`;
+  // series parts on the top rail, and the measured branch (to ground, across the output terminals)
+  const SERIES = {rc:{C:['R'], R:['C']}, rlc:{C:['R', 'L', 'RL'], R:['L', 'RL', 'C'], L:['R', 'C']}};
+  const BRANCH = {rc:{C:['C'], R:['R']}, rlc:{C:['C'], R:['R'], L:['L', 'RL']}};
+  // one part drawn from (0,0) along +x; rotated by 90° for the vertical branch
+  function partPath(p, len){
+    if(p === 'R') return `<path d="${resistorPath(0, 0, len)}"/>`;
+    if(p === 'RL') return `<path d="${resistorPath(0, 0, len, 3, 4.5)}"/>`;
+    if(p === 'L') return `<path d="${inductorPath(0, 0, len)}"/>`;
+    const a = len/2 - 6, b = len/2 + 6;   // capacitor
+    return `<path d="M0 0 H${a}"/><path d="M${a} -14 V14"/><path d="M${b} -14 V14"/><path d="M${b} 0 H${len}"/>`;
+  }
+  const partLabel = (p, x, y, anchor) => p === 'RL'
+    ? `<text x="${x}" y="${y}" text-anchor="${anchor}" style="font-size:11px">R<tspan class="sub" dy="3" style="font-size:8px">L</tspan></text>`
+    : `<text x="${x}" y="${y}" text-anchor="${anchor}">${p}</text>`;
+  // widest drawing of each circuit, so that switching the measured component keeps the scale
+  const SCHEM_REF_W = {rc:266, rlc:362};
+  function schematicSVG(kind, out){
+    const yTop = 34, yBot = 124, xIn = 92;
+    const hLen = {R: kind === 'rc' ? 60 : 52, L:56, RL:24, C:28}, vLen = {R:50, L:44, RL:22, C:28};
+    let body = '', x = xIn + 16;
+    body += `<path d="M${xIn} ${yTop} H${x}"/>`;
+    SERIES[kind][out].forEach((p, i) => {
+      if(i){ body += `<path d="M${x} ${yTop} H${x+12}"/>`; x += 12; }
+      body += `<g transform="translate(${x} ${yTop})">${partPath(p, hLen[p])}</g>` + partLabel(p, x + hLen[p]/2, yTop - (p === 'RL' ? 12 : p === 'C' ? 20 : 14), 'middle');
+      x += hLen[p];
+    });
+    const xB = x + 24, xOut = xB + 48, W = xOut + 26;
+    body += `<path d="M${x} ${yTop} H${xOut}"/><path d="M42 95 V${yBot} H${xOut}"/>`;
+    // measured branch, centred between the rails
+    const parts = BRANCH[kind][out], total = parts.reduce((n, p) => n + vLen[p], 0) + 6 * (parts.length - 1);
+    let y = yTop + (yBot - yTop - total) / 2;
+    body += `<path d="M${xB} ${yTop} V${y}"/>`;
+    parts.forEach((p, i) => {
+      if(i){ body += `<path d="M${xB} ${y} V${y+6}"/>`; y += 6; }
+      body += `<g transform="translate(${xB} ${y}) rotate(90)">${partPath(p, vLen[p])}</g>` + partLabel(p, xB - 18, y + vLen[p]/2 + 5, 'end');
+      y += vLen[p];
+    });
+    body += `<path d="M${xB} ${y} V${yBot}"/>`;
+    let s = `<svg viewBox="0 0 ${W} 150" style="width:${(100 * W / SCHEM_REF_W[kind]).toFixed(1)}%" xmlns="http://www.w3.org/2000/svg">`;
     // generator
-    s += `<circle cx="42" cy="79" r="16"/><path d="M32 79 q5 -9 10 0 t10 0"/>`;
-    s += `<path d="M42 63 V${yTop} H${xIn}"/><path d="M42 95 V${yBot} H${xOut}"/>`;
+    s += `<circle cx="42" cy="79" r="16"/><path d="M32 79 q5 -9 10 0 t10 0"/><path d="M42 63 V${yTop} H${xIn}"/>`;
+    s += body;
     // input terminals and v_in
     s += `<circle class="node" cx="${xIn}" cy="${yTop}" r="3"/><circle class="node" cx="${xIn}" cy="${yBot}" r="3"/>`;
     s += `<text class="sign vin" x="${xIn}" y="${yTop+22}" text-anchor="middle">+</text>`;
     s += `<text class="vin" x="${xIn}" y="${(yTop+yBot)/2+5}" text-anchor="middle">v<tspan class="sub" dy="3">in</tspan></text>`;
     s += `<text class="sign vin" x="${xIn}" y="${yBot-10}" text-anchor="middle">−</text>`;
-    // top rail with components
-    let x = xIn;
-    const rLen = rlc ? 48 : 60;
-    s += `<path d="M${x} ${yTop} H${x+16}"/>`; x += 16;
-    s += `<path d="${resistorPath(x, yTop, rLen)}"/><text x="${x+rLen/2}" y="${yTop-14}" text-anchor="middle">R</text>`; x += rLen;
-    if(rlc){
-      s += `<path d="M${x} ${yTop} H${x+14}"/>`; x += 14;
-      s += `<path d="${inductorPath(x, yTop, 60)}"/><text x="${x+30}" y="${yTop-14}" text-anchor="middle">L</text>`; x += 60;
-      s += `<path d="M${x} ${yTop} H${x+10}"/>`; x += 10;
-      // the coil's own resistance: a small, short resistor
-      s += `<path d="${resistorPath(x, yTop, 24, 3, 4.5)}"/><text x="${x+12}" y="${yTop-12}" text-anchor="middle" style="font-size:11px">R<tspan class="sub" dy="3" style="font-size:8px">L</tspan></text>`; x += 24;
-    }
-    s += `<path d="M${x} ${yTop} H${xOut}"/>`;
-    // capacitor to the bottom rail
-    s += `<path d="M${xC} ${yTop} V${(yTop+yBot)/2-6}"/><path d="M${xC-14} ${(yTop+yBot)/2-6} H${xC+14}"/><path d="M${xC-14} ${(yTop+yBot)/2+6} H${xC+14}"/><path d="M${xC} ${(yTop+yBot)/2+6} V${yBot}"/>`;
-    s += `<text x="${xC-20}" y="${(yTop+yBot)/2+5}" text-anchor="end">C</text>`;
     // output terminals and v_out
     s += `<circle class="node" cx="${xOut}" cy="${yTop}" r="3"/><circle class="node" cx="${xOut}" cy="${yBot}" r="3"/>`;
     s += `<text class="sign vout" x="${xOut}" y="${yTop+22}" text-anchor="middle">+</text>`;
@@ -685,7 +746,9 @@ document.addEventListener('DOMContentLoaded', () => {
      ['tableCardTitle', t.tableCard], ['measHint', t.measHint], ['addRowBtn', t.addRow], ['rowsHint', t.rowsHint], ['dtNote', t.dtNote],
      ['fitBodeLbl', t.fitBode]
     ].forEach(([id, html]) => { const el = document.getElementById(id); if(el) el.innerHTML = html; });
-    $('#thVe').title = t.veTip; $('#thVs').title = t.vsTip; $('#thDt').title = t.dtTip;
+    $('#thVe').title = t.veTip; $('#thDt').title = t.dtTip;
+    $('#outLbl').innerHTML = t.outLbl;
+    renderOutTexts();
     $('#thG').title = t.gTip; $('#thGdb').title = t.gdbTip; $('#thPhi').title = t.phiTip;
     $('#themeBtn').title = t.theme; $('#themeBtn').setAttribute('aria-label', t.theme);
     $('.seg').setAttribute('aria-label', t.language);
@@ -719,23 +782,39 @@ document.addEventListener('DOMContentLoaded', () => {
   })();
 
   // ========= Circuit panel =========
-  const circuitSel = $('#circuitSel');
-  // the selector shows how many measurements each circuit already holds
+  const circuitSel = $('#circuitSel'), outSel = $('#outSel');
+  // both selectors show how many measurements each circuit / measured component already holds
   function renderCircuitOptions(){
     const t = TXT[LANG];
     KINDS.forEach(kind => {
       const n = dataCount(kind);
       document.getElementById(kind === 'rc' ? 'optRc' : 'optRlc').textContent = t[kind] + (n ? ` — ${t.nMeas(n)}` : '');
     });
+    const kind = state.circuit;
+    outSel.innerHTML = OUTS[kind].map(o => {
+      const n = dataCount(kind, o);
+      return `<option value="${o}">${esc(t.outOpt[o])}${n ? ' — ' + esc(t.nMeas(n)) : ''}</option>`;
+    }).join('');
+    outSel.value = cur().out;
+  }
+  function renderOutTexts(){
+    const t = TXT[LANG], out = cur().out;
+    $('#thVs').title = t.vsTip(out === 'L' ? 'L + R_L' : out);
+    $('#outHint').innerHTML = t.outHint + (out === 'L' ? ' ' + t.outHintL : '');
   }
   function applyCircuit(){
     const rlc = state.circuit === 'rlc';
     document.querySelectorAll('.rlc-only').forEach(el => el.hidden = !rlc);
-    $('#schematic').innerHTML = schematicSVG(rlc);
+    $('#schematic').innerHTML = schematicSVG(state.circuit, cur().out);
+    renderOutTexts();
   }
   circuitSel.addEventListener('change', () => {
     state.circuit = circuitSel.value;
-    syncCircuitInputs(); renderTable(); renderTheoryValues(); save(); updatePlots();
+    syncCircuitInputs(); renderCircuitOptions(); renderTable(); renderTheoryValues(); save(); updatePlots();
+  });
+  outSel.addEventListener('change', () => {
+    cur().out = outSel.value;
+    applyCircuit(); renderTable(); save(); updatePlots();
   });
   const compOk = (key, v) => Number.isFinite(v) && (key === 'R' || key === 'RL' ? v >= 0 : v > 0);
   [['compR','R'], ['compC','C'], ['compL','L'], ['compRL','RL']].forEach(([id, key]) => {
@@ -818,7 +897,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const body = $('#measBody');
   function renderTable(){
     body.innerHTML = '';
-    cur().rows.forEach((row, i) => body.appendChild(makeRow(row, i)));
+    curRows().forEach((row, i) => body.appendChild(makeRow(row, i)));
     refreshComputedCells();
   }
   function makeRow(row, i){
@@ -846,8 +925,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   function onCellInput(e){
     const inp = e.target, tr = inp.closest('tr'), i = Number(tr.dataset.index);
-    cur().rows[i][inp.dataset.key] = inp.value;
-    refreshRow(tr, cur().rows[i]);
+    curRows()[i][inp.dataset.key] = inp.value;
+    refreshRow(tr, curRows()[i]);
     renderCircuitOptions();
     save(); updatePlots();
   }
@@ -869,10 +948,10 @@ document.addEventListener('DOMContentLoaded', () => {
     tr.querySelectorAll('input').forEach(inp => inp.classList.toggle('invalid', cellInvalid(inp.dataset.key, inp.value)));
   }
   function refreshComputedCells(){
-    body.querySelectorAll('tr').forEach(tr => refreshRow(tr, cur().rows[Number(tr.dataset.index)]));
+    body.querySelectorAll('tr').forEach(tr => refreshRow(tr, curRows()[Number(tr.dataset.index)]));
   }
   function addRow(focus = true){
-    const rows = cur().rows;
+    const rows = curRows();
     rows.push(blankRow());
     const tr = makeRow(rows[rows.length-1], rows.length-1);
     body.appendChild(tr); refreshRow(tr, rows[rows.length-1]);
@@ -880,7 +959,7 @@ document.addEventListener('DOMContentLoaded', () => {
     save();
   }
   function deleteRow(i){
-    cur().rows.splice(i, 1);
+    curRows().splice(i, 1);
     renderTable(); renderCircuitOptions(); save(); updatePlots();
   }
   $('#addRowBtn').addEventListener('click', () => addRow(true));
@@ -903,10 +982,10 @@ document.addEventListener('DOMContentLoaded', () => {
     return /[";\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
   }
   // rows with at least one filled cell, sorted by frequency (unparsable frequencies last)
-  function sortedRows(kind){
-    return state[kind].rows
+  function sortedRows(kind, out){
+    return rowsOf(kind, out)
       .filter(rowHasData)
-      .map(row => ({row, c: computeRow(row)}))
+      .map(row => ({row, c: computeRow(row, kind, out)}))
       .sort((a, b) => (Number.isFinite(a.c.f) ? a.c.f : Infinity) - (Number.isFinite(b.c.f) ? b.c.f : Infinity));
   }
   function buildCSV(){
@@ -914,15 +993,16 @@ document.addEventListener('DOMContentLoaded', () => {
     lines.push([t.csvComment, new Date().toLocaleDateString(LOCALES[LANG])].map(csvEscape).join(';'));
     lines.push([t.names, state.names].map(csvEscape).join(';'));
     lines.push([t.group, state.group].map(csvEscape).join(';'));
-    circuitsWithData().forEach(kind => {
+    configsWithData().forEach(({kind, out}) => {
       const s = state[kind], c = components(kind);
       lines.push('');
       lines.push([t.reportCircuit, t[kind]].map(csvEscape).join(';'));
+      lines.push([t.csvOut, t.outOpt[out]].map(csvEscape).join(';'));
       lines.push(['R (Ω)', csvNum(c.R)].join(';'));
       lines.push(['C (nF)', csvNum(parseNum(s.C))].join(';'));
       if(kind === 'rlc'){ lines.push(['L (mH)', csvNum(parseNum(s.L))].join(';')); lines.push(['R_L (Ω)', csvNum(c.RL)].join(';')); }
       lines.push(['f (Hz)', 'V_in,pp (V)', 'V_out,pp (V)', 'ΔT (µs)', 'G (V/V)', 'G_dB (dB)', 'φ (°)'].join(';'));
-      sortedRows(kind).forEach(({row, c}) => {
+      sortedRows(kind, out).forEach(({row, c}) => {
         const raw = (key, v) => Number.isFinite(v) ? csvNum(v) : csvEscape(row[key]);
         lines.push([raw('f', c.f), raw('ve', c.ve), raw('vs', c.vs), raw('dt', c.dt),
                     Number.isFinite(c.G) ? csvNum(Number(c.G.toPrecision(3))) : '', csvNum(c.GdB, 1), csvNum(c.phi, 1)].join(';'));
@@ -934,7 +1014,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const blob = new Blob(['﻿' + buildCSV()], {type:'text/csv;charset=utf-8'});
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `bode-${circuitsWithData().map(k => k.toUpperCase()).join('-')}-${new Date().toISOString().slice(0,10)}.csv`;
+    a.download = `bode-${configsWithData().map(({kind, out}) => kind.toUpperCase() + '_' + out).join('-')}-${new Date().toISOString().slice(0,10)}.csv`;
     document.body.appendChild(a); a.click();
     setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
   });
@@ -949,8 +1029,8 @@ document.addEventListener('DOMContentLoaded', () => {
   function plotConfig(){ return {displaylogo:false, displayModeBar:false, responsive:true, showTips:false, scrollZoom:false}; }
 
   // measured points of a circuit, sorted by frequency
-  function measuredPoints(kind){
-    const pts = state[kind].rows.map(computeRow).filter(c => Number.isFinite(c.f) && c.f > 0);
+  function measuredPoints(kind, out){
+    const pts = rowsOf(kind, out).map(r => computeRow(r, kind, out)).filter(c => Number.isFinite(c.f) && c.f > 0);
     pts.sort((a, b) => a.f - b.f);
     return {
       gain: pts.filter(c => Number.isFinite(c.GdB)),
@@ -963,11 +1043,11 @@ document.addEventListener('DOMContentLoaded', () => {
     pts.forEach(c => { lo = Math.min(lo, Math.floor(log10(c.f) + 1e-9)); hi = Math.max(hi, Math.ceil(log10(c.f) - 1e-9)); });
     return [lo, hi];
   }
-  function theoryCurve(range, c){
+  function theoryCurve(range, c, out){
     const n = 400, f = [], mag = [], ph = [];
     for(let i = 0; i <= n; i++){
       const ff = Math.pow(10, range[0] + (range[1]-range[0]) * i / n);
-      const h = theoryAt(ff, c);
+      const h = theoryAt(ff, c, out);
       f.push(ff); mag.push(Number.isFinite(h.mag) && h.mag > 0 ? 20*log10(h.mag) : null); ph.push(h.ph);
     }
     return {f, mag, ph};
@@ -979,12 +1059,12 @@ document.addEventListener('DOMContentLoaded', () => {
     return `f = ${fmtF(c.f)} Hz<br>G = ${Number.isFinite(c.GdB) ? fmtG(c.G) + ' (' + fmtDec1(c.GdB) + ' dB)' : '—'}<br>φ = ${fmtDec1(c.phi)}°`;
   }
   // everything the two plots of a circuit need: data + layouts, for the screen palette or the light print palette
-  function buildPlotModel(kind, pal, sizeOpts){
-    const t = TXT[LANG], pts = measuredPoints(kind);
+  function buildPlotModel(kind, out, pal, sizeOpts){
+    const t = TXT[LANG], pts = measuredPoints(kind, out);
     const allPts = pts.gain.concat(pts.phase);
     const range = freqRangeExp(allPts);
     const c = components(kind);
-    const th = (theoryOn && c.ok) ? theoryCurve(range, c) : null;
+    const th = (theoryOn && c.ok) ? theoryCurve(range, c, out) : null;
     const ch = th ? characteristic(c) : null;
     const fMark = ch ? (c.rc ? ch.fc : ch.f0) : null;
 
@@ -1007,7 +1087,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let gLo = Math.min(-40, ...gVals), gHi = Math.max(5, ...gVals);
     gLo = Math.floor(gLo/5)*5 - 2; gHi = Math.ceil(gHi/5)*5 + 2;
     const pVals = pts.phase.map(p => p.phi).concat(th ? th.ph : []);
-    let pLo = Math.min(c.rc ? -95 : -185, ...pVals), pHi = Math.max(5, ...pVals);
+    const pr = PHASE_RANGE[kind][out];
+    let pLo = Math.min(pr[0] - 5, ...pVals), pHi = Math.max(pr[1] + 5, ...pVals);
     pLo = Math.floor(pLo/15)*15 - 5; pHi = Math.ceil(pHi/15)*15 + 5;
 
     const shapes = fMark ? [{type:'line', x0:fMark, x1:fMark, y0:0, y1:1, xref:'x', yref:'paper', layer:'below',
@@ -1023,12 +1104,12 @@ document.addEventListener('DOMContentLoaded', () => {
       title:{text:'<b>'+title+'</b>', x:0.5, xanchor:'center', y:0.985, yanchor:'top', font:{size:sizeOpts.titleSize, color:pal.fg}},
       separators: LANG === 'en' ? '.,' : ',.',
       // zoom / pan are kept while the data range does not change; a new decade, a new theory or another circuit resets the view
-      uirevision: kind + '|' + range.join('|') + '|' + yRange.join('|') + '|' + (th ? 'th' : 'no'),
+      uirevision: kind + out + '|' + range.join('|') + '|' + yRange.join('|') + '|' + (th ? 'th' : 'no'),
       shapes
     });
     return {
       mag:{data:magData, layout:base(t.bodeTitle, t.bodeYdB, [gLo, gHi], null)},
-      phase:{data:phData, layout:base(t.bodePhaseTitle, t.phaseY, [pLo, pHi], c.rc ? 15 : 30)},
+      phase:{data:phData, layout:base(t.bodePhaseTitle, t.phaseY, [pLo, pHi], pr[1] - pr[0] > 90 ? 30 : 15)},
       fMark, ch, c
     };
   }
@@ -1036,7 +1117,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function updatePlots(){
     if(!window.Plotly) return;
-    const m = buildPlotModel(state.circuit, palette(), screenSize());
+    const m = buildPlotModel(state.circuit, cur().out, palette(), screenSize());
     const cfg = plotConfig();
     Plotly.react('bodeMag', m.mag.data, m.mag.layout, cfg);
     Plotly.react('bodePhase', m.phase.data, m.phase.layout, cfg);
@@ -1196,23 +1277,24 @@ document.addEventListener('DOMContentLoaded', () => {
     $('#report').innerHTML = '';
     const t = TXT[LANG];
     const printSize = {margin:{l:50, r:14, t:54, b:44}, titleSize:15, legendSize:11};
-    const kinds = circuitsWithData();
+    const configs = configsWithData();
     const meta = `<h1>${esc(t.title)}</h1>
       <dl class="meta">
         <dt>${esc(t.names)}</dt><dd>${esc(state.names) || '—'}</dd>
         <dt>${esc(t.date)}</dt><dd>${esc($('#dateVal').textContent)}</dd>
         <dt>${esc(t.group)}</dt><dd>${esc(state.group) || '—'}</dd>
-        <dt>${esc(t.reportCircuit)}</dt><dd>${kinds.map(k => t[k]).join(' + ')}</dd>
+        <dt>${esc(t.reportCircuit)}</dt><dd>${configs.map(({kind, out}) => `${t[kind]} (${out === 'L' ? 'L + R<sub>L</sub>' : out})`).join(', ')}</dd>
       </dl>`;
     let html = '';
-    for(const kind of kinds){
-      const m = buildPlotModel(kind, LIGHT, printSize);
+    for(const {kind, out} of configs){
+      const m = buildPlotModel(kind, out, LIGHT, printSize);
       const [imgMag, imgPh] = await Promise.all([plotImage(m.mag, 500, 360), plotImage(m.phase, 500, 360)]);
       html += `<section class="page">${meta}
-        <h2>${esc(t.reportCircuit)} ${t[kind]} — ${componentsText(kind)}</h2>
+        <h2>${esc(t.reportCircuit)} ${t[kind]} — ${t.reportOut} ${esc(t.outOpt[out])}</h2>
+        <p class="comps">${componentsText(kind)}</p>
         <div class="body"><div>
         <table><thead><tr><th>f (Hz)</th><th>V<sub>in,pp</sub> (V)</th><th>V<sub>out,pp</sub> (V)</th><th>ΔT (µs)</th><th>G (V/V)</th><th>G<sub>dB</sub> (dB)</th><th>φ (°)</th></tr></thead><tbody>`;
-      sortedRows(kind).forEach(({row, c}) => {
+      sortedRows(kind, out).forEach(({row, c}) => {
         const raw = (key, v, f) => Number.isFinite(v) ? f(v) : esc(row[key]);
         html += `<tr><td>${raw('f', c.f, fmtF)}</td><td>${raw('ve', c.ve, fmtF)}</td><td>${raw('vs', c.vs, fmtF)}</td><td>${raw('dt', c.dt, fmtF)}</td>
                  <td class="c">${fmtG(c.G)}</td><td class="c">${fmtDec1(c.GdB)}</td><td class="c">${fmtDec1(c.phi)}</td></tr>`;
