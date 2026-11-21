@@ -190,11 +190,25 @@
   /* phones keep :hover after a tap: only a real pointer lights the buttons up */
   @media (hover:hover){ .plot-fit-btns button:hover{opacity:1; filter:none} }
   .plot-fit-btns svg{width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
+  /* the legend lies inside the plot, in a corner, with a small show/hide button at that corner
+     (as in timeseries-explorer); hiding it is a class, so the figure itself is never changed */
+  .js-plotly-plot.legend-collapsed .infolayer .legend{display:none}
+  .legend-toggle-btn{position:absolute; z-index:6; display:flex; align-items:center; justify-content:center; width:22px; height:22px; padding:0;
+                     border:1px solid color-mix(in srgb, var(--border) 70%, transparent); border-radius:5px;
+                     background:color-mix(in srgb, var(--paper) 80%, transparent); color:var(--fg); opacity:.6; cursor:pointer; touch-action:manipulation}
+  .legend-toggle-btn[hidden]{display:none}
+  .legend-toggle-btn:focus-visible{opacity:1}
+  @media (hover:hover){ .legend-toggle-btn:hover{opacity:1; filter:none} }
+  .legend-toggle-btn.is-open{color:var(--accent)}
+  .legend-toggle-btn svg{width:15px; height:15px; fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round}
   /* a finger needs a bigger target */
   @media (pointer:coarse){
     .plot-fit-btns{gap:6px}
     .plot-fit-btns button{width:36px; height:36px; border-radius:10px; background:color-mix(in srgb, var(--card) 70%, transparent)}
     .plot-fit-btns svg{width:20px; height:20px}
+    .legend-toggle-btn{width:36px; height:36px; border-radius:10px; border-color:color-mix(in srgb, var(--border) 60%, transparent)}
+    .legend-toggle-btn svg{width:20px; height:20px}
+    .legend-toggle-btn.is-open{opacity:.9; background:color-mix(in srgb, var(--accent) 14%, var(--paper))}
   }
   .plotly-notifier{display:none !important}
   /* one-finger gestures on the plots: the browser scrolls natively unless the page blocks it for a
@@ -452,6 +466,7 @@ document.addEventListener('DOMContentLoaded', () => {
       invalidComp:'Valeurs de composants invalides : la courbe théorique ne peut pas être tracée.',
       bodeTitle:'Bode — Gain', bodePhaseTitle:'Bode — Phase', bodeX:'Fréquence (Hz)', bodeYdB:'G (dB)', phaseY:'Phase (°)',
       traceMeas:'Mesures', traceTh:'Théorie', fitBode:'Ajuster le Bode à la hauteur', fitX:'Ajuster X', fitY:'Ajuster Y', fitAll:'Tout ajuster',
+      legendShow:'Afficher la légende', legendHide:'Réduire la légende',
       zoomHint:'Glissez sur le côté pour zoomer en X, vers le haut ou le bas pour zoomer en Y, en diagonale pour une fenêtre',
       reportCircuit:'Circuit', reportTheory:'Courbe théorique affichée',
       reportFoot:'Relevé réalisé avec ferrucci-lab.com/bode-measure',
@@ -487,6 +502,7 @@ document.addEventListener('DOMContentLoaded', () => {
       invalidComp:'Invalid component values: the theoretical curve cannot be drawn.',
       bodeTitle:'Bode — Gain', bodePhaseTitle:'Bode — Phase', bodeX:'Frequency (Hz)', bodeYdB:'G (dB)', phaseY:'Phase (°)',
       traceMeas:'Measurements', traceTh:'Theory', fitBode:'Fit Bode to the height', fitX:'Fit X', fitY:'Fit Y', fitAll:'Fit all',
+      legendShow:'Show legend', legendHide:'Minimize legend',
       zoomHint:'Drag sideways to zoom on X, up or down to zoom on Y, diagonally for a window',
       reportCircuit:'Circuit', reportTheory:'Theoretical curve shown',
       reportFoot:'Measured with ferrucci-lab.com/bode-measure',
@@ -522,6 +538,7 @@ document.addEventListener('DOMContentLoaded', () => {
       invalidComp:'Valores de componentes inválidos: no se puede trazar la curva teórica.',
       bodeTitle:'Bode — Ganancia', bodePhaseTitle:'Bode — Fase', bodeX:'Frecuencia (Hz)', bodeYdB:'G (dB)', phaseY:'Fase (°)',
       traceMeas:'Mediciones', traceTh:'Teoría', fitBode:'Ajustar el Bode a la altura', fitX:'Ajustar X', fitY:'Ajustar Y', fitAll:'Ajustar todo',
+      legendShow:'Mostrar leyenda', legendHide:'Minimizar leyenda',
       zoomHint:'Arrastra de lado para ampliar en X, arriba o abajo para ampliar en Y, en diagonal para una ventana',
       reportCircuit:'Circuito', reportTheory:'Curva teórica mostrada',
       reportFoot:'Medido con ferrucci-lab.com/bode-measure',
@@ -1158,6 +1175,31 @@ document.addEventListener('DOMContentLoaded', () => {
   function hoverTextPhase(c){
     return `f = ${fmtF(c.f)} Hz<br>G = ${Number.isFinite(c.GdB) ? fmtG(c.G) + ' (' + fmtDec1(c.GdB) + ' dB)' : '—'}<br>φ = ${fmtDec1(c.phi)}°`;
   }
+  const withAlpha = (hex, a) => {
+    const m = /^#?([0-9a-f]{6})$/i.exec(String(hex).trim());
+    if(!m) return hex;
+    const n = parseInt(m[1], 16);
+    return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`;
+  };
+  // corner of the plotting area (about a third of its width, a third of its height) with the least drawn in it;
+  // a measured point weighs as much as 8 samples of the theory curve. Ties: top left, top right, bottom left.
+  function emptiestCorner(xRangeLog, yRange, series){
+    const corners = [{left:true, top:true}, {left:false, top:true}, {left:true, top:false}, {left:false, top:false}];
+    let best = corners[0], bestScore = Infinity;
+    corners.forEach(cn => {
+      let score = 0;
+      series.forEach(sr => sr.x.forEach((f, i) => {
+        const y = sr.y[i];
+        if(!(f > 0) || y == null || !Number.isFinite(y)) return;
+        const fx = (Math.log10(f) - xRangeLog[0]) / (xRangeLog[1] - xRangeLog[0]);
+        const fy = (y - yRange[0]) / (yRange[1] - yRange[0]);
+        const inX = cn.left ? fx <= 0.38 : fx >= 0.62, inY = cn.top ? fy >= 0.66 : fy <= 0.34;
+        if(inX && inY) score += sr.w;
+      }));
+      if(score < bestScore){ bestScore = score; best = cn; }
+    });
+    return best;
+  }
   // everything the two plots of a circuit need: data + layouts, for the screen palette or the light print palette
   function buildPlotModel(kind, out, pal, sizeOpts){
     const t = TXT[LANG], pts = measuredPoints(kind, out);
@@ -1194,13 +1236,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const shapes = fMark ? [{type:'line', x0:fMark, x1:fMark, y0:0, y1:1, xref:'x', yref:'paper', layer:'below',
                              line:{color:pal.mark, width:1.5, dash:'dot'}}] : [];
     const axis = {gridcolor:pal.grid, zerolinecolor:pal.zero, linecolor:pal.zero, tickcolor:pal.zero, automargin:true};
-    const base = (title, yTitle, yRange, dtick) => ({
+    // the legend lies inside the plot, in the corner that holds the fewest points and the least curve
+    const magSeries = [{x:pts.gain.map(p => p.f), y:pts.gain.map(p => p.GdB), w:8}];
+    const phSeries = [{x:pts.phase.map(p => p.f), y:pts.phase.map(p => p.phi), w:8}];
+    if(th){ magSeries.push({x:th.f, y:th.mag, w:1}); phSeries.push({x:th.f, y:th.ph, w:1}); }
+    const legendFor = (series, yRange) => {
+      const cn = emptiestCorner(range, yRange, series);
+      return {orientation:'v', x:cn.left ? 0.01 : 0.99, xanchor:cn.left ? 'left' : 'right', y:cn.top ? 0.99 : 0.01, yanchor:cn.top ? 'top' : 'bottom',
+              bgcolor:withAlpha(pal.paper, 0.85), bordercolor:pal.grid, borderwidth:1, font:{size:sizeOpts.legendSize}};
+    };
+    const base = (title, yTitle, yRange, dtick, legend) => ({
       paper_bgcolor:pal.paper, plot_bgcolor:pal.plot,
       font:{color:pal.axis, family:FONT}, hoverlabel:{font:{family:FONT}},
       margin:sizeOpts.margin, dragmode:'zoom',
       xaxis:{title:{text:t.bodeX}, type:'log', range:range, ...axis, exponentformat:'none', ticks:'outside', minor:{showgrid:true, gridcolor:pal.grid, ticks:'outside'}},
       yaxis:{title:{text:yTitle}, range:yRange, dtick, ...axis},
-      showlegend:true, legend:{orientation:'h', x:0.5, xanchor:'center', y:1.01, yanchor:'bottom', bgcolor:'rgba(0,0,0,0)', font:{size:sizeOpts.legendSize}},
+      showlegend:true, legend,
       title:{text:'<b>'+title+'</b>', x:sizeOpts.titleLeft ? 0.03 : 0.5, xanchor:sizeOpts.titleLeft ? 'left' : 'center', y:0.985, yanchor:'top', font:{size:sizeOpts.titleSize, color:pal.fg}},
       separators: LANG === 'en' ? '.,' : ',.',
       // zoom / pan are kept while the data range does not change; a new decade, a new theory or another circuit resets the view
@@ -1208,16 +1259,16 @@ document.addEventListener('DOMContentLoaded', () => {
       shapes
     });
     return {
-      mag:{data:magData, layout:base(t.bodeTitle, t.bodeYdB, [gLo, gHi], null)},
-      phase:{data:phData, layout:base(t.bodePhaseTitle, t.phaseY, [pLo, pHi], pr[1] - pr[0] > 90 ? 30 : 15)},
+      mag:{data:magData, layout:base(t.bodeTitle, t.bodeYdB, [gLo, gHi], null, legendFor(magSeries, [gLo, gHi]))},
+      phase:{data:phData, layout:base(t.bodePhaseTitle, t.phaseY, [pLo, pHi], pr[1] - pr[0] > 90 ? 30 : 15, legendFor(phSeries, [pLo, pHi]))},
       fMark, ch, c
     };
   }
   // narrow plots (phones): smaller margins and title on the left, clear of the fit buttons
   const plotIsNarrow = () => { const el = document.getElementById('bodeMag'); return !!el && el.clientWidth > 0 && el.clientWidth < 520; };
   const screenSize = () => plotIsNarrow()
-    ? {margin:{l:52, r:10, t:70, b:42}, titleSize:15, legendSize:11, titleLeft:true}
-    : {margin:{l:64, r:16, t:76, b:48}, titleSize:18, legendSize:12, titleLeft:false};
+    ? {margin:{l:52, r:10, t:52, b:42}, titleSize:15, legendSize:11, titleLeft:true}
+    : {margin:{l:64, r:16, t:44, b:48}, titleSize:18, legendSize:12, titleLeft:false};
   let lastNarrow = null;
 
   function updatePlots(){
@@ -1240,6 +1291,8 @@ document.addEventListener('DOMContentLoaded', () => {
       ['bodeMag', 'bodePhase'].forEach(id => {
         const gd = document.getElementById(id);
         setupMousePan(gd); setupWheelPan(gd); setupTouchGestures(gd);
+        gd.on('plotly_afterplot', () => syncLegendToggle(gd));
+        syncLegendToggle(gd);
       });
     }
   }
@@ -1268,6 +1321,58 @@ document.addEventListener('DOMContentLoaded', () => {
     if(px < 0 || px > xa._length || py < 0 || py > ya._length) return null;
     return {xa, ya, px, py};
   }
+  // ----- Legend show/hide button (as in timeseries-explorer) -----
+  // The button stays at the legend's corner; while the legend is shown it is moved aside by the button's
+  // size: sideways on a wide plot, down (up at a bottom corner) on a phone, where the button opens it like a
+  // menu. On a phone the legend starts hidden; on a computer it is shown unless wider than 40 % of the plot.
+  // The reader's choice is kept per plot and per layout until the page is reloaded.
+  const LEGEND_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">'
+    + '<line x1="4" y1="7" x2="7" y2="7"/><line x1="10" y1="7" x2="20" y2="7"/>'
+    + '<line x1="4" y1="12" x2="7" y2="12"/><line x1="10" y1="12" x2="20" y2="12"/>'
+    + '<line x1="4" y1="17" x2="7" y2="17"/><line x1="10" y1="17" x2="17" y2="17"/></svg>';
+  const legendChoices = new Map();
+  const COARSE_MQ = window.matchMedia('(pointer:coarse)');
+  const compactLegend = () => plotIsNarrow() || COARSE_MQ.matches;
+  const legendKey = gd => gd.id + '|' + (compactLegend() ? 'compact' : 'wide');
+  function legendBox(legendEl){
+    const bg = legendEl.querySelector(':scope > rect.bg');
+    const width = Number(bg && bg.getAttribute('width')), height = Number(bg && bg.getAttribute('height'));
+    const m = /translate\(\s*([-\d.e]+)[\s,]+([-\d.e]+)\s*\)/.exec(legendEl.getAttribute('transform') || '');
+    if(!(width > 0) || !(height > 0) || !m) return null;
+    return {left:Number(m[1]), top:Number(m[2]), width, height};
+  }
+  function syncLegendToggle(gd){
+    const cell = gd.parentElement, fl = gd._fullLayout;
+    let btn = cell.querySelector('.legend-toggle-btn');
+    const legendEl = gd.querySelector('.infolayer .legend');
+    const box = fl && fl.showlegend && legendEl && legendEl.querySelector('.traces') ? legendBox(legendEl) : null;
+    if(!box){ if(btn) btn.hidden = true; gd.classList.remove('legend-collapsed'); return; }
+    const compact = compactLegend(), key = legendKey(gd), own = legendChoices.get(key);
+    const collapsed = typeof own === 'boolean' ? own : (compact || box.width > 0.4 * ((fl._size && fl._size.w) || Infinity));
+    if(!btn){
+      btn = document.createElement('button');
+      btn.type = 'button'; btn.className = 'legend-toggle-btn'; btn.innerHTML = LEGEND_ICON;
+      btn.addEventListener('click', e => {
+        e.preventDefault();
+        legendChoices.set(legendKey(gd), !gd.classList.contains('legend-collapsed'));
+        syncLegendToggle(gd);
+        if(e.detail) btn.blur();
+      });
+      cell.appendChild(btn);
+    }
+    btn.hidden = false;
+    btn.classList.toggle('is-open', !collapsed);
+    btn.setAttribute('aria-expanded', String(!collapsed));
+    const label = TXT[LANG][collapsed ? 'legendShow' : 'legendHide'];
+    btn.title = label; btn.setAttribute('aria-label', label);
+    const lg = fl.legend, left = lg.xanchor === 'left', top = lg.yanchor === 'top';
+    const size = btn.offsetWidth || (compact ? 36 : 22), step = size + (compact ? 6 : 4);
+    btn.style.left = Math.round(left ? box.left : box.left + box.width - size) + 'px';
+    btn.style.top = Math.round(top ? box.top : box.top + box.height - size) + 'px';
+    gd.classList.toggle('legend-collapsed', collapsed);
+    legendEl.style.translate = collapsed ? '' : (compact ? `0px ${top ? step : -step}px` : `${left ? step : -step}px 0px`);
+  }
+
   // ----- Fit X / Fit Y / Fit all -----
   // Fit X:   frequency axis back to its initial range (10 Hz – 100 kHz, widened to the measurements);
   //          x is shared, so the other plot follows through the axis link.
@@ -1530,6 +1635,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     gd.addEventListener('pointerdown', e => {
       if(!isTouch(e)) return;
+      if(e.target.closest && e.target.closest('.legend')) return;   // the legend's own items, not a gesture
       if(g || pinch || twoFingers){ end(); return; }   // a second finger: the pinch takes over
       const now = performance.now(), a = plotArea();
       g = {id:e.pointerId, t0:now, x0:e.clientX, y0:e.clientY, x:e.clientX, y:e.clientY, a, mode:'pending', hold:0, gap:null};
@@ -1704,7 +1810,7 @@ document.addEventListener('DOMContentLoaded', () => {
   async function buildReport(){
     $('#report').innerHTML = '';
     const t = TXT[LANG];
-    const printSize = {margin:{l:50, r:14, t:54, b:44}, titleSize:15, legendSize:11};
+    const printSize = {margin:{l:50, r:14, t:34, b:44}, titleSize:15, legendSize:11};
     const configs = configsWithData();
     const meta = `<h1>${esc(t.title)}</h1>
       <dl class="meta">
