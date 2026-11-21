@@ -115,6 +115,7 @@
 
   /* ----- fake "disabled" checkbox (toggled with Ctrl+Shift+click) ----- */
   .theory-row{cursor:default; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none}
+  .theory-row.on{cursor:pointer}
   .fake-check{
     display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:4px;
     border:1.5px solid var(--muted); background:var(--computed); color:var(--muted); font-size:13px; line-height:1; opacity:.55;
@@ -860,38 +861,50 @@ document.addEventListener('DOMContentLoaded', () => {
     applyCircuit();
   }
 
-  // ========= Hidden theory checkbox: Ctrl+Shift+click (Cmd+Shift+click also on a Mac), 5 s long press on touch =========
-  // mousedown, not click: on a Mac, Ctrl+click is a right click and never fires "click"
-  const theoryCheck = $('#theoryCheck');
+  // ========= Hidden theory checkbox =========
+  // Showing the curve is hidden: Ctrl+Shift+click (Cmd+Shift+click also on a Mac), or a 5 s long press
+  // on a touch screen. Hiding it again is a plain click or tap.
+  // mousedown, not click: on a Mac, Ctrl+click is a right click and never fires "click".
+  const theoryCheck = $('#theoryCheck'), theoryRow = $('#theoryRow');
   const theoryKeys = e => (e.ctrlKey || e.metaKey) && e.shiftKey;
-  $('#theoryRow').addEventListener('contextmenu', e => { if(theoryKeys(e)) e.preventDefault(); });
-  $('#theoryRow').addEventListener('mousedown', e => {
-    if(!theoryKeys(e) || (e.button !== 0 && !(e.button === 2 && e.ctrlKey))) return;   // looks disabled: a normal click does nothing
-    e.preventDefault();
-    toggleTheory();
+  let lastTouch = 0;   // a touch is followed by emulated mouse events: those must not count as a click
+  theoryRow.addEventListener('contextmenu', e => { if(theoryKeys(e)) e.preventDefault(); });
+  theoryRow.addEventListener('mousedown', e => {
+    if(Date.now() - lastTouch < 1000) return;
+    if(theoryKeys(e) && (e.button === 0 || (e.button === 2 && e.ctrlKey))){ e.preventDefault(); toggleTheory(); return; }
+    if(theoryOn && e.button === 0){ e.preventDefault(); toggleTheory(); }   // off: a plain click is enough
+    // otherwise the row looks disabled: a plain click does nothing
   });
-  // touch screens have no modifier keys: a 5 s long press on the row toggles it, with no visual hint.
-  // Moving the finger, lifting it early or a scroll taking over the touch cancels the press.
-  (function theoryLongPress(){
-    const row = $('#theoryRow'), HOLD_MS = 5000, SLOP = 10;
+  // touch: curve hidden → a 5 s long press shows it, with no visual hint; curve shown → a tap hides it.
+  // Moving the finger, lifting it early or a scroll taking over the touch cancels either gesture.
+  (function theoryTouch(){
+    const HOLD_MS = 5000, SLOP = 10;
     let timer = 0, start = null;
     const cancel = () => { clearTimeout(timer); timer = 0; start = null; };
-    row.addEventListener('pointerdown', e => {
+    theoryRow.addEventListener('pointerdown', e => {
       if(e.pointerType === 'mouse') return;
-      cancel();
-      start = {id:e.pointerId, x:e.clientX, y:e.clientY};
-      timer = setTimeout(() => { timer = 0; start = null; toggleTheory(); }, HOLD_MS);
+      cancel(); lastTouch = Date.now();
+      start = {id:e.pointerId, x:e.clientX, y:e.clientY, tap:theoryOn};
+      if(!theoryOn) timer = setTimeout(() => { timer = 0; start = null; lastTouch = Date.now(); toggleTheory(); }, HOLD_MS);
     });
-    row.addEventListener('pointermove', e => {
+    theoryRow.addEventListener('pointermove', e => {
       if(start && e.pointerId === start.id && Math.hypot(e.clientX - start.x, e.clientY - start.y) > SLOP) cancel();
     });
-    ['pointerup', 'pointercancel', 'pointerleave'].forEach(type => row.addEventListener(type, e => { if(start && e.pointerId === start.id) cancel(); }));
+    theoryRow.addEventListener('pointerup', e => {
+      if(e.pointerType === 'mouse') return;
+      lastTouch = Date.now();
+      const tapOff = start && e.pointerId === start.id && start.tap && theoryOn;
+      cancel();
+      if(tapOff) toggleTheory();
+    });
+    ['pointercancel', 'pointerleave'].forEach(type => theoryRow.addEventListener(type, e => { if(start && e.pointerId === start.id) cancel(); }));
     // the long press must not open the system menu or select text
-    row.addEventListener('contextmenu', e => { if(start || e.pointerType === 'touch') e.preventDefault(); });
+    theoryRow.addEventListener('contextmenu', e => { if(start || e.pointerType === 'touch') e.preventDefault(); });
   })();
   function toggleTheory(){
     theoryOn = !theoryOn;
     theoryCheck.setAttribute('aria-checked', String(theoryOn));
+    theoryRow.classList.toggle('on', theoryOn);
     renderTheoryValues();
     updatePlots();
   }
