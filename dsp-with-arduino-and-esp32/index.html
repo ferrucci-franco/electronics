@@ -750,6 +750,10 @@
     }
 
     .step3-group{ display:flex; flex-direction:column; gap:5px; }
+    /* Carte : libellé et pilule sur une même ligne, pilule compacte */
+    .step3-group.step3-board-row{ flex-direction:row; align-items:center; justify-content:space-between; gap:10px; font-size:.9rem; font-weight:500; }
+    .step3-board-row .board-pill{ align-self:auto; }
+    .step3-board-row .board-pill button{ font-size:.82rem; padding:4px 12px; }
     .step3-row{ display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:.9rem; color:var(--fg); font-weight:500; }
 
     .step3-range-row{ display:flex; align-items:center; gap:6px; }
@@ -1554,11 +1558,11 @@ Implement a real-time digital signal acquisition and processing system using Ard
     let boardSvg, boardNote = '', usbSvg, blueSvg, redSvg, gndSvg, pinTags = '';
     const yA0 = board === 'esp32' ? 335 : 560;
     if (board === 'esp32') {
-      // ESP32 DevKit V1 (30 broches), vertical, USB en bas. Dessin vectoriel wokwi-elements (MIT), 107 × 201.
-      const ESP = {x:575, y:36, s:1.65};
-      boardSvg = img(ESP,107,201,'img/esp32-devkit-v1.svg');
-      A1 = P(ESP,5,53.1); A0 = P(ESP,5,91.3); GND = P(ESP,5,149); USB = P(ESP,53.5,199);
-      const xBl = A1.x - 85, xRd = A1.x - 48, xGnd = A1.x - 20;
+      // Carte ESP32 à 30 broches (WROOM-32E, USB-C), verticale, USB en bas : dessin vectoriel 280 × 520
+      const ESP = {x:575, y:36, s:0.64};
+      boardSvg = img(ESP,280,520,'img/esp32-devkit-30.svg');
+      A1 = P(ESP,22,138.2); A0 = P(ESP,22,239.8); GND = P(ESP,22,392.2); USB = P(ESP,140,520);
+      const xBl = A1.x - 100, xRd = A1.x - 72, xGnd = A1.x - 22;
       // bleu : par-dessus la carte jusqu'à D34 (aucun croisement avec le fil rouge)
       blueSvg = `<path d="M ${xNode} ${yBlue} V 20 H ${f(xBl)} V ${f(A1.y)} H ${f(A1.x)}" stroke="${BLUE}" stroke-width="4" fill="none" stroke-linejoin="round"/>`;
       redSvg  = `<path d="M ${f(A0.x)} ${f(A0.y)} H ${f(xRd)} V ${yRed} H ${f(CH2.x)} V ${f(CH2.y)}" stroke="${RED}" stroke-width="4" fill="none" stroke-linejoin="round"/>`;
@@ -1566,7 +1570,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       usbSvg  = `<path d="M ${f(USB.x)} ${f(USB.y)} V 382" stroke="${CABLE}" stroke-width="7" stroke-linecap="round" fill="none"/>
   <text x="${f(USB.x)}" y="408" text-anchor="middle" class="m-small">${t.usb1}</text>
   <text x="${f(USB.x)}" y="430" text-anchor="middle" class="m-small">${t.usb2}</text>`;
-      const tag = (p, txt, c) => `<text x="${f(p.x-10)}" y="${f(p.y-9)}" text-anchor="end" class="m-label" style="font-size:17px" fill="${c}">${txt}</text>`;
+      const tag = (p, txt, c) => `<text x="${f(p.x-28)}" y="${f(p.y-9)}" text-anchor="end" class="m-label" style="font-size:17px" fill="${c}">${txt}</text>`;
       pinTags = tag(A1, 'D34', BLUE) + tag(A0, 'D25', RED) + tag(GND, 'GND', INK);
       const xn = ARD.x + 577 * ARD.s + 14;
       boardNote = `<text x="${xn}" y="104" class="m-small">${t.pins1}</text>
@@ -1610,7 +1614,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
 
   <!-- Fil rouge : A0 → CH2 -->
   ${redSvg}
-  <text x="${f(board === 'esp32' ? A1.x - 62 : A0.x - 14)}" y="${yA0}" text-anchor="end" class="m-label" fill="${RED}">${t.a0}</text>
+  <text x="${f(board === 'esp32' ? A1.x - 86 : A0.x - 14)}" y="${yA0}" text-anchor="end" class="m-label" fill="${RED}">${t.a0}</text>
 
   <!-- Masse de la carte -->
   ${gndSvg}
@@ -4111,7 +4115,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
               <!-- Entrada -->
               <div class="step3-section">
                 <div class="step3-section-title">${t('section_input')}</div>
-                <div class="step3-group" style="display:flex; align-items:center; gap:10px;">
+                <div class="step3-group step3-board-row">
                   <span>${t('board_label')}</span>
                   <div class="board-pill" role="tablist">${['uno', 'esp32'].map(b => `<button type="button" role="tab" data-board="${b}" class="${state.board === b ? 'active' : ''}">${montageBoardLabels[b]}</button>`).join('')}</div>
                 </div>
