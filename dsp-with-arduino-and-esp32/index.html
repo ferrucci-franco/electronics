@@ -3035,13 +3035,21 @@ Implement a real-time digital signal acquisition and processing system using Ard
                    : v >= 1e-3 ? (v * 1e3).toPrecision(3).replace('.', sep) + ' ms'
                    : (v * 1e6).toPrecision(3).replace('.', sep) + ' µs';
     const fmtF = v => v >= 1000 ? (v / 1000).toFixed(2).replace('.', sep) + ' kHz' : v.toFixed(1).replace('.', sep) + ' Hz';
+    // Étiquette centrée sur la flèche, mais décalée vers l'intérieur si elle déborderait du graphe
+    const labelTxt = '<b>T* = ' + fmtT(Ta) + '  →  f*<sub>IN</sub> = 1/T* = ' + fmtF(fa) + '</b>';
+    const plotEl = document.getElementById('step3TimePlot');
+    const plotW = Math.max(150, (plotEl ? plotEl.clientWidth : 500) - 78);
+    const labelW = 7.8 * labelTxt.replace(/<[^>]+>/g, '').length + 10;
+    const h = Math.min(0.5, labelW / 2 / plotW);
+    const fMid = Math.min(1 - h, Math.max(h, (tcr + Ta / 2 - t0) / (t1 - t0)));
+    const labelX = t0 + fMid * (t1 - t0);
     res.shapes = [tcr, tcr + Ta].map(tv => ({ type:'line', xref:xr, yref:yr, x0:tv, x1:tv, y0:crest, y1:yC + 0.03 * span,
       line:{ color:col, width:1.5, dash:'dot' } }));
     res.annotations = [
       { xref:xr, yref:yr, axref:xr, ayref:yr, x:tcr + Ta, y:yC, ax:tcr, ay:yC, text:'', showarrow:true,
         arrowhead:2, arrowside:'end+start', arrowsize:1.2, arrowwidth:2, arrowcolor:col },
-      { xref:xr, yref:yr, x:tcr + Ta / 2, y:yC, yanchor:'bottom', yshift:3, showarrow:false,
-        text:'<b>T* = ' + fmtT(Ta) + '  →  f*<sub>IN</sub> = 1/T* = ' + fmtF(fa) + '</b>',
+      { xref:xr, yref:yr, x:labelX, y:yC, yanchor:'bottom', yshift:3, showarrow:false,
+        text:labelTxt,
         font:{ size:14, color:col }, bgcolor:dark ? 'rgba(38,50,68,0.85)' : 'rgba(255,255,255,0.9)', borderpad:3 }
     ];
     if (yr === 'y2') res.yMaxOut = yC + 0.12 * span; else res.yMaxIn = yC + 0.12 * span;
