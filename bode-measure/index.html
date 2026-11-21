@@ -332,8 +332,16 @@
         </div>
         <div class="table-actions">
           <button id="addRowBtn" type="button">+ Ajouter une ligne</button>
+          <button id="clearTableBtn" type="button" class="btn-danger">Vider le tableau</button>
           <span class="spacer"></span>
           <span class="muted hint" id="rowsHint"></span>
+        </div>
+        <div class="confirm-box" id="clearBox" hidden>
+          <div id="clearText"></div>
+          <div class="row">
+            <button id="clearNo" type="button">Annuler</button>
+            <button id="clearYes" type="button" class="btn-danger">Oui, vider ce tableau</button>
+          </div>
         </div>
         <div class="dt-note">
           <div class="muted hint" id="dtNote"></div>
@@ -400,6 +408,8 @@ document.addEventListener('DOMContentLoaded', () => {
       print:'Imprimer le rapport (PDF)', csv:'Exporter CSV', newSeries:'Nouvelle série de mesures',
       reportHint:'Le rapport et le CSV contiennent chaque combinaison circuit / composant mesuré qui a des mesures (une page par combinaison).',
       confirmText:'Effacer toutes les mesures (RC et RLC), les valeurs des composants et les noms ?', confirmYes:'Oui, tout effacer', confirmNo:'Annuler',
+      clearTable:'Vider le tableau', clearYes:'Oui, vider ce tableau',
+      clearText:cfg => `Effacer toutes les mesures du tableau affiché (${cfg}) ? Les autres tableaux, les valeurs des composants et les noms sont conservés.`,
       theory:'Afficher la courbe théorique', theoryTitle:'Valeurs caractéristiques (théorie)',
       fc:'Fréquence de coupure f<sub>c</sub>', f0:'Fréquence de résonance f<sub>0</sub>', Q:'Facteur de qualité Q',
       invalidComp:'Valeurs de composants invalides : la courbe théorique ne peut pas être tracée.',
@@ -432,6 +442,8 @@ document.addEventListener('DOMContentLoaded', () => {
       print:'Print the report (PDF)', csv:'Export CSV', newSeries:'New measurement series',
       reportHint:'The report and the CSV include every circuit / measured-component combination that has measurements (one page per combination).',
       confirmText:'Clear all measurements (RC and RLC), component values and names?', confirmYes:'Yes, clear everything', confirmNo:'Cancel',
+      clearTable:'Clear table', clearYes:'Yes, clear this table',
+      clearText:cfg => `Delete all measurements in the table shown (${cfg})? The other tables, the component values and the names are kept.`,
       theory:'Show the theoretical curve', theoryTitle:'Characteristic values (theory)',
       fc:'Cutoff frequency f<sub>c</sub>', f0:'Resonance frequency f<sub>0</sub>', Q:'Quality factor Q',
       invalidComp:'Invalid component values: the theoretical curve cannot be drawn.',
@@ -464,6 +476,8 @@ document.addEventListener('DOMContentLoaded', () => {
       print:'Imprimir el informe (PDF)', csv:'Exportar CSV', newSeries:'Nueva serie de mediciones',
       reportHint:'El informe y el CSV incluyen cada combinación circuito / componente medido que tenga mediciones (una página por combinación).',
       confirmText:'¿Borrar todas las mediciones (RC y RLC), los valores de los componentes y los nombres?', confirmYes:'Sí, borrar todo', confirmNo:'Cancelar',
+      clearTable:'Vaciar la tabla', clearYes:'Sí, vaciar esta tabla',
+      clearText:cfg => `¿Borrar todas las mediciones de la tabla visible (${cfg})? Las demás tablas, los valores de los componentes y los nombres se conservan.`,
       theory:'Mostrar la curva teórica', theoryTitle:'Valores característicos (teoría)',
       fc:'Frecuencia de corte f<sub>c</sub>', f0:'Frecuencia de resonancia f<sub>0</sub>', Q:'Factor de calidad Q',
       invalidComp:'Valores de componentes inválidos: no se puede trazar la curva teórica.',
@@ -748,7 +762,8 @@ document.addEventListener('DOMContentLoaded', () => {
      ['lblR', t.R], ['lblC', t.C], ['lblL', t.L], ['lblRL', t.RL], ['theoryLabel', t.theory],
      ['reportCardTitle', t.reportCard], ['namesLbl', t.names], ['groupLbl', t.group], ['dateLbl', t.date], ['reportHint', t.reportHint],
      ['printBtn', t.print], ['csvBtn', t.csv], ['newBtn', t.newSeries], ['confirmText', t.confirmText], ['confirmYes', t.confirmYes], ['confirmNo', t.confirmNo],
-     ['tableCardTitle', t.tableCard], ['measHint', t.measHint], ['addRowBtn', t.addRow], ['rowsHint', t.rowsHint], ['dtNote', t.dtNote],
+     ['tableCardTitle', t.tableCard], ['measHint', t.measHint], ['addRowBtn', t.addRow],
+     ['clearTableBtn', t.clearTable], ['clearYes', t.clearYes], ['clearNo', t.confirmNo], ['rowsHint', t.rowsHint], ['dtNote', t.dtNote],
      ['fitBodeLbl', t.fitBode]
     ].forEach(([id, html]) => { const el = document.getElementById(id); if(el) el.innerHTML = html; });
     $('#thVe').title = t.veTip; $('#thDt').title = t.dtTip;
@@ -766,6 +781,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try{ localStorage.setItem(LANG_KEY, LANG); }catch(_){}
     renderDate();
     renderCircuitOptions();
+    if(!clearBox.hidden) $('#clearText').textContent = t.clearText(currentConfigName());
     refreshComputedCells();
     renderTheoryValues();
     updatePlots();
@@ -801,6 +817,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return `<option value="${o}">${esc(t.outOpt[o])}${n ? ' — ' + esc(t.nMeas(n)) : ''}</option>`;
     }).join('');
     outSel.value = cur().out;
+    updateClearBtn();
   }
   function renderOutTexts(){
     const t = TXT[LANG], out = cur().out;
@@ -815,10 +832,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   circuitSel.addEventListener('change', () => {
     state.circuit = circuitSel.value;
+    clearBox.hidden = true;
     syncCircuitInputs(); renderCircuitOptions(); renderTable(); renderTheoryValues(); save(); updatePlots();
   });
   outSel.addEventListener('change', () => {
     cur().out = outSel.value;
+    clearBox.hidden = true;
     applyCircuit(); renderTable(); save(); updatePlots();
   });
   const compOk = (key, v) => Number.isFinite(v) && (key === 'R' || key === 'RL' ? v >= 0 : v > 0);
@@ -904,6 +923,7 @@ document.addEventListener('DOMContentLoaded', () => {
     body.innerHTML = '';
     curRows().forEach((row, i) => body.appendChild(makeRow(row, i)));
     refreshComputedCells();
+    updateClearBtn();
   }
   function makeRow(row, i){
     const tr = document.createElement('tr');
@@ -969,12 +989,33 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   $('#addRowBtn').addEventListener('click', () => addRow(true));
 
+  // ========= Clear the visible table only (in-page confirmation) =========
+  const clearBox = $('#clearBox'), clearBtn = $('#clearTableBtn');
+  const currentConfigName = () => `${TXT[LANG][state.circuit]} — ${TXT[LANG].outOpt[cur().out]}`;
+  function updateClearBtn(){
+    const empty = dataCount(state.circuit, cur().out) === 0;
+    clearBtn.disabled = empty;
+    if(empty) clearBox.hidden = true;
+  }
+  clearBtn.addEventListener('click', () => {
+    if(clearBtn.disabled) return;
+    $('#clearText').textContent = TXT[LANG].clearText(currentConfigName());
+    clearBox.hidden = false;
+    $('#clearNo').focus();
+  });
+  $('#clearNo').addEventListener('click', () => { clearBox.hidden = true; });
+  $('#clearYes').addEventListener('click', () => {
+    clearBox.hidden = true;
+    cur().rows[cur().out] = blankRows();
+    renderTable(); renderCircuitOptions(); save(); updatePlots();
+  });
+
   // ========= New series (in-page confirmation): clears both circuits =========
   const confirmBox = $('#confirmBox');
   $('#newBtn').addEventListener('click', () => { confirmBox.hidden = false; $('#confirmNo').focus(); });
   $('#confirmNo').addEventListener('click', () => { confirmBox.hidden = true; });
   $('#confirmYes').addEventListener('click', () => {
-    confirmBox.hidden = true;
+    confirmBox.hidden = true; clearBox.hidden = true;
     const fit = state.fitBode;
     state = defaultState(); state.fitBode = fit;
     try{ localStorage.removeItem(STORE_KEY); localStorage.removeItem(STORE_KEY_V1); }catch(_){}
