@@ -145,6 +145,11 @@
 
   .dt-note{display:grid; grid-template-columns:1fr 240px; gap:10px; align-items:center}
   .dt-note svg{width:100%; height:auto; display:block}
+  /* narrow screens: the note above, the drawing below at the full width of the card */
+  @media (max-width:699px){
+    .dt-note{grid-template-columns:minmax(0,1fr)}
+    #dtDrawing{width:100%; max-width:420px; justify-self:center}
+  }
   .dt-note .dt-in{stroke:var(--c-in)} .dt-note .dt-out{stroke:var(--c-meas)}
   .dt-note text{font-family:ui-sans-serif,system-ui,"Segoe UI",Roboto,Arial,sans-serif; font-size:11px; fill:var(--fg)}
   .dt-note .axis{stroke:var(--zero); stroke-width:1}
