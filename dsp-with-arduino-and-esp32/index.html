@@ -928,6 +928,10 @@
     }
     .plot-fit-btns button:hover{ opacity:1; }
     /* Zoom tactile : l'extérieur de la fenêtre est grisé */
+    /* Zoom à la souris : griser l'extérieur de la fenêtre, comme au doigt (Plotly choisit sinon une
+       couleur d'après plot_bgcolor, transparent ici, et le gris devient invisible) */
+    .js-plotly-plot .zoomlayer .zoombox{ fill:rgba(100,116,139,0.35) !important; }
+    .js-plotly-plot .zoomlayer .zoombox-corners{ fill:#ffffff !important; stroke:#334155 !important; }
     .touch-zoom-ov{ position:absolute; inset:0; pointer-events:none; display:none; z-index:6; }
     .touch-zoom-ov > div{ position:absolute; background:rgba(100,116,139,0.35); }
     .touch-zoom-ov > .tz-box{ background:transparent; border:1.5px dashed var(--accent-strong); box-sizing:border-box; }
@@ -2319,7 +2323,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
       fs_label: "Frecuencia de muestreo Fs",
       cycles_label: "Ciclos visibles",
       alias_show_btn: "Mostrar la sinusoide aparente",
-      alias_show_hint: "Ajusta los ciclos visibles para ver dos períodos de f*<sub>IN</sub> y acota su período.",
+      alias_hide_btn: "Ocultar la sinusoide aparente",
+      alias_show_hint: "Dibuja la sinusoide que forman las muestras, ajusta los ciclos visibles para ver dos de sus períodos y acota el período en la salida.",
       steady_note: "Se muestra solo el régimen permanente.",
       nyq_value_prefix: "F<sub>Nyq</sub> = ",
       nyq_condition: "Condición: Fs > 2·f<sub>IN</sub>",
@@ -2399,7 +2404,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
       fs_label: "Fréquence d'échantillonnage Fs",
       cycles_label: "Cycles visibles",
       alias_show_btn: "Montrer la sinusoïde apparente",
-      alias_show_hint: "Règle les cycles visibles pour voir deux périodes de f*<sub>IN</sub> et cote sa période.",
+      alias_hide_btn: "Masquer la sinusoïde apparente",
+      alias_show_hint: "Trace la sinusoïde que forment les échantillons, règle les cycles visibles pour en voir deux périodes et cote la période sur la sortie.",
       steady_note: "Seul le régime permanent est affiché.",
       nyq_value_prefix: "F<sub>Nyq</sub> = ",
       nyq_condition: "Condition : Fs > 2·f<sub>IN</sub>",
@@ -2479,7 +2485,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
       fs_label: "Sampling frequency Fs",
       cycles_label: "Visible cycles",
       alias_show_btn: "Show the apparent sinusoid",
-      alias_show_hint: "Sets the visible cycles to show two periods of f*<sub>IN</sub> and marks its period.",
+      alias_hide_btn: "Hide the apparent sinusoid",
+      alias_show_hint: "Draws the sinusoid formed by the samples, sets the visible cycles to show two of its periods and marks the period on the output.",
       steady_note: "Only steady-state is shown.",
       nyq_value_prefix: "F<sub>Nyq</sub> = ",
       nyq_condition: "Condition: Fs > 2·f<sub>IN</sub>",
@@ -2557,6 +2564,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
     limit: true,
     Fs: 5000,
     cycles: 2,
+    showAlias: false,   // sinusoïde apparente + cote de T* (repliement)
     filt: 'ma',
     maN: 5,
     lpR: 0.10,
@@ -2973,46 +2981,69 @@ Implement a real-time digital signal acquisition and processing system using Ard
     return fa;
   }
 
-  // Cote de la période apparente T* = 1/f* : on ajuste aux échantillons x[n] une sinusoïde de fréquence f*
-  // (moindres carrés sur cos et sin), on repère deux crêtes successives dans la fenêtre et on les relie
-  // par une flèche double, avec « T* = … → f* = 1/T* = … ». Rien si la fenêtre ne contient pas une période.
-  function step3AliasCote(tArr, x, C, dark) {
-    if (step3State.signal !== 'sine' || step3State.f0 <= step3State.Fs / 2) return null;
+  // Ajustement aux moindres carrés de v ≈ c + a·cos(wt) + b·sin(wt) (c fixé à c0 si fitC est faux)
+  function step3FitSine(t, v, w, fitC, c0) {
+    const n = fitC ? 3 : 2, M = Array.from({length:n}, () => new Array(n + 1).fill(0));
+    for (let i = 0; i < t.length; i++) {
+      const row = fitC ? [Math.cos(w * t[i]), Math.sin(w * t[i]), 1] : [Math.cos(w * t[i]), Math.sin(w * t[i])];
+      const vi = fitC ? v[i] : v[i] - c0;
+      for (let r = 0; r < n; r++) { for (let c = 0; c < n; c++) M[r][c] += row[r] * row[c]; M[r][n] += row[r] * vi; }
+    }
+    for (let k = 0; k < n; k++) {                      // élimination de Gauss avec pivot partiel
+      let p = k; for (let r = k + 1; r < n; r++) if (Math.abs(M[r][k]) > Math.abs(M[p][k])) p = r;
+      [M[k], M[p]] = [M[p], M[k]];
+      if (Math.abs(M[k][k]) < 1e-12) return null;
+      for (let r = 0; r < n; r++) if (r !== k) { const q = M[r][k] / M[k][k]; for (let c = k; c <= n; c++) M[r][c] -= q * M[k][c]; }
+    }
+    const a = M[0][n] / M[0][0], b = M[1][n] / M[1][1], c = fitC ? M[2][n] / M[2][2] : c0;
+    return { a, b, c, R: Math.hypot(a, b), phi: Math.atan2(b, a) };   // crêtes : w·t = phi + 2πk
+  }
+
+  // Repliement d'une sinusoïde : sinusoïde apparente x*(t) tracée en pointillés à travers les x[n],
+  // et cote de sa période T* = 1/f* entre deux crêtes de la sortie y[n] (celle que l'on mesure à
+  // l'oscilloscope). Si le filtre a presque éteint la sortie, la cote passe sur l'entrée.
+  function step3AliasOverlay(tArr, x, y, dark, overlay) {
+    if (!step3State.showAlias || step3State.signal !== 'sine' || step3State.f0 <= step3State.Fs / 2) return null;
     const fa = step3ApparentFreq();
     if (!(fa > 1e-6 * step3State.Fs) || tArr.length < 4) return null;
     const Ta = 1 / fa, w = 2 * Math.PI * fa;
     const t0 = tArr[0], t1 = tArr[tArr.length - 1];
-    if (t1 - t0 < Ta) return null;
     const off = step3State.offset, A = step3State.Vpp / 2;
     if (!(A > 0)) return null;
-    let cc = 0, ss = 0, cs = 0, xc = 0, xs = 0;
-    for (let i = 0; i < tArr.length; i++) {
-      const c = Math.cos(w * tArr[i]), sn = Math.sin(w * tArr[i]), v = x[i] - off;
-      cc += c * c; ss += sn * sn; cs += c * sn; xc += v * c; xs += v * sn;
-    }
-    const det = cc * ss - cs * cs;
-    if (Math.abs(det) < 1e-12) return null;
-    const a = (xc * ss - xs * cs) / det, b = (xs * cc - xc * cs) / det;   // x − off ≈ a·cos(wt) + b·sin(wt)
-    const phi = Math.atan2(b, a);                                          // crêtes : w·t = phi + 2πk
-    let tc = (phi + 2 * Math.PI * Math.ceil((w * t0 - phi) / (2 * Math.PI))) / w;
-    if (tc + Ta > t1) return null;
+    const fx = step3FitSine(tArr, x, w, false, off);
+    if (!fx) return null;
+    const col = dark ? '#c4b5fd' : '#7c3aed';
+    // sinusoïde apparente
+    const nP = 400, tc = [], xc = [];
+    for (let i = 0; i < nP; i++) { const tv = t0 + (t1 - t0) * i / (nP - 1); tc.push(tv); xc.push(off + fx.a * Math.cos(w * tv) + fx.b * Math.sin(w * tv)); }
+    const traces = [{ x:tc, y:xc, type:'scatter', mode:'lines', name:'x*(t)', line:{ color:col, width:2.5, dash:'dash' }, hoverinfo:'skip', xaxis:'x', yaxis:'y' }];
+    const res = { traces, shapes:[], annotations:[], yMaxIn:null, yMaxOut:null };
+    if (t1 - t0 < Ta) return res;
+    // cote : sur la sortie si elle n'est pas éteinte, sinon sur l'entrée
+    const fy = step3FitSine(tArr, y, w, true, 0);
+    const onOut = fy && fy.R > 0.03 * A;
+    const fit = onOut ? fy : fx;
+    let tcr = (fit.phi + 2 * Math.PI * Math.ceil((w * t0 - fit.phi) / (2 * Math.PI))) / w;
+    if (tcr + Ta > t1) return res;
+    const xr = (onOut && !overlay) ? 'x2' : 'x', yr = (onOut && !overlay) ? 'y2' : 'y';
+    const crest = fit.c + fit.R, span = Math.max(2 * A, 1);
+    const yC = (overlay ? Math.max(crest, off + A) : crest) + 0.09 * span;
     const sep = state.lang === 'en' ? '.' : ',';
     const fmtT = v => v >= 1 ? v.toPrecision(3).replace('.', sep) + ' s'
                    : v >= 1e-3 ? (v * 1e3).toPrecision(3).replace('.', sep) + ' ms'
                    : (v * 1e6).toPrecision(3).replace('.', sep) + ' µs';
     const fmtF = v => v >= 1000 ? (v / 1000).toFixed(2).replace('.', sep) + ' kHz' : v.toFixed(1).replace('.', sep) + ' Hz';
-    const col = dark ? '#c4b5fd' : '#7c3aed';
-    const yTop = off + A, yC = yTop + 0.09 * Math.max(2 * A, 1);
-    const shapes = [tc, tc + Ta].map(tv => ({ type:'line', xref:'x', yref:'y', x0:tv, x1:tv, y0:yTop, y1:yC + 0.03 * Math.max(2 * A, 1),
+    res.shapes = [tcr, tcr + Ta].map(tv => ({ type:'line', xref:xr, yref:yr, x0:tv, x1:tv, y0:crest, y1:yC + 0.03 * span,
       line:{ color:col, width:1.5, dash:'dot' } }));
-    const annotations = [
-      { xref:'x', yref:'y', axref:'x', ayref:'y', x:tc + Ta, y:yC, ax:tc, ay:yC, text:'', showarrow:true,
+    res.annotations = [
+      { xref:xr, yref:yr, axref:xr, ayref:yr, x:tcr + Ta, y:yC, ax:tcr, ay:yC, text:'', showarrow:true,
         arrowhead:2, arrowside:'end+start', arrowsize:1.2, arrowwidth:2, arrowcolor:col },
-      { xref:'x', yref:'y', x:tc + Ta / 2, y:yC, yanchor:'bottom', yshift:3, showarrow:false,
+      { xref:xr, yref:yr, x:tcr + Ta / 2, y:yC, yanchor:'bottom', yshift:3, showarrow:false,
         text:'<b>T* = ' + fmtT(Ta) + '  →  f*<sub>IN</sub> = 1/T* = ' + fmtF(fa) + '</b>',
         font:{ size:14, color:col }, bgcolor:dark ? 'rgba(38,50,68,0.85)' : 'rgba(255,255,255,0.9)', borderpad:3 }
     ];
-    return { shapes, annotations, yMax:yC + 0.12 * Math.max(2 * A, 1) };
+    if (yr === 'y2') res.yMaxOut = yC + 0.12 * span; else res.yMaxIn = yC + 0.12 * span;
+    return res;
   }
 
   // Draw time plot
@@ -3094,14 +3125,15 @@ Implement a real-time digital signal acquisition and processing system using Ard
       }
     }
 
-    // Cote de la période apparente (repliement d'une sinusoïde)
+    // Repliement : sinusoïde apparente et cote de sa période
     const dark = document.documentElement.getAttribute('data-theme') === 'dark';
-    const cote = step3AliasCote(tArr, x, C, dark);
-    if (cote) {
-      layout.shapes = (layout.shapes || []).concat(cote.shapes);
-      layout.annotations = (layout.annotations || []).concat(cote.annotations);
-      if (layout.yaxis.range && cote.yMax > layout.yaxis.range[1])
-        layout.yaxis.range = [layout.yaxis.range[0], cote.yMax];
+    const ali = step3AliasOverlay(tArr, x, y, dark, step3State.overlay);
+    if (ali) {
+      ali.traces.forEach(tr => { if (step3State.overlay) { delete tr.xaxis; delete tr.yaxis; } data.splice(2, 0, tr); });
+      layout.shapes = (layout.shapes || []).concat(ali.shapes);
+      layout.annotations = (layout.annotations || []).concat(ali.annotations);
+      if (ali.yMaxIn !== null && layout.yaxis.range && ali.yMaxIn > layout.yaxis.range[1]) layout.yaxis.range = [layout.yaxis.range[0], ali.yMaxIn];
+      if (ali.yMaxOut !== null && layout.yaxis2 && layout.yaxis2.range && ali.yMaxOut > layout.yaxis2.range[1]) layout.yaxis2.range = [layout.yaxis2.range[0], ali.yMaxOut];
     }
 
     Plotly.react(el, data, layout, {displaylogo:false, responsive:true, displayModeBar:false, doubleClick:false});
@@ -4051,7 +4083,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
                   <div class="step3-note" id="step3SamplingStatus" style="font-weight:600;"></div>
                 </div>
                 <div class="step3-group" id="step3AliasShowGroup" style="display:none">
-                  <button type="button" class="step3-alias-btn" id="step3AliasShowBtn" title="${t('alias_show_hint').replace(/<[^>]+>/g, '')}">${t('alias_show_btn')}</button>
+                  <button type="button" class="step3-alias-btn" id="step3AliasShowBtn" title="${t('alias_show_hint').replace(/<[^>]+>/g, '')}">${t(S.showAlias ? 'alias_hide_btn' : 'alias_show_btn')}</button>
                 </div>
               </div>
 
@@ -4200,10 +4232,13 @@ Implement a real-time digital signal acquisition and processing system using Ard
     };
     document.getElementById('step3CyclesSlider').addEventListener('input', e => syncCycles(e.target.value));
     // Assez de cycles de f_IN pour voir un peu plus de deux périodes de la sinusoïde apparente
-    document.getElementById('step3AliasShowBtn').addEventListener('click', () => {
+    document.getElementById('step3AliasShowBtn').addEventListener('click', e => {
+      step3State.showAlias = !step3State.showAlias;
+      e.currentTarget.textContent = step3t(step3State.showAlias ? 'alias_hide_btn' : 'alias_show_btn');
       const fa = step3ApparentFreq();
-      if (!(fa > 0)) return;
-      syncCycles(Math.ceil(2.15 * step3State.f0 / fa));
+      if (step3State.showAlias && fa > 0) syncCycles(Math.ceil(2.15 * step3State.f0 / fa));
+      else if (step3State.showTime) step3DrawTime();
+      if (typeof saveSettings === 'function') saveSettings();
     });
     document.getElementById('step3CyclesNumber').addEventListener('change', e => syncCycles(e.target.value));
 
