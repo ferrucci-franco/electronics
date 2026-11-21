@@ -3336,6 +3336,41 @@ Implement a real-time digital signal acquisition and processing system using Ard
     div.addEventListener('touchcancel', () => { mode = null; hideBox(); }, { capture: true });
   }
 
+  // Champ texte d'un curseur : flèches ↑ / ↓ = un pas du curseur (Maj : dix pas)
+  document.addEventListener('input', e => {
+    if (e.target && e.target.type === 'text' && e.target.closest && e.target.closest('.step3-range-row')) e.target.dataset.typed = '1';
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+    const box = e.target;
+    if (!box || box.tagName !== 'INPUT' || box.type !== 'text') return;
+    const row = box.closest('.step3-range-row');
+    const rng = row && row.querySelector('input[type="range"]');
+    if (!rng) return;
+    e.preventDefault();
+    if (box.dataset.typed) {                                         // valeur tapée d'abord prise en compte
+      delete box.dataset.typed;
+      box.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    if (rng.id === 'step3F0LogSlider') {
+      // f_IN (curseur logarithmique) : pas « rond » adapté à l'ordre de grandeur (50 → 1 Hz, 950 → 10 Hz…)
+      const f = step3State.f0, dir = e.key === 'ArrowUp' ? 1 : -1;
+      let st = Math.pow(10, Math.floor(Math.log10(Math.max(f, 1))) - 1) * (e.shiftKey ? 10 : 1);
+      if (dir < 0 && f - st < Math.pow(10, Math.floor(Math.log10(Math.max(f, 1))))) st /= 10;   // 100 → 99, pas 90
+      box.value = String(Math.round((f + dir * st) / st) * st);
+      box.dispatchEvent(new Event('change', { bubbles: true }));
+      const n = box.value.length; box.setSelectionRange(n, n);
+      return;
+    }
+    const step = parseFloat(rng.step) || 1, lo = parseFloat(rng.min), hi = parseFloat(rng.max);
+    const k = (e.key === 'ArrowUp' ? 1 : -1) * (e.shiftKey ? 10 : 1);
+    const dec = (String(rng.step).split('.')[1] || '').length;
+    const v = Math.min(hi, Math.max(lo, parseFloat(rng.value) + k * step));
+    rng.value = v.toFixed(dec);
+    rng.dispatchEvent(new Event('input', { bubbles: true }));
+    const n = box.value.length; box.setSelectionRange(n, n);
+  });
+
   // Pavé tactile (trackpad) : deux doigts = déplacer la vue (pan), pincer = zoom autour du curseur.
   // Molette de souris classique = zoom autour du curseur. (Le téléphone n'envoie pas d'événements
   // « wheel » : les gestes tactiles de step3AttachTouch ne sont pas concernés.)
