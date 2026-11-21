@@ -1214,6 +1214,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if(!plotsBuilt){
       plotsBuilt = true;
       linkXAxes();
+      // Plotly's own double-click resets only the plot clicked: reset both
+      ['bodeMag', 'bodePhase'].forEach(id => document.getElementById(id).on('plotly_doubleclick', () => { fitAllPlots(); return false; }));
       ['bodeMag', 'bodePhase'].forEach(id => {
         const gd = document.getElementById(id);
         setupMousePan(gd); setupWheelPan(gd); setupTouchGestures(gd);
@@ -1250,7 +1252,7 @@ document.addEventListener('DOMContentLoaded', () => {
   //          x is shared, so the other plot follows through the axis link.
   // Fit Y:   vertical axis fitted to what is drawn inside the current frequency window (points, and the
   //          theory curve when shown), with a small margin; initial range when nothing is visible there.
-  // Fit all: the plot's initial view (also the quick double tap).
+  // Fit all: the plot's initial view. A quick double tap or a double-click does it on both plots.
   function dataYRange(gd){
     const fl = gd._fullLayout;
     if(!fl || !fl.xaxis) return null;
@@ -1273,6 +1275,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const pad = 0.08 * (ymax - ymin);
     return [ymin - pad, ymax + pad];
   }
+  // quick double tap (touch) or double-click (mouse): initial view on both plots
+  function fitAllPlots(){ ['bodeMag', 'bodePhase'].forEach(id => fitPlot(document.getElementById(id), 'all')); }
   function fitPlot(gd, which){
     const v = gd && gd._fitView;
     if(!v) return;
@@ -1361,7 +1365,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if(z.zmode !== 'x') upd['yaxis.range'] = [ya.p2r(Math.max(z.zy0, z.zy1) - top), ya.p2r(Math.min(z.zy0, z.zy1) - top)];
       Plotly.relayout(gd, upd);
     }
-    const fit = () => fitPlot(gd, 'all');
+    const fit = fitAllPlots;   // quick double tap: both plots
     function applyPan(){
       raf = 0;
       if(!g || g.mode !== 'pan') return;
