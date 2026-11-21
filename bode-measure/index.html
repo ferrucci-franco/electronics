@@ -179,6 +179,8 @@
     .app{height:auto; min-height:100vh; grid-template-columns:minmax(0,1fr); grid-template-rows:none; grid-template-areas:"left" "right"}
     .left{overflow:visible}
     .right{height:760px}
+    /* one column: the Bode block has a fixed height and always fills it, so the option is meaningless */
+    .side-head .fit-row{display:none}
   }
   /* phones: the schematic goes above the component fields and takes the full width of the card */
   @media (max-width:699px){
@@ -1161,12 +1163,15 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   // ----- Fit Bode: both plots share the column height, or fixed heights with a scrolling column -----
   const fitBode = $('#fitBode');
+  // same breakpoint as the CSS single-column layout, where the checkbox is hidden and the plots always fit
+  const ONE_COLUMN_MQ = window.matchMedia('(max-width:1099px)');
   function applyFit(){
-    $('#bodeSection').classList.toggle('fit', state.fitBode);
+    $('#bodeSection').classList.toggle('fit', state.fitBode || ONE_COLUMN_MQ.matches);
     fitBode.checked = state.fitBode;
     if(plotsBuilt){ Plotly.Plots.resize('bodeMag'); Plotly.Plots.resize('bodePhase'); }
   }
   fitBode.addEventListener('change', () => { state.fitBode = fitBode.checked; save(); applyFit(); });
+  ONE_COLUMN_MQ.addEventListener('change', applyFit);
   function whenPlotly(){
     return new Promise(res => {
       if(window.Plotly) return res();
