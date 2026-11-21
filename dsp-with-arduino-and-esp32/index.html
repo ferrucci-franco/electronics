@@ -2325,7 +2325,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       cycles_label: "Ciclos visibles",
       alias_show_btn: "Mostrar la sinusoide aparente",
       alias_hide_btn: "Ocultar la sinusoide aparente",
-      alias_show_hint: "Dibuja la sinusoide que forman las muestras, ajusta los ciclos visibles para ver dos de sus períodos y acota el período en la salida.",
+      alias_show_hint: "Dibuja la sinusoide que forman las muestras, ajusta los ciclos visibles para ver dos de sus períodos y acota su período.",
       steady_note: "Se muestra solo el régimen permanente.",
       nyq_value_prefix: "F<sub>Nyq</sub> = ",
       nyq_condition: "Condición: Fs > 2·f<sub>IN</sub>",
@@ -2406,7 +2406,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       cycles_label: "Cycles visibles",
       alias_show_btn: "Montrer la sinusoïde apparente",
       alias_hide_btn: "Masquer la sinusoïde apparente",
-      alias_show_hint: "Trace la sinusoïde que forment les échantillons, règle les cycles visibles pour en voir deux périodes et cote la période sur la sortie.",
+      alias_show_hint: "Trace la sinusoïde que forment les échantillons, règle les cycles visibles pour en voir deux périodes et cote sa période.",
       steady_note: "Seul le régime permanent est affiché.",
       nyq_value_prefix: "F<sub>Nyq</sub> = ",
       nyq_condition: "Condition : Fs > 2·f<sub>IN</sub>",
@@ -2487,7 +2487,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       cycles_label: "Visible cycles",
       alias_show_btn: "Show the apparent sinusoid",
       alias_hide_btn: "Hide the apparent sinusoid",
-      alias_show_hint: "Draws the sinusoid formed by the samples, sets the visible cycles to show two of its periods and marks the period on the output.",
+      alias_show_hint: "Draws the sinusoid formed by the samples, sets the visible cycles to show two of its periods and marks its period.",
       steady_note: "Only steady-state is shown.",
       nyq_value_prefix: "F<sub>Nyq</sub> = ",
       nyq_condition: "Condition: Fs > 2·f<sub>IN</sub>",
@@ -3001,8 +3001,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
   }
 
   // Repliement d'une sinusoïde : sinusoïde apparente x*(t) tracée en pointillés à travers les x[n],
-  // et cote de sa période T* = 1/f* entre deux crêtes de la sortie y[n] (celle que l'on mesure à
-  // l'oscilloscope). Si le filtre a presque éteint la sortie, la cote passe sur l'entrée.
+  // et cote de sa période T* = 1/f* entre deux crêtes consécutives de cette sinusoïde.
   function step3AliasOverlay(tArr, x, y, dark, overlay) {
     if (!step3State.showAlias || step3State.signal !== 'sine' || step3State.f0 <= step3State.Fs / 2) return null;
     const fa = step3ApparentFreq();
@@ -3020,15 +3019,13 @@ Implement a real-time digital signal acquisition and processing system using Ard
     const traces = [{ x:tc, y:xc, type:'scatter', mode:'lines', name:'x*(t)', line:{ color:col, width:2.5, dash:'dash' }, hoverinfo:'skip', xaxis:'x', yaxis:'y' }];
     const res = { traces, shapes:[], annotations:[], yMaxIn:null, yMaxOut:null };
     if (t1 - t0 < Ta) return res;
-    // cote : sur la sortie si elle n'est pas éteinte, sinon sur l'entrée
-    const fy = step3FitSine(tArr, y, w, true, 0);
-    const onOut = fy && fy.R > 0.03 * A;
-    const fit = onOut ? fy : fx;
+    // cote : entre deux crêtes de la sinusoïde apparente x*(t)
+    const fit = fx;
     let tcr = (fit.phi + 2 * Math.PI * Math.ceil((w * t0 - fit.phi) / (2 * Math.PI))) / w;
     if (tcr + Ta > t1) return res;
-    const xr = (onOut && !overlay) ? 'x2' : 'x', yr = (onOut && !overlay) ? 'y2' : 'y';
+    const xr = 'x', yr = 'y';
     const crest = fit.c + fit.R, span = Math.max(2 * A, 1);
-    const yC = (overlay ? Math.max(crest, off + A) : crest) + 0.09 * span;
+    const yC = Math.max(crest, off + A) + 0.09 * span;
     const sep = state.lang === 'en' ? '.' : ',';
     const fmtT = v => v >= 1 ? v.toPrecision(3).replace('.', sep) + ' s'
                    : v >= 1e-3 ? (v * 1e3).toPrecision(3).replace('.', sep) + ' ms'
