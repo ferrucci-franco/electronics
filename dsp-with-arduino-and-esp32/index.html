@@ -3064,8 +3064,9 @@ Implement a real-time digital signal acquisition and processing system using Ard
       legend:{orientation:'h',yanchor:'bottom',y:1.04,x:0,font:{size:14, color:C.text}}
     };
 
-    const contFs = Math.max(50*step3State.f0, 20*step3State.Fs);
-    const nCont = Math.max(400, Math.floor(contFs * tShow));
+    // Courbe continue x(t) : ≥ 60 points par période de f_IN et ≥ 2 par échantillon, plafonnée
+    // (20·Fs points par seconde, comme avant, rendaient chaque tracé lent quand f_IN ≪ Fs)
+    const nCont = Math.min(20000, Math.max(400, Math.ceil(60 * step3State.f0 * tShow), 2 * tArr.length));
     const tStart = tArr[0];
     const tEnd = tArr[tArr.length-1];
     const tCont = [];
@@ -3704,8 +3705,14 @@ Implement a real-time digital signal acquisition and processing system using Ard
     // Même plage de fréquences pour le module et la phase (lignes verticales alignées)
     const xRange = useLog ? [Math.log10(fMin), Math.log10(fMax)] : [fMin, fMax];
 
+    // Marge gauche : assez large pour les graduations de phase les plus longues (« −1080° ») et le titre
+    // de l'axe ; la même pour le module, pour garder les deux graphes alignés en fréquence
+    const phChars = step3State.showPhase
+      ? Math.max(...[Math.min(...phases), Math.max(...phases)].map(v => String(Math.round(Math.abs(v) / 90) * 90).length + (v < 0 ? 1 : 0) + 1))
+      : 0;
+    const marginL = Math.max(54, Math.ceil(7.5 * phChars + 34));
     const magLayout = {
-      margin:{l:54,r:18,t:25,b:(step3State.showPhase ? 6 : 40)},
+      margin:{l:marginL,r:18,t:25,b:(step3State.showPhase ? 6 : 40)},
       paper_bgcolor:'rgba(0,0,0,0)',
       plot_bgcolor:'rgba(0,0,0,0)',
       xaxis:{ type:(useLog ? 'log' : 'linear'), range:xRange.slice(), title:(step3State.showPhase ? '' : '<b>'+step3t('axis_freq')+'</b>'), titlefont:{size:14}, tickfont:{size:(step3State.showPhase?0:13)}, showticklabels: !step3State.showPhase, gridcolor:C.grid, gridwidth:1, zerolinecolor:C.zero, zerolinewidth:1, color:C.text },
@@ -3751,7 +3758,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
 
     if(step3State.showPhase) {
       const phLayout = {
-        margin:{l:54,r:18,t:22,b:40},
+        margin:{l:marginL,r:18,t:22,b:40},
         paper_bgcolor:'rgba(0,0,0,0)',
         plot_bgcolor:'rgba(0,0,0,0)',
         xaxis:{ type:(useLog ? 'log' : 'linear'), range:xRange.slice(), title:'<b>'+step3t('axis_freq')+'</b>', titlefont:{size:14}, tickfont:{size:13}, gridcolor:C.grid, gridwidth:1, zerolinecolor:C.zero, zerolinewidth:1, color:C.text },
@@ -4270,7 +4277,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
       step3State.cycles = c;
       document.getElementById('step3CyclesSlider').value = c;
       document.getElementById('step3CyclesNumber').value = step3Fmt(c, 0);
-      if(step3State.showTime) step3DrawTime();
+      // un seul tracé par image : avec la touche maintenue, la dernière valeur est toujours affichée
+      if(step3State.showTime && !syncCycles.raf) syncCycles.raf = requestAnimationFrame(() => { syncCycles.raf = 0; step3DrawTime(); });
     };
     document.getElementById('step3CyclesSlider').addEventListener('input', e => syncCycles(e.target.value));
     // Assez de cycles de f_IN pour voir un peu plus de deux périodes de la sinusoïde apparente
