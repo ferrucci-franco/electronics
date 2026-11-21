@@ -2365,6 +2365,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       vis_auto_y: "Ajuste automático Y",
       vis_show_bode: "Mostrar Bode",
       vis_show_phase: "Mostrar fase (°)",
+      vis_phase_unwrap: "Fase desenrollada (si no, entre −180° y 180°)",
       vis_mag_label: "Magnitud Bode",
       vis_mag_linear: "V/V",
       vis_mag_db: "dB",
@@ -2446,6 +2447,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       vis_auto_y: "Ajustement auto Y",
       vis_show_bode: "Afficher Bode",
       vis_show_phase: "Afficher phase (°)",
+      vis_phase_unwrap: "Phase déroulée (sinon entre −180° et 180°)",
       vis_mag_label: "Magnitude Bode",
       vis_mag_linear: "V/V",
       vis_mag_db: "dB",
@@ -2527,6 +2529,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       vis_auto_y: "Auto-adjust Y",
       vis_show_bode: "Show Bode",
       vis_show_phase: "Show phase (°)",
+      vis_phase_unwrap: "Unwrapped phase (otherwise between −180° and 180°)",
       vis_mag_label: "Bode magnitude",
       vis_mag_linear: "V/V",
       vis_mag_db: "dB",
@@ -2584,6 +2587,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
     fmaxRatio: 2.0,
     showTime: true,
     showPhase: false,
+    phaseUnwrap: true,   // phase déroulée ; sinon ramenée dans ]−180°, 180°]
     showZOH: true,
     showBode: true,
     overlay: true,
@@ -3650,6 +3654,15 @@ Implement a real-time digital signal acquisition and processing system using Ard
       else if (phases.length > 1) phases[0] = phases[1];
     }
     step3UnwrapDeg(phases);
+    // Phase « enroulée » demandée : ramener chaque point dans ]−180°, 180°] et couper la courbe
+    // à chaque retour de ±360° (pas de trait vertical parasite)
+    const wrapped = step3State.phaseUnwrap === false;
+    if (wrapped) for (let i = 0; i < phases.length; i++) { let v = ((phases[i] + 180) % 360 + 360) % 360 - 180; if (v === -180) v = 180; phases[i] = v; }
+    const phPlotX = [], phPlotY = [];
+    for (let i = 0; i < phases.length; i++) {
+      if (wrapped && i > 0 && Math.abs(phases[i] - phases[i - 1]) > 270) { phPlotX.push(null); phPlotY.push(null); }
+      phPlotX.push(fGrid[i]); phPlotY.push(phases[i]);
+    }
 
     const magVals = (step3State.magMode === 'db')
       ? mags.map(v => Math.max(20*Math.log10(v || 1e-12), -100))
@@ -3737,6 +3750,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       let a = Math.atan2(H0.Im, H0.Re) * 180 / Math.PI;
       while (a - phases[best] > 180) a -= 360;
       while (a - phases[best] < -180) a += 360;
+      if (wrapped) { a = ((a + 180) % 360 + 360) % 360 - 180; if (a === -180) a = 180; }
       return a;
     })();
     const ptRight = frac(f0) > 0.7;   // près du bord droit : valeur à gauche du point
@@ -3764,12 +3778,13 @@ Implement a real-time digital signal acquisition and processing system using Ard
         xaxis:{ type:(useLog ? 'log' : 'linear'), range:xRange.slice(), title:'<b>'+step3t('axis_freq')+'</b>', titlefont:{size:14}, tickfont:{size:13}, gridcolor:C.grid, gridwidth:1, zerolinecolor:C.zero, zerolinewidth:1, color:C.text },
         yaxis:{ title:'<b>'+step3t('axis_phase')+'</b>', titlefont:{size:14}, tickfont:{size:13}, gridcolor:C.grid, gridwidth:1, zerolinecolor:C.zero, zerolinewidth:1, color:C.text,
                 autorange:true, tick0:0, ticksuffix:'°',
-                ...(() => { const dt = step3PhaseDtick((Math.max(...phases) - Math.min(...phases)) * 1.1);
+                ...(wrapped ? { autorange:false, range:[-200, 200] } : {}),
+                ...(() => { const dt = wrapped ? 90 : step3PhaseDtick((Math.max(...phases) - Math.min(...phases)) * 1.1);
                             return dt ? { tickmode:'linear', dtick:dt } : { tickmode:'auto' }; })() },
         shapes: shapesPh,
         showlegend:false
       };
-      const phTraces = [{ x:freqs, y:phases, type:'scatter', mode:'lines', line:{color:C.bodePh, width:3}, hoverinfo:'skip' }];
+      const phTraces = [{ x:phPlotX, y:phPlotY, type:'scatter', mode:'lines', line:{color:C.bodePh, width:3}, hoverinfo:'skip', connectgaps:false }];
       if (f0In) {
         phTraces.push({ x:[f0], y:[ph0], type:'scatter', mode:'markers', marker:{color:'#dc2626', size:11, line:{color:dark ? '#2b3648' : '#ffffff', width:2}}, hoverinfo:'skip' });
         phLayout.annotations = [ptAnn(ph0, ph0.toFixed(1).replace('.', state.lang === 'en' ? '.' : ',') + '°', phases)];
@@ -4155,6 +4170,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
                 <div style="font-weight:600; margin-top:12px; margin-bottom:6px;">${t('visual_bode_title')}</div>
                 <div class="step3-group"><div class="step3-checks"><label><input type="checkbox" id="step3ShowBode" ${S.showBode ? 'checked' : ''}><span>${t('vis_show_bode')}</span></label></div></div>
                 <div class="step3-group"><div class="step3-checks"><label><input type="checkbox" id="step3ShowPhase" ${S.showPhase ? 'checked' : ''}><span>${t('vis_show_phase')}</span></label></div></div>
+                <div class="step3-group" id="step3PhaseUnwrapGroup" style="display:${S.showPhase ? 'block' : 'none'}; margin-left:22px;"><div class="step3-checks"><label><input type="checkbox" id="step3PhaseUnwrap" ${S.phaseUnwrap !== false ? 'checked' : ''}><span>${t('vis_phase_unwrap')}</span></label></div></div>
                 <div class="step3-group">
                   <div class="step3-row"><span>${t('vis_mag_label')}</span></div>
                   <div class="step3-radios">
@@ -4444,7 +4460,16 @@ Implement a real-time digital signal acquisition and processing system using Ard
     document.getElementById('step3ShowZOH').addEventListener('change', e => { step3State.showZOH = e.target.checked; if(step3State.showTime) step3DrawTime(); });
     document.getElementById('step3AutoYRange').addEventListener('change', e => { step3State.autoYRange = e.target.checked; if(step3State.showTime) step3DrawTime(); });
     document.getElementById('step3ShowBode').addEventListener('change', e => { step3State.showBode = e.target.checked; step3UpdateDisabledStates(); step3DrawAll(); });
-    document.getElementById('step3ShowPhase').addEventListener('change', e => { step3State.showPhase = e.target.checked; if(step3State.showBode) step3DrawBode(); });
+    document.getElementById('step3ShowPhase').addEventListener('change', e => {
+      step3State.showPhase = e.target.checked;
+      document.getElementById('step3PhaseUnwrapGroup').style.display = step3State.showPhase ? 'block' : 'none';
+      if(step3State.showBode) step3DrawBode();
+    });
+    document.getElementById('step3PhaseUnwrap').addEventListener('change', e => {
+      step3State.phaseUnwrap = e.target.checked;
+      if(step3State.showBode) step3DrawBode();
+      if (typeof saveSettings === 'function') saveSettings();
+    });
 
     // Mag mode
     document.querySelectorAll('input[name="step3MagMode"]').forEach(r => {
