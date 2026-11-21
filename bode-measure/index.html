@@ -1245,14 +1245,41 @@ document.addEventListener('DOMContentLoaded', () => {
     if(px < 0 || px > xa._length || py < 0 || py > ya._length) return null;
     return {xa, ya, px, py};
   }
-  // ----- Fit X / Fit Y / Fit all: back to the initial view on one or both axes -----
-  // x is shared: fitting it on one plot fits the other one through the axis link
+  // ----- Fit X / Fit Y / Fit all -----
+  // Fit X:   frequency axis back to its initial range (10 Hz – 100 kHz, widened to the measurements);
+  //          x is shared, so the other plot follows through the axis link.
+  // Fit Y:   vertical axis fitted to what is drawn inside the current frequency window (points, and the
+  //          theory curve when shown), with a small margin; initial range when nothing is visible there.
+  // Fit all: the plot's initial view (also the quick double tap).
+  function dataYRange(gd){
+    const fl = gd._fullLayout;
+    if(!fl || !fl.xaxis) return null;
+    const xr = fl.xaxis.range.map(Number), lo = Math.min(xr[0], xr[1]), hi = Math.max(xr[0], xr[1]);
+    let ymin = Infinity, ymax = -Infinity;
+    (gd.data || []).forEach(t => {
+      if(t.visible === false || t.visible === 'legendonly') return;
+      (t.x || []).forEach((x, i) => {
+        const y = t.y[i];
+        if(!(x > 0) || y == null || !Number.isFinite(y)) return;
+        const lx = Math.log10(x);
+        if(lx < lo || lx > hi) return;
+        if(y < ymin) ymin = y;
+        if(y > ymax) ymax = y;
+      });
+    });
+    if(!Number.isFinite(ymin)) return null;
+    const minSpan = gd.id === 'bodeMag' ? 3 : 10;   // dB / degrees: a single point still gets a readable axis
+    if(ymax - ymin < minSpan){ const c = (ymin + ymax) / 2; ymin = c - minSpan / 2; ymax = c + minSpan / 2; }
+    const pad = 0.08 * (ymax - ymin);
+    return [ymin - pad, ymax + pad];
+  }
   function fitPlot(gd, which){
     const v = gd && gd._fitView;
     if(!v) return;
     const upd = {};
     if(which !== 'y') upd['xaxis.range'] = v.x.slice();
-    if(which !== 'x') upd['yaxis.range'] = v.y.slice();
+    if(which === 'y') upd['yaxis.range'] = dataYRange(gd) || v.y.slice();
+    if(which === 'all') upd['yaxis.range'] = v.y.slice();
     Plotly.relayout(gd, upd);
   }
   const FIT_ICONS = {
