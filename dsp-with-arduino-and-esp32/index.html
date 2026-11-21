@@ -1498,24 +1498,24 @@ Implement a real-time digital signal acquisition and processing system using Ard
     fr:{gen:'Générateur de signaux', osc:'Oscilloscope', ard:'Arduino UNO R4',
         a1:'A1 : entrée du CAN', a1r:'(0 … 5 V)', a0:'A0 : sortie du CNA',
         res:'10 kΩ',
-        resw1:'Protège l’entrée : hors de 0 … {V} V, elle limite',
-        resw2:'le courant dans les diodes de la carte (< 1 mA).',
+        resw1:'Protection : si le signal sort de 0 … {V} V,',
+        resw2:'la résistance limite le courant qui entre dans la carte.',
         ch1:'CH1 : signal d’entrée', ch2:'CH2 : signal de sortie',
         usb1:'Câble USB', usb2:'vers l’ordinateur',
         gnd:'Masse commune : relier le GND de l’Arduino à la masse du générateur et de l’oscilloscope'},
     es:{gen:'Generador de señales', osc:'Osciloscopio', ard:'Arduino UNO R4',
         a1:'A1: entrada del ADC', a1r:'(0 … 5 V)', a0:'A0: salida del DAC',
         res:'10 kΩ',
-        resw1:'Protege la entrada: fuera de 0 … {V} V, limita',
-        resw2:'la corriente en los diodos de la placa (< 1 mA).',
+        resw1:'Protección: si la señal sale de 0 … {V} V,',
+        resw2:'la resistencia limita la corriente que entra en la placa.',
         ch1:'CH1: señal de entrada', ch2:'CH2: señal de salida',
         usb1:'Cable USB', usb2:'hacia la computadora',
         gnd:'Masa común: unir el GND del Arduino a la masa del generador y del osciloscopio'},
     en:{gen:'Signal generator', osc:'Oscilloscope', ard:'Arduino UNO R4',
         a1:'A1: ADC input', a1r:'(0 … 5 V)', a0:'A0: DAC output',
         res:'10 kΩ',
-        resw1:'Protects the input: outside 0 … {V} V, it limits',
-        resw2:'the current in the board’s diodes (< 1 mA).',
+        resw1:'Protection: if the signal leaves 0 … {V} V,',
+        resw2:'the resistor limits the current flowing into the board.',
         ch1:'CH1: input signal', ch2:'CH2: output signal',
         usb1:'USB cable', usb2:'to the computer',
         gnd:'Common ground: connect the Arduino GND to the generator and oscilloscope ground'}
@@ -1591,9 +1591,17 @@ Implement a real-time digital signal acquisition and processing system using Ard
       gndSvg  = `<path d="M ${f(GND.x)} ${f(GND.y)} V ${f(GND.y+40)}" stroke="${INK}" stroke-width="3" fill="none"/>` + ground(GND.x, GND.y + 40)
               + `<text x="${f(GND.x-22)}" y="${f(GND.y+50)}" text-anchor="end" class="m-small" fill="${INK}">GND</text>`;
       usbSvg  = `<path d="M ${f(USB.x)} ${f(USB.y)} H 250" stroke="${CABLE}" stroke-width="7" stroke-linecap="round" fill="none"/>
-  <text x="236" y="${f(USB.y-4)}" text-anchor="end" class="m-small">${t.usb1}</text>
-  <text x="236" y="${f(USB.y+20)}" text-anchor="end" class="m-small">${t.usb2}</text>`;
+  <text x="236" y="${f(USB.y+30)}" text-anchor="end" class="m-small">${t.usb1}</text>
+  <text x="236" y="${f(USB.y+54)}" text-anchor="end" class="m-small">${t.usb2}</text>`;
     }
+    // Masse commune : en haut à gauche (zone libre), titre puis texte coupé en lignes courtes
+    const [gT, gR] = t.gnd.split(/\s*:\s*/);
+    const gLines = []; (gR || '').split(' ').forEach(w => {
+      const last = gLines[gLines.length - 1];
+      if (last && (last + ' ' + w).length <= 34) gLines[gLines.length - 1] = last + ' ' + w; else gLines.push(w);
+    });
+    const gndNote = `<text x="30" y="34" class="m-label" fill="${INK}">${gT}</text>` +
+      gLines.map((l, i) => `<text x="30" y="${60 + 24 * i}" class="m-small">${l}</text>`).join('');
     const svg = `
 <svg class="montage-svg" viewBox="0 0 1200 830" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${t.ard}">
   ${boardSvg}
@@ -1614,8 +1622,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
   ${blueSvg}
   <rect x="${f(xR-39)}" y="${yBlue-11}" width="78" height="22" rx="2" fill="${BG}" stroke="${INK}" stroke-width="3"/>
   <text x="${f(xR)}" y="${yBlue-22}" text-anchor="middle" class="m-label" fill="${INK}">${t.res}</text>
-  <text x="${f(xR)}" y="${yBlue+30}" text-anchor="middle" class="m-small" style="font-size:17px">${t.resw1.replace('{V}', board === 'esp32' ? (state.lang === 'en' ? '3.3' : '3,3') : '5')}</text>
-  <text x="${f(xR)}" y="${yBlue+50}" text-anchor="middle" class="m-small" style="font-size:17px">${t.resw2}</text>
+  <text x="${f(xR)}" y="${yBlue+44}" text-anchor="middle" class="m-small">${t.resw1.replace('{V}', board === 'esp32' ? (state.lang === 'en' ? '3.3' : '3,3') : '5')}</text>
+  <text x="${f(xR)}" y="${yBlue+70}" text-anchor="middle" class="m-small">${t.resw2}</text>
   <circle cx="${xNode}" cy="${yBlue}" r="6.5" fill="${BLUE}"/>
   <text x="${xNode+18}" y="${yA1+30}" class="m-label" fill="${BLUE}">${t.a1}</text>
   <text x="${xNode+18}" y="${yA1+54}" class="m-small">${t.a1r}</text>
@@ -1635,7 +1643,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
   <!-- Légende des voies -->
   <text x="30" y="784" class="m-label" fill="${BLUE}">${t.ch1}</text>
   <text x="30" y="814" class="m-label" fill="${RED}">${t.ch2}</text>
-  <text x="1180" y="822" text-anchor="end" class="m-small">${t.gnd}</text>
+  ${gndNote}
 </svg>`;
     const pill = `<div class="montage-board" role="tablist">` + ['uno', 'esp32'].map(b =>
       `<button type="button" role="tab" data-board="${b}" class="${b === board ? 'active' : ''}" aria-selected="${b === board}">${montageBoardLabels[b]}</button>`).join('') + `</div>`;
