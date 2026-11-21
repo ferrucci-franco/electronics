@@ -190,11 +190,27 @@
   /* phones keep :hover after a tap: only a real pointer lights the buttons up */
   @media (hover:hover){ .plot-fit-btns button:hover{opacity:1; filter:none} }
   .plot-fit-btns svg{width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
+  /* a finger needs a bigger target */
+  @media (pointer:coarse){
+    .plot-fit-btns{gap:6px}
+    .plot-fit-btns button{width:36px; height:36px; border-radius:10px; background:color-mix(in srgb, var(--card) 70%, transparent)}
+    .plot-fit-btns svg{width:20px; height:20px}
+  }
   .plotly-notifier{display:none !important}
   /* one-finger gestures on the plots: the browser scrolls natively unless the page blocks it for a
      pan or a zoom; "manipulation" removes the browser's double-tap zoom, which is our "fit" */
   #bodeMag, #bodePhase{touch-action:manipulation}
-  .zoom-sel{position:fixed; display:none; pointer-events:none; z-index:40; border:1px solid var(--accent); background:color-mix(in srgb, var(--accent) 16%, transparent)}
+  /* the zoom window a finger draws: a band of x (edges left/right), of y (edges top/bottom), or a box */
+  .zoom-sel{position:fixed; display:none; pointer-events:none; z-index:40; box-sizing:border-box; background:color-mix(in srgb, var(--accent) 16%, transparent);
+            border-left:2px solid var(--accent); border-right:2px solid var(--accent)}
+  .zoom-sel.is-y{border:none; border-top:2px solid var(--accent); border-bottom:2px solid var(--accent)}
+  .zoom-sel.is-xy{border:2px solid var(--accent)}
+  /* after a slow double tap, the line that says the plot waits for the drag */
+  .zoom-hint{position:fixed; display:none; pointer-events:none; z-index:42; transform:translate(-50%, -100%); max-width:min(90vw, 360px);
+             padding:6px 12px; border-radius:12px; border:1px solid var(--accent); background:color-mix(in srgb, var(--paper) 92%, transparent);
+             color:var(--fg); font-size:13px; line-height:1.3; text-align:center; box-shadow:0 4px 16px rgba(0,0,0,.18)}
+  /* a tap's tooltip would come back at every redraw of a gesture, over a point nobody touches */
+  .js-plotly-plot.touch-gesture .hoverlayer{display:none}
   .touch-ring{position:fixed; display:none; pointer-events:none; z-index:41; width:46px; height:46px; margin:-23px 0 0 -23px; border-radius:50%;
               border:2px solid var(--accent); background:color-mix(in srgb, var(--accent) 14%, transparent)}
   body.panning, body.panning *{cursor:grabbing !important}
@@ -436,6 +452,7 @@ document.addEventListener('DOMContentLoaded', () => {
       invalidComp:'Valeurs de composants invalides : la courbe théorique ne peut pas être tracée.',
       bodeTitle:'Bode — Gain', bodePhaseTitle:'Bode — Phase', bodeX:'Fréquence (Hz)', bodeYdB:'G (dB)', phaseY:'Phase (°)',
       traceMeas:'Mesures', traceTh:'Théorie', fitBode:'Ajuster le Bode à la hauteur', fitX:'Ajuster X', fitY:'Ajuster Y', fitAll:'Tout ajuster',
+      zoomHint:'Glissez sur le côté pour zoomer en X, vers le haut ou le bas pour zoomer en Y, en diagonale pour une fenêtre',
       reportCircuit:'Circuit', reportTheory:'Courbe théorique affichée',
       reportFoot:'Relevé réalisé avec ferrucci-lab.com/bode-measure',
       theme:'Changer de thème', language:'Langue',
@@ -470,6 +487,7 @@ document.addEventListener('DOMContentLoaded', () => {
       invalidComp:'Invalid component values: the theoretical curve cannot be drawn.',
       bodeTitle:'Bode — Gain', bodePhaseTitle:'Bode — Phase', bodeX:'Frequency (Hz)', bodeYdB:'G (dB)', phaseY:'Phase (°)',
       traceMeas:'Measurements', traceTh:'Theory', fitBode:'Fit Bode to the height', fitX:'Fit X', fitY:'Fit Y', fitAll:'Fit all',
+      zoomHint:'Drag sideways to zoom on X, up or down to zoom on Y, diagonally for a window',
       reportCircuit:'Circuit', reportTheory:'Theoretical curve shown',
       reportFoot:'Measured with ferrucci-lab.com/bode-measure',
       theme:'Toggle theme', language:'Language',
@@ -504,6 +522,7 @@ document.addEventListener('DOMContentLoaded', () => {
       invalidComp:'Valores de componentes inválidos: no se puede trazar la curva teórica.',
       bodeTitle:'Bode — Ganancia', bodePhaseTitle:'Bode — Fase', bodeX:'Frecuencia (Hz)', bodeYdB:'G (dB)', phaseY:'Fase (°)',
       traceMeas:'Mediciones', traceTh:'Teoría', fitBode:'Ajustar el Bode a la altura', fitX:'Ajustar X', fitY:'Ajustar Y', fitAll:'Ajustar todo',
+      zoomHint:'Arrastra de lado para ampliar en X, arriba o abajo para ampliar en Y, en diagonal para una ventana',
       reportCircuit:'Circuito', reportTheory:'Curva teórica mostrada',
       reportFoot:'Medido con ferrucci-lab.com/bode-measure',
       theme:'Cambiar tema', language:'Idioma',
@@ -1106,7 +1125,8 @@ document.addEventListener('DOMContentLoaded', () => {
             meas:cssVar('--c-meas'), theory:cssVar('--c-theory'), mark:cssVar('--c-mark')};
   }
   const FONT = 'ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif';
-  function plotConfig(){ return {displaylogo:false, displayModeBar:false, responsive:true, showTips:false, scrollZoom:false}; }
+  // doubleClick false: Plotly's own reset would autoscale to the points after ours (see fitAllPlots)
+  function plotConfig(){ return {displaylogo:false, displayModeBar:false, responsive:true, showTips:false, scrollZoom:false, doubleClick:false}; }
 
   // measured points of a circuit, sorted by frequency
   function measuredPoints(kind, out){
@@ -1214,8 +1234,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if(!plotsBuilt){
       plotsBuilt = true;
       linkXAxes();
-      // Plotly's own double-click resets only the plot clicked: reset both
-      ['bodeMag', 'bodePhase'].forEach(id => document.getElementById(id).on('plotly_doubleclick', () => { fitAllPlots(); return false; }));
+      // a double-click resets both plots. Plotly's own reset is off (doubleClick:false), but it still
+      // reports the double-click; the DOM dblclick never reaches the plot (it lands on Plotly's drag cover)
+      ['bodeMag', 'bodePhase'].forEach(id => document.getElementById(id).on('plotly_doubleclick', fitAllPlots));
       ['bodeMag', 'bodePhase'].forEach(id => {
         const gd = document.getElementById(id);
         setupMousePan(gd); setupWheelPan(gd); setupTouchGestures(gd);
@@ -1277,6 +1298,11 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   // quick double tap (touch) or double-click (mouse): initial view on both plots
   function fitAllPlots(){ ['bodeMag', 'bodePhase'].forEach(id => fitPlot(document.getElementById(id), 'all')); }
+  // Plotly redraws the last hover label after every relayout until a mouseout, which a finger never sends
+  function clearPlotHover(gd){
+    if(gd && gd._fullLayout) gd._fullLayout._hoversubplot = null;
+    if(window.Plotly && Plotly.Fx) Plotly.Fx.unhover(gd);
+  }
   function fitPlot(gd, which){
     const v = gd && gd._fitView;
     if(!v) return;
@@ -1284,6 +1310,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if(which !== 'y') upd['xaxis.range'] = v.x.slice();
     if(which === 'y') upd['yaxis.range'] = dataYRange(gd) || v.y.slice();
     if(which === 'all') upd['yaxis.range'] = v.y.slice();
+    clearPlotHover(gd);
     Plotly.relayout(gd, upd);
   }
   const FIT_ICONS = {
@@ -1305,19 +1332,25 @@ document.addEventListener('DOMContentLoaded', () => {
     if(e.detail) b.blur();   // pointer click: back to semi-transparent (keyboard focus stays visible)
   });
 
-  // ----- One-finger touch gestures on a plot -----
+  // ----- Touch gestures on a plot -----
   //   fast, mostly vertical finger      -> the page scrolls, natively (smooth, with the browser's inertia);
   //                                        so does any movement while the page is still moving, or one
   //                                        that starts outside the plot area
   //   slower finger                     -> pans the plot (both axes)
   //   finger held still, then moved     -> zoom: x, y or window depending on the direction
-  //   slow double tap (2nd touch moves) -> zoom, the same way
-  //   quick double tap                  -> back to the initial view ("fit")
-  // The decision is taken on the first movement past SLOP, before the browser starts its own scroll
-  // (its touch slop is larger): for a pan or a zoom the touchmove events are cancelled, which keeps the
+  //   tap, then a second touch that moves (or is held) -> the same zoom
+  //   slow double tap (both lifted)     -> the plot waits 4 s for one drag, with a hint, and zooms to it
+  //   quick double tap                  -> both plots back to their initial view
+  //   two fingers                       -> pinch: each axis scales by how far the fingers spread along it,
+  //                                        the values under the fingers stay under them
+  //   tap                               -> the tooltip of the point under the finger
+  // Timings and the pinch arithmetic follow timeseries-explorer (unditas.com), which has the same gestures
+  // apart from the fast-finger page scroll and the hold-then-move zoom of a single touch.
+  // The decision is taken on the first movement past SLOP, before the browser starts its own scroll (its
+  // touch slop is larger): for a pan, a zoom or a pinch the touchmove events are cancelled, which keeps the
   // page still; for a scroll nothing is cancelled and the browser takes over (pointercancel follows).
-  // A single tap still shows the point's tooltip (Plotly gets the emulated mouse events of a tap).
-  const TOUCH = {SLOP:8, HOLD_MS:350, FAST:0.6, MOVING_MS:150, TAP_MS:250, DTAP_MS:300, NEAR:40, MINDRAG:14, MINZOOM:36};
+  const TOUCH = {SLOP:8, HOLD_MS:350, FAST:0.6, MOVING_MS:150, TAP_MS:350, FOLLOW_MS:700, QUICK_MS:300, NEAR:60,
+                 ARMED_MS:4000, MINDRAG:14, MINZOOM:36, PINCH_MIN:24, PINCH_MAX:50};
   const touchScroll = {last:0};
   document.addEventListener('scroll', () => { touchScroll.last = performance.now(); }, true);
   function setupTouchGestures(gd){
@@ -1327,7 +1360,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const BLOCKING = {pan:1, zoom:1, armed:1, second:1};   // gestures during which the page must not scroll
     const sel = document.createElement('div'); sel.className = 'zoom-sel'; document.body.appendChild(sel);
     const ring = document.createElement('div'); ring.className = 'touch-ring'; document.body.appendChild(ring);
-    let g = null, lastTap = null, raf = 0;
+    const hint = document.createElement('div'); hint.className = 'zoom-hint'; document.body.appendChild(hint);
+    let g = null, lastTap = null, raf = 0, armedUntil = 0, armedTimer = 0;
+    let pinch = null, pinchRaf = 0, pinchPending = null, twoFingers = false;
     const isTouch = e => e.pointerType === 'touch' || e.pointerType === 'pen';
     function plotArea(){
       const fl = gd._fullLayout;
@@ -1344,11 +1379,26 @@ document.addEventListener('DOMContentLoaded', () => {
       return 'xy';
     }
     const hideRing = () => { ring.style.display = 'none'; };
+    const gestureOn = on => gd.classList.toggle('touch-gesture', on);
     function arm(){
       if(!g) return;
       if(g.mode === 'pending') g.mode = 'armed';
       Object.assign(ring.style, {display:'block', left:g.x + 'px', top:g.y + 'px'});
-      if(Plotly.Fx) Plotly.Fx.unhover(gd);
+      clearPlotHover(gd);
+    }
+    // a slow double tap: the next drag on the plot, within ARMED_MS, draws the window
+    function disarm(){ armedUntil = 0; clearTimeout(armedTimer); armedTimer = 0; hint.style.display = 'none'; }
+    function armWindow(){
+      const a = plotArea();
+      if(!a) return;
+      disarm();
+      clearPlotHover(gd);
+      armedUntil = performance.now() + T.ARMED_MS;
+      armedTimer = setTimeout(disarm, T.ARMED_MS);
+      hint.textContent = TXT[LANG].zoomHint;
+      // low in the plot, growing upward from its bottom edge: the legend and the fit buttons are at the top,
+      // the frequency axis below; never wider than the plot
+      Object.assign(hint.style, {display:'block', left:(a.left + a.w / 2) + 'px', top:(a.top + a.h - 10) + 'px', maxWidth:Math.max(160, Math.min(360, a.w - 16)) + 'px'});
     }
     function drawBox(){
       const z = g, a = z.a;
@@ -1356,6 +1406,8 @@ document.addEventListener('DOMContentLoaded', () => {
       let x0 = Math.min(z.zx0, z.zx1), x1 = Math.max(z.zx0, z.zx1), y0 = Math.min(z.zy0, z.zy1), y1 = Math.max(z.zy0, z.zy1);
       if(z.zmode === 'y'){ x0 = a.left; x1 = a.left + a.w; }
       if(z.zmode === 'x'){ y0 = a.top; y1 = a.top + a.h; }
+      sel.classList.toggle('is-y', z.zmode === 'y');
+      sel.classList.toggle('is-xy', z.zmode === 'xy');
       Object.assign(sel.style, {display:'block', left:x0 + 'px', top:y0 + 'px', width:(x1 - x0) + 'px', height:(y1 - y0) + 'px'});
     }
     function applyZoom(){
@@ -1376,6 +1428,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const a = g.a, x = a.xa.range.map(Number), y = a.ya.range.map(Number);
       g.mode = 'pan';
       g.pan = {x, y, kx:(x[1] - x[0]) / a.w, ky:(y[1] - y[0]) / a.h};
+      gestureOn(true);
+    }
+    function startZoom(){
+      hideRing(); disarm();
+      g.mode = 'zoom';
+      g.zx0 = clamp(g.x0, g.a.left, g.a.left + g.a.w); g.zy0 = clamp(g.y0, g.a.top, g.a.top + g.a.h);
+      gestureOn(true);
     }
     // first movement past SLOP decides the gesture; called from pointermove and touchmove alike,
     // whichever arrives first, so the touchmove that would start a native scroll is already decided
@@ -1387,36 +1446,101 @@ document.addEventListener('DOMContentLoaded', () => {
       if(g.mode === 'pending'){
         clearTimeout(g.hold);
         const speed = dist / Math.max(1, now - g.t0);
-        if(speed > T.FAST && Math.abs(dy) >= Math.abs(dx)) g.mode = 'native'; else startPan();
+        if(speed > T.FAST && Math.abs(dy) >= Math.abs(dx)){ g.mode = 'native'; lastTap = null; } else startPan();
       }else if(g.mode === 'armed' || g.mode === 'second'){
-        hideRing();
-        g.mode = 'zoom';
-        g.zx0 = clamp(g.x0, g.a.left, g.a.left + g.a.w); g.zy0 = clamp(g.y0, g.a.top, g.a.top + g.a.h);
+        startZoom();
       }
     }
     function end(){
       if(g){ clearTimeout(g.hold); try{ gd.releasePointerCapture(g.id); }catch(_){} }
       g = null; hideRing(); sel.style.display = 'none';
+      if(!pinch) gestureOn(false);
     }
+    // a tap reads the value under it (the emulated mouse events of a tap miss a second tap on the same spot)
+    function showTapValue(x, y){
+      const target = document.elementFromPoint(x, y);
+      if(!target || !gd.contains(target) || !Plotly.Fx || typeof Plotly.Fx.hover !== 'function') return;
+      try{ Plotly.Fx.hover(gd, {clientX:x, clientY:y, target}, 'xy'); }catch(_){}
+    }
+
+    // ----- pinch (two fingers): touch events, since it needs both fingers at once -----
+    const pinchPoints = e => Array.from(e.touches).filter(t => gd.contains(t.target)).slice(0, 2).map(t => ({x:t.clientX, y:t.clientY}));
+    function pinchStart(pts){
+      const a = plotArea();
+      if(!a) return;
+      if(g) end();
+      disarm(); lastTap = null;
+      const cx = (pts[0].x + pts[1].x) / 2, cy = (pts[0].y + pts[1].y) / 2;
+      pinch = {pts, a, x:a.xa.range.map(Number), y:a.ya.range.map(Number),
+               ax:a.xa.p2l(cx - a.left), ay:a.ya.p2l(cy - a.top)};   // the values the fingers came down on
+      clearPlotHover(gd); gestureOn(true);
+    }
+    // the span divides by the scale, and the anchor value lands wherever the fingers are now
+    function pinchMove(pts){
+      const p = pinch, a = p.a;
+      const scale = key => {
+        const from = Math.abs(p.pts[0][key] - p.pts[1][key]), to = Math.abs(pts[0][key] - pts[1][key]);
+        if(from < T.PINCH_MIN || to < T.PINCH_MIN) return 1;   // fingers in line along this axis: it keeps its scale
+        return clamp(to / from, 1 / T.PINCH_MAX, T.PINCH_MAX);
+      };
+      const cx = (pts[0].x + pts[1].x) / 2, cy = (pts[0].y + pts[1].y) / 2;
+      const range = (r, anchor, fraction, s) => { const span = (r[1] - r[0]) / s, lo = anchor - fraction * span; return [lo, lo + span]; };
+      pinchPending = {
+        'xaxis.range':range(p.x, p.ax, (cx - a.left) / a.w, scale('x')),
+        'yaxis.range':range(p.y, p.ay, 1 - (cy - a.top) / a.h, scale('y'))
+      };
+      if(!pinchRaf) pinchRaf = requestAnimationFrame(() => { pinchRaf = 0; if(pinchPending){ Plotly.relayout(gd, pinchPending); pinchPending = null; } });
+    }
+    function pinchEnd(){
+      if(pinchRaf){ cancelAnimationFrame(pinchRaf); pinchRaf = 0; if(pinchPending){ Plotly.relayout(gd, pinchPending); pinchPending = null; } }
+      pinch = null;
+      gestureOn(false); clearPlotHover(gd);
+    }
+
     // Plotly's own touch handling (its zoom box on a drag) never sees a finger; touchmove is cancelled
-    // only during a pan or a zoom, so that every other movement scrolls the page natively
-    ['touchstart', 'touchend'].forEach(type => gd.addEventListener(type, e => e.stopPropagation(), {capture:true}));
+    // during a pan, a zoom or a pinch, so that every other movement scrolls the page natively
+    gd.addEventListener('touchstart', e => {
+      e.stopPropagation();
+      if(e.touches.length >= 2){
+        twoFingers = true;
+        // the pinch is measured from where the fingers came down
+        const pts = pinchPoints(e);
+        if(pts.length === 2 && !pinch && !(g && g.mode === 'native')) pinchStart(pts);
+      }
+    }, {capture:true});
     gd.addEventListener('touchmove', e => {
       e.stopPropagation();
+      const pts = pinchPoints(e);
+      if(pts.length === 2 && e.cancelable){
+        if(!pinch) pinchStart(pts);
+        if(pinch){ e.preventDefault(); pinchMove(pts); }
+        return;
+      }
+      if(pinch){ if(e.cancelable) e.preventDefault(); return; }   // one finger left of a pinch: nothing until all lift
       if(g && e.touches.length === 1) decide(e.touches[0].clientX, e.touches[0].clientY, performance.now());
       if(g && BLOCKING[g.mode] && e.cancelable) e.preventDefault();
     }, {capture:true, passive:false});
+    const touchDone = e => {
+      e.stopPropagation();
+      if(pinch && e.touches.length < 2) pinchEnd();
+      if(e.touches.length === 0) twoFingers = false;
+    };
+    gd.addEventListener('touchend', touchDone, {capture:true});
+    gd.addEventListener('touchcancel', touchDone, {capture:true});
 
     gd.addEventListener('pointerdown', e => {
       if(!isTouch(e)) return;
-      if(g){ end(); return; }              // a second finger cancels the gesture
+      if(g || pinch || twoFingers){ end(); return; }   // a second finger: the pinch takes over
       const now = performance.now(), a = plotArea();
-      g = {id:e.pointerId, t0:now, x0:e.clientX, y0:e.clientY, x:e.clientX, y:e.clientY, a, mode:'pending', hold:0};
+      g = {id:e.pointerId, t0:now, x0:e.clientX, y0:e.clientY, x:e.clientX, y:e.clientY, a, mode:'pending', hold:0, gap:null};
       if(now - touchScroll.last < T.MOVING_MS || !a || !inside(a, e.clientX, e.clientY)){
-        g.mode = 'native'; lastTap = null; return;   // page still moving, or outside the plot area: plain scroll
+        g.mode = 'native'; lastTap = null; disarm(); return;   // page still moving, or outside the plot area: plain scroll
       }
-      if(lastTap && now - lastTap.t < T.DTAP_MS && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < T.NEAR){
-        g.mode = 'second'; lastTap = null; arm(); return;
+      if(armedUntil && now < armedUntil){
+        g.mode = 'armed'; lastTap = null; return;              // the drag a slow double tap was waiting for
+      }
+      if(lastTap && now - lastTap.t < T.FOLLOW_MS && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < T.NEAR){
+        g.mode = 'second'; g.gap = now - lastTap.t; lastTap = null; arm(); return;
       }
       g.hold = setTimeout(arm, T.HOLD_MS);
     }, true);
@@ -1436,19 +1560,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     gd.addEventListener('pointerup', e => {
       if(!g || e.pointerId !== g.id) return;
-      const now = performance.now(), dt = now - g.t0;
-      if(g.mode === 'pan'){
+      const now = performance.now(), dt = now - g.t0, mode = g.mode, gap = g.gap, x0 = g.x0, y0 = g.y0;
+      if(mode === 'pan'){
         if(raf){ cancelAnimationFrame(raf); applyPan(); }
-      }else if(g.mode === 'zoom'){
+      }else if(mode === 'zoom'){
         applyZoom();
-      }else if(g.mode === 'second'){
-        if(dt < T.TAP_MS) fit();
-      }else if(g.mode === 'pending' && dt < T.TAP_MS){
-        lastTap = {t:now, x:g.x0, y:g.y0};
       }
       end();
+      if(mode === 'pan' || mode === 'zoom'){ clearPlotHover(gd); return; }
+      if(mode === 'second' && dt < T.TAP_MS){
+        // the second of two taps: quick, both plots back to their initial view; slow, wait for the drag
+        if(gap < T.QUICK_MS) fit(); else armWindow();
+      }else if(mode === 'pending' && dt < T.TAP_MS){
+        lastTap = {t:now, x:x0, y:y0};
+        showTapValue(x0, y0);
+      }
     }, true);
-    // the browser took the touch over for its native scroll
+    // the browser took the touch over for its native scroll (or a pinch of the page)
     gd.addEventListener('pointercancel', e => { if(g && e.pointerId === g.id) end(); }, true);
   }
 
