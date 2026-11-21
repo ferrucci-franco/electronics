@@ -21,6 +21,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # historique complet : commit du dernier changement de chaque app
 
       - name: Assemble Pages site
         run: |
@@ -32,6 +34,15 @@ jobs:
             --exclude='site/' \
             ./ ./site/
           touch site/.nojekyll
+
+      - name: Offline copy of dsp-with-arduino-and-esp32 (zip named after its last commit)
+        run: |
+          APP=dsp-with-arduino-and-esp32
+          SHA=$(git log -1 --format=%h --abbrev=7 -- "$APP")
+          sed -i "s/const BUILD_COMMIT = '';/const BUILD_COMMIT = '$SHA';/" "site/$APP/index.html"
+          grep -q "const BUILD_COMMIT = '$SHA';" "site/$APP/index.html"
+          (cd site && zip -qr "$APP/${APP}_$SHA.zip" "$APP" -x '*.zip')
+          ls -l "site/$APP/${APP}_$SHA.zip"
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

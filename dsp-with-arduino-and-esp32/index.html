@@ -1363,6 +1363,9 @@
 <script>
   // ===== FEATURE FLAGS =====
   const APP_VERSION = '2.0';   // affichée à côté du © ; même numéro que le programme de la carte
+  // Commit de la version publiée : rempli par le déploiement (.github/workflows/deploy-pages.yml),
+  // qui crée aussi dsp-with-arduino-and-esp32_<commit>.zip (copie hors ligne). Vide en local.
+  const BUILD_COMMIT = '';
   const SETTINGS_KEY = 'dsp-arduino-lab-settings-v1';
   const UI_TEXTS = {
     fr: { reset_settings: 'Réinitialiser les réglages', reset_confirm: 'Revenir aux réglages par défaut ?',
@@ -1802,7 +1805,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
             <div style="font-weight:600; margin-bottom:4px; color:var(--accent);">${t.interpDescTitle}</div>
             <div id="interpDescText">${t.interpDescIdeal}</div>
           </div>
-          <div class="app-copyright">© 2026 Franco Ferrucci · v${APP_VERSION}<br><a href="https://ferrucci-lab.com/" target="_blank" rel="noopener">ferrucci-lab.com</a><br><a href="#" class="app-reset" data-reset="1">${uiT('reset_settings')}</a></div>
+          <div class="app-copyright">© 2026 Franco Ferrucci · v${APP_VERSION}${BUILD_COMMIT ? ' (' + BUILD_COMMIT + ')' : ''}<br><a href="https://ferrucci-lab.com/" target="_blank" rel="noopener">ferrucci-lab.com</a><br><a href="#" class="app-reset" data-reset="1">${uiT('reset_settings')}</a></div>
         </div>
 
         <div class="step2-temporal">
@@ -4346,7 +4349,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
                   </div>
                 </div>
               </div>
-              <div class="app-copyright">© 2026 Franco Ferrucci · v${APP_VERSION}<br><a href="https://ferrucci-lab.com/" target="_blank" rel="noopener">ferrucci-lab.com</a><br><a href="#" class="app-reset" data-reset="1">${uiT('reset_settings')}</a></div>
+              <div class="app-copyright">© 2026 Franco Ferrucci · v${APP_VERSION}${BUILD_COMMIT ? ' (' + BUILD_COMMIT + ')' : ''}<br><a href="https://ferrucci-lab.com/" target="_blank" rel="noopener">ferrucci-lab.com</a><br><a href="#" class="app-reset" data-reset="1">${uiT('reset_settings')}</a></div>
             </div>
 
             <!-- Time plot -->
@@ -4717,6 +4720,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       error_connect: 'Error al conectar',
       baud_rate: 'Baudrate',
       lastconfig_title: 'Última config. enviada a la placa',
+      offline_zip: 'Copia sin conexión: aplicación + programas (.zip)',
       firmware_note: 'Para docentes: el programa ya está cargado en las placas del TP. Para preparar otra placa:',
       no_config_sent: 'Ninguna configuración enviada',
       desc_x: 'entrada del ADC (muestra n)',
@@ -4762,6 +4766,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       error_connect: 'Erreur de connexion',
       baud_rate: 'Baudrate',
       lastconfig_title: 'Dernière config. envoyée à la carte',
+      offline_zip: 'Copie hors ligne : application + programmes (.zip)',
       firmware_note: 'Pour les enseignants : le programme est déjà chargé dans les cartes du TP. Pour préparer une autre carte :',
       no_config_sent: 'Aucune configuration envoyée',
       desc_x: 'entrée du CAN (échantillon n)',
@@ -4807,6 +4812,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       error_connect: 'Connection error',
       baud_rate: 'Baud rate',
       lastconfig_title: 'Last config. sent to the board',
+      offline_zip: 'Offline copy: app + programs (.zip)',
       firmware_note: 'For teachers: the program is already loaded on the lab boards. To prepare another board:',
       no_config_sent: 'No configuration sent',
       desc_x: 'ADC input (sample n)',
@@ -5348,7 +5354,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
           <p id="step4Hint" class="step4-hint">${step4t('connect_hint')}</p>
           <p class="step4-firmware-note">${step4t('firmware_note')}
             <a href="firmware/TP2_UNOR4/TP2_UNOR4.ino" download>UNO R4 (.ino)</a> ·
-            <a href="firmware/TP2_ESP32/TP2_ESP32.ino" download>ESP32 (.ino)</a></p>
+            <a href="firmware/TP2_ESP32/TP2_ESP32.ino" download>ESP32 (.ino)</a>${BUILD_COMMIT && /^https?:$/.test(location.protocol) ? `<br>
+            <a href="dsp-with-arduino-and-esp32_${BUILD_COMMIT}.zip" download>${step4t('offline_zip')} — ${BUILD_COMMIT}</a>` : ''}</p>
         </div>
 
         <!-- Difference Equation Card -->
