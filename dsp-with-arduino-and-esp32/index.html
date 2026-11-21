@@ -1008,16 +1008,17 @@
     .eq-term{ white-space:nowrap; }
     .step4-btn-big{ font-size:1rem !important; padding:9px 18px !important; }
     .step4-hint{
-      margin:8px 0 0;
-      font-size:.82rem;
+      margin:10px 0 0;
+      font-size:.98rem;
       color:var(--muted);
       line-height:1.4;
     }
 
     .step4-firmware-note{
       margin:auto 0 0;
-      padding-top:8px;
-      font-size:.78rem;
+      padding-top:10px;
+      font-size:.92rem;
+      line-height:1.4;
       color:var(--muted);
     }
     .step4-firmware-note a{ color:var(--muted); text-decoration:underline; }
@@ -1145,8 +1146,8 @@
     }
 
     .step4-status{
-      font-size:.8rem;
-      padding:4px 8px;
+      font-size:.92rem;
+      padding:5px 10px;
       border-radius:4px;
       background:var(--bg-soft);
     }
@@ -1323,7 +1324,7 @@
     </button>
     <span class="step-arrow">→</span>
     <button class="step-tab" data-step="4">
-      <span class="num">4</span><span id="stepLabel4">Connexion à l'Arduino</span>
+      <span class="num">4</span><span id="stepLabel4">Connexion à la carte</span>
     </button>
     <span class="step-arrow" id="step5Arrow">→</span>
     <button class="step-tab" data-step="5" id="step5Button">
@@ -1466,9 +1467,9 @@ Implement a real-time digital signal acquisition and processing system using Ard
   const state = { lang: 'fr', step: 1, board: 'uno' };   // board : carte du schéma de montage (uno | esp32)
 
   const stepLabels = {
-    es: {1:'Montaje',2:'Repaso: aliasing',3:'Simulación del filtro',4:'Conexión al Arduino',5:'Bode & Medidas'},
-    fr: {1:'Montage',2:'Rappel : repliement',3:'Simulation du filtre',4:'Connexion à l\'Arduino',5:'Bode & Mesures'},
-    en: {1:'Setup',2:'Recap: aliasing',3:'Filter simulation',4:'Connect the Arduino',5:'Bode & Measurements'}
+    es: {1:'Montaje',2:'Repaso: aliasing',3:'Simulación del filtro',4:'Conexión a la placa',5:'Bode & Medidas'},
+    fr: {1:'Montage',2:'Rappel : repliement',3:'Simulation du filtre',4:'Connexion à la carte',5:'Bode & Mesures'},
+    en: {1:'Setup',2:'Recap: aliasing',3:'Filter simulation',4:'Connect the board',5:'Bode & Measurements'}
   };
 
   const appTitles = {
@@ -4690,15 +4691,15 @@ Implement a real-time digital signal acquisition and processing system using Ard
       points_label: 'Número de puntos N',
       coef_a: 'Coeficientes a (denominador)',
       coef_b: 'Coeficientes b (numerador)',
-      connect_arduino: 'Conectar el Arduino',
-      err_generic: 'Error', read_error: 'Error de lectura', send_error: 'Error de envío', not_connected: 'Arduino no conectado',
+      connect_arduino: 'Conectar la placa',
+      err_generic: 'Error', read_error: 'Error de lectura', send_error: 'Error de envío', not_connected: 'Placa no conectada',
       console_placeholder: 'Escriba un comando (help)…', esp32_fs_limit: 'La ESP32 acepta como máximo Fs = 10 kHz.',
       program: 'programa',
       old_firmware: 'programa antiguo de la placa',
       needs_new_firmware: 'Este filtro necesita el programa 2.0 de la placa (orden > 3). Cargue el .ino actual o elija un orden menor.',
-      connect_hint: 'La primera vez, el navegador abre una ventana y pregunta qué dispositivo usar: elija el Arduino y luego «\u00a0Conectar\u00a0».',
+      connect_hint: 'La primera vez, el navegador abre una ventana y pregunta qué dispositivo usar: elija la placa y luego «\u00a0Conectar\u00a0».',
       no_device_chosen: 'Ningún dispositivo elegido.',
-      unplugged: 'Arduino desconectado (cable USB).',
+      unplugged: 'Placa desconectada (cable USB).',
       connect: 'Conectar',
       disconnect: 'Desconectar',
       send_config: 'Enviar configuración',
@@ -4706,8 +4707,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
       status_disconnected: 'Desconectado',
       send: 'Enviar',
       clear: 'Limpiar',
-      no_serial: 'Este navegador no permite conectar el Arduino: use Chrome, Edge o Firefox (versión 151 o posterior).',
-      no_serial_mobile: 'La conexión con el Arduino requiere una computadora: este teléfono o tableta no permite la conexión USB serie.',
+      no_serial: 'Este navegador no permite conectar la placa: use Chrome, Edge o Firefox (versión 151 o posterior).',
+      no_serial_mobile: 'La conexión con la placa requiere una computadora: este teléfono o tableta no permite la conexión USB serie.',
       no_device_android: 'En Android, la conexión USB serie solo existe en algunos equipos recientes: use una computadora.',
       request_port: 'Solicitar puerto...',
       port_opened: 'Puerto abierto',
@@ -4715,12 +4716,12 @@ Implement a real-time digital signal acquisition and processing system using Ard
       config_sent: 'Configuración enviada',
       error_connect: 'Error al conectar',
       baud_rate: 'Baudrate',
-      lastconfig_title: 'Última config. enviada al Arduino',
+      lastconfig_title: 'Última config. enviada a la placa',
       firmware_note: 'Para docentes: el programa ya está cargado en las placas del TP. Para preparar otra placa:',
       no_config_sent: 'Ninguna configuración enviada',
-      desc_x: 'entrada ADC (muestra n)',
+      desc_x: 'entrada del ADC (muestra n)',
       desc_y: 'salida del filtro (muestra n)',
-      desc_yout: 'salida DAC (muestra n)'
+      desc_yout: 'salida del DAC (muestra n)'
     },
     fr: {
       params_title: 'Paramètres du filtre (Étape 3)',
@@ -4735,15 +4736,15 @@ Implement a real-time digital signal acquisition and processing system using Ard
       points_label: 'Nombre de points N',
       coef_a: 'Coefficients a (dénominateur)',
       coef_b: 'Coefficients b (numérateur)',
-      connect_arduino: 'Connecter l\'Arduino',
-      err_generic: 'Erreur', read_error: 'Erreur de lecture', send_error: 'Erreur d\'envoi', not_connected: 'Arduino non connecté',
+      connect_arduino: 'Connecter la carte',
+      err_generic: 'Erreur', read_error: 'Erreur de lecture', send_error: 'Erreur d\'envoi', not_connected: 'Carte non connectée',
       console_placeholder: 'Tapez une commande (help)…', esp32_fs_limit: 'L\'ESP32 accepte au plus Fs = 10 kHz.',
       program: 'programme',
       old_firmware: 'ancien programme de la carte',
       needs_new_firmware: 'Ce filtre demande le programme 2.0 de la carte (ordre > 3). Chargez le .ino actuel ou choisissez un ordre plus petit.',
-      connect_hint: 'La première fois, le navigateur ouvre une fenêtre et demande quel appareil utiliser : choisissez l\'Arduino, puis «\u00a0Connexion\u00a0».',
+      connect_hint: 'La première fois, le navigateur ouvre une fenêtre et demande quel appareil utiliser : choisissez la carte, puis «\u00a0Connexion\u00a0».',
       no_device_chosen: 'Aucun appareil choisi.',
-      unplugged: 'Arduino débranché (câble USB).',
+      unplugged: 'Carte débranchée (câble USB).',
       connect: 'Connecter',
       disconnect: 'Déconnecter',
       send_config: 'Envoyer configuration',
@@ -4751,8 +4752,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
       status_disconnected: 'Déconnecté',
       send: 'Envoyer',
       clear: 'Effacer',
-      no_serial: 'Ce navigateur ne permet pas de connecter l\'Arduino : utilisez Chrome, Edge ou Firefox (version 151 ou plus récente).',
-      no_serial_mobile: 'La connexion à l\'Arduino demande un ordinateur : ce téléphone ou cette tablette ne permet pas la liaison série USB.',
+      no_serial: 'Ce navigateur ne permet pas de connecter la carte : utilisez Chrome, Edge ou Firefox (version 151 ou plus récente).',
+      no_serial_mobile: 'La connexion à la carte demande un ordinateur : ce téléphone ou cette tablette ne permet pas la liaison série USB.',
       no_device_android: 'Sur Android, la liaison USB série n\'existe que sur certains appareils récents : utilisez un ordinateur.',
       request_port: 'Demander port...',
       port_opened: 'Port ouvert',
@@ -4760,12 +4761,12 @@ Implement a real-time digital signal acquisition and processing system using Ard
       config_sent: 'Configuration envoyée',
       error_connect: 'Erreur de connexion',
       baud_rate: 'Baudrate',
-      lastconfig_title: 'Dernière config. envoyée à l\'Arduino',
+      lastconfig_title: 'Dernière config. envoyée à la carte',
       firmware_note: 'Pour les enseignants : le programme est déjà chargé dans les cartes du TP. Pour préparer une autre carte :',
       no_config_sent: 'Aucune configuration envoyée',
-      desc_x: 'entrée ADC (échantillon n)',
+      desc_x: 'entrée du CAN (échantillon n)',
       desc_y: 'sortie du filtre (échantillon n)',
-      desc_yout: 'sortie DAC (échantillon n)'
+      desc_yout: 'sortie du CNA (échantillon n)'
     },
     en: {
       params_title: 'Filter parameters (Step 3)',
@@ -4780,15 +4781,15 @@ Implement a real-time digital signal acquisition and processing system using Ard
       points_label: 'Number of points N',
       coef_a: 'Coefficients a (denominator)',
       coef_b: 'Coefficients b (numerator)',
-      connect_arduino: 'Connect the Arduino',
-      err_generic: 'Error', read_error: 'Read error', send_error: 'Send error', not_connected: 'Arduino not connected',
+      connect_arduino: 'Connect the board',
+      err_generic: 'Error', read_error: 'Read error', send_error: 'Send error', not_connected: 'Board not connected',
       console_placeholder: 'Type a command (help)…', esp32_fs_limit: 'The ESP32 accepts at most Fs = 10 kHz.',
       program: 'program',
       old_firmware: 'old board program',
       needs_new_firmware: 'This filter needs board program 2.0 (order > 3). Upload the current .ino or choose a lower order.',
-      connect_hint: 'The first time, the browser opens a window asking which device to use: choose the Arduino, then «\u00a0Connect\u00a0».',
+      connect_hint: 'The first time, the browser opens a window asking which device to use: choose the board, then «\u00a0Connect\u00a0».',
       no_device_chosen: 'No device chosen.',
-      unplugged: 'Arduino unplugged (USB cable).',
+      unplugged: 'Board unplugged (USB cable).',
       connect: 'Connect',
       disconnect: 'Disconnect',
       send_config: 'Send configuration',
@@ -4796,8 +4797,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
       status_disconnected: 'Disconnected',
       send: 'Send',
       clear: 'Clear',
-      no_serial: 'This browser cannot connect to the Arduino: use Chrome, Edge or Firefox (version 151 or later).',
-      no_serial_mobile: 'Connecting to the Arduino requires a computer: this phone or tablet does not support USB serial.',
+      no_serial: 'This browser cannot connect to the board: use Chrome, Edge or Firefox (version 151 or later).',
+      no_serial_mobile: 'Connecting to the board requires a computer: this phone or tablet does not support USB serial.',
       no_device_android: 'On Android, USB serial is only available on some recent devices: use a computer.',
       request_port: 'Request port...',
       port_opened: 'Port opened',
@@ -4805,7 +4806,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       config_sent: 'Configuration sent',
       error_connect: 'Connection error',
       baud_rate: 'Baud rate',
-      lastconfig_title: 'Last config. sent to the Arduino',
+      lastconfig_title: 'Last config. sent to the board',
       firmware_note: 'For teachers: the program is already loaded on the lab boards. To prepare another board:',
       no_config_sent: 'No configuration sent',
       desc_x: 'ADC input (sample n)',
@@ -5356,7 +5357,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
           <div class="step4-equation-display">
             <div style="margin-bottom:4px">${equation.filter}</div>
             <div style="margin-bottom:8px">${equation.dac}</div>
-            <div style="font-size:0.72em;color:var(--muted);line-height:1.5">
+            <div style="font-size:0.82em;color:var(--muted);line-height:1.5">
               <div>x[n]: ${step4t('desc_x')}</div>
               <div>y[n]: ${step4t('desc_y')}</div>
               <div>y<sub>OUT</sub>[n]: ${step4t('desc_yout')}</div>
