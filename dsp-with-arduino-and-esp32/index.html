@@ -987,17 +987,17 @@
       gap:6px;
     }
     /* Choix de la carte (pilule à deux segments) */
-    .montage-board{ align-self:center; display:inline-flex; padding:3px; gap:3px; border-radius:999px;
+    .montage-board, .board-pill{ align-self:center; display:inline-flex; padding:3px; gap:3px; border-radius:999px;
       background:var(--bg); border:1px solid var(--border); flex:0 0 auto; }
-    .montage-board button{ font:inherit; font-weight:600; font-size:.9rem; padding:5px 16px; border-radius:999px;
+    .montage-board button, .board-pill button{ font:inherit; font-weight:600; font-size:.9rem; padding:5px 16px; border-radius:999px;
       border:none; background:transparent; color:var(--muted); cursor:pointer; }
-    .montage-board button:hover{ color:var(--fg); }
-    .montage-board button.active{ background:var(--accent-strong, var(--accent)); color:#fff; }
+    .montage-board button:hover, .board-pill button:hover{ color:var(--fg); }
+    .montage-board button.active, .board-pill button.active{ background:var(--accent-strong, var(--accent)); color:#fff; }
     /* Le viewBox garde les proportions : le schéma remplit l'espace disponible sans défilement */
     .montage-svg{ flex:1 1 auto; width:100%; height:100%; min-height:0; display:block; font-family:var(--font); }
-    .montage-svg .m-title{ font-size:24px; font-weight:700; fill:var(--fg); }
-    .montage-svg .m-label{ font-size:21px; font-weight:700; }
-    .montage-svg .m-small{ font-size:17px; fill:var(--muted); }
+    .montage-svg .m-title{ font-size:26px; font-weight:700; fill:var(--fg); }
+    .montage-svg .m-label{ font-size:23px; font-weight:700; }
+    .montage-svg .m-small{ font-size:20px; fill:var(--muted); }
     /* En thème sombre : léger halo autour des appareils pour les détacher du fond */
     :root[data-theme="dark"] .montage-svg image{ filter:drop-shadow(0 0 8px rgba(226,232,240,0.18)); }
 
@@ -1554,7 +1554,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       const x = pinX(i), col = used[lb] && y === yBot ? used[lb] : null;
       return `<rect x="${(x-6).toFixed(1)}" y="${y-6}" width="12" height="12" rx="2" fill="#1f2937" stroke="#d1d5db" stroke-width="1.5"/>`
            + `<circle cx="${x.toFixed(1)}" cy="${y}" r="3" fill="#e5c07b"/>`
-           + `<text x="${x.toFixed(1)}" y="${labY}" text-anchor="middle" font-size="${col ? 12 : 10.5}" font-weight="${col ? 800 : 500}" fill="${col ? 'COL' + col : '#e5e7eb'}">${lb}</text>`;
+           + `<text x="${x.toFixed(1)}" y="${labY}" text-anchor="middle" font-size="${col ? 13.5 : 11.5}" font-weight="${col ? 800 : 500}" fill="${col ? 'COL' + col : '#e5e7eb'}">${lb}</text>`;
     }).join('');
     g += pinRow(top, yTop, yTop + 20) + pinRow(bottom, yBot, yBot - 12);
     return { svg: g, pin34: { x: pinX(4), y: yBot }, pin25: { x: pinX(8), y: yBot }, gnd: { x: pinX(13), y: yBot },
@@ -1643,11 +1643,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
     const pill = `<div class="montage-board" role="tablist">` + ['uno', 'esp32'].map(b =>
       `<button type="button" role="tab" data-board="${b}" class="${b === board ? 'active' : ''}" aria-selected="${b === board}">${montageBoardLabels[b]}</button>`).join('') + `</div>`;
     stepContentEl.innerHTML = `<div class="montage-panel">${pill}${svg}</div>`;
-    stepContentEl.querySelectorAll('.montage-board button').forEach(btn => btn.addEventListener('click', () => {
-      state.board = btn.dataset.board;
-      renderMontage();
-      saveSettings();
-    }));
+    stepContentEl.querySelectorAll('.montage-board button').forEach(btn => btn.addEventListener('click', () => setBoard(btn.dataset.board)));
   }
 
   const stepNoteEl = document.getElementById('stepNote');
@@ -2417,7 +2413,9 @@ Implement a real-time digital signal acquisition and processing system using Ard
       signal_sine: "Senoidal",
       signal_square: "Cuadrada",
       signal_tri: "Triangular",
-      force_range: "Forzar 0 ≤ Vin ≤ 5 V",
+      force_range: "Rango ampliado ±10 V",
+      board_label: "Placa",
+      adc_sat: "Fuera de 0 … {V} V: el ADC satura y x[n] queda recortado (la resistencia de 10 kΩ protege la entrada).",
       vmax_label: "V<sub>max</sub> (V)",
       vmin_label: "V<sub>min</sub> (V)",
       vpp_label: "Vpp (V)",
@@ -2499,7 +2497,9 @@ Implement a real-time digital signal acquisition and processing system using Ard
       signal_sine: "Sinusoïdale",
       signal_square: "Carrée",
       signal_tri: "Triangulaire",
-      force_range: "Forcer 0 ≤ Vin ≤ 5 V",
+      force_range: "Plage étendue ±10 V",
+      board_label: "Carte",
+      adc_sat: "Hors de 0 … {V} V : le CAN sature et x[n] est écrêté (la résistance de 10 kΩ protège l’entrée).",
       vmax_label: "V<sub>max</sub> (V)",
       vmin_label: "V<sub>min</sub> (V)",
       vpp_label: "Vpp (V)",
@@ -2581,7 +2581,9 @@ Implement a real-time digital signal acquisition and processing system using Ard
       signal_sine: "Sinusoidal",
       signal_square: "Square",
       signal_tri: "Triangular",
-      force_range: "Force 0 ≤ Vin ≤ 5 V",
+      force_range: "Extended range ±10 V",
+      board_label: "Board",
+      adc_sat: "Outside 0 … {V} V: the ADC saturates and x[n] is clipped (the 10 kΩ resistor protects the input).",
       vmax_label: "V<sub>max</sub> (V)",
       vmin_label: "V<sub>min</sub> (V)",
       vpp_label: "Vpp (V)",
@@ -2863,10 +2865,36 @@ Implement a real-time digital signal acquisition and processing system using Ard
     return { b:[1, -1], a:[1] };
   }
 
-  // Sortie du CNA de l'UNO R4 : 0 … 5 V. Les filtres qui suppriment la composante continue
-  // (passe-haut, passe-bande, dérivateur) sortent re-centrés à mi-échelle, 2,5 V.
-  const STEP3_DAC_MAX = 5.0, STEP3_DAC_MID = 2.5;
-  function step3DacClip(y) { return y.map(v => Math.max(0, Math.min(STEP3_DAC_MAX, v))); }
+  // Carte choisie (schéma de montage et simulation) : tension de référence, résolutions, Fs max.
+  // UNO R4 : CAN 12 bits et CNA 12 bits, 0 … 5 V ; ESP32 : CAN 12 bits, CNA 8 bits, 0 … 3,3 V, Fs ≤ 10 kHz.
+  const BOARDS = {
+    uno:   { vref:5.0, adcBits:12, dacBits:12, fsMax:20000, vmin:0.5, vmax:4.5 },
+    esp32: { vref:3.3, adcBits:12, dacBits:8,  fsMax:10000, vmin:0.3, vmax:3.0 }
+  };
+  function boardCfg() { return BOARDS[state.board] || BOARDS.uno; }
+  function setBoard(b) {
+    if (!BOARDS[b] || b === state.board) return;
+    state.board = b;
+    const B = boardCfg();
+    step3State.vmin = B.vmin; step3State.vmax = B.vmax;             // signal conseillé pour cette carte
+    step3State.Vpp = B.vmax - B.vmin; step3State.offset = (B.vmax + B.vmin) / 2;
+    if (step3State.Fs > B.fsMax) step3State.Fs = B.fsMax;
+    if (state.step === 1) renderMontage();
+    if (state.step === 3) renderStep3();
+    saveSettings();
+  }
+  // Conversion analogique-numérique : écrêtage à 0 … Vref (diodes de protection + 10 kΩ) et quantification
+  function step3Adc(v) {
+    const B = boardCfg(), q = B.vref / ((1 << B.adcBits) - 1);
+    return Math.round(Math.max(0, Math.min(B.vref, v)) / q) * q;
+  }
+  // Sortie du CNA : 0 … Vref, quantifiée. Les filtres qui suppriment la composante continue
+  // (passe-haut, passe-bande, dérivateur) sortent re-centrés à mi-échelle, Vref/2.
+  function step3DacMid() { return boardCfg().vref / 2; }
+  function step3DacClip(y) {
+    const B = boardCfg(), q = B.vref / ((1 << B.dacBits) - 1);
+    return y.map(v => Math.round(Math.max(0, Math.min(B.vref, v)) / q) * q);
+  }
 
   // Apply filter
   function step3FilterApply(x) {
@@ -2880,7 +2908,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       // même convention que la forme polynomiale : retard d'un échantillon (sortie du CNA)
       const y = new Array(v.length); y[0] = 0;
       for (let n = 1; n < v.length; n++) y[n] = v[n-1];
-      if (step3State.filt === 'hp' || step3State.filt === 'bp') for (let n = 0; n < y.length; n++) y[n] += STEP3_DAC_MID;   // re-centrage (mode AC)
+      if (step3State.filt === 'hp' || step3State.filt === 'bp') for (let n = 0, m = step3DacMid(); n < y.length; n++) y[n] += m;   // re-centrage (mode AC)
       return step3DacClip(y);
     }
     const b = cf.b.slice();
@@ -2909,7 +2937,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
 
     if(step3State.filt === 'hp' || step3State.filt === 'bp' || step3State.filt === 'diff') {
       for(let n=0; n<N; n++) {
-        y[n] += STEP3_DAC_MID;   // re-centrage (mode AC)
+        y[n] += step3DacMid();   // re-centrage (mode AC)
       }
     }
     return step3DacClip(y);
@@ -2983,7 +3011,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
     const N = Math.ceil(tOffset * Fs) + showS;
     const x_all = new Array(N);
     for(let n=0; n<N; n++) {
-      x_all[n] = step3_x_cont(n/Fs);
+      x_all[n] = step3Adc(step3_x_cont(n/Fs));   // ce que mesure le CAN (écrêtage, quantification)
     }
     const y_all = step3FilterApply(x_all);
 
@@ -3000,10 +3028,11 @@ Implement a real-time digital signal acquisition and processing system using Ard
     return { t:t, x:x, y:y, tShow: showS/Fs };
   }
 
-  // Vmin / Vmax : bornes 0…5 V (entrée du CAN de l'UNO R4) si « forcer » est coché, sinon ±10 V
+  // Vmin / Vmax : de −1 V à Vref + 1 V (au-delà de 0 … Vref le CAN sature ; la résistance de 10 kΩ
+  // protège l'entrée), ou ±10 V en plage étendue
+  function step3VRange() { const V = boardCfg().vref; return step3State.limit ? [-1, V + 1] : [-10, 10]; }
   function step3SetVminVmax(vmin, vmax, moved) {
-    const lo = step3State.limit ? 0 : -10;
-    const hi = step3State.limit ? 5 : 10;
+    const [lo, hi] = step3VRange();
     vmin = Math.max(lo, Math.min(hi, vmin));
     vmax = Math.max(lo, Math.min(hi, vmax));
     if (vmin > vmax) { if (moved === 'min') vmax = vmin; else vmin = vmax; }
@@ -3017,6 +3046,12 @@ Implement a real-time digital signal acquisition and processing system using Ard
       if (sl) { sl.min = lo; sl.max = hi; sl.value = v; }
       if (nb) nb.value = step3Fmt(v, 2);
     });
+    const sat = document.getElementById('step3AdcSat');
+    if (sat) {
+      const V = boardCfg().vref;
+      sat.style.display = (vmin < -1e-9 || vmax > V + 1e-9) ? 'block' : 'none';
+      sat.textContent = '⚠ ' + step3t('adc_sat').replace('{V}', String(V).replace('.', state.lang === 'en' ? '.' : ','));
+    }
   }
 
   function step3ApplyLimitImmediately() {
@@ -3206,7 +3241,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
 
       if(!step3State.autoYRange) {
         if(step3State.limit) {
-          layout.yaxis.range = [-0.5, 5.5];
+          layout.yaxis.range = [-1.4, boardCfg().vref + 1.4];
           layout.yaxis.autorange = false;
         } else {
           layout.yaxis.range = [-10.5, 10.5];
@@ -3231,8 +3266,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
 
       if(!step3State.autoYRange) {
         if(step3State.limit) {
-          layout.yaxis.range = [-0.5, 5.5];
-          layout.yaxis2.range = [-0.5, 5.5];
+          layout.yaxis.range = [-1.4, boardCfg().vref + 1.4];
+          layout.yaxis2.range = [-1.4, boardCfg().vref + 1.4];
         } else {
           layout.yaxis.range = [-10.5, 10.5];
           layout.yaxis2.range = [-10.5, 10.5];
@@ -3950,9 +3985,9 @@ Implement a real-time digital signal acquisition and processing system using Ard
       Plotly.purge(phDiv);
     }
 
-    setTimeout(() => {
-      Plotly.Plots.resize(magDiv);
-      if(step3State.showPhase && phDiv) Plotly.Plots.resize(phDiv);
+    setTimeout(() => {   // le panneau a pu être reconstruit entre-temps (changement de carte, de langue…)
+      if (magDiv.isConnected && magDiv.offsetParent) Plotly.Plots.resize(magDiv);
+      if (step3State.showPhase && phDiv && phDiv.isConnected && phDiv.offsetParent) Plotly.Plots.resize(phDiv);
     }, 0);
   }
 
@@ -4094,6 +4129,10 @@ Implement a real-time digital signal acquisition and processing system using Ard
               <!-- Entrada -->
               <div class="step3-section">
                 <div class="step3-section-title">${t('section_input')}</div>
+                <div class="step3-group" style="display:flex; align-items:center; gap:10px;">
+                  <span>${t('board_label')}</span>
+                  <div class="board-pill" role="tablist">${['uno', 'esp32'].map(b => `<button type="button" role="tab" data-board="${b}" class="${state.board === b ? 'active' : ''}">${montageBoardLabels[b]}</button>`).join('')}</div>
+                </div>
                 <div class="step3-group">
                   <div class="step3-row"><span>${t('input_signal_type')}</span></div>
                   <select id="step3SignalType">
@@ -4104,22 +4143,23 @@ Implement a real-time digital signal acquisition and processing system using Ard
                 </div>
                 <div class="step3-group">
                   <div class="step3-checks">
-                    <label><input type="checkbox" id="step3LimitRange" ${S.limit ? 'checked' : ''}><span>${t('force_range')}</span></label>
+                    <label><input type="checkbox" id="step3LimitRange" ${S.limit ? '' : 'checked'}><span>${t('force_range')}</span></label>
                   </div>
                 </div>
                 <div class="step3-group">
                   <div class="step3-row"><span>${t('vmax_label')}</span></div>
                   <div class="step3-range-row">
-                    <input type="range" id="step3VmaxSlider" min="${S.limit ? 0 : -10}" max="${S.limit ? 5 : 10}" step="0.1" value="${S.vmax}">
+                    <input type="range" id="step3VmaxSlider" min="${step3VRange()[0]}" max="${step3VRange()[1]}" step="0.1" value="${S.vmax}">
                     <input type="text" id="step3VmaxNumber" value="${step3Fmt(S.vmax, 2)}">
                   </div>
                 </div>
                 <div class="step3-group">
                   <div class="step3-row"><span>${t('vmin_label')}</span></div>
                   <div class="step3-range-row">
-                    <input type="range" id="step3VminSlider" min="${S.limit ? 0 : -10}" max="${S.limit ? 5 : 10}" step="0.1" value="${S.vmin}">
+                    <input type="range" id="step3VminSlider" min="${step3VRange()[0]}" max="${step3VRange()[1]}" step="0.1" value="${S.vmin}">
                     <input type="text" id="step3VminNumber" value="${step3Fmt(S.vmin, 2)}">
                   </div>
+                  <div class="step3-note" id="step3AdcSat" style="display:none; color:var(--accent2); font-weight:600;"></div>
                 </div>
                 <div class="step3-group">
                   <div class="step3-row"><span>${t('fin_label')}</span></div>
@@ -4234,7 +4274,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
                     <option value="1000" ${S.Fs === 1000 ? 'selected' : ''}>1 kHz</option>
                     <option value="5000" ${S.Fs === 5000 ? 'selected' : ''}>5 kHz</option>
                     <option value="10000" ${S.Fs === 10000 ? 'selected' : ''}>10 kHz</option>
-                    <option value="20000" ${S.Fs === 20000 ? 'selected' : ''}>20 kHz</option>
+                    ${boardCfg().fsMax >= 20000 ? `<option value="20000" ${S.Fs === 20000 ? 'selected' : ''}>20 kHz</option>` : ''}
                   </select>
                 </div>
                 <div class="step3-note">${t('filter_note')}</div>
@@ -4337,6 +4377,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
 
   // Initialize Step 3 event listeners
   function initStep3() {
+    if (step3State.Fs > boardCfg().fsMax) step3State.Fs = boardCfg().fsMax;
+    step3SetVminVmax(step3State.vmin, step3State.vmax, 'max');   // bornes de la carte + avertissement de saturation
     // Signal type
     document.getElementById('step3SignalType').addEventListener('change', e => {
       step3State.signal = e.target.value;
@@ -4344,9 +4386,12 @@ Implement a real-time digital signal acquisition and processing system using Ard
       step3DrawAll();
     });
 
-    // Limit range
+    // Carte
+    document.querySelectorAll('.board-pill button').forEach(btn => btn.addEventListener('click', () => setBoard(btn.dataset.board)));
+
+    // Plage étendue ±10 V (case cochée) ou −1 V … Vref + 1 V
     document.getElementById('step3LimitRange').addEventListener('change', e => {
-      step3State.limit = e.target.checked;
+      step3State.limit = !e.target.checked;
       step3ApplyLimitImmediately();
       step3DrawAll();
     });
@@ -5054,8 +5099,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
                 if (step4State.waitingForModel && /^(UNO_R4|ESP32)/.test(trimmed)) {
                   step4State.waitingForModel = false;
                   step4State.boardName = trimmed.startsWith('UNO_R4') ? 'Arduino UNO R4' : 'ESP32';
-                  state.board = trimmed.startsWith('UNO_R4') ? 'uno' : 'esp32';   // le schéma de montage suit la carte
-                  saveSettings();
+                  setBoard(trimmed.startsWith('UNO_R4') ? 'uno' : 'esp32');   // montage et simulation suivent la carte
                   step4Log(`RX: ${trimmed}`, 'rx');
                   updateStep4UI();
                   continue;
