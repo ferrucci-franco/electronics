@@ -3887,6 +3887,24 @@ Implement a real-time digital signal acquisition and processing system using Ard
     return 23040;
   }
 
+  // Vue du Bode (zoom, pan) gardée tant que seuls des réglages du signal ou du tracé temporel changent :
+  // déplacer f_IN (au doigt, à la souris, au curseur) ne doit pas ramener le Bode à « tout ajuster ».
+  const STEP3_TIME_ONLY = new Set(['signal','Vpp','offset','vmin','vmax','f0','duty','limit','cycles','showAlias',
+                                   'showTime','showZOH','overlay','autoYRange']);
+  function step3BodeViewKey() {
+    return JSON.stringify(Object.keys(step3State).sort().filter(k => !STEP3_TIME_ONLY.has(k)).map(k => [k, step3State[k]]));
+  }
+  function step3KeepView(div, layout, key, phase) {
+    const fl = div && div._fullLayout;
+    if (!fl || div._viewKey !== key || !fl.xaxis || !fl.yaxis) return;
+    layout.xaxis.range = fl.xaxis.range.slice(); layout.xaxis.autorange = false;
+    layout.yaxis.range = fl.yaxis.range.slice(); layout.yaxis.autorange = false;
+    if (phase && layout.yaxis.tickmode === 'linear') {
+      const dt = step3PhaseDtick(Math.abs(fl.yaxis.range[1] - fl.yaxis.range[0]));
+      if (dt) layout.yaxis.dtick = dt; else { layout.yaxis.tickmode = 'auto'; delete layout.yaxis.dtick; }
+    }
+  }
+
   // Draw Bode plot
   function step3DrawBode() {
     const magDiv = document.getElementById('step3BodeMag');
@@ -4049,9 +4067,12 @@ Implement a real-time digital signal acquisition and processing system using Ard
     const magTraces = [{ x:freqs, y:magVals, type:'scatter', mode:'lines', line:{color:C.bode, width:3}, hoverinfo:'skip' }];
     if (f0In) magTraces.push({ x:[f0], y:[m0Val], type:'scatter', mode:'markers', marker:{color:'#dc2626', size:11, line:{color:dark ? '#2b3648' : '#ffffff', width:2}}, hoverinfo:'skip' });
 
+    const viewKey = step3BodeViewKey();
+    step3StoreInit(magDiv, magLayout);                 // vue initiale (boutons « ajuster »), avant de garder le zoom
+    step3KeepView(magDiv, magLayout, viewKey, false);
     Plotly.react(magDiv, magTraces, magLayout, {displaylogo:false, responsive:true, displayModeBar:false, doubleClick:false});
+    magDiv._viewKey = viewKey;
     step3AttachF0Drag(magDiv);
-    step3StoreInit(magDiv, magLayout);
     step3AttachRightPan(magDiv);
     step3AttachWheel(magDiv);
     step3AttachTouch(magDiv);
@@ -4075,9 +4096,11 @@ Implement a real-time digital signal acquisition and processing system using Ard
         phTraces.push({ x:[f0], y:[ph0], type:'scatter', mode:'markers', marker:{color:'#dc2626', size:11, line:{color:dark ? '#2b3648' : '#ffffff', width:2}}, hoverinfo:'skip' });
         phLayout.annotations = [ptAnn(ph0, ph0.toFixed(1).replace('.', state.lang === 'en' ? '.' : ',') + '°', phases)];
       }
-      Plotly.react(phDiv, phTraces, phLayout, {displaylogo:false, responsive:true, displayModeBar:false, doubleClick:false});
-      step3AttachF0Drag(phDiv);
       step3StoreInit(phDiv, phLayout);
+      step3KeepView(phDiv, phLayout, viewKey, true);
+      Plotly.react(phDiv, phTraces, phLayout, {displaylogo:false, responsive:true, displayModeBar:false, doubleClick:false});
+      phDiv._viewKey = viewKey;
+      step3AttachF0Drag(phDiv);
       step3AttachRightPan(phDiv);
       step3AttachWheel(phDiv);
       step3AttachTouch(phDiv);
