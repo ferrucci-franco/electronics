@@ -829,8 +829,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const BRANCH = {rc:{C:['C'], R:['R']}, rlc:{C:['C'], R:['R'], L:['L', 'RL']}};
   // one part drawn from (0,0) along +x; rotated by 90° for the vertical branch
   function partPath(p, len){
-    if(p === 'R') return `<path d="${resistorPath(0, 0, len)}"/>`;
-    if(p === 'RL') return `<path d="${resistorPath(0, 0, len, 3, 4.5)}"/>`;
+    // R: 4 zigzags; R_L (the coil's own resistance): shorter, 3 zigzags, same height as R
+    if(p === 'R') return `<path d="${resistorPath(0, 0, len, 4, 7)}"/>`;
+    if(p === 'RL') return `<path d="${resistorPath(0, 0, len, 3, 7)}"/>`;
     if(p === 'L') return `<path d="${inductorPath(0, 0, len)}"/>`;
     const a = len/2 - 6, b = len/2 + 6;   // capacitor
     return `<path d="M0 0 H${a}"/><path d="M${a} -14 V14"/><path d="M${b} -14 V14"/><path d="M${b} 0 H${len}"/>`;
@@ -839,15 +840,23 @@ document.addEventListener('DOMContentLoaded', () => {
     ? `<text x="${x}" y="${y}" text-anchor="${anchor}" style="font-size:11px">R<tspan class="sub" dy="3" style="font-size:8px">L</tspan></text>`
     : `<text x="${x}" y="${y}" text-anchor="${anchor}">${p}</text>`;
   // widest drawing of each circuit, so that switching the measured component keeps the scale
-  const SCHEM_REF_W = {rc:266, rlc:362};
+  // part lengths, along the top rail (h) and in the measured branch (v)
+  const H_LEN = kind => ({R: kind === 'rc' ? 42 : 36, L:56, RL:24, C:28}), V_LEN = {R:35, L:44, RL:22, C:28};
+  // drawing width of a set-up; each circuit is scaled by its widest set-up, so that switching the
+  // measured component keeps the scale
+  const schemWidth = (kind, out) => {
+    const parts = SERIES[kind][out], h = H_LEN(kind);
+    return 92 + 16 + parts.reduce((w, p) => w + h[p], 0) + 12 * (parts.length - 1) + 24 + 48 + 26;
+  };
+  const SCHEM_REF_W = {rc:Math.max(...OUTS.rc.map(o => schemWidth('rc', o))), rlc:Math.max(...OUTS.rlc.map(o => schemWidth('rlc', o)))};
   function schematicSVG(kind, out){
     const yTop = 34, yBot = 124, xIn = 92;
-    const hLen = {R: kind === 'rc' ? 60 : 52, L:56, RL:24, C:28}, vLen = {R:50, L:44, RL:22, C:28};
+    const hLen = H_LEN(kind), vLen = V_LEN;
     let body = '', x = xIn + 16;
     body += `<path d="M${xIn} ${yTop} H${x}"/>`;
     SERIES[kind][out].forEach((p, i) => {
       if(i){ body += `<path d="M${x} ${yTop} H${x+12}"/>`; x += 12; }
-      body += `<g transform="translate(${x} ${yTop})">${partPath(p, hLen[p])}</g>` + partLabel(p, x + hLen[p]/2, yTop - (p === 'RL' ? 12 : p === 'C' ? 20 : 14), 'middle');
+      body += `<g transform="translate(${x} ${yTop})">${partPath(p, hLen[p])}</g>` + partLabel(p, x + hLen[p]/2, yTop - (p === 'C' ? 20 : 14), 'middle');
       x += hLen[p];
     });
     const xB = x + 24, xOut = xB + 48, W = xOut + 26;
