@@ -121,4 +121,5 @@ a tap; use `plotly_doubleclick`, not the DOM `dblclick`; clear `_hoversubplot` a
 - No text selection and no text caret outside the text fields: `body{user-select:none; caret-color:transparent}`,
   then `input:not([type=checkbox]):not([type=radio]), textarea{user-select:text; caret-color:auto}`. Otherwise a
   button focused from code (a confirmation's "Cancel") or caret browsing shows a blinking bar on it.
-- Language selector FR/EN/ES (FR default), light/dark theme, plots styled as `adjustable-filters/`.
+- Language selector as in `adjustable-filters/`: segmented buttons in the order EN · FR · ES (FR selected by
+  default), then the 🌗 theme button; light/dark theme, plots styled as `adjustable-filters/`.
