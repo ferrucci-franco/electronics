@@ -121,5 +121,12 @@ a tap; use `plotly_doubleclick`, not the DOM `dblclick`; clear `_hoversubplot` a
 - No text selection and no text caret outside the text fields: `body{user-select:none; caret-color:transparent}`,
   then `input:not([type=checkbox]):not([type=radio]), textarea{user-select:text; caret-color:auto}`. Otherwise a
   button focused from code (a confirmation's "Cancel") or caret browsing shows a blinking bar on it.
+- Full screen: a ⛶ button after the theme button, from `assets/fullscreen.js` (`AppFullscreen.install({button,
+  texts})`, strings `fullscreen`, `exitFullscreen`, `exitPill` in FR/EN/ES). It uses the page's Fullscreen API, not
+  the browser's F11 mode, whose top-edge hover brings the browser bars back (a page cannot prevent that): here the
+  top edge shows the app's semi-transparent pill « Quitter le plein écran (Échap) » instead, also for 2.5 s on
+  entry; F11 is caught where the browser allows it. Hidden where the page cannot go full screen (iPhone, iframes).
+  In `bode-measure/`, `adjustable-filters/` and `dc-circuit-simulator/` (a header with menu labels: `.fs-icon` and
+  `.fs-label` slots in the button).
 - Language selector as in `adjustable-filters/`: segmented buttons in the order EN · FR · ES (FR selected by
   default), then the 🌗 theme button; light/dark theme, plots styled as `adjustable-filters/`.

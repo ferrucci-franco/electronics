@@ -123,6 +123,7 @@
       drawPalette();
       if (ui.syncWaveChip) ui.syncWaveChip();
       if (ui.quiz) ui.quiz.render();   // the quiz pane is drawn by the quiz itself
+      if (ui.fullscreen) ui.fullscreen.refresh();
     }
     $('themeBtn').addEventListener('click', () => {
       const h = document.documentElement;
@@ -130,6 +131,9 @@
       h.classList.toggle('dark', !dark); h.classList.toggle('light', dark);
       R.readColors(); drawPalette(); app.requestRender(); ui.update();
     });
+    // full screen (button, F11) with an exit pill on the top edge instead of the browser's bar (fullscreen.js);
+    // hidden where the page cannot go full screen (iPhone, the guide's demo frame)
+    ui.fullscreen = AppFullscreen.install({ button: $('fsBtn'), texts: () => ({ fullscreen: app.tp('fullscreen'), exitFullscreen: app.tp('fs_exit'), exitPill: app.tp('fs_exit_pill') }) });
     /* phone, tablet: the header is a single row (circuit tabs + ☰); the actions open in a menu under it */
     const hdrEl = document.querySelector('.app-header');
     $('moreBtn').addEventListener('click', () => hdrEl.classList.toggle('menu-open'));
