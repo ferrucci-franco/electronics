@@ -3747,11 +3747,12 @@ Implement a real-time digital signal acquisition and processing system using Ard
     return ph;
   }
   // Graduations de la phase : multiples de 45° ou 90° (180° pour une très grande plage)
+  // Pas = multiple de 45° choisi pour garder au plus 8 graduations, quelle que soit la plage
+  // (au-delà de F_Nyq, un filtre d'ordre élevé descend à plusieurs milliers de degrés)
   function step3PhaseDtick(span) {
-    if (span > 720) return 180;
-    if (span > 270) return 90;
-    if (span >= 60) return 45;
-    return null;                       // zoom serré : graduations automatiques
+    if (span < 60) return null;        // zoom serré : graduations automatiques
+    for (const d of [45, 90, 180, 360, 720, 1440, 2880, 5760, 11520]) if (span / d <= 8) return d;
+    return 23040;
   }
 
   // Draw Bode plot
