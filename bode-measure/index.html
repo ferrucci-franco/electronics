@@ -110,7 +110,8 @@
   .card{border:1px solid var(--border);border-radius:12px;padding:10px 12px;background:var(--paper);display:flex;flex-direction:column;gap:8px;flex:none}
   .card h3{margin:0 0 2px;font-size:15px}
   .grow{flex:1}
-  .hint{font-size:12px;line-height:1.35}
+  .hint{font-size:13.5px;line-height:1.4}
+  .theory-note{font-size:13px}
   .copyright{font-size:12px;line-height:1.35;padding:2px 2px 0;margin-top:auto}
   .btn-accent{background:var(--accent) !important; color:#fff !important; border-color:var(--accent) !important}
   .btn-accent:hover{filter:brightness(1.08)}
@@ -179,11 +180,11 @@
      query, so the splitter counts too): drawing on the left of the text when there is room, otherwise
      definition, drawing, formula, convention from top to bottom. */
   .calc{container-type:inline-size; border:1px solid var(--border); border-radius:10px; padding:10px 12px; background:var(--computed);
-        font-size:13px; line-height:1.45; color:var(--muted)}
-  .calc h4{margin:0 0 4px; font-size:13px; color:var(--fg)}
+        font-size:14px; line-height:1.45; color:var(--muted)}
+  .calc h4{margin:0 0 4px; font-size:14.5px; color:var(--fg)}
   .calc p{margin:4px 0}
   .calc b{color:var(--fg)}
-  .calc .eqs{display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:2px 28px; margin:2px 0 4px; color:var(--fg); font-size:15px}
+  .calc .eqs{display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:2px 28px; margin:2px 0 4px; color:var(--fg); font-size:16px}
   .calc .eqs .katex-display{margin:.35em 0}
   .calc .katex{font-size:1.05em}
   .calc .eqs .katex{font-size:1.12em}
@@ -293,6 +294,7 @@
     @page{size:A4 portrait; margin:11mm 12mm}
     :root, html.dark{
       --bg:#ffffff; --fg:#000000; --muted:#444c5c; --card:#ffffff; --border:#9aa4b8; --paper:#ffffff; --computed:#f1f4fa;
+      --c-in:#666666; --c-meas:#1f77b4;
     }
     html, body{background:#fff !important; color:#000 !important; overflow:visible !important; height:auto !important}
     .app{display:none !important}
@@ -302,6 +304,9 @@
     #report h1{font-size:15pt; margin:0 0 4mm}
     #report h2{font-size:12pt; margin:3mm 0 1mm; padding:1.5mm 2.5mm; background:#eef2f8; border-radius:1.5mm}
     #report p.comps{margin:0 0 2mm; padding:0 2.5mm; font-size:10pt}
+    /* the set-up's schematic, above its table */
+    #report .report-schem{width:72mm; margin:0 0 3mm 2mm}
+    #report .report-schem svg{display:block; width:100% !important; height:auto}
     #report .meta{display:grid; grid-template-columns:auto 1fr auto 1fr; gap:1.5mm 4mm; margin:0 0 2mm; font-size:10pt}
     #report .meta dt{color:#444; margin:0} #report .meta dd{margin:0; font-weight:600}
     #report .body{display:grid; grid-template-columns:minmax(0,1fr) 98mm; gap:3mm; align-items:start}
@@ -505,7 +510,7 @@ document.addEventListener('DOMContentLoaded', () => {
       confirmText:'Effacer toutes les mesures (RC et RLC), les valeurs des composants et les noms ?', confirmYes:'Oui, tout effacer', confirmNo:'Annuler',
       clearTable:'Vider le tableau', clearYes:'Oui, vider ce tableau',
       clearText:cfg => `Effacer toutes les mesures du tableau affiché (${cfg}) ? Les autres tableaux, les valeurs des composants et les noms sont conservés.`,
-      theory:'Afficher la courbe théorique', theoryTitle:'Valeurs caractéristiques (théorie)',
+      theory:'Afficher la courbe théorique <span class="theory-note">(l’enseignant sait comment l’activer)</span>', theoryTitle:'Valeurs caractéristiques (théorie)',
       fc:'Fréquence de coupure f<sub>c</sub>', f0:'Fréquence de résonance f<sub>0</sub>', Q:'Facteur de qualité Q',
       invalidComp:'Valeurs de composants invalides : la courbe théorique ne peut pas être tracée.',
       bodeTitle:'Bode — Gain', bodePhaseTitle:'Bode — Phase', bodeX:'Fréquence (Hz)', bodeYdB:'G (dB)', phaseY:'Phase (°)',
@@ -541,7 +546,7 @@ document.addEventListener('DOMContentLoaded', () => {
       confirmText:'Clear all measurements (RC and RLC), component values and names?', confirmYes:'Yes, clear everything', confirmNo:'Cancel',
       clearTable:'Clear table', clearYes:'Yes, clear this table',
       clearText:cfg => `Delete all measurements in the table shown (${cfg})? The other tables, the component values and the names are kept.`,
-      theory:'Show the theoretical curve', theoryTitle:'Characteristic values (theory)',
+      theory:'Show the theoretical curve <span class="theory-note">(the teacher knows how to turn it on)</span>', theoryTitle:'Characteristic values (theory)',
       fc:'Cutoff frequency f<sub>c</sub>', f0:'Resonance frequency f<sub>0</sub>', Q:'Quality factor Q',
       invalidComp:'Invalid component values: the theoretical curve cannot be drawn.',
       bodeTitle:'Bode — Gain', bodePhaseTitle:'Bode — Phase', bodeX:'Frequency (Hz)', bodeYdB:'G (dB)', phaseY:'Phase (°)',
@@ -577,7 +582,7 @@ document.addEventListener('DOMContentLoaded', () => {
       confirmText:'¿Borrar todas las mediciones (RC y RLC), los valores de los componentes y los nombres?', confirmYes:'Sí, borrar todo', confirmNo:'Cancelar',
       clearTable:'Vaciar la tabla', clearYes:'Sí, vaciar esta tabla',
       clearText:cfg => `¿Borrar todas las mediciones de la tabla visible (${cfg})? Las demás tablas, los valores de los componentes y los nombres se conservan.`,
-      theory:'Mostrar la curva teórica', theoryTitle:'Valores característicos (teoría)',
+      theory:'Mostrar la curva teórica <span class="theory-note">(el docente sabe cómo activarla)</span>', theoryTitle:'Valores característicos (teoría)',
       fc:'Frecuencia de corte f<sub>c</sub>', f0:'Frecuencia de resonancia f<sub>0</sub>', Q:'Factor de calidad Q',
       invalidComp:'Valores de componentes inválidos: no se puede trazar la curva teórica.',
       bodeTitle:'Bode — Ganancia', bodePhaseTitle:'Bode — Fase', bodeX:'Frecuencia (Hz)', bodeYdB:'G (dB)', phaseY:'Fase (°)',
@@ -1958,6 +1963,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <h2>${esc(t.reportCircuit)} ${t[kind]} — ${t.reportOut} ${esc(t.outOpt[out])}</h2>
         <p class="comps">${componentsText(kind)}</p>
         <div class="body"><div>
+        <div class="schematic report-schem">${schematicSVG(kind, out)}</div>
         <table><thead><tr><th>f (Hz)</th><th>V<sub>in,pp</sub> (V)</th><th>V<sub>out,pp</sub> (V)</th><th>ΔT (µs)</th><th>G (V/V)</th><th>G<sub>dB</sub> (dB)</th><th>φ (°)</th></tr></thead><tbody>`;
       sortedRows(kind, out).forEach(({row, c}) => {
         const raw = (key, v, f) => Number.isFinite(v) ? f(v) : esc(row[key]);
