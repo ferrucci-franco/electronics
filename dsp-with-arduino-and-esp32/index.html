@@ -3624,6 +3624,12 @@ Implement a real-time digital signal acquisition and processing system using Ard
   document.addEventListener('input', e => {
     if (e.target && e.target.type === 'text' && e.target.closest && e.target.closest('.step3-range-row')) e.target.dataset.typed = '1';
   });
+  // Entrée (touche « OK » du clavier du téléphone) : valider la valeur et fermer le clavier
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    const box = e.target;
+    if (box && box.tagName === 'INPUT' && box.type === 'text' && box.closest && box.closest('.step3-range-row')) { e.preventDefault(); box.blur(); }
+  });
   document.addEventListener('keydown', e => {
     if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
     const box = e.target;
@@ -4278,14 +4284,14 @@ Implement a real-time digital signal acquisition and processing system using Ard
                   <div class="step3-row"><span>${t('vmax_label')}</span></div>
                   <div class="step3-range-row">
                     <input type="range" id="step3VmaxSlider" min="${step3VRange()[0]}" max="${step3VRange()[1]}" step="0.1" value="${S.vmax}">
-                    <input type="text" id="step3VmaxNumber" value="${step3Fmt(S.vmax, 2)}">
+                    <input type="text" id="step3VmaxNumber" inputmode="decimal" enterkeyhint="done" autocomplete="off" value="${step3Fmt(S.vmax, 2)}">
                   </div>
                 </div>
                 <div class="step3-group">
                   <div class="step3-row"><span>${t('vmin_label')}</span></div>
                   <div class="step3-range-row">
                     <input type="range" id="step3VminSlider" min="${step3VRange()[0]}" max="${step3VRange()[1]}" step="0.1" value="${S.vmin}">
-                    <input type="text" id="step3VminNumber" value="${step3Fmt(S.vmin, 2)}">
+                    <input type="text" id="step3VminNumber" inputmode="text" enterkeyhint="done" autocomplete="off" value="${step3Fmt(S.vmin, 2)}">
                   </div>
                   <div class="step3-note" id="step3AdcSat" style="display:none; color:var(--accent2); font-weight:600;"></div>
                 </div>
@@ -4294,14 +4300,14 @@ Implement a real-time digital signal acquisition and processing system using Ard
                   <div class="step3-note">${t('fin_note')}</div>
                   <div class="step3-range-row">
                     <input type="range" id="step3F0LogSlider" min="0" max="1000" step="1" value="${step3InvLog(S.f0)}">
-                    <input type="text" id="step3F0Number" value="${step3Fmt(S.f0, 0)}">
+                    <input type="text" id="step3F0Number" inputmode="decimal" enterkeyhint="done" autocomplete="off" value="${step3Fmt(S.f0, 0)}">
                   </div>
                 </div>
                 <div class="step3-group" id="step3DutyGroup" style="display:${S.signal === 'square' ? 'block' : 'none'}">
                   <div class="step3-row"><span>${t('duty_label')}</span></div>
                   <div class="step3-range-row">
                     <input type="range" id="step3DutySlider" min="5" max="95" step="5" value="${S.duty}">
-                    <input type="text" id="step3DutyNumber" value="${step3Fmt(S.duty, 0)}">
+                    <input type="text" id="step3DutyNumber" inputmode="decimal" enterkeyhint="done" autocomplete="off" value="${step3Fmt(S.duty, 0)}">
                   </div>
                 </div>
               </div>
@@ -4326,7 +4332,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
                   <div class="step3-row"><span>${t('filter_ma_order')}</span></div>
                   <div class="step3-range-row">
                     <input type="range" id="step3MaNSlider" min="2" max="32" step="1" value="${S.maN}">
-                    <input type="text" id="step3MaNNumber" value="${step3Fmt(S.maN, 0)}">
+                    <input type="text" id="step3MaNNumber" inputmode="numeric" enterkeyhint="done" autocomplete="off" value="${step3Fmt(S.maN, 0)}">
                   </div>
                   <div class="step3-note" id="step3MaOrderInfo">${t('filter_ma_order_note')}${S.maN - 1}</div>
                 </div>
@@ -4339,7 +4345,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
                   <div class="step3-row"><span>${t('filter_ratio')}</span></div>
                   <div class="step3-range-row">
                     <input type="range" id="step3LpRatioSlider" min="${step3MinRatio(S.lpOrder)}" max="0.9" step="0.005" value="${S.lpR}">
-                    <input type="text" id="step3LpRatioNumber" value="${step3Fmt(S.lpR, 3)}">
+                    <input type="text" id="step3LpRatioNumber" inputmode="decimal" enterkeyhint="done" autocomplete="off" value="${step3Fmt(S.lpR, 3)}">
                   </div>
                   <div class="step3-note" id="step3LpFcInfo">${t('fc_prefix')}250.0 Hz</div>
                 </div>
@@ -4347,12 +4353,12 @@ Implement a real-time digital signal acquisition and processing system using Ard
                   <div class="step3-row"><span>${t('filter_fir_taps')}</span></div>
                   <div class="step3-range-row">
                     <input type="range" id="step3FirNSlider" min="3" max="32" step="1" value="${S.firN}">
-                    <input type="text" id="step3FirNNumber" value="${step3Fmt(S.firN, 0)}">
+                    <input type="text" id="step3FirNNumber" inputmode="numeric" enterkeyhint="done" autocomplete="off" value="${step3Fmt(S.firN, 0)}">
                   </div>
                   <div class="step3-row"><span>${t('filter_ratio')}</span></div>
                   <div class="step3-range-row">
                     <input type="range" id="step3FirRatioSlider" min="0.02" max="0.9" step="0.005" value="${S.firR}">
-                    <input type="text" id="step3FirRatioNumber" value="${step3Fmt(S.firR, 3)}">
+                    <input type="text" id="step3FirRatioNumber" inputmode="decimal" enterkeyhint="done" autocomplete="off" value="${step3Fmt(S.firR, 3)}">
                   </div>
                   <div class="step3-note" id="step3FirInfo"></div>
                 </div>
@@ -4365,7 +4371,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
                   <div class="step3-row"><span>${t('filter_ratio')}</span></div>
                   <div class="step3-range-row">
                     <input type="range" id="step3HpRatioSlider" min="${step3MinRatio(S.hpOrder)}" max="0.9" step="0.005" value="${S.hpR}">
-                    <input type="text" id="step3HpRatioNumber" value="${step3Fmt(S.hpR, 3)}">
+                    <input type="text" id="step3HpRatioNumber" inputmode="decimal" enterkeyhint="done" autocomplete="off" value="${step3Fmt(S.hpR, 3)}">
                   </div>
                   <div class="step3-note" id="step3HpFcInfo">${t('fc_prefix')}250.0 Hz</div>
                 </div>
@@ -4373,12 +4379,12 @@ Implement a real-time digital signal acquisition and processing system using Ard
                   <div class="step3-row"><span>${t('center_ratio')}</span></div>
                   <div class="step3-range-row">
                     <input type="range" id="step3BpRatioSlider" min="0.01" max="0.95" step="0.005" value="${S.bpR}">
-                    <input type="text" id="step3BpRatioNumber" value="${step3Fmt(S.bpR, 3)}">
+                    <input type="text" id="step3BpRatioNumber" inputmode="decimal" enterkeyhint="done" autocomplete="off" value="${step3Fmt(S.bpR, 3)}">
                   </div>
                   <div class="step3-row"><span>${t('q_label')}</span></div>
                   <div class="step3-range-row">
                     <input type="range" id="step3BpQSlider" min="0.5" max="30" step="0.5" value="${S.bpQ}">
-                    <input type="text" id="step3BpQNumber" value="${step3Fmt(S.bpQ, 1)}">
+                    <input type="text" id="step3BpQNumber" inputmode="decimal" enterkeyhint="done" autocomplete="off" value="${step3Fmt(S.bpQ, 1)}">
                   </div>
                   <div class="step3-note" id="step3BpInfo"></div>
                 </div>
@@ -4386,12 +4392,12 @@ Implement a real-time digital signal acquisition and processing system using Ard
                   <div class="step3-row"><span>${t('center_ratio')}</span></div>
                   <div class="step3-range-row">
                     <input type="range" id="step3NotchRatioSlider" min="0.01" max="0.95" step="0.005" value="${S.notchR}">
-                    <input type="text" id="step3NotchRatioNumber" value="${step3Fmt(S.notchR, 3)}">
+                    <input type="text" id="step3NotchRatioNumber" inputmode="decimal" enterkeyhint="done" autocomplete="off" value="${step3Fmt(S.notchR, 3)}">
                   </div>
                   <div class="step3-row"><span>${t('q_label')}</span></div>
                   <div class="step3-range-row">
                     <input type="range" id="step3NotchQSlider" min="0.5" max="30" step="0.5" value="${S.notchQ}">
-                    <input type="text" id="step3NotchQNumber" value="${step3Fmt(S.notchQ, 1)}">
+                    <input type="text" id="step3NotchQNumber" inputmode="decimal" enterkeyhint="done" autocomplete="off" value="${step3Fmt(S.notchQ, 1)}">
                   </div>
                   <div class="step3-note" id="step3NotchInfo"></div>
                 </div>
@@ -4443,7 +4449,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
                   <div class="step3-row"><span>${t('cycles_label')}</span></div>
                   <div class="step3-range-row">
                     <input type="range" id="step3CyclesSlider" min="2" max="500" step="1" value="${S.cycles}">
-                    <input type="text" id="step3CyclesNumber" value="${step3Fmt(S.cycles, 0)}">
+                    <input type="text" id="step3CyclesNumber" inputmode="numeric" enterkeyhint="done" autocomplete="off" value="${step3Fmt(S.cycles, 0)}">
                   </div>
                 </div>
                 <div class="step3-note">${t('steady_note')}</div>
@@ -4471,7 +4477,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
                     <div class="step3-row"><span>${t('advanced_fmax_ratio_label')}</span></div>
                     <div class="step3-range-row">
                       <input type="range" id="step3BodeFmaxRatioSlider" min="1" max="6" step="0.5" value="${S.fmaxRatio}">
-                      <input type="text" id="step3BodeFmaxRatioNumber" value="${step3Fmt(S.fmaxRatio, 1)}">
+                      <input type="text" id="step3BodeFmaxRatioNumber" inputmode="decimal" enterkeyhint="done" autocomplete="off" value="${step3Fmt(S.fmaxRatio, 1)}">
                     </div>
                   </div>
                 </div>
