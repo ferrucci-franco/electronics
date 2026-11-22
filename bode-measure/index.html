@@ -46,18 +46,32 @@
 
   /* ===== Layout: side panel (title, settings, table) on the left, Bode on the right, full height;
      each column scrolls on its own, so the plot stays in view while the table grows ===== */
+  /* the side panel's width (--left-w) is set by the page: wide enough for the whole table when the window
+     allows, or what the reader dragged the splitter to */
   .app{
-    display:grid; gap:10px; padding:10px;
+    display:grid; gap:0; padding:10px;
     height:100vh; height:100dvh;
-    grid-template-columns:minmax(560px, 44%) minmax(0,1fr);
+    grid-template-columns:var(--left-w, minmax(560px, 44%)) 12px minmax(0,1fr);
     grid-template-rows:minmax(0,1fr);
-    grid-template-areas:"left right";
+    grid-template-areas:"left split right";
   }
-  .left{grid-area:left; display:flex; flex-direction:column; gap:10px; min-width:0; min-height:0; overflow:auto; overscroll-behavior:contain;
-        scrollbar-width:thin; scrollbar-color:var(--scroll-thumb) var(--scroll-track)}
-  .left::-webkit-scrollbar, .bodeWrap::-webkit-scrollbar{width:12px}
-  .left::-webkit-scrollbar-track, .bodeWrap::-webkit-scrollbar-track{background:var(--scroll-track); border-radius:999px}
-  .left::-webkit-scrollbar-thumb, .bodeWrap::-webkit-scrollbar-thumb{background:linear-gradient(180deg, var(--scroll-thumb), var(--scroll-thumb-hover)); border-radius:999px; border:2px solid var(--scroll-track)}
+  .left{grid-area:left; display:flex; flex-direction:column; gap:10px; min-width:0; min-height:0; overflow:auto; overscroll-behavior:contain}
+  /* splitter between the panels: drag to resize, double-click for the automatic width */
+  .splitter{grid-area:split; position:relative; cursor:col-resize; touch-action:none; outline:none}
+  .splitter::before{content:''; position:absolute; top:8px; bottom:8px; left:50%; width:2px; margin-left:-1px; border-radius:2px; background:var(--border); transition:background .15s, width .15s}
+  .splitter:hover::before, .splitter:focus-visible::before, .splitter.dragging::before{background:var(--accent); width:4px; margin-left:-2px}
+  body.splitting, body.splitting *{cursor:col-resize !important; user-select:none !important}
+  /* scrollbars: thin but always visible. Styled WebKit/Blink scrollbars are never the overlay kind that
+     fades out (macOS, phones), so the extra columns and rows are always announced; Firefox gets the thin
+     standard ones. (iOS ignores all of this: the table gets its own bar, see .hbar.) */
+  .left::-webkit-scrollbar, .bodeWrap::-webkit-scrollbar, .table-wrap::-webkit-scrollbar{width:8px; height:8px}
+  .left::-webkit-scrollbar-track, .bodeWrap::-webkit-scrollbar-track, .table-wrap::-webkit-scrollbar-track{background:var(--scroll-track); border-radius:999px}
+  .left::-webkit-scrollbar-thumb, .bodeWrap::-webkit-scrollbar-thumb, .table-wrap::-webkit-scrollbar-thumb{background:var(--scroll-thumb); border-radius:999px}
+  .left::-webkit-scrollbar-thumb:hover, .bodeWrap::-webkit-scrollbar-thumb:hover, .table-wrap::-webkit-scrollbar-thumb:hover{background:var(--scroll-thumb-hover)}
+  .left::-webkit-scrollbar-corner, .table-wrap::-webkit-scrollbar-corner{background:transparent}
+  @supports not selector(::-webkit-scrollbar){
+    .left, .bodeWrap, .table-wrap{scrollbar-width:thin; scrollbar-color:var(--scroll-thumb) var(--scroll-track)}
+  }
   .right{grid-area:right; min-width:0; min-height:0; overflow:hidden; display:flex; flex-direction:column; gap:6px}
 
   .panel{border:1px solid var(--border);background:var(--card);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:10px;min-width:0}
@@ -131,6 +145,12 @@
 
   /* ----- measurement table ----- */
   .table-wrap{overflow-x:auto}
+  .table-wrap.has-x-scroll{padding-bottom:2px}
+  /* the table's own horizontal bar, shown only where the native one fades out (iOS, overlay scrollbars) */
+  .hbar{position:relative; height:6px; margin-top:4px; border-radius:999px; background:var(--scroll-track); touch-action:none; cursor:pointer}
+  .hbar[hidden]{display:none}
+  .hbar-thumb{position:absolute; top:0; bottom:0; left:0; border-radius:999px; background:var(--scroll-thumb)}
+  .hbar:active .hbar-thumb{background:var(--scroll-thumb-hover)}
   table.meas{border-collapse:separate; border-spacing:0; width:100%; font-size:14px}
   table.meas th, table.meas td{border-bottom:1px solid var(--border); padding:3px 4px; text-align:center; white-space:nowrap}
   table.meas th{font-weight:600; font-size:13px; padding-bottom:6px; cursor:help}
@@ -170,8 +190,7 @@
 
   /* ----- Bode ----- */
   .plotwrap.panel{background:var(--paper); padding:8px}
-  .bodeWrap{display:flex;flex-direction:column;gap:8px;min-height:0; flex:1 1 auto; overflow:auto; overscroll-behavior:contain;
-            scrollbar-width:thin; scrollbar-color:var(--scroll-thumb) var(--scroll-track)}
+  .bodeWrap{display:flex;flex-direction:column;gap:8px;min-height:0; flex:1 1 auto; overflow:auto; overscroll-behavior:contain}
   /* "fit" (default): both plots share the panel height, no scroll */
   /* not scrollable itself: a scroll that starts on the plots must reach the page */
   .right.fit .bodeWrap{overflow:hidden; overscroll-behavior:auto}
@@ -232,7 +251,8 @@
 
   @media (max-width:1099px){
     body{overflow:auto}
-    .app{height:auto; min-height:100vh; grid-template-columns:minmax(0,1fr); grid-template-rows:none; grid-template-areas:"left" "right"}
+    .app{height:auto; min-height:100vh; gap:10px; grid-template-columns:minmax(0,1fr) !important; grid-template-rows:none; grid-template-areas:"left" "right"}
+    .splitter{display:none}
     .left{overflow:visible}
     .right{height:760px}
     /* one column: the Bode block has a fixed height and always fills it, so the option is meaningless */
@@ -381,6 +401,7 @@
             <tbody id="measBody"></tbody>
           </table>
         </div>
+        <div class="hbar" id="tableHbar" hidden><div class="hbar-thumb"></div></div>
         <div class="table-actions">
           <button id="addRowBtn" type="button">+ Ajouter une ligne</button>
           <button id="clearTableBtn" type="button" class="btn-danger">Vider le tableau</button>
@@ -407,6 +428,8 @@
     </aside>
 
     <!-- ===== Right column: Bode plot ===== -->
+    <div class="splitter" id="splitter" role="separator" aria-orientation="vertical" tabindex="0"></div>
+
     <section class="panel plotwrap right fit" id="bodeSection">
       <div class="bodeWrap">
         <div class="plot-cell" id="magCell"><div id="bodeMag" class="plot"></div><div class="plot-fit-btns" data-plot="bodeMag"></div></div>
@@ -467,6 +490,7 @@ document.addEventListener('DOMContentLoaded', () => {
       bodeTitle:'Bode — Gain', bodePhaseTitle:'Bode — Phase', bodeX:'Fréquence (Hz)', bodeYdB:'G (dB)', phaseY:'Phase (°)',
       traceMeas:'Mesures', traceTh:'Théorie', fitBode:'Ajuster le Bode à la hauteur', fitX:'Ajuster X', fitY:'Ajuster Y', fitAll:'Tout ajuster',
       legendShow:'Afficher la légende', legendHide:'Réduire la légende',
+      splitter:'Glisser pour redimensionner les panneaux (double-clic : largeur automatique)',
       zoomHint:'Glissez sur le côté pour zoomer en X, vers le haut ou le bas pour zoomer en Y, en diagonale pour une fenêtre',
       reportCircuit:'Circuit', reportTheory:'Courbe théorique affichée',
       reportFoot:'Relevé réalisé avec ferrucci-lab.com/bode-measure',
@@ -503,6 +527,7 @@ document.addEventListener('DOMContentLoaded', () => {
       bodeTitle:'Bode — Gain', bodePhaseTitle:'Bode — Phase', bodeX:'Frequency (Hz)', bodeYdB:'G (dB)', phaseY:'Phase (°)',
       traceMeas:'Measurements', traceTh:'Theory', fitBode:'Fit Bode to the height', fitX:'Fit X', fitY:'Fit Y', fitAll:'Fit all',
       legendShow:'Show legend', legendHide:'Minimize legend',
+      splitter:'Drag to resize the panels (double-click: automatic width)',
       zoomHint:'Drag sideways to zoom on X, up or down to zoom on Y, diagonally for a window',
       reportCircuit:'Circuit', reportTheory:'Theoretical curve shown',
       reportFoot:'Measured with ferrucci-lab.com/bode-measure',
@@ -539,6 +564,7 @@ document.addEventListener('DOMContentLoaded', () => {
       bodeTitle:'Bode — Ganancia', bodePhaseTitle:'Bode — Fase', bodeX:'Frecuencia (Hz)', bodeYdB:'G (dB)', phaseY:'Fase (°)',
       traceMeas:'Mediciones', traceTh:'Teoría', fitBode:'Ajustar el Bode a la altura', fitX:'Ajustar X', fitY:'Ajustar Y', fitAll:'Ajustar todo',
       legendShow:'Mostrar leyenda', legendHide:'Minimizar leyenda',
+      splitter:'Arrastrar para redimensionar los paneles (doble clic: ancho automático)',
       zoomHint:'Arrastra de lado para ampliar en X, arriba o abajo para ampliar en Y, en diagonal para una ventana',
       reportCircuit:'Circuito', reportTheory:'Curva teórica mostrada',
       reportFoot:'Medido con ferrucci-lab.com/bode-measure',
@@ -838,6 +864,8 @@ document.addEventListener('DOMContentLoaded', () => {
     try{ localStorage.setItem(LANG_KEY, LANG); }catch(_){}
     renderDate();
     renderFitButtons();
+    $('#splitter').title = t.splitter; $('#splitter').setAttribute('aria-label', t.splitter);
+    requestAnimationFrame(applyLeftWidth);   // header widths changed: the automatic width may too
     renderCircuitOptions();
     if(!clearBox.hidden) $('#clearText').textContent = t.clearText(currentConfigName());
     refreshComputedCells();
@@ -1640,8 +1668,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const touchDone = e => {
       e.stopPropagation();
       if(pinch && e.touches.length < 2) pinchEnd();
-      if(e.touches.length === 0) twoFingers = false;
+      if(e.touches.length === 0){ twoFingers = false; lastTouchEnd = performance.now(); }
     };
+    // a tap's emulated mouse events can end with a mouseout from the plot, and Plotly answers it by removing
+    // the tooltip the tap just showed: a finger has no pointer to leave with, so that mouseout is not passed on
+    let lastTouchEnd = -Infinity;
+    gd.addEventListener('mouseout', e => { if(performance.now() - lastTouchEnd < 700) e.stopPropagation(); }, true);
     gd.addEventListener('touchend', touchDone, {capture:true});
     gd.addEventListener('touchcancel', touchDone, {capture:true});
 
@@ -1879,11 +1911,117 @@ document.addEventListener('DOMContentLoaded', () => {
   setLang(TXT[savedLang] ? savedLang : 'fr');
   whenPlotly().then(() => updatePlots());
   // the Bode column changes height with the window: let Plotly follow it
-  window.addEventListener('resize', () => {
+  // the plots follow their column's size: window resize, splitter drag, layout switch
+  function resizePlots(){
     if(!plotsBuilt) return;
     if(plotIsNarrow() !== lastNarrow) updatePlots();   // margins and title placement follow the width
     Plotly.Plots.resize('bodeMag'); Plotly.Plots.resize('bodePhase');
-  });
+  }
+  let resizeRaf = 0;
+  const queueResize = () => { if(!resizeRaf) resizeRaf = requestAnimationFrame(() => { resizeRaf = 0; resizePlots(); }); };
+  window.addEventListener('resize', () => { applyLeftWidth(); queueResize(); });
+  if(window.ResizeObserver) new ResizeObserver(queueResize).observe($('#bodeSection'));
+
+  // ========= Side panel width and splitter =========
+  // Automatic width: the whole measurement table fits, when the window leaves the plots at least
+  // MIN_RIGHT px; otherwise the table scrolls sideways. A width dragged by the reader is kept (storage).
+  const LEFT_W_KEY = 'bode-measure-left-width', MIN_LEFT = 380, MIN_RIGHT = 420;
+  let userLeftW = null;
+  try{ const v = Number(localStorage.getItem(LEFT_W_KEY)); if(v > 0) userLeftW = v; }catch(_){}
+  const appEl = $('#app'), leftEl = $('.left'), splitter = $('#splitter'), tableWrap = $('.table-wrap'), measTable = $('#measTable');
+  function autoLeftWidth(){
+    // the table at its narrowest (each column at its content), plus the panel around the table
+    const prev = measTable.style.width;
+    measTable.style.width = 'auto';
+    const need = measTable.getBoundingClientRect().width;
+    measTable.style.width = prev;
+    return Math.ceil(leftEl.getBoundingClientRect().width - tableWrap.clientWidth + need + 2);
+  }
+  function maxLeft(){ return window.innerWidth - 20 - 12 - MIN_RIGHT; }
+  function applyLeftWidth(){
+    if(ONE_COLUMN_MQ.matches){ appEl.style.removeProperty('--left-w'); syncHbar(); return; }
+    const w = userLeftW != null ? userLeftW : Math.max(560, autoLeftWidth());
+    appEl.style.setProperty('--left-w', Math.round(clampW(w)) + 'px');
+    syncHbar();
+  }
+  const clampW = w => Math.max(MIN_LEFT, Math.min(maxLeft(), w));
+  function setUserLeftW(w, persist){
+    userLeftW = w == null ? null : clampW(w);
+    applyLeftWidth(); queueResize();
+    if(persist) try{ if(userLeftW == null) localStorage.removeItem(LEFT_W_KEY); else localStorage.setItem(LEFT_W_KEY, String(Math.round(userLeftW))); }catch(_){}
+  }
+  (function splitterDrag(){
+    let drag = null;
+    splitter.addEventListener('pointerdown', e => {
+      if(e.button !== 0) return;
+      e.preventDefault();
+      drag = {id:e.pointerId, x0:e.clientX, w0:leftEl.getBoundingClientRect().width};
+      try{ splitter.setPointerCapture(e.pointerId); }catch(_){}
+      splitter.classList.add('dragging'); document.body.classList.add('splitting');
+    });
+    splitter.addEventListener('pointermove', e => {
+      if(!drag || e.pointerId !== drag.id) return;
+      setUserLeftW(drag.w0 + e.clientX - drag.x0, false);
+    });
+    const end = e => {
+      if(!drag || e.pointerId !== drag.id) return;
+      drag = null;
+      splitter.classList.remove('dragging'); document.body.classList.remove('splitting');
+      setUserLeftW(userLeftW, true);
+    };
+    splitter.addEventListener('pointerup', end);
+    splitter.addEventListener('pointercancel', end);
+    splitter.addEventListener('dblclick', () => setUserLeftW(null, true));   // back to the automatic width
+    splitter.addEventListener('keydown', e => {
+      const step = e.shiftKey ? 64 : 16, w = leftEl.getBoundingClientRect().width;
+      if(e.key === 'ArrowLeft'){ e.preventDefault(); setUserLeftW(w - step, true); }
+      else if(e.key === 'ArrowRight'){ e.preventDefault(); setUserLeftW(w + step, true); }
+      else if(e.key === 'Home' || e.key === 'Enter'){ e.preventDefault(); setUserLeftW(null, true); }
+    });
+  })();
+  ONE_COLUMN_MQ.addEventListener('change', applyLeftWidth);
+
+  // ========= The table's horizontal scroll bar where the native one fades out =========
+  // A styled native bar is always visible on Windows, macOS, Linux and Android; iOS ignores the styling
+  // and fades its bar out, which hid the last columns. There (native bar taking no room), this one shows.
+  const hbar = $('#tableHbar'), hthumb = hbar.firstElementChild;
+  function syncHbar(){
+    const over = tableWrap.scrollWidth > tableWrap.clientWidth + 1;
+    tableWrap.classList.toggle('has-x-scroll', over);
+    const overlay = tableWrap.offsetHeight - tableWrap.clientHeight < 1;
+    hbar.hidden = !(over && overlay);
+    if(hbar.hidden) return;
+    const track = hbar.clientWidth, tw = Math.max(28, track * tableWrap.clientWidth / tableWrap.scrollWidth);
+    const max = tableWrap.scrollWidth - tableWrap.clientWidth;
+    hthumb.style.width = tw + 'px';
+    hthumb.style.transform = `translateX(${max > 0 ? (track - tw) * tableWrap.scrollLeft / max : 0}px)`;
+  }
+  tableWrap.addEventListener('scroll', syncHbar, {passive:true});
+  if(window.ResizeObserver){ const ro = new ResizeObserver(syncHbar); ro.observe(tableWrap); ro.observe(measTable); }
+  (function hbarDrag(){
+    let drag = null;
+    const scrollTo = (clientX, grabX) => {
+      const r = hbar.getBoundingClientRect(), tw = hthumb.offsetWidth, max = tableWrap.scrollWidth - tableWrap.clientWidth;
+      const pos = Math.max(0, Math.min(r.width - tw, clientX - r.left - grabX));
+      tableWrap.scrollLeft = r.width > tw ? pos / (r.width - tw) * max : 0;
+    };
+    hbar.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      const t = hthumb.getBoundingClientRect();
+      // grabbing the thumb keeps the finger where it took it; the track jumps the thumb under the finger
+      const grabX = e.clientX >= t.left && e.clientX <= t.right ? e.clientX - t.left : t.width / 2;
+      drag = {id:e.pointerId, grabX};
+      try{ hbar.setPointerCapture(e.pointerId); }catch(_){}
+      scrollTo(e.clientX, grabX);
+    });
+    hbar.addEventListener('pointermove', e => { if(drag && e.pointerId === drag.id) scrollTo(e.clientX, drag.grabX); });
+    const end = e => { if(drag && e.pointerId === drag.id) drag = null; };
+    hbar.addEventListener('pointerup', end); hbar.addEventListener('pointercancel', end);
+  })();
+
+  // the side panel's width needs the rendered table, hence after everything above
+  applyLeftWidth();
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(applyLeftWidth);
 });
 </script>
 </body>
