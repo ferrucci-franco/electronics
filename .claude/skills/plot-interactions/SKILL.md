@@ -1,6 +1,6 @@
 ---
 name: plot-interactions
-description: The agreed mouse, trackpad and touch behaviour for every Plotly plot in the ferrucci-lab.com apps (this repo) — one-finger gestures on phones (fast finger scrolls the page, slower finger pans, hold-then-drag zooms, slow/quick double tap, pinch), right-button pan, wheel that never zooms, semi-transparent Fit X / Fit Y / Fit all buttons, an in-plot legend that can be hidden, linked x axes, plus a drop-in JS module and a browser check script. Use this skill whenever you create an app with a plot in this repo, add or change a plot, port an app to phones, or touch anything about zoom, pan, scroll on plots, double tap/double-click, legends, tooltips or fit/autoscale buttons — even when the request only says "make it work on mobile", "the scroll feels wrong", "add a Bode/time plot" or "fix the legend".
+description: The agreed mouse, trackpad and touch behaviour for every Plotly plot in the ferrucci-lab.com apps (this repo) — one-finger gestures on phones (fast finger scrolls the page, slower finger pans, hold-then-drag zooms, slow/quick double tap, pinch), right-button pan, wheel that never zooms, semi-transparent Fit X / Fit Y / Fit all buttons, an in-plot legend that can be hidden, linked x axes, plus a drop-in JS module and a browser check script; also the shared app conventions (full screen and its exit pill, EN·FR·ES language pills, CSV/PDF export that opens the share menu on phones). Use this skill whenever you create an app with a plot in this repo, add or change a plot, port an app to phones, or touch anything about zoom, pan, scroll on plots, double tap/double-click, legends, tooltips or fit/autoscale buttons — even when the request only says "make it work on mobile", "the scroll feels wrong", "add a Bode/time plot" or "fix the legend", "add a CSV/PDF export", "send the report by WhatsApp".
 ---
 
 # Plot interactions (ferrucci-lab.com apps)
@@ -135,3 +135,22 @@ a tap; use `plotly_doubleclick`, not the DOM `dblclick`; clear `_hoversubplot` a
 - Language selector as in `adjustable-filters/`: segmented buttons in the order EN · FR · ES (FR selected by
   default), then the 🌗 theme button, then the full-screen button; no `<select>` for language or theme;
   light/dark theme, plots styled as `adjustable-filters/`.
+- Exported files (CSV, PDF report): on a computer the CSV downloads and the report opens the print dialog
+  (« Enregistrer en PDF »), as before. On a phone or tablet (coarse pointer, browser able to share files) both
+  go to the system **share menu** (WhatsApp, mail, Drive, Save to Files…), and the buttons say so: « Partager le
+  rapport (PDF) », « Partager le CSV » (EN « Share the report (PDF) », « Share CSV »; ES « Compartir el informe
+  (PDF) », « Compartir CSV »). Use `assets/share-export.js` (header comment = API):
+  - CSV: `ShareExport.deliver(new File(['\uFEFF' + csv], name + '.csv', {type:'text/csv'}), {title})` straight
+    from the click (the share menu needs the tap's gesture; it downloads where sharing is not possible).
+  - PDF: build the print report as usual, show it off-screen (`#report.pdf-render`: `display:block;
+    position:absolute; left:-12000px; width:186mm`, light-theme colour variables set on it), then
+    `ShareExport.pagesToPdf(pages)` (html2canvas + jsPDF from jsDelivr, loaded on first use only) and
+    `deliver(file, {title, askTap})`. Making the PDF takes a few seconds, after which the tap may no longer count:
+    `askTap(share)` shows a box « Le rapport PDF est prêt. » with Fermer / Télécharger / **Partager**, whose tap
+    opens the menu. While it is made, the button reads « Préparation du PDF… ». If the libraries cannot load
+    (offline), fall back to the print dialog.
+  - Keep the report's styles outside `@media print` (only `@page`, the hidden app and page breaks inside it) so
+    the print and the PDF file share them; in `.pdf-render` set `font-variant-numeric:normal` (html2canvas
+    ignores tabular figures and leaves gaps after minus signs).
+  - Reference: `bode-measure/`. Check it with an emulated phone and stubbed `navigator.share`/`canShare` (headless
+    Chromium on Linux has no Web Share), routing jsDelivr to local copies, and look at the PDF pages.
