@@ -1,15 +1,19 @@
 ---
 name: plot-interactions
-description: The agreed mouse, trackpad and touch behaviour for every Plotly plot in the ferrucci-lab.com apps (this repo) — one-finger gestures on phones (fast finger scrolls the page, slower finger pans, hold-then-drag zooms, slow/quick double tap, pinch), right-button pan, wheel that never zooms, semi-transparent Fit X / Fit Y / Fit all buttons, an in-plot legend that can be hidden, linked x axes, plus a drop-in JS module and a browser check script; also the shared app conventions (full screen and its exit pill, EN·FR·ES language pills, CSV/PDF export that opens the share menu on phones). Use this skill whenever you create an app with a plot in this repo, add or change a plot, port an app to phones, or touch anything about zoom, pan, scroll on plots, double tap/double-click, legends, tooltips or fit/autoscale buttons — even when the request only says "make it work on mobile", "the scroll feels wrong", "add a Bode/time plot" or "fix the legend", "add a CSV/PDF export", "send the report by WhatsApp".
+description: The agreed mouse, trackpad and touch behaviour for every Plotly plot in the ferrucci-lab.com apps (and any educational web app of Franco Ferrucci) — one-finger gestures on phones (fast finger scrolls the page, slower finger pans, hold-then-drag zooms, slow/quick double tap, pinch), right-button pan, wheel that never zooms, semi-transparent Fit X / Fit Y / Fit all buttons, an in-plot legend that can be hidden, linked x axes, plus a drop-in JS module and a browser check script; also the shared app conventions (full screen and its exit pill, EN·FR·ES language pills, CSV/PDF export that opens the share menu on phones). Use this skill whenever you create an app with a plot in this repo, add or change a plot, port an app to phones, or touch anything about zoom, pan, scroll on plots, double tap/double-click, legends, tooltips or fit/autoscale buttons — even when the request only says "make it work on mobile", "the scroll feels wrong", "add a Bode/time plot" or "fix the legend", "add a CSV/PDF export", "send the report by WhatsApp".
 ---
 
 # Plot interactions (ferrucci-lab.com apps)
 
-Every plot in this repo should feel the same on a lab PC with a mouse, on a laptop trackpad and on a
+Every plot in these apps should feel the same on a lab PC with a mouse, on a laptop trackpad and on a
 phone. The behaviour below was settled with the repo owner one point at a time while building
 `bode-measure/` (the reference implementation) and aligned with `timeseries-explorer` (unditas.com,
 `src/ui/plot-touch-gestures.js`, `src/ui/legend-toggle.js`). Apply it as is: the owner has already
 rejected alternatives (wheel zoom, help-text overlays, Plotly's modebar), and every rule has a reason.
+
+Reference apps (paths in this skill such as `bode-measure/` or `adjustable-filters/`) are in the GitHub repo
+`ferrucci-franco/electronics`, published at https://ferrucci-lab.com/<app>/. When working in another repo, read
+them there if needed; everything required to apply the conventions is in this skill's `assets/`.
 
 ## The behaviour
 
@@ -92,10 +96,10 @@ the same code) consistent if you change a behaviour here.
 ## Checking
 
 ```bash
-cd <scratchpad> && npm pack plotly.js-dist-min@2.32.0 && tar xzf plotly.js-dist-min-2.32.0.tgz   # cdn.plot.ly is blocked here
-(cd /home/user/electronics && python3 -m http.server 8765 --bind 127.0.0.1 &)
+cd <scratchpad> && npm pack plotly.js-dist-min@2.32.0 && tar xzf plotly.js-dist-min-2.32.0.tgz   # cdn.plot.ly may be blocked in sandboxes
+(cd <repo root> && python3 -m http.server 8765 --bind 127.0.0.1 &)
 PLOTLY_JS=$PWD/package/plotly.min.js SETUP_JS=fill.js \
-  node /home/user/electronics/.claude/skills/plot-interactions/scripts/check-plot-interactions.js \
+  node ${CLAUDE_SKILL_DIR}/scripts/check-plot-interactions.js \
   http://127.0.0.1:8765/<app>/ <plotId> [<linkedPlotId>]
 ```
 
