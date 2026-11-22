@@ -170,25 +170,32 @@
   .table-actions{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
   .table-actions .spacer{flex:1}
 
-  /* how G, G_dB and φ are computed (KaTeX) */
-  .formulas{border:1px solid var(--border); border-radius:10px; padding:8px 12px; background:var(--computed); font-size:13px; line-height:1.45; color:var(--muted)}
-  .formulas h4{margin:0 0 4px; font-size:13px; color:var(--fg)}
-  .formulas p{margin:4px 0}
-  .formulas .eqs{display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:2px 28px; margin:4px 0; color:var(--fg); font-size:15px}
-  .formulas .katex{font-size:1.05em}
-  .formulas .eqs .katex{font-size:1.12em}
-  .dt-note{display:grid; grid-template-columns:1fr 240px; gap:10px; align-items:center}
-  .dt-note svg{width:100%; height:auto; display:block}
-  /* narrow screens: the note above, the drawing below at the full width of the card */
-  @media (max-width:699px){
-    .dt-note{grid-template-columns:minmax(0,1fr)}
-    #dtDrawing{width:100%; max-width:420px; justify-self:center}
+  /* « Calcul du gain et de la phase »: one box. Gain: a line and its two equations. Phase: the definition of
+     ΔT, the drawing (ΔT and T), the formula, the sign convention. The box follows its own width (container
+     query, so the splitter counts too): drawing on the left of the text when there is room, otherwise
+     definition, drawing, formula, convention from top to bottom. */
+  .calc{container-type:inline-size; border:1px solid var(--border); border-radius:10px; padding:10px 12px; background:var(--computed);
+        font-size:13px; line-height:1.45; color:var(--muted)}
+  .calc h4{margin:0 0 4px; font-size:13px; color:var(--fg)}
+  .calc p{margin:4px 0}
+  .calc b{color:var(--fg)}
+  .calc .eqs{display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:2px 28px; margin:2px 0 4px; color:var(--fg); font-size:15px}
+  .calc .eqs .katex-display{margin:.35em 0}
+  .calc .katex{font-size:1.05em}
+  .calc .eqs .katex{font-size:1.12em}
+  .calc-gain{padding-bottom:6px; margin-bottom:8px; border-bottom:1px solid var(--border)}
+  .calc-phase{display:grid; grid-template-columns:minmax(0,1fr); grid-template-areas:"intro" "fig" "eq" "note"; gap:2px 16px; align-items:center}
+  .calc-phase .ph-intro{grid-area:intro} .calc-phase .ph-eq{grid-area:eq} .calc-phase .ph-note{grid-area:note}
+  .calc-phase .ph-fig{grid-area:fig; justify-self:center; width:100%; max-width:300px; margin:2px 0}
+  @container (min-width:560px){
+    .calc-phase{grid-template-columns:250px minmax(0,1fr); grid-template-areas:"fig intro" "fig eq" "fig note"}
   }
-  .dt-note .dt-in{stroke:var(--c-in)} .dt-note .dt-out{stroke:var(--c-meas)}
-  .dt-note text{font-family:ui-sans-serif,system-ui,"Segoe UI",Roboto,Arial,sans-serif; font-size:11px; fill:var(--fg)}
-  .dt-note .axis{stroke:var(--zero); stroke-width:1}
-  .dt-note .dim{stroke:var(--c-mark); stroke-width:1.2}
-  .dt-note .guide{stroke:var(--c-mark); stroke-width:1; stroke-dasharray:3 3}
+  .ph-fig svg{width:100%; height:auto; display:block}
+  .ph-fig .sig-in{stroke:var(--c-in)} .ph-fig .sig-out{stroke:var(--c-meas)}
+  .ph-fig text{font-family:ui-sans-serif,system-ui,"Segoe UI",Roboto,Arial,sans-serif; font-size:11px; fill:var(--fg)}
+  .ph-fig .axis{stroke:var(--zero); stroke-width:1}
+  .ph-fig .dim{stroke:var(--c-mark); stroke-width:1.3} .ph-fig .dimT{stroke:var(--muted); stroke-width:1.3}
+  .ph-fig .guide{stroke:var(--c-mark); stroke-width:1; stroke-dasharray:3 3} .ph-fig .guideT{stroke:var(--muted); stroke-width:1; stroke-dasharray:3 3}
 
   /* ----- report fields ----- */
   .report-fields{display:grid; grid-template-columns:auto 1fr; gap:6px 10px; align-items:center}
@@ -429,11 +436,7 @@
             <button id="clearYes" type="button" class="btn-danger">Oui, vider ce tableau</button>
           </div>
         </div>
-        <div class="formulas" id="formulas"></div>
-        <div class="dt-note">
-          <div class="muted hint" id="dtNote"></div>
-          <div id="dtDrawing" aria-hidden="true"></div>
-        </div>
+        <div class="calc" id="calcBox"></div>
       </div>
 
       <div class="muted copyright">
@@ -486,7 +489,6 @@ document.addEventListener('DOMContentLoaded', () => {
       outHintL:'Aux bornes de la bobine réelle, la tension mesurée inclut sa résistance R<sub>L</sub>.',
       reportOut:'V<sub>out</sub> aux bornes de', csvOut:'V_out aux bornes de',
       measHint:'Mesurez V<sub>in</sub> aux bornes d’entrée du circuit (voie 1), pas sur l’affichage du générateur.',
-      dtNote:'ΔT = temps entre le passage montant de l’entrée et le passage montant suivant de la sortie (sortie en retard : ΔT &gt; 0, φ &lt; 0). Si la sortie est en avance, saisissez ΔT &lt; 0. Dans tous les cas, φ est ramené à ±180° autour de la plage attendue pour ce montage.',
       dtTip:'ΔT = temps entre le passage montant de l’entrée et le passage montant suivant de la sortie (sortie en retard : ΔT > 0, φ < 0 ; sortie en avance : ΔT < 0).',
       veTip:'Tension d’entrée crête à crête (voie 1), mesurée aux bornes du circuit.',
       vsTip:o => `Tension de sortie crête à crête (voie 2), aux bornes de ${o}.`,
@@ -523,7 +525,6 @@ document.addEventListener('DOMContentLoaded', () => {
       outHintL:'Across the real coil, the measured voltage includes its resistance R<sub>L</sub>.',
       reportOut:'V<sub>out</sub> across', csvOut:'V_out across',
       measHint:'Measure V<sub>in</sub> at the circuit input terminals (channel 1), not on the generator display.',
-      dtNote:'ΔT = time between a rising zero crossing of the input and the next rising zero crossing of the output (output lags: ΔT &gt; 0, φ &lt; 0). If the output leads, type ΔT &lt; 0. In every case φ is brought within ±180° of the range expected for this set-up.',
       dtTip:'ΔT = time between a rising zero crossing of the input and the next rising zero crossing of the output (output lags: ΔT > 0, φ < 0; output leads: ΔT < 0).',
       veTip:'Input peak-to-peak voltage (channel 1), measured at the circuit terminals.',
       vsTip:o => `Output peak-to-peak voltage (channel 2), across ${o}.`,
@@ -560,7 +561,6 @@ document.addEventListener('DOMContentLoaded', () => {
       outHintL:'En bornes de la bobina real, la tensión medida incluye su resistencia R<sub>L</sub>.',
       reportOut:'V<sub>out</sub> en bornes de', csvOut:'V_out en bornes de',
       measHint:'Mida V<sub>in</sub> en los bornes de entrada del circuito (canal 1), no en la pantalla del generador.',
-      dtNote:'ΔT = tiempo entre el cruce ascendente de la entrada y el siguiente cruce ascendente de la salida (salida retrasada: ΔT &gt; 0, φ &lt; 0). Si la salida está adelantada, escriba ΔT &lt; 0. En todos los casos φ se lleva a ±180° alrededor del rango esperado para este montaje.',
       dtTip:'ΔT = tiempo entre el cruce ascendente de la entrada y el siguiente cruce ascendente de la salida (salida retrasada: ΔT > 0, φ < 0; salida adelantada: ΔT < 0).',
       veTip:'Tensión de entrada pico a pico (canal 1), medida en los bornes del circuito.',
       vsTip:o => `Tensión de salida pico a pico (canal 2), en bornes de ${o}.`,
@@ -591,25 +591,35 @@ document.addEventListener('DOMContentLoaded', () => {
   // ========= Formulas shown under the table (and in the report) =========
   // \( … \) inline math, $$ … $$ displayed math; rendered by KaTeX, plain TeX text until it has loaded
   const FORMULAS = {
-    fr:String.raw`<h4>Formules</h4>
-      <p><b>Gain</b> : rapport des amplitudes crête à crête, puis en décibels :</p>
-      <div class="eqs"><span>$$G = \frac{V_{\text{out,pp}}}{V_{\text{in,pp}}}$$</span><span>$$G_{\text{dB}} = 20\,\log_{10} G$$</span></div>
-      <p><b>Phase</b> : une période \(T = 1/f\) correspond à 360°. Un retard \(\Delta T\) de la sortie est donc une fraction \(\Delta T/T\) de tour :</p>
-      <div class="eqs"><span>$$\varphi = -360^\circ\,\frac{\Delta T}{T} = -360^\circ \cdot f \cdot \Delta T$$</span></div>
-      <p>avec \(\Delta T\) en secondes (le tableau le saisit en µs). Exemple : \(f = 1\ \text{kHz}\), \(V_{\text{in,pp}} = 4\ \text{V}\), \(V_{\text{out,pp}} = 3{,}39\ \text{V}\), \(\Delta T = 89{,}2\ \mu\text{s}\) donnent \(G = 0{,}848\), \(G_{\text{dB}} = -1{,}4\ \text{dB}\) et \(\varphi = -360 \times 1000 \times 89{,}2\cdot 10^{-6} = -32{,}1^\circ\).</p>`,
-    en:String.raw`<h4>Formulas</h4>
-      <p><b>Gain</b>: ratio of the peak-to-peak amplitudes, then in decibels:</p>
-      <div class="eqs"><span>$$G = \frac{V_{\text{out,pp}}}{V_{\text{in,pp}}}$$</span><span>$$G_{\text{dB}} = 20\,\log_{10} G$$</span></div>
-      <p><b>Phase</b>: one period \(T = 1/f\) is 360°. A delay \(\Delta T\) of the output is therefore a fraction \(\Delta T/T\) of a turn:</p>
-      <div class="eqs"><span>$$\varphi = -360^\circ\,\frac{\Delta T}{T} = -360^\circ \cdot f \cdot \Delta T$$</span></div>
-      <p>with \(\Delta T\) in seconds (the table takes it in µs). Example: \(f = 1\ \text{kHz}\), \(V_{\text{in,pp}} = 4\ \text{V}\), \(V_{\text{out,pp}} = 3.39\ \text{V}\), \(\Delta T = 89.2\ \mu\text{s}\) give \(G = 0.848\), \(G_{\text{dB}} = -1.4\ \text{dB}\) and \(\varphi = -360 \times 1000 \times 89.2\cdot 10^{-6} = -32.1^\circ\).</p>`,
-    es:String.raw`<h4>Fórmulas</h4>
-      <p><b>Ganancia</b>: cociente de las amplitudes pico a pico, luego en decibeles:</p>
-      <div class="eqs"><span>$$G = \frac{V_{\text{out,pp}}}{V_{\text{in,pp}}}$$</span><span>$$G_{\text{dB}} = 20\,\log_{10} G$$</span></div>
-      <p><b>Fase</b>: un período \(T = 1/f\) corresponde a 360°. Un retardo \(\Delta T\) de la salida es entonces una fracción \(\Delta T/T\) de vuelta:</p>
-      <div class="eqs"><span>$$\varphi = -360^\circ\,\frac{\Delta T}{T} = -360^\circ \cdot f \cdot \Delta T$$</span></div>
-      <p>con \(\Delta T\) en segundos (la tabla lo recibe en µs). Ejemplo: \(f = 1\ \text{kHz}\), \(V_{\text{in,pp}} = 4\ \text{V}\), \(V_{\text{out,pp}} = 3{,}39\ \text{V}\), \(\Delta T = 89{,}2\ \mu\text{s}\) dan \(G = 0{,}848\), \(G_{\text{dB}} = -1{,}4\ \text{dB}\) y \(\varphi = -360 \times 1000 \times 89{,}2\cdot 10^{-6} = -32{,}1^\circ\).</p>`
+    fr:{title:'Calcul du gain et de la phase',
+        gain:String.raw`<b>Gain</b> : rapport des amplitudes crête à crête, puis en décibels :`,
+        intro:String.raw`<b>Phase</b> : \(\Delta T\) est le temps entre un passage montant de l’entrée et le passage montant suivant de la sortie. Une période \(T = 1/f\) valant 360°, la sortie est décalée de la fraction \(\Delta T/T\) d’un tour :`,
+        note:String.raw`\(\Delta T\) en secondes (saisi en µs dans le tableau). Sortie en retard : \(\Delta T > 0\), \(\varphi < 0\). Sortie en avance (mesure aux bornes de R ou de L) : saisissez \(\Delta T < 0\). Dans tous les cas, \(\varphi\) est ramené à ±180° autour de la plage attendue pour ce montage.`},
+    en:{title:'Computing gain and phase',
+        gain:String.raw`<b>Gain</b>: ratio of the peak-to-peak amplitudes, then in decibels:`,
+        intro:String.raw`<b>Phase</b>: \(\Delta T\) is the time from a rising crossing of the input to the next rising crossing of the output. One period \(T = 1/f\) being 360°, the output is shifted by the fraction \(\Delta T/T\) of a turn:`,
+        note:String.raw`\(\Delta T\) in seconds (typed in µs in the table). Output lagging: \(\Delta T > 0\), \(\varphi < 0\). Output leading (measured across R or L): type \(\Delta T < 0\). In every case \(\varphi\) is brought within ±180° of the range expected for this set-up.`},
+    es:{title:'Cálculo de la ganancia y de la fase',
+        gain:String.raw`<b>Ganancia</b>: cociente de las amplitudes pico a pico, luego en decibeles:`,
+        intro:String.raw`<b>Fase</b>: \(\Delta T\) es el tiempo entre un cruce ascendente de la entrada y el siguiente cruce ascendente de la salida. Como un período \(T = 1/f\) vale 360°, la salida está desplazada la fracción \(\Delta T/T\) de una vuelta:`,
+        note:String.raw`\(\Delta T\) en segundos (se escribe en µs en la tabla). Salida retrasada: \(\Delta T > 0\), \(\varphi < 0\). Salida adelantada (medición en bornes de R o de L): escriba \(\Delta T < 0\). En todos los casos \(\varphi\) se lleva a ±180° alrededor del rango esperado para este montaje.`}
   };
+  const EQ_GAIN = String.raw`<div class="eqs"><span>$$G = \frac{V_{\text{out,pp}}}{V_{\text{in,pp}}}$$</span><span>$$G_{\text{dB}} = 20\,\log_{10} G$$</span></div>`;
+  const EQ_PHASE = String.raw`$$\varphi = -360^\circ\,\frac{\Delta T}{T} = -360^\circ \cdot f \cdot \Delta T$$`;
+  // the box under the table; compact (report): no drawing, no sign convention
+  function formulasHTML(compact){
+    const F = FORMULAS[LANG] || FORMULAS.fr;
+    if(compact) return texToHtml(`<h4>${F.title}</h4><p>${F.gain}</p>${EQ_GAIN}<p>${F.intro}</p><div class="eqs">${EQ_PHASE}</div>`);
+    return texToHtml(`<h4>${F.title}</h4>
+      <div class="calc-gain"><p>${F.gain}</p>${EQ_GAIN}</div>
+      <div class="calc-phase">
+        <p class="ph-intro">${F.intro}</p>
+        <div class="ph-fig" aria-hidden="true">${phaseDrawingSVG()}</div>
+        <div class="eqs ph-eq">${EQ_PHASE}</div>
+        <p class="ph-note">${F.note}</p>
+      </div>`);
+  }
+
   // TeX → HTML (KaTeX); without KaTeX the TeX source stays readable
   function texToHtml(src){
     const k = window.katex;
@@ -619,7 +629,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     return src.replace(/\$\$([\s\S]+?)\$\$/g, (_, t) => one(t, true)).replace(/\\\(([\s\S]+?)\\\)/g, (_, t) => one(t, false));
   }
-  function renderFormulas(){ $('#formulas').innerHTML = texToHtml(FORMULAS[LANG] || FORMULAS.fr); }
+  function renderFormulas(){ $('#calcBox').innerHTML = formulasHTML(false); }
   // KaTeX is loaded with defer: render again once it is there
   // (setLang renders them at start; a deferred script has normally run by then, this is the fallback)
   (function whenKatex(){
@@ -868,28 +878,36 @@ document.addEventListener('DOMContentLoaded', () => {
     s += `<text class="sign vout" x="${xOut}" y="${yBot-10}" text-anchor="middle">−</text>`;
     return s + '</svg>';
   }
-  function dtDrawingSVG(){
-    const W = 240, H = 100, y0 = 48, T = 150, x0 = 18, delay = 36, aIn = 30, aOut = 19;
+  // input (grey) and output (blue, lagging by ΔT); the dimension lines show ΔT and the period T, as in φ = −360°·ΔT/T
+  function phaseDrawingSVG(){
+    const W = 260, H = 132, y0 = 50, T = 168, x0 = 22, delay = 40, aIn = 32, aOut = 20;
+    const yDT = 100, yT = 122;
     const sine = (amp, shift) => {
       let d = '';
-      for(let x = x0 - 60; x <= W - 4; x += 2){
+      for(let x = 2; x <= W - 2; x += 2){
         const y = y0 - amp * Math.sin(TWO_PI * (x - x0 - shift) / T);
         d += (d ? ' L' : 'M') + x + ' ' + y.toFixed(1);
       }
       return d;
     };
+    const tick = (x, y, cls) => `<line class="${cls}" x1="${x}" y1="${y-4}" x2="${x}" y2="${y+4}"/>`;
     let s = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
     s += `<line class="axis" x1="2" y1="${y0}" x2="${W-2}" y2="${y0}"/>`;
-    s += `<path class="dt-in" d="${sine(aIn, 0)}" fill="none" stroke-width="1.6"/>`;
-    s += `<path class="dt-out" d="${sine(aOut, delay)}" fill="none" stroke-width="1.8"/>`;
-    s += `<line class="guide" x1="${x0}" y1="${y0}" x2="${x0}" y2="${H-8}"/><line class="guide" x1="${x0+delay}" y1="${y0}" x2="${x0+delay}" y2="${H-8}"/>`;
-    s += `<line class="dim" x1="${x0}" y1="${H-12}" x2="${x0+delay}" y2="${H-12}"/>`;
-    s += `<text x="${x0+delay/2}" y="${H-2}" text-anchor="middle" style="font-weight:700">ΔT</text>`;
-    s += `<text x="${W-4}" y="${y0-aIn-2}" text-anchor="end" style="fill:var(--c-in)">v<tspan dy="2" style="font-size:8px">in</tspan></text>`;
-    s += `<text x="${W-4}" y="${y0+aOut+11}" text-anchor="end" style="fill:var(--c-meas)">v<tspan dy="2" style="font-size:8px">out</tspan></text>`;
+    s += `<path class="sig-in" d="${sine(aIn, 0)}" fill="none" stroke-width="1.6"/>`;
+    s += `<path class="sig-out" d="${sine(aOut, delay)}" fill="none" stroke-width="1.8"/>`;
+    // rising crossings: input, output, next input
+    s += `<line class="guide" x1="${x0}" y1="${y0}" x2="${x0}" y2="${yT}"/><line class="guide" x1="${x0+delay}" y1="${y0}" x2="${x0+delay}" y2="${yDT}"/>`;
+    s += `<line class="guideT" x1="${x0+T}" y1="${y0}" x2="${x0+T}" y2="${yT}"/>`;
+    s += `<circle cx="${x0}" cy="${y0}" r="2.6" style="fill:var(--c-in)"/><circle cx="${x0+delay}" cy="${y0}" r="2.6" style="fill:var(--c-meas)"/><circle cx="${x0+T}" cy="${y0}" r="2.6" style="fill:var(--c-in)"/>`;
+    // ΔT and T
+    s += `<line class="dim" x1="${x0}" y1="${yDT}" x2="${x0+delay}" y2="${yDT}"/>` + tick(x0, yDT, 'dim') + tick(x0 + delay, yDT, 'dim');
+    s += `<text x="${x0+delay+6}" y="${yDT+4}" style="font-weight:700; fill:var(--c-mark)">ΔT</text>`;
+    s += `<line class="dimT" x1="${x0}" y1="${yT}" x2="${x0+T}" y2="${yT}"/>` + tick(x0, yT, 'dimT') + tick(x0 + T, yT, 'dimT');
+    s += `<text x="${x0+T/2}" y="${yT-5}" text-anchor="middle" style="fill:var(--muted)">T = 1/f</text>`;
+    s += `<text x="${W-4}" y="${y0-aIn-4}" text-anchor="end" style="fill:var(--c-in)">v<tspan dy="2" style="font-size:8px">in</tspan></text>`;
+    s += `<text x="${W-4}" y="${y0+aOut+13}" text-anchor="end" style="fill:var(--c-meas)">v<tspan dy="2" style="font-size:8px">out</tspan></text>`;
     return s + '</svg>';
   }
-  $('#dtDrawing').innerHTML = dtDrawingSVG();
 
   // ========= Language =========
   const langBtns = [$('#lang-fr'), $('#lang-en'), $('#lang-es')];
@@ -901,7 +919,7 @@ document.addEventListener('DOMContentLoaded', () => {
      ['reportCardTitle', t.reportCard], ['namesLbl', t.names], ['groupLbl', t.group], ['dateLbl', t.date], ['reportHint', t.reportHint],
      ['printBtn', t.print], ['csvBtn', t.csv], ['newBtn', t.newSeries], ['confirmText', t.confirmText], ['confirmYes', t.confirmYes], ['confirmNo', t.confirmNo],
      ['tableCardTitle', t.tableCard], ['measHint', t.measHint], ['addRowBtn', t.addRow],
-     ['clearTableBtn', t.clearTable], ['clearYes', t.clearYes], ['clearNo', t.confirmNo], ['rowsHint', t.rowsHint], ['dtNote', t.dtNote],
+     ['clearTableBtn', t.clearTable], ['clearYes', t.clearYes], ['clearNo', t.confirmNo], ['rowsHint', t.rowsHint],
      ['fitBodeLbl', t.fitBode]
     ].forEach(([id, html]) => { const el = document.getElementById(id); if(el) el.innerHTML = html; });
     $('#thVe').title = t.veTip; $('#thDt').title = t.dtTip;
@@ -1934,7 +1952,7 @@ document.addEventListener('DOMContentLoaded', () => {
                  <td class="c">${fmtG(c.G)}</td><td class="c">${fmtDec1(c.GdB)}</td><td class="c">${fmtDec1(c.phi)}</td></tr>`;
       });
       html += `</tbody></table>`;
-      html += `<div class="formulas">${texToHtml(FORMULAS[LANG] || FORMULAS.fr)}</div>`;
+      html += `<div class="formulas">${formulasHTML(true)}</div>`;
       if(theoryOn && m.ch) html += `<div class="theory"><strong>${esc(t.reportTheory)}</strong>${theoryValuesHTML(kind, 'ul')}</div>`;
       html += `</div><div class="plots"><img src="${imgMag}" alt=""><img src="${imgPh}" alt=""></div></div>
         <div class="foot"><div class="line">${esc(t.reportFoot)} — © 2025 Franco Ferrucci</div></div></section>`;
