@@ -3294,13 +3294,18 @@ Implement a real-time digital signal acquisition and processing system using Ard
     const traces = [{ x:tc, y:xc, type:'scatter', mode:'lines', name:'x*(t)', line:{ color:col, width:2.5, dash:'dash' }, hoverinfo:'skip', xaxis:'x', yaxis:'y' }];
     const res = { traces, shapes:[], annotations:[], yMaxIn:null, yMaxOut:null };
     if (t1 - t0 < Ta) return res;
-    // cote : entre deux crêtes de la sinusoïde apparente x*(t)
+    // cote : entre deux crêtes de x*(t) ; si la fenêtre (à peine plus d'une période) ne les contient pas,
+    // entre deux creux, ou deux passages par la valeur moyenne dans le même sens
     const fit = fx;
-    let tcr = (fit.phi + 2 * Math.PI * Math.ceil((w * t0 - fit.phi) / (2 * Math.PI))) / w;
-    if (tcr + Ta > t1) return res;
+    let tcr = null, yPt = null;
+    for (const th of [0, Math.PI, Math.PI / 2, 3 * Math.PI / 2]) {
+      const t = (fit.phi + th + 2 * Math.PI * Math.ceil((w * t0 - fit.phi - th) / (2 * Math.PI))) / w;
+      if (t + Ta <= t1) { tcr = t; yPt = fit.c + fit.R * Math.cos(th); break; }
+    }
+    if (tcr === null) return res;
     const xr = 'x', yr = 'y';
-    const crest = fit.c + fit.R, span = Math.max(2 * A, 1);
-    const yC = Math.max(crest, off + A) + 0.09 * span;
+    const crest = yPt, span = Math.max(2 * A, 1);
+    const yC = Math.max(fit.c + fit.R, off + A) + 0.09 * span;
     const sep = state.lang === 'en' ? '.' : ',';
     const fmtT = v => v >= 1 ? v.toPrecision(3).replace('.', sep) + ' s'
                    : v >= 1e-3 ? (v * 1e3).toPrecision(3).replace('.', sep) + ' ms'
@@ -3942,6 +3947,19 @@ Implement a real-time digital signal acquisition and processing system using Ard
       fGrid.push(fc0);
       fGrid = fGrid.filter(f => f >= fMin && f <= fMax && (!useLog || f > 0)).sort((u, v) => u - v);
     }
+    // Vue zoomée gardée : 400 points de plus dans la fenêtre visible (sinon la courbe apparaît en segments)
+    const viewKey = step3BodeViewKey();
+    const flv = magDiv._fullLayout;
+    if (flv && magDiv._viewKey === viewKey && flv.xaxis && flv.xaxis.range) {
+      let [a, b] = flv.xaxis.range.slice();
+      if (useLog) { a = Math.pow(10, a); b = Math.pow(10, b); }
+      a = Math.max(fMin, a); b = Math.min(fMax, b);
+      if (b > a && (b - a) < 0.6 * (fMax - fMin)) {
+        for (let i = 0; i < 400; i++) fGrid.push(useLog ? a * Math.pow(b / a, i / 399) : a + (b - a) * i / 399);
+        fGrid = fGrid.filter(f => f >= fMin && f <= fMax && (!useLog || f > 0)).sort((u, v) => u - v)
+                     .filter((f, i, arr) => i === 0 || f > arr[i - 1]);
+      }
+    }
     for(let i=0; i<fGrid.length; i++) {
       const f = fGrid[i];
       const H = step3H_at_f(f);
@@ -4067,11 +4085,20 @@ Implement a real-time digital signal acquisition and processing system using Ard
     const magTraces = [{ x:freqs, y:magVals, type:'scatter', mode:'lines', line:{color:C.bode, width:3}, hoverinfo:'skip' }];
     if (f0In) magTraces.push({ x:[f0], y:[m0Val], type:'scatter', mode:'markers', marker:{color:'#dc2626', size:11, line:{color:dark ? '#2b3648' : '#ffffff', width:2}}, hoverinfo:'skip' });
 
-    const viewKey = step3BodeViewKey();
     step3StoreInit(magDiv, magLayout);                 // vue initiale (boutons « ajuster »), avant de garder le zoom
     step3KeepView(magDiv, magLayout, viewKey, false);
     Plotly.react(magDiv, magTraces, magLayout, {displaylogo:false, responsive:true, displayModeBar:false, doubleClick:false});
     magDiv._viewKey = viewKey;
+    // Après un zoom ou un pan de l'utilisateur : recalculer la courbe avec des points serrés dans la fenêtre
+    if (!magDiv._refineHook) {
+      magDiv._refineHook = true;
+      let tmr = 0;
+      magDiv.on('plotly_relayout', ev => {
+        if (!ev || !Object.keys(ev).some(k => /^xaxis\.(range|autorange)/.test(k))) return;
+        clearTimeout(tmr);
+        tmr = setTimeout(() => { if (magDiv.isConnected && step3State.showBode) step3DrawBode(); }, 150);
+      });
+    }
     step3AttachF0Drag(magDiv);
     step3AttachRightPan(magDiv);
     step3AttachWheel(magDiv);
