@@ -31,7 +31,7 @@ async function open(browser, opts){
   await page.waitForTimeout(500);
   return { page, errors, ctx };
 }
-const view = (p, id) => p.$eval('#' + id, el => ({ x: el.layout.xaxis.range.map(v => +(+v).toFixed(3)), y: el.layout.yaxis.range.map(v => +(+v).toFixed(2)) }));
+const view = (p, id) => p.$eval('#' + id, el => ({ x: el.layout.xaxis.range.map(v => +(+v).toPrecision(5)), y: el.layout.yaxis.range.map(v => +(+v).toPrecision(5)) }));
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const centre = (p, id) => p.$eval('#' + id, el => { const r = el.getBoundingClientRect(), xa = el._fullLayout.xaxis, ya = el._fullLayout.yaxis;
   return { x: r.left + xa._offset + xa._length / 2, y: r.top + ya._offset + ya._length / 2, top: r.top + 12, w: xa._length, h: ya._length }; });
@@ -58,11 +58,14 @@ const legendBtn = id => `xpath=//*[@id="${id}"]/ancestor::*[.//*[contains(@class
   await fitAll();
   const v0 = await view(page, A);
 
+  // flick toward the side of the page with room to scroll (a plot at the top of the page cannot scroll up)
+  const room = () => page.evaluate(() => scrollY > (document.scrollingElement.scrollHeight - innerHeight) / 2 ? 1 : -1);
   if(scrolls){
-    const s0 = await page.evaluate(() => scrollY);
-    await drag(c.x, c.y - 60, 0, 25, 8, 8);
+    const s0 = await page.evaluate(() => scrollY), dir = await room();   // +1: finger down, page up
+    await drag(c.x, c.y - 60 * dir, 0, 25 * dir, 8, 8);
     const sA = await page.evaluate(() => scrollY); await wait(500); const sB = await page.evaluate(() => scrollY);
-    check('fast vertical flick scrolls the page natively, with inertia', sA < s0 && sB < sA && same(await view(page, A), v0), `${s0}→${sA}→${sB}`);
+    const moved = (a, b) => dir > 0 ? b < a : b > a;
+    check('fast vertical flick scrolls the page natively, with inertia', moved(s0, sA) && moved(sA, sB) && same(await view(page, A), v0), `${s0}→${sA}→${sB}`);
     await wait(1200); await bring(page, A); await wait(400); c = await centre(page, A);
   }else check('fast vertical flick scrolls the page', null, 'page does not scroll');
   const s1 = await page.evaluate(() => scrollY);
@@ -72,7 +75,8 @@ const legendBtn = id => `xpath=//*[@id="${id}"]/ancestor::*[.//*[contains(@class
   if(B) check('x pan reaches the linked plot', same(v.x, (await view(page, B)).x));
   const vB0 = B ? null : null;
   await tap(c.x, c.y); await wait(120); await tap(c.x, c.y); await wait(500);
-  check('quick double tap: back to the initial view', same(await view(page, A), v0));
+  const vq = await view(page, A);
+  check('quick double tap: back to the initial view', same(vq, v0), same(vq, v0) ? '' : JSON.stringify(vq) + ' vs ' + JSON.stringify(v0));
   await wait(900);
   await drag(c.x - 60, c.y, 8, 0, 15, 16, 450); v = await view(page, A);
   check('hold, then sideways drag: x zoom only', v.x[1] - v.x[0] < v0.x[1] - v0.x[0] && same(v.y, v0.y)); await fitAll();
@@ -87,15 +91,17 @@ const legendBtn = id => `xpath=//*[@id="${id}"]/ancestor::*[.//*[contains(@class
   await T('touchStart', [{ x: c.x - 30, y: c.y, id: 1 }, { x: c.x + 30, y: c.y, id: 2 }]);
   for(let i = 1; i <= 10; i++){ await wait(16); await T('touchMove', [{ x: c.x - 30 - 6 * i, y: c.y, id: 1 }, { x: c.x + 30 + 6 * i, y: c.y, id: 2 }]); }
   await T('touchEnd', []); await wait(300); v = await view(page, A);
-  const span0 = v0.x[1] - v0.x[0], span = v.x[1] - v.x[0];
+  const span0 = v0.x[1] - v0.x[0], span = v.x[1] - v.x[0];   // (5 significant digits)
   check('pinch ×3 sideways: x ×3, y kept, page not zoomed', Math.abs(span - span0 / 3) < 0.02 * span0 && same(v.y, v0.y) && await page.evaluate(() => visualViewport.scale) === 1,
         `x span ${span0.toFixed(3)} → ${span.toFixed(3)}`);
   await fitAll();
   if(scrolls){
-    await drag(c.x, c.y - 60, 0, 25, 8, 8); await wait(120);
+    const dir2 = await room();
+    await drag(c.x, c.y - 60 * dir2, 0, 25 * dir2, 8, 8); await wait(120);
     const sm = await page.evaluate(() => scrollY), vm = await view(page, A);
-    await drag(c.x, c.y, 2, 3, 15, 16);
-    check('slow drag while the page still moves: scroll, not pan', (await page.evaluate(() => scrollY)) !== sm && same(await view(page, A), vm));
+    await drag(c.x, c.y, 2, 3 * dir2, 15, 16);
+    const sm2 = await page.evaluate(() => scrollY), vm2 = await view(page, A);
+    check('slow drag while the page still moves: scroll, not pan', sm2 !== sm && same(vm2, vm), `scrollY ${sm}→${sm2}` + (same(vm2, vm) ? '' : ' view ' + JSON.stringify(vm) + '→' + JSON.stringify(vm2)));
     await wait(1500); await bring(page, A); await wait(400); c = await centre(page, A);
     const st = await page.evaluate(() => scrollY);
     const up = st > (await page.evaluate(() => document.scrollingElement.scrollHeight - innerHeight)) / 2;   // scroll toward the room there is
@@ -127,7 +133,8 @@ const legendBtn = id => `xpath=//*[@id="${id}"]/ancestor::*[.//*[contains(@class
   if(pt) check('Fit Y fits what is drawn in the x window', v.y[1] - v.y[0] < v0.y[1] - v0.y[0], JSON.stringify(v.y));
   else check('Fit Y fits what is drawn in the x window', null, 'nothing drawn: Fit Y keeps the initial range ' + JSON.stringify(v.y));
   await page.locator(fitBtn(A, 'x')).first().tap(); await wait(300);
-  check('Fit X restores x' + (B ? ' on the linked plot too' : ''), same((await view(page, A)).x, v0.x) && (!B || same((await view(page, B)).x, v0.x)));
+  const vx = await view(page, A);
+  check('Fit X restores x' + (B ? ' on the linked plot too' : ''), same(vx.x, v0.x) && (!B || same((await view(page, B)).x, v0.x)), same(vx.x, v0.x) ? '' : JSON.stringify(vx.x) + ' vs ' + JSON.stringify(v0.x));
   check('no page errors (phone)', errors.length === 0, errors.join(' | '));
 
   // ================= desktop =================

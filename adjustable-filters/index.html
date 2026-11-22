@@ -67,11 +67,13 @@
   .panel{border:1px solid var(--border);background:var(--card);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:10px;min-width:0}
   .app-header{background:var(--panel); padding:10px 12px; flex-direction:row; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px 12px}
   .app-header h1{margin:0; font-size:18px; line-height:1.25; font-weight:700}
-  .controls{background:var(--panel); overflow:auto; overscroll-behavior:contain; scrollbar-width:thin; scrollbar-color:var(--scroll-thumb) var(--scroll-track)}
-  .controls::-webkit-scrollbar{width:12px}
+  .controls{background:var(--panel); overflow:auto; overscroll-behavior:contain}
+  /* thin but always visible: styled WebKit/Blink scrollbars never fade out (macOS, phones); Firefox: thin standard ones */
+  .controls::-webkit-scrollbar{width:8px; height:8px}
   .controls::-webkit-scrollbar-track{background:var(--scroll-track); border-radius:999px}
-  .controls::-webkit-scrollbar-thumb{background:linear-gradient(180deg, var(--scroll-thumb), var(--scroll-thumb-hover)); border-radius:999px; border:2px solid var(--scroll-track)}
+  .controls::-webkit-scrollbar-thumb{background:var(--scroll-thumb); border-radius:999px}
   .controls::-webkit-scrollbar-thumb:hover{background:var(--scroll-thumb-hover)}
+  @supports not selector(::-webkit-scrollbar){ .controls{scrollbar-width:thin; scrollbar-color:var(--scroll-thumb) var(--scroll-track)} }
   .muted{color:var(--muted)}
   .disabled-label{color:var(--muted); opacity:.6}
   .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;min-height:28px}
@@ -102,18 +104,19 @@
   .plotwrap.panel{background:var(--paper); padding:8px}
   #timePlot{width:100%;height:100%}
   .bodeWrap{display:flex;flex-direction:column;gap:8px;height:100%;min-height:0}
-  #bodeMag{flex:11 1 0; min-height:0; width:100%}
-  #bodePhase{flex:9 1 0; min-height:0; width:100%; display:none}
-  .with-phase #bodePhase{display:block}
+  /* each plot alone in its cell: the cell also holds its Fit buttons and legend button (plot-interactions) */
+  .plot-cell{position:relative; min-height:0; width:100%}
+  .plot-cell > div:first-child{width:100%; height:100%}
+  #magCell{flex:11 1 0}
+  #phaseCell{flex:9 1 0; display:none}
+  .with-phase #phaseCell{display:block}
 
   /* the red frequency cursor on the Bode plots can be dragged */
   .cursor-hover .nsewdrag, .cursor-hover .draglayer .drag, body.cursor-dragging, body.cursor-dragging *{cursor:ew-resize !important}
   body.cursor-dragging{user-select:none; -webkit-user-select:none}
-  body.panning, body.panning *{cursor:grabbing !important}
   .plotwrap{touch-action:manipulation}
   /* touch zoom selection (slow double tap + drag) */
   .plotly-notifier{display:none !important}
-  .zoom-sel{position:fixed; display:none; pointer-events:none; z-index:40; border:1px solid var(--accent); background:color-mix(in srgb, var(--accent) 16%, transparent)}
 
   .card{border:1px solid var(--border);border-radius:12px;padding:10px 12px;background:var(--paper);display:flex;flex-direction:column;gap:6px}
   .card h3{margin:0 0 2px;font-size:15px}
@@ -366,8 +369,8 @@
       <!-- Bode column (mag + optional phase) -->
       <section class="panel plotwrap" id="bodeSection">
         <div class="bodeWrap" id="bodeWrap">
-          <div id="bodeMag"></div>
-          <div id="bodePhase"></div>
+          <div class="plot-cell" id="magCell"><div id="bodeMag"></div></div>
+          <div class="plot-cell" id="phaseCell"><div id="bodePhase"></div></div>
         </div>
       </section>
     </div>
@@ -396,6 +399,635 @@
   </div>
 
 <script>
+/* ===== plot-interactions.js (shared gestures, Fit buttons, in-plot legend: .claude/skills/plot-interactions) ===== */
+/* plot-interactions.js — mouse, trackpad and touch interaction for Plotly plots (ferrucci-lab.com apps).
+ *
+ * Extracted from bode-measure/index.html and generalised. Plain script, no build step: inline it in a
+ * single-file app (the repo's convention) or load it with <script src>. Needs Plotly 2.x on the page.
+ *
+ *   const pi = PlotInteractions.install([gdGain, gdPhase], {
+ *     linkX: true,                       // the plots share their x axis (zoom / pan / fit move all of them)
+ *     texts: () => TXT[LANG],            // {fitX, fitY, fitAll, legendShow, legendHide, zoomHint}
+ *   });
+ *   // after every Plotly.react of a plot: its "initial view", used by Fit X / Fit all / double tap
+ *   pi.setFitView(gd, {x:[xmin, xmax], y:[ymin, ymax]});   // in Plotly range units (log10 on a log axis)
+ *   pi.refresh();                        // after a language change: button titles
+ *   pi.add(gd);                          // a plot created later (e.g. an optional phase plot)
+ *
+ * Options: linkX, texts, minYSpan(gd), isNarrow(gd),
+ *   getFitView(gd) -> {x, y}   computed at the moment of a fit instead of setFitView (x or y may be null:
+ *                              that axis autoranges) — for apps whose default view depends on their state;
+ *   claim(gd, event) -> bool   a pointer/touch the app keeps for itself (a draggable cursor line): none of
+ *                              the gestures below act on it, and it is not hidden from the app's handlers.
+ *
+ * Plot config must include  doubleClick:false  (Plotly's own reset would run after ours and autoscale),
+ * scrollZoom:false and displayModeBar:false. Each plot div must sit alone in a container element that this
+ * module positions (position:relative) to hold the Fit buttons and the legend button.
+ *
+ * What the reader gets (see SKILL.md for the reasons):
+ *   mouse      left drag = Plotly zoom box; right (or middle) drag = pan; wheel = page scroll, never zoom;
+ *              double-click = every plot back to its initial view
+ *   trackpad   two-finger swipe that starts sideways = pan (latched 800 ms); vertical = page scroll
+ *   finger     fast and mostly vertical = native page scroll; slower = pan; held still then moved = zoom
+ *              (x, y or window by direction); tap = tooltip; quick double tap = fit all plots; slow double
+ *              tap = the next drag within 4 s draws the zoom window (hint shown); two fingers = pinch
+ *   buttons    Fit X / Fit Y / Fit all, semi-transparent, top-right of each plot; Fit Y fits what is drawn
+ *              in the current x window
+ *   legend     inside the plot, in its emptiest corner, with a show/hide button (hidden at start on phones)
+ */
+(function(global){
+  'use strict';
+
+  const T = {
+    SLOP:8,          // px a finger may wander before a touch is a drag
+    HOLD_MS:350,     // still this long: zoom armed (ring under the finger)
+    FAST:0.6,        // px/ms over the first SLOP px: faster and mostly vertical = page scroll
+    MOVING_MS:150,   // a scroll event this recent: the page is still moving, any drag scrolls it
+    TAP_MS:350,      // longest tap
+    FOLLOW_MS:700,   // a second touch this soon after a tap belongs to it...
+    NEAR:60,         // ...if it lands this close
+    QUICK_MS:300,    // two taps closer than this: quick double tap (fit)
+    ARMED_MS:4000,   // after a slow double tap, how long the plot waits for the drag
+    MINDRAG:14, MINZOOM:36,     // zoom direction thresholds (as Plotly's own zoom box)
+    PINCH_MIN:24, PINCH_MAX:50, // pinch: ignore an axis when fingers are this close along it; max factor
+    WHEEL_LATCH_MS:800,         // trackpad pan stays latched through short pauses
+    LEGEND_WIDE_SHARE:0.4       // a legend wider than this share of the plot starts hidden on a computer
+  };
+
+  const DEFAULT_TEXTS = {
+    fitX:'Fit X', fitY:'Fit Y', fitAll:'Fit all', legendShow:'Show legend', legendHide:'Minimize legend',
+    zoomHint:'Drag sideways to zoom on X, up or down to zoom on Y, diagonally for a window'
+  };
+
+  const ICONS = {
+    x:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h18M3 12l4-4M3 12l4 4M21 12l-4-4M21 12l-4 4"/></svg>',
+    y:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M12 3l-4 4M12 3l4 4M12 21l-4-4M12 21l4-4"/></svg>',
+    all:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>',
+    legend:'<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><line x1="4" y1="7" x2="7" y2="7"/><line x1="10" y1="7" x2="20" y2="7"/>'
+      + '<line x1="4" y1="12" x2="7" y2="12"/><line x1="10" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="7" y2="17"/><line x1="10" y1="17" x2="17" y2="17"/></svg>'
+  };
+
+  // Colours come from the app's CSS variables when it has them (--accent, --paper, --card, --fg, --border).
+  const CSS = `
+.pi-fit-btns{position:absolute; top:8px; right:10px; z-index:5; display:flex; gap:4px}
+.pi-fit-btns button{width:28px; height:28px; padding:4px; border-radius:7px; border:1px solid var(--border,#d7e2f4); background:var(--card,#eef4ff);
+  color:var(--fg,#0f1222); opacity:.5; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:opacity .15s}
+.pi-fit-btns button:focus-visible{opacity:1}
+.pi-fit-btns svg{width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
+.js-plotly-plot.pi-legend-collapsed .infolayer .legend{display:none}
+.pi-legend-btn{position:absolute; z-index:6; display:flex; align-items:center; justify-content:center; width:22px; height:22px; padding:0;
+  border:1px solid color-mix(in srgb, var(--border,#d7e2f4) 70%, transparent); border-radius:5px;
+  background:color-mix(in srgb, var(--paper,#fff) 80%, transparent); color:var(--fg,#0f1222); opacity:.6; cursor:pointer; touch-action:manipulation}
+.pi-legend-btn[hidden]{display:none}
+.pi-legend-btn:focus-visible{opacity:1}
+.pi-legend-btn.is-open{color:var(--accent,#2f6fde)}
+.pi-legend-btn svg{width:15px; height:15px; fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round}
+@media (hover:hover){ .pi-fit-btns button:hover, .pi-legend-btn:hover{opacity:1} }
+@media (pointer:coarse){
+  .pi-fit-btns{gap:6px}
+  .pi-fit-btns button{width:36px; height:36px; border-radius:10px; background:color-mix(in srgb, var(--card,#eef4ff) 70%, transparent)}
+  .pi-fit-btns svg{width:20px; height:20px}
+  .pi-legend-btn{width:36px; height:36px; border-radius:10px}
+  .pi-legend-btn svg{width:20px; height:20px}
+  .pi-legend-btn.is-open{opacity:.9; background:color-mix(in srgb, var(--accent,#2f6fde) 14%, var(--paper,#fff))}
+}
+.pi-zoom-sel{position:fixed; display:none; pointer-events:none; z-index:40; box-sizing:border-box;
+  background:color-mix(in srgb, var(--accent,#2f6fde) 16%, transparent); border-left:2px solid var(--accent,#2f6fde); border-right:2px solid var(--accent,#2f6fde)}
+.pi-zoom-sel.is-y{border:none; border-top:2px solid var(--accent,#2f6fde); border-bottom:2px solid var(--accent,#2f6fde)}
+.pi-zoom-sel.is-xy{border:2px solid var(--accent,#2f6fde)}
+.pi-touch-ring{position:fixed; display:none; pointer-events:none; z-index:41; width:46px; height:46px; margin:-23px 0 0 -23px; border-radius:50%;
+  border:2px solid var(--accent,#2f6fde); background:color-mix(in srgb, var(--accent,#2f6fde) 14%, transparent)}
+.pi-zoom-hint{position:fixed; display:none; pointer-events:none; z-index:42; transform:translate(-50%, -100%); max-width:min(90vw, 360px);
+  padding:6px 12px; border-radius:12px; border:1px solid var(--accent,#2f6fde); background:color-mix(in srgb, var(--paper,#fff) 92%, transparent);
+  color:var(--fg,#0f1222); font-size:13px; line-height:1.3; text-align:center; box-shadow:0 4px 16px rgba(0,0,0,.18)}
+.js-plotly-plot.pi-touch-gesture .hoverlayer{display:none}
+body.pi-panning, body.pi-panning *{cursor:grabbing !important}
+`;
+  function injectCss(){
+    if(document.getElementById('pi-style')) return;
+    const st = document.createElement('style');
+    st.id = 'pi-style'; st.textContent = CSS;
+    document.head.appendChild(st);
+  }
+
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const COARSE_MQ = global.matchMedia ? global.matchMedia('(pointer:coarse)') : {matches:false};
+
+  // Plotly redraws the last hover label after every relayout until a mouseout, which a finger never sends
+  function clearHover(gd){
+    if(gd && gd._fullLayout) gd._fullLayout._hoversubplot = null;
+    if(global.Plotly && Plotly.Fx) Plotly.Fx.unhover(gd);
+  }
+  // pointer position inside the plotting area: {xa, ya, px, py}, or null outside it
+  function plotAreaPoint(gd, clientX, clientY){
+    const fl = gd._fullLayout;
+    if(!fl || !fl.xaxis || !fl.yaxis || !fl.xaxis._length) return null;
+    const xa = fl.xaxis, ya = fl.yaxis, r = gd.getBoundingClientRect();
+    const px = clientX - r.left - xa._offset, py = clientY - r.top - ya._offset;
+    if(px < 0 || px > xa._length || py < 0 || py > ya._length) return null;
+    return {xa, ya, px, py};
+  }
+  function plotArea(gd){
+    const fl = gd._fullLayout;
+    if(!fl || !fl.xaxis || !fl.yaxis || !fl.xaxis._length) return null;
+    const r = gd.getBoundingClientRect();
+    return {xa:fl.xaxis, ya:fl.yaxis, left:r.left + fl.xaxis._offset, top:r.top + fl.yaxis._offset, w:fl.xaxis._length, h:fl.yaxis._length};
+  }
+
+  // ---------- helpers an app uses when it builds its layout ----------
+
+  // The corner of the plotting area (about a third of its width and height) with the least drawn in it.
+  // series: [{x:[...], y:[...], w:weight}] in data units; xLog: the x axis is logarithmic.
+  // Ties: top left, top right, bottom left, bottom right.
+  function emptiestCorner(xRange, yRange, series, xLog){
+    const corners = [{left:true, top:true}, {left:false, top:true}, {left:true, top:false}, {left:false, top:false}];
+    let best = corners[0], bestScore = Infinity;
+    corners.forEach(cn => {
+      let score = 0;
+      series.forEach(sr => (sr.x || []).forEach((xv, i) => {
+        const y = sr.y[i];
+        if(y == null || !Number.isFinite(y) || (xLog && !(xv > 0))) return;
+        const fx = ((xLog ? Math.log10(xv) : xv) - xRange[0]) / (xRange[1] - xRange[0]);
+        const fy = (y - yRange[0]) / (yRange[1] - yRange[0]);
+        if((cn.left ? fx <= 0.38 : fx >= 0.62) && (cn.top ? fy >= 0.66 : fy <= 0.34)) score += (sr.w || 1);
+      }));
+      if(score < bestScore){ bestScore = score; best = cn; }
+    });
+    return best;
+  }
+  const withAlpha = (hex, a) => {
+    const m = /^#?([0-9a-f]{6})$/i.exec(String(hex).trim());
+    if(!m) return hex;
+    const n = parseInt(m[1], 16);
+    return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`;
+  };
+  // Plotly legend object for an in-plot legend at a corner
+  function overlayLegend(corner, {paper = '#ffffff', grid = '#e6ebf3', fontSize = 12} = {}){
+    return {orientation:'v', x:corner.left ? 0.01 : 0.99, xanchor:corner.left ? 'left' : 'right',
+            y:corner.top ? 0.99 : 0.01, yanchor:corner.top ? 'top' : 'bottom',
+            bgcolor:withAlpha(paper, 0.85), bordercolor:grid, borderwidth:1, font:{size:fontSize}};
+  }
+
+  // ---------- install ----------
+  function install(gds, options = {}){
+    gds = (Array.isArray(gds) ? gds : [gds]).filter(Boolean);
+    injectCss();
+    const opts = Object.assign({linkX:gds.length > 1, fitButtons:true, legendToggle:true, touch:true, wheel:true, mousePan:true,
+                                isNarrow:gd => gd.clientWidth > 0 && gd.clientWidth < 520}, options);
+    const texts = () => Object.assign({}, DEFAULT_TEXTS, typeof opts.texts === 'function' ? opts.texts() : (opts.texts || {}));
+    const legendChoices = new Map();
+
+    // ----- fit -----
+    // Fit X: x back to the initial view (every linked plot follows). Fit Y: y fitted to what is drawn in the
+    // current x window, 8 % margin; initial view when nothing is there. Fit all: the plot's initial view.
+    function dataYRange(gd){
+      const fl = gd._fullLayout;
+      if(!fl || !fl.xaxis) return null;
+      const xa = fl.xaxis, xr = xa.range.map(Number), lo = Math.min(xr[0], xr[1]), hi = Math.max(xr[0], xr[1]);
+      const isLog = xa.type === 'log';
+      let ymin = Infinity, ymax = -Infinity;
+      (gd.data || []).forEach(t => {
+        if(t.visible === false || t.visible === 'legendonly') return;
+        // a trace without a legend entry is decoration (e.g. spectral lines drawn from a floor to their value,
+        // whose markers carry the values): it would keep Fit Y from ever tightening
+        if(t.showlegend === false) return;
+        (t.x || []).forEach((x, i) => {
+          const y = t.y && t.y[i];
+          if(y == null || !Number.isFinite(y)) return;
+          const lx = isLog ? (x > 0 ? Math.log10(x) : NaN) : Number(x);
+          if(!(lx >= lo && lx <= hi)) return;
+          if(y < ymin) ymin = y;
+          if(y > ymax) ymax = y;
+        });
+      });
+      if(!Number.isFinite(ymin)) return null;
+      const minSpan = (opts.minYSpan && opts.minYSpan(gd)) || Math.max(1e-9, Math.abs(ymax) * 0.05) || 1;
+      if(ymax - ymin < minSpan){ const c = (ymin + ymax) / 2; ymin = c - minSpan / 2; ymax = c + minSpan / 2; }
+      const pad = 0.08 * (ymax - ymin);
+      return [ymin - pad, ymax + pad];
+    }
+    function fitPlot(gd, which){
+      const v = (opts.getFitView ? opts.getFitView(gd) : gd._piFitView) || {};
+      const upd = {};
+      const put = (ax, r) => { if(Array.isArray(r)){ upd[ax + '.autorange'] = false; upd[ax + '.range'] = r.slice(); } else upd[ax + '.autorange'] = true; };
+      // the axis a Fit X / Fit Y does not touch stays exactly where it is, even if it was autoranged
+      // (redrawn data, e.g. lines binned per pixel, would otherwise rescale it)
+      const keep = ax => { const a = gd._fullLayout && gd._fullLayout[ax]; if(a && a.range) put(ax, a.range.map(Number)); };
+      if(which !== 'y') put('xaxis', v.x);
+      if(which === 'x') keep('yaxis');
+      if(which === 'y'){ const r = dataYRange(gd); put('yaxis', r || v.y); keep('xaxis'); }
+      if(which === 'all') put('yaxis', v.y);
+      clearHover(gd);
+      return Plotly.relayout(gd, upd);
+    }
+    const visible = gd => gd.isConnected && gd.offsetParent !== null && gd._fullLayout;
+    const fitAll = () => Promise.all(gds.filter(visible).map(gd => fitPlot(gd, 'all')));
+
+    // ----- linked x axes -----
+    let linking = false;
+    function setupLink(src){
+      if(!opts.linkX) return;
+      src.on('plotly_relayout', ev => {
+        if(linking) return;
+        let range = null;
+        if('xaxis.range[0]' in ev) range = [ev['xaxis.range[0]'], ev['xaxis.range[1]']];
+        else if(ev['xaxis.autorange'] || ev['xaxis.range']) range = src.layout.xaxis.range;
+        if(!range) return;
+        const upd = {'xaxis.autorange':false, 'xaxis.range':range.slice()};
+        if(ev['xaxis.type']) upd['xaxis.type'] = ev['xaxis.type'];   // a lin/log switch reaches the others with its range
+        const others = gds.filter(g => g !== src && g._fullLayout);
+        if(!others.length) return;
+        linking = true;
+        Promise.all(others.map(g => Plotly.relayout(g, upd))).then(() => { linking = false; }, () => { linking = false; });
+      });
+    }
+    // a pointer or touch the app keeps for itself (opts.claim): no gesture of ours acts on it
+    const claimed = (gd, e) => !!(opts.claim && opts.claim(gd, e));
+
+    // ----- fit buttons -----
+    function renderButtons(){
+      const t = texts(), titles = {x:t.fitX, y:t.fitY, all:t.fitAll};
+      gds.forEach(gd => {
+        if(!opts.fitButtons) return;
+        const cell = gd.parentElement;
+        let box = cell.querySelector(':scope > .pi-fit-btns');
+        if(!box){
+          if(getComputedStyle(cell).position === 'static') cell.style.position = 'relative';
+          box = document.createElement('div'); box.className = 'pi-fit-btns';
+          box.addEventListener('click', e => {
+            const b = e.target.closest('button');
+            if(!b) return;
+            fitPlot(gd, b.dataset.fit);
+            if(e.detail) b.blur();
+          });
+          cell.appendChild(box);
+        }
+        box.innerHTML = ['x', 'y', 'all'].map(k => `<button type="button" data-fit="${k}" title="${titles[k]}" aria-label="${titles[k]}">${ICONS[k]}</button>`).join('');
+      });
+      gds.forEach(syncLegend);
+    }
+
+    // ----- legend show/hide button -----
+    const compact = gd => opts.isNarrow(gd) || COARSE_MQ.matches;
+    const legendKey = gd => (gd.id || gds.indexOf(gd)) + '|' + (compact(gd) ? 'compact' : 'wide');
+    function legendBox(legendEl){
+      const bg = legendEl.querySelector(':scope > rect.bg');
+      const width = Number(bg && bg.getAttribute('width')), height = Number(bg && bg.getAttribute('height'));
+      const m = /translate\(\s*([-\d.e]+)[\s,]+([-\d.e]+)\s*\)/.exec(legendEl.getAttribute('transform') || '');
+      if(!(width > 0) || !(height > 0) || !m) return null;
+      return {left:Number(m[1]), top:Number(m[2]), width, height};
+    }
+    function syncLegend(gd){
+      if(!opts.legendToggle) return;
+      const cell = gd.parentElement, fl = gd._fullLayout;
+      let btn = cell.querySelector(':scope > .pi-legend-btn');
+      const legendEl = gd.querySelector('.infolayer .legend');
+      const lg = fl && fl.legend;
+      const inside = lg && lg.orientation !== 'h' && lg.x >= 0 && lg.x <= 1 && lg.y >= 0 && lg.y <= 1;
+      const box = fl && fl.showlegend && inside && legendEl && legendEl.querySelector('.traces') ? legendBox(legendEl) : null;
+      if(!box){ if(btn) btn.hidden = true; gd.classList.remove('pi-legend-collapsed'); return; }
+      const cmp = compact(gd), own = legendChoices.get(legendKey(gd));
+      const collapsed = typeof own === 'boolean' ? own : (cmp || box.width > T.LEGEND_WIDE_SHARE * ((fl._size && fl._size.w) || Infinity));
+      if(!btn){
+        if(getComputedStyle(cell).position === 'static') cell.style.position = 'relative';
+        btn = document.createElement('button');
+        btn.type = 'button'; btn.className = 'pi-legend-btn'; btn.innerHTML = ICONS.legend;
+        btn.addEventListener('click', e => {
+          e.preventDefault();
+          legendChoices.set(legendKey(gd), !gd.classList.contains('pi-legend-collapsed'));
+          syncLegend(gd);
+          if(e.detail) btn.blur();
+        });
+        cell.appendChild(btn);
+      }
+      btn.hidden = false;
+      btn.classList.toggle('is-open', !collapsed);
+      btn.setAttribute('aria-expanded', String(!collapsed));
+      const label = texts()[collapsed ? 'legendShow' : 'legendHide'];
+      btn.title = label; btn.setAttribute('aria-label', label);
+      const left = lg.xanchor === 'left' || (lg.xanchor === 'auto' && lg.x < 0.5), top = lg.yanchor === 'top' || (lg.yanchor === 'auto' && lg.y >= 0.5);
+      const size = btn.offsetWidth || (cmp ? 36 : 22), step = size + (cmp ? 6 : 4);
+      // the button's offset inside the cell = the plot div's offset + the legend's place in the plot
+      const ox = gd.offsetLeft, oy = gd.offsetTop;
+      btn.style.left = Math.round(ox + (left ? box.left : box.left + box.width - size)) + 'px';
+      btn.style.top = Math.round(oy + (top ? box.top : box.top + box.height - size)) + 'px';
+      gd.classList.toggle('pi-legend-collapsed', collapsed);
+      legendEl.style.translate = collapsed ? '' : (cmp ? `0px ${top ? step : -step}px` : `${left ? step : -step}px 0px`);
+    }
+
+    // ----- mouse: right (or middle) drag pans -----
+    // Plotly would read a right-button drag as a zoom box it never draws and collapse the axes on release.
+    function setupMousePan(gd){
+      let pan = null, raf = 0;
+      const isPanButton = e => e.pointerType !== 'touch' && e.pointerType !== 'pen' && (e.button === 1 || e.button === 2);
+      function apply(){
+        raf = 0;
+        if(!pan) return;
+        const {x0, y0, kx, ky, dx, dy} = pan;
+        Plotly.relayout(gd, {'xaxis.autorange':false, 'xaxis.range':[x0[0] - dx*kx, x0[1] - dx*kx],
+                             'yaxis.autorange':false, 'yaxis.range':[y0[0] + dy*ky, y0[1] + dy*ky]});
+      }
+      gd.addEventListener('pointerdown', e => {
+        if(pan || !isPanButton(e) || claimed(gd, e)) return;
+        const p = plotAreaPoint(gd, e.clientX, e.clientY);
+        if(!p) return;
+        e.preventDefault(); e.stopPropagation();
+        const x0 = p.xa.range.map(Number), y0 = p.ya.range.map(Number);
+        pan = {id:e.pointerId, sx:e.clientX, sy:e.clientY, dx:0, dy:0, x0, y0, kx:(x0[1]-x0[0])/p.xa._length, ky:(y0[1]-y0[0])/p.ya._length};
+        try{ gd.setPointerCapture(e.pointerId); }catch(_){}
+        clearHover(gd);
+        document.body.classList.add('pi-panning');
+      }, true);
+      gd.addEventListener('pointermove', e => {
+        if(!pan || e.pointerId !== pan.id) return;
+        e.preventDefault(); e.stopPropagation();
+        pan.dx = e.clientX - pan.sx; pan.dy = e.clientY - pan.sy;
+        if(!raf) raf = requestAnimationFrame(apply);
+      }, true);
+      const end = e => {
+        if(!pan || e.pointerId !== pan.id) return;
+        e.stopPropagation();
+        if(raf){ cancelAnimationFrame(raf); apply(); }
+        pan = null;
+        try{ gd.releasePointerCapture(e.pointerId); }catch(_){}
+        document.body.classList.remove('pi-panning');
+      };
+      ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(t => gd.addEventListener(t, end, true));
+      ['mousedown', 'mouseup', 'auxclick'].forEach(type => gd.addEventListener(type, e => {
+        if(e.button === 1 || e.button === 2){ e.stopPropagation(); if(e.cancelable) e.preventDefault(); }
+      }, true));
+      gd.addEventListener('contextmenu', e => e.preventDefault());
+    }
+
+    // ----- trackpad: a two-finger swipe that starts sideways pans; the mouse wheel stays a page scroll -----
+    function setupWheelPan(gd){
+      let base = null, endTimer = 0, raf = 0, pdx = 0, pdy = 0;
+      const scale = e => e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? (gd.clientHeight || 800) : 1;
+      function flush(){
+        raf = 0;
+        if(!base) return;
+        const xs = pdx / base.xLen * base.xSpan, ys = -pdy / base.yLen * base.ySpan;
+        pdx = 0; pdy = 0;
+        base.x = [base.x[0] + xs, base.x[1] + xs];
+        base.y = [base.y[0] + ys, base.y[1] + ys];
+        Plotly.relayout(gd, {'xaxis.autorange':false, 'xaxis.range':base.x.slice(), 'yaxis.autorange':false, 'yaxis.range':base.y.slice()});
+      }
+      gd.addEventListener('wheel', e => {
+        if(!base){
+          if(e.ctrlKey || Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;   // mouse wheel, vertical swipe, pinch
+          const p = plotAreaPoint(gd, e.clientX, e.clientY);
+          if(!p) return;
+          const x = p.xa.range.map(Number), y = p.ya.range.map(Number);
+          base = {xLen:p.xa._length, yLen:p.ya._length, xSpan:x[1]-x[0], ySpan:y[1]-y[0], x, y};
+        }
+        clearTimeout(endTimer);
+        endTimer = setTimeout(() => { base = null; pdx = 0; pdy = 0; }, T.WHEEL_LATCH_MS);
+        e.preventDefault(); e.stopPropagation();
+        pdx += e.deltaX * scale(e); pdy += e.deltaY * scale(e);
+        if(!raf) raf = requestAnimationFrame(flush);
+      }, {capture:true, passive:false});
+    }
+
+    // ----- touch -----
+    const touchScroll = global.__piTouchScroll || (global.__piTouchScroll = {last:0});
+    if(!global.__piScrollListener){
+      global.__piScrollListener = true;
+      document.addEventListener('scroll', () => { touchScroll.last = performance.now(); }, true);
+    }
+    function setupTouch(gd){
+      gd.style.touchAction = 'manipulation';   // native scroll allowed, browser double-tap zoom off
+      const BLOCKING = {pan:1, zoom:1, armed:1, second:1};
+      const sel = document.createElement('div'); sel.className = 'pi-zoom-sel'; document.body.appendChild(sel);
+      const ring = document.createElement('div'); ring.className = 'pi-touch-ring'; document.body.appendChild(ring);
+      const hint = document.createElement('div'); hint.className = 'pi-zoom-hint'; document.body.appendChild(hint);
+      let g = null, lastTap = null, raf = 0, armedUntil = 0, armedTimer = 0;
+      let pinch = null, pinchRaf = 0, pinchPending = null, twoFingers = false, appOwns = false;
+      const isTouch = e => e.pointerType === 'touch' || e.pointerType === 'pen';
+      const inside = (a, x, y) => x >= a.left && x <= a.left + a.w && y >= a.top && y <= a.top + a.h;
+      const hideRing = () => { ring.style.display = 'none'; };
+      const gestureOn = on => gd.classList.toggle('pi-touch-gesture', on);
+      function zoomMode(dx, dy){
+        const ax = Math.abs(dx), ay = Math.abs(dy);
+        if(ax < T.MINDRAG && ay < T.MINDRAG) return null;
+        if(ay < Math.min(Math.max(ax * 0.6, T.MINDRAG), T.MINZOOM)) return 'x';
+        if(ax < Math.min(Math.max(ay * 0.6, T.MINDRAG), T.MINZOOM)) return 'y';
+        return 'xy';
+      }
+      function arm(){
+        if(!g) return;
+        if(g.mode === 'pending') g.mode = 'armed';
+        Object.assign(ring.style, {display:'block', left:g.x + 'px', top:g.y + 'px'});
+        clearHover(gd);
+      }
+      function disarm(){ armedUntil = 0; clearTimeout(armedTimer); armedTimer = 0; hint.style.display = 'none'; }
+      function armWindow(){
+        const a = plotArea(gd);
+        if(!a) return;
+        disarm(); clearHover(gd);
+        armedUntil = performance.now() + T.ARMED_MS;
+        armedTimer = setTimeout(disarm, T.ARMED_MS);
+        hint.textContent = texts().zoomHint;
+        Object.assign(hint.style, {display:'block', left:(a.left + a.w / 2) + 'px', top:(a.top + a.h - 10) + 'px',
+                                   maxWidth:Math.max(160, Math.min(360, a.w - 16)) + 'px'});
+      }
+      function drawBox(){
+        const z = g, a = z.a;
+        if(!z.zmode){ sel.style.display = 'none'; return; }
+        let x0 = Math.min(z.zx0, z.zx1), x1 = Math.max(z.zx0, z.zx1), y0 = Math.min(z.zy0, z.zy1), y1 = Math.max(z.zy0, z.zy1);
+        if(z.zmode === 'y'){ x0 = a.left; x1 = a.left + a.w; }
+        if(z.zmode === 'x'){ y0 = a.top; y1 = a.top + a.h; }
+        sel.classList.toggle('is-y', z.zmode === 'y');
+        sel.classList.toggle('is-xy', z.zmode === 'xy');
+        Object.assign(sel.style, {display:'block', left:x0 + 'px', top:y0 + 'px', width:(x1 - x0) + 'px', height:(y1 - y0) + 'px'});
+      }
+      function applyZoom(){
+        const z = g, {xa, ya, left, top} = z.a, upd = {};
+        if(!z.zmode) return;
+        // the axis an x-only (y-only) zoom leaves alone is frozen where it is: an autoranged axis would rescale
+        upd['xaxis.autorange'] = false; upd['yaxis.autorange'] = false;
+        upd['xaxis.range'] = z.zmode !== 'y' ? [xa.p2r(Math.min(z.zx0, z.zx1) - left), xa.p2r(Math.max(z.zx0, z.zx1) - left)] : xa.range.map(Number);
+        upd['yaxis.range'] = z.zmode !== 'x' ? [ya.p2r(Math.max(z.zy0, z.zy1) - top), ya.p2r(Math.min(z.zy0, z.zy1) - top)] : ya.range.map(Number);
+        Plotly.relayout(gd, upd);
+      }
+      function applyPan(){
+        raf = 0;
+        if(!g || g.mode !== 'pan') return;
+        const dx = g.x - g.x0, dy = g.y - g.y0, p = g.pan;
+        Plotly.relayout(gd, {'xaxis.autorange':false, 'yaxis.autorange':false, 'xaxis.range':[p.x[0] - dx * p.kx, p.x[1] - dx * p.kx], 'yaxis.range':[p.y[0] + dy * p.ky, p.y[1] + dy * p.ky]});
+      }
+      function startPan(){
+        const a = g.a, x = a.xa.range.map(Number), y = a.ya.range.map(Number);
+        g.mode = 'pan';
+        g.pan = {x, y, kx:(x[1] - x[0]) / a.w, ky:(y[1] - y[0]) / a.h};
+        gestureOn(true);
+      }
+      function startZoom(){
+        hideRing(); disarm();
+        g.mode = 'zoom';
+        g.zx0 = clamp(g.x0, g.a.left, g.a.left + g.a.w); g.zy0 = clamp(g.y0, g.a.top, g.a.top + g.a.h);
+        gestureOn(true);
+      }
+      // the first movement past SLOP decides; called from pointermove and touchmove, whichever comes first
+      function decide(x, y, now){
+        if(!g) return;
+        g.x = x; g.y = y;
+        const dx = x - g.x0, dy = y - g.y0, dist = Math.hypot(dx, dy);
+        if(dist <= T.SLOP) return;
+        if(g.mode === 'pending'){
+          clearTimeout(g.hold);
+          const speed = dist / Math.max(1, now - g.t0);
+          if(speed > T.FAST && Math.abs(dy) >= Math.abs(dx)){ g.mode = 'native'; lastTap = null; } else startPan();
+        }else if(g.mode === 'armed' || g.mode === 'second'){
+          startZoom();
+        }
+      }
+      function end(){
+        if(g){ clearTimeout(g.hold); try{ gd.releasePointerCapture(g.id); }catch(_){} }
+        g = null; hideRing(); sel.style.display = 'none';
+        if(!pinch) gestureOn(false);
+      }
+      function showTapValue(x, y){
+        const target = document.elementFromPoint(x, y);
+        if(!target || !gd.contains(target) || !Plotly.Fx || typeof Plotly.Fx.hover !== 'function') return;
+        try{ Plotly.Fx.hover(gd, {clientX:x, clientY:y, target}, 'xy'); }catch(_){}
+      }
+      // pinch: each axis scales by the fingers' spread along it; the values under them stay under them
+      const pinchPoints = e => Array.from(e.touches).filter(t => gd.contains(t.target)).slice(0, 2).map(t => ({x:t.clientX, y:t.clientY}));
+      function pinchStart(pts){
+        const a = plotArea(gd);
+        if(!a) return;
+        if(g) end();
+        disarm(); lastTap = null;
+        const cx = (pts[0].x + pts[1].x) / 2, cy = (pts[0].y + pts[1].y) / 2;
+        pinch = {pts, a, x:a.xa.range.map(Number), y:a.ya.range.map(Number), ax:a.xa.p2l(cx - a.left), ay:a.ya.p2l(cy - a.top)};
+        clearHover(gd); gestureOn(true);
+      }
+      function pinchMove(pts){
+        const p = pinch, a = p.a;
+        const scale = key => {
+          const from = Math.abs(p.pts[0][key] - p.pts[1][key]), to = Math.abs(pts[0][key] - pts[1][key]);
+          if(from < T.PINCH_MIN || to < T.PINCH_MIN) return 1;
+          return clamp(to / from, 1 / T.PINCH_MAX, T.PINCH_MAX);
+        };
+        const cx = (pts[0].x + pts[1].x) / 2, cy = (pts[0].y + pts[1].y) / 2;
+        const range = (r, anchor, fraction, s) => { const span = (r[1] - r[0]) / s, lo = anchor - fraction * span; return [lo, lo + span]; };
+        pinchPending = {'xaxis.autorange':false, 'yaxis.autorange':false,
+                        'xaxis.range':range(p.x, p.ax, (cx - a.left) / a.w, scale('x')), 'yaxis.range':range(p.y, p.ay, 1 - (cy - a.top) / a.h, scale('y'))};
+        if(!pinchRaf) pinchRaf = requestAnimationFrame(() => { pinchRaf = 0; if(pinchPending){ Plotly.relayout(gd, pinchPending); pinchPending = null; } });
+      }
+      function pinchEnd(){
+        if(pinchRaf){ cancelAnimationFrame(pinchRaf); pinchRaf = 0; if(pinchPending){ Plotly.relayout(gd, pinchPending); pinchPending = null; } }
+        pinch = null;
+        gestureOn(false); clearHover(gd);
+      }
+      // Plotly's own touch handling never sees a finger
+      gd.addEventListener('touchstart', e => {
+        if(appOwns) return;   // the app's own drag: its handlers see everything, Plotly is kept out by the app
+        e.stopPropagation();
+        if(e.touches.length >= 2){
+          twoFingers = true;
+          const pts = pinchPoints(e);
+          if(pts.length === 2 && !pinch && !(g && g.mode === 'native')) pinchStart(pts);
+        }
+      }, {capture:true});
+      gd.addEventListener('touchmove', e => {
+        if(appOwns) return;
+        e.stopPropagation();
+        const pts = pinchPoints(e);
+        if(pts.length === 2 && e.cancelable){
+          if(!pinch) pinchStart(pts);
+          if(pinch){ e.preventDefault(); pinchMove(pts); }
+          return;
+        }
+        if(pinch){ if(e.cancelable) e.preventDefault(); return; }
+        if(g && e.touches.length === 1) decide(e.touches[0].clientX, e.touches[0].clientY, performance.now());
+        if(g && BLOCKING[g.mode] && e.cancelable) e.preventDefault();
+      }, {capture:true, passive:false});
+      const touchDone = e => {
+        if(appOwns){ if(e.touches.length === 0) appOwns = false; return; }
+        e.stopPropagation();
+        if(pinch && e.touches.length < 2) pinchEnd();
+        if(e.touches.length === 0){ twoFingers = false; lastTouchEnd = performance.now(); }
+      };
+      // a tap's emulated mouse events can end with a mouseout from the plot, and Plotly answers it by removing
+      // the tooltip the tap just showed: a finger has no pointer to leave with, so that mouseout is not passed on
+      let lastTouchEnd = -Infinity;
+      gd.addEventListener('mouseout', e => { if(performance.now() - lastTouchEnd < 700) e.stopPropagation(); }, true);
+      gd.addEventListener('touchend', touchDone, {capture:true});
+      gd.addEventListener('touchcancel', touchDone, {capture:true});
+
+      gd.addEventListener('pointerdown', e => {
+        if(!isTouch(e)) return;
+        if(e.target.closest && e.target.closest('.legend')) return;   // the legend's items belong to the legend
+        if(!g && !pinch && claimed(gd, e)){ appOwns = true; return; }
+        if(appOwns) return;
+        if(g || pinch || twoFingers){ end(); return; }
+        const now = performance.now(), a = plotArea(gd);
+        g = {id:e.pointerId, t0:now, x0:e.clientX, y0:e.clientY, x:e.clientX, y:e.clientY, a, mode:'pending', hold:0, gap:null};
+        if(now - touchScroll.last < T.MOVING_MS || !a || !inside(a, e.clientX, e.clientY)){
+          g.mode = 'native'; lastTap = null; disarm(); return;
+        }
+        if(armedUntil && now < armedUntil){ g.mode = 'armed'; lastTap = null; return; }
+        if(lastTap && now - lastTap.t < T.FOLLOW_MS && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < T.NEAR){
+          g.mode = 'second'; g.gap = now - lastTap.t; lastTap = null; arm(); return;
+        }
+        g.hold = setTimeout(arm, T.HOLD_MS);
+      }, true);
+      gd.addEventListener('pointermove', e => {
+        if(!g || e.pointerId !== g.id) return;
+        decide(e.clientX, e.clientY, performance.now());
+        if(g.mode === 'pan'){
+          if(!raf) raf = requestAnimationFrame(applyPan);
+        }else if(g.mode === 'zoom'){
+          const a = g.a;
+          g.zx1 = clamp(g.x, a.left, a.left + a.w); g.zy1 = clamp(g.y, a.top, a.top + a.h);
+          g.zmode = zoomMode(g.zx1 - g.zx0, g.zy1 - g.zy0);
+          drawBox();
+        }
+      }, true);
+      gd.addEventListener('pointerup', e => {
+        if(!g || e.pointerId !== g.id) return;
+        const now = performance.now(), dt = now - g.t0, mode = g.mode, gap = g.gap, x0 = g.x0, y0 = g.y0;
+        if(mode === 'pan'){ if(raf){ cancelAnimationFrame(raf); applyPan(); } }
+        else if(mode === 'zoom') applyZoom();
+        end();
+        if(mode === 'pan' || mode === 'zoom'){ clearHover(gd); return; }
+        if(mode === 'second' && dt < T.TAP_MS){ if(gap < T.QUICK_MS) fitAll(); else armWindow(); }
+        else if(mode === 'pending' && dt < T.TAP_MS){ lastTap = {t:now, x:x0, y:y0}; showTapValue(x0, y0); }
+      }, true);
+      gd.addEventListener('pointercancel', e => { if(g && e.pointerId === g.id) end(); }, true);
+    }
+
+    function setup(gd){
+      if(gd._piInstalled) return;
+      gd._piInstalled = true;
+      setupLink(gd);
+      // double-click (mouse) and the emulated one of a quick double tap: every plot to its initial view.
+      // Plotly still reports the double-click with doubleClick:false; the DOM dblclick lands on its drag cover.
+      gd.on('plotly_doubleclick', fitAll);
+      gd.on('plotly_afterplot', () => syncLegend(gd));
+      if(opts.mousePan) setupMousePan(gd);
+      if(opts.wheel) setupWheelPan(gd);
+      if(opts.touch) setupTouch(gd);
+    }
+    gds.forEach(setup);
+    renderButtons();
+
+    return {
+      setFitView(gd, view){ gd._piFitView = {x:view.x ? view.x.slice() : null, y:view.y ? view.y.slice() : null}; },
+      fitPlot, fitAll,
+      refresh(){ renderButtons(); },
+      syncLegend,
+      // a plot created after install (Plotly.newPlot done): same gestures, buttons, legend button, link
+      add(gd){ if(!gd || gds.includes(gd)) return; gds.push(gd); setup(gd); renderButtons(); }
+    };
+  }
+
+  global.PlotInteractions = {install, emptiestCorner, overlayLegend, withAlpha, clearHover, constants:T};
+})(window);
+
+</script>
+<script>
 document.addEventListener('DOMContentLoaded', () => {
   'use strict';
 
@@ -410,7 +1042,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Same breakpoint as the CSS: one scrolling column on phones and short screens
   const STACKED_MQ = window.matchMedia('(max-width:699px), (max-height:520px)');
-  const COARSE_MQ = window.matchMedia('(pointer:coarse)');
 
   // ========= Textos =========
   const TXT = {
@@ -423,6 +1054,7 @@ document.addEventListener('DOMContentLoaded', () => {
       specIn:'Input harmonics', specY1:'Output 1 harmonics', specY2:'Output 2 harmonics', specYdB:'|H|, A<sub>k</sub> (dB)', specYlin:'|H|, A<sub>k</sub> (linear)', specPhaseY:'∠H, φ<sub>k</sub> (°)',
       cascadeFilters:'Cascade filters', bodeFmax:'Bode max frequency', cascadeHint:'Both filter 1 and 2 must be enabled to use this feature.',
       infoBtn:'Filter information', infoTitle:'Filter equations', close:'Close', theme:'Toggle theme', language:'Language',
+      fitX:'Fit X', fitY:'Fit Y', fitAll:'Fit all', legendShow:'Show legend', legendHide:'Minimize legend', zoomHint:'Drag sideways to zoom on X, up or down to zoom on Y, diagonally for a window',
       infoType:'Type', infoCutoff:'Cutoff frequency', infoDiffEq:'Differential equation', infoTf:'Transfer function',
       infoDisabledNote:'This filter is disabled in the plots. The equations below correspond to its configured parameters.',
       timeTitle:'Time response', bodeTitle:'Bode — Magnitude', bodePhaseTitle:'Bode — Phase',
@@ -438,6 +1070,7 @@ document.addEventListener('DOMContentLoaded', () => {
       specIn:'Harmoniques entrée', specY1:'Harmoniques sortie 1', specY2:'Harmoniques sortie 2', specYdB:'|H|, A<sub>k</sub> (dB)', specYlin:'|H|, A<sub>k</sub> (linéaire)', specPhaseY:'∠H, φ<sub>k</sub> (°)',
       cascadeFilters:'Mettre les filtres en cascade', bodeFmax:'Fréquence max. du Bode', cascadeHint:'Les filtres 1 et 2 doivent être activés pour utiliser cette fonction.',
       infoBtn:'Informations du filtre', infoTitle:'Équations du filtre', close:'Fermer', theme:'Changer de thème', language:'Langue',
+      fitX:'Ajuster X', fitY:'Ajuster Y', fitAll:'Tout ajuster', legendShow:'Afficher la légende', legendHide:'Réduire la légende', zoomHint:'Glissez sur le côté pour zoomer en X, vers le haut ou le bas pour zoomer en Y, en diagonale pour une fenêtre',
       infoType:'Type', infoCutoff:'Fréquence de coupure', infoDiffEq:'Équation différentielle', infoTf:'Fonction de transfert',
       infoDisabledNote:'Ce filtre est désactivé dans les graphiques. Les équations ci-dessous correspondent à ses paramètres configurés.',
       timeTitle:'Réponse temporelle', bodeTitle:'Bode — Module', bodePhaseTitle:'Bode — Phase',
@@ -453,6 +1086,7 @@ document.addEventListener('DOMContentLoaded', () => {
       specIn:'Armónicos entrada', specY1:'Armónicos salida 1', specY2:'Armónicos salida 2', specYdB:'|H|, A<sub>k</sub> (dB)', specYlin:'|H|, A<sub>k</sub> (lineal)', specPhaseY:'∠H, φ<sub>k</sub> (°)',
       cascadeFilters:'Filtros en cascada', bodeFmax:'Frecuencia máx. del Bode', cascadeHint:'Los filtros 1 y 2 deben estar activados para usar esta función.',
       infoBtn:'Información del filtro', infoTitle:'Ecuaciones del filtro', close:'Cerrar', theme:'Cambiar tema', language:'Idioma',
+      fitX:'Ajustar X', fitY:'Ajustar Y', fitAll:'Ajustar todo', legendShow:'Mostrar leyenda', legendHide:'Minimizar leyenda', zoomHint:'Arrastra de lado para ampliar en X, arriba o abajo para ampliar en Y, en diagonal para una ventana',
       infoType:'Tipo', infoCutoff:'Frecuencia de corte', infoDiffEq:'Ecuación diferencial', infoTf:'Función de transferencia',
       infoDisabledNote:'Este filtro está desactivado en las gráficas. Las ecuaciones siguientes corresponden a sus parámetros configurados.',
       timeTitle:'Respuesta temporal', bodeTitle:'Bode — Módulo', bodePhaseTitle:'Bode — Fase',
@@ -547,20 +1181,16 @@ document.addEventListener('DOMContentLoaded', () => {
       'font.color': cssVar('--axis'), 'title.font.color': cssVar('--fg')
     };
     ['xaxis','yaxis'].forEach(ax => Object.keys(a).forEach(k => { if(k!=='automargin') out[`${ax}.${k}`] = a[k]; }));
+    out['legend.bgcolor'] = PlotInteractions.withAlpha(cssVar('--paper'), 0.85);
+    out['legend.bordercolor'] = cssVar('--grid');
     return out;
-  }
-  // Bode legend with the harmonic entries can wrap to a second row: make room above the plot
-  function legendExtraTop(id){
-    if(!(id === 'bodeMag' || id === 'bodePhase') || !state.showSpectrum) return 0;
-    const n = [filter1Visible(), filter2Visible(), cascadeBodeVisible()].filter(Boolean).length
-            + stemVisible().filter(Boolean).length;
-    return n > (isNarrowPlot(id) ? 3 : 4) ? 22 : 0;
   }
   function sizeLayout(id){
     const narrow = isNarrowPlot(id);
     return {
-      margin:{l: narrow ? 52 : 64, r: narrow ? 10 : 16, t: (narrow ? 64 : 76) + legendExtraTop(id), b: narrow ? 42 : 48},
-      // narrow plots: title on the left so the mode bar (always shown on touch) does not cover it
+      // top margin for the title only: the legend lies inside the plot
+      margin:{l: narrow ? 52 : 64, r: narrow ? 10 : 16, t: narrow ? 52 : 44, b: narrow ? 42 : 48},
+      // narrow plots: title on the left so the Fit buttons in the top-right corner never cover it
       'title.x': narrow ? 0.03 : 0.5, 'title.xanchor': narrow ? 'left' : 'center',
       'title.font.size': narrow ? 15 : 18,
       'legend.font.size': narrow ? 11 : 12
@@ -570,16 +1200,41 @@ document.addEventListener('DOMContentLoaded', () => {
     const s = sizeLayout(id);
     return {text:'<b>'+text+'</b>', x:s['title.x'], xanchor:s['title.xanchor'], y:0.985, yanchor:'top', font:{size:s['title.font.size'], color: cssVar('--fg')}};
   }
+  // the legend lies inside the plot, in the corner with the least curve under it (plot-interactions)
+  function legendSeries(id){
+    const out = [];
+    const add = (x, y) => { if(x && y) out.push({x, y, w:1}); };
+    if(id === 'timePlot'){
+      const d = s => s ? decimateXY(s) : null;
+      const vin = d(state.x), v1 = filter1Visible() ? d(state.y1) : null, v2 = filter2Visible() ? d(state.y2) : null;
+      [vin, v1, v2].forEach(v => v && add(v.x, v.y));
+      return out;
+    }
+    if(!bodeCache1) return out;
+    const caches = [[bodeCache1, filter1Visible()], [bodeCache2, filter2Visible()], [bodeCacheCascade, cascadeBodeVisible()]];
+    caches.forEach(([c, on]) => {
+      if(!on || !c) return;
+      add(c.f, id === 'bodePhase' ? c.ph : (state.bodeDb ? c.mag.map(m => 20*log10(m)) : c.mag));
+    });
+    return out;
+  }
   function legendLayout(id){
-    return {orientation:'h', x:0.5, xanchor:'center', y:1.01, yanchor:'bottom', bgcolor:'rgba(0,0,0,0)', font:{size: isNarrowPlot(id) ? 11 : 12}};
+    const series = legendSeries(id);
+    let lo = Infinity, hi = -Infinity;
+    series.forEach(sr => sr.y.forEach(v => { if(Number.isFinite(v)){ if(v < lo) lo = v; if(v > hi) hi = v; } }));
+    if(id === 'bodeMag' && state.bodeDb) lo = Math.max(lo, hi - 120);   // the dB axis does not show the deep stop band
+    const xr = id === 'timePlot' ? [0, viewWindowSec()] : (state.xLog ? bodeDefaultXRangeExp() : bodeDefaultXRangeLinear());
+    const corner = Number.isFinite(lo) && hi > lo
+      ? PlotInteractions.emptiestCorner(xr, [lo, hi], series, id !== 'timePlot' && state.xLog)
+      : {left:true, top:true};
+    return PlotInteractions.overlayLegend(corner, {paper:cssVar('--paper'), grid:cssVar('--grid'), fontSize:isNarrowPlot(id) ? 11 : 12});
   }
   function cursorShapes(){
     return [{type:'line', x0:state.freq, x1:state.freq, y0:0, y1:1, xref:'x', yref:'paper', layer:'above',
              line:{color:COLORS.cursor, width: cursorActive ? 3 : 2, dash: cursorActive ? 'solid' : 'dot'}}];
   }
-  // Touch: a one-finger swipe never starts Plotly's zoom box (it scrolls the page);
-  // touch zoom is the slow double tap + drag below. A mouse keeps the usual zoom box.
-  const plotDragMode = () => COARSE_MQ.matches ? false : 'zoom';
+  // a mouse drag draws Plotly's zoom box; a finger never reaches Plotly (plot-interactions handles touch)
+  const plotDragMode = () => 'zoom';
 
   // ========= Theme toggle (solo light/dark, sin Auto) =========
   (function themeToggle(){
@@ -659,6 +1314,8 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.setAttribute('aria-pressed', String(isActive));
     });
     document.documentElement.setAttribute('lang', LANG);
+    if(piTime) piTime.refresh();
+    if(piBode) piBode.refresh();
     try{ localStorage.setItem('lang', LANG); }catch(_){}
     updateEnabledFiltersUI();
     if(infoBackdrop.classList.contains('open')) renderInfoModal();
@@ -1207,23 +1864,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     return defaultBodeXLayout();
   }
-  function resetBodeView(){
-    if(!(window.Plotly && bodeMagBuilt)) return Promise.resolve();
-    const xlayout = defaultBodeXLayout();
-    _syncing = true;
-    const ops = [
-      Plotly.relayout('bodeMag', xlayout).then(enforceMagYAxis)
-    ];
-    if(state.showPhase && bodePhaseBuilt){
-      ops.push(Plotly.relayout('bodePhase', {...xlayout, 'yaxis.autorange':true}));
-    }
-    return Promise.all(ops).finally(()=>{ _syncing = false; });
-  }
-  function resetTimeView(){
-    if(!(window.Plotly && timeBuilt)) return;
-    Plotly.relayout('timePlot', {'xaxis.autorange': false, 'xaxis.range':[0, viewWindowSec()], 'yaxis.autorange': true});
-  }
-
   // ========= Construcción de gráficos =========
   function magTraces(){
     const t = TXT[LANG];
@@ -1286,11 +1926,7 @@ document.addEventListener('DOMContentLoaded', () => {
     timeBuilt=true;
 
     const timeGd = document.getElementById('timePlot');
-    if(timeGd && timeGd.on){
-      timeGd.on('plotly_doubleclick', () => { if(lastPointerType !== 'touch') resetTimeView(); return false; });
-    }
-    setupTouchZoom(timeGd, resetTimeView);
-    setupMousePan(timeGd);
+    if(timeGd && timeGd.on) piTime = PlotInteractions.install([timeGd], {linkX:false, texts:() => TXT[LANG], getFitView});
 
     // Bode MAG
     rebuildBodeCaches();
@@ -1300,14 +1936,13 @@ document.addEventListener('DOMContentLoaded', () => {
     bodeMagBuilt=true;
     await restyleStems('bodeMag', 'mag');
     setupCursorDrag(document.getElementById('bodeMag'));
-    setupTouchZoom(document.getElementById('bodeMag'), () => { resetBodeView(); });
-    setupMousePan(document.getElementById('bodeMag'));
+    // gain and phase share their frequency axis; a finger or mouse on the red cursor drags it, nothing else
+    piBode = PlotInteractions.install([document.getElementById('bodeMag')], {linkX:true, texts:() => TXT[LANG], getFitView, claim:cursorHit});
 
     // Bode PHASE (si está activo)
     await ensurePhasePlot();
 
-    setupBodeLinking();
-    setupBodeDoubleClick();
+    setupStemRedraw();
     enforceMagYAxis();
     observePlotSizes();
   }
@@ -1324,12 +1959,10 @@ document.addEventListener('DOMContentLoaded', () => {
         bodePhaseBuilt=true;
         await restyleStems('bodePhase', 'phase');
         setupCursorDrag(document.getElementById('bodePhase'));
-        setupTouchZoom(document.getElementById('bodePhase'), () => { resetBodeView(); });
-        setupMousePan(document.getElementById('bodePhase'));
-        setupBodeLinking();
-        setupBodeDoubleClick();
+        if(piBode) piBode.add(document.getElementById('bodePhase'));
+        setupStemRedraw();
       }else{
-        Plotly.update('bodePhase', phaseTraces(), {shapes:cursorShapes(), ...currentBodeMagXLayout(), 'yaxis.title.text':phaseYTitle(), 'margin.t':sizeLayout('bodePhase').margin.t}, [0,1,2]);
+        Plotly.update('bodePhase', phaseTraces(), {shapes:cursorShapes(), ...currentBodeMagXLayout(), 'yaxis.title.text':phaseYTitle(), 'margin.t':sizeLayout('bodePhase').margin.t, legend:legendLayout('bodePhase')}, [0,1,2]);
         restyleStems('bodePhase', 'phase');
         return;
       }
@@ -1339,60 +1972,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function setupBodeLinking(){
-    const mag = document.getElementById('bodeMag');
-    const ph  = document.getElementById('bodePhase');
-    if(!mag || !mag.on) return;
-
-    function sync(toId, ev){
-      if(_syncing) return;
-      const xr0 = ev['xaxis.range[0]'] ?? (Array.isArray(ev['xaxis.range']) ? ev['xaxis.range'][0] : null);
-      const xr1 = ev['xaxis.range[1]'] ?? (Array.isArray(ev['xaxis.range']) ? ev['xaxis.range'][1] : null);
-      const autor = ev['xaxis.autorange'];
-      const xtype = ev['xaxis.type'];
-
-      _syncing = true;
-      if(xr0!=null && xr1!=null){
-        Plotly.relayout(toId, {'xaxis.type': xtype || (state.xLog ? 'log' : 'linear'), 'xaxis.autorange': false, 'xaxis.range':[xr0,xr1]}).then(()=>{_syncing=false;});
-      }else if(autor){
-        Plotly.relayout(toId, {'xaxis.type': xtype || (state.xLog ? 'log' : 'linear'), 'xaxis.autorange': true}).then(()=>{_syncing=false;});
-      }else{
-        _syncing=false;
-      }
-    }
-
-    mag.removeAllListeners && mag.removeAllListeners('plotly_relayout');
-    mag.on('plotly_relayout', ev => {
-      if(changesStemScale(ev)) redrawStemsSoon('bodeMag');
-      if(state.showPhase && bodePhaseBuilt) sync('bodePhase',ev);
-    });
-
-    if(ph && ph.on){
-      ph.removeAllListeners && ph.removeAllListeners('plotly_relayout');
-      ph.on('plotly_relayout', ev => {
-        if(changesStemScale(ev)) redrawStemsSoon('bodePhase');
-        sync('bodeMag',ev);
-      });
-    }
-  }
-
-  function setupBodeDoubleClick(){
-    const home = () => {
-      if(lastPointerType !== 'touch') requestAnimationFrame(() => { resetBodeView(); });
-      return false;
-    };
-    ['bodeMag','bodePhase'].forEach(id => {
+  // the spectral lines are binned per pixel column: redraw them after a zoom, a pan or a resize
+  // (the x link between gain and phase, the double-click and the Fit buttons are plot-interactions')
+  function setupStemRedraw(){
+    [['bodeMag'], ['bodePhase']].forEach(([id]) => {
       const gd = document.getElementById(id);
-      if(gd && gd.on){
-        gd.removeAllListeners && gd.removeAllListeners('plotly_doubleclick');
-        gd.on('plotly_doubleclick', home);
-      }
+      if(!gd || !gd.on || gd.dataset.stemRedraw) return;
+      gd.dataset.stemRedraw = '1';
+      gd.on('plotly_relayout', ev => { if(changesStemScale(ev)) redrawStemsSoon(id); });
     });
+  }
+  // the plots' initial view, for double-click / double tap and the Fit buttons (x or y null: autorange)
+  let piTime = null, piBode = null;
+  function getFitView(gd){
+    if(gd.id === 'timePlot') return {x:[0, viewWindowSec()], y:null};
+    const x = state.xLog ? bodeDefaultXRangeExp() : bodeDefaultXRangeLinear();
+    if(gd.id === 'bodeMag') return {x, y:state.bodeDb ? null : [0, magLinTop()]};
+    return {x, y:null};
   }
 
   function applyBodeMode(){
     if(!(window.Plotly && bodeCache1 && bodeCache2 && bodeMagBuilt)) return;
-    Plotly.update('bodeMag', magTraces(), {shapes:cursorShapes(), ...magYLayout(), 'margin.t':sizeLayout('bodeMag').margin.t}, [0,1,2]);
+    Plotly.update('bodeMag', magTraces(), {shapes:cursorShapes(), ...magYLayout(), 'margin.t':sizeLayout('bodeMag').margin.t, legend:legendLayout('bodeMag')}, [0,1,2]);
     restyleStems('bodeMag', 'mag');
   }
 
@@ -1405,7 +2006,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const inD = decimateXY(state.x), y1D = decimateXY(state.y1), y2D = decimateXY(state.y2);
       Plotly.update('timePlot',
         {x:[inD.x,y1D.x,y2D.x], y:[inD.y,y1D.y,y2D.y], visible:visibleList(), 'line.color':[COLORS.input, COLORS.f1, output2Color()]},
-        {'xaxis.autorange': false, 'xaxis.range':[0, viewWindowSec()], 'yaxis.autorange': true},
+        {'xaxis.autorange': false, 'xaxis.range':[0, viewWindowSec()], 'yaxis.autorange': true, legend:legendLayout('timePlot')},
         [0,1,2]);
     }
     applyBodeMode();
@@ -1433,6 +2034,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if(bodeMagBuilt) Plotly.relayout('bodeMag', {shapes:cursorShapes()});
     if(state.showPhase && bodePhaseBuilt) Plotly.relayout('bodePhase', {shapes:cursorShapes()});
   }
+  // is the pointer on the red cursor line of this Bode plot? (also tells plot-interactions to keep off)
+  function cursorHit(gd, e){
+    const fl = gd._fullLayout;
+    if(!(fl && fl.xaxis && fl.yaxis && fl.xaxis._length)) return false;
+    const r = gd.getBoundingClientRect(), xa = fl.xaxis, ya = fl.yaxis;
+    const p = {x:e.clientX - r.left, y:e.clientY - r.top};
+    if(p.y < ya._offset || p.y > ya._offset + ya._length) return false;
+    if(p.x < xa._offset - 4 || p.x > xa._offset + xa._length + 4) return false;
+    const px = xa._offset + xa.c2p(state.freq);
+    const tol = e.pointerType === 'mouse' ? 8 : 22;
+    return Number.isFinite(px) && Math.abs(p.x - px) <= tol;
+  }
   function setupCursorDrag(gd){
     if(!gd || gd.dataset.cursorDrag) return;
     gd.dataset.cursorDrag = '1';
@@ -1440,15 +2053,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const axes = () => { const fl = gd._fullLayout; return (fl && fl.xaxis && fl.yaxis && fl.xaxis._length) ? fl : null; };
     const local = e => { const r = gd.getBoundingClientRect(); return {x:e.clientX - r.left, y:e.clientY - r.top}; };
-    function hit(e){
-      const fl = axes(); if(!fl) return false;
-      const xa = fl.xaxis, ya = fl.yaxis, p = local(e);
-      if(p.y < ya._offset || p.y > ya._offset + ya._length) return false;
-      if(p.x < xa._offset - 4 || p.x > xa._offset + xa._length + 4) return false;
-      const px = xa._offset + xa.c2p(state.freq);
-      const tol = e.pointerType === 'mouse' ? 8 : 22;
-      return Number.isFinite(px) && Math.abs(p.x - px) <= tol;
-    }
+    const hit = e => cursorHit(gd, e);
     function hzAt(e){
       const xa = axes().xaxis;
       const v = xa.p2c(clamp(local(e).x - xa._offset, 0, xa._length));
@@ -1484,166 +2089,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const block = e => { if(drag){ e.stopPropagation(); if(e.cancelable) e.preventDefault(); } };
     ['mousedown','touchstart','touchmove'].forEach(type => gd.addEventListener(type, block, {capture:true, passive:false}));
     gd.addEventListener('click', e => { if(drag) e.stopPropagation(); }, true);
-  }
-
-  // ========= Touch zoom: slow double tap, then drag =========
-  // Tap once, touch again at the same spot and drag. As with Plotly's mouse zoom, the
-  // direction decides: mostly horizontal -> x only, mostly vertical -> y only, else a box.
-  // A double tap without dragging resets the view. Mouse and pen keep Plotly's zoom box.
-  // Plotly also sees two taps as a double click; for touch the gesture below owns that
-  let lastPointerType = 'mouse';
-  document.addEventListener('pointerdown', e => { lastPointerType = e.pointerType; }, true);
-  function setupTouchZoom(gd, onReset){
-    if(!gd || gd.dataset.touchZoom) return;
-    gd.dataset.touchZoom = '1';
-    const TAP_MS = 350, GAP_MS = 600, NEAR_PX = 45, MOVE_PX = 12, MINDRAG = 14, MINZOOM = 36;
-    let down = null, lastTap = null, zoom = null;
-    const sel = document.createElement('div');
-    sel.className = 'zoom-sel';
-    document.body.appendChild(sel);
-
-    function plotArea(){
-      const fl = gd._fullLayout;
-      if(!fl || !fl.xaxis || !fl.yaxis || !fl.xaxis._length) return null;
-      const r = gd.getBoundingClientRect();
-      return {xa:fl.xaxis, ya:fl.yaxis, left:r.left + fl.xaxis._offset, top:r.top + fl.yaxis._offset, w:fl.xaxis._length, h:fl.yaxis._length};
-    }
-    const inside = (a, x, y) => x >= a.left && x <= a.left + a.w && y >= a.top && y <= a.top + a.h;
-    function zoomMode(dx, dy){
-      const ax = Math.abs(dx), ay = Math.abs(dy);
-      if(ax < MINDRAG && ay < MINDRAG) return null;
-      if(ay < Math.min(Math.max(ax*0.6, MINDRAG), MINZOOM)) return 'x';
-      if(ax < Math.min(Math.max(ay*0.6, MINDRAG), MINZOOM)) return 'y';
-      return 'xy';
-    }
-    function draw(){
-      const z = zoom, a = z.a;
-      if(!z.mode){ sel.style.display = 'none'; return; }
-      let x0 = Math.min(z.x0, z.x1), x1 = Math.max(z.x0, z.x1), y0 = Math.min(z.y0, z.y1), y1 = Math.max(z.y0, z.y1);
-      if(z.mode === 'y'){ x0 = a.left; x1 = a.left + a.w; }
-      if(z.mode === 'x'){ y0 = a.top; y1 = a.top + a.h; }
-      Object.assign(sel.style, {display:'block', left:x0+'px', top:y0+'px', width:(x1-x0)+'px', height:(y1-y0)+'px'});
-    }
-    function finish(apply){
-      const z = zoom;
-      zoom = null;
-      sel.style.display = 'none';
-      if(!apply) return;
-      if(!z.mode){ onReset(); return; }
-      const {xa, ya, left, top} = z.a, upd = {};
-      if(z.mode !== 'y'){
-        upd['xaxis.autorange'] = false;
-        upd['xaxis.range'] = [xa.p2r(Math.min(z.x0, z.x1) - left), xa.p2r(Math.max(z.x0, z.x1) - left)];
-      }
-      if(z.mode !== 'x'){
-        upd['yaxis.autorange'] = false;
-        upd['yaxis.range'] = [ya.p2r(Math.max(z.y0, z.y1) - top), ya.p2r(Math.min(z.y0, z.y1) - top)];
-      }
-      Plotly.relayout(gd, upd);
-    }
-
-    gd.addEventListener('pointerdown', e => {
-      // a mouse on a touch device still gets the zoom box, a finger never does
-      const want = e.pointerType === 'touch' ? false : 'zoom';
-      if(gd._fullLayout && gd._fullLayout.dragmode !== want) Plotly.relayout(gd, {dragmode:want});
-      if(e.pointerType !== 'touch' || e.defaultPrevented || zoom) return;   // red cursor drags first
-      const a = plotArea(), now = performance.now();
-      if(!a || !inside(a, e.clientX, e.clientY)){ down = null; lastTap = null; return; }
-      if(lastTap && now - lastTap.t < GAP_MS && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < NEAR_PX){
-        e.preventDefault(); e.stopPropagation();
-        lastTap = null; down = null;
-        zoom = {id:e.pointerId, a, x0:e.clientX, y0:e.clientY, x1:e.clientX, y1:e.clientY, mode:null};
-        try{ gd.setPointerCapture(e.pointerId); }catch(_){}
-        if(Plotly.Fx) Plotly.Fx.unhover(gd);
-        return;
-      }
-      down = {id:e.pointerId, t:now, x:e.clientX, y:e.clientY};
-    }, true);
-    gd.addEventListener('pointermove', e => {
-      if(zoom && e.pointerId === zoom.id){
-        e.preventDefault();
-        const a = zoom.a;
-        zoom.x1 = clamp(e.clientX, a.left, a.left + a.w);
-        zoom.y1 = clamp(e.clientY, a.top, a.top + a.h);
-        zoom.mode = zoomMode(zoom.x1 - zoom.x0, zoom.y1 - zoom.y0);
-        draw();
-      }else if(down && e.pointerId === down.id && Math.hypot(e.clientX - down.x, e.clientY - down.y) > MOVE_PX){
-        down = null;
-      }
-    }, true);
-    gd.addEventListener('pointerup', e => {
-      if(zoom && e.pointerId === zoom.id){ finish(true); return; }
-      if(down && e.pointerId === down.id){
-        const now = performance.now();
-        lastTap = (now - down.t < TAP_MS) ? {t:now, x:down.x, y:down.y} : null;
-        down = null;
-      }
-    }, true);
-    gd.addEventListener('pointercancel', e => {
-      if(zoom && e.pointerId === zoom.id) finish(false);
-      down = null;
-    }, true);
-    // while zooming, no page scroll and nothing for Plotly
-    const block = e => { if(zoom){ e.stopPropagation(); if(e.cancelable) e.preventDefault(); } };
-    ['touchstart','touchmove'].forEach(type => gd.addEventListener(type, block, {capture:true, passive:false}));
-  }
-
-  // ========= Pan with the right (or middle) mouse button =========
-  // Plotly would treat a right-button drag as a zoom box it never draws, and on release
-  // zoom to a zero-size box (both axes collapse to a point). Those buttons never reach
-  // Plotly: they pan the plot instead, and the left button keeps the usual zoom box.
-  function setupMousePan(gd){
-    if(!gd || gd.dataset.mousePan) return;
-    gd.dataset.mousePan = '1';
-    let pan = null, raf = 0;
-    const isPanButton = e => e.pointerType !== 'touch' && (e.button === 1 || e.button === 2);
-
-    // ranges are linear in pixels (log axes: in decades), so a pan is a plain shift
-    function apply(){
-      raf = 0;
-      if(!pan) return;
-      const {x0, y0, kx, ky, dx, dy} = pan;
-      Plotly.relayout(gd, {
-        'xaxis.autorange': false, 'xaxis.range': [x0[0] - dx*kx, x0[1] - dx*kx],
-        'yaxis.autorange': false, 'yaxis.range': [y0[0] + dy*ky, y0[1] + dy*ky]
-      });
-    }
-    gd.addEventListener('pointerdown', e => {
-      if(pan || !isPanButton(e)) return;
-      const fl = gd._fullLayout;
-      if(!fl || !fl.xaxis || !fl.yaxis || !fl.xaxis._length) return;
-      const xa = fl.xaxis, ya = fl.yaxis, r = gd.getBoundingClientRect();
-      const px = e.clientX - r.left - xa._offset, py = e.clientY - r.top - ya._offset;
-      if(px < 0 || px > xa._length || py < 0 || py > ya._length) return;
-      e.preventDefault(); e.stopPropagation();
-      const x0 = xa.range.map(Number), y0 = ya.range.map(Number);
-      pan = {id:e.pointerId, sx:e.clientX, sy:e.clientY, dx:0, dy:0, x0, y0,
-             kx:(x0[1]-x0[0])/xa._length, ky:(y0[1]-y0[0])/ya._length};
-      try{ gd.setPointerCapture(e.pointerId); }catch(_){}
-      if(Plotly.Fx) Plotly.Fx.unhover(gd);
-      document.body.classList.add('panning');
-    }, true);
-    gd.addEventListener('pointermove', e => {
-      if(!pan || e.pointerId !== pan.id) return;
-      e.preventDefault(); e.stopPropagation();
-      pan.dx = e.clientX - pan.sx; pan.dy = e.clientY - pan.sy;
-      if(!raf) raf = requestAnimationFrame(apply);
-    }, true);
-    const end = e => {
-      if(!pan || e.pointerId !== pan.id) return;
-      e.stopPropagation();
-      if(raf){ cancelAnimationFrame(raf); apply(); }
-      pan = null;
-      try{ gd.releasePointerCapture(e.pointerId); }catch(_){}
-      document.body.classList.remove('panning');
-    };
-    gd.addEventListener('pointerup', end, true);
-    gd.addEventListener('pointercancel', end, true);
-    gd.addEventListener('lostpointercapture', end, true);
-    // the matching mouse events must not start Plotly's drag either (middle click: no autoscroll)
-    ['mousedown','mouseup','auxclick'].forEach(type => gd.addEventListener(type, e => {
-      if(e.button === 1 || e.button === 2){ e.stopPropagation(); if(e.cancelable) e.preventDefault(); }
-    }, true));
   }
 
   // ========= Resize =========

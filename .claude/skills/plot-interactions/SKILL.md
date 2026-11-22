@@ -77,7 +77,15 @@ autorange. The app keeps it current with `setFitView` after every redraw.
    gestures as working without it: several bugs only showed with data on the plots.
 
 If an app's plots differ (one plot, no shared x, a linear axis), the module handles it: `linkX:false`,
-x ranges in data units for a linear axis. For an existing app with its own gesture code, replace that code
+x ranges in data units for a linear axis. Other options, used in `adjustable-filters/`:
+- `getFitView: gd => ({x, y})` computes the initial view when a fit happens (`null` axis = autorange),
+  for apps whose default view depends on their settings (lin/log, dB, frequency span);
+- `claim: (gd, e) => bool` keeps a pointer or touch for the app itself, e.g. a draggable cursor line:
+  no gesture acts on it (test the hit with a generous tolerance for fingers, 22 px there);
+- `pi.add(gd)` adds a plot created later (an optional phase plot) to the group, with its link and buttons.
+x-only and y-only zooms and Fit X / Fit Y freeze the other axis, so an autoranged axis does not jump when
+the app redraws data. Fit Y ignores traces with `showlegend:false` (decoration such as spectral-line stems
+drawn from a floor); give real data traces a legend entry. For an existing app with its own gesture code, replace that code
 with the module rather than patching it piecemeal, and keep `bode-measure/index.html` (inline version of
 the same code) consistent if you change a behaviour here.
 

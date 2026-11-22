@@ -10,6 +10,13 @@
  *   // after every Plotly.react of a plot: its "initial view", used by Fit X / Fit all / double tap
  *   pi.setFitView(gd, {x:[xmin, xmax], y:[ymin, ymax]});   // in Plotly range units (log10 on a log axis)
  *   pi.refresh();                        // after a language change: button titles
+ *   pi.add(gd);                          // a plot created later (e.g. an optional phase plot)
+ *
+ * Options: linkX, texts, minYSpan(gd), isNarrow(gd),
+ *   getFitView(gd) -> {x, y}   computed at the moment of a fit instead of setFitView (x or y may be null:
+ *                              that axis autoranges) — for apps whose default view depends on their state;
+ *   claim(gd, event) -> bool   a pointer/touch the app keeps for itself (a draggable cursor line): none of
+ *                              the gestures below act on it, and it is not hidden from the app's handlers.
  *
  * Plot config must include  doubleClick:false  (Plotly's own reset would run after ours and autoscale),
  * scrollZoom:false and displayModeBar:false. Each plot div must sit alone in a container element that this
@@ -179,6 +186,9 @@ body.pi-panning, body.pi-panning *{cursor:grabbing !important}
       let ymin = Infinity, ymax = -Infinity;
       (gd.data || []).forEach(t => {
         if(t.visible === false || t.visible === 'legendonly') return;
+        // a trace without a legend entry is decoration (e.g. spectral lines drawn from a floor to their value,
+        // whose markers carry the values): it would keep Fit Y from ever tightening
+        if(t.showlegend === false) return;
         (t.x || []).forEach((x, i) => {
           const y = t.y && t.y[i];
           if(y == null || !Number.isFinite(y)) return;
@@ -195,34 +205,42 @@ body.pi-panning, body.pi-panning *{cursor:grabbing !important}
       return [ymin - pad, ymax + pad];
     }
     function fitPlot(gd, which){
-      const v = gd._piFitView;
+      const v = (opts.getFitView ? opts.getFitView(gd) : gd._piFitView) || {};
       const upd = {};
-      if(which !== 'y'){ if(v) upd['xaxis.range'] = v.x.slice(); else upd['xaxis.autorange'] = true; }
-      if(which === 'y'){ const r = dataYRange(gd); if(r) upd['yaxis.range'] = r; else if(v) upd['yaxis.range'] = v.y.slice(); else upd['yaxis.autorange'] = true; }
-      if(which === 'all'){ if(v) upd['yaxis.range'] = v.y.slice(); else upd['yaxis.autorange'] = true; }
+      const put = (ax, r) => { if(Array.isArray(r)){ upd[ax + '.autorange'] = false; upd[ax + '.range'] = r.slice(); } else upd[ax + '.autorange'] = true; };
+      // the axis a Fit X / Fit Y does not touch stays exactly where it is, even if it was autoranged
+      // (redrawn data, e.g. lines binned per pixel, would otherwise rescale it)
+      const keep = ax => { const a = gd._fullLayout && gd._fullLayout[ax]; if(a && a.range) put(ax, a.range.map(Number)); };
+      if(which !== 'y') put('xaxis', v.x);
+      if(which === 'x') keep('yaxis');
+      if(which === 'y'){ const r = dataYRange(gd); put('yaxis', r || v.y); keep('xaxis'); }
+      if(which === 'all') put('yaxis', v.y);
       clearHover(gd);
       return Plotly.relayout(gd, upd);
     }
-    const fitAll = () => Promise.all(gds.map(gd => fitPlot(gd, 'all')));
+    const visible = gd => gd.isConnected && gd.offsetParent !== null && gd._fullLayout;
+    const fitAll = () => Promise.all(gds.filter(visible).map(gd => fitPlot(gd, 'all')));
 
     // ----- linked x axes -----
     let linking = false;
-    if(opts.linkX && gds.length > 1){
-      gds.forEach(src => src.on('plotly_relayout', ev => {
+    function setupLink(src){
+      if(!opts.linkX) return;
+      src.on('plotly_relayout', ev => {
         if(linking) return;
         let range = null;
         if('xaxis.range[0]' in ev) range = [ev['xaxis.range[0]'], ev['xaxis.range[1]']];
         else if(ev['xaxis.autorange'] || ev['xaxis.range']) range = src.layout.xaxis.range;
         if(!range) return;
+        const upd = {'xaxis.autorange':false, 'xaxis.range':range.slice()};
+        if(ev['xaxis.type']) upd['xaxis.type'] = ev['xaxis.type'];   // a lin/log switch reaches the others with its range
+        const others = gds.filter(g => g !== src && g._fullLayout);
+        if(!others.length) return;
         linking = true;
-        Promise.all(gds.filter(g => g !== src).map(g => Plotly.relayout(g, {'xaxis.range':range.slice()})))
-          .then(() => { linking = false; }, () => { linking = false; });
-      }));
+        Promise.all(others.map(g => Plotly.relayout(g, upd))).then(() => { linking = false; }, () => { linking = false; });
+      });
     }
-
-    // ----- double-click (mouse) and the emulated one of a quick double tap: every plot to its initial view -----
-    // Plotly still reports the double-click with doubleClick:false; the DOM dblclick lands on its drag cover.
-    gds.forEach(gd => gd.on('plotly_doubleclick', fitAll));
+    // a pointer or touch the app keeps for itself (opts.claim): no gesture of ours acts on it
+    const claimed = (gd, e) => !!(opts.claim && opts.claim(gd, e));
 
     // ----- fit buttons -----
     function renderButtons(){
@@ -294,7 +312,6 @@ body.pi-panning, body.pi-panning *{cursor:grabbing !important}
       gd.classList.toggle('pi-legend-collapsed', collapsed);
       legendEl.style.translate = collapsed ? '' : (cmp ? `0px ${top ? step : -step}px` : `${left ? step : -step}px 0px`);
     }
-    gds.forEach(gd => gd.on('plotly_afterplot', () => syncLegend(gd)));
 
     // ----- mouse: right (or middle) drag pans -----
     // Plotly would read a right-button drag as a zoom box it never draws and collapse the axes on release.
@@ -309,7 +326,7 @@ body.pi-panning, body.pi-panning *{cursor:grabbing !important}
                              'yaxis.autorange':false, 'yaxis.range':[y0[0] + dy*ky, y0[1] + dy*ky]});
       }
       gd.addEventListener('pointerdown', e => {
-        if(pan || !isPanButton(e)) return;
+        if(pan || !isPanButton(e) || claimed(gd, e)) return;
         const p = plotAreaPoint(gd, e.clientX, e.clientY);
         if(!p) return;
         e.preventDefault(); e.stopPropagation();
@@ -382,7 +399,7 @@ body.pi-panning, body.pi-panning *{cursor:grabbing !important}
       const ring = document.createElement('div'); ring.className = 'pi-touch-ring'; document.body.appendChild(ring);
       const hint = document.createElement('div'); hint.className = 'pi-zoom-hint'; document.body.appendChild(hint);
       let g = null, lastTap = null, raf = 0, armedUntil = 0, armedTimer = 0;
-      let pinch = null, pinchRaf = 0, pinchPending = null, twoFingers = false;
+      let pinch = null, pinchRaf = 0, pinchPending = null, twoFingers = false, appOwns = false;
       const isTouch = e => e.pointerType === 'touch' || e.pointerType === 'pen';
       const inside = (a, x, y) => x >= a.left && x <= a.left + a.w && y >= a.top && y <= a.top + a.h;
       const hideRing = () => { ring.style.display = 'none'; };
@@ -424,15 +441,17 @@ body.pi-panning, body.pi-panning *{cursor:grabbing !important}
       function applyZoom(){
         const z = g, {xa, ya, left, top} = z.a, upd = {};
         if(!z.zmode) return;
-        if(z.zmode !== 'y') upd['xaxis.range'] = [xa.p2r(Math.min(z.zx0, z.zx1) - left), xa.p2r(Math.max(z.zx0, z.zx1) - left)];
-        if(z.zmode !== 'x') upd['yaxis.range'] = [ya.p2r(Math.max(z.zy0, z.zy1) - top), ya.p2r(Math.min(z.zy0, z.zy1) - top)];
+        // the axis an x-only (y-only) zoom leaves alone is frozen where it is: an autoranged axis would rescale
+        upd['xaxis.autorange'] = false; upd['yaxis.autorange'] = false;
+        upd['xaxis.range'] = z.zmode !== 'y' ? [xa.p2r(Math.min(z.zx0, z.zx1) - left), xa.p2r(Math.max(z.zx0, z.zx1) - left)] : xa.range.map(Number);
+        upd['yaxis.range'] = z.zmode !== 'x' ? [ya.p2r(Math.max(z.zy0, z.zy1) - top), ya.p2r(Math.min(z.zy0, z.zy1) - top)] : ya.range.map(Number);
         Plotly.relayout(gd, upd);
       }
       function applyPan(){
         raf = 0;
         if(!g || g.mode !== 'pan') return;
         const dx = g.x - g.x0, dy = g.y - g.y0, p = g.pan;
-        Plotly.relayout(gd, {'xaxis.range':[p.x[0] - dx * p.kx, p.x[1] - dx * p.kx], 'yaxis.range':[p.y[0] + dy * p.ky, p.y[1] + dy * p.ky]});
+        Plotly.relayout(gd, {'xaxis.autorange':false, 'yaxis.autorange':false, 'xaxis.range':[p.x[0] - dx * p.kx, p.x[1] - dx * p.kx], 'yaxis.range':[p.y[0] + dy * p.ky, p.y[1] + dy * p.ky]});
       }
       function startPan(){
         const a = g.a, x = a.xa.range.map(Number), y = a.ya.range.map(Number);
@@ -490,7 +509,8 @@ body.pi-panning, body.pi-panning *{cursor:grabbing !important}
         };
         const cx = (pts[0].x + pts[1].x) / 2, cy = (pts[0].y + pts[1].y) / 2;
         const range = (r, anchor, fraction, s) => { const span = (r[1] - r[0]) / s, lo = anchor - fraction * span; return [lo, lo + span]; };
-        pinchPending = {'xaxis.range':range(p.x, p.ax, (cx - a.left) / a.w, scale('x')), 'yaxis.range':range(p.y, p.ay, 1 - (cy - a.top) / a.h, scale('y'))};
+        pinchPending = {'xaxis.autorange':false, 'yaxis.autorange':false,
+                        'xaxis.range':range(p.x, p.ax, (cx - a.left) / a.w, scale('x')), 'yaxis.range':range(p.y, p.ay, 1 - (cy - a.top) / a.h, scale('y'))};
         if(!pinchRaf) pinchRaf = requestAnimationFrame(() => { pinchRaf = 0; if(pinchPending){ Plotly.relayout(gd, pinchPending); pinchPending = null; } });
       }
       function pinchEnd(){
@@ -500,6 +520,7 @@ body.pi-panning, body.pi-panning *{cursor:grabbing !important}
       }
       // Plotly's own touch handling never sees a finger
       gd.addEventListener('touchstart', e => {
+        if(appOwns) return;   // the app's own drag: its handlers see everything, Plotly is kept out by the app
         e.stopPropagation();
         if(e.touches.length >= 2){
           twoFingers = true;
@@ -508,6 +529,7 @@ body.pi-panning, body.pi-panning *{cursor:grabbing !important}
         }
       }, {capture:true});
       gd.addEventListener('touchmove', e => {
+        if(appOwns) return;
         e.stopPropagation();
         const pts = pinchPoints(e);
         if(pts.length === 2 && e.cancelable){
@@ -520,6 +542,7 @@ body.pi-panning, body.pi-panning *{cursor:grabbing !important}
         if(g && BLOCKING[g.mode] && e.cancelable) e.preventDefault();
       }, {capture:true, passive:false});
       const touchDone = e => {
+        if(appOwns){ if(e.touches.length === 0) appOwns = false; return; }
         e.stopPropagation();
         if(pinch && e.touches.length < 2) pinchEnd();
         if(e.touches.length === 0){ twoFingers = false; lastTouchEnd = performance.now(); }
@@ -534,6 +557,8 @@ body.pi-panning, body.pi-panning *{cursor:grabbing !important}
       gd.addEventListener('pointerdown', e => {
         if(!isTouch(e)) return;
         if(e.target.closest && e.target.closest('.legend')) return;   // the legend's items belong to the legend
+        if(!g && !pinch && claimed(gd, e)){ appOwns = true; return; }
+        if(appOwns) return;
         if(g || pinch || twoFingers){ end(); return; }
         const now = performance.now(), a = plotArea(gd);
         g = {id:e.pointerId, t0:now, x0:e.clientX, y0:e.clientY, x:e.clientX, y:e.clientY, a, mode:'pending', hold:0, gap:null};
@@ -571,20 +596,28 @@ body.pi-panning, body.pi-panning *{cursor:grabbing !important}
       gd.addEventListener('pointercancel', e => { if(g && e.pointerId === g.id) end(); }, true);
     }
 
-    gds.forEach(gd => {
+    function setup(gd){
       if(gd._piInstalled) return;
       gd._piInstalled = true;
+      setupLink(gd);
+      // double-click (mouse) and the emulated one of a quick double tap: every plot to its initial view.
+      // Plotly still reports the double-click with doubleClick:false; the DOM dblclick lands on its drag cover.
+      gd.on('plotly_doubleclick', fitAll);
+      gd.on('plotly_afterplot', () => syncLegend(gd));
       if(opts.mousePan) setupMousePan(gd);
       if(opts.wheel) setupWheelPan(gd);
       if(opts.touch) setupTouch(gd);
-    });
+    }
+    gds.forEach(setup);
     renderButtons();
 
     return {
-      setFitView(gd, view){ gd._piFitView = {x:view.x.slice(), y:view.y.slice()}; },
+      setFitView(gd, view){ gd._piFitView = {x:view.x ? view.x.slice() : null, y:view.y ? view.y.slice() : null}; },
       fitPlot, fitAll,
       refresh(){ renderButtons(); },
-      syncLegend
+      syncLegend,
+      // a plot created after install (Plotly.newPlot done): same gestures, buttons, legend button, link
+      add(gd){ if(!gd || gds.includes(gd)) return; gds.push(gd); setup(gd); renderButtons(); }
     };
   }
 
