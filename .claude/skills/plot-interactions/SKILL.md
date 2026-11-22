@@ -1,6 +1,6 @@
 ---
 name: plot-interactions
-description: The agreed mouse, trackpad and touch behaviour for every Plotly plot in the ferrucci-lab.com apps (and any educational web app of Franco Ferrucci) — one-finger gestures on phones (fast finger scrolls the page, slower finger pans, hold-then-drag zooms, slow/quick double tap, pinch), right-button pan, wheel that never zooms, semi-transparent Fit X / Fit Y / Fit all buttons, an in-plot legend that can be hidden, linked x axes, plus a drop-in JS module and a browser check script; also the shared app conventions (full screen and its exit pill, EN·FR·ES language pills, CSV/PDF export that opens the share menu on phones). Use this skill whenever you create an app with a plot in this repo, add or change a plot, port an app to phones, or touch anything about zoom, pan, scroll on plots, double tap/double-click, legends, tooltips or fit/autoscale buttons — even when the request only says "make it work on mobile", "the scroll feels wrong", "add a Bode/time plot" or "fix the legend", "add a CSV/PDF export", "send the report by WhatsApp".
+description: The agreed mouse, trackpad and touch behaviour for every Plotly plot in the ferrucci-lab.com apps (and any educational web app of Franco Ferrucci) — one-finger gestures on phones (fast finger scrolls the page, slower finger pans, hold-then-drag zooms, slow/quick double tap, pinch), right-button pan, wheel that never zooms, semi-transparent Fit X / Fit Y / Fit all buttons, an in-plot legend that can be hidden, linked x axes, plus a drop-in JS module and a browser check script; also the shared app conventions (full screen and its exit pill, EN·FR·ES language pills, CSV/PDF export that opens the share menu on phones). Use this skill whenever you create an app with a plot (ferrucci-lab.com apps or another of the owner's web apps), add or change a plot, port an app to phones, or touch anything about zoom, pan, scroll on plots, double tap/double-click, legends, tooltips or fit/autoscale buttons — even when the request only says "make it work on mobile", "the scroll feels wrong", "add a Bode/time plot" or "fix the legend", "add a CSV/PDF export", "send the report by WhatsApp".
 ---
 
 # Plot interactions (ferrucci-lab.com apps)
@@ -165,3 +165,10 @@ a tap; use `plotly_doubleclick`, not the DOM `dblclick`; clear `_hoversubplot` a
     ignores tabular figures and leaves gaps after minus signs).
   - Reference: `bode-measure/`. Check it with an emulated phone and stubbed `navigator.share`/`canShare` (headless
     Chromium on Linux has no Web Share), routing jsDelivr to local copies, and look at the PDF pages.
+
+## Maintaining this skill
+
+The reference copy is the plugin `ferrucci-lab` in the private repo `ferrucci-franco/claude-skills`
+(`plugins/ferrucci-lab/skills/plot-interactions/`); repos used in cloud sessions carry a copy in
+`.claude/skills/plot-interactions/`. After changing a copy, bring the change back to the reference with
+`scripts/sync-skill.sh from <this repo>` run in `claude-skills` (or ask the owner to), so the other repos get it.
