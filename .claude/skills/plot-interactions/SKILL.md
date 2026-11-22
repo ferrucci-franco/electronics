@@ -126,7 +126,11 @@ a tap; use `plotly_doubleclick`, not the DOM `dblclick`; clear `_hoversubplot` a
   the browser's F11 mode, whose top-edge hover brings the browser bars back (a page cannot prevent that): here the
   top edge shows the app's semi-transparent pill « Quitter le plein écran (Échap) » instead, also for 2.5 s on
   entry; F11 is caught where the browser allows it. Hidden where the page cannot go full screen (iPhone, iframes).
-  In `bode-measure/`, `adjustable-filters/` and `dc-circuit-simulator/` (a header with menu labels: `.fs-icon` and
-  `.fs-label` slots in the button).
+  The pill is semi-transparent **yellow** so it stands out (a neutral pill went unnoticed): pale yellow with dark
+  text in light theme, dark amber with light text in dark theme (`html.dark` or `html[data-theme="dark"]`; add
+  the app's dark selector to the module's CSS if it uses another one).
+  In `bode-measure/`, `adjustable-filters/`, `dc-circuit-simulator/` (a header with menu labels: `.fs-icon` and
+  `.fs-label` slots in the button) and `dsp-with-arduino-and-esp32/`.
 - Language selector as in `adjustable-filters/`: segmented buttons in the order EN · FR · ES (FR selected by
-  default), then the 🌗 theme button; light/dark theme, plots styled as `adjustable-filters/`.
+  default), then the 🌗 theme button, then the full-screen button; no `<select>` for language or theme;
+  light/dark theme, plots styled as `adjustable-filters/`.

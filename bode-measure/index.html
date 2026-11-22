@@ -500,10 +500,11 @@
 .fs-btn .fs-icon{display:inline-flex}
 .fs-btn svg{width:18px; height:18px; display:block; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
 .fs-pill{position:fixed; top:10px; left:50%; z-index:100; transform:translate(-50%, -6px); display:flex; align-items:center; gap:8px;
-  padding:8px 16px 8px 12px; border-radius:999px; border:1px solid color-mix(in srgb, var(--border,#d7e2f4) 80%, transparent);
-  background:color-mix(in srgb, var(--paper,#fff) 78%, transparent); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px);
-  color:var(--fg,#0f1222); font:inherit; font-size:14px; line-height:1.2; cursor:pointer; box-shadow:0 6px 22px rgba(0,0,0,.18);
+  padding:8px 16px 8px 12px; border-radius:999px; border:1px solid rgba(214,168,0,.75);
+  background:rgba(255,236,140,.82); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px);
+  color:#3d2f00; font:inherit; font-size:14px; line-height:1.2; cursor:pointer; box-shadow:0 6px 22px rgba(0,0,0,.18);
   opacity:0; pointer-events:none; transition:opacity .2s, transform .2s}
+html.dark .fs-pill, html[data-theme="dark"] .fs-pill{background:rgba(120,92,8,.78); color:#fff3c4; box-shadow:0 6px 22px rgba(0,0,0,.45)}
 .fs-pill.show{opacity:.92; transform:translate(-50%, 0); pointer-events:auto}
 .fs-pill:hover, .fs-pill:focus-visible{opacity:1}
 .fs-pill svg{width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round}
