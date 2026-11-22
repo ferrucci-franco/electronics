@@ -121,6 +121,13 @@ a tap; use `plotly_doubleclick`, not the DOM `dblclick`; clear `_hoversubplot` a
 - No text selection and no text caret outside the text fields: `body{user-select:none; caret-color:transparent}`,
   then `input:not([type=checkbox]):not([type=radio]), textarea{user-select:text; caret-color:auto}`. Otherwise a
   button focused from code (a confirmation's "Cancel") or caret browsing shows a blinking bar on it.
+- Form fields at **16 px or more on touch screens**: iPhone/iPad Safari zooms the whole page in (about 115 %) when
+  a text field or a `<select>` under 16 px gets the focus, and leaves it zoomed — students think the app is broken.
+  Add `@media (pointer:coarse){ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=button]):not([type=color]),
+  select, textarea{font-size:16px !important} }` (as in the four apps); do not block zoom with `maximum-scale`.
+- A checkbox and its label: box and label side by side, never wrapped onto two lines (`flex-wrap:nowrap;
+  align-items:flex-start`, box `flex:0 0 auto`, label `min-width:0`), so a long label's second line starts under
+  its first line, not under the box.
 - Full screen: a ⛶ button after the theme button, from `assets/fullscreen.js` (`AppFullscreen.install({button,
   texts})`, strings `fullscreen`, `exitFullscreen`, `exitPill` in FR/EN/ES). It uses the page's Fullscreen API, not
   the browser's F11 mode, whose top-edge hover brings the browser bars back (a page cannot prevent that): here the

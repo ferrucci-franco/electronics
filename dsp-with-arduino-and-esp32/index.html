@@ -1301,6 +1301,11 @@
       .step4-card { overflow:visible !important; }
       .step4-console-output { height:220px; flex:0 0 auto; }
     }
+  /* iPhone / iPad: Safari zooms the page in (about 115 %) when a field under 16 px gets the focus, and the page
+     stays zoomed after it. 16 px on touch screens prevents it (convention of the plot-interactions skill). */
+  @media (pointer:coarse){
+    input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=button]):not([type=color]), select, textarea{font-size:16px !important}
+  }
   </style>
 <!-- Contador de visitas (GoatCounter, sin cookies ni datos personales). No cuenta en localhost ni desde file://. -->
 <script data-goatcounter="https://ferrucci-franco.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
