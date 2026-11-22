@@ -1446,13 +1446,21 @@ html.dark .fs-pill, html[data-theme="dark"] .fs-pill{background:rgba(120,92,8,.7
     const onChange = () => { refresh(); if(isFs()) show(2500); else hide(); };
     d.addEventListener('fullscreenchange', onChange);
     d.addEventListener('webkitfullscreenchange', onChange);
-    // the top edge brings the pill back, as the browser would bring its bar back in F11 mode
+    // Only the very top edge (EDGE px) brings the pill back, as the browser would bring its bar back in F11
+    // mode: pointing at the app's own header buttons just below must not cover them. The pill goes away as
+    // soon as the pointer leaves it (and the band above it) toward the page.
+    const EDGE = 6;
+    let leaveTimer = 0;
+    const stay = () => { clearTimeout(leaveTimer); leaveTimer = 0; };
     d.addEventListener('mousemove', e => {
       if(!isFs()) return;
-      if(e.clientY <= 48) show(0);
-      else if(e.clientY > 110 && pill.classList.contains('show') && !pill.matches(':hover')) hideTimer = hideTimer || setTimeout(hide, 600);
+      if(e.clientY <= EDGE){ stay(); show(0); return; }
+      if(!pill.classList.contains('show')) return;
+      const r = pill.getBoundingClientRect();
+      if(pill.matches(':hover') || (e.clientY <= r.bottom + 4 && e.clientX >= r.left - 24 && e.clientX <= r.right + 24)) stay();
+      else if(!leaveTimer) leaveTimer = setTimeout(() => { leaveTimer = 0; hide(); }, 250);
     }, {passive:true});
-    d.addEventListener('touchstart', e => { if(isFs() && e.touches[0] && e.touches[0].clientY <= 48) show(3000); }, {passive:true});
+    d.addEventListener('touchstart', e => { if(isFs() && e.touches[0] && e.touches[0].clientY <= 16) show(3000); }, {passive:true});
     // F11: this full screen instead of the browser's, where the browser lets a page take the key
     d.addEventListener('keydown', e => {
       if(e.key !== 'F11' || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;

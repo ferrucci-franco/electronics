@@ -125,7 +125,8 @@ a tap; use `plotly_doubleclick`, not the DOM `dblclick`; clear `_hoversubplot` a
   texts})`, strings `fullscreen`, `exitFullscreen`, `exitPill` in FR/EN/ES). It uses the page's Fullscreen API, not
   the browser's F11 mode, whose top-edge hover brings the browser bars back (a page cannot prevent that): here the
   top edge shows the app's semi-transparent pill « Quitter le plein écran (Échap) » instead, also for 2.5 s on
-  entry; F11 is caught where the browser allows it. Hidden where the page cannot go full screen (iPhone, iframes).
+  entry. Only the topmost 6 px (16 px for a finger) bring it back, and it hides 250 ms after the pointer leaves it:
+  with a 48 px band it popped up over the app's header buttons whenever one was pointed at; F11 is caught where the browser allows it. Hidden where the page cannot go full screen (iPhone, iframes).
   The pill is semi-transparent **yellow** so it stands out (a neutral pill went unnoticed): pale yellow with dark
   text in light theme, dark amber with light text in dark theme (`html.dark` or `html[data-theme="dark"]`; add
   the app's dark selector to the module's CSS if it uses another one).
