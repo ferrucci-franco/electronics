@@ -13,6 +13,8 @@
   })();
 </script>
 <script defer src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 <style>
   :root{
     --bg:#ffffff; --fg:#0f1222; --muted:#5a6275; --card:#eef4ff; --border:#d7e2f4; --link:#0b6cff; --accent:#2f6fde;
@@ -167,6 +169,13 @@
   .table-actions{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
   .table-actions .spacer{flex:1}
 
+  /* how G, G_dB and φ are computed (KaTeX) */
+  .formulas{border:1px solid var(--border); border-radius:10px; padding:8px 12px; background:var(--computed); font-size:13px; line-height:1.45; color:var(--muted)}
+  .formulas h4{margin:0 0 4px; font-size:13px; color:var(--fg)}
+  .formulas p{margin:4px 0}
+  .formulas .eqs{display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:2px 28px; margin:4px 0; color:var(--fg); font-size:15px}
+  .formulas .katex{font-size:1.05em}
+  .formulas .eqs .katex{font-size:1.12em}
   .dt-note{display:grid; grid-template-columns:1fr 240px; gap:10px; align-items:center}
   .dt-note svg{width:100%; height:auto; display:block}
   /* narrow screens: the note above, the drawing below at the full width of the card */
@@ -291,6 +300,10 @@
     #report .plots img{display:block; width:98mm; height:auto}
     #report .plots img + img{margin-top:1mm}
     #report .theory{margin-top:2mm; font-size:9.5pt}
+    #report .formulas{margin-top:2mm; padding:1.5mm 2.5mm; border:0.3pt solid #9aa4b8; border-radius:1.5mm; background:#f6f8fb; font-size:9pt; color:#222}
+    #report .formulas h4{font-size:9.5pt; margin:0 0 1mm; color:#000}
+    #report .formulas p{margin:1mm 0}
+    #report .formulas .eqs{display:flex; flex-wrap:wrap; justify-content:center; gap:0 6mm; margin:1mm 0; font-size:10pt; color:#000}
     #report .theory ul{margin:1mm 0 0; padding-left:5mm}
     #report .foot{margin-top:3mm; font-size:8pt; color:#555}
     #report .foot .line{border-top:0.3pt solid #9aa4b8; margin-top:3mm; padding-top:1mm}
@@ -415,6 +428,7 @@
             <button id="clearYes" type="button" class="btn-danger">Oui, vider ce tableau</button>
           </div>
         </div>
+        <div class="formulas" id="formulas"></div>
         <div class="dt-note">
           <div class="muted hint" id="dtNote"></div>
           <div id="dtDrawing" aria-hidden="true"></div>
@@ -572,6 +586,46 @@ document.addEventListener('DOMContentLoaded', () => {
       csvComment:'Hoja de medición de diagrama de Bode'
     }
   };
+
+  // ========= Formulas shown under the table (and in the report) =========
+  // \( … \) inline math, $$ … $$ displayed math; rendered by KaTeX, plain TeX text until it has loaded
+  const FORMULAS = {
+    fr:String.raw`<h4>Formules</h4>
+      <p><b>Gain</b> : rapport des amplitudes crête à crête, puis en décibels :</p>
+      <div class="eqs"><span>$$G = \frac{V_{\text{out,pp}}}{V_{\text{in,pp}}}$$</span><span>$$G_{\text{dB}} = 20\,\log_{10} G$$</span></div>
+      <p><b>Phase</b> : une période \(T = 1/f\) correspond à 360°. Un retard \(\Delta T\) de la sortie est donc une fraction \(\Delta T/T\) de tour :</p>
+      <div class="eqs"><span>$$\varphi = -360^\circ\,\frac{\Delta T}{T} = -360^\circ \cdot f \cdot \Delta T$$</span></div>
+      <p>avec \(\Delta T\) en secondes (le tableau le saisit en µs). Exemple : \(f = 1\ \text{kHz}\), \(V_{\text{in,pp}} = 4\ \text{V}\), \(V_{\text{out,pp}} = 3{,}39\ \text{V}\), \(\Delta T = 89{,}2\ \mu\text{s}\) donnent \(G = 0{,}848\), \(G_{\text{dB}} = -1{,}4\ \text{dB}\) et \(\varphi = -360 \times 1000 \times 89{,}2\cdot 10^{-6} = -32{,}1^\circ\).</p>`,
+    en:String.raw`<h4>Formulas</h4>
+      <p><b>Gain</b>: ratio of the peak-to-peak amplitudes, then in decibels:</p>
+      <div class="eqs"><span>$$G = \frac{V_{\text{out,pp}}}{V_{\text{in,pp}}}$$</span><span>$$G_{\text{dB}} = 20\,\log_{10} G$$</span></div>
+      <p><b>Phase</b>: one period \(T = 1/f\) is 360°. A delay \(\Delta T\) of the output is therefore a fraction \(\Delta T/T\) of a turn:</p>
+      <div class="eqs"><span>$$\varphi = -360^\circ\,\frac{\Delta T}{T} = -360^\circ \cdot f \cdot \Delta T$$</span></div>
+      <p>with \(\Delta T\) in seconds (the table takes it in µs). Example: \(f = 1\ \text{kHz}\), \(V_{\text{in,pp}} = 4\ \text{V}\), \(V_{\text{out,pp}} = 3.39\ \text{V}\), \(\Delta T = 89.2\ \mu\text{s}\) give \(G = 0.848\), \(G_{\text{dB}} = -1.4\ \text{dB}\) and \(\varphi = -360 \times 1000 \times 89.2\cdot 10^{-6} = -32.1^\circ\).</p>`,
+    es:String.raw`<h4>Fórmulas</h4>
+      <p><b>Ganancia</b>: cociente de las amplitudes pico a pico, luego en decibeles:</p>
+      <div class="eqs"><span>$$G = \frac{V_{\text{out,pp}}}{V_{\text{in,pp}}}$$</span><span>$$G_{\text{dB}} = 20\,\log_{10} G$$</span></div>
+      <p><b>Fase</b>: un período \(T = 1/f\) corresponde a 360°. Un retardo \(\Delta T\) de la salida es entonces una fracción \(\Delta T/T\) de vuelta:</p>
+      <div class="eqs"><span>$$\varphi = -360^\circ\,\frac{\Delta T}{T} = -360^\circ \cdot f \cdot \Delta T$$</span></div>
+      <p>con \(\Delta T\) en segundos (la tabla lo recibe en µs). Ejemplo: \(f = 1\ \text{kHz}\), \(V_{\text{in,pp}} = 4\ \text{V}\), \(V_{\text{out,pp}} = 3{,}39\ \text{V}\), \(\Delta T = 89{,}2\ \mu\text{s}\) dan \(G = 0{,}848\), \(G_{\text{dB}} = -1{,}4\ \text{dB}\) y \(\varphi = -360 \times 1000 \times 89{,}2\cdot 10^{-6} = -32{,}1^\circ\).</p>`
+  };
+  // TeX → HTML (KaTeX); without KaTeX the TeX source stays readable
+  function texToHtml(src){
+    const k = window.katex;
+    const one = (tex, display) => {
+      if(!k || typeof k.renderToString !== 'function') return display ? tex : tex;
+      try{ return k.renderToString(tex, {displayMode:display, throwOnError:false, output:'html'}); }catch(_){ return tex; }
+    };
+    return src.replace(/\$\$([\s\S]+?)\$\$/g, (_, t) => one(t, true)).replace(/\\\(([\s\S]+?)\\\)/g, (_, t) => one(t, false));
+  }
+  function renderFormulas(){ $('#formulas').innerHTML = texToHtml(FORMULAS[LANG] || FORMULAS.fr); }
+  // KaTeX is loaded with defer: render again once it is there
+  // (setLang renders them at start; a deferred script has normally run by then, this is the fallback)
+  (function whenKatex(){
+    if(window.katex) return;
+    const sc = document.querySelector('script[src*="katex"]');
+    if(sc) sc.addEventListener('load', () => renderFormulas(), {once:true});
+  })();
 
   // ========= State: per circuit, its component values and one table per measured component =========
   // components across which V_out can be measured (L = the real coil, its resistance R_L included)
@@ -863,6 +917,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.documentElement.setAttribute('lang', LANG);
     try{ localStorage.setItem(LANG_KEY, LANG); }catch(_){}
     renderDate();
+    renderFormulas();
     renderFitButtons();
     $('#splitter').title = t.splitter; $('#splitter').setAttribute('aria-label', t.splitter);
     requestAnimationFrame(applyLeftWidth);   // header widths changed: the automatic width may too
@@ -1878,6 +1933,7 @@ document.addEventListener('DOMContentLoaded', () => {
                  <td class="c">${fmtG(c.G)}</td><td class="c">${fmtDec1(c.GdB)}</td><td class="c">${fmtDec1(c.phi)}</td></tr>`;
       });
       html += `</tbody></table>`;
+      html += `<div class="formulas">${texToHtml(FORMULAS[LANG] || FORMULAS.fr)}</div>`;
       if(theoryOn && m.ch) html += `<div class="theory"><strong>${esc(t.reportTheory)}</strong>${theoryValuesHTML(kind, 'ul')}</div>`;
       html += `</div><div class="plots"><img src="${imgMag}" alt=""><img src="${imgPh}" alt=""></div></div>
         <div class="foot"><div class="line">${esc(t.reportFoot)} — © 2025 Franco Ferrucci</div></div></section>`;
