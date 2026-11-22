@@ -240,7 +240,8 @@
   .legend-toggle-btn[hidden]{display:none}
   .legend-toggle-btn:focus-visible{opacity:1}
   @media (hover:hover){ .legend-toggle-btn:hover{opacity:1; filter:none} }
-  .legend-toggle-btn.is-open{color:var(--accent)}
+  /* legend shown: a light blue button, as on phones */
+  .legend-toggle-btn.is-open{color:var(--accent); opacity:.9; background:color-mix(in srgb, var(--accent) 14%, var(--paper)); border-color:color-mix(in srgb, var(--accent) 45%, transparent)}
   .legend-toggle-btn svg{width:15px; height:15px; fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round}
   /* a finger needs a bigger target */
   @media (pointer:coarse){
@@ -249,7 +250,6 @@
     .plot-fit-btns svg{width:20px; height:20px}
     .legend-toggle-btn{width:36px; height:36px; border-radius:10px; border-color:color-mix(in srgb, var(--border) 60%, transparent)}
     .legend-toggle-btn svg{width:20px; height:20px}
-    .legend-toggle-btn.is-open{opacity:.9; background:color-mix(in srgb, var(--accent) 14%, var(--paper))}
   }
   .plotly-notifier{display:none !important}
   /* one-finger gestures on the plots: the browser scrolls natively unless the page blocks it for a
