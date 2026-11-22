@@ -110,4 +110,7 @@ a tap; use `plotly_doubleclick`, not the DOM `dblclick`; clear `_hoversubplot` a
   and phone — overlay scrollbars that fade out hide the extra columns from students.
 - Side panel next to the plots: wide enough by default for its table to fit when the window allows,
   with a draggable splitter between the panel and the plots.
+- No text selection and no text caret outside the text fields: `body{user-select:none; caret-color:transparent}`,
+  then `input:not([type=checkbox]):not([type=radio]), textarea{user-select:text; caret-color:auto}`. Otherwise a
+  button focused from code (a confirmation's "Cancel") or caret browsing shows a blinking bar on it.
 - Language selector FR/EN/ES (FR default), light/dark theme, plots styled as `adjustable-filters/`.

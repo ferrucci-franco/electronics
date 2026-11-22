@@ -41,8 +41,12 @@
     overflow:hidden; -webkit-text-size-adjust:100%;
     /* no text selection (nor the iOS long-press callout) anywhere but in the input fields */
     -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;
+    /* no text caret either: caret browsing, or a button focused from code (the confirmation's « Annuler »),
+       would otherwise leave a blinking bar on a button, a title or a label */
+    caret-color:transparent;
   }
-  input, textarea{-webkit-user-select:text; user-select:text; -webkit-touch-callout:default}
+  /* text fields keep their selection and their caret: that is where one types */
+  input:not([type=checkbox]):not([type=radio]):not([type=button]), textarea, [contenteditable="true"]{-webkit-user-select:text; user-select:text; -webkit-touch-callout:default; caret-color:auto}
   a{color:var(--link);text-decoration:none}
   a:hover{text-decoration:underline}
 
