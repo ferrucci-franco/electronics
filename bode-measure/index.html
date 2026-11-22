@@ -1223,6 +1223,18 @@ document.addEventListener('DOMContentLoaded', () => {
       magData.unshift({type:'scatter', mode:'lines', name:t.traceTh, x:th.f, y:th.mag, line:{color:pal.theory, width:2}, hoverinfo:'skip'});
       phData.unshift({type:'scatter', mode:'lines', name:t.traceTh, x:th.f, y:th.ph, line:{color:pal.theory, width:2}, hoverinfo:'skip'});
     }
+    // the characteristic frequency (f_c for RC, f_0 for RLC): a red dot on the theory curve, with its legend entry
+    let markPt = null;
+    if(th && Number.isFinite(fMark) && fMark > 0){
+      const h = theoryAt(fMark, c, out), gdb = Number.isFinite(h.mag) && h.mag > 0 ? 20 * log10(h.mag) : null;
+      const sym = c.rc ? 'f<sub>c</sub>' : 'f<sub>0</sub>', symTxt = c.rc ? 'f_c' : 'f_0';
+      const name = `${sym} = ${fmtChar(fMark)} Hz`;
+      const tip = `${symTxt} = ${fmtChar(fMark)} Hz<br>G = ${gdb == null ? '—' : fmtDec1(gdb) + ' dB'}<br>φ = ${fmtDec1(h.ph)}°`;
+      const mk = {color:pal.mark, size:10, line:{color:pal.paper, width:1.5}};
+      markPt = {f:fMark, gdb, ph:h.ph};
+      if(gdb != null) magData.push({type:'scatter', mode:'markers', name, x:[fMark], y:[gdb], marker:mk, text:[tip], hovertemplate:'%{text}<extra></extra>'});
+      phData.push({type:'scatter', mode:'markers', name, x:[fMark], y:[h.ph], marker:mk, text:[tip], hovertemplate:'%{text}<extra></extra>'});
+    }
 
     // y ranges: always include the measured points (and the theory when shown)
     const gVals = pts.gain.map(p => p.GdB).concat(th ? th.mag.filter(Number.isFinite) : []);
@@ -1233,13 +1245,13 @@ document.addEventListener('DOMContentLoaded', () => {
     let pLo = Math.min(pr[0] - 5, ...pVals), pHi = Math.max(pr[1] + 5, ...pVals);
     pLo = Math.floor(pLo/15)*15 - 5; pHi = Math.ceil(pHi/15)*15 + 5;
 
-    const shapes = fMark ? [{type:'line', x0:fMark, x1:fMark, y0:0, y1:1, xref:'x', yref:'paper', layer:'below',
-                             line:{color:pal.mark, width:1.5, dash:'dot'}}] : [];
+    const shapes = [];
     const axis = {gridcolor:pal.grid, zerolinecolor:pal.zero, linecolor:pal.zero, tickcolor:pal.zero, automargin:true};
     // the legend lies inside the plot, in the corner that holds the fewest points and the least curve
     const magSeries = [{x:pts.gain.map(p => p.f), y:pts.gain.map(p => p.GdB), w:8}];
     const phSeries = [{x:pts.phase.map(p => p.f), y:pts.phase.map(p => p.phi), w:8}];
     if(th){ magSeries.push({x:th.f, y:th.mag, w:1}); phSeries.push({x:th.f, y:th.ph, w:1}); }
+    if(markPt){ magSeries.push({x:[markPt.f], y:[markPt.gdb], w:8}); phSeries.push({x:[markPt.f], y:[markPt.ph], w:8}); }
     const legendFor = (series, yRange) => {
       const cn = emptiestCorner(range, yRange, series);
       return {orientation:'v', x:cn.left ? 0.01 : 0.99, xanchor:cn.left ? 'left' : 'right', y:cn.top ? 0.99 : 0.01, yanchor:cn.top ? 'top' : 'bottom',
