@@ -777,7 +777,7 @@ document.addEventListener('DOMContentLoaded', () => {
       rcd:'RC numérique (filtre discret)', ma:'Moyenne mobile (numérique)', rcdShort:'RC numérique', maShort:'Moyenne mobile',
       a:'a', N:'N (points)', Fs:'F<sub>s</sub> (Hz)', adc:'CAN', dac:'CNA', filterBlk:'filtre numérique', board:'carte Arduino / ESP32',
       digHint:'v<sub>in</sub> : entrée analogique de la carte (CAN) ; v<sub>out</sub> : sortie du CNA, en escalier. Restez sous F<sub>s</sub>/2 : au-delà, le signal est replié.',
-      measHintDig:'Mesurez V<sub>in</sub> sur l’entrée analogique de la carte (voie 1) et V<sub>out</sub> sur la sortie du CNA (voie 2).',
+      measHintDig:'Mesurez V<sub>in</sub> sur l’entrée analogique de la carte (voie 1) et V<sub>out</sub> sur la sortie du CNA (voie 2). ΔT est mesuré jusqu’au passage montant suivant de la sortie : φ est donné entre −360° et 0° (l’oscilloscope ne montre pas les périodes entières de retard).',
       vsTipDig:'Tension de sortie crête à crête (voie 2), sur la sortie du CNA (signal en escalier).',
       tau:'Constante de temps équivalente τ = a·T<sub>s</sub>/(1−a)', firstZero:'Premier zéro du gain F<sub>s</sub>/N', nyq:'Fréquence de Nyquist F<sub>s</sub>/2',
       boardNote:'Théorie vue à l’oscilloscope : réponse du filtre × retard de la carte. Le CNA sort y[n−1] (1 échantillon) et le maintient jusqu’au suivant (bloqueur d’ordre zéro : ½ échantillon en moyenne), soit −540°·f/F<sub>s</sub> de phase en plus ; le module est celui du filtre.',
@@ -824,7 +824,7 @@ document.addEventListener('DOMContentLoaded', () => {
       rcd:'Digital RC (discrete filter)', ma:'Moving average (digital)', rcdShort:'Digital RC', maShort:'Moving average',
       a:'a', N:'N (points)', Fs:'F<sub>s</sub> (Hz)', adc:'ADC', dac:'DAC', filterBlk:'digital filter', board:'Arduino / ESP32 board',
       digHint:'v<sub>in</sub>: the board’s analog input (ADC); v<sub>out</sub>: the DAC output, a staircase. Stay below F<sub>s</sub>/2: above it, the signal is aliased.',
-      measHintDig:'Measure V<sub>in</sub> at the board’s analog input (channel 1) and V<sub>out</sub> at the DAC output (channel 2).',
+      measHintDig:'Measure V<sub>in</sub> at the board’s analog input (channel 1) and V<sub>out</sub> at the DAC output (channel 2). ΔT is measured up to the next rising crossing of the output: φ is given between −360° and 0° (the oscilloscope does not show whole periods of delay).',
       vsTipDig:'Output peak-to-peak voltage (channel 2), at the DAC output (staircase signal).',
       tau:'Equivalent time constant τ = a·T<sub>s</sub>/(1−a)', firstZero:'First zero of the gain F<sub>s</sub>/N', nyq:'Nyquist frequency F<sub>s</sub>/2',
       boardNote:'Theory as seen on the oscilloscope: the filter’s response × the board’s delay. The DAC outputs y[n−1] (1 sample) and holds it until the next one (zero-order hold: ½ sample on average), i.e. −540°·f/F<sub>s</sub> of extra phase; the magnitude is the filter’s.',
@@ -871,7 +871,7 @@ document.addEventListener('DOMContentLoaded', () => {
       rcd:'RC digital (filtro discreto)', ma:'Media móvil (digital)', rcdShort:'RC digital', maShort:'Media móvil',
       a:'a', N:'N (puntos)', Fs:'F<sub>s</sub> (Hz)', adc:'ADC', dac:'DAC', filterBlk:'filtro digital', board:'placa Arduino / ESP32',
       digHint:'v<sub>in</sub>: entrada analógica de la placa (ADC); v<sub>out</sub>: salida del DAC, en escalera. Quédese debajo de F<sub>s</sub>/2: por encima, la señal se repliega (aliasing).',
-      measHintDig:'Mida V<sub>in</sub> en la entrada analógica de la placa (canal 1) y V<sub>out</sub> en la salida del DAC (canal 2).',
+      measHintDig:'Mida V<sub>in</sub> en la entrada analógica de la placa (canal 1) y V<sub>out</sub> en la salida del DAC (canal 2). ΔT se mide hasta el siguiente cruce ascendente de la salida: φ se da entre −360° y 0° (el osciloscopio no muestra los períodos enteros de retardo).',
       vsTipDig:'Tensión de salida pico a pico (canal 2), en la salida del DAC (señal en escalera).',
       tau:'Constante de tiempo equivalente τ = a·T<sub>s</sub>/(1−a)', firstZero:'Primer cero de la ganancia F<sub>s</sub>/N', nyq:'Frecuencia de Nyquist F<sub>s</sub>/2',
       boardNote:'Teoría vista en el osciloscopio: respuesta del filtro × retardo de la placa. El DAC saca y[n−1] (1 muestra) y la mantiene hasta la siguiente (retenedor de orden cero: ½ muestra en promedio), o sea −540°·f/F<sub>s</sub> de fase adicional; el módulo es el del filtro.',
@@ -981,6 +981,9 @@ document.addEventListener('DOMContentLoaded', () => {
     return LANG === 'fr' ? s.replace('.', ',') : s;
   }
 
+  // a lagging phase brought into ]−360°, 0] (whole turns removed)
+  const wrapPh = p => { const r = p - 360 * Math.ceil(p / 360); return r === 0 ? 0 : r; };   // no "-0"
+
   // ========= Row computation =========
   function computeRow(row, kind = state.circuit, out = state[kind].out){
     const f = parseNum(row.f), ve = parseNum(row.ve), vs = parseNum(row.vs), dt = parseNum(row.dt);
@@ -993,12 +996,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if(fOk && Number.isFinite(dt)){
       // a phase is defined modulo 360°: take the branch within ±180° of the set-up's expected range,
       // so a leading output works whether ΔT is typed negative or up to the next rising crossing
-      // (digital filter: within ±180° of the filter's phase at that frequency, which keeps turning past −360°)
+      // (digital filter: in ]−360°, 0], as read on the scope — ΔT is a fraction of the period; the whole periods of the
+      //  board's delay cannot be seen, so the theory is shown the same way, see wrapPh)
       const raw = -360 * f * dt * 1e-6;
-      let ctr;
-      if(isDigital(kind)){ const c = components(kind); ctr = c.ok ? theoryAt(f, c).ph : -180; }
-      else { const pr = PHASE_RANGE[kind][out]; ctr = (pr[0] + pr[1]) / 2; }
-      res.phi = raw - 360 * Math.ceil((raw - ctr - 180) / 360);
+      if(isDigital(kind)) res.phi = wrapPh(raw);
+      else { const pr = PHASE_RANGE[kind][out], ctr = (pr[0] + pr[1]) / 2; res.phi = raw - 360 * Math.ceil((raw - ctr - 180) / 360); }
     }
     return res;
   }
@@ -1428,8 +1430,6 @@ document.addEventListener('DOMContentLoaded', () => {
     el.addEventListener('input', () => {
       cur()[key] = el.value;
       el.classList.toggle('invalid', !compOk(key, parseNum(el.value)));
-      // a digital filter's measured phase is taken on the branch nearest its theory: the table's φ may change
-      if(isDigital(state.circuit)) refreshComputedCells();
       save(); renderTheoryValues(); updatePlots();
     });
   });
@@ -1743,7 +1743,10 @@ document.addEventListener('DOMContentLoaded', () => {
     for(const ff of grid){
       const h = theoryAt(ff, c, out);
       const ok = Number.isFinite(h.mag);
-      f.push(ff); ph.push(h.ph);
+      const p = c.digital ? wrapPh(h.ph) : h.ph;
+      // the true phase only decreases: a rise is the wrap from −360° back to 0°, where the line is broken
+      if(c.digital && ph.length && ph[ph.length - 1] != null && p > ph[ph.length - 1] + 90){ f.push(ff); ph.push(null); mag.push(mag[mag.length - 1]); }
+      f.push(ff); ph.push(p);
       mag.push(state.magDb ? (ok && h.mag > 0 && 20*log10(h.mag) > -80 ? 20*log10(h.mag) : null) : (ok ? h.mag : null));
     }
     return {f, mag, ph};
@@ -1827,6 +1830,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let markPt = null;
     if(th && Number.isFinite(fMark) && fMark > 0){
       const h = theoryAt(fMark, c, out), gdb = Number.isFinite(h.mag) && h.mag > 0 ? 20 * log10(h.mag) : null;
+      if(c.digital) h.ph = wrapPh(h.ph);
       const gy = dB ? gdb : (Number.isFinite(h.mag) ? h.mag : null);
       const sym = isF0 ? 'f<sub>0</sub>' : 'f<sub>c</sub>', symTxt = isF0 ? 'f_0' : 'f_c';
       const name = `${sym} = ${fmtChar(fMark)} Hz`;
@@ -1844,14 +1848,14 @@ document.addEventListener('DOMContentLoaded', () => {
     let gLo, gHi;
     if(dB){ gLo = Math.min(-40, ...gVals); gHi = Math.max(5, ...gVals); gLo = Math.floor(gLo/5)*5 - 2; gHi = Math.ceil(gHi/5)*5 + 2; }
     else { gLo = 0; gHi = Math.max(1.1, ...gVals) * 1.06; }
-    const pVals = pts.phase.map(p => p.phi).concat(ov ? ovPts.phase.map(p => p.phi) : [], th ? th.ph : [], ovTh ? ovTh.ph : []);
+    const pVals = pts.phase.map(p => p.phi).concat(ov ? ovPts.phase.map(p => p.phi) : [], th ? th.ph : [], ovTh ? ovTh.ph : []).filter(Number.isFinite);
     // expected range of the set-up (digital filter: none given away, −180°…0° until points or the theory say more)
-    const pr = isDigital(kind) ? [-180, 0] : PHASE_RANGE[kind][out];
+    const pr = isDigital(kind) ? [-360, 0] : PHASE_RANGE[kind][out];
     let pLo = Math.min(pr[0] - 5, ...pVals), pHi = Math.max(pr[1] + 5, ...pVals);
     pLo = Math.floor(pLo/15)*15 - 5; pHi = Math.ceil(pHi/15)*15 + 5;
     // tick step: 15°, 30°, 45° or 90° (at most ~12 intervals); a wider span (a long moving average turns through
     // thousands of degrees) is left to Plotly, whose automatic step also follows a zoom
-    const pSpan = pHi - pLo, pTick = [15, 30, 45, 90].find(st => pSpan / st <= 12) || null;
+    const pSpan = pHi - pLo, pTick = isDigital(kind) && pSpan <= 420 ? 90 : [15, 30, 45, 90].find(st => pSpan / st <= 12) || null;
 
     // a digital filter: dotted line at the Nyquist frequency F_s/2 (known from F_s, not from the theory), named in the
     // legend; a vertical trace (meta 'nyq', left out of Fit Y) rather than a shape with a label, which crowded the corner
