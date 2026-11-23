@@ -2602,6 +2602,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       vis_show_bode: "Mostrar Bode",
       vis_show_phase: "Mostrar fase (°)",
       vis_phase_unwrap: "Fase desenrollada (si no, entre −180° y 180°)",
+      vis_phase_note: "Fase vista en el osciloscopio: filtro + retardo de la placa de 1,5 muestra (el DAC saca y[n−1] y lo mantiene hasta la muestra siguiente: ½ muestra en promedio), o sea −540°·f/F<sub>s</sub>.",
       vis_mag_label: "Magnitud Bode",
       vis_mag_linear: "V/V",
       vis_mag_db: "dB",
@@ -2685,6 +2686,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       vis_show_bode: "Afficher Bode",
       vis_show_phase: "Afficher phase (°)",
       vis_phase_unwrap: "Phase déroulée (sinon entre −180° et 180°)",
+      vis_phase_note: "Phase vue à l’oscilloscope : filtre + retard de la carte d’un échantillon et demi (le CNA sort y[n−1] et le maintient jusqu’à l’échantillon suivant : ½ échantillon en moyenne), soit −540°·f/F<sub>s</sub>.",
       vis_mag_label: "Magnitude Bode",
       vis_mag_linear: "V/V",
       vis_mag_db: "dB",
@@ -2768,6 +2770,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       vis_show_bode: "Show Bode",
       vis_show_phase: "Show phase (°)",
       vis_phase_unwrap: "Unwrapped phase (otherwise between −180° and 180°)",
+      vis_phase_note: "Phase as seen on the oscilloscope: filter + the board’s delay of one and a half samples (the DAC outputs y[n−1] and holds it until the next sample: ½ sample on average), i.e. −540°·f/F<sub>s</sub>.",
       vis_mag_label: "Bode magnitude",
       vis_mag_linear: "V/V",
       vis_mag_db: "dB",
@@ -3191,11 +3194,13 @@ Implement a real-time digital signal acquisition and processing system using Ard
   }
 
   // Frequency response
-  // Réponse vue à la sortie de la carte : filtre × retard d'un échantillon (le CNA sort y[n-1]).
-  // Le module est inchangé ; la phase perd 360°·f/Fs.
+  // Réponse vue à l'oscilloscope, à la sortie de la carte : filtre × retard d'un échantillon et demi —
+  // le CNA sort y[n-1] (1 échantillon) et le maintient jusqu'au suivant (bloqueur d'ordre zéro : la
+  // sinusoïde qui passe au milieu des marches est en retard d'un demi-échantillon). Le module est celui du
+  // filtre (crête à crête de l'escalier) ; la phase perd 540°·f/Fs, comme dans bode-measure.
   function step3H_at_f(f) {
     const H = step3H_filter_at_f(f);
-    const w = 2*Math.PI*f/step3State.Fs, c = Math.cos(w), sn = Math.sin(w);
+    const w = 1.5 * 2*Math.PI*f/step3State.Fs, c = Math.cos(w), sn = Math.sin(w);
     return { Re: H.Re*c + H.Im*sn, Im: H.Im*c - H.Re*sn };
   }
 
@@ -4506,7 +4511,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
                 <div style="font-weight:600; margin-top:12px; margin-bottom:6px;">${t('visual_bode_title')}</div>
                 <div class="step3-group"><div class="step3-checks"><label><input type="checkbox" id="step3ShowBode" ${S.showBode ? 'checked' : ''}><span>${t('vis_show_bode')}</span></label></div></div>
                 <div class="step3-group"><div class="step3-checks"><label><input type="checkbox" id="step3ShowPhase" ${S.showPhase ? 'checked' : ''}><span>${t('vis_show_phase')}</span></label></div></div>
-                <div class="step3-group" id="step3PhaseUnwrapGroup" style="display:${S.showPhase ? 'block' : 'none'}; margin-left:22px;"><div class="step3-checks"><label><input type="checkbox" id="step3PhaseUnwrap" ${S.phaseUnwrap !== false ? 'checked' : ''}><span>${t('vis_phase_unwrap')}</span></label></div></div>
+                <div class="step3-group" id="step3PhaseUnwrapGroup" style="display:${S.showPhase ? 'block' : 'none'}; margin-left:22px;"><div class="step3-checks"><label><input type="checkbox" id="step3PhaseUnwrap" ${S.phaseUnwrap !== false ? 'checked' : ''}><span>${t('vis_phase_unwrap')}</span></label></div><div class="step3-note">${t('vis_phase_note')}</div></div>
                 <div class="step3-group">
                   <div class="step3-row"><span>${t('vis_mag_label')}</span></div>
                   <div class="step3-radios">
