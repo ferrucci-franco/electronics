@@ -129,6 +129,13 @@ a tap; use `plotly_doubleclick`, not the DOM `dblclick`; clear `_hoversubplot` a
   a text field or a `<select>` under 16 px gets the focus, and leaves it zoomed — students think the app is broken.
   Add `@media (pointer:coarse){ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=button]):not([type=color]),
   select, textarea{font-size:16px !important} }` (as in the four apps); do not block zoom with `maximum-scale`.
+- Numeric setting fields (component values, F_s, N…): **↑ / ↓ change the value** (Shift: ×10), keeping the decimal
+  comma or point typed; integers step by 1, a coefficient in [0, 1) by 0.01, other values on their second significant
+  digit (1000 → 1100 up, 990 down). The mouse wheel and the trackpad never change a value (fields are `type=text`).
+  Reference: `stepValue` in `bode-measure/`.
+- A marker line on a plot (e.g. the Nyquist frequency F_s/2): name it in the legend (a vertical trace with its own
+  legend entry, left out of Fit Y), not with a text label on the plot, which crowds the corner with the legend and
+  the Fit buttons.
 - A checkbox and its label: box and label side by side, never wrapped onto two lines (`flex-wrap:nowrap;
   align-items:flex-start`, box `flex:0 0 auto`, label `min-width:0`), so a long label's second line starts under
   its first line, not under the box.
