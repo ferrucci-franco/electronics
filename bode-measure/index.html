@@ -775,7 +775,7 @@ document.addEventListener('DOMContentLoaded', () => {
       theme:'Changer de thème', language:'Langue', fullscreen:'Plein écran', exitFullscreen:'Quitter le plein écran', exitPill:'Quitter le plein écran (Échap)',
       csvComment:'Relevé de diagramme de Bode',
       rcd:'RC numérique (filtre discret)', ma:'Moyenne mobile (numérique)', rcdShort:'RC numérique', maShort:'Moyenne mobile',
-      a:'a', N:'N (points)', Fs:'F<sub>s</sub> (Hz)', adc:'CAN', dac:'CNA', board:'carte Arduino / ESP32',
+      a:'a', N:'N (points)', Fs:'F<sub>s</sub> (Hz)', adc:'CAN', dac:'CNA', filterBlk:'filtre numérique', board:'carte Arduino / ESP32',
       digHint:'v<sub>in</sub> : entrée analogique de la carte (CAN) ; v<sub>out</sub> : sortie du CNA, en escalier. Restez sous F<sub>s</sub>/2 : au-delà, le signal est replié.',
       measHintDig:'Mesurez V<sub>in</sub> sur l’entrée analogique de la carte (voie 1) et V<sub>out</sub> sur la sortie du CNA (voie 2).',
       vsTipDig:'Tension de sortie crête à crête (voie 2), sur la sortie du CNA (signal en escalier).',
@@ -822,7 +822,7 @@ document.addEventListener('DOMContentLoaded', () => {
       theme:'Toggle theme', language:'Language', fullscreen:'Full screen', exitFullscreen:'Exit full screen', exitPill:'Exit full screen (Esc)',
       csvComment:'Bode plot measurement sheet',
       rcd:'Digital RC (discrete filter)', ma:'Moving average (digital)', rcdShort:'Digital RC', maShort:'Moving average',
-      a:'a', N:'N (points)', Fs:'F<sub>s</sub> (Hz)', adc:'ADC', dac:'DAC', board:'Arduino / ESP32 board',
+      a:'a', N:'N (points)', Fs:'F<sub>s</sub> (Hz)', adc:'ADC', dac:'DAC', filterBlk:'digital filter', board:'Arduino / ESP32 board',
       digHint:'v<sub>in</sub>: the board’s analog input (ADC); v<sub>out</sub>: the DAC output, a staircase. Stay below F<sub>s</sub>/2: above it, the signal is aliased.',
       measHintDig:'Measure V<sub>in</sub> at the board’s analog input (channel 1) and V<sub>out</sub> at the DAC output (channel 2).',
       vsTipDig:'Output peak-to-peak voltage (channel 2), at the DAC output (staircase signal).',
@@ -869,7 +869,7 @@ document.addEventListener('DOMContentLoaded', () => {
       theme:'Cambiar tema', language:'Idioma', fullscreen:'Pantalla completa', exitFullscreen:'Salir de pantalla completa', exitPill:'Salir de pantalla completa (Esc)',
       csvComment:'Hoja de medición de diagrama de Bode',
       rcd:'RC digital (filtro discreto)', ma:'Media móvil (digital)', rcdShort:'RC digital', maShort:'Media móvil',
-      a:'a', N:'N (puntos)', Fs:'F<sub>s</sub> (Hz)', adc:'ADC', dac:'DAC', board:'placa Arduino / ESP32',
+      a:'a', N:'N (puntos)', Fs:'F<sub>s</sub> (Hz)', adc:'ADC', dac:'DAC', filterBlk:'filtro digital', board:'placa Arduino / ESP32',
       digHint:'v<sub>in</sub>: entrada analógica de la placa (ADC); v<sub>out</sub>: salida del DAC, en escalera. Quédese debajo de F<sub>s</sub>/2: por encima, la señal se repliega (aliasing).',
       measHintDig:'Mida V<sub>in</sub> en la entrada analógica de la placa (canal 1) y V<sub>out</sub> en la salida del DAC (canal 2).',
       vsTipDig:'Tensión de salida pico a pico (canal 2), en la salida del DAC (señal en escalera).',
@@ -1220,7 +1220,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const eq = kind === 'rcd' ? 'y[n] = a·y[n−1] + (1−a)·x[n]' : 'y[n] = (x[n] + … + x[n−N+1]) / N';
     let s = `<svg viewBox="0 0 ${W} 150" style="width:100%" xmlns="http://www.w3.org/2000/svg">`;
     s += `<rect class="board" x="${bx0}" y="14" width="${bx1-bx0}" height="96" rx="10"/>`;
-    s += `<path d="M${xIn} ${yTop} H60"/>` + blk(60, 50, t.adc) + arrow(110, 128) + blk(128, 84, 'H(z)') + arrow(212, 230) + blk(230, 50, t.dac) + `<path d="M280 ${yTop} H${xOut}"/>`;
+    s += `<path d="M${xIn} ${yTop} H56"/>` + blk(56, 46, t.adc) + arrow(102, 114) + blk(114, 112, esc(t.filterBlk)) + arrow(226, 238) + blk(238, 46, t.dac) + `<path d="M284 ${yTop} H${xOut}"/>`;
     s += `<text class="eq" x="${W/2}" y="76" text-anchor="middle">${eq}</text>`;
     s += `<text class="board-lbl" x="${W/2}" y="100" text-anchor="middle">${esc(t.board)} · F<tspan class="sub" dy="3">s</tspan></text>`;
     s += `<path d="M${xIn} ${yBot} H${xOut}"/>`;
@@ -1699,8 +1699,15 @@ document.addEventListener('DOMContentLoaded', () => {
   function theoryCurve(range, c, out){
     const n = 400, f = [], mag = [], ph = [];
     const hiLog = c.digital ? Math.min(range[1], log10(c.Fs / 2)) : range[1];
-    for(let i = 0; i <= n; i++){
-      const ff = Math.pow(10, range[0] + (hiLog - range[0]) * i / n);
+    let grid = Array.from({length:n + 1}, (_, i) => Math.pow(10, range[0] + (hiLog - range[0]) * i / n));
+    if(c.kind === 'ma' && c.N > 1){
+      // lobes F_s/N wide: 24 samples per lobe, and each zero itself, so that the dips and the 180° steps are drawn sharp
+      const fLo = grid[0], fHi = grid[n], step = c.Fs / c.N / 24;
+      for(let k = Math.ceil(fLo / step); k * step <= fHi; k++) grid.push(k * step);
+      grid.sort((x, y) => x - y);
+      grid = grid.filter((x, i) => i === 0 || x - grid[i - 1] > 1e-9 * x);
+    }
+    for(const ff of grid){
       const h = theoryAt(ff, c, out);
       const ok = Number.isFinite(h.mag);
       f.push(ff); ph.push(h.ph);
@@ -1809,7 +1816,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const pr = isDigital(kind) ? [-180, 0] : PHASE_RANGE[kind][out];
     let pLo = Math.min(pr[0] - 5, ...pVals), pHi = Math.max(pr[1] + 5, ...pVals);
     pLo = Math.floor(pLo/15)*15 - 5; pHi = Math.ceil(pHi/15)*15 + 5;
-    const pSpan = pHi - pLo, pTick = pSpan > 400 ? 90 : pSpan > 150 ? 30 : 15;
+    // tick step: 15°, 30°, 45° or 90° (at most ~12 intervals); a wider span (a long moving average turns through
+    // thousands of degrees) is left to Plotly, whose automatic step also follows a zoom
+    const pSpan = pHi - pLo, pTick = [15, 30, 45, 90].find(st => pSpan / st <= 12) || null;
 
     // a digital filter: dotted line at the Nyquist frequency F_s/2 (known from F_s, not from the theory)
     const shapes = [], annotations = [];
