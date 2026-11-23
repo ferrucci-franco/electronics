@@ -3877,13 +3877,19 @@ Implement a real-time digital signal acquisition and processing system using Ard
   // Déroulement de la phase (équivalent de numpy.unwrap, en degrés) : en parcourant les fréquences
   // croissantes, chaque saut de plus de 180° entre deux points voisins est compensé par ±360°
   // sur tous les points suivants. Un vrai saut de 180° (zéro sur le cercle unité) est conservé.
-  function step3UnwrapDeg(ph) {
+  // fir (moyenne mobile, RIF) : à chaque zéro du gain, le signe de l'amplitude change et la phase saute de 180°,
+  // vers le haut ou vers le bas indifféremment (±180° ont le même effet). Le saut est pris vers le bas, pour que
+  // la phase déroulée d'un filtre RIF continue de descendre (retard constant), comme dans bode-measure.
+  // Entre deux points de la grille, la phase d'un RIF ne descend que de quelques degrés : une montée de plus
+  // de 90° ne peut être que ce saut.
+  function step3UnwrapDeg(ph, fir) {
     let off = 0;
     for (let i = 1; i < ph.length; i++) {
       const raw = ph[i] + off;
-      const d = raw - ph[i - 1];
-      if (d > 180) off -= 360 * Math.ceil((d - 180) / 360);
-      else if (d < -180) off += 360 * Math.ceil((-d - 180) / 360);
+      let d = raw - ph[i - 1];
+      if (d > 180) { const k = Math.ceil((d - 180) / 360); off -= 360 * k; d -= 360 * k; }
+      else if (d < -180) { const k = Math.ceil((-d - 180) / 360); off += 360 * k; d += 360 * k; }
+      if (fir && d > 90) off -= 360;
       ph[i] += off;
     }
     return ph;
@@ -3980,7 +3986,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       if (i > 0) phases[i] = phases[i - 1];
       else if (phases.length > 1) phases[0] = phases[1];
     }
-    step3UnwrapDeg(phases);
+    step3UnwrapDeg(phases, step3State.filt === 'ma' || step3State.filt === 'fir');
     // Phase « enroulée » demandée : ramener chaque point dans ]−180°, 180°] et couper la courbe
     // à chaque retour de ±360° (pas de trait vertical parasite)
     const wrapped = step3State.phaseUnwrap === false;
