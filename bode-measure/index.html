@@ -1691,8 +1691,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // extended by whole decades to fit the points
   function freqRangeExp(pts, kind){
     let lo = log10(BODE_FMIN), hi = log10(BODE_FMAX);
-    if(isDigital(kind)){ const c = components(kind); if(c.ok) hi = log10(c.Fs / 2) + 0.08; }
-    pts.forEach(c => { lo = Math.min(lo, Math.floor(log10(c.f) + 1e-9)); hi = Math.max(hi, Math.ceil(log10(c.f) - 1e-9)); });
+    const cd = isDigital(kind) ? components(kind) : null, tight = !!(cd && cd.ok);
+    if(tight) hi = log10(cd.Fs / 2) + 0.08;
+    // (digital filter: a point beyond F_s/2 widens the axis just past it, not to the next decade)
+    pts.forEach(c => { lo = Math.min(lo, Math.floor(log10(c.f) + 1e-9)); hi = Math.max(hi, tight ? log10(c.f) + 0.08 : Math.ceil(log10(c.f) - 1e-9)); });
     return [lo, hi];
   }
   // gain in dB or V/V; a digital filter's curve stops at F_s/2 (beyond it the input is aliased); dB below −80 left out
@@ -1825,8 +1827,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if(c.digital && c.ok){
       const fN = c.Fs / 2;
       shapes.push({type:'line', xref:'x', yref:'paper', x0:fN, x1:fN, y0:0, y1:1, line:{color:pal.axis, width:1.2, dash:'dot'}, layer:'below'});
-      annotations.push({x:log10(fN), y:1, xref:'x', yref:'paper', yanchor:'bottom', xanchor:'center', showarrow:false,
-                        text:'F<sub>s</sub>/2', font:{size:sizeOpts.legendSize, color:pal.axis}});
+      // label inside the plotting area, along the line (above it, it ran into the Fit buttons)
+      annotations.push({x:log10(fN), y:1, xref:'x', yref:'paper', yanchor:'top', xanchor:'right', xshift:-2, yshift:-4, textangle:-90,
+                        showarrow:false, text:'F<sub>s</sub>/2', font:{size:sizeOpts.legendSize, color:pal.axis}});
     }
     const axis = {gridcolor:pal.grid, zerolinecolor:pal.zero, linecolor:pal.zero, tickcolor:pal.zero, automargin:true};
     // the legend lies inside the plot, in the corner that holds the fewest points and the least curve
@@ -1835,6 +1838,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if(ov){ magSeries.push({x:ovPts.gain.map(p => p.f), y:ovPts.gain.map(gainOf), w:8}); phSeries.push({x:ovPts.phase.map(p => p.f), y:ovPts.phase.map(p => p.phi), w:8}); }
     [th, ovTh].filter(Boolean).forEach(x => { magSeries.push({x:x.f, y:x.mag, w:1}); phSeries.push({x:x.f, y:x.ph, w:1}); });
     if(markPt){ magSeries.push({x:[markPt.f], y:[markPt.gy], w:8}); phSeries.push({x:[markPt.f], y:[markPt.ph], w:8}); }
+    // the F_s/2 label at the top of its line: the legend keeps clear of it when another corner is as empty
+    const nyqAt = (yRange) => (c.digital && c.ok) ? [{x:[c.Fs / 2], y:[yRange[1]], w:8}] : [];
     const legendFor = (series, yRange) => {
       const cn = emptiestCorner(range, yRange, series);
       return {orientation:'v', x:cn.left ? 0.01 : 0.99, xanchor:cn.left ? 'left' : 'right', y:cn.top ? 0.99 : 0.01, yanchor:cn.top ? 'top' : 'bottom',
@@ -1854,8 +1859,8 @@ document.addEventListener('DOMContentLoaded', () => {
       shapes, annotations
     });
     return {
-      mag:{data:magData, layout:base(t.bodeTitle, yTitle, [gLo, gHi], null, legendFor(magSeries, [gLo, gHi]))},
-      phase:{data:phData, layout:base(t.bodePhaseTitle, t.phaseY, [pLo, pHi], pTick, legendFor(phSeries, [pLo, pHi]))},
+      mag:{data:magData, layout:base(t.bodeTitle, yTitle, [gLo, gHi], null, legendFor(magSeries.concat(nyqAt([gLo, gHi])), [gLo, gHi]))},
+      phase:{data:phData, layout:base(t.bodePhaseTitle, t.phaseY, [pLo, pHi], pTick, legendFor(phSeries.concat(nyqAt([pLo, pHi])), [pLo, pHi]))},
       fMark, ch, c, ov
     };
   }
