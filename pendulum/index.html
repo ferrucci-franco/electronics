@@ -7,6 +7,7 @@
 <script>
   document.documentElement.setAttribute('data-theme',new Date().getHours()>=7&&new Date().getHours()<18?'light':'dark');
 </script>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231a62d6' stroke-width='2' stroke-linecap='round'%3E%3Cg opacity='.3'%3E%3Cpath d='M12 3.5L7 15'/%3E%3Ccircle cx='6.2' cy='16.9' r='3.6' fill='%231a62d6' stroke='none'/%3E%3C/g%3E%3Cpath d='M5.5 3.5h13M12 3.5l5 11.5'/%3E%3Ccircle cx='17.8' cy='16.9' r='3.6' fill='%231a62d6' stroke='none'/%3E%3C/svg%3E">
 <link rel="preload" href="tp-guide.css" as="style">
 <link rel="stylesheet" href="tp-guide.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -70,7 +71,13 @@ body{font-family:var(--font-ui);font-size:15px;background:var(--bg);color:var(--
 /* TOPBAR */
 .topbar{display:flex;align-items:center;height:var(--tab-h);padding:0 18px;background:var(--surface);border-bottom:1px solid var(--border);gap:12px;flex-shrink:0;z-index:10}
 .logo{font-size:20px;font-weight:700;color:var(--text2);letter-spacing:.01em;white-space:nowrap;line-height:1}
+.logo{display:flex;align-items:center;gap:8px}
 .logo span{color:var(--accent)}
+/* Pendulum drawing: support, rod and bob, with a faint copy at the other end of the swing */
+.logo-icon{width:26px;height:26px;flex:0 0 auto;fill:none;stroke:var(--accent);stroke-width:2;stroke-linecap:round}
+.logo-icon .li-bob{fill:var(--accent);stroke:none}
+.logo-icon .li-ghost{opacity:.3}
+.logo-icon .li-ghost circle{fill:var(--accent);stroke:none}
 .tabs{display:flex;gap:2px;flex:1;justify-content:center}
 .tab-btn{padding:0 16px;height:40px;border:none;background:transparent;color:var(--text2);font:500 14px var(--font-ui);cursor:pointer;border-radius:var(--r-sm);transition:background var(--tr),color var(--tr);white-space:nowrap}
 .tab-btn:hover{background:var(--accent-bg);color:var(--text)}
@@ -450,7 +457,7 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
 
   <!-- ===== TOPBAR ===== -->
   <header class="topbar">
-    <div class="logo">⚗ <span id="t_appname">Analyseur de Pendule</span></div>
+    <div class="logo"><svg class="logo-icon" viewBox="0 0 24 24" aria-hidden="true"><g class="li-ghost"><path d="M12 3.5L7 15"/><circle cx="6.2" cy="16.9" r="3.6"/></g><path d="M5.5 3.5h13"/><path d="M12 3.5l5 11.5"/><circle class="li-bob" cx="17.8" cy="16.9" r="3.6"/></svg><span id="t_appname">Analyseur de Pendule</span></div>
     <nav class="tabs">
       <button class="tab-btn active" data-tab="intro"><span class="tab-num">1</span><span id="t_tab1">Introduction</span></button>
       <button class="tab-btn" data-tab="acq"><span class="tab-num">2</span><span id="t_tab2">Acquisition et simulation</span></button>
