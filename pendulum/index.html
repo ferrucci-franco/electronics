@@ -138,13 +138,12 @@ body{font-family:var(--font-ui);font-size:15px;background:var(--bg);color:var(--
 .hist-p em{color:var(--text);font-style:italic}
 .hist-p a{color:var(--accent);text-decoration:none;border-bottom:1px dotted var(--accent)}
 .hist-p a:hover{border-bottom-style:solid}
-.offline-intro{text-align:center;font-size:14px;margin:0}
+.footer-sb.intro-footer{margin-top:4px;padding:12px 0 4px;font-size:14px}
 .setup-row{display:flex;gap:20px;align-items:flex-start}
 .setup-photo{flex:0 0 auto;width:min(42%,480px);height:auto;border-radius:var(--r-md);border:1px solid var(--border)}
 .setup-text{flex:1;min-width:0}
 @media(max-width:900px){.setup-row{flex-direction:column;align-items:center}.setup-photo{width:min(100%,480px)}}
 .offline-row[hidden]{display:none}
-.offline-intro a{color:var(--accent);text-decoration:none;border-bottom:1px dotted var(--accent)}
 .icon-btn.fs-btn[hidden]{display:none}
 
 /* ENCODER BADGE */
@@ -559,7 +558,11 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
           </div>
         </div>
 
-        <p class="offline-row offline-intro" hidden><a class="offline-zip" download></a></p>
+        <div class="footer-sb intro-footer">
+          Franco FERRUCCI &nbsp;·&nbsp;
+          <a href="https://ferrucci-lab.com/" target="_blank" rel="noopener">ferrucci-lab.com</a>
+          <span class="offline-row" hidden><br><a class="offline-zip" download></a></span>
+        </div>
 
       </div>
     </div>
