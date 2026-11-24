@@ -11,3 +11,7 @@
 !lib/
 !lib/katex/
 !lib/katex/**
+!chart-interactions.js
+!fullscreen.js
+!lib/chart.min.js
+!lib/chart.LICENSE.md

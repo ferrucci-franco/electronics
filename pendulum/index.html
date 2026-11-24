@@ -126,6 +126,10 @@ body{font-family:var(--font-ui);font-size:15px;background:var(--bg);color:var(--
 .hist-p em{color:var(--text);font-style:italic}
 .hist-p a{color:var(--accent);text-decoration:none;border-bottom:1px dotted var(--accent)}
 .hist-p a:hover{border-bottom-style:solid}
+.offline-intro{text-align:center;font-size:14px;margin:0}
+.offline-row[hidden]{display:none}
+.offline-intro a{color:var(--accent);text-decoration:none;border-bottom:1px dotted var(--accent)}
+.icon-btn.fs-btn[hidden]{display:none}
 
 /* ENCODER BADGE */
 .enc-badge{margin-left:8px;font-size:11px;font-weight:600;color:var(--data-o);background:rgba(249,115,22,.13);border:1px solid rgba(249,115,22,.45);border-radius:4px;padding:1px 7px;white-space:nowrap;vertical-align:middle}
@@ -323,12 +327,6 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
 #tab-acq #encNote,
 #tab-acq #t_enc_ppr,
 #tab-acq #enc_res_lbl,
-#tab-acq #t_pts_info,
-#tab-post #t_data_zoom_hint,
-#tab-post #t_fit_zoom_hint,
-#tab-post #t_per_zoom_hint,
-#tab-post #t_phase_zoom_hint,
-#tab-post #t_sysid_zoom_hint,
 #tab-post #phaseAnimSpeedLbl{font-size:13.2px!important}
 #tab-acq #encNote{line-height:1.5!important}
 #tab-acq #t_enc_disp_lbl,
@@ -376,7 +374,7 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
           <span class="tab-num">TP</span><span id="t_tab_tp">Guides TP</span><span class="tp-guides-caret">▼</span>
         </button>
         <div class="tp-guides-dropdown" role="menu" aria-label="Guides TP">
-          <button class="tp-guide-option" type="button" disabled id="t_tp_discovery">TP Découverte</button>
+          <button class="tp-guide-option" type="button" data-guide-tab="tp" data-guide-id="discovery" id="t_tp_discovery">TP Découverte</button>
           <button class="tp-guide-option" type="button" data-guide-tab="tp" data-guide-id="part1" id="t_tp_part1">TP pendule - Partie 1</button>
           <button class="tp-guide-option" type="button" data-guide-tab="tp" data-guide-id="part2" id="t_tp_part2">TP pendule - Partie 2</button>
         </div>
@@ -389,6 +387,7 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
         <button class="lang-btn" data-lang="ES">ES</button>
       </div>
       <button class="icon-btn" id="themeBtn" title="Toggle theme">🌓</button>
+      <button class="icon-btn fs-btn" id="fsBtn" type="button"></button>
     </div>
   </header>
 
@@ -411,7 +410,7 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
           <div class="hist-sub-card">
             <div class="hist-imgs">
               <figure class="hist-figure">
-                <img class="hist-img" src="img/galileo_portrait.jpg" alt="Galileo Galilei">
+                <img class="hist-img" decoding="async" src="img/galileo_portrait.jpg" alt="Galileo Galilei">
                 <figcaption class="hist-name">Galileo Galilei</figcaption>
               </figure>
             </div>
@@ -419,13 +418,9 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
           </div>
 
           <div class="hist-sub-card">
-            <div class="hist-text"><p id="t_hist_p1b" class="hist-p"></p></div>
-          </div>
-
-          <div class="hist-sub-card">
             <div class="hist-imgs">
               <figure class="hist-figure">
-                <img class="hist-img" src="img/huygens_portrait.jpg" alt="Christiaan Huygens">
+                <img class="hist-img" decoding="async" src="img/huygens_portrait.jpg" alt="Christiaan Huygens">
                 <figcaption class="hist-name">Christiaan Huygens</figcaption>
               </figure>
             </div>
@@ -435,7 +430,7 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
           <div class="hist-sub-card">
             <div class="hist-imgs">
               <figure class="hist-figure">
-                <img class="hist-img" src="img/newton_portrait.jpg" alt="Isaac Newton">
+                <img class="hist-img" decoding="async" src="img/newton_portrait.jpg" alt="Isaac Newton">
                 <figcaption class="hist-name">Isaac Newton</figcaption>
               </figure>
             </div>
@@ -445,7 +440,7 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
           <div class="hist-sub-card">
             <div class="hist-imgs">
               <figure class="hist-figure">
-                <img class="hist-img" src="img/foucault_portrait.jpg" alt="Léon Foucault">
+                <img class="hist-img" decoding="async" src="img/foucault_portrait.jpg" alt="Léon Foucault">
                 <figcaption class="hist-name">Léon Foucault</figcaption>
               </figure>
             </div>
@@ -468,6 +463,8 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
           <p id="t_hist_sys3" class="hist-p" style="margin-bottom:10px"></p>
           <p id="t_hist_sys4" class="hist-p"></p>
         </div>
+
+        <p class="offline-row offline-intro" hidden><a class="offline-zip" download></a></p>
 
       </div>
     </div>
@@ -647,13 +644,13 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
           <div class="footer-sb">
             Franco FERRUCCI &nbsp;·&nbsp;
             <a href="https://ferrucci-lab.com/" target="_blank" rel="noopener">ferrucci-lab.com</a>
+            <span class="offline-row" hidden><br><a class="offline-zip" download></a></span>
           </div>
         </aside>
 
         <div class="main-area" style="flex-direction:row">
           <div class="chart-box full-width" id="chart-container" style="margin:14px 0 14px 14px;border-radius:var(--r-lg);padding:14px;min-height:0">
             <div style="flex:1;min-height:0;position:relative"><canvas id="acqChart"></canvas></div>
-            <div style="text-align:center;font-size:11px;color:var(--text3);margin-top:4px" id="t_pts_info">🖱 Scroll/Drag = zoom · Ctrl+drag = pan · Dbl-click = reset  |  📱 Pinch = zoom</div>
           </div>
           <div class="pendulum-panel" id="pendulum-container" style="margin:14px">
             <div class="pendulum-canvas-wrapper">
@@ -709,6 +706,7 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
           <div class="footer-sb" style="margin-top:auto">
             Franco FERRUCCI &nbsp;·&nbsp;
             <a href="https://ferrucci-lab.com/" target="_blank" rel="noopener">ferrucci-lab.com</a>
+            <span class="offline-row" hidden><br><a class="offline-zip" download></a></span>
           </div>
         </aside>
 
@@ -724,7 +722,6 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
               <div class="an-chart-wrap" style="flex:1;min-height:0;position:relative">
                 <canvas id="postDataChart"></canvas>
               </div>
-              <div style="text-align:center;font-size:12px;color:var(--text3);margin-top:6px" id="t_data_zoom_hint">🖱 Scroll/Drag = zoom · Ctrl+drag = pan · Dbl-click = reset</div>
             </div>
           </div>
 
@@ -793,7 +790,6 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
                 </p>
               </div>
               <div class="an-chart-wrap" style="height:340px;position:relative"><canvas id="fitChart"></canvas></div>
-              <div style="text-align:center;font-size:12px;color:var(--text3);margin-top:2px" id="t_fit_zoom_hint">🖱 Scroll/Drag = zoom · Ctrl+drag = pan · Dbl-click = reset</div>
               <div class="results-grid">
                 <div class="result-item"><div class="r-lbl" id="t_rT">Period T</div><div class="r-val accent" id="rT">—</div></div>
                 <div class="result-item"><div class="r-lbl" id="t_rf">Frequency</div><div class="r-val accent" id="rf">—</div></div>
@@ -844,7 +840,6 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
               </div>
               <div class="an-chart-wrap" style="flex:1;min-height:0;height:calc(100vh - 370px);position:relative">
                 <canvas id="periodChart"></canvas>
-                <div style="position:absolute;bottom:4px;left:0;right:0;text-align:center;font-size:12px;color:var(--text3);pointer-events:none" id="t_per_zoom_hint">🖱 Scroll/Drag = zoom · Ctrl+drag = pan · Dbl-click = reset</div>
               </div>
             </div>
           </div>
@@ -886,7 +881,6 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
                 </div>
                 <div id="phasePortraitCol" class="an-chart-wrap" style="flex:1;min-height:0;position:relative"><canvas id="phaseChart"></canvas></div>
               </div>
-              <div style="text-align:center;font-size:12px;color:var(--text3);pointer-events:none" id="t_phase_zoom_hint">🖱 Scroll/Drag = zoom · Ctrl+drag = pan · Dbl-click = reset  |  📱 Pinch = zoom</div>
             </div>
           </div>
 
@@ -925,7 +919,6 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
                 </div>
               </div>
               <div class="an-chart-wrap" style="height:340px"><canvas id="sysidChart"></canvas></div>
-              <div style="text-align:center;font-size:12px;color:var(--text3);margin-top:2px" id="t_sysid_zoom_hint">🖱 Scroll/Drag = zoom · Ctrl+drag = pan · Dbl-click = reset</div>
               <div class="results-grid">
                 <div class="result-item"><div class="r-lbl" id="t_rLid">Length L (m)</div><div class="r-val accent" id="rL_id">—</div></div>
                 <div class="result-item"><div class="r-lbl" id="t_rm">b/(mL²)</div><div class="r-val accent" id="rm_id">—</div></div>
@@ -1111,41 +1104,35 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
 </div><!-- app -->
 
 <script src="lib/katex/katex.min.js"></script>
+<script src="chart-interactions.js"></script>
+<script src="fullscreen.js"></script>
 <script src="tp-guide.js"></script>
 <script>
 // ============================================================
-// LIBRARY LOADING — online first, local fallback (from original)
+// LIBRARY LOADING — Chart.js from lib/ (works offline), CDN as fallback
 // ============================================================
 (function(){
-  const CDN={
-    chart:'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js',
-    hammer:'https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js',
-    zoom:'https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-zoom/1.2.1/chartjs-plugin-zoom.min.js'
-  };
-  const LOCAL={chart:'./lib/chart.min.js',hammer:'./lib/hammer.min.js',zoom:'./lib/chartjs-plugin-zoom.min.js'};
-  let loadedFromCDN=false;
+  const LOCAL='lib/chart.min.js';
+  const CDN='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js';
 
-  function updateBadge(online){
+  function updateBadge(){
     const el=document.getElementById('acqConnectionBadge');
     if(!el)return;
-    if(online){el.textContent='🌐 Online';el.className='online-badge online';}
+    if(navigator.onLine){el.textContent='🌐 Online';el.className='online-badge online';}
     else{el.textContent='📴 Offline';el.className='online-badge offline';}
   }
-  window.addEventListener('online', ()=>updateBadge(loadedFromCDN));
-  window.addEventListener('offline',()=>updateBadge(false));
+  window.addEventListener('online',updateBadge);
+  window.addEventListener('offline',updateBadge);
 
   function loadSrc(src){return new Promise((r,x)=>{const s=document.createElement('script');s.src=src;s.onload=r;s.onerror=x;document.head.appendChild(s);})}
 
   async function go(){
-    try{
-      await loadSrc(CDN.chart);await loadSrc(CDN.hammer);await loadSrc(CDN.zoom);
-      loadedFromCDN=true;updateBadge(true);
-    }catch(e){
-      try{
-        await loadSrc(LOCAL.chart);await loadSrc(LOCAL.hammer);await loadSrc(LOCAL.zoom);
-        loadedFromCDN=false;updateBadge(false);
-      }catch(e2){document.title='⚠ Cannot load Chart.js';return;}
+    try{await loadSrc(LOCAL);}
+    catch(e){
+      try{await loadSrc(CDN);}
+      catch(e2){document.title='⚠ Cannot load Chart.js';return;}
     }
+    updateBadge();
     initApp();
   }
   go();
@@ -1171,15 +1158,12 @@ EN:{
   angle_lbl:'Angle',pts_lbl:'Points',chart_title:'Angle θ(t)',pend_title:'Animation',
   remove_csv:'Remove CSV',no_csv_selected:'— no CSV selected —',no_data_short:'— no data —',
   start_sim:'Start',pause_sim:'Pause',resume_sim:'Resume',stop_sim:'Stop',
-  post_src:'Data source',post_analysis:'Analysis',data_short:'Data',data_title:'Selected data',data_zoom_hint:'🖱 Scroll/Drag = zoom · Ctrl+drag = pan · Dbl-click = reset',a1_short:'Sinusoidal fit',a2_short:'Period vs. time',a3_short:'Phase portrait',a4_short:'System ID',ps_acq:'Acquisition',ps_sim:'Simulation',ps_csv:'Load CSV',
+  post_src:'Data source',post_analysis:'Analysis',data_short:'Data',data_title:'Selected data',a1_short:'Sinusoidal fit',a2_short:'Period vs. time',a3_short:'Phase portrait',a4_short:'System ID',ps_acq:'Acquisition',ps_sim:'Simulation',ps_csv:'Load CSV',
   a1:'Sinusoidal fit with exponential decay',fit_ts:'T<sub>start</sub> (s)',fit_np:'N periods',
   fit_zc:'Trim to first zero crossing',fit_showall:'Show full signal',
   fit_eq_desc:'<strong>θ(t)</strong> is the pendulum angle [°] as a function of time. We fit this damped sinusoidal model over the selected window: <strong>A</strong> = initial amplitude [°], <strong>δ</strong> = exponential decay rate [s⁻¹], <strong>ω = 2π/T</strong> = angular frequency [rad/s], <strong>f = 1/T</strong> = oscillation frequency [Hz], <strong>φ</strong> = phase offset [rad], <strong>B</strong> = DC offset [°]. Dashed lines = decay envelope ±A·e<sup>−δt</sup>.',
   fit_r2_note:'<strong>R²</strong> (coefficient of determination) measures how well the model explains data variance: R² = 1 − SS<sub>res</sub>/SS<sub>tot</sub>, where SS<sub>res</sub> = Σ(θ<sub>data</sub> − θ<sub>fit</sub>)² and SS<sub>tot</sub> = Σ(θ<sub>data</sub> − θ̄)². R² = 1 means perfect fit; R² &gt; 0.99 is excellent; R² &lt; 0.95 suggests poor fit.',
-  fit_zoom_hint:'🖱 Scroll/Drag = zoom · Ctrl+drag = pan · Dbl-click = reset',
   fit_conc_btn:'💡 What does this fit tell us?',
-  per_zoom_hint:'🖱 Scroll/Drag = zoom · Ctrl+drag = pan · Dbl-click = reset',
-  sysid_zoom_hint:'🖱 Scroll/Drag = zoom · Ctrl+drag = pan · Dbl-click = reset',
   per_flanco:'↑ 0°  (positive flank)',
   a2:'Period vs. time (zero crossings)',per_thr:'Angle threshold (°)',per_ti:'T<sub>start</sub> (s)',per_intro:'Every time the pendulum passes through equilibrium (θ = 0°) in the upward direction — coming from the negative side towards the positive — we call that instant a <strong>positive flank</strong>. The time between two consecutive positive flanks is exactly one <strong>oscillation period</strong>.<span style="display:block;height:7px"></span>As the pendulum loses energy through friction, its amplitude decreases. But what happens to the period? Does it stay constant? Does it increase? Decrease? The answer is not obvious… <strong>Run the analysis to find out!</strong><span style="display:block;height:7px"></span>The chart shows two overlapping curves: in <strong style="color:var(--text2)">grey</strong>, the pendulum signal θ(t) (right axis) as a visual reference. In <strong style="color:var(--data-t)">teal</strong>, the period measured cycle by cycle (left axis) — each point corresponds to a detected positive flank. The grey circles on the zero line mark the exact detection instants.',
   a3:'Phase portrait  θ vs. dθ/dt',play:'Play',pause:'Pause',run_phase:'Launch analysis',run_fit:'Launch analysis',run_period:'Launch analysis',run_sysid:'Launch analysis',
@@ -1202,24 +1186,22 @@ EN:{
   cmp_L:'L (m)',cmp_th:'θ₀ (°)',
   intro_h1:'From Galileo Galilei to Arduino',intro_sub:'A complete toolkit for pendulum dynamics: acquisition, simulation, and analysis.',
   intro_ctx_h:'Historical context',
-  hist_p1:'In 1583, a young medical student was absent-mindedly watching a chandelier swinging in Pisa Cathedral. What caught his attention was not the movement itself, but a surprising regularity: regardless of how wide the oscillation, the time needed to complete each swing seemed always the same. Galileo Galilei had just discovered the <strong>isochronism of the pendulum</strong> — the property that the oscillation period is, for small angles, independent of amplitude. To verify it he had no clock: he used his own <em>pulse</em> as a reference.',
-  hist_p1b:'That Galileo resorted to his pulse was no eccentricity — it was the best available. Measuring time precisely was, in the late 16th century, an unsolved problem. Sundials only worked in daylight with a clear sky. <em>Clepsydras</em>, which regulated flow through a calibrated orifice, accumulated errors of 15 to 30 minutes per day: water pressure changes as the level drops, flow is not constant, and water freezes in winter. Hourglasses, more reliable for short intervals, did not indicate the time of day. And mechanical <em>verge-and-foliot</em> clocks — installed in church towers since the 13th century — could lose up to one hour per day; adjustment weights were moved by hand each morning against the sundial. At sea the problem was even graver: calculating longitude requires comparing local time with that of a reference meridian, and no clock survived weeks aboard a ship battered by waves without drifting completely. Shipwrecks due to navigation errors were routine. Galileo\'s observation, apparently anecdotal, pointed exactly to the solution the world needed.',
-  hist_p2:'Galileo\'s observation was fascinating, but it was the Dutch mathematician and astronomer <strong>Christiaan Huygens</strong> who grasped its practical potential. In 1656 he designed the first functional pendulum clock, reducing the error of contemporary clocks from several minutes per day to less than one minute. It was a technological revolution: for the first time humanity could measure time with enough precision to solve the longitude problem in navigation. Huygens also established the period formula T&nbsp;=&nbsp;2π√(L/g), rigorously derived in his work <a href=\'https://archive.org/details/bub_gb_e_VXcl87u6AC\' target=\'_blank\'><em>Horologium Oscillatorium</em></a> (1673).',
-  hist_p3:'<strong>Isaac Newton</strong> used the pendulum as one of his most powerful instruments for studying gravity. Since T&nbsp;=&nbsp;2π√(L/g), a pendulum of known length allows direct measurement of the local gravitational acceleration <em>g</em>. Newton understood that <em>g</em> varies slightly over Earth\'s surface — less at the equator than at the poles — and used pendulum measurements at different latitudes to confirm that Earth is not a perfect sphere but an oblate spheroid. The pendulum thus became the first instrument of <strong>physical geodesy</strong>. The mathematical details are set out in his <a href=\'https://archive.org/details/1686-newton-principia-1ed\' target=\'_blank\'><em>Philosophiae Naturalis Principia Mathematica</em></a> (1687).',
-  hist_p4:'In 1851, <strong>Léon Foucault</strong> hung a pendulum 67 metres long beneath the dome of the Panthéon in Paris. The plane of oscillation slowly rotated before the public\'s eyes: not because the pendulum was moving, but because the Earth was rotating beneath it. It was the first direct and visible demonstration of Earth\'s rotation — no telescope, no calculations, just a pendulum and the patience to watch. The event provoked a collective emotion hard to imagine today.',
-  hist_p5:'Four centuries after Galileo, the pendulum remains an irreplaceable reference system. In <strong>seismology</strong>, inertial-mass seismographs are essentially pendulums. The <strong>MEMS accelerometers</strong> in your smartphone — the ones that detect screen orientation — are microscopic versions of the same principle: a suspended mass whose position is measured electrically. In the laboratory, the physical pendulum remains the ideal system for learning <strong>system identification</strong>: its equations are known, its behaviour is rich (non-linearity, damping, initial conditions), and today we can measure it with a rotary encoder and an Arduino in real time. This application is precisely that bridge: from Galileo\'s intuition to digital acquisition.',
+  hist_p1:'<strong>1583 — Galileo.</strong> Watching a chandelier swing in Pisa Cathedral, he notices that each swing takes the same time, whether the oscillation is large or small: this is <strong>isochronism</strong> (true for small angles). His stopwatch? His own <em>pulse</em>: no clock of the time was accurate enough.',
+  hist_p2:'<strong>1656 — Huygens.</strong> He builds the first pendulum clock: the error drops from several minutes to less than one minute per day. He also establishes the period formula, T&nbsp;=&nbsp;2π√(L/g) (<a href=\'https://archive.org/details/bub_gb_e_VXcl87u6AC\' target=\'_blank\'><em>Horologium Oscillatorium</em></a>, 1673).',
+  hist_p3:'<strong>1687 — Newton.</strong> Since T depends on <em>g</em>, a pendulum of known length measures gravity. Pendulums at different latitudes show that <em>g</em> varies: the Earth is slightly flattened at the poles (<a href=\'https://archive.org/details/1686-newton-principia-1ed\' target=\'_blank\'><em>Principia</em></a>).',
+  hist_p4:'<strong>1851 — Foucault.</strong> A 67 m pendulum under the dome of the Panthéon in Paris: its plane of oscillation slowly rotates. It is not the pendulum that turns, it is the Earth, beneath it.',
+  hist_p5:'<strong>Today.</strong> Seismographs and the MEMS accelerometers in your smartphone rely on the same principle: a suspended mass whose position is measured. In this lab, you measure a real pendulum with an encoder and an Arduino, then compare it with its model.',
   intro_sys_h:'Experimental setup',
   hist_sys1:'The device you will use is a <strong>physical pendulum</strong> built around a 6 mm stainless steel threaded rod. Unlike the idealised simple pendulum — a point mass on a massless string — this pendulum is a real rigid body: the rod has distributed mass, and the motion depends not only on where the mass is but on how mass is distributed along the axis.',
   hist_sys2:'The <strong>sliding mass</strong> can be positioned anywhere along the rod. Moving it toward or away from the pivot simultaneously changes the effective distance to the axis and the moment of inertia of the system. This lets you study how the oscillation period varies with geometry — and verify whether the theoretical model correctly predicts that change.',
   hist_sys3:'The <strong>pivot axis</strong> is directly coupled to a <strong>rotary encoder</strong> with 1000 pulses per revolution. Thanks to quadrature counting, the system distinguishes 4000 positions per revolution, giving an angular resolution of <strong>0.09°</strong>. Every 20 ms, an <strong>Arduino</strong> microcontroller converts those pulses into an angle and a timestamp, and sends that data via USB to this application.',
   hist_sys4:'To study <strong>aerodynamic damping</strong>, the device includes an interchangeable accessory: two plastic pieces that hold a sheet of paper forming a <strong>sail</strong>. You decide the size by cutting the sheet. A larger surface area increases air resistance and makes the pendulum stop faster — without adding significant mass to the system. The effect is directly visible in the decay curve of the recorded data.',
-  autoscale:'Auto Scale XY ✓',showraw:'Show raw data in console (F12)',showpendulum:'Show pendulum animation',pts_info:'🖱 Scroll/Drag = zoom · Ctrl+drag = pan · Dbl-click = reset  |  📱 Pinch = zoom',
-  no_data:'No data for the selected source.<br>→ Check that the data source (above) matches where your data came from: <em>Acquisition</em> for Arduino, <em>Simulation</em> for the simulator.<br>→ If you have no data yet, go to Tab 2 to connect the Arduino or run the simulator.',
+  fit_x:'Fit X',fit_y:'Fit Y',fit_all:'Fit all',fullscreen:'Full screen',exit_fullscreen:'Exit full screen',exit_pill:'Exit full screen (Esc)',offline_zip:'Offline version (.zip)',offline_tip:'Unzip it, then open index.html: works without Internet.',
+  autoscale:'Auto Scale XY ✓',showraw:'Show raw data in console (F12)',showpendulum:'Show pendulum animation',no_data:'No data for the selected source.<br>→ Check that the data source (above) matches where your data came from: <em>Acquisition</em> for Arduino, <em>Simulation</em> for the simulator.<br>→ If you have no data yet, go to Tab 2 to connect the Arduino or run the simulator.',
   ax_time:'Time (s)',ax_angle:'Angle (°)',ax_anglet:'Angle θ(t) (°)',ax_period:'Period (s)',ax_theta:'θ (°)',ax_dtheta:'dθ/dt (°/s)',ax_omega:'ω(t) (°/s)',
   enc_pro:'⚙ Encoder simulation',enc_ppr:'Pulses/rev',enc_disp_lbl:'Display:',enc_cont:'Continuous',enc_disc:'Discrete',enc_both:'Cont+Disc',enc_step:'°/step',enc_note:'💡 You can also enable/disable the encoder simulation, or change its parameters, after the simulation ends.',
   phase_intro:'To fully describe the state of the pendulum at any given instant, knowing its position θ is not enough — we also need to know <em>how fast</em> it is moving. <em style="color:var(--text2)">(Why? Think about it: if I only give you the position, the pendulum could be swinging up or down, at any speed… see? Position alone is not enough!)</em> That "how fast" is the angular velocity ω = dθ/dt. From the discrete samples of θ(t), we can estimate it numerically using central differences.<span style="display:block;height:7px"></span>We now have, at each instant, a pair of values (θ, ω). If we plot them as points in a 2D plane — θ on the X axis, ω on the Y axis — we get the <strong>phase portrait</strong>. For an <em>undamped</em> pendulum, the trajectory would be a closed ellipse: energy is conserved and the system returns to the same state after each cycle. For a <em>damped</em> pendulum (the real case), the trajectory is a spiral converging toward the origin (0,&nbsp;0): the system loses energy and the oscillation dies out. The shape of the spiral reveals the damping regime and, for large angles, the non-linearity of sin(θ) distorts the ellipse.',
   phase_view_full:'Complete',phase_view_time:'Temporal evolutions',phase_view_portrait:'Phase portrait only',
-  phase_zoom_hint:'🖱 Scroll/Drag = zoom · Ctrl+drag = pan · Dbl-click = reset  |  📱 Pinch = zoom',
   phase_intro_btn:'💡 What is the phase portrait?'
 },
 FR:{
@@ -1233,15 +1215,12 @@ FR:{
   angle_lbl:'Angle',pts_lbl:'Points',chart_title:'Angle θ(t)',pend_title:'Animation',
   remove_csv:'Supprimer le CSV',no_csv_selected:'— aucun CSV sélectionné —',no_data_short:'— aucune donnée —',
   start_sim:'Démarrer',pause_sim:'Pause',resume_sim:'Reprendre',stop_sim:'Arrêter',
-  post_src:'Source',post_analysis:'Analyse',data_short:'Données',data_title:'Données sélectionnées',data_zoom_hint:'🖱 Scroll/Drag = zoom · Ctrl+drag = pan · Dbl-click = reset',a1_short:'Ajustement sinus.',a2_short:'Période vs temps',a3_short:'Portrait de phase',a4_short:'Identif. système',ps_acq:'Acquisition',ps_sim:'Simulation',ps_csv:'Charger CSV',
+  post_src:'Source',post_analysis:'Analyse',data_short:'Données',data_title:'Données sélectionnées',a1_short:'Ajustement sinus.',a2_short:'Période vs temps',a3_short:'Portrait de phase',a4_short:'Identif. système',ps_acq:'Acquisition',ps_sim:'Simulation',ps_csv:'Charger CSV',
   a1:'Ajustement sinusoïdal à décroissance exponentielle',fit_ts:'T<sub>départ</sub> (s)',fit_np:'N périodes',
   fit_zc:'Recouper au 1er passage par zéro',fit_showall:'Afficher signal complet',
   fit_eq_desc:'<strong>θ(t)</strong> est l\'angle du pendule [°] en fonction du temps. Nous ajustons ce modèle sur la fenêtre sélectionnée : <strong>A</strong> = amplitude initiale [°], <strong>δ</strong> = taux de décroissance exponentielle [s⁻¹], <strong>ω = 2π/T</strong> = fréquence angulaire [rad/s], <strong>f = 1/T</strong> = fréquence d\'oscillation [Hz], <strong>φ</strong> = déphasage [rad], <strong>B</strong> = offset continu [°]. Pointillés = enveloppe ±A·e<sup>−δt</sup>.',
   fit_r2_note:'<strong>R²</strong> (coefficient de détermination) mesure la qualité de l\'ajustement : R² = 1 − SS<sub>rés</sub>/SS<sub>tot</sub>. R² = 1 = ajustement parfait ; R² &gt; 0,99 = excellent ; R² &lt; 0,95 = ajustement insuffisant.',
-  fit_zoom_hint:'🖱 Scroll/Glisser = zoom · Ctrl+glisser = pan · Dbl-clic = réinit',
   fit_conc_btn:'💡 Que nous dit cet ajustement ?',
-  per_zoom_hint:'🖱 Scroll/Glisser = zoom · Ctrl+glisser = pan · Dbl-clic = réinit',
-  sysid_zoom_hint:'🖱 Scroll/Glisser = zoom · Ctrl+glisser = pan · Dbl-clic = réinit',
   per_flanco:'↑ 0°  (front montant)',
   a2:'Période vs temps (passages par zéro)',per_thr:'Seuil angle (°)',per_ti:'T<sub>départ</sub> (s)',per_intro:'Chaque fois que le pendule passe par l\'équilibre (θ = 0°) en direction montante — venant du côté négatif vers le positif — nous appelons cet instant un <strong>front montant</strong>. Le temps entre deux fronts montants consécutifs est exactement une <strong>période d\'oscillation</strong>.<span style="display:block;height:7px"></span>À mesure que le pendule perd de l\'énergie par frottement, son amplitude diminue. Mais que se passe-t-il avec la période ? Reste-t-elle constante ? Augmente-t-elle ? Diminue-t-elle ? La réponse n\'est pas évidente… <strong>Lancez l\'analyse pour le découvrir !</strong><span style="display:block;height:7px"></span>Le graphique montre deux courbes superposées : en <strong style="color:var(--text2)">gris</strong>, le signal θ(t) du pendule (axe droit), comme référence visuelle. En <strong style="color:var(--data-t)">vert</strong>, la période mesurée cycle par cycle (axe gauche) — chaque point correspond à un front montant détecté. Les cercles gris sur la ligne zéro marquent exactement les instants de détection.',
   a3:'Portrait de phase  θ vs. dθ/dt',play:'Lecture',pause:'Pause',run_phase:'Lancer l\'analyse',run_fit:'Lancer l\'analyse',run_period:'Lancer l\'analyse',run_sysid:'Lancer l\'analyse',
@@ -1264,24 +1243,22 @@ FR:{
   cmp_L:'L (m)',cmp_th:'θ₀ (°)',
   intro_h1:'De Galilée à Arduino',intro_sub:'Une boîte à outils complète pour la dynamique du pendule.',
   intro_ctx_h:'Contexte historique',
-  hist_p1:'En 1583, un jeune étudiant en médecine observait distraitement un lustre oscillant dans la cathédrale de Pise. Ce qui attira son attention ne fut pas le mouvement lui-même, mais une régularité surprenante : quelle que soit l\'amplitude de l\'oscillation, le temps nécessaire à chaque va-et-vient semblait toujours identique. Galileo Galilei venait de découvrir l\' <strong>isochronisme du pendule</strong> — la propriété selon laquelle la période d\'oscillation est, pour de petits angles, indépendante de l\'amplitude. Pour le vérifier, il ne disposait d\'aucune horloge : il utilisa son propre <em>pouls</em> comme référence.',
-  hist_p1b:'Que Galilée ait recours à son pouls n\'était pas une excentricité — c\'était ce qu\'il avait de mieux. Mesurer le temps avec précision était, à la fin du XVI<sup>e</sup> siècle, un problème sans solution satisfaisante. Les cadrans solaires ne fonctionnaient que de jour et par ciel dégagé. Les <em>clepsydres</em>, qui régulaient l\'écoulement par un orifice calibré, accumulaient des erreurs de 15 à 30 minutes par jour. Les sabliers, plus fiables pour de courtes durées, n\'indiquaient pas l\'heure. Et les premières horloges mécaniques à <em>verge et foliot</em> — installées dans les clochers depuis le XIII<sup>e</sup> siècle — pouvaient perdre jusqu\'à une heure par jour. En mer, le problème était encore plus grave : calculer la longitude exige de comparer l\'heure locale avec celle d\'un méridien de référence, et aucune horloge ne survivait plusieurs semaines à bord d\'un navire sans se dérégler. Les naufrages par erreur de navigation étaient courants. L\'observation de Galilée, apparemment anecdotique, pointait exactement vers la solution dont le monde avait besoin.',
-  hist_p2:'L\'observation de Galilée était fascinante, mais c\'est le mathématicien et astronome hollandais <strong>Christiaan Huygens</strong> qui en comprit le potentiel pratique. En 1656, il conçut la première horloge à pendule fonctionnelle, réduisant l\'erreur des horloges de l\'époque de plusieurs minutes par jour à moins d\'une minute. Ce fut une révolution technologique : pour la première fois, l\'humanité pouvait mesurer le temps avec une précision suffisante pour résoudre le problème de la longitude en navigation. Huygens établit également la formule de la période T&nbsp;=&nbsp;2π√(L/g), démontrée rigoureusement dans son œuvre <a href=\'https://archive.org/details/bub_gb_e_VXcl87u6AC\' target=\'_blank\'><em>Horologium Oscillatorium</em></a> (1673).',
-  hist_p3:'<strong>Isaac Newton</strong> utilisa le pendule comme l\'un de ses instruments les plus puissants pour étudier la gravité. Puisque T&nbsp;=&nbsp;2π√(L/g), un pendule de longueur connue permet de mesurer directement l\'accélération gravitationnelle locale <em>g</em>. Newton comprit que <em>g</em> varie légèrement à la surface de la Terre — plus faible à l\'équateur qu\'aux pôles — et utilisa des mesures de pendules à différentes latitudes pour confirmer que la Terre n\'est pas une sphère parfaite mais un sphéroïde aplati. Le pendule devint ainsi le premier instrument de <strong>géodésie physique</strong>. Les détails mathématiques sont consignés dans ses <a href=\'https://archive.org/details/1686-newton-principia-1ed\' target=\'_blank\'><em>Philosophiae Naturalis Principia Mathematica</em></a> (1687).',
-  hist_p4:'En 1851, <strong>Léon Foucault</strong> suspendit un pendule de 67 mètres sous la coupole du Panthéon à Paris. Le plan d\'oscillation tournait lentement devant les yeux du public : non parce que le pendule se déplaçait, mais parce que la Terre tournait sous lui. C\'était la première démonstration directe et visible de la rotation terrestre — sans télescope, sans calculs, rien qu\'un pendule et la patience d\'observer. L\'expérience provoqua une émotion collective difficile à imaginer aujourd\'hui.',
-  hist_p5:'Quatre siècles après Galilée, le pendule reste un système de référence irremplaçable. En <strong>sismologie</strong>, les sismographes à masse inertielle sont essentiellement des pendules. Les <strong>accéléromètres MEMS</strong> de votre smartphone — ceux qui détectent l\'orientation de l\'écran — sont des versions microscopiques du même principe : une masse suspendue dont la position est mesurée électriquement. En laboratoire, le pendule physique reste le système idéal pour apprendre l\' <strong>identification de systèmes</strong> : ses équations sont connues, son comportement est riche (non-linéarité, amortissement, conditions initiales), et nous pouvons aujourd\'hui le mesurer avec un codeur rotatif et un Arduino en temps réel. Cette application est précisément ce pont : de l\'intuition de Galilée à l\'acquisition numérique.',
+  hist_p1:'<strong>1583 — Galilée.</strong> En regardant un lustre osciller dans la cathédrale de Pise, il remarque que chaque va-et-vient dure le même temps, que l\'oscillation soit grande ou petite : c\'est l\'<strong>isochronisme</strong> (vrai pour les petits angles). Son chronomètre ? Son propre <em>pouls</em> : aucune horloge de l\'époque n\'était assez précise.',
+  hist_p2:'<strong>1656 — Huygens.</strong> Il construit la première horloge à pendule : l\'erreur passe de plusieurs minutes à moins d\'une minute par jour. Il établit aussi la formule de la période, T&nbsp;=&nbsp;2π√(L/g) (<a href=\'https://archive.org/details/bub_gb_e_VXcl87u6AC\' target=\'_blank\'><em>Horologium Oscillatorium</em></a>, 1673).',
+  hist_p3:'<strong>1687 — Newton.</strong> Puisque T dépend de <em>g</em>, un pendule de longueur connue mesure la gravité. Des pendules à différentes latitudes montrent que <em>g</em> varie : la Terre est légèrement aplatie aux pôles (<a href=\'https://archive.org/details/1686-newton-principia-1ed\' target=\'_blank\'><em>Principia</em></a>).',
+  hist_p4:'<strong>1851 — Foucault.</strong> Un pendule de 67 m sous la coupole du Panthéon, à Paris : son plan d\'oscillation tourne lentement. Ce n\'est pas le pendule qui tourne, c\'est la Terre, sous lui.',
+  hist_p5:'<strong>Aujourd\'hui.</strong> Les sismographes et les accéléromètres MEMS de votre smartphone reposent sur le même principe : une masse suspendue dont on mesure la position. Dans ce TP, vous mesurez un pendule réel avec un encodeur et un Arduino, puis vous le comparez à son modèle.',
   intro_sys_h:'Dispositif expérimental',
   hist_sys1:'Le dispositif que vous utiliserez est un <strong>pendule physique</strong> construit autour d\'une tige filetée en acier inoxydable de 6 mm de diamètre. Contrairement au pendule simple idéalisé — une masse ponctuelle suspendue à un fil sans masse — ce pendule est un corps rigide réel : la tige a une masse répartie, et le mouvement dépend non seulement de la position de la masse, mais aussi de la façon dont celle-ci est distribuée le long de l\'axe.',
   hist_sys2:'La <strong>masse coulissante</strong> peut être positionnée en n\'importe quel point de la tige. En la déplaçant vers l\'axe de rotation ou en l\'en éloignant, vous modifiez simultanément la distance effective au pivot et le moment d\'inertie du système. Cela vous permettra d\'étudier comment la période d\'oscillation varie en fonction de la géométrie — et de vérifier si le modèle théorique prédit correctement ce changement.',
   hist_sys3:'L\'<strong>axe de rotation</strong> est directement couplé à un <strong>encodeur rotatif</strong> de 1000 impulsions par tour. Grâce au comptage en quadrature, le système distingue 4000 positions distinctes par tour, ce qui correspond à une résolution angulaire de <strong>0,09°</strong>. Toutes les 20 ms, un microcontrôleur <strong>Arduino</strong> convertit ces impulsions en angle et en instant de temps, et envoie cette donnée via USB vers cette application.',
   hist_sys4:'Pour étudier l\'<strong>amortissement aérodynamique</strong>, le dispositif comprend un accessoire interchangeable : deux pièces plastiques qui maintiennent une feuille de papier formant une <strong>voile</strong>. Vous décidez de la taille en découpant la feuille. Une surface plus grande augmente la résistance de l\'air et fait s\'arrêter le pendule plus rapidement — sans ajouter de masse significative au système. L\'effet est directement observable dans la courbe de décroissance des données enregistrées.',
-  autoscale:'Échelle Auto XY ✓',showraw:'Données brutes en console (F12)',showpendulum:'Afficher animation du pendule',pts_info:'🖱 Scroll/Glisser = zoom · Ctrl+glisser = pan · Dbl-clic = réinit  |  📱 Pincer = zoom',
-  no_data:'Aucune donnée pour la source sélectionnée.<br>→ Vérifiez que la source de données (ci-dessus) correspond à l\'origine : <em>Acquisition</em> pour l\'Arduino, <em>Simulation</em> pour le simulateur.<br>→ Si vous n\'avez pas encore de données, allez à l\'onglet 2 pour acquérir ou simuler.',
+  fit_x:'Ajuster X',fit_y:'Ajuster Y',fit_all:'Tout ajuster',fullscreen:'Plein écran',exit_fullscreen:'Quitter le plein écran',exit_pill:'Quitter le plein écran (Échap)',offline_zip:'Version hors ligne (.zip)',offline_tip:'À décompresser, puis ouvrir index.html : fonctionne sans Internet.',
+  autoscale:'Échelle Auto XY ✓',showraw:'Données brutes en console (F12)',showpendulum:'Afficher animation du pendule',no_data:'Aucune donnée pour la source sélectionnée.<br>→ Vérifiez que la source de données (ci-dessus) correspond à l\'origine : <em>Acquisition</em> pour l\'Arduino, <em>Simulation</em> pour le simulateur.<br>→ Si vous n\'avez pas encore de données, allez à l\'onglet 2 pour acquérir ou simuler.',
   ax_time:'Temps (s)',ax_angle:'Angle (°)',ax_anglet:'Angle θ(t) (°)',ax_period:'Période (s)',ax_theta:'θ (°)',ax_dtheta:'dθ/dt (°/s)',ax_omega:'ω(t) (°/s)',
   enc_pro:'⚙ Simulation encodeur',enc_ppr:'Impuls./tour',enc_disp_lbl:'Affichage :',enc_cont:'Continu',enc_disc:'Discret',enc_both:'Cont+Disc',enc_step:'°/pas',enc_note:'💡 Vous pouvez aussi activer/désactiver la simulation d\'encodeur, ou modifier ses paramètres, après la fin de la simulation.',
   phase_intro:'Pour décrire complètement l\'état du pendule à un instant donné, connaître sa position θ ne suffit pas — il faut aussi savoir <em>à quelle vitesse</em> il se déplace. <em style="color:var(--text2)">(Pourquoi ? Réfléchis : si je te donne seulement la position, le pendule peut monter ou descendre, à n\'importe quelle vitesse… tu vois ? La position seule ne suffit pas !)</em> Ce "à quelle vitesse" est la vitesse angulaire ω = dθ/dt. À partir des échantillons discrets de θ(t), on peut l\'estimer numériquement par différences centrées.<span style="display:block;height:7px"></span>On dispose maintenant, à chaque instant, d\'une paire de valeurs (θ, ω). Si on les trace comme des points dans un plan 2D — θ en abscisse, ω en ordonnée — on obtient le <strong>portrait de phase</strong>. Pour un pendule <em>non amorti</em>, la trajectoire serait une ellipse fermée : l\'énergie est conservée et le système revient au même état à chaque cycle. Pour un pendule <em>amorti</em> (le cas réel), la trajectoire est une spirale qui converge vers l\'origine (0,&nbsp;0) : le système perd de l\'énergie et l\'oscillation s\'éteint. La forme de la spirale révèle le régime d\'amortissement et, pour de grands angles, la non-linéarité du sin(θ) déforme l\'ellipse.',
   phase_view_full:'Complet',phase_view_time:'Évol. temporelles',phase_view_portrait:'Portrait seul',
-  phase_zoom_hint:'🖱 Scroll/Glisser = zoom · Ctrl+glisser = pan · Dbl-clic = réinit  |  📱 Pincer = zoom',
   phase_intro_btn:'💡 Qu\'est-ce que le portrait de phase ?'
 },
 ES:{
@@ -1295,15 +1272,12 @@ ES:{
   angle_lbl:'Ángulo',pts_lbl:'Puntos',chart_title:'Ángulo θ(t)',pend_title:'Animación',
   remove_csv:'Eliminar CSV',no_csv_selected:'— ningún CSV seleccionado —',no_data_short:'— sin datos —',
   start_sim:'Iniciar',pause_sim:'Pausar',resume_sim:'Reanudar',stop_sim:'Detener',
-  post_src:'Fuente de datos',post_analysis:'Análisis',data_short:'Datos',data_title:'Datos seleccionados',data_zoom_hint:'🖱 Scroll/Drag = zoom · Ctrl+drag = pan · Dbl-click = reset',a1_short:'Ajuste sinusoidal',a2_short:'Período vs tiempo',a3_short:'Diagrama de fase',a4_short:'Identif. sistema',ps_acq:'Adquisición',ps_sim:'Simulación',ps_csv:'Cargar CSV',
+  post_src:'Fuente de datos',post_analysis:'Análisis',data_short:'Datos',data_title:'Datos seleccionados',a1_short:'Ajuste sinusoidal',a2_short:'Período vs tiempo',a3_short:'Diagrama de fase',a4_short:'Identif. sistema',ps_acq:'Adquisición',ps_sim:'Simulación',ps_csv:'Cargar CSV',
   a1:'Ajuste sinusoidal con decaimiento exponencial',fit_ts:'T<sub>inicio</sub> (s)',fit_np:'N períodos',
   fit_zc:'Recortar al primer cruce por cero',fit_showall:'Mostrar señal completa',
   fit_eq_desc:'<strong>θ(t)</strong> es el ángulo del péndulo [°] en función del tiempo. Ajustamos este modelo sinusoidal amortiguado en la ventana seleccionada: <strong>A</strong> = amplitud inicial [°], <strong>δ</strong> = tasa de decaimiento exponencial [s⁻¹], <strong>ω = 2π/T</strong> = frecuencia angular [rad/s], <strong>f = 1/T</strong> = frecuencia de oscilación [Hz], <strong>φ</strong> = desfase [rad], <strong>B</strong> = offset DC [°]. Líneas de puntos = envolvente ±A·e<sup>−δt</sup>.',
   fit_r2_note:'<strong>R²</strong> (coeficiente de determinación) mide la calidad del ajuste: R² = 1 − SS<sub>res</sub>/SS<sub>tot</sub>. R² = 1 = ajuste perfecto; R² &gt; 0,99 = excelente; R² &lt; 0,95 = ajuste insuficiente.',
-  fit_zoom_hint:'🖱 Scroll/Arrastrar = zoom · Ctrl+arrastrar = pan · Dbl-clic = reiniciar',
   fit_conc_btn:'💡 ¿Qué nos dice este ajuste?',
-  per_zoom_hint:'🖱 Scroll/Arrastrar = zoom · Ctrl+arrastrar = pan · Dbl-clic = reiniciar',
-  sysid_zoom_hint:'🖱 Scroll/Arrastrar = zoom · Ctrl+arrastrar = pan · Dbl-clic = reiniciar',
   per_flanco:'↑ 0°  (flanco positivo)',
   a2:'Período vs tiempo (cruces por cero)',per_thr:'Umbral ángulo (°)',per_ti:'T<sub>inicio</sub> (s)',per_intro:'Cada vez que el péndulo pasa por el equilibrio (θ = 0°) en dirección ascendente — viniendo del lado negativo hacia el positivo — llamamos a ese instante un <strong>flanco positivo</strong>. El tiempo entre dos flancos positivos consecutivos es exactamente un <strong>período de oscilación</strong>.<span style="display:block;height:7px"></span>A medida que el péndulo pierde energía por rozamiento, su amplitud disminuye. ¿Pero qué pasa con el período? ¿Se mantiene constante? ¿Aumenta? ¿Disminuye? La respuesta no es obvia… <strong>¡Ejecutá el análisis para descubrirlo!</strong><span style="display:block;height:7px"></span>El gráfico muestra dos curvas superpuestas: en <strong style="color:var(--text2)">gris</strong>, la señal θ(t) del péndulo (eje derecho), como referencia visual. En <strong style="color:var(--data-t)">verde</strong>, el período medido ciclo a ciclo (eje izquierdo) — cada punto corresponde a un flanco positivo detectado. Los círculos grises sobre el eje cero marcan exactamente los instantes de detección.',
   a3:'Diagrama de fase  θ vs. dθ/dt',play:'Reproducir',pause:'Pausar',run_phase:'Lanzar el análisis',run_fit:'Lanzar el análisis',run_period:'Lanzar el análisis',run_sysid:'Lanzar el análisis',
@@ -1326,24 +1300,22 @@ ES:{
   cmp_L:'L (m)',cmp_th:'θ₀ (°)',
   intro_h1:'De Galileo Galilei a Arduino',intro_sub:'Herramienta completa para la dinámica del péndulo.',
   intro_ctx_h:'Contexto histórico',
-  hist_p1:'En 1583, un joven estudiante de medicina observaba distraídamente una lámpara de araña que oscilaba en la catedral de Pisa. Lo que llamó su atención no fue el movimiento en sí, sino una regularidad sorprendente: independientemente de cuán grande fuera la oscilación, el tiempo que tardaba en completar cada vaivén parecía siempre el mismo. Galileo Galilei acababa de descubrir el <strong>isocronismo del péndulo</strong> — la propiedad de que el período de oscilación es, para ángulos pequeños, independiente de la amplitud. Para verificarlo no contaba con reloj alguno: usó su propio <em>pulso</em> como referencia.',
-  hist_p1b:'Que Galileo recurriera a su pulso no era una excentricidad — era lo mejor disponible. Medir el tiempo con precisión era, a finales del siglo XVI, un problema sin solución satisfactoria. Los relojes de sol funcionaban solo con luz diurna y cielo despejado. Las <em>clepsidras</em>, que regulaban el flujo mediante un orificio calibrado, acumulaban errores de 15 a 30 minutos por día: la presión del agua cambia al bajar el nivel y el agua se congela en invierno. Los relojes de arena, más fiables para medir intervalos cortos, no indicaban la hora del día. Y los relojes mecánicos de <em>verge y foliot</em> — instalados en torres de iglesias desde el siglo XIII — podían perder hasta una hora diaria; las pesas de ajuste se desplazaban a mano cada mañana comparando con el reloj de sol. En el mar, el problema era todavía más grave: calcular la longitud exige comparar la hora local con la de un meridiano de referencia, y ningún reloj aguantaba semanas en un barco azotado por el oleaje sin desajustarse por completo. Los naufragios por errores de navegación eran rutinarios. La observación de Galileo, aparentemente anecdótica, apuntaba exactamente a la solución que el mundo necesitaba.',
-  hist_p2:'La observación de Galileo era fascinante, pero fue el matemático y astrónomo holandés <strong>Christiaan Huygens</strong> quien comprendió su potencial práctico. En 1656 diseñó el primer reloj de péndulo funcional, que redujo el error de los relojes de la época de varios minutos por día a menos de un minuto. Fue una revolución tecnológica: por primera vez la humanidad podía medir el tiempo con suficiente precisión para resolver el problema de la longitud en navegación. Huygens también estableció la fórmula del período T&nbsp;=&nbsp;2π√(L/g), derivada rigurosamente en su obra <a href=\'https://archive.org/details/bub_gb_e_VXcl87u6AC\' target=\'_blank\'><em>Horologium Oscillatorium</em></a> (1673).',
-  hist_p3:'<strong>Isaac Newton</strong> utilizó el péndulo como uno de sus instrumentos más poderosos para estudiar la gravedad. Dado que T&nbsp;=&nbsp;2π√(L/g), un péndulo de longitud conocida permite medir directamente la aceleración gravitacional local <em>g</em>. Newton comprendió que <em>g</em> varía ligeramente sobre la superficie terrestre — es menor en el ecuador que en los polos — y utilizó mediciones de péndulos en distintas latitudes para confirmar que la Tierra no es una esfera perfecta sino un esferoide achatado. El péndulo se convirtió así en el primer instrumento de <strong>geodesia física</strong>. Los detalles matemáticos quedaron consignados en sus <a href=\'https://archive.org/details/1686-newton-principia-1ed\' target=\'_blank\'><em>Philosophiae Naturalis Principia Mathematica</em></a> (1687).',
-  hist_p4:'En 1851, <strong>Léon Foucault</strong> colgó un péndulo de 67 metros bajo la cúpula del Panteón de París. El plano de oscilación rotaba lentamente ante los ojos del público: no porque el péndulo se moviera, sino porque la Tierra giraba bajo él. Era la primera demostración directa y visible de la rotación terrestre — sin telescopio, sin cálculos, solo con un péndulo y la paciencia de observar. La experiencia provocó una emoción colectiva difícil de imaginar hoy.',
-  hist_p5:'Cuatro siglos después de Galileo, el péndulo sigue siendo un sistema de referencia insustituible. En <strong>sismología</strong>, los sismógrafos de masa inercial son esencialmente péndulos. Los <strong>acelerómetros MEMS</strong> de tu smartphone — esos que detectan la orientación de la pantalla — son versiones microscópicas del mismo principio: una masa suspendida cuya posición se mide eléctricamente. En el laboratorio, el péndulo físico sigue siendo el sistema ideal para aprender <strong>identificación de sistemas</strong>: sus ecuaciones son conocidas, su comportamiento es rico (no linealidad, amortiguamiento, condiciones iniciales), y hoy podemos medirlo con un codificador rotatorio y un Arduino en tiempo real. Esta aplicación es precisamente ese puente: de la intuición de Galileo a la adquisición digital.',
+  hist_p1:'<strong>1583 — Galileo.</strong> Mirando oscilar una lámpara en la catedral de Pisa, nota que cada vaivén dura el mismo tiempo, sea grande o pequeña la oscilación: es el <strong>isocronismo</strong> (válido para ángulos pequeños). ¿Su cronómetro? Su propio <em>pulso</em>: ningún reloj de la época era lo bastante preciso.',
+  hist_p2:'<strong>1656 — Huygens.</strong> Construye el primer reloj de péndulo: el error pasa de varios minutos a menos de un minuto por día. También establece la fórmula del período, T&nbsp;=&nbsp;2π√(L/g) (<a href=\'https://archive.org/details/bub_gb_e_VXcl87u6AC\' target=\'_blank\'><em>Horologium Oscillatorium</em></a>, 1673).',
+  hist_p3:'<strong>1687 — Newton.</strong> Como T depende de <em>g</em>, un péndulo de longitud conocida mide la gravedad. Péndulos en distintas latitudes muestran que <em>g</em> varía: la Tierra está ligeramente achatada en los polos (<a href=\'https://archive.org/details/1686-newton-principia-1ed\' target=\'_blank\'><em>Principia</em></a>).',
+  hist_p4:'<strong>1851 — Foucault.</strong> Un péndulo de 67 m bajo la cúpula del Panteón de París: su plano de oscilación gira lentamente. No es el péndulo el que gira, es la Tierra, debajo de él.',
+  hist_p5:'<strong>Hoy.</strong> Los sismógrafos y los acelerómetros MEMS de tu smartphone se basan en el mismo principio: una masa suspendida cuya posición se mide. En este TP medirás un péndulo real con un encoder y un Arduino, y luego lo compararás con su modelo.',
   intro_sys_h:'Sistema experimental',
   hist_sys1:'El dispositivo que utilizarás es un <strong>péndulo físico</strong> construido alrededor de una varilla roscada de acero inoxidable de 6 mm de diámetro. A diferencia del péndulo simple idealizado — una masa puntual colgada de un hilo sin masa — este péndulo es un cuerpo rígido real: la varilla tiene masa distribuida, y el movimiento depende no solo de dónde está la masa sino de cómo está distribuida a lo largo del eje.',
   hist_sys2:'La <strong>masa deslizante</strong> puede posicionarse en cualquier punto de la varilla. Al moverla hacia el eje de rotación o alejándola, cambias simultáneamente la distancia efectiva al pivote y el momento de inercia del sistema. Esto te permitirá estudiar cómo varía el período de oscilación en función de la geometría — y verificar si el modelo teórico predice correctamente ese cambio.',
   hist_sys3:'El <strong>eje de rotación</strong> está acoplado directamente a un <strong>encoder rotatorio</strong> de 1000 pulsos por revolución. Gracias al conteo en cuadratura, el sistema distingue 4000 posiciones distintas por vuelta, lo que equivale a una resolución angular de <strong>0,09°</strong>. Cada 20 ms, un microcontrolador <strong>Arduino</strong> convierte esos pulsos en ángulo e instante de tiempo, y envía ese dato por USB hacia esta aplicación.',
   hist_sys4:'Para estudiar el <strong>amortiguamiento aerodinámico</strong>, el dispositivo incluye un accesorio intercambiable: dos piezas de plástico que sujetan una hoja de papel formando una <strong>vela</strong>. Tú decides el tamaño recortando la hoja. Una superficie mayor aumenta la resistencia del aire y hace que el péndulo se detenga más rápidamente — sin añadir masa significativa al sistema. El efecto es directamente observable en la curva de decaimiento de los datos registrados.',
-  autoscale:'Auto Escala XY ✓',showraw:'Datos brutos en consola (F12)',showpendulum:'Mostrar animación del péndulo',pts_info:'🖱 Scroll/Arrastrar = zoom · Ctrl+arrastrar = pan · Dbl-clic = reiniciar  |  📱 Pellizcar = zoom',
-  no_data:'Sin datos para la fuente seleccionada.<br>→ Verificá que la fuente de datos (arriba) coincida con el origen: <em>Adquisición</em> si usaste el Arduino, <em>Simulación</em> si corriste el simulador.<br>→ Si aún no tenés datos, andá a la pestaña 2 y adquirí o simulá primero.',
+  fit_x:'Ajustar X',fit_y:'Ajustar Y',fit_all:'Ajustar todo',fullscreen:'Pantalla completa',exit_fullscreen:'Salir de pantalla completa',exit_pill:'Salir de pantalla completa (Esc)',offline_zip:'Versión sin conexión (.zip)',offline_tip:'Descomprimir y abrir index.html: funciona sin Internet.',
+  autoscale:'Auto Escala XY ✓',showraw:'Datos brutos en consola (F12)',showpendulum:'Mostrar animación del péndulo',no_data:'Sin datos para la fuente seleccionada.<br>→ Verificá que la fuente de datos (arriba) coincida con el origen: <em>Adquisición</em> si usaste el Arduino, <em>Simulación</em> si corriste el simulador.<br>→ Si aún no tenés datos, andá a la pestaña 2 y adquirí o simulá primero.',
   ax_time:'Tiempo (s)',ax_angle:'Ángulo (°)',ax_anglet:'Ángulo θ(t) (°)',ax_period:'Período (s)',ax_theta:'θ (°)',ax_dtheta:'dθ/dt (°/s)',ax_omega:'ω(t) (°/s)',
   enc_pro:'⚙ Simulación encoder',enc_ppr:'Pulsos/rev',enc_disp_lbl:'Visualización:',enc_cont:'Continuo',enc_disc:'Discreto',enc_both:'Cont+Disc',enc_step:'°/paso',enc_note:'💡 También podés habilitar/deshabilitar la simulación del encoder, o cambiar sus parámetros, luego de finalizada la simulación.',
   phase_intro:'Para describir completamente el estado del péndulo en un instante dado, no basta con saber su posición θ — también necesitamos saber <em>con qué velocidad</em> se mueve. <em style="color:var(--text2)">(¿Por qué? Mirá: si te doy solo la posición, el péndulo puede estar subiendo o bajando, y a cualquier velocidad… ¿ves? ¡la posición sola no alcanza!)</em> Ese "cuán rápido" es la velocidad angular ω = dθ/dt. A partir de las muestras discretas de θ(t), podemos estimarla numéricamente con diferencias centradas.<span style="display:block;height:7px"></span>Ahora tenemos, en cada instante, un par de valores (θ, ω). Si los graficamos como puntos en un plano 2D — θ en el eje X, ω en el eje Y — obtenemos el <strong>retrato de fase</strong>. Para un péndulo <em>no amortiguado</em>, la trayectoria sería una elipse cerrada: la energía se conserva y el sistema regresa al mismo estado tras cada ciclo. Para un péndulo <em>amortiguado</em> (el caso real), la trayectoria es una espiral que converge hacia el origen (0,&nbsp;0): el sistema pierde energía y la oscilación se extingue. La forma de la espiral revela el régimen de amortiguamiento y, para ángulos grandes, la no-linealidad del sin(θ) distorsiona la elipse.',
   phase_view_full:'Completo',phase_view_time:'Evol. temporales',phase_view_portrait:'Solo retrato de fase',
-  phase_zoom_hint:'🖱 Scroll/Arrastrar = zoom · Ctrl+arrastrar = pan · Dbl-clic = reiniciar  |  📱 Pellizcar = zoom',
   phase_intro_btn:'💡 ¿Qué es el retrato de fase?'
 }
 };
@@ -1356,7 +1328,7 @@ function setLang(l){
     btn.classList.toggle('active',btn.dataset.lang===l);
   });
   const t=LANG[l]||LANG.EN;
-  const HTML_KEYS=/^hist_p|^hist_sys|^pts_info|^fit_eq_desc|^fit_r2_note|^fit_zoom_hint|^fit_ts|^per_intro|^per_ti|^sid_|^sysid_/;
+  const HTML_KEYS=/^hist_p|^hist_sys|^fit_eq_desc|^fit_r2_note|^fit_ts|^per_intro|^per_ti|^sid_|^sysid_/;
   for(const[k,v]of Object.entries(t)){
     const el=document.getElementById('t_'+k);
     if(!el)continue;
@@ -1378,6 +1350,7 @@ function setLang(l){
   renderCsvSeriesList();
   updatePostInfo();
   if(window.setTpGuideLanguage)window.setTpGuideLanguage(l);
+  refreshAppUiTexts();
 }
 // Quick i18n lookup helper
 function gL(key){ return (LANG[curLang]||LANG.EN)[key]||key; }
@@ -1852,6 +1825,7 @@ function openTab(tab){
   btn.classList.add('active');
   panel.classList.add('active');
   if(tab==='edu')setTimeout(updateAllEduCharts,50);
+  refreshStaleCharts();
 }
 document.querySelectorAll('.tab-btn').forEach(btn=>{
   if(!btn.dataset.guideTrigger)btn.addEventListener('click',()=>openTab(btn.dataset.tab));
@@ -1864,6 +1838,10 @@ if(tpGuidesMenu&&tpGuidesBtn){
     const open=!tpGuidesMenu.classList.contains('open');
     tpGuidesMenu.classList.toggle('open',open);
     tpGuidesBtn.setAttribute('aria-expanded',open?'true':'false');
+  });
+  // Guides not offered this year stay in the menu, greyed out (list: TP_ENABLED_GUIDES in tp-guide.js).
+  document.querySelectorAll('[data-guide-id]').forEach(btn=>{
+    btn.disabled=!(window.TP_ENABLED_GUIDES||[]).includes(btn.dataset.guideId);
   });
   document.querySelectorAll('[data-guide-tab]').forEach(btn=>{
     btn.addEventListener('click',()=>{
@@ -1959,9 +1937,9 @@ function getPostData(){
   return{time:s.time,angle:s.angle,omega:s.omega,source:store.postSource,name:s.name,id:s.id};
 }
 function updatePostInfo(){
-  const d=getPostData();
+  const d=currentPostSeries(); // no need for the (possibly quantized) angles here
   const el=document.getElementById('postInfo');
-  if(!d){
+  if(!d||d.time.length<10){
     el.textContent=store.postSource==='csv'?gL('no_csv_selected'):gL('no_data_short');
     return;
   }
@@ -1970,6 +1948,7 @@ function updatePostInfo(){
 }
 
 function renderPostDataChart(){
+  _postDataStale=false;_postDataDirty=false;
   const data=getPostData();
   const c=chartColors();
   const ds=data?[{
@@ -1995,24 +1974,22 @@ function renderPostDataChart(){
         tooltip:{enabled:!!data,mode:'nearest',intersect:true,callbacks:{
           title:it=>`t = ${Number(it[0].raw.x).toFixed(3)} s`,
           label:it=>`θ = ${Number(it.raw.y).toFixed(3)}°`
-        }},
-        zoom:{
-          pan:{enabled:true,mode:'xy',modifierKey:'ctrl'},
-          zoom:{wheel:{enabled:true},pinch:{enabled:true},drag:{enabled:true,button:0,backgroundColor:'rgba(59,142,255,0.15)',borderColor:'rgba(59,142,255,0.8)',borderWidth:1},mode:'xy'}
-        }
+        }}
       }
     }
   });
 }
 function appendPostDataPoint(t,theta,source){
   if(store.postSource!==source)return;
+  if(_postDataStale)return;
+  if(!canvasShown('postDataChart')){_postDataStale=true;return;} // hidden: rebuilt when shown
   if(!charts.postDataChart||!charts.postDataChart.data.datasets[0]){
     renderPostDataChart();
     return;
   }
   const y=proModeActive?Math.round(theta/encRes())*encRes():theta;
   charts.postDataChart.data.datasets[0].data.push({x:t,y});
-  charts.postDataChart.update('none');
+  _postDataDirty=true;
 }
 
 // ============================================================
@@ -2027,60 +2004,48 @@ const g=9.81;
 // CHART UTILITIES
 // ============================================================
 const charts={};
-function eventHasPanModifier(evt){
-  const e=evt&&((evt.native)||(evt.srcEvent)||evt);
-  return !!(e&&(e.ctrlKey||e.metaKey));
+// Zoom, pan and Fit buttons: chart-interactions.js (same behaviour as the Plotly apps).
+const INTERACTIVE_CHARTS=['acqChart','postDataChart','fitChart','periodChart','thetaTimeChart','omegaTimeChart','phaseChart','sysidChart'];
+const chartUi={};
+function fitTexts(){const L=LANG[curLang]||LANG.EN;return{fitX:L.fit_x,fitY:L.fit_y,fitAll:L.fit_all};}
+function onChartViewChange(chart){
+  if(chart===charts.thetaTimeChart||chart===charts.omegaTimeChart)syncPhaseTimeXAxes(chart);
 }
-function stabilizeZoomInteractions(config){
-  const zoomOpts=config?.options?.plugins?.zoom;
-  if(!zoomOpts||zoomOpts._pendulumStable)return;
-  zoomOpts._pendulumStable=true;
-  const pan=zoomOpts.pan=zoomOpts.pan||{};
-  const zoom=zoomOpts.zoom=zoomOpts.zoom||{};
-  const prevPanStart=pan.onPanStart;
-  const prevPanComplete=pan.onPanComplete;
-  const prevZoomStart=zoom.onZoomStart;
-  const prevZoomComplete=zoom.onZoomComplete;
-
-  pan.onPanStart=ctx=>{
-    if(prevPanStart&&prevPanStart(ctx)===false)return false;
-    if(ctx?.chart)ctx.chart.$pendulumPanning=true;
-    return true;
-  };
-  pan.onPanComplete=ctx=>{
-    if(prevPanComplete)prevPanComplete(ctx);
-    if(ctx?.chart){
-      ctx.chart.$pendulumPanning=false;
-      ctx.chart.update('none');
-    }
-  };
-  zoom.onZoomStart=ctx=>{
-    if(ctx?.chart?.$pendulumPanning||eventHasPanModifier(ctx?.event))return false;
-    return prevZoomStart?prevZoomStart(ctx)!==false:true;
-  };
-  zoom.onZoomComplete=ctx=>{
-    if(ctx?.chart)ctx.chart.$pendulumPanning=false;
-    if(prevZoomComplete)prevZoomComplete(ctx);
-  };
-}
-function beginManualPan(chart){
-  if(chart)chart.$pendulumPanning=true;
-}
-function endManualPan(chart){
-  if(!chart)return;
-  chart.$pendulumPanning=false;
-  chart.update('none');
+INTERACTIVE_CHARTS.forEach(id=>{
+  const canvas=document.getElementById(id);
+  if(canvas)chartUi[id]=ChartInteractions.attach(canvas,{getChart:()=>charts[id],texts:fitTexts,onViewChange:onChartViewChange,all:()=>Object.values(charts)});
+});
+// Full screen (fullscreen.js) and link to the offline copy.
+// BUILD_COMMIT is filled in by the GitHub Pages workflow (.github/workflows/deploy-pages.yml), which also
+// builds pendulum_<commit>.zip, a copy that works without Internet. Empty locally.
+const BUILD_COMMIT = '';
+const appFs=AppFullscreen.install({button:document.getElementById('fsBtn'),texts:()=>{
+  const L=LANG[curLang]||LANG.EN;
+  return{fullscreen:L.fullscreen,exitFullscreen:L.exit_fullscreen,exitPill:L.exit_pill};
+}});
+function refreshAppUiTexts(){
+  Object.values(chartUi).forEach(ui=>ui.refresh());
+  appFs.refresh();
+  const L=LANG[curLang]||LANG.EN;
+  if(BUILD_COMMIT){
+    document.querySelectorAll('.offline-zip').forEach(z=>{
+      z.href=`pendulum_${BUILD_COMMIT}.zip`;z.textContent=`${L.offline_zip} — ${BUILD_COMMIT}`;z.title=L.offline_tip;
+    });
+    document.querySelectorAll('.offline-row').forEach(r=>{r.hidden=false;});
+  }
 }
 function mkChart(id,config){
   const canvas=document.getElementById(id);
   if(!canvas)return null;
   if(charts[id])charts[id].destroy();
   config.options=config.options||{};
-  stabilizeZoomInteractions(config);
+  // A zoomed or panned axis keeps round tick values (no odd label at each end).
+  for(const sc of Object.values(config.options.scales||{})){sc.ticks=sc.ticks||{};if(sc.ticks.includeBounds===undefined)sc.ticks.includeBounds=false;}
   config.options.responsive=true;
   config.options.maintainAspectRatio=false;
   config.options.animation=config.options.animation!==undefined?config.options.animation:{duration:0};
   charts[id]=new Chart(canvas.getContext('2d'),config);
+  if(chartUi[id])chartUi[id].sync();
   return charts[id];
 }
 function chartColors(){
@@ -2216,44 +2181,11 @@ function buildAcqChart(){
             title:items=>'t = '+items[0].parsed.x.toFixed(3)+' s',
           }
         },
-        zoom:{pan:{enabled:true,mode:'xy',modifierKey:'ctrl'},zoom:{wheel:{enabled:true},pinch:{enabled:true},drag:{enabled:true,button:0,backgroundColor:'rgba(59,142,255,0.15)',borderColor:'rgba(59,142,255,0.8)',borderWidth:1},mode:'xy'}},
       },
     }
   });
 }
 buildAcqChart();
-document.getElementById('acqChart').addEventListener('dblclick',()=>{if(charts.acqChart)charts.acqChart.resetZoom();});
-// Mouse button filter + middle-click pan
-// Uses capture:true to intercept BEFORE the zoom plugin sees the event
-(function(){
-  let midPanning=false,midStartX=0,midStartY=0;
-  const el=document.getElementById('acqChart');
-
-  // Capture phase: block right-click (2) and middle-click (1) from reaching plugin
-  el.addEventListener('mousedown', e=>{
-    if(e.button===1||e.button===2){
-      e.stopPropagation(); // plugin never sees this
-      e.preventDefault();
-      if(e.button===1){
-        midPanning=true;
-        midStartX=e.clientX;
-        midStartY=e.clientY;
-        beginManualPan(charts.acqChart);
-      }
-    }
-  }, true); // <-- capture phase
-
-  window.addEventListener('mousemove', e=>{
-    if(!midPanning||!charts.acqChart)return;
-    const dx=e.clientX-midStartX, dy=e.clientY-midStartY;
-    midStartX=e.clientX; midStartY=e.clientY;
-    charts.acqChart.pan({x:dx,y:dy},undefined,'none');
-  });
-
-  window.addEventListener('mouseup', e=>{
-    if(e.button===1){midPanning=false;endManualPan(charts.acqChart);}
-  });
-})();
 
 function pushAcqPoint(t,theta,which,omegaDeg){
   store[which].time.push(t);
@@ -2266,15 +2198,37 @@ function pushAcqPoint(t,theta,which,omegaDeg){
     charts.acqChart.data.datasets[1].data.push({x:t,y:tq});
     charts.acqChart.data.datasets[1].hidden=false;
   }
-  charts.acqChart.update('none');
-  document.getElementById('liveAngle').textContent=theta.toFixed(1)+'°';
-  document.getElementById('liveCount').textContent=store[which].time.length;
   currentAngle=theta;
-  if(showPendulum)drawPendulum(theta);// theta is in degrees, matches original
-  updatePostInfo();
   appendPostDataPoint(t,theta,which);
-  // update pts info label
-
+  // Several samples can arrive between two screen frames (serial bursts, fast simulation):
+  // redraw once per frame, not once per sample.
+  _acqPending={theta,which};
+  if(!_acqFlushRAF)_acqFlushRAF=requestAnimationFrame(flushAcq);
+}
+var _acqPending=null,_acqFlushRAF=0,_acqChartStale=false,_postDataStale=false,_postDataDirty=false;
+function canvasShown(id){const c=document.getElementById(id);return !!(c&&c.offsetParent!==null);}
+function flushAcq(){
+  _acqFlushRAF=0;
+  const p=_acqPending;
+  if(!p)return;
+  _acqPending=null;
+  if(canvasShown('acqChart')){
+    if(charts.acqChart)charts.acqChart.update('none');
+    if(showPendulum)drawPendulum(p.theta);// theta is in degrees, matches original
+  }else _acqChartStale=true;
+  document.getElementById('liveAngle').textContent=p.theta.toFixed(1)+'°';
+  document.getElementById('liveCount').textContent=store[p.which].time.length;
+  updatePostInfo();
+  if(_postDataDirty){_postDataDirty=false;if(charts.postDataChart)charts.postDataChart.update('none');}
+}
+// Plots that were hidden while data arrived are brought up to date when their tab is shown.
+function refreshStaleCharts(){
+  if(_acqChartStale&&canvasShown('acqChart')){
+    _acqChartStale=false;
+    if(charts.acqChart)charts.acqChart.update('none');
+    if(showPendulum)drawPendulum(currentAngle);
+  }
+  if(_postDataStale&&canvasShown('postDataChart'))renderPostDataChart();
 }
 
 // ============================================================
@@ -2911,7 +2865,6 @@ document.getElementById('csvFile').onchange=async e=>{
   e.target.value='';
 };
 
-document.getElementById('postDataChart').addEventListener('dblclick',()=>{if(charts.postDataChart)charts.postDataChart.resetZoom();});
 
 // ============================================================
 // FFT (Cooley-Tukey)
@@ -3178,16 +3131,7 @@ function renderFitChart(){
             }
           }
         },
-        tooltip:{enabled:false},
-        zoom:{
-          pan:{enabled:true,mode:'xy',modifierKey:'ctrl'},
-          zoom:{
-            wheel:{enabled:true},
-            pinch:{enabled:true},
-            drag:{enabled:true,button:0,backgroundColor:'rgba(59,142,255,0.15)',borderColor:'rgba(59,142,255,0.8)',borderWidth:1},
-            mode:'xy'
-          }
-        }
+        tooltip:{enabled:false}
       }
     }
   });
@@ -3328,29 +3272,6 @@ document.getElementById('runFitBtn').onclick=runFit;
 // fitShowAll checkbox: re-render chart
 document.getElementById('fitShowAll').addEventListener('change',renderFitChart);
 
-// fitChart double-click reset zoom
-document.getElementById('fitChart').addEventListener('dblclick',()=>{
-  if(charts.fitChart)charts.fitChart.resetZoom();
-});
-
-// fitChart middle-click pan (same pattern as acqChart)
-(function(){
-  let midPanning=false,midStartX=0,midStartY=0;
-  const el=document.getElementById('fitChart');
-  el.addEventListener('mousedown',e=>{
-    if(e.button===1||e.button===2){
-      e.stopPropagation();e.preventDefault();
-      if(e.button===1){midPanning=true;midStartX=e.clientX;midStartY=e.clientY;beginManualPan(charts.fitChart);}
-    }
-  },true);
-  window.addEventListener('mousemove',e=>{
-    if(!midPanning||!charts.fitChart)return;
-    const dx=e.clientX-midStartX,dy=e.clientY-midStartY;
-    midStartX=e.clientX;midStartY=e.clientY;
-    charts.fitChart.pan({x:dx,y:dy},undefined,'none');
-  });
-  window.addEventListener('mouseup',e=>{if(e.button===1){midPanning=false;endManualPan(charts.fitChart);}});
-})();
 
 // R² help modal
 function showR2Help(){
@@ -3550,46 +3471,12 @@ function _runPeriod(data){
             },
             title:(items)=>'t = '+items[0].parsed.x.toFixed(3)+' s',
           }
-        },
-        zoom:{
-          pan:{enabled:true,mode:'xy',modifierKey:'ctrl'},
-          zoom:{
-            wheel:{enabled:true},
-            pinch:{enabled:true},
-            drag:{enabled:true,button:0,backgroundColor:'rgba(59,142,255,0.15)',borderColor:'rgba(59,142,255,0.8)',borderWidth:1},
-            mode:'xy'
-          }
         }
       }
     }
   });
-  // Double-click to reset zoom
-  const canvas=document.getElementById('periodChart');
-  if(canvas){
-    canvas._dblHandler&&canvas.removeEventListener('dblclick',canvas._dblHandler);
-    canvas._dblHandler=()=>{if(charts.periodChart)charts.periodChart.resetZoom();};
-    canvas.addEventListener('dblclick',canvas._dblHandler);
-  }
 }
 document.getElementById('runPeriodBtn').onclick=runPeriod;
-// periodChart middle-click pan (same pattern as acqChart / fitChart)
-(function(){
-  let midPanning=false,midStartX=0,midStartY=0;
-  const el=document.getElementById('periodChart');
-  el.addEventListener('mousedown',e=>{
-    if(e.button===1||e.button===2){
-      e.stopPropagation();e.preventDefault();
-      if(e.button===1){midPanning=true;midStartX=e.clientX;midStartY=e.clientY;beginManualPan(charts.periodChart);}
-    }
-  },true);
-  window.addEventListener('mousemove',e=>{
-    if(!midPanning||!charts.periodChart)return;
-    const dx=e.clientX-midStartX,dy=e.clientY-midStartY;
-    midStartX=e.clientX;midStartY=e.clientY;
-    charts.periodChart.pan({x:dx,y:dy},undefined,'none');
-  });
-  window.addEventListener('mouseup',e=>{if(e.button===1){midPanning=false;endManualPan(charts.periodChart);}});
-})();
 
 // ============================================================
 // ANALYSIS ③: PHASE PORTRAIT
@@ -3642,13 +3529,17 @@ function runPhase(){
   } else {
     fullOmega=numDerivSmooth(fullTime,fullAngle);
   }
-  phaseAnimData={time,angle,omega,fullTime,fullAngle,fullOmega,trimOffset:s};
+  // Point arrays built once: the animation only slices them.
+  const ptsTheta=fullTime.map((t,i)=>({x:t,y:fullAngle[i]}));
+  const ptsOmega=fullTime.map((t,i)=>({x:t,y:fullOmega[i]}));
+  const ptsPhase=angle.map((a,i)=>({x:a,y:omega[i]}));
+  phaseAnimData={time,angle,omega,fullTime,fullAngle,fullOmega,trimOffset:s,ptsTheta,ptsOmega,ptsPhase};
   phaseAnimIdx=angle.length;
   const c=chartColors();
   // ── θ(t) chart — full signal from t=0 ──
   mkChart('thetaTimeChart',{
     type:'line',
-    data:{datasets:[{label:gL('ax_anglet'),data:fullTime.map((t,i)=>({x:t,y:fullAngle[i]})),
+    data:{datasets:[{label:gL('ax_anglet'),data:ptsTheta.slice(),
       borderColor:c.dr,borderWidth:1.5,pointRadius:0,pointHitRadius:12,tension:0,
       ...(postUsesEncoderSimulation()?{stepped:true}:{})}]},
     plugins:[zeroAxisPlugin],
@@ -3656,32 +3547,28 @@ function runPhase(){
       interaction:{mode:'nearest',intersect:true},
       hover:{mode:'nearest',intersect:true},
       scales:{...baseScaleOpts(gL('ax_time'),gL('ax_anglet'))},
-      plugins:{legend:{display:false},tooltip:{mode:'nearest',intersect:true,callbacks:{title:it=>`t = ${Number(it[0].raw.x).toFixed(2)} s`,label:it=>`θ = ${Number(it.raw.y).toFixed(2)}°`}},zoom:{
-        pan:{enabled:true,mode:'xy',modifierKey:'ctrl',onPanComplete:({chart})=>syncPhaseTimeXAxes(chart)},
-        zoom:{wheel:{enabled:true},drag:{enabled:true,button:0,backgroundColor:'rgba(59,142,255,0.15)',borderColor:'rgba(59,142,255,0.8)',borderWidth:1},mode:'xy',onZoomComplete:({chart})=>syncPhaseTimeXAxes(chart)}}}}
+      plugins:{legend:{display:false},tooltip:{mode:'nearest',intersect:true,callbacks:{title:it=>`t = ${Number(it[0].raw.x).toFixed(2)} s`,label:it=>`θ = ${Number(it.raw.y).toFixed(2)}°`}}}}
   });
   // ── ω(t) chart — full signal from t=0 ──
   mkChart('omegaTimeChart',{
     type:'line',
-    data:{datasets:[{label:gL('ax_omega'),data:fullTime.map((t,i)=>({x:t,y:fullOmega[i]})),
+    data:{datasets:[{label:gL('ax_omega'),data:ptsOmega.slice(),
       borderColor:c.dp,borderWidth:1.5,pointRadius:0,pointHitRadius:12,tension:0}]},
     plugins:[zeroAxisPlugin],
     options:{animation:{duration:0},maintainAspectRatio:false,
       interaction:{mode:'nearest',intersect:true},
       hover:{mode:'nearest',intersect:true},
       scales:{...baseScaleOpts(gL('ax_time'),gL('ax_omega'))},
-      plugins:{legend:{display:false},tooltip:{mode:'nearest',intersect:true,callbacks:{title:it=>`t = ${Number(it[0].raw.x).toFixed(2)} s`,label:it=>`ω = ${Number(it.raw.y).toFixed(2)} °/s`}},zoom:{
-        pan:{enabled:true,mode:'xy',modifierKey:'ctrl',onPanComplete:({chart})=>syncPhaseTimeXAxes(chart)},
-        zoom:{wheel:{enabled:true},drag:{enabled:true,button:0,backgroundColor:'rgba(59,142,255,0.15)',borderColor:'rgba(59,142,255,0.8)',borderWidth:1},mode:'xy',onZoomComplete:({chart})=>syncPhaseTimeXAxes(chart)}}}}
+      plugins:{legend:{display:false},tooltip:{mode:'nearest',intersect:true,callbacks:{title:it=>`t = ${Number(it[0].raw.x).toFixed(2)} s`,label:it=>`ω = ${Number(it.raw.y).toFixed(2)} °/s`}}}}
   });
   renderPhaseChart(angle.length);
   applyPhaseViewMode();
 }
 function renderPhaseChart(n){
   if(!phaseAnimData)return;
-  const{angle,omega}=phaseAnimData;
+  const{angle,ptsPhase}=phaseAnimData;
   const nn=Math.min(n,angle.length);
-  const pts=angle.slice(0,nn).map((a,i)=>({x:a,y:omega[i]}));
+  const pts=ptsPhase.slice(0,nn);
   // Animation: update dataset in-place for performance
   if(charts.phaseChart&&n<angle.length){
     charts.phaseChart.data.datasets[0].data=pts;
@@ -3699,33 +3586,10 @@ function renderPhaseChart(n){
       interaction:{mode:'nearest',intersect:true},
       hover:{mode:'nearest',intersect:true},
       scales:{...baseScaleOpts(gL('ax_theta'),gL('ax_dtheta'))},
-      plugins:{legend:{display:false},tooltip:{mode:'nearest',intersect:true,callbacks:{title:it=>`θ = ${Number(it[0].raw.x).toFixed(2)}°`,label:it=>`ω = ${Number(it.raw.y).toFixed(2)} °/s`}},zoom:{
-        pan:{enabled:true,mode:'xy',modifierKey:'ctrl'},
-        zoom:{wheel:{enabled:true},drag:{enabled:true,button:0,backgroundColor:'rgba(59,142,255,0.15)',borderColor:'rgba(59,142,255,0.8)',borderWidth:1},mode:'xy'}}}}
+      plugins:{legend:{display:false},tooltip:{mode:'nearest',intersect:true,callbacks:{title:it=>`θ = ${Number(it[0].raw.x).toFixed(2)}°`,label:it=>`ω = ${Number(it.raw.y).toFixed(2)} °/s`}}}}
   });
 }
 document.getElementById('runPhaseBtn').onclick=runPhase;
-function resetAllPhaseCharts(){
-  [charts.thetaTimeChart,charts.omegaTimeChart,charts.phaseChart].forEach(ch=>{
-    if(!ch)return;
-    try{
-      // 1. resetZoom() clears the plugin's stored zoom state so it won't re-apply old limits
-      //    during the subsequent update().
-      try{ch.resetZoom();}catch(_){}
-      // 2. Override whatever resetZoom() just set with undefined so Chart.js auto-scales from data.
-      const sx=ch.options.scales.x,sy=ch.options.scales.y;
-      if(sx){sx.min=undefined;sx.max=undefined;}
-      if(sy){sy.min=undefined;sy.max=undefined;}
-      ch.update('none');
-    }catch(_){}
-  });
-}
-// Single stable dblclick handler on the layout div — never destroyed by chart ops.
-// Capture phase fires before any canvas-level zoom-plugin handler.
-document.getElementById('phaseLayout').addEventListener('dblclick',function(e){
-  e.stopImmediatePropagation();
-  resetAllPhaseCharts();
-},true);
 // ── Zero-axis lines plugin (shared by all 3 phase charts) ──────────────────
 const zeroAxisPlugin={
   id:'zeroAxisLines',
@@ -3746,48 +3610,6 @@ const zeroAxisPlugin={
     ctx.restore();
   }
 };
-// ── Block middle/right-click from reaching zoom plugin; add middle-click pan ─
-function addPhaseChartMouseFix(canvasId){
-  const canvas=document.getElementById(canvasId);
-  if(!canvas)return;
-  let midPan=null;
-  canvas.addEventListener('mousedown',function(e){
-    if(e.button===0)return; // left click → zoom plugin handles it
-    e.stopImmediatePropagation(); // block zoom plugin for any other button
-    if(e.button===1){
-      e.preventDefault();
-      const chart=charts[canvasId];
-      if(!chart)return;
-      beginManualPan(chart);
-      midPan={sx:e.clientX,sy:e.clientY,
-        xMin:chart.scales.x.min,xMax:chart.scales.x.max,
-        yMin:chart.scales.y.min,yMax:chart.scales.y.max,
-        pw:chart.chartArea.width,ph:chart.chartArea.height};
-    }
-  },true); // capture phase: runs before zoom plugin's bubble listeners
-  canvas.addEventListener('mousemove',function(e){
-    if(!midPan)return;
-    const chart=charts[canvasId];
-    if(!chart)return;
-    const dx=e.clientX-midPan.sx,dy=e.clientY-midPan.sy;
-    const xR=midPan.xMax-midPan.xMin,yR=midPan.yMax-midPan.yMin;
-    chart.options.scales.x.min=midPan.xMin-dx*xR/midPan.pw;
-    chart.options.scales.x.max=midPan.xMax-dx*xR/midPan.pw;
-    chart.options.scales.y.min=midPan.yMin+dy*yR/midPan.ph;
-    chart.options.scales.y.max=midPan.yMax+dy*yR/midPan.ph;
-    chart.update('none');
-    if(canvasId==='thetaTimeChart'||canvasId==='omegaTimeChart')syncPhaseTimeXAxes(chart);
-  });
-  const endMidPan=()=>{
-    const chart=charts[canvasId];
-    midPan=null;
-    endManualPan(chart);
-  };
-  canvas.addEventListener('mouseup',endMidPan);
-  canvas.addEventListener('mouseleave',endMidPan);
-  canvas.addEventListener('contextmenu',e=>e.preventDefault());
-}
-['phaseChart','thetaTimeChart','omegaTimeChart'].forEach(addPhaseChartMouseFix);
 function getPhaseViewMode(){
   return document.querySelector('input[name="phaseViewMode"]:checked')?.value||'full';
 }
@@ -3836,8 +3658,8 @@ function phaseSkipToEnd(){
   phaseAnimIdx=angle.length;
   if(phaseShowsPortrait())renderPhaseChart(angle.length);
   if(phaseShowsTime()){
-    if(charts.thetaTimeChart){charts.thetaTimeChart.data.datasets[0].data=fullTime.map((t,i)=>({x:t,y:fullAngle[i]}));charts.thetaTimeChart.update('none');}
-    if(charts.omegaTimeChart){charts.omegaTimeChart.data.datasets[0].data=fullTime.map((t,i)=>({x:t,y:fullOmega[i]}));charts.omegaTimeChart.update('none');}
+    if(charts.thetaTimeChart){charts.thetaTimeChart.data.datasets[0].data=phaseAnimData.ptsTheta.slice();charts.thetaTimeChart.update('none');}
+    if(charts.omegaTimeChart){charts.omegaTimeChart.data.datasets[0].data=phaseAnimData.ptsOmega.slice();charts.omegaTimeChart.update('none');}
   }
 }
 document.getElementById('phaseSkipEndBtn').onclick=phaseSkipToEnd;
@@ -3858,11 +3680,11 @@ document.getElementById('playPhaseBtn').onclick=()=>{
       const{fullTime,fullAngle,fullOmega,trimOffset}=phaseAnimData;
       const fullNN=trimOffset+phaseAnimIdx;
       if(charts.thetaTimeChart){
-        charts.thetaTimeChart.data.datasets[0].data=fullTime.slice(0,fullNN).map((t,i)=>({x:t,y:fullAngle[i]}));
+        charts.thetaTimeChart.data.datasets[0].data=phaseAnimData.ptsTheta.slice(0,fullNN);
         charts.thetaTimeChart.update('none');
       }
       if(charts.omegaTimeChart){
-        charts.omegaTimeChart.data.datasets[0].data=fullTime.slice(0,fullNN).map((t,i)=>({x:t,y:fullOmega[i]}));
+        charts.omegaTimeChart.data.datasets[0].data=phaseAnimData.ptsOmega.slice(0,fullNN);
         charts.omegaTimeChart.update('none');
       }
     }
@@ -3873,11 +3695,11 @@ document.getElementById('playPhaseBtn').onclick=()=>{
       if(phaseShowsTime()){
         const{fullTime,fullAngle,fullOmega}=phaseAnimData;
         if(charts.thetaTimeChart){
-          charts.thetaTimeChart.data.datasets[0].data=fullTime.map((t,i)=>({x:t,y:fullAngle[i]}));
+          charts.thetaTimeChart.data.datasets[0].data=phaseAnimData.ptsTheta.slice();
           charts.thetaTimeChart.update('none');
         }
         if(charts.omegaTimeChart){
-          charts.omegaTimeChart.data.datasets[0].data=fullTime.map((t,i)=>({x:t,y:fullOmega[i]}));
+          charts.omegaTimeChart.data.datasets[0].data=phaseAnimData.ptsOmega.slice();
           charts.omegaTimeChart.update('none');
         }
       }
@@ -4062,25 +3884,10 @@ function _runSysId(data){
       scales:baseScaleOpts(gL('ax_time'),gL('ax_angle')),
       plugins:{
         legend:baseLegend(['Measurement','ODE (identified)'],[c.dr,c.dt]),
-        tooltip:{mode:'nearest',intersect:true},
-        zoom:{
-          pan:{enabled:true,mode:'xy',modifierKey:'ctrl'},
-          zoom:{
-            wheel:{enabled:true},
-            pinch:{enabled:true},
-            drag:{enabled:true,button:0,backgroundColor:'rgba(59,142,255,0.15)',borderColor:'rgba(59,142,255,0.8)',borderWidth:1},
-            mode:'xy'
-          }
-        }
+        tooltip:{mode:'nearest',intersect:true}
       }
     }
   });
-  const canvas=document.getElementById('sysidChart');
-  if(canvas){
-    if(canvas._sysidDblHandler)canvas.removeEventListener('dblclick',canvas._sysidDblHandler);
-    canvas._sysidDblHandler=()=>{if(charts.sysidChart&&charts.sysidChart.resetZoom)charts.sysidChart.resetZoom();};
-    canvas.addEventListener('dblclick',canvas._sysidDblHandler);
-  }
 }
 document.getElementById('runSysIdBtn').onclick=runSysId;
 
@@ -4196,8 +4003,8 @@ setTimeout(()=>{
   if(document.getElementById('tab-edu').classList.contains('active'))updateAllEduCharts();
 },100);
 
-// Keyboard shortcut: Ctrl+D = double-click reset zoom on active chart
-document.addEventListener('keydown',e=>{if(e.ctrlKey&&e.key==='d'){e.preventDefault();for(const ch of Object.values(charts)){try{ch.resetZoom();}catch(_){}}}});
+// Keyboard shortcut: Ctrl+D = every plot back to its initial view
+document.addEventListener('keydown',e=>{if(e.ctrlKey&&e.key==='d'){e.preventDefault();for(const ch of Object.values(charts)){try{ch.resetZoom&&ch.resetZoom();}catch(_){}}}});
 
 } // end initApp
 </script>

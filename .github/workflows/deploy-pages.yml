@@ -48,6 +48,9 @@ jobs:
       - name: Offline copy of bode-measure (zip named after its last commit, Plotly and KaTeX inside)
         run: .github/scripts/offline-bode-measure.sh site
 
+      - name: Offline copy of pendulum (zip named after its last commit, Chart.js and KaTeX inside)
+        run: .github/scripts/offline-pendulum.sh site
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 

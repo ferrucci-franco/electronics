@@ -1,7 +1,11 @@
 (function(){
   const TP_STORAGE_KEY='pendulum_tp_progress_v1';
   const TP_DEFAULT_GUIDE='part1';
-  const TP_GUIDE_IDS=['part1','part2'];
+  const TP_GUIDE_IDS=['discovery','part1','part2'];
+  // Guides offered in the « Guides TP » menu this year; the others stay listed but greyed out.
+  // To bring one back, add its id here (e.g. ['discovery','part1','part2']).
+  const TP_ENABLED_GUIDES=['discovery'];
+  window.TP_ENABLED_GUIDES=TP_ENABLED_GUIDES;
   const TP_ALLOW_STEP_SKIP=false;
 
   const MODEL_CODE=`model PendulumTP
@@ -1539,7 +1543,7 @@ end PeriodMeter;`;
     }
   };
 
-  let activeGuide=TP_DEFAULT_GUIDE;
+  let activeGuide=TP_ENABLED_GUIDES.includes(TP_DEFAULT_GUIDE)?TP_DEFAULT_GUIDE:TP_ENABLED_GUIDES[0];
   let tpState={active:0,unlocked:0,completed:{},answers:{}};
   let switchTab=function(){};
   let getLang=function(){return document.documentElement.lang||'EN';};
@@ -1555,8 +1559,24 @@ end PeriodMeter;`;
   function text(){return TP_TEXT[langCode()]||TP_TEXT.EN;}
   function steps(){
     const t=text();
-    const list=activeGuide==='part2'&&t.part2Steps?t.part2Steps:t.steps;
+    const list=activeGuide==='discovery'?discoverySteps(t):activeGuide==='part2'&&t.part2Steps?t.part2Steps:t.steps;
     return list.filter(s=>s.hidden!==true);
+  }
+  // TP Découverte: a short, experiment-only path made of steps of the two long guides
+  // (real measurement, period vs. time, paper air brake), renumbered.
+  function discoverySteps(t){
+    if(t._discoverySteps)return t._discoverySteps;
+    const find=(list,id)=>(list||[]).find(st=>st.id===id);
+    const word=String((t.steps[0]&&t.steps[0].kicker)||'').replace(/\s*\d+\s*$/,'');
+    const real=find(t.steps,'real-first'),period=find(t.steps,'period-real'),paper=find(t.part2Steps,'p2-paper-damper');
+    const picked=[
+      real&&{...real,checklist:(real.checklist||[]).filter(c=>c.id!=='real_csv_emailed')},
+      period&&{...period},
+      paper&&{...paper,questions:(paper.questions||[]).filter(q=>q.id==='p2_paper_decay')}
+    ].filter(Boolean);
+    picked.forEach((st,i)=>{st.kicker=`${word} ${i+1}`;});
+    t._discoverySteps=picked;
+    return picked;
   }
   function freshTpState(){return {active:0,unlocked:0,completed:{},answers:{}};}
   function storageKey(){return activeGuide===TP_DEFAULT_GUIDE?TP_STORAGE_KEY:`${TP_STORAGE_KEY}_${activeGuide}`;}
@@ -2020,7 +2040,7 @@ end PeriodMeter;`;
   };
 
   window.setTpGuide=function setTpGuide(guideId){
-    if(!TP_GUIDE_IDS.includes(guideId))return;
+    if(!TP_GUIDE_IDS.includes(guideId)||!TP_ENABLED_GUIDES.includes(guideId))return;
     if(activeGuide===guideId){
       if(initialized)renderTp();
       return;
