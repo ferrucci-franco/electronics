@@ -60,7 +60,7 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden}
 body{font-family:var(--font-ui);font-size:15px;background:var(--bg);color:var(--text);line-height:1.5;transition:background var(--tr),color var(--tr)}
-.app{display:flex;flex-direction:column;height:100vh}
+.app{display:flex;flex-direction:column;height:100vh;height:100dvh}
 
 /* TOPBAR */
 .topbar{display:flex;align-items:center;height:var(--tab-h);padding:0 18px;background:var(--surface);border-bottom:1px solid var(--border);gap:12px;flex-shrink:0;z-index:10}
@@ -146,11 +146,12 @@ body{font-family:var(--font-ui);font-size:15px;background:var(--bg);color:var(--
 .chart-box{flex:1;background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;display:flex;flex-direction:column;min-height:0;position:relative}
 .chart-box-title{font-size:11.5px;font-weight:600;color:var(--text2);margin-bottom:8px}
 .chart-box canvas{flex:1;min-height:0}
-.pendulum-panel{flex-direction:column;width:500px;min-width:500px;max-width:500px;height:100%;background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px}
+.pendulum-panel{flex-direction:column;flex:0 0 auto;width:clamp(260px,34vw,500px);min-width:0;height:auto;background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px}
 .pendulum-panel.visible{display:flex}
 .pendulum-panel:not(.visible){display:none}
-.pendulum-canvas-wrapper{flex:1;display:flex;justify-content:center;align-items:center}
-#pendulumCanvas{border-radius:var(--r-md)}
+.pendulum-canvas-wrapper{flex:1;min-height:0;position:relative}
+/* The drawing keeps its 450 px bitmap and is scaled to the room the panel has. */
+#pendulumCanvas{border-radius:var(--r-md);position:absolute;inset:0;margin:auto;max-width:100%;max-height:100%}
 .chart-box.with-pendulum{flex:1 1 auto;min-width:0}
 .chart-box.full-width{flex:1 1 100%}
 .online-badge{font-size:10px;padding:3px 8px;border-radius:3px;text-align:center;font-weight:600}
@@ -345,8 +346,6 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
 #tab-post #t_sysid_ident_note{font-size:15.4px!important}
 
 @media(max-width:800px){
-  .acq-layout{grid-template-columns:1fr;grid-template-rows:auto 1fr}
-  .sidebar{border-right:none;border-bottom:1px solid var(--border);max-height:42vh}
   .edu-content{grid-template-columns:1fr}
   .intro-wrap{padding:16px 16px}
   .hist-sub-card{flex-direction:column}
@@ -354,6 +353,84 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
   .intro-hero h1{font-size:30px}
   .intro-hero p{font-size:17px}
   .hist-figure{height:108px;width:96px}
+}
+
+/* ============================================================
+   PHONES AND TABLETS
+   ≤1100 px: no app name in the top bar · ≤1000 px: pendulum under the plot · ≤900 px: tab numbers only,
+   post-processing in one scrolling column · ≤700 px: acquisition in one column · ≤640 px: top bar on two rows
+   ============================================================ */
+/* The step buttons float over the text: give them their own background */
+.tp-nav{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:6px;box-shadow:0 6px 18px rgba(0,0,0,.18)}
+@media (pointer:coarse){
+  /* iPhone/iPad zoom the page in when a field under 16 px gets the focus */
+  input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=button]):not([type=color]),select,textarea{font-size:16px!important}
+}
+@media(max-width:1100px){
+  .logo span{display:none}
+}
+@media(max-width:1000px) and (min-height:501px){
+  #tab-acq .main-area{flex-direction:column!important}
+  #tab-acq #chart-container{margin:10px 10px 0!important;flex:1 1 0}
+  #tab-acq #chart-container.full-width{margin-bottom:10px!important}
+  #tab-acq .pendulum-panel{margin:10px!important;width:auto;flex:0 0 38%;padding:8px}
+}
+@media(max-width:900px){
+  :root{--sidebar-w:240px}
+  .topbar{padding:0 10px;gap:8px}
+  .tab-btn{padding:0 10px}
+  .tab-btn:not(.active)>span:not(.tab-num){display:none}
+  .tab-btn:not(.active) .tab-num{margin-right:0}
+  .lang-btn{padding:0 9px}
+  .topbar-actions{gap:6px}
+
+  /* Post-processing: source and analysis choices on top, then one scrolling column */
+  .post-layout{display:block;height:auto;overflow:visible}
+  .post-sidebar{overflow:visible;border-right:none;border-bottom:1px solid var(--border);padding:10px;gap:8px}
+  .post-sidebar .divider,.post-sidebar .footer-sb{display:none}
+  .post-sidebar .psrc-tabs{flex-direction:row!important;flex-wrap:wrap}
+  .post-sidebar .psrc-tab{flex:1 1 0;min-height:38px;justify-content:center;white-space:nowrap}
+  .pan-section{flex-direction:row;flex-wrap:wrap;gap:5px}
+  .pan-section .post-bar-label{flex:1 0 100%}
+  .pan-section .pan-btn{width:auto;flex:1 1 auto;justify-content:center;padding:8px 10px;white-space:nowrap}
+  .post-main,.post-panel{overflow:visible;height:auto}
+  .post-scroll{flex:none;overflow:visible!important;padding:12px}
+  .post-scroll .an-chart-wrap{flex:none!important;height:min(62vh,440px)!important;min-height:250px}
+  #phaseLayout{flex-direction:column;flex:none!important;height:auto!important}
+  #phaseTempCol{width:100%!important}
+  #phaseTempCol .an-chart-wrap{height:230px!important;min-height:0}
+  #phasePortraitCol{height:min(70vh,440px)!important}
+  .an-header{flex-wrap:wrap;gap:8px}
+  #panel-period .post-scroll>div:first-child{flex-direction:column;align-items:stretch!important}
+  #panel-period .post-scroll>div:first-child>div{width:auto!important;gap:12px!important}
+  #panel-phase .post-scroll>div:first-child{flex-wrap:wrap}
+  #phaseViewModeGroup{flex:1 0 100%!important;flex-wrap:wrap;white-space:normal!important}
+
+  /* TP guide: steps on top, one scrolling column, navigation bar that stays readable over the text */
+  .tp-layout{display:block;overflow-y:auto}
+  .tp-sidebar{max-height:none;overflow:visible;padding:12px}
+  .tp-main{overflow:visible;padding:16px 14px 20px}
+  .tp-title{font-size:23px}
+  .tp-nav{width:100%;justify-content:space-between;bottom:8px}
+}
+@media(max-width:700px){
+  /* Acquisition: plot first, pendulum, then the controls; the tab scrolls as one page */
+  .acq-layout{display:flex;flex-direction:column;height:auto;overflow:visible}
+  #tab-acq .main-area{order:-1;overflow:visible;flex:none;flex-direction:column!important}
+  #tab-acq #chart-container{flex:none;height:54vh;min-height:270px;margin:10px 10px 0!important;padding:8px!important}
+  #tab-acq .pendulum-panel{flex:none;height:260px;width:auto;margin:10px 10px 0!important;padding:8px}
+  .sidebar{overflow:visible;border-right:none;border-top:1px solid var(--border);margin-top:10px}
+  #panel-fit .post-scroll>div:first-child{grid-template-columns:1fr!important}
+  .an-params{grid-template-columns:1fr!important}
+  .post-scroll .an-chart-wrap{height:min(56vh,380px)!important}
+}
+@media(max-width:640px){
+  .topbar{height:auto;flex-wrap:wrap;padding:6px 10px;row-gap:4px}
+  .logo{flex:1}
+  .tabs{order:3;flex:1 0 100%;justify-content:space-between}
+  .tab-btn{height:36px}
+  .tp-nav{flex-wrap:nowrap;gap:6px}
+  .tp-nav .btn-sm{padding:7px 8px;font-size:13px;white-space:nowrap}
 }
 </style>
 <!-- Contador de visitas (GoatCounter, sin cookies ni datos personales). No cuenta en localhost ni desde file://. -->
@@ -669,7 +746,7 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
         <aside class="post-sidebar">
 
           <!-- Data source -->
-          <div class="sb-section">
+          <div class="sb-section src-section">
             <div class="post-bar-label" id="t_post_src">Data source</div>
             <div class="psrc-tabs" style="flex-direction:column;gap:4px">
               <button class="psrc-tab active" data-ps="acq" id="ps_acq">📡 <span id="t_ps_acq">Acquisition</span></button>
@@ -684,7 +761,7 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
           <div class="divider"></div>
 
           <!-- Analysis selector -->
-          <div class="sb-section">
+          <div class="sb-section pan-section">
             <div class="post-bar-label" id="t_post_analysis">Analysis</div>
             <button class="pan-btn active" data-panel="data">
               <span id="t_data_short">Data</span>
@@ -2041,6 +2118,9 @@ function mkChart(id,config){
   config.options=config.options||{};
   // A zoomed or panned axis keeps round tick values (no odd label at each end).
   for(const sc of Object.values(config.options.scales||{})){sc.ticks=sc.ticks||{};if(sc.ticks.includeBounds===undefined)sc.ticks.includeBounds=false;}
+  // Legend on the left: the Fit buttons are in the top-right corner.
+  const lg=config.options.plugins&&config.options.plugins.legend;
+  if(lg&&lg.display!==false&&lg.align===undefined)lg.align='start';
   config.options.responsive=true;
   config.options.maintainAspectRatio=false;
   config.options.animation=config.options.animation!==undefined?config.options.animation:{duration:0};
@@ -2245,7 +2325,7 @@ function drawPendulum(angle){
 
   // In HW mode: use fixed mid-range values (sliders belong to sim panel)
   const inSimMode=document.querySelector('.src-btn.active')?.dataset.src==='sim';
-  const Lm=inSimMode?(parseFloat(document.getElementById('sl_L').value)||1.0):0.7;
+  const Lm=inSimMode?(parseFloat(document.getElementById('sl_L').value)||1.0):1.2; // real pendulum: full length, to use the whole window
   const Mm=inSimMode?(parseFloat(document.getElementById('sl_m').value)||0.5):0.3;
 
   // Physical ranges
