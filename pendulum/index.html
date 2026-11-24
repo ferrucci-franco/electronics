@@ -69,7 +69,7 @@ body{font-family:var(--font-ui);font-size:15px;background:var(--bg);color:var(--
 
 /* TOPBAR */
 .topbar{display:flex;align-items:center;height:var(--tab-h);padding:0 18px;background:var(--surface);border-bottom:1px solid var(--border);gap:12px;flex-shrink:0;z-index:10}
-.logo{font-size:14px;font-weight:600;color:var(--text2);letter-spacing:.02em;white-space:nowrap}
+.logo{font-size:20px;font-weight:700;color:var(--text2);letter-spacing:.01em;white-space:nowrap;line-height:1}
 .logo span{color:var(--accent)}
 .tabs{display:flex;gap:2px;flex:1;justify-content:center}
 .tab-btn{padding:0 16px;height:40px;border:none;background:transparent;color:var(--text2);font:500 14px var(--font-ui);cursor:pointer;border-radius:var(--r-sm);transition:background var(--tr),color var(--tr);white-space:nowrap}
@@ -375,7 +375,7 @@ input[type="range"]:disabled::-webkit-slider-thumb{background:var(--text3)}
   /* iPhone/iPad zoom the page in when a field under 16 px gets the focus */
   input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=button]):not([type=color]),select,textarea{font-size:16px!important}
 }
-@media(max-width:1100px){
+@media(max-width:1200px){
   .logo span{display:none}
 }
 @media(max-width:1000px) and (min-height:501px){
