@@ -1,6 +1,6 @@
 ---
 name: plot-interactions
-description: The agreed mouse, trackpad and touch behaviour for every Plotly plot in the ferrucci-lab.com apps (and any educational web app of Franco Ferrucci) — one-finger gestures on phones (fast finger scrolls the page, slower finger pans, hold-then-drag zooms, slow/quick double tap, pinch), right-button pan, wheel that never zooms, semi-transparent Fit X / Fit Y / Fit all buttons, an in-plot legend that can be hidden, linked x axes, plus a drop-in JS module and a browser check script; also the shared app conventions (full screen and its exit pill, EN·FR·ES language pills, CSV/PDF export that opens the share menu on phones). Use this skill whenever you create an app with a plot (ferrucci-lab.com apps or another of the owner's web apps), add or change a plot, port an app to phones, or touch anything about zoom, pan, scroll on plots, double tap/double-click, legends, tooltips or fit/autoscale buttons — even when the request only says "make it work on mobile", "the scroll feels wrong", "add a Bode/time plot" or "fix the legend", "add a CSV/PDF export", "send the report by WhatsApp".
+description: The agreed mouse, trackpad and touch behaviour for every Plotly or Chart.js plot in the ferrucci-lab.com apps (and any educational web app of Franco Ferrucci) — one-finger gestures on phones (fast finger scrolls the page, slower finger pans, hold-then-drag zooms, slow/quick double tap, pinch), right-button pan, wheel that never zooms, semi-transparent Fit X / Fit Y / Fit all buttons, an in-plot legend that can be hidden, linked x axes, plus a drop-in JS module and a browser check script for Plotly and for Chart.js; also the shared app conventions (full screen and its exit pill, EN·FR·ES language pills, CSV/PDF export that opens the share menu on phones). Use this skill whenever you create an app with a plot (ferrucci-lab.com apps or another of the owner's web apps), add or change a plot, port an app to phones, or touch anything about zoom, pan, scroll on plots, double tap/double-click, legends, tooltips or fit/autoscale buttons — even when the request only says "make it work on mobile", "the scroll feels wrong", "add a Bode/time plot" or "fix the legend", "add a CSV/PDF export", "send the report by WhatsApp".
 ---
 
 # Plot interactions (ferrucci-lab.com apps)
@@ -93,6 +93,38 @@ drawn from a floor); give real data traces a legend entry. For an existing app w
 with the module rather than patching it piecemeal, and keep `bode-measure/index.html` (inline version of
 the same code) consistent if you change a behaviour here.
 
+## Chart.js plots
+
+An app that already draws with Chart.js (`pendulum/`: live acquisition, Chart.js kept for speed) gets the same
+behaviour from `assets/chart-interactions.js` instead of moving to Plotly. It replaces chartjs-plugin-zoom and
+Hammer (remove both, and every `zoom:{…}` plugin option): mouse (left drag = zoom x, y or window by direction;
+right/middle drag = pan; wheel never zooms; double-click = every visible plot to its initial view), trackpad
+sideways swipe, all the finger gestures of the table above with the same thresholds, and the three Fit buttons.
+There is no legend button (Chart.js legends sit outside the plotting area): put the legend on the left
+(`legend.align:'start'`) so the Fit buttons, top-right, do not cover it.
+
+```js
+// once per canvas (the chart may be destroyed and rebuilt on it later); canvas alone in a positioned container
+const ui = ChartInteractions.attach(canvas, {
+  getChart: () => charts.acqChart,
+  texts: () => ({fitX, fitY, fitAll, zoomHint}),      // strings of references/i18n.md
+  onViewChange: chart => {},                          // linked x axes: copy options.scales.x.min/max to the other chart
+  all: () => Object.values(charts)                    // charts reset together by a double-click / quick double tap
+});
+ui.sync();      // right after each `new Chart(...)`: remembers the initial view, defines chart.resetZoom()
+ui.refresh();   // after a language change
+```
+
+- "Initial view" = the `min`/`max` the app put in `options.scales` when it built the chart (`undefined` = autoscale).
+- Give the scales `ticks.includeBounds:false`, or a zoomed axis shows an odd label at each end.
+- Chart.js 3.9.1 from `lib/chart.min.js` (works offline, one request), not three CDN scripts.
+- Live data: push the points, then `chart.update('none')` **once per animation frame**, not once per sample, and
+  skip charts whose canvas is hidden (`offsetParent === null`), bringing them up to date when their tab opens.
+- Keep its touch rules identical to `plot-interactions.js` when either changes.
+
+Check it with `scripts/check-chart-interactions.js <url> <canvasId>` (same server as below; `SETUP_JS` may be
+async code that opens the plot's tab and puts data on it): 20 checks, phone and desktop.
+
 ## Checking
 
 ```bash
@@ -177,5 +209,5 @@ a tap; use `plotly_doubleclick`, not the DOM `dblclick`; clear `_hoversubplot` a
 
 The reference copy is the plugin `ferrucci-lab` in the private repo `ferrucci-franco/claude-skills`
 (`plugins/ferrucci-lab/skills/plot-interactions/`); repos used in cloud sessions carry a copy in
-`.claude/skills/plot-interactions/`. After changing a copy, bring the change back to the reference with
+`.claude/skills/plot-interactions/`. `assets/chart-interactions.js` is the file used by `pendulum/` (copy it both ways). After changing a copy, bring the change back to the reference with
 `scripts/sync-skill.sh from <this repo>` run in `claude-skills` (or ask the owner to), so the other repos get it.
