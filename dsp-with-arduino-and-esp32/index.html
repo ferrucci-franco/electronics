@@ -1332,7 +1332,7 @@
     </button>
     <span class="step-arrow">→</span>
     <button class="step-tab" data-step="3">
-      <span class="num">3</span><span id="stepLabel3">Simulation du filtre</span>
+      <span class="num">3</span><span id="stepLabel3">Choix du filtre &amp; simulation</span>
     </button>
     <span class="step-arrow">→</span>
     <button class="step-tab" data-step="4">
@@ -1595,9 +1595,9 @@ Implement a real-time digital signal acquisition and processing system using Ard
   const state = { lang: 'fr', step: 1, board: 'uno' };   // board : carte du schéma de montage (uno | esp32)
 
   const stepLabels = {
-    es: {1:'Montaje',2:'Repaso: aliasing',3:'Simulación del filtro',4:'Conexión a la placa',5:'Bode & Medidas'},
-    fr: {1:'Montage',2:'Rappel : repliement',3:'Simulation du filtre',4:'Connexion à la carte',5:'Bode & Mesures'},
-    en: {1:'Setup',2:'Recap: aliasing',3:'Filter simulation',4:'Connect to the board',5:'Bode & Measurements'}
+    es: {1:'Montaje',2:'Repaso: aliasing',3:'Elección del filtro & simulación',4:'Conexión a la placa',5:'Bode & Medidas'},
+    fr: {1:'Montage',2:'Rappel : repliement',3:'Choix du filtre & simulation',4:'Connexion à la carte',5:'Bode & Mesures'},
+    en: {1:'Setup',2:'Recap: aliasing',3:'Filter choice & simulation',4:'Connect to the board',5:'Bode & Measurements'}
   };
 
   const appTitles = {
@@ -4326,53 +4326,6 @@ Implement a real-time digital signal acquisition and processing system using Ard
           <div class="step3-layout">
             <!-- Panel lateral -->
             <div class="step3-panel">
-              <!-- Entrada -->
-              <div class="step3-section">
-                <div class="step3-section-title">${t('section_input')}</div>
-                <div class="step3-group step3-board-row">
-                  <span>${t('board_label')}</span>
-                  <div class="board-pill" role="tablist">${['uno', 'esp32'].map(b => `<button type="button" role="tab" data-board="${b}" class="${state.board === b ? 'active' : ''}">${montageBoardLabels[b]}</button>`).join('')}</div>
-                </div>
-                <div class="step3-group">
-                  <div class="step3-row"><span>${t('input_signal_type')}</span></div>
-                  <select id="step3SignalType">
-                    <option value="sine" ${S.signal === 'sine' ? 'selected' : ''}>${t('signal_sine')}</option>
-                    <option value="square" ${S.signal === 'square' ? 'selected' : ''}>${t('signal_square')}</option>
-                    <option value="triangular" ${S.signal === 'triangular' ? 'selected' : ''}>${t('signal_tri')}</option>
-                  </select>
-                </div>
-                <div class="step3-group">
-                  <div class="step3-row"><span>${t('vmax_label')}</span></div>
-                  <div class="step3-range-row">
-                    <input type="range" id="step3VmaxSlider" min="${step3VRange()[0]}" max="${step3VRange()[1]}" step="0.1" value="${S.vmax}">
-                    <input type="text" id="step3VmaxNumber" inputmode="decimal" enterkeyhint="done" autocomplete="off" value="${step3Fmt(S.vmax, 2)}">
-                  </div>
-                </div>
-                <div class="step3-group">
-                  <div class="step3-row"><span>${t('vmin_label')}</span></div>
-                  <div class="step3-range-row">
-                    <input type="range" id="step3VminSlider" min="${step3VRange()[0]}" max="${step3VRange()[1]}" step="0.1" value="${S.vmin}">
-                    <input type="text" id="step3VminNumber" inputmode="text" enterkeyhint="done" autocomplete="off" value="${step3Fmt(S.vmin, 2)}">
-                  </div>
-                  <div class="step3-note" id="step3AdcSat" style="display:none; color:var(--accent2); font-weight:600;"></div>
-                </div>
-                <div class="step3-group">
-                  <div class="step3-row"><span>${t('fin_label')}</span></div>
-                  <div class="step3-note">${t('fin_note')}</div>
-                  <div class="step3-range-row">
-                    <input type="range" id="step3F0LogSlider" min="0" max="1000" step="1" value="${step3InvLog(S.f0)}">
-                    <input type="text" id="step3F0Number" inputmode="decimal" enterkeyhint="done" autocomplete="off" value="${step3Fmt(S.f0, 0)}">
-                  </div>
-                </div>
-                <div class="step3-group" id="step3DutyGroup" style="display:${S.signal === 'square' ? 'block' : 'none'}">
-                  <div class="step3-row"><span>${t('duty_label')}</span></div>
-                  <div class="step3-range-row">
-                    <input type="range" id="step3DutySlider" min="5" max="95" step="5" value="${S.duty}">
-                    <input type="text" id="step3DutyNumber" inputmode="decimal" enterkeyhint="done" autocomplete="off" value="${step3Fmt(S.duty, 0)}">
-                  </div>
-                </div>
-              </div>
-
               <!-- Filtro -->
               <div class="step3-section">
                 <div class="step3-section-title">${t('section_filter')}</div>
@@ -4473,6 +4426,53 @@ Implement a real-time digital signal acquisition and processing system using Ard
                   </select>
                 </div>
                 <div class="step3-note">${t('filter_note')}</div>
+              </div>
+
+              <!-- Entrada -->
+              <div class="step3-section">
+                <div class="step3-section-title">${t('section_input')}</div>
+                <div class="step3-group step3-board-row">
+                  <span>${t('board_label')}</span>
+                  <div class="board-pill" role="tablist">${['uno', 'esp32'].map(b => `<button type="button" role="tab" data-board="${b}" class="${state.board === b ? 'active' : ''}">${montageBoardLabels[b]}</button>`).join('')}</div>
+                </div>
+                <div class="step3-group">
+                  <div class="step3-row"><span>${t('input_signal_type')}</span></div>
+                  <select id="step3SignalType">
+                    <option value="sine" ${S.signal === 'sine' ? 'selected' : ''}>${t('signal_sine')}</option>
+                    <option value="square" ${S.signal === 'square' ? 'selected' : ''}>${t('signal_square')}</option>
+                    <option value="triangular" ${S.signal === 'triangular' ? 'selected' : ''}>${t('signal_tri')}</option>
+                  </select>
+                </div>
+                <div class="step3-group">
+                  <div class="step3-row"><span>${t('vmax_label')}</span></div>
+                  <div class="step3-range-row">
+                    <input type="range" id="step3VmaxSlider" min="${step3VRange()[0]}" max="${step3VRange()[1]}" step="0.1" value="${S.vmax}">
+                    <input type="text" id="step3VmaxNumber" inputmode="decimal" enterkeyhint="done" autocomplete="off" value="${step3Fmt(S.vmax, 2)}">
+                  </div>
+                </div>
+                <div class="step3-group">
+                  <div class="step3-row"><span>${t('vmin_label')}</span></div>
+                  <div class="step3-range-row">
+                    <input type="range" id="step3VminSlider" min="${step3VRange()[0]}" max="${step3VRange()[1]}" step="0.1" value="${S.vmin}">
+                    <input type="text" id="step3VminNumber" inputmode="text" enterkeyhint="done" autocomplete="off" value="${step3Fmt(S.vmin, 2)}">
+                  </div>
+                  <div class="step3-note" id="step3AdcSat" style="display:none; color:var(--accent2); font-weight:600;"></div>
+                </div>
+                <div class="step3-group">
+                  <div class="step3-row"><span>${t('fin_label')}</span></div>
+                  <div class="step3-note">${t('fin_note')}</div>
+                  <div class="step3-range-row">
+                    <input type="range" id="step3F0LogSlider" min="0" max="1000" step="1" value="${step3InvLog(S.f0)}">
+                    <input type="text" id="step3F0Number" inputmode="decimal" enterkeyhint="done" autocomplete="off" value="${step3Fmt(S.f0, 0)}">
+                  </div>
+                </div>
+                <div class="step3-group" id="step3DutyGroup" style="display:${S.signal === 'square' ? 'block' : 'none'}">
+                  <div class="step3-row"><span>${t('duty_label')}</span></div>
+                  <div class="step3-range-row">
+                    <input type="range" id="step3DutySlider" min="5" max="95" step="5" value="${S.duty}">
+                    <input type="text" id="step3DutyNumber" inputmode="decimal" enterkeyhint="done" autocomplete="off" value="${step3Fmt(S.duty, 0)}">
+                  </div>
+                </div>
               </div>
 
               <!-- Nyquist -->
