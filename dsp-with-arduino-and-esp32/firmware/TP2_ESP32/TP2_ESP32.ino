@@ -1,10 +1,6 @@
 /*  ===========================================================================
     ESP32 WROOM-32 — ADC → filtre (FIR / RII / biquads en cascade) → DAC @ Fs
-    Version du programme : 2.1  (commande 'version' → "FW 2.1")
-    2.1 : le calcul d'un échantillon (CNA, CAN, filtre) ne se fait plus dans l'interruption du
-          timer mais dans une tâche FreeRTOS prioritaire sur le cœur 0, réveillée par le timer.
-          Dans l'interruption, analogRead() (pilote « oneshot » du core 3, non prévu pour une ISR)
-          et le calcul dépassaient la période de 100 µs à Fs = 10 kHz : la carte ne suivait plus.
+    Version du programme : 2.0  (commande 'version' → "FW 2.0")
     - sos [b0,b1,b2,a1,a2, ...] : cascade de cellules du second ordre (forme directe II
       transposée), robuste en float32 jusqu'à l'ordre 8 (4 cellules)
     - GPIO27 : carré à Fs/2   GPIO33 : à 1 pendant le calcul d'un échantillon
@@ -27,7 +23,7 @@
 #define PIN_PROBE         27        // broche sonde (carrée ~Fs/2)
 #define PIN_BUSY          33        // à 1 pendant le calcul d'un échantillon
 #define MAX_SOS            4        // cellules du second ordre (ordre 8 au maximum)
-#define FW_VERSION        "2.1"
+#define FW_VERSION        "2.0"
 
 #define ADC_BITS          12
 #define DAC_BITS           8        // ESP32 DAC : 8 bits
@@ -186,10 +182,8 @@ static inline uint16_t filter_step(uint16_t x_code) {
   return clamp_u16_int(y_code, 0, DAC_MAX_CODE);
 }
 
-// ===================== Tâche de calcul (réveillée par le timer) ===============
-static TaskHandle_t dspTaskHandle = nullptr;
-
-static void sample_once() {
+// ============================ ISR du timer ===================================
+void IRAM_ATTR on_timer_irq() {
   // Broche sonde : carrée ~Fs/2
   static bool tgl = false;
   tgl = !tgl;
@@ -212,21 +206,6 @@ static void sample_once() {
     tick_count = 0;
     poll_request = true;
   }
-}
-
-static void dsp_task(void*) {
-  for (;;) {
-    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);   // attend le top du timer
-    sample_once();
-  }
-}
-
-// ============================ ISR du timer ===================================
-// Seulement un réveil de la tâche : aucun accès au CAN ni calcul en interruption
-void ARDUINO_ISR_ATTR on_timer_irq() {
-  BaseType_t woken = pdFALSE;
-  if (dspTaskHandle) vTaskNotifyGiveFromISR(dspTaskHandle, &woken);
-  if (woken) portYIELD_FROM_ISR();
 }
 
 // ======================= (Re)programmation du timer ==========================
@@ -497,9 +476,6 @@ void setup() {
   // Premier calcul pour initialiser pendingSample
   uint16_t x0 = analogRead(ADC_PIN);
   pendingSample = filter_step(x0);
-
-  // Tâche de calcul : priorité maximale, sur le cœur 0 (loop() et le port série restent sur le cœur 1)
-  xTaskCreatePinnedToCore(dsp_task, "dsp", 4096, nullptr, configMAX_PRIORITIES - 1, &dspTaskHandle, 0);
 
   // Démarre Fs=1000 Hz SANS dépendre de Serial
   reprogram_timer(1000);
