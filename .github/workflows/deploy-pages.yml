@@ -45,6 +45,9 @@ jobs:
           (cd site && zip -qr "$APP/${APP}_$SHA.zip" "$APP" -x '*.zip')
           ls -l "site/$APP/${APP}_$SHA.zip"
 
+      - name: Offline copy of bode-measure (zip named after its last commit, Plotly and KaTeX inside)
+        run: .github/scripts/offline-bode-measure.sh site
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 

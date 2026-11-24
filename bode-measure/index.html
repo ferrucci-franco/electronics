@@ -496,6 +496,7 @@
       <div class="muted copyright">
         © 2025 Franco Ferrucci<br>
         <a href="https://ferrucci-lab.com/" target="_blank" rel="noopener">ferrucci-lab.com</a>
+        <span id="offlineRow" hidden><br><a id="offlineZip" download></a></span>
       </div>
     </aside>
 
@@ -730,6 +731,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const LOCALES = {fr:'fr-FR', en:'en-US', es:'es-ES'};
   const DEFAULT_ROWS = 8;
   const BODE_FMIN = 10, BODE_FMAX = 1e5;
+  // Commit of the published version: filled in by the deployment (.github/workflows/deploy-pages.yml), which also
+  // builds bode-measure_<commit>.zip, a copy that works without Internet (Plotly and KaTeX inside). Empty locally.
+  const BUILD_COMMIT = '';
   const KINDS = ['rc', 'rlc', 'rcd', 'ma'];            // analog RC, series RLC, digital RC (discrete filter), moving average
   const isDigital = kind => kind === 'rcd' || kind === 'ma';
   // phones and tablets: the CSV and the PDF report go to the share menu (WhatsApp, mail, Drive…)
@@ -782,7 +786,8 @@ document.addEventListener('DOMContentLoaded', () => {
       tau:'Constante de temps équivalente τ = a·T<sub>s</sub>/(1−a)', firstZero:'Premier zéro du gain F<sub>s</sub>/N', nyq:'Fréquence de Nyquist F<sub>s</sub>/2',
       boardNote:'Théorie vue à l’oscilloscope : réponse du filtre × retard de la carte. Le CNA sort y[n−1] (1 échantillon) et le maintient jusqu’au suivant (bloqueur d’ordre zéro : ½ échantillon en moyenne), soit −540°·f/F<sub>s</sub> de phase en plus ; le module est celui du filtre.',
       magDb:'Gain en dB (décoché : en V/V)', bodeYlin:'G (V/V)', overlayLbl:'Superposer au Bode', overlayNone:'— aucun —',
-      reportOverlay:'Relevé superposé'
+      reportOverlay:'Relevé superposé',
+      offlineZip:'Version hors ligne (.zip)', offlineTip:'À décompresser, puis ouvrir index.html : fonctionne sans Internet.'
     },
     en:{
       title:'Bode Plot Measurement Sheet — RC, series RLC, digital filters',
@@ -829,7 +834,8 @@ document.addEventListener('DOMContentLoaded', () => {
       tau:'Equivalent time constant τ = a·T<sub>s</sub>/(1−a)', firstZero:'First zero of the gain F<sub>s</sub>/N', nyq:'Nyquist frequency F<sub>s</sub>/2',
       boardNote:'Theory as seen on the oscilloscope: the filter’s response × the board’s delay. The DAC outputs y[n−1] (1 sample) and holds it until the next one (zero-order hold: ½ sample on average), i.e. −540°·f/F<sub>s</sub> of extra phase; the magnitude is the filter’s.',
       magDb:'Gain in dB (unchecked: V/V)', bodeYlin:'G (V/V)', overlayLbl:'Overlay on the Bode plot', overlayNone:'— none —',
-      reportOverlay:'Overlaid measurement'
+      reportOverlay:'Overlaid measurement',
+      offlineZip:'Offline version (.zip)', offlineTip:'Unzip it, then open index.html: works without Internet.'
     },
     es:{
       title:'Hoja de medición de diagrama de Bode — RC, RLC serie, filtros digitales',
@@ -876,7 +882,8 @@ document.addEventListener('DOMContentLoaded', () => {
       tau:'Constante de tiempo equivalente τ = a·T<sub>s</sub>/(1−a)', firstZero:'Primer cero de la ganancia F<sub>s</sub>/N', nyq:'Frecuencia de Nyquist F<sub>s</sub>/2',
       boardNote:'Teoría vista en el osciloscopio: respuesta del filtro × retardo de la placa. El DAC saca y[n−1] (1 muestra) y la mantiene hasta la siguiente (retenedor de orden cero: ½ muestra en promedio), o sea −540°·f/F<sub>s</sub> de fase adicional; el módulo es el del filtro.',
       magDb:'Ganancia en dB (sin marcar: en V/V)', bodeYlin:'G (V/V)', overlayLbl:'Superponer en el Bode', overlayNone:'— ninguno —',
-      reportOverlay:'Medición superpuesta'
+      reportOverlay:'Medición superpuesta',
+      offlineZip:'Versión sin conexión (.zip)', offlineTip:'Descomprimir y abrir index.html: funciona sin Internet.'
     }
   };
 
@@ -1337,6 +1344,11 @@ document.addEventListener('DOMContentLoaded', () => {
     renderFormulas();
     renderFitButtons();
     $('#splitter').title = t.splitter; $('#splitter').setAttribute('aria-label', t.splitter);
+    if(BUILD_COMMIT && /^https?:$/.test(location.protocol)){
+      const z = $('#offlineZip');
+      z.href = `bode-measure_${BUILD_COMMIT}.zip`; z.textContent = `${t.offlineZip} — ${BUILD_COMMIT}`; z.title = t.offlineTip;
+      $('#offlineRow').hidden = false;
+    }
     requestAnimationFrame(applyLeftWidth);   // header widths changed: the automatic width may too
     renderCircuitOptions();
     if(!clearBox.hidden) $('#clearText').textContent = t.clearText(currentConfigName());
