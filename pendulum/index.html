@@ -207,6 +207,7 @@ button,label,.btn,.tab-btn,.icon-btn,.lang-btn,.src-btn,.spd-btn,.psrc-tab,.pan-
 [data-theme="dark"] .analysis-run-btn:hover:not(:disabled){background:#0a6d57!important;border-color:#16c49a!important;box-shadow:0 0 0 4px rgba(20,212,176,.18)}
 .status-badge{font:500 11px var(--font-mono);padding:5px 8px;border-radius:4px;text-align:center;background:var(--bg);border:1px solid var(--border);color:var(--text2)}
 .status-badge.connected{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.3);color:var(--success)}
+.status-badge.lost{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.45);color:var(--danger)}
 .status-badge.running{background:rgba(59,142,255,.1);border-color:rgba(59,142,255,.3);color:var(--accent)}
 .live-val{font:600 22px var(--font-mono);text-align:center;padding:4px 0}
 .live-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;text-align:center;margin-bottom:2px}
@@ -1293,7 +1294,7 @@ EN:{
   hist_sys2:'The <strong>sliding mass</strong> can be positioned anywhere along the rod. Moving it toward or away from the pivot simultaneously changes the effective distance to the axis and the moment of inertia of the system. This lets you study how the oscillation period varies with geometry — and verify whether the theoretical model correctly predicts that change.',
   hist_sys3:'The <strong>pivot axis</strong> is directly coupled to a <strong>rotary encoder</strong> with 1000 pulses per revolution. Thanks to quadrature counting, the system distinguishes 4000 positions per revolution, giving an angular resolution of <strong>0.09°</strong>. Every 20 ms, an <strong>Arduino</strong> microcontroller converts those pulses into an angle and a timestamp, and sends that data via USB to this application.',
   hist_sys4:'To study <strong>aerodynamic damping</strong>, the device includes an interchangeable accessory: two plastic pieces that hold a sheet of paper forming a <strong>sail</strong>. You decide the size by cutting the sheet. A larger surface area increases air resistance and makes the pendulum stop faster — without adding significant mass to the system. The effect is directly visible in the decay curve of the recorded data.',
-  fit_x:'Fit X',fit_y:'Fit Y',fit_all:'Fit all',zoom_hint:'Drag sideways to zoom on X, up or down to zoom on Y, diagonally for a window',fullscreen:'Full screen',exit_fullscreen:'Exit full screen',exit_pill:'Exit full screen (Esc)',offline_zip:'Offline version (.zip)',offline_tip:'Unzip it, then open index.html: works without Internet.',
+  st_connected:'Connected',st_disconnected:'Disconnected',st_lost:'Connection lost',fit_x:'Fit X',fit_y:'Fit Y',fit_all:'Fit all',zoom_hint:'Drag sideways to zoom on X, up or down to zoom on Y, diagonally for a window',fullscreen:'Full screen',exit_fullscreen:'Exit full screen',exit_pill:'Exit full screen (Esc)',offline_zip:'Offline version (.zip)',offline_tip:'Unzip it, then open index.html: works without Internet.',
   autoscale:'Auto Scale XY ✓',showraw:'Show raw data in console (F12)',showpendulum:'Show pendulum animation',no_data:'No data for the selected source.<br>→ Check that the data source (above) matches where your data came from: <em>Acquisition</em> for Arduino, <em>Simulation</em> for the simulator.<br>→ If you have no data yet, go to Tab 2 to connect the Arduino or run the simulator.',
   ax_time:'Time (s)',ax_angle:'Angle (°)',ax_anglet:'Angle θ(t) (°)',ax_period:'Period (s)',ax_theta:'θ (°)',ax_dtheta:'dθ/dt (°/s)',ax_omega:'ω(t) (°/s)',
   enc_pro:'⚙ Encoder simulation',enc_ppr:'Pulses/rev',enc_disp_lbl:'Display:',enc_cont:'Continuous',enc_disc:'Discrete',enc_both:'Cont+Disc',enc_step:'°/step',enc_note:'💡 You can also enable/disable the encoder simulation, or change its parameters, after the simulation ends.',
@@ -1350,7 +1351,7 @@ FR:{
   hist_sys2:'La <strong>masse coulissante</strong> peut être positionnée en n\'importe quel point de la tige. En la déplaçant vers l\'axe de rotation ou en l\'en éloignant, vous modifiez simultanément la distance effective au pivot et le moment d\'inertie du système. Cela vous permettra d\'étudier comment la période d\'oscillation varie en fonction de la géométrie — et de vérifier si le modèle théorique prédit correctement ce changement.',
   hist_sys3:'L\'<strong>axe de rotation</strong> est directement couplé à un <strong>encodeur rotatif</strong> de 1000 impulsions par tour. Grâce au comptage en quadrature, le système distingue 4000 positions distinctes par tour, ce qui correspond à une résolution angulaire de <strong>0,09°</strong>. Toutes les 20 ms, un microcontrôleur <strong>Arduino</strong> convertit ces impulsions en angle et en instant de temps, et envoie cette donnée via USB vers cette application.',
   hist_sys4:'Pour étudier l\'<strong>amortissement aérodynamique</strong>, le dispositif comprend un accessoire interchangeable : deux pièces plastiques qui maintiennent une feuille de papier formant une <strong>voile</strong>. Vous décidez de la taille en découpant la feuille. Une surface plus grande augmente la résistance de l\'air et fait s\'arrêter le pendule plus rapidement — sans ajouter de masse significative au système. L\'effet est directement observable dans la courbe de décroissance des données enregistrées.',
-  fit_x:'Ajuster X',fit_y:'Ajuster Y',fit_all:'Tout ajuster',zoom_hint:'Glissez sur le côté pour zoomer en X, vers le haut ou le bas pour zoomer en Y, en diagonale pour une fenêtre',fullscreen:'Plein écran',exit_fullscreen:'Quitter le plein écran',exit_pill:'Quitter le plein écran (Échap)',offline_zip:'Version hors ligne (.zip)',offline_tip:'À décompresser, puis ouvrir index.html : fonctionne sans Internet.',
+  st_connected:'Connecté',st_disconnected:'Déconnecté',st_lost:'Connexion perdue',fit_x:'Ajuster X',fit_y:'Ajuster Y',fit_all:'Tout ajuster',zoom_hint:'Glissez sur le côté pour zoomer en X, vers le haut ou le bas pour zoomer en Y, en diagonale pour une fenêtre',fullscreen:'Plein écran',exit_fullscreen:'Quitter le plein écran',exit_pill:'Quitter le plein écran (Échap)',offline_zip:'Version hors ligne (.zip)',offline_tip:'À décompresser, puis ouvrir index.html : fonctionne sans Internet.',
   autoscale:'Échelle Auto XY ✓',showraw:'Données brutes en console (F12)',showpendulum:'Afficher animation du pendule',no_data:'Aucune donnée pour la source sélectionnée.<br>→ Vérifiez que la source de données (ci-dessus) correspond à l\'origine : <em>Acquisition</em> pour l\'Arduino, <em>Simulation</em> pour le simulateur.<br>→ Si vous n\'avez pas encore de données, allez à l\'onglet 2 pour acquérir ou simuler.',
   ax_time:'Temps (s)',ax_angle:'Angle (°)',ax_anglet:'Angle θ(t) (°)',ax_period:'Période (s)',ax_theta:'θ (°)',ax_dtheta:'dθ/dt (°/s)',ax_omega:'ω(t) (°/s)',
   enc_pro:'⚙ Simulation encodeur',enc_ppr:'Impuls./tour',enc_disp_lbl:'Affichage :',enc_cont:'Continu',enc_disc:'Discret',enc_both:'Cont+Disc',enc_step:'°/pas',enc_note:'💡 Vous pouvez aussi activer/désactiver la simulation d\'encodeur, ou modifier ses paramètres, après la fin de la simulation.',
@@ -1407,7 +1408,7 @@ ES:{
   hist_sys2:'La <strong>masa deslizante</strong> puede posicionarse en cualquier punto de la varilla. Al moverla hacia el eje de rotación o alejándola, cambias simultáneamente la distancia efectiva al pivote y el momento de inercia del sistema. Esto te permitirá estudiar cómo varía el período de oscilación en función de la geometría — y verificar si el modelo teórico predice correctamente ese cambio.',
   hist_sys3:'El <strong>eje de rotación</strong> está acoplado directamente a un <strong>encoder rotatorio</strong> de 1000 pulsos por revolución. Gracias al conteo en cuadratura, el sistema distingue 4000 posiciones distintas por vuelta, lo que equivale a una resolución angular de <strong>0,09°</strong>. Cada 20 ms, un microcontrolador <strong>Arduino</strong> convierte esos pulsos en ángulo e instante de tiempo, y envía ese dato por USB hacia esta aplicación.',
   hist_sys4:'Para estudiar el <strong>amortiguamiento aerodinámico</strong>, el dispositivo incluye un accesorio intercambiable: dos piezas de plástico que sujetan una hoja de papel formando una <strong>vela</strong>. Tú decides el tamaño recortando la hoja. Una superficie mayor aumenta la resistencia del aire y hace que el péndulo se detenga más rápidamente — sin añadir masa significativa al sistema. El efecto es directamente observable en la curva de decaimiento de los datos registrados.',
-  fit_x:'Ajustar X',fit_y:'Ajustar Y',fit_all:'Ajustar todo',zoom_hint:'Arrastra de lado para ampliar en X, arriba o abajo para ampliar en Y, en diagonal para una ventana',fullscreen:'Pantalla completa',exit_fullscreen:'Salir de pantalla completa',exit_pill:'Salir de pantalla completa (Esc)',offline_zip:'Versión sin conexión (.zip)',offline_tip:'Descomprimir y abrir index.html: funciona sin Internet.',
+  st_connected:'Conectado',st_disconnected:'Desconectado',st_lost:'Conexión perdida',fit_x:'Ajustar X',fit_y:'Ajustar Y',fit_all:'Ajustar todo',zoom_hint:'Arrastra de lado para ampliar en X, arriba o abajo para ampliar en Y, en diagonal para una ventana',fullscreen:'Pantalla completa',exit_fullscreen:'Salir de pantalla completa',exit_pill:'Salir de pantalla completa (Esc)',offline_zip:'Versión sin conexión (.zip)',offline_tip:'Descomprimir y abrir index.html: funciona sin Internet.',
   autoscale:'Auto Escala XY ✓',showraw:'Datos brutos en consola (F12)',showpendulum:'Mostrar animación del péndulo',no_data:'Sin datos para la fuente seleccionada.<br>→ Verificá que la fuente de datos (arriba) coincida con el origen: <em>Adquisición</em> si usaste el Arduino, <em>Simulación</em> si corriste el simulador.<br>→ Si aún no tenés datos, andá a la pestaña 2 y adquirí o simulá primero.',
   ax_time:'Tiempo (s)',ax_angle:'Ángulo (°)',ax_anglet:'Ángulo θ(t) (°)',ax_period:'Período (s)',ax_theta:'θ (°)',ax_dtheta:'dθ/dt (°/s)',ax_omega:'ω(t) (°/s)',
   enc_pro:'⚙ Simulación encoder',enc_ppr:'Pulsos/rev',enc_disp_lbl:'Visualización:',enc_cont:'Continuo',enc_disc:'Discreto',enc_both:'Cont+Disc',enc_step:'°/paso',enc_note:'💡 También podés habilitar/deshabilitar la simulación del encoder, o cambiar sus parámetros, luego de finalizada la simulación.',
@@ -2123,6 +2124,7 @@ const appFs=AppFullscreen.install({button:document.getElementById('fsBtn'),texts
 function refreshAppUiTexts(){
   Object.values(chartUi).forEach(ui=>ui.refresh());
   appFs.refresh();
+  retranslateSerialStatus();
   const L=LANG[curLang]||LANG.EN;
   if(BUILD_COMMIT){
     document.querySelectorAll('.offline-zip').forEach(z=>{
@@ -2444,24 +2446,59 @@ document.getElementById('connectBtn').onclick=async()=>{
     document.getElementById('connectBtn').disabled=true;
     document.getElementById('disconnectBtn').disabled=false;
     document.querySelectorAll('.src-btn').forEach(x=>x.disabled=true);
-    const sb=document.getElementById('serialStatus');sb.textContent='Connected';sb.className='status-badge connected';
-  }catch(e){if(e.name!=='NotFoundError')showToast('Error: '+e.message);}
+    setSerialStatus('st_connected','connected');
+  }catch(e){
+    if(e.name!=='NotFoundError')showToast('Error: '+e.message);
+    // a port opened but then failed (cable pulled during the connection): leave nothing half open
+    if(serialPort&&document.getElementById('disconnectBtn').disabled){keepReading=false;const p=serialPort;serialPort=null;try{await p.close();}catch(_){}}
+  }
 };
 
-document.getElementById('disconnectBtn').onclick=async()=>{
+// Status line under the two buttons, in the app's language (kept up to date on a language change).
+var serialStatusKey=null,serialStatusText='',serialLostTimer=0;
+function setSerialStatus(key,cls){
+  clearTimeout(serialLostTimer);serialLostTimer=0;
+  serialStatusKey=key;
+  const sb=document.getElementById('serialStatus');
+  serialStatusText=gL(key);
+  sb.textContent=serialStatusText;sb.className='status-badge'+(cls?' '+cls:'');
+}
+// After a language change; not when the simulation wrote its own status (Running, Paused…) there meanwhile.
+function retranslateSerialStatus(){
+  const sb=document.getElementById('serialStatus');
+  if(!serialStatusKey||sb.textContent!==serialStatusText)return;
+  serialStatusText=gL(serialStatusKey);sb.textContent=serialStatusText;
+}
+// Buttons and data source back to the "not connected" state; the port is released.
+async function closeSerial(){
   keepReading=false;
-  try{if(serialReader)await serialReader.cancel();}catch(e){}
-  try{if(serialPort)await serialPort.close();}catch(e){}
+  const reader=serialReader,port=serialPort;
   serialPort=null;serialReader=null;
   document.getElementById('connectBtn').disabled=false;
   document.getElementById('disconnectBtn').disabled=true;
   document.querySelectorAll('.src-btn').forEach(x=>x.disabled=false);
-  const sb=document.getElementById('serialStatus');sb.textContent='Disconnected';sb.className='status-badge';
   document.getElementById('saveBtn').disabled=store.acq.time.length===0;
+  try{if(reader)await reader.cancel();}catch(e){}
+  try{if(port)await port.close();}catch(e){}
+}
+document.getElementById('disconnectBtn').onclick=async()=>{
+  await closeSerial();
+  setSerialStatus('st_disconnected','');
 };
+// The cable was unplugged (or the board reset): say so briefly, then show the normal "disconnected" state.
+function serialConnectionLost(port){
+  if(!serialPort||(port&&port!==serialPort))return; // already handled, or another device
+  closeSerial();
+  setSerialStatus('st_lost','lost');
+  serialLostTimer=setTimeout(()=>setSerialStatus('st_disconnected',''),2500);
+}
+if('serial' in navigator){
+  navigator.serial.addEventListener('disconnect',e=>serialConnectionLost(e.target&&e.target!==navigator.serial?e.target:e.port));
+}
 
 async function readSerial(){
   keepReading=true;
+  const port=serialPort;
   const dec=new TextDecoder();
   serialReader=serialPort.readable.getReader();
   let buf='';
@@ -2483,8 +2520,12 @@ async function readSerial(){
         if(showRawData)console.log('t='+ts.toFixed(3)+'s  θ='+ang+'°  raw='+tms+'ms');
       }
     }
-  }catch(e){if(keepReading)console.error(e);}
-  finally{try{serialReader.releaseLock();}catch(e){}}
+  }catch(e){}
+  finally{
+    try{if(serialReader)serialReader.releaseLock();}catch(e){}
+    // the loop ended although nobody asked to stop: the device is gone
+    if(keepReading&&serialPort===port)serialConnectionLost(port);
+  }
 }
 
 // ============================================================
