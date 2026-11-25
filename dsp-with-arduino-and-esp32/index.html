@@ -1629,9 +1629,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
         res:'10 kΩ',
         resw1:'Protection : si le signal sort de 0 … {V} V,',
         resw2:'la résistance limite le courant qui entre dans la carte.',
-        reso1:'Protection : si un générateur est',
-        reso2:'branché sur la sortie, la résistance',
-        reso3:'limite le courant.',
+        reso:['Protège la sortie', 'si un générateur y est', 'branché par erreur.'],
         ch1:'CH1 : signal d’entrée', ch2:'CH2 : signal de sortie',
         usb1:'Câble USB', usb2:'vers l’ordinateur',
         gnd:'Masse commune : relier le GND de l’Arduino à la masse du générateur et de l’oscilloscope'},
@@ -1640,9 +1638,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
         res:'10 kΩ',
         resw1:'Protección: si la señal sale de 0 … {V} V,',
         resw2:'la resistencia limita la corriente que entra en la placa.',
-        reso1:'Protección: si se conecta por error',
-        reso2:'un generador a la salida, la',
-        reso3:'resistencia limita la corriente.',
+        reso:['Protege la salida', 'si se conecta por error', 'un generador.'],
         ch1:'CH1: señal de entrada', ch2:'CH2: señal de salida',
         usb1:'Cable USB', usb2:'hacia la computadora',
         gnd:'Masa común: unir el GND del Arduino a la masa del generador y del osciloscopio'},
@@ -1651,9 +1647,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
         res:'10 kΩ',
         resw1:'Protection: if the signal leaves 0 … {V} V,',
         resw2:'the resistor limits the current flowing into the board.',
-        reso1:'Protection: if a generator is wired',
-        reso2:'to the output by mistake, the resistor',
-        reso3:'limits the current.',
+        reso:['Protects the output', 'if a generator is wired', 'to it by mistake.'],
         ch1:'CH1: input signal', ch2:'CH2: output signal',
         usb1:'USB cable', usb2:'to the computer',
         gnd:'Common ground: connect the Arduino GND to the generator and oscilloscope ground'}
@@ -1701,7 +1695,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
     const ground = (x, y) => `<path d="M ${f(x-16)} ${f(y)} H ${f(x+16)} M ${f(x-10)} ${f(y+7)} H ${f(x+10)} M ${f(x-4)} ${f(y+14)} H ${f(x+4)}" stroke="${INK}" stroke-width="3" fill="none"/>`;
     let boardSvg, boardNote = '', usbSvg, blueSvg, redSvg, gndSvg, pinTags = '';
     let xRo, yRo, roLeft;   // résistance de protection de la sortie (verticale, sur le fil rouge)
-    const yA0 = board === 'esp32' ? 335 : 560;
+    const yA0 = board === 'esp32' ? 335 : 470;
     if (board === 'esp32') {
       // Carte ESP32 à 30 broches (WROOM-32E, USB-C), verticale, USB en bas : dessin vectoriel 280 × 520
       const ESP = {x:575, y:36, s:0.64};
@@ -1711,7 +1705,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       // bleu : par-dessus la carte jusqu'à D34 (aucun croisement avec le fil rouge)
       blueSvg = `<path d="M ${xNode} ${yBlue} V 20 H ${f(xBl)} V ${f(A1.y)} H ${f(A1.x)}" stroke="${BLUE}" stroke-width="4" fill="none" stroke-linejoin="round"/>`;
       redSvg  = `<path d="M ${f(A0.x)} ${f(A0.y)} H ${f(xRd)} V ${yRed} H ${f(CH2.x)} V ${f(CH2.y)}" stroke="${RED}" stroke-width="4" fill="none" stroke-linejoin="round"/>`;
-      xRo = xRd; yRo = 560; roLeft = false;
+      xRo = xRd; yRo = 545; roLeft = false;
       gndSvg  = `<path d="M ${f(GND.x)} ${f(GND.y)} H ${f(xGnd)} V ${f(GND.y+30)}" stroke="${INK}" stroke-width="3" fill="none"/>` + ground(xGnd, GND.y + 30);
       usbSvg  = `<path d="M ${f(USB.x)} ${f(USB.y)} V 382" stroke="${CABLE}" stroke-width="7" stroke-linecap="round" fill="none"/>
   <text x="${f(USB.x)}" y="408" text-anchor="middle" class="m-small">${t.usb1}</text>
@@ -1728,7 +1722,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       boardSvg = img(ARD,577,433,'img/arduino-uno-r4.png');
       blueSvg = `<path d="M ${xNode} ${yBlue} V ${yA1} H ${f(A1.x)} V ${f(A1.y)}" stroke="${BLUE}" stroke-width="4" fill="none" stroke-linejoin="round"/>`;
       redSvg  = `<path d="M ${f(A0.x)} ${f(A0.y)} V ${yRed} H ${f(CH2.x)} V ${f(CH2.y)}" stroke="${RED}" stroke-width="4" fill="none" stroke-linejoin="round"/>`;
-      xRo = A0.x; yRo = 625; roLeft = true;
+      xRo = A0.x; yRo = 612; roLeft = true;
       gndSvg  = `<path d="M ${f(GND.x)} ${f(GND.y)} V ${f(GND.y+40)}" stroke="${INK}" stroke-width="3" fill="none"/>` + ground(GND.x, GND.y + 40)
               + `<text x="${f(GND.x-22)}" y="${f(GND.y+50)}" text-anchor="end" class="m-small" fill="${INK}">GND</text>`;
       usbSvg  = `<path d="M ${f(USB.x)} ${f(USB.y)} H 250" stroke="${CABLE}" stroke-width="7" stroke-linecap="round" fill="none"/>
@@ -1744,7 +1738,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
     const gndNote = `<text x="30" y="34" class="m-label" fill="${INK}">${gT}</text>` +
       gLines.map((l, i) => `<text x="30" y="${60 + 24 * i}" class="m-small">${l}</text>`).join('');
     const svg = `
-<svg class="montage-svg" viewBox="0 0 1200 850" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${t.ard}">
+<svg class="montage-svg" viewBox="0 0 1200 830" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${t.ard}">
   ${boardSvg}
   ${img(OSC,658,379,'img/oscilloscope.png')}
   ${img(GEN,654,381,'img/generateur.png')}
@@ -1772,10 +1766,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
   <!-- Fil rouge : A0 → R → CH2 -->
   ${redSvg}
   <rect x="${f(xRo-11)}" y="${f(yRo-39)}" width="22" height="78" rx="2" fill="${BG}" stroke="${INK}" stroke-width="3"/>
-  <text x="${f(roLeft ? xRo-22 : xRo+22)}" y="${f(yRo+8)}" text-anchor="${roLeft ? 'end' : 'start'}" class="m-label" fill="${INK}">${t.res}</text>
-  <text x="500" y="${yBlue+44}" text-anchor="middle" class="m-small">${t.reso1}</text>
-  <text x="500" y="${yBlue+70}" text-anchor="middle" class="m-small">${t.reso2}</text>
-  <text x="500" y="${yBlue+96}" text-anchor="middle" class="m-small">${t.reso3}</text>
+  <text x="${f(roLeft ? xRo-24 : xRo+24)}" y="${f(yRo-46)}" text-anchor="${roLeft ? 'end' : 'start'}" class="m-label" fill="${INK}">${t.res}</text>
+  ${t.reso.map((l, i) => `<text x="${f(roLeft ? xRo-24 : xRo+24)}" y="${f(yRo-20+24*i)}" text-anchor="${roLeft ? 'end' : 'start'}" class="m-small">${l}</text>`).join('')}
   <text x="${f(board === 'esp32' ? A1.x - 86 : A0.x - 14)}" y="${yA0}" text-anchor="end" class="m-label" fill="${RED}">${t.a0}</text>
 
   <!-- Masse de la carte -->
