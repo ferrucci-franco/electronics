@@ -120,6 +120,8 @@ ui.refresh();   // after a language change
 - Chart.js 3.9.1 from `lib/chart.min.js` (works offline, one request), not three CDN scripts.
 - Live data: push the points, then `chart.update('none')` **once per animation frame**, not once per sample, and
   skip charts whose canvas is hidden (`offsetParent === null`), bringing them up to date when their tab opens.
+- `plugins.tooltip.animation:false` on every chart: with live redraws the tooltip's fade restarts at each
+  update and it lingers for seconds after the pointer has left the point.
 - Keep its touch rules identical to `plot-interactions.js` when either changes.
 
 Check it with `scripts/check-chart-interactions.js <url> <canvasId>` (same server as below; `SETUP_JS` may be
