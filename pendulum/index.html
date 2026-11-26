@@ -2111,7 +2111,7 @@ function onChartViewChange(chart){
 }
 INTERACTIVE_CHARTS.forEach(id=>{
   const canvas=document.getElementById(id);
-  if(canvas)chartUi[id]=ChartInteractions.attach(canvas,{getChart:()=>charts[id],texts:fitTexts,onViewChange:onChartViewChange,all:()=>Object.values(charts)});
+  if(canvas)chartUi[id]=ChartInteractions.attach(canvas,{getChart:()=>charts[id],texts:fitTexts,onViewChange:onChartViewChange,all:()=>Object.values(charts),wheelZoom:true});
 });
 // Full screen (fullscreen.js) and link to the offline copy.
 // BUILD_COMMIT is filled in by the GitHub Pages workflow (.github/workflows/deploy-pages.yml), which also

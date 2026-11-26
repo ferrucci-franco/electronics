@@ -2,7 +2,7 @@
  * ferrucci-lab.com (skill plot-interactions), without chartjs-plugin-zoom or Hammer:
  *
  *   mouse      left drag = zoom (x band, y band or window, by the direction of the drag); right or middle
- *              drag = pan every axis; wheel = page scroll, never zoom; double-click = every visible plot
+ *              drag = pan every axis; wheel = page scroll, never zoom (unless the app sets wheelZoom); double-click = every visible plot
  *              back to its initial view
  *   trackpad   two-finger swipe that starts sideways = pan (latched 800 ms); vertical = page scroll
  *   finger     fast and mostly vertical = native page scroll; slower = pan; held still then moved = zoom
@@ -16,7 +16,8 @@
  *     getChart: () => charts.acqChart,          // the chart may be destroyed and rebuilt on the same canvas
  *     texts: () => ({fitX, fitY, fitAll, zoomHint}),   // in the current language
  *     onViewChange: chart => {},                // after any change of view (linked x axes)
- *     all: () => [chart, ...]                   // charts reset together by a double-click
+ *     all: () => [chart, ...],                  // charts reset together by a double-click
+ *     wheelZoom: true                           // optional: the wheel zooms around the pointer (default: never)
  *   });
  *   ci.sync();      // after the chart is created or destroyed: remembers its initial view, shows the buttons
  *   ci.refresh();   // after a language change
@@ -274,8 +275,33 @@ body.ci-panning, body.ci-panning *{cursor:grabbing !important}
         base.dx -= pdx; base.dy -= pdy; pdx = 0; pdy = 0;
         panBy(base.chart, base.scales, base.area, base.dx, base.dy);
       }
+      // opts.wheelZoom: the wheel zooms every axis in or out around the pointer (an app's own choice; off by
+      // default, where the wheel never zooms and stays a page scroll)
+      let zacc = 0, zpt = null, zraf = 0;
+      function zoomFlush(){
+        zraf = 0;
+        const chart = getChart(), p = zpt, f = Math.exp(zacc * 0.0015);
+        zacc = 0;
+        if(!chart || !chart.chartArea || !p) return;
+        for(const sc of scalesOf(chart)){
+          const v = sc.getValueForPixel(sc.isHorizontal() ? p.x : p.y);
+          if(!isFinite(v)) continue;
+          setRange(chart, sc.id, v - (v - sc.min) * f, v + (sc.max - v) * f);
+        }
+        clearTooltip(chart);
+        chart.update('none');
+        changed(chart);
+      }
       canvas.addEventListener('wheel', e => {
         if(!base){
+          if(opts.wheelZoom && !e.ctrlKey && Math.abs(e.deltaY) > Math.abs(e.deltaX)){
+            const chart = getChart(), p = local(e), a = chart && chart.chartArea;
+            if(!a || p.x < a.left || p.x > a.right || p.y < a.top || p.y > a.bottom) return;
+            e.preventDefault();
+            zacc += Math.max(-400, Math.min(400, e.deltaY * unit(e))); zpt = p;
+            if(!zraf) zraf = requestAnimationFrame(zoomFlush);
+            return;
+          }
           if(e.ctrlKey || Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;   // mouse wheel, vertical swipe, pinch
           const chart = getChart();
           if(!chart || !chart.chartArea) return;
