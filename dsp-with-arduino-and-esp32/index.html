@@ -1701,7 +1701,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
       const ESP = {x:575, y:36, s:0.64};
       boardSvg = img(ESP,280,520,'img/esp32-devkit-30.svg');
       A1 = P(ESP,22,138.2); A0 = P(ESP,22,239.8); GND = P(ESP,22,392.2); USB = P(ESP,140,520);
-      const xBl = A1.x - 100, xRd = A1.x - 72, xGnd = A1.x - 22;
+      const xBl = A1.x - 100, xRd = A1.x - 72, xGnd = A1.x - 44;   // masse assez à gauche pour ne pas chevaucher le bord de la carte
       // bleu : par-dessus la carte jusqu'à D34 (aucun croisement avec le fil rouge)
       blueSvg = `<path d="M ${xNode} ${yBlue} V 20 H ${f(xBl)} V ${f(A1.y)} H ${f(A1.x)}" stroke="${BLUE}" stroke-width="4" fill="none" stroke-linejoin="round"/>`;
       redSvg  = `<path d="M ${f(A0.x)} ${f(A0.y)} H ${f(xRd)} V ${yRed} H ${f(CH2.x)} V ${f(CH2.y)}" stroke="${RED}" stroke-width="4" fill="none" stroke-linejoin="round"/>`;
