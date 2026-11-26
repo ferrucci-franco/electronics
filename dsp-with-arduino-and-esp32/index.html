@@ -2392,7 +2392,10 @@ Implement a real-time digital signal acquisition and processing system using Ard
     ctx.fillStyle=bgColor;
     ctx.fillRect(0,0,width,height);
 
-    const xMin=-2*Fs, xMax=2*Fs;
+    // Axe des f_IN : ±2·Fs au moins, élargi par multiples de Fs pour que le point f_IN reste visible
+    const K = Math.max(2, Math.ceil(Math.abs(f0) / Fs - 1e-9));
+    const kStep = Math.ceil(K / 4);                 // au plus ~9 graduations
+    const xMin=-K*Fs, xMax=K*Fs;
     const yMin=-Fs/2, yMax=Fs/2;
 
     const f0ToX = f => padding + ((f-xMin)/(xMax-xMin))*graphWidth;
@@ -2418,7 +2421,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
     ctx.strokeStyle=gridColor;
     ctx.lineWidth=1;
     ctx.setLineDash([2,2]);
-    for(let k=-2;k<=2;k++){
+    for(let k=-K;k<=K;k++){
+      if (K > 12 && k % kStep) continue;
       const x=f0ToX(k*Fs);
       ctx.beginPath();
       ctx.moveTo(x,padding);
@@ -2443,7 +2447,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
     ctx.strokeStyle=accentColor;
     ctx.lineWidth=2.5;
     ctx.beginPath();
-    const numPoints=1000;
+    const numPoints=Math.max(1000, 400*K);
     for(let i=0;i<=numPoints;i++){
       const f=xMin+(i/numPoints)*(xMax-xMin);
       // Calcular f* con patrón diente de sierra
@@ -2512,11 +2516,11 @@ Implement a real-time digital signal acquisition and processing system using Ard
     ctx.fillStyle=textColor;
     ctx.font='13px system-ui';
     ctx.textAlign='center';
-    ctx.fillText((-2*Fs).toFixed(0), f0ToX(-2*Fs), yZero+22);
-    ctx.fillText((-Fs).toFixed(0), f0ToX(-Fs), yZero+22);
-    ctx.fillText('0', f0ToX(0)+15, yZero+22);  // Desplazar "0" a la derecha
-    ctx.fillText(Fs.toFixed(0), f0ToX(Fs), yZero+22);
-    ctx.fillText((2*Fs).toFixed(0), f0ToX(2*Fs), yZero+22);
+    for (let k = -K; k <= K; k++) {
+      if (k % kStep) continue;
+      if (k === 0) ctx.fillText('0', f0ToX(0)+15, yZero+22);  // Desplazar "0" a la derecha
+      else ctx.fillText((k*Fs).toFixed(0), f0ToX(k*Fs), yZero+22);
+    }
     ctx.font='bold 14px system-ui';  // Negrita (même taille que l'onglet Simulation)
     ctx.textAlign='right';  // Justificado a la derecha
     if (width < 520) {   // écran étroit (téléphone) : titre au bout de l'axe, au-dessus, pour ne pas chevaucher la légende
