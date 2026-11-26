@@ -2070,7 +2070,20 @@ Implement a real-time digital signal acquisition and processing system using Ard
     document.getElementById('interpDescText').innerHTML = descText;
   }
 
+  // Diagramme spectral : axe f_IN de ±K·Fs, de 2 à 4 périodes du motif (lisible même pour Fs petite),
+  // assez pour couvrir ±100 Hz quand Fs ≥ 25 Hz ; le curseur f_IN est borné à cet intervalle.
+  const STEP2_F0_MAX = 100;
+  function step2AxisK(Fs) { return Math.max(2, Math.min(4, Math.ceil(STEP2_F0_MAX / Fs - 1e-9))); }
+  function step2F0Limit(Fs) { return Math.floor(Math.min(STEP2_F0_MAX, step2AxisK(Fs) * Fs)); }
+
   function updateStep2() {
+    {
+      const lim = step2F0Limit(step2State.Fs);
+      const sl = document.getElementById('f0Slider');
+      if (sl && +sl.max !== lim) { sl.min = -lim; sl.max = lim; }
+      if (Math.abs(step2State.f0) > lim) step2State.f0 = Math.sign(step2State.f0) * lim;
+      if (sl && +sl.value !== step2State.f0) sl.value = step2State.f0;
+    }
     const { f0, Fs, periods } = step2State;
     document.getElementById('f0Value').textContent = f0 + ' Hz';
     document.getElementById('FsValue').textContent = Fs + ' Hz';
@@ -2392,11 +2405,10 @@ Implement a real-time digital signal acquisition and processing system using Ard
     ctx.fillStyle=bgColor;
     ctx.fillRect(0,0,width,height);
 
-    // Axe des f_IN fixé par Fs seul (pas par f_IN, sinon la courbe change d'échelle pendant le glissement) :
-    // ±2·Fs au moins, et assez de multiples de Fs pour couvrir toute la course du curseur f_IN
-    const f0Max = Math.abs(parseFloat(document.getElementById('f0Slider')?.max)) || 100;
-    const K = Math.max(2, Math.ceil(f0Max / Fs - 1e-9));
-    const kStep = Math.ceil(K / 4);                 // au plus ~9 graduations
+    // Axe des f_IN fixé par Fs seul (pas par f_IN, sinon la courbe change d'échelle pendant le glissement) ;
+    // la course du curseur f_IN est limitée au même intervalle (step2F0Limit), le point reste donc toujours visible
+    const K = step2AxisK(Fs);
+    const kStep = 1;
     const xMin=-K*Fs, xMax=K*Fs;
     const yMin=-Fs/2, yMax=Fs/2;
 
