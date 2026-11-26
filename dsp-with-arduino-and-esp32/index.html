@@ -735,18 +735,34 @@
     }
 
     .step3-section{
-      background:#f5f8fc;
+      background:#e9eff7;
       border-radius:10px;
-      border:1px solid var(--border);
+      border:1px solid #c3cfde;
+      box-shadow:0 1px 2px rgba(15,23,42,.06);
       padding:8px 9px;
       display:flex;
       flex-direction:column;
       gap:6px;
     }
     :root[data-theme="dark"] .step3-section{
-      background:var(--card);
-      border-color:var(--border);
+      background:#334157;
+      border-color:#4a5b74;
+      box-shadow:none;
     }
+
+    .step3-send-row{ display:flex; flex-direction:column; gap:5px; margin-top:4px; padding-top:8px; border-top:1px dashed var(--border); }
+    .step3-send-row[hidden]{ display:none; }
+    .step3-send-btn{ padding:7px 10px; border-radius:8px; border:1px solid var(--accent-strong, var(--accent)); background:var(--accent-strong, var(--accent));
+      color:#fff; font:inherit; font-weight:600; cursor:pointer; }
+    .step3-send-btn:hover:not(:disabled){ filter:brightness(1.08); }
+    .step3-send-btn:disabled{ opacity:.6; cursor:default; }
+    .step3-send-status{ font-size:.88rem; line-height:1.3; color:var(--muted); min-height:1.3em; }
+    .step3-send-status.ok{ color:#15803d; font-weight:600; }
+    .step3-send-status.err{ color:#b91c1c; font-weight:600; }
+    .step3-send-status.warn{ color:#b45309; font-weight:600; }
+    :root[data-theme="dark"] .step3-send-status.ok{ color:#4ade80; }
+    :root[data-theme="dark"] .step3-send-status.err{ color:#f87171; }
+    :root[data-theme="dark"] .step3-send-status.warn{ color:#fbbf24; }
 
     .step3-section-title{
       margin:0 0 2px;
@@ -848,7 +864,8 @@
     .step3-plot-card{
       background:#fff;
       border-radius:10px;
-      border:1px solid var(--border);
+      border:1px solid #c3cfde;
+      box-shadow:0 1px 3px rgba(15,23,42,.08);
       padding:6px;
       display:flex;
       flex-direction:column;
@@ -859,7 +876,8 @@
 
     :root[data-theme="dark"] .step3-plot-card{
       background:var(--card);
-      border-color:var(--border);
+      border-color:#4a5b74;
+      box-shadow:none;
     }
 
     .step3-plot-title{
@@ -2551,6 +2569,12 @@ Implement a real-time digital signal acquisition and processing system using Ard
       section_input: "Entrada",
       section_nyquist: "Frecuencia de Nyquist",
       section_filter: "Filtro",
+      send_cfg_btn: "Enviar la configuración a la placa",
+      send_cfg_busy: "Enviando…",
+      send_cfg_ok: "✓ Configuración enviada a la placa ({t}).",
+      send_cfg_board_err: "✗ La placa señaló un error: {m}",
+      send_cfg_noreply: "✗ La placa no respondió: vuelva a enviar la configuración.",
+      send_cfg_stale: "Parámetros modificados desde el último envío: configuración no enviada.",
       section_visual: "Visualización",
       section_advanced: "Opciones avanzadas",
       input_signal_type: "Tipo de señal",
@@ -2635,6 +2659,12 @@ Implement a real-time digital signal acquisition and processing system using Ard
       section_input: "Entrée",
       section_nyquist: "Fréquence de Nyquist",
       section_filter: "Filtre",
+      send_cfg_btn: "Envoyer la configuration à la carte",
+      send_cfg_busy: "Envoi en cours…",
+      send_cfg_ok: "✓ Configuration envoyée à la carte ({t}).",
+      send_cfg_board_err: "✗ La carte a signalé une erreur : {m}",
+      send_cfg_noreply: "✗ Pas de réponse de la carte : renvoyer la configuration.",
+      send_cfg_stale: "Paramètres modifiés depuis le dernier envoi : configuration non envoyée.",
       section_visual: "Visualisation",
       section_advanced: "Options avancées",
       input_signal_type: "Type de signal",
@@ -2719,6 +2749,12 @@ Implement a real-time digital signal acquisition and processing system using Ard
       section_input: "Input",
       section_nyquist: "Nyquist Frequency",
       section_filter: "Filter",
+      send_cfg_btn: "Send the configuration to the board",
+      send_cfg_busy: "Sending…",
+      send_cfg_ok: "✓ Configuration sent to the board ({t}).",
+      send_cfg_board_err: "✗ The board reported an error: {m}",
+      send_cfg_noreply: "✗ No answer from the board: send the configuration again.",
+      send_cfg_stale: "Settings changed since the last send: configuration not sent.",
       section_visual: "Visualization",
       section_advanced: "Advanced options",
       input_signal_type: "Signal type",
@@ -4322,7 +4358,35 @@ Implement a real-time digital signal acquisition and processing system using Ard
     if(step3State.showTime) step3DrawTime(); else { const el = document.getElementById('step3TimePlot'); if(el) Plotly.purge(el); }
     if(step3State.showBode) step3DrawBode(); else { const m = document.getElementById('step3BodeMag'); const p = document.getElementById('step3BodePhase'); if(m) Plotly.purge(m); if(p) Plotly.purge(p); }
     step3UpdateNyquist();
+    step3UpdateSendRow();
     saveSettings();
+  }
+
+  // Envoi de la configuration depuis l'étape 3 (visible seulement quand la carte est connectée)
+  function step3CfgKey() {
+    try {
+      const { a, b, sos, Fs, filt } = getFilterCoefficients();
+      const r = v => Number(v.toPrecision(8));
+      return JSON.stringify([filt, Fs, b.map(r), a.map(r), sos ? sos.flat().map(r) : null]);
+    } catch (e) { return ''; }
+  }
+  function step3UpdateSendRow() {
+    const row = document.getElementById('step3SendRow');
+    if (!row) return;
+    row.hidden = !step4State.connected;
+    if (row.hidden) return;
+    const btn = document.getElementById('step3SendCfgBtn');
+    const st = document.getElementById('step3SendStatus');
+    const r = step4State.lastSendResult;
+    btn.disabled = !!step4State.sending;
+    if (step4State.sending) { st.className = 'step3-send-status'; st.textContent = step3t('send_cfg_busy'); return; }
+    if (!r) { st.className = 'step3-send-status'; st.textContent = ''; return; }
+    if (r.ok && r.key !== step3CfgKey()) { st.className = 'step3-send-status warn'; st.textContent = step3t('send_cfg_stale'); return; }
+    st.className = 'step3-send-status ' + (r.ok ? 'ok' : 'err');
+    st.textContent = r.ok ? step3t('send_cfg_ok').replace('{t}', r.time)
+                   : r.kind === 'board' ? step3t('send_cfg_board_err').replace('{m}', r.msg)
+                   : r.kind === 'noreply' ? step3t('send_cfg_noreply')
+                   : '✗ ' + r.msg;
   }
 
   // Render Step 3
@@ -4435,6 +4499,10 @@ Implement a real-time digital signal acquisition and processing system using Ard
                   </select>
                 </div>
                 <div class="step3-note">${t('filter_note')}</div>
+                <div id="step3SendRow" class="step3-send-row" hidden>
+                  <button id="step3SendCfgBtn" type="button" class="step3-send-btn">${t('send_cfg_btn')}</button>
+                  <div id="step3SendStatus" class="step3-send-status" aria-live="polite"></div>
+                </div>
               </div>
 
               <!-- Entrada -->
@@ -4635,6 +4703,8 @@ Implement a real-time digital signal acquisition and processing system using Ard
     document.getElementById('step3F0Number').addEventListener('change', e => syncF0FromBox(e.target.value));
 
     // Fs
+    document.getElementById('step3SendCfgBtn').addEventListener('click', () => step4SendConfig());
+    step3UpdateSendRow();
     document.getElementById('step3FsSelect').addEventListener('change', e => {
       step3State.Fs = parseInt(e.target.value, 10);
       step3UpdateFcTexts();
@@ -5048,7 +5118,10 @@ Implement a real-time digital signal acquisition and processing system using Ard
     waitingForModel: false, // Flag to capture model response
     waitingForVersion: false,
     fwVersion: null,        // '2.0' si le programme gère les cellules en cascade (commande sos)
-    boardName: ''
+    boardName: '',
+    sending: false,         // envoi de configuration en cours
+    cfgWatch: null,         // réponses de la carte attendues pendant un envoi {fsOk, done, err}
+    lastSendResult: null    // {ok, kind:'board'|'noreply'|'local', msg, time, key}
   };
 
   // Get filter coefficients from step3
@@ -5284,6 +5357,12 @@ Implement a real-time digital signal acquisition and processing system using Ard
             for (const line of lines) {
               const trimmed = line.trim();
               if (trimmed) {
+                const w = step4State.cfgWatch;
+                if (w) {
+                  if (/Hz \(OK\)/.test(trimmed)) w.fsOk = true;
+                  else if (/^(Erreur|Commande inconnue|ac set \[)/i.test(trimmed)) w.err = w.err || trimmed.replace(/^Erreur\s*:?\s*/i, '');
+                  else if (/^(BYPASS active|AC (mode: )?(ON|OFF)\b)/i.test(trimmed)) w.done = true;
+                }
                 // Réponse à 'version' : « FW x.y » (programme récent) ou « Commande inconnue » (ancien)
                 if (step4State.waitingForVersion && /^FW\s+\S+/.test(trimmed)) {
                   step4State.waitingForVersion = false;
@@ -5338,7 +5417,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
   async function step4Send(data) {
     if (!step4State.connected || !step4State.port) {
       step4Log(step4t('not_connected'), 'err');
-      return;
+      return false;
     }
 
     try {
@@ -5347,26 +5426,61 @@ Implement a real-time digital signal acquisition and processing system using Ard
       await writer.write(encoder.encode(data + '\n'));
       writer.releaseLock();
       step4Log(`TX: ${data}`, 'tx');
+      return true;
     } catch (err) {
       step4Log(`${step4t('send_error')} : ${err.message}`, 'err');
+      return false;
     }
   }
 
+  // Envoie la configuration et vérifie les réponses de la carte (« Fs = … (OK) », puis « BYPASS active. » ou
+  // « AC … » en dernière réponse ; une ligne « Erreur… » ou « Commande inconnue » signale un refus).
   async function step4SendConfig() {
+    if (step4State.sending) return;
+    step4State.sending = true;
+    step3UpdateSendRow();
+    const key = step3CfgKey();
+    const watch = step4State.cfgWatch = { fsOk:false, done:false, err:null };
+    let res;
+    try {
+      const local = await step4SendConfigCommands();
+      if (local) res = { ok:false, kind:'local', msg:local };
+      else {
+        const t0 = Date.now();
+        while (!watch.done && !watch.err && Date.now() - t0 < 2000) await new Promise(r => setTimeout(r, 50));
+        if (watch.err) res = { ok:false, kind:'board', msg:watch.err };
+        else if (watch.done && watch.fsOk) res = { ok:true };
+        else res = { ok:false, kind:'noreply' };
+      }
+    } catch (e) {
+      res = { ok:false, kind:'local', msg:e.message };
+    }
+    step4State.cfgWatch = null;
+    step4State.sending = false;
+    res.time = new Date().toLocaleTimeString(state.lang === 'en' ? 'en-GB' : state.lang);
+    res.key = key;
+    step4State.lastSendResult = res;
+    if (!res.ok && res.kind !== 'local') step4Log(res.kind === 'board' ? step3t('send_cfg_board_err').replace('{m}', res.msg) : step3t('send_cfg_noreply'), 'err');
+    step3UpdateSendRow();
+    return res;
+  }
+
+  // Commandes de configuration ; renvoie un message d'erreur locale, ou null si tout est parti
+  async function step4SendConfigCommands() {
     const { a, b, sos, Fs, filterName, fc, N, filt, Q } = getFilterCoefficients();
     const useSos = !!(sos && step4State.fwVersion && parseFloat(step4State.fwVersion) >= 2);
     const ratio = (filt === 'lp') ? step3State.lpR : step3State.hpR;
     if (step4State.boardName === 'ESP32' && Fs > 10000) {
       step4Log(step4t('esp32_fs_limit'), 'err');
-      return;
+      return step4t('esp32_fs_limit');
     }
     if (sos && !useSos && !step3PolyOkOnOldFirmware(N, ratio)) {
       step4Log(step4t('needs_new_firmware'), 'err');
-      return;
+      return step4t('needs_new_firmware');
     }
 
     // Send sampling frequency first (needed for all modes)
-    await step4Send(`fs ${Fs}`);
+    if (!await step4Send(`fs ${Fs}`)) return step4t('send_error');
 
     // Send bypass or filter mode
     if (filt === 'bypass') {
@@ -5408,6 +5522,7 @@ Implement a real-time digital signal acquisition and processing system using Ard
     // Store last sent config
     step4State.lastSentConfig = { filterName, Fs, fc, N, filt, Q };
     updateLastConfigDisplay();
+    return null;
   }
 
   function updateLastConfigDisplay() {
@@ -5463,6 +5578,12 @@ Implement a real-time digital signal acquisition and processing system using Ard
   }
 
   function updateStep4UI() {
+    // Connexion ou déconnexion : la carte redémarre, l'envoi précédent ne vaut plus
+    if (step4State._wasConnected !== step4State.connected) {
+      step4State._wasConnected = step4State.connected;
+      step4State.lastSendResult = null;
+    }
+    step3UpdateSendRow();
     const connectBtn = document.getElementById('step4ConnectBtn');
     const sendConfigBtn = document.getElementById('step4SendConfigBtn');
     const statusEl = document.getElementById('step4Status');
