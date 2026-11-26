@@ -3,7 +3,9 @@
 // (Playwright + Chromium). The Plotly apps use check-plot-interactions.js instead.
 //
 //   node check-chart-interactions.js <url> <canvasId>
-//   SETUP_JS=fill.js node check-chart-interactions.js http://127.0.0.1:8765/pendulum/ acqChart
+//   SETUP_JS=fill.js WHEEL_ZOOM=1 node check-chart-interactions.js http://127.0.0.1:8765/pendulum/ acqChart
+//
+// WHEEL_ZOOM=1: the app attached its plots with wheelZoom:true (pendulum/), so the wheel is expected to zoom.
 //
 // SETUP_JS (optional): a file whose JavaScript runs in the page after load, to show the plot and put data on
 // it (open its tab, run a simulation…); it may return a promise. The plot needs a first dataset with points.
@@ -123,7 +125,9 @@ const helpers = page => ({
     await mdrag(-dx, -dy, dx, dy); v = await view(); check('mouse: diagonal left drag zooms a window', (v[1] - v[0]) < xs * 0.9 && (v[3] - v[2]) < ys * 0.9, JSON.stringify(v));
     await mdrag(0, 0, 60, 30, 'right'); const vp = await view(); check('mouse: right drag pans', vp[0] < v[0] && vp[2] > v[2], JSON.stringify(vp));
     await page.mouse.dblclick(c.x, c.y); await wait(150); v = await view(); check('mouse: double-click resets', same(v, v0), JSON.stringify(v));
-    await page.mouse.move(c.x, c.y); await page.mouse.wheel(0, -300); await wait(150); v = await view(); check('mouse: wheel does not zoom', same(v, v0), JSON.stringify(v));
+    await page.mouse.move(c.x, c.y); await page.mouse.wheel(0, -300); await wait(150); v = await view();
+    if(process.env.WHEEL_ZOOM){ check('mouse: wheel zooms in around the pointer (app set wheelZoom)', (v[1] - v[0]) < xs * 0.9 && (v[3] - v[2]) < ys * 0.9, JSON.stringify(v)); await reset(); }
+    else check('mouse: wheel does not zoom', same(v, v0), JSON.stringify(v));
     const btn = page.locator(`xpath=//*[@id="${ID}"]/following-sibling::*[contains(@class,"ci-fit-btns")]//button`);
     await mdrag(-dx, -dy, dx, dy); await btn.nth(0).click(); await wait(120); v = await view(); check('mouse: Fit X restores x, keeps y', same(v.slice(0, 2), v0.slice(0, 2)) && (v[3] - v[2]) < ys * 0.9, JSON.stringify(v));
     await btn.nth(2).click(); await wait(120); v = await view(); check('mouse: Fit all', same(v, v0), JSON.stringify(v));

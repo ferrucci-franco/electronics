@@ -122,6 +122,9 @@ ui.refresh();   // after a language change
   skip charts whose canvas is hidden (`offsetParent === null`), bringing them up to date when their tab opens.
 - `plugins.tooltip.animation:false` on every chart: with live redraws the tooltip's fade restarts at each
   update and it lingers for seconds after the pointer has left the point.
+- `wheelZoom:true` (option, off by default): the wheel zooms every axis around the pointer. The owner asked for
+  it in `pendulum/` only, whose desktop tabs do not scroll; the rule for the other apps stays "the wheel never zooms".
+  No Shift+wheel or Ctrl+wheel variants (rejected).
 - Keep its touch rules identical to `plot-interactions.js` when either changes.
 
 Check it with `scripts/check-chart-interactions.js <url> <canvasId>` (same server as below; `SETUP_JS` may be
