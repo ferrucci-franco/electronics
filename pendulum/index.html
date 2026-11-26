@@ -2140,6 +2140,10 @@ function mkChart(id,config){
   config.options=config.options||{};
   // A zoomed or panned axis keeps round tick values (no odd label at each end).
   for(const sc of Object.values(config.options.scales||{})){sc.ticks=sc.ticks||{};if(sc.ticks.includeBounds===undefined)sc.ticks.includeBounds=false;}
+  // Tooltip shown and hidden at once: its fade was restarted by every live redraw and lingered for seconds.
+  config.options.plugins=config.options.plugins||{};
+  const tt=config.options.plugins.tooltip=config.options.plugins.tooltip||{};
+  tt.animation=false;
   // Legend on the left: the Fit buttons are in the top-right corner.
   const lg=config.options.plugins&&config.options.plugins.legend;
   if(lg&&lg.display!==false&&lg.align===undefined)lg.align='start';
