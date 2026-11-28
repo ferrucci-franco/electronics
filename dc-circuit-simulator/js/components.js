@@ -61,6 +61,18 @@
   ];
   const waveText = (c, f, u) => (sine(c) ? ' ± ' + f(c.props.amp, u) + ' ∿' : '');
 
+  // output saturation of the dependent sources: a check box and the two limits (V or A)
+  const satProps = (unit, m) => [
+    { key: 'sat', type: 'bool', def: false },
+    { key: 'smax', unit, def: m, min: -1e6, max: 1e6, show: c => c.props.sat },
+    { key: 'smin', unit, def: -m, min: -1e6, max: 1e6, show: c => c.props.sat }
+  ];
+  const satText = (c, f, u) => {
+    if (!c.props.sat) return '';
+    const lo = Math.min(c.props.smin, c.props.smax), hi = Math.max(c.props.smin, c.props.smax);
+    return lo === -hi ? ' ±' + f(hi, u) : ' [' + f(lo, u) + ', ' + f(hi, u) + ']';
+  };
+
   const TYPES = {
     resistor: {
       prefix: 'R', terms: [[-2, 0], [2, 0]], box: [-2, -0.75, 2, 0.75],
@@ -88,15 +100,17 @@
       valueText: (c, f) => f(c.props.Vn, 'V') + ' · ' + f(c.props.Pn, 'W')
     },
     // dependent sources: value = k · (control variable); the control is a sensor anywhere in the circuit
+    // (optional output saturation: the output is held between a lower and an upper limit, e.g. the supply
+    // rails of an amplifier modelled by its gain)
     depv: {
       prefix: 'E', terms: [[-2, 0], [2, 0]], box: [-2, -1.05, 2, 1.05], defRot: 1,
-      props: [{ key: 'ctrl', type: 'select', def: '' }, { key: 'k', unit: (c, ckt) => depKind(c, ckt).unit, def: 2, min: -1e9, max: 1e9 }],
-      valueText: (c, f) => depText(c)
+      props: [{ key: 'ctrl', type: 'select', def: '' }, { key: 'k', unit: (c, ckt) => depKind(c, ckt).unit, def: 2, min: -1e9, max: 1e9 }].concat(satProps('V', 15)),
+      valueText: (c, f) => depText(c) + satText(c, f, 'V')
     },
     depi: {
       prefix: 'G', terms: [[-2, 0], [2, 0]], box: [-2, -1.05, 2, 1.05], defRot: 3,
-      props: [{ key: 'ctrl', type: 'select', def: '' }, { key: 'k', unit: (c, ckt) => depKind(c, ckt).unit, def: 0.01, min: -1e9, max: 1e9 }],
-      valueText: (c, f) => depText(c)
+      props: [{ key: 'ctrl', type: 'select', def: '' }, { key: 'k', unit: (c, ckt) => depKind(c, ckt).unit, def: 0.01, min: -1e9, max: 1e9 }].concat(satProps('A', 0.01)),
+      valueText: (c, f) => depText(c) + satText(c, f, 'A')
     },
     // control sensors: a small ammeter (a wire that measures i_x) and a small voltmeter (open, measures v_x)
     isense: { prefix: 'ix', terms: [[-1, 0], [1, 0]], box: [-1, -0.75, 1, 0.6], props: [] },

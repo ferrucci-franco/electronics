@@ -24,8 +24,10 @@
  *   { type:'H', id, n:[p,m], ctrl, k }          v(p) − v(m) = k·i_x          (CCVS)
  *   { type:'G', id, n:[a,b], cn:[cp,cm], k }   I = k·v_x, from a to b inside (VCCS)
  *   { type:'F', id, n:[a,b], ctrl, k }          I = k·i_x, from a to b inside (CCCS)
+ *   optional output saturation of any of them: lim:[lo, hi] (V for E/H, A for G/F); the output is then
+ *   clamp(k·x, lo, hi), with three states: 'lin', 'sp' (held at hi) and 'sn' (held at lo)
  *
- * Piecewise-linear devices (ideal and constant-drop diodes, op-amp, BJT) have discrete states.
+ * Piecewise-linear devices (ideal and constant-drop diodes, op-amp, BJT, saturating dependent sources) have discrete states.
  * The solver looks for a set of states whose linear solution is consistent with every state,
  * and Newton-Raphson handles the exponential (Shockley) diodes inside each set of states.
  */
@@ -182,6 +184,29 @@
     return Math.abs(vds) < vov ? 'ohm' : 'sat';
   }
 
+  /* dependent sources with output saturation: the free output k·x (x: the control voltage or current in
+   * this solution), and the value a saturated (or test-fixed) output is held at */
+  const depStates = (el) => (el.lim ? ['lin', 'sp', 'sn'] : null);
+  function depFree(el, sol) {
+    if (el.type === 'E' || el.type === 'G') return el.k * (sol.v[el.cn[0]] - sol.v[el.cn[1]]);
+    const kc = sol.brById && sol.brById.get(el.ctrl);
+    return kc != null ? el.k * sol.x[kc] : 0;
+  }
+  const depHeld = (el, st) => (st === 'sp' ? el.lim[1] : st === 'sn' ? el.lim[0] : st === 'fix' ? el._fix : 0);
+  function depCheck(el, st, sol) {
+    if (!el.lim) return null;
+    const u = depFree(el, sol), [lo, hi] = el.lim, tol = el.type === 'E' || el.type === 'H' ? VTOL : ITOL;
+    const w = el.type === 'E' || el.type === 'H' ? 1 : 1e3;   // violations in comparable units (V, mA)
+    if (st === 'lin') {
+      if (u > hi + tol) return { next: 'sp', mag: (u - hi) * w };
+      if (u < lo - tol) return { next: 'sn', mag: (lo - u) * w };
+      return null;
+    }
+    if (st === 'sp' && u < hi - tol) return { next: 'lin', alt: 'sn', mag: (hi - u) * w };
+    if (st === 'sn' && u > lo + tol) return { next: 'lin', alt: 'sp', mag: (u - lo) * w };
+    return null;
+  }
+
   const DEV = {
     LMP: {
       stamp(S, el) {
@@ -216,25 +241,43 @@
       tc() { return [0, 0]; }
     },
     E: {
+      states: depStates,
       branches: () => 1,
-      stamp(S, el, st, br) { S.vbr(el.n[0], el.n[1], br[0], 0, 0); S.row(br[0], el.cn[0], -el.k); S.row(br[0], el.cn[1], el.k); },
+      stamp(S, el, st, br) {
+        S.vbr(el.n[0], el.n[1], br[0], depHeld(el, st), 0);
+        if (!st || st === 'lin') { S.row(br[0], el.cn[0], -el.k); S.row(br[0], el.cn[1], el.k); }
+      },
+      check: depCheck,
       tc(el, st, sol, br) { const i = sol.x[br[0]]; return [i, -i]; }
     },
     H: {
+      states: depStates,
       branches: () => 1,
-      stamp(S, el, st, br) { S.vbr(el.n[0], el.n[1], br[0], 0, 0); const kc = S.brOf(el.ctrl); if (kc != null) S.ab(br[0], kc, -el.k); },
+      stamp(S, el, st, br) {
+        S.vbr(el.n[0], el.n[1], br[0], depHeld(el, st), 0);
+        if (!st || st === 'lin') { const kc = S.brOf(el.ctrl); if (kc != null) S.ab(br[0], kc, -el.k); }
+      },
+      check: depCheck,
       tc(el, st, sol, br) { const i = sol.x[br[0]]; return [i, -i]; }
     },
     G: {
-      stamp(S, el) {
+      states: depStates,
+      stamp(S, el, st) {
+        if (st && st !== 'lin') { S.i(el.n[0], el.n[1], depHeld(el, st)); return; }
         const [a, b] = el.n, [cp, cm] = el.cn;
         S.mat(a, cp, el.k); S.mat(a, cm, -el.k); S.mat(b, cp, -el.k); S.mat(b, cm, el.k);
       },
-      tc(el, st, sol) { const i = el.k * (sol.v[el.cn[0]] - sol.v[el.cn[1]]); return [i, -i]; }
+      check: depCheck,
+      tc(el, st, sol) { const i = st && st !== 'lin' ? depHeld(el, st) : depFree(el, sol); return [i, -i]; }
     },
     F: {
-      stamp(S, el) { const kc = S.brOf(el.ctrl); if (kc != null) { S.col(el.n[0], kc, el.k); S.col(el.n[1], kc, -el.k); } },
-      tc(el, st, sol) { const kc = sol.brById && sol.brById.get(el.ctrl); const i = kc != null ? el.k * sol.x[kc] : 0; return [i, -i]; }
+      states: depStates,
+      stamp(S, el, st) {
+        if (st && st !== 'lin') { S.i(el.n[0], el.n[1], depHeld(el, st)); return; }
+        const kc = S.brOf(el.ctrl); if (kc != null) { S.col(el.n[0], kc, el.k); S.col(el.n[1], kc, -el.k); }
+      },
+      check: depCheck,
+      tc(el, st, sol) { const i = st && st !== 'lin' ? depHeld(el, st) : depFree(el, sol); return [i, -i]; }
     },
     // test source used by the Thevenin / Norton calculation: current source or voltage source
     IT: {
@@ -622,7 +665,7 @@
       if (!good || alpha < 1) r = { ok: false, reason: 'newton' };
     }
     if (!r.ok) return r;
-    if (!ctx.noHuge) for (let i = 0; i < r.x.length; i++) if (Math.abs(r.x[i]) > HUGE) return { ok: false, reason: 'huge', x: r.x, v: r.v, brIndex: r.brIndex };
+    if (!ctx.noHuge) for (let i = 0; i < r.x.length; i++) if (Math.abs(r.x[i]) > HUGE) return { ok: false, reason: 'huge', x: r.x, v: r.v, brIndex: r.brIndex, brById: r.brById };
     return r;
   }
 
@@ -723,23 +766,37 @@
     return { ok: false, evals };
   }
 
-  // Positive feedback check for op-amps in the linear state: the linear solution of a comparator
-  // with positive feedback (Schmitt trigger) is consistent but unstable, the output sits at a rail.
+  // Positive feedback check for op-amps and saturating dependent sources in the linear state: the linear
+  // solution of a comparator with positive feedback (Schmitt trigger) is consistent but unstable, the output
+  // sits at a limit. The output is pushed a little (state 'fix') and the loop gain read back: an op-amp is
+  // unstable when its input difference follows the push; a dependent source of finite gain k when its free
+  // output k·x grows faster than the push (loop gain above 1).
+  const DEP = new Set(['E', 'H', 'G', 'F']);
   function unstableOpamps(ckt, ctx, states, sol) {
     const out = [];
     ckt.elements.forEach((el, k) => {
-      if (el.type !== 'OA' || !el.sat || states[k] !== 'lin' || ctx.skip.has(el)) return;
-      const [ip, im, o] = el.n;
-      const vd0 = sol.v[ip] - sol.v[im];
-      const delta = 1e-3 * Math.max(1, Math.abs(el.Vpos - el.Vneg));
+      if (states[k] !== 'lin' || ctx.skip.has(el)) return;
       const s2 = states.slice();
       s2[k] = 'fix';
-      el._fix = sol.v[o] + delta;
-      const r = solveFixed(ckt, ctx, s2, sol.v);
-      delete el._fix;
-      if (!r.ok) return;
-      const g = ((r.v[ip] - r.v[im]) - vd0) / delta;
-      if (g > 1e-6) out.push(k);
+      if (el.type === 'OA' && el.sat) {
+        const [ip, im, o] = el.n;
+        const vd0 = sol.v[ip] - sol.v[im];
+        const delta = 1e-3 * Math.max(1, Math.abs(el.Vpos - el.Vneg));
+        el._fix = sol.v[o] + delta;
+        const r = solveFixed(ckt, ctx, s2, sol.v);
+        delete el._fix;
+        if (!r.ok) return;
+        const g = ((r.v[ip] - r.v[im]) - vd0) / delta;
+        if (g > 1e-6) out.push(k);
+      } else if (DEP.has(el.type) && el.lim) {
+        const u0 = depFree(el, sol);
+        const delta = 1e-3 * Math.max(Math.abs(el.lim[1] - el.lim[0]), 1e-9);
+        el._fix = u0 + delta;
+        const r = solveFixed(ckt, ctx, s2, sol.v);
+        delete el._fix;
+        if (!r.ok) return;
+        if ((depFree(el, r) - u0) / delta > 1 + 1e-6) out.push(k);
+      }
     });
     return out;
   }
@@ -860,6 +917,8 @@
         r.id = sg * tc[1];
         r.state = mosRegion(el, r.vgs, r.vds);
       }
+      // a saturating dependent source: the output it would give without the limits, k·x
+      if (DEP.has(el.type) && el.lim) r.free = depFree(el, sol);
       if (el.type === 'OA') { r.vout = sol.v[el.n[2]]; r.iout = -tc[2]; r.vd = sol.v[el.n[0]] - sol.v[el.n[1]]; r.vp = sol.v[el.n[0]]; r.vm = sol.v[el.n[1]]; }
       result.el[el.id] = r;
       pSum += p; pAbs += Math.abs(p);
@@ -887,12 +946,12 @@
     const base = ckt.elements.filter(el => !exclude.has(el.id));
     const out = { a, b };
     if (a === b) { out.error = 'samenode'; return out; }
-    const nl = base.filter(el => el.type === 'D' || el.type === 'Q' || el.type === 'M' || el.type === 'LMP' || (el.type === 'OA' && el.sat));
+    const nl = base.filter(el => el.type === 'D' || el.type === 'Q' || el.type === 'M' || el.type === 'LMP' || (el.type === 'OA' && el.sat) || (DEP.has(el.type) && el.lim));
     const nonlinear = nl.length > 0;
     out.nonlinear = nonlinear;
     out.nonlinearIds = nl.map(el => el.id);
     // piecewise-linear only (ideal / constant-drop diodes, simple transistor, saturating op-amp): linear between breakpoints
-    out.pwl = nonlinear && nl.every(el => (el.type === 'D' && el.model !== 'exact') || (el.type === 'Q' && el.model !== 'em') || (el.type === 'M' && el.model !== 'sq') || el.type === 'OA');
+    out.pwl = nonlinear && nl.every(el => (el.type === 'D' && el.model !== 'exact') || (el.type === 'Q' && el.model !== 'em') || (el.type === 'M' && el.model !== 'sq') || el.type === 'OA' || DEP.has(el.type));
     const prevStates = opts.prevStates;
     // test solves may legitimately reach large voltages (a test current into a large resistance)
     const sopts = { prevStates, tempC: opts.tempC, prevV: opts.prevV, noHuge: !nonlinear };

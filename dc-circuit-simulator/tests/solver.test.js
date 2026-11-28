@@ -350,5 +350,52 @@ const Q = (id, b, c, e, pnp) => ({ type: 'Q', id, n: [b, c, e], pnp: !!pnp, beta
   near('thev mos sw', th.rth, 100 * 1 / 101, 1e-6);
 }
 
+// saturating dependent sources: the output is clamp(k·x, lo, hi)
+{
+  const VM = (id, p, m) => ({ type: 'VM', id, n: [p, m] });
+  const AM = (id, p, m) => ({ type: 'AM', id, n: [p, m] });
+  const E = (k, vin, lim) => S.solve({ nodeCount: 3, elements: [V('V1', 1, 0, vin), VM('vx', 1, 0), { type: 'E', id: 'E1', n: [2, 0], cn: [1, 0], k, lim }, R('RL', 2, 0, 1000)] });
+  let r = E(10, 1, [-15, 15]);
+  near('vcvs sat linear', r.v[2], 10); truthy('vcvs sat lin state', r.states.E1 === 'lin'); near('vcvs free', r.el.E1.free, 10);
+  r = E(10, 2, [-15, 15]);
+  near('vcvs sat +', r.v[2], 15); truthy('vcvs sat + state', r.states.E1 === 'sp'); near('vcvs free sat', r.el.E1.free, 20);
+  r = E(10, -3, [-12, 15]);
+  near('vcvs sat −', r.v[2], -12); truthy('vcvs sat − state', r.states.E1 === 'sn');
+  r = E(10, 2);
+  near('vcvs no lim', r.v[2], 20); truthy('vcvs no lim no state', r.states.E1 === undefined);
+  // the output swept through both limits follows the clamp
+  let okSweep = true;
+  for (let vin = -3; vin <= 3; vin += 0.25) { const v = E(5, vin, [-10, 7]).v[2]; if (Math.abs(v - Math.max(-10, Math.min(7, 5 * vin))) > 1e-6) okSweep = false; }
+  truthy('vcvs sat sweep', okSweep);
+  // VCCS into a load: I = g_m·v_x up to the current limit
+  const G = (vin) => S.solve({ nodeCount: 3, elements: [V('V1', 1, 0, vin), VM('vx', 1, 0), { type: 'G', id: 'G1', n: [0, 2], cn: [1, 0], k: 0.01, lim: [-5e-3, 5e-3] }, R('RL', 2, 0, 1000)] });
+  near('vccs lin', G(0.3).v[2], 3); near('vccs sat +', G(1).v[2], 5); near('vccs sat −', G(-2).v[2], -5);
+  truthy('vccs sat state', G(1).states.G1 === 'sp'); near('vccs tc', G(1).el.G1.i, 5e-3); near('vccs tc lin', G(0.3).el.G1.i, 3e-3);
+  // CCVS and CCCS
+  r = S.solve({ nodeCount: 4, elements: [V('V1', 1, 0, 10), AM('ix', 1, 2), R('R1', 2, 0, 1000), { type: 'H', id: 'H1', n: [3, 0], ctrl: 'ix', k: 1000, lim: [-5, 5] }, R('RL', 3, 0, 1000)] });
+  near('ccvs sat', r.v[3], 5); near('ccvs free', r.el.H1.free, 10);
+  r = S.solve({ nodeCount: 4, elements: [V('V1', 1, 0, 10), R('R1', 1, 2, 1000), AM('ix', 2, 0), { type: 'F', id: 'F1', n: [0, 3], ctrl: 'ix', k: 50, lim: [-0.2, 0.2] }, R('RL', 3, 0, 10)] });
+  near('cccs sat', r.v[3], 2); truthy('cccs sat state', r.states.F1 === 'sp');
+  r = S.solve({ nodeCount: 4, elements: [V('V1', 1, 0, 1), R('R1', 1, 2, 1000), AM('ix', 2, 0), { type: 'F', id: 'F1', n: [0, 3], ctrl: 'ix', k: 50, lim: [-0.2, 0.2] }, R('RL', 3, 0, 10)] });
+  near('cccs lin', r.v[3], 0.5);
+  // negative feedback amplifier made of a saturating VCVS (an op-amp model): gain 1 + R2/R1 until the rail
+  const ni = (vin) => S.solve({ nodeCount: 4, elements: [V('V1', 1, 0, vin), { type: 'E', id: 'E1', n: [2, 0], cn: [1, 3], k: 1e5, lim: [-12, 12] }, R('R2', 2, 3, 9000), R('R1', 3, 0, 1000)] });
+  near('ni amp lin', ni(0.5).v[2], 0.5 * 1e5 / (1 + 1e5 * 0.1), 1e-9);
+  near('ni amp sat', ni(2).v[2], 12); truthy('ni amp sat state', ni(2).states.E1 === 'sp');
+  // positive feedback (comparator with hysteresis): the linear solution is unstable, the output sits at a limit
+  const st = (vin, prev) => S.solve({ nodeCount: 4, elements: [V('V1', 1, 0, vin), { type: 'E', id: 'E1', n: [2, 0], cn: [3, 1], k: 1e5, lim: [-10, 10] }, R('R2', 2, 3, 9000), R('R1', 3, 0, 1000)] }, { prevStates: prev });
+  r = st(0);
+  truthy('schmitt E at a limit', r.states.E1 === 'sp' || r.states.E1 === 'sn');
+  truthy('schmitt E no warn', !r.issues.some(i => i.code === 'unstable'));
+  near('schmitt E keeps +', st(0.5, { E1: 'sp' }).v[2], 10); near('schmitt E keeps −', st(-0.5, { E1: 'sn' }).v[2], -10);
+  near('schmitt E flips', st(1.5, { E1: 'sp' }).v[2], -10);
+  // positive feedback with loop gain below 1 is stable: the linear solution stays (v = 0.5·v + 1 → 2 V)
+  r = S.solve({ nodeCount: 3, elements: [V('V1', 1, 0, 1), { type: 'E', id: 'E1', n: [2, 1], cn: [2, 0], k: 0.5, lim: [-10, 10] }, R('RL', 2, 0, 1000)] });
+  near('loop gain < 1 linear', r.v[2], 2); truthy('loop gain < 1 state', r.states.E1 === 'lin');
+  // Thevenin sees a saturating source as piecewise linear
+  const th = S.thevenin({ nodeCount: 3, elements: [V('V1', 1, 0, 2), VM('vx', 1, 0), { type: 'E', id: 'E1', n: [2, 0], cn: [1, 0], k: 10, lim: [-15, 15] }, R('RO', 2, 0, 100)] }, 2, 0);
+  truthy('thev dep sat pwl', th.nonlinear && th.pwl);
+}
+
 console.log(`${count - fails}/${count} checks passed`);
 process.exit(fails ? 1 : 0);

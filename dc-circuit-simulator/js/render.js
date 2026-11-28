@@ -574,6 +574,7 @@
             if (showI) lines.push({ text: fmt(Math.abs(r.i), 'A'), color: col.cur, mono: true });
             if (st.showP) lines.push({ text: fmt(r.p, 'W'), color: r.p < -1e-15 ? col.pgen : col.pabs, mono: true });
             if (C.isDiode(c) && c.props.model !== 'exact' && st.showState) lines.push({ text: tr('state_' + r.state), color: col.muted });
+            if (C.isDep(c) && (r.state === 'sp' || r.state === 'sn')) lines.push({ text: r.state === 'sp' ? 'SAT +' : 'SAT −', color: col.err, bold: true });
             if (c.type === 'lamp' && st.showState) { const ls = C.lampState(c, r); lines.push({ text: tr('lamp_' + ls.state), color: ls.state === 'hot' ? col.err : col.muted, bold: ls.state === 'hot' }); }
           }
           rb = { wx: cx + rd[0] * ((lines.refOff || off) + gap), wy: cy + rd[1] * ((lines.refOff || off) + gap), dir: rd, lines };
@@ -768,6 +769,7 @@
       if (st.showI) lines.push({ text: fmt(sg.i, 'A'), color: col.cur, mono: true });
       if (st.showP) lines.push({ text: fmt(r.p, 'W'), color: r.p < -1e-15 ? col.pgen : col.pabs, mono: true });
       if (C.isDiode(c) && c.props.model !== 'exact' && st.showState) lines.push({ text: S.tr('state_' + r.state), color: col.muted });
+      if (C.isDep(c) && (r.state === 'sp' || r.state === 'sn')) lines.push({ text: r.state === 'sp' ? 'SAT +' : 'SAT −', color: col.err, bold: true });
       if (c.type === 'lamp' && st.showState) { const ls = C.lampState(c, r); lines.push({ text: S.tr('lamp_' + ls.state), color: ls.state === 'hot' ? col.err : col.muted, bold: ls.state === 'hot' }); }
     }
     lines.refOff = off;

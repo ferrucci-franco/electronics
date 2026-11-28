@@ -122,14 +122,15 @@
   }
 
   // the components whose regions can be shown, and the regions they go through
-  const zoneable = (c) => !!c && (c.type === 'bjt' || c.type === 'mosfet' || c.type === 'opamp' || C.isDiode(c));
+  const zoneable = (c) => !!c && (c.type === 'bjt' || c.type === 'mosfet' || c.type === 'opamp' || C.isDiode(c) || (C.isDep(c) && !!c.props.sat));
   const ZONES = {
     bjt: { off: ['region_off', 'muted'], act: ['region_act', 2], sat: ['region_sat', 'err'] },
     mosfet: { off: ['mos_off', 'muted'], ohm: ['mos_ohm', 'err'], sat: ['mos_sat', 2] },
     opamp: { lin: ['sw_z_lin', 2], sp: ['sw_z_sp', 'err'], sn: ['sw_z_sn', 6] },
     diode: { off: ['sw_z_off', 'muted'], on: ['sw_z_on', 2], bd: ['sw_z_bd', 3] }
   };
-  const zoneSet = (c) => ZONES[c.type] || ZONES.diode;
+  // (a saturating dependent source: the same regions as the op-amp)
+  const zoneSet = (c) => (C.isDep(c) ? ZONES.opamp : ZONES[c.type] || ZONES.diode);
 
   function grid(x, n) {
     const out = new Float64Array(n);

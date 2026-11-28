@@ -102,8 +102,10 @@
           // without a control the source is zero
           const s = C.ctrlOf(c, circuit), cur = s && C.meterKind(s) === 'A', k = s ? pr.k : 0;
           const vt = c.type === 'depv';
-          if (cur) elements.push({ type: vt ? 'H' : 'F', id: c.id, n, ctrl: s.id, k });
-          else elements.push({ type: vt ? 'E' : 'G', id: c.id, n, cn: s ? compNodes.get(s.id) : [0, 0], k });
+          // optional output saturation: the output stays between the two limits (V or A)
+          const lim = pr.sat ? [Math.min(pr.smin, pr.smax), Math.max(pr.smin, pr.smax)] : undefined;
+          if (cur) elements.push({ type: vt ? 'H' : 'F', id: c.id, n, ctrl: s.id, k, lim });
+          else elements.push({ type: vt ? 'E' : 'G', id: c.id, n, cn: s ? compNodes.get(s.id) : [0, 0], k, lim });
           break;
         }
         // an open switch is an open circuit: a voltmeter gives the voltage across its contacts

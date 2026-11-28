@@ -764,6 +764,8 @@
     function propLabel(c, d) {
       if (d.key === 'k') { const k = C.depKind(c, app.circuit); return t('p_gain') + ' ' + k.sym; }
       if (d.key === 'model' || d.key === 'pol' || d.key === 'sat') return t('p_' + d.key);
+      // limits of a saturating dependent source: v_max / v_min, i_max / i_min
+      if (d.key === 'smax' || d.key === 'smin') return t('p_' + d.key) + ' ' + (c.type === 'depv' ? 'v' : 'i') + '<sub>' + d.key.slice(1) + '</sub>';
       // a varying source: its main value is the offset (the middle of the sine)
       if ((d.key === 'V' || d.key === 'I') && C.waving(c)) return t('p_' + d.key + '0');
       if (d.key === 'amp') return t('p_amp') + ' ' + (c.type === 'vsource' ? 'V' : 'I') + '<sub>p</sub>';
@@ -947,6 +949,7 @@
         const k = C.depKind(c, app.circuit), nm = String(c.props.ctrl || 'x');
         const x = nm[0].toLowerCase() === k.x && nm.length > 1 ? k.x + '<sub>' + esc(nm.slice(1)) + '</sub>' : k.x + '<sub>' + esc(nm) + '</sub>';
         card.appendChild(el('div', { class: 'hint' }, `${t('dep_' + k.code)}: ${c.type === 'depv' ? 'v' : 'i'} = ${k.sym} · ${x}`));
+        if (c.props.sat) card.appendChild(el('div', { class: 'hint' }, t('dep_sat_hint', { y: c.type === 'depv' ? 'v' : 'i' })));
       }
       if (C.flippable(c) && !app.settings.realDir) {
         const f = C.refs(c);
@@ -1171,6 +1174,12 @@
         const nm = esc(c.name || '');
         html = `<dt>V<sub>${nm}</sub></dt><dd class="v">${fmt(sg.v, 'V')}</dd><dt>I<sub>${nm}</sub></dt><dd class="i">${fmt(sg.i, 'A')}</dd>` + pRow(r.p);
         if (C.isDiode(c) && r.state) html += `<dt>${t('res_state')}</dt><dd>${t('state_' + r.state)}</dd>`;
+        // a saturating dependent source: linear or held at a limit, and the output k·x it would give without them
+        if (C.isDep(c) && r.free !== undefined) {
+          const u = c.type === 'depv' ? 'V' : 'A';
+          html += `<dt>${t('res_state')}</dt><dd>${r.state === 'sp' ? 'SAT +' : r.state === 'sn' ? 'SAT −' : t('sat_lin')}</dd>` +
+            `<dt>${t('dep_free', { k: C.depKind(c, app.circuit).sym + '·' + C.depKind(c, app.circuit).x + '<sub>x</sub>' })}</dt><dd>${fmt(r.free, u)}</dd>`;
+        }
         if (c.type === 'led') html += `<dt>${t('brightness')}</dt><dd>${Math.round(100 * Math.max(0, Math.min(1, r.i / c.props.Imax)))} %</dd>`;
         if (c.type === 'resistor') html += `<dt>V/R</dt><dd>${fmt(r.v / c.props.R, 'A')}</dd>`;
         if (c.type === 'lamp') { const ls = C.lampState(c, r), real = c.props.lmodel === 'real'; html += real ? `<dt>${t('lamp_rvi')}</dt><dd>${Math.abs(r.i) > 1e-12 ? fmt(r.v / r.i, 'Ω') : '—'}</dd><dt>${t('lamp_r')}</dt><dd>${fmt(c.props.Vn * c.props.Vn / c.props.Pn, 'Ω')}</dd>` : `<dt>${t('lamp_r')}</dt><dd>${fmt(c.props.Vn * c.props.Vn / c.props.Pn, 'Ω')}</dd>`; html += `<dt>${t('lamp_bright')}</dt><dd>${Math.round(ls.b * 100)} %</dd><dt>${t('res_state')}</dt><dd>${t('lamp_' + ls.state)}</dd>`; }
